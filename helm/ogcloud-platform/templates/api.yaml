@@ -1,0 +1,98 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/part-of: ogcloud
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/api-configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/api-secret.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.service.port }}
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          resources:
+{{ toYaml .Values.api.resources | indent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  type: {{ .Values.api.service.type }}
+  selector:
+    app.kubernetes.io/name: api
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: http
+{{- if .Values.api.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: ogcloud
+  {{- if or .Values.api.ingress.maxBodySize .Values.api.ingress.annotations }}
+  annotations:
+    {{- if .Values.api.ingress.maxBodySize }}
+    nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.api.ingress.maxBodySize | quote }}
+    {{- end }}
+    {{- with .Values.api.ingress.annotations }}
+{{ toYaml . | indent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Values.api.ingress.className }}
+  ingressClassName: {{ .Values.api.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.api.ingress.domain | quote }}
+      http:
+        paths:
+          - path: {{ .Values.api.ingress.path }}
+            pathType: {{ .Values.api.ingress.pathType }}
+            backend:
+              service:
+                name: api
+                port:
+                  number: {{ .Values.api.service.port }}
+  {{- if .Values.api.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.api.ingress.domain | quote }}
+      {{- if .Values.api.ingress.tls.secretName }}
+      secretName: {{ .Values.api.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

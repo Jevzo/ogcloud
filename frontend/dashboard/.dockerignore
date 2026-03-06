@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# IDE files
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.example
+
+# Documentation
+*.md
+LICENSE
+
+# Test files
+*.test.*
+*.spec.*
+__tests__/
+coverage/

@@ -1,0 +1,3 @@
+### Search via path parameter
+GET {{baseUrl}}/api/v1/search/lobby?limit=10
+Authorization: Bearer {{accessToken}}

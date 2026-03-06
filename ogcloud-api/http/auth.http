@@ -1,0 +1,85 @@
+@adminEmail = service@ogcloud.local
+@adminPassword = 3f7ff321a42e48eb848e845eac79268052ca7f5c5b4e45b58057517b384e986ddd795852fc2f44e187e29b7bc0fdfec3df9de02e83964dfc9d67cb1633ddde67d2b3d179c48d4247abe32de06f1e0f07d47099d7e3924b90bee46d64d22904f5b3d0059dcd114640b0fa41dce3fdab59c819ba1f222a47b3b428e532c86c6bebe82a997f01a546499389281ba7f328776297e4f3b68c45f5a5a278584458fc72
+
+### Health (public)
+GET {{baseUrl}}/health
+
+### Login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+client.global.set("accessToken", response.body.accessToken);
+client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Refresh tokens
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+client.global.set("accessToken", response.body.accessToken);
+client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+### Revoke the current refresh token
+POST {{baseUrl}}/api/v1/auth/revoke
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Revoke all refresh tokens for the authenticated user
+POST {{baseUrl}}/api/v1/auth/revoke-all
+Authorization: Bearer {{accessToken}}
+
+### Update the authenticated user's own email
+PUT {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "service-updated@ogcloud.local"
+}
+
+### Update the authenticated user's own password
+PUT {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "replace-with-a-new-password"
+}
+
+### Request an OTP to link the authenticated web account to an online Minecraft account
+POST {{baseUrl}}/api/v1/auth/link/request
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "minecraftUsername": "Notch"
+}
+
+### Confirm account linking with the OTP shown in Minecraft chat
+POST {{baseUrl}}/api/v1/auth/link/confirm
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "otp": "123456"
+}
+
+### Unlink the currently linked Minecraft account
+DELETE {{baseUrl}}/api/v1/auth/link
+Authorization: Bearer {{accessToken}}

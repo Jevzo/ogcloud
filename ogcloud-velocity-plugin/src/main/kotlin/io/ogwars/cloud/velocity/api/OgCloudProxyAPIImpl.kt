@@ -1,0 +1,119 @@
+package io.ogwars.cloud.velocity.api
+
+import io.ogwars.cloud.api.event.ServerReadyEvent
+import io.ogwars.cloud.api.model.DisplayConfig
+import io.ogwars.cloud.api.model.PermissionGroup
+import io.ogwars.cloud.api.model.PlayerInfo
+import io.ogwars.cloud.api.model.RedisPlayerSession
+import io.ogwars.cloud.api.model.RunningServer
+import io.ogwars.cloud.api.model.ServerInfo
+import io.ogwars.cloud.api.model.toRunningServer
+import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
+import io.ogwars.cloud.velocity.permission.CachedPlayer
+import io.ogwars.cloud.velocity.permission.PermissionCache
+import io.ogwars.cloud.velocity.redis.RedisManager
+import org.slf4j.Logger
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.function.Consumer
+
+class OgCloudProxyAPIImpl(
+    private val permissionCache: PermissionCache,
+    private val apiClient: ApiClient,
+    private val redisManager: RedisManager,
+    private val logger: Logger
+) : OgCloudProxyAPI {
+
+    private val serverReadyListeners = CopyOnWriteArrayList<Consumer<ServerReadyEvent>>()
+
+    override fun getServers(): List<RunningServer> {
+        val ids = redisManager.getServerIds()
+        return ids.mapNotNull(::findRunningServer)
+    }
+
+    override fun getServersByGroup(group: String): List<RunningServer> {
+        val ids = redisManager.getServerIdsByGroup(group)
+        return ids.mapNotNull(::findRunningServer)
+    }
+
+    override fun getServer(id: String): RunningServer? {
+        return findRunningServer(id)
+    }
+
+    override fun getServerByPlayer(uuid: UUID): RunningServer? {
+        val session = redisManager.getPlayerData(uuid.toString()) ?: return null
+        val serverId = session.serverId ?: return null
+        return findRunningServer(serverId)
+    }
+
+    override fun findPlayer(uuid: UUID): PlayerInfo? {
+        val session = redisManager.getPlayerData(uuid.toString()) ?: return null
+        return session.toPlayerInfo(uuid)
+    }
+
+    override fun getPlayerGroup(uuid: UUID): PermissionGroup? {
+        val cached = permissionCache.getPlayer(uuid) ?: return null
+        return cached.toPermissionGroup()
+    }
+
+    override fun requestServer(group: String): CompletableFuture<ServerInfo> {
+        return apiClient.requestServer(group).thenApply { response ->
+            ServerInfo(id = response.serverId, group = response.group, displayName = response.group)
+        }
+    }
+
+    override fun transferPlayer(uuid: UUID, serverId: String): CompletableFuture<Void> {
+        return apiClient.transferPlayer(uuid.toString(), serverId)
+    }
+
+    override fun transferPlayerToGroup(uuid: UUID, group: String): CompletableFuture<Void> {
+        return apiClient.transferPlayer(uuid.toString(), group)
+    }
+
+    override fun onServerReady(listener: Consumer<ServerReadyEvent>) {
+        serverReadyListeners.add(listener)
+    }
+
+    fun fireServerReady(server: RunningServer) {
+        val event = ServerReadyEvent(server)
+        serverReadyListeners.forEach { listener ->
+            try {
+                listener.accept(event)
+            } catch (e: Exception) {
+                logger.error("Error in server ready listener", e)
+            }
+        }
+    }
+
+    private fun findRunningServer(serverId: String): RunningServer? {
+        val data = redisManager.getServerData(serverId) ?: return null
+        return data.toRunningServer()
+    }
+
+    private fun RedisPlayerSession.toPlayerInfo(uuid: UUID): PlayerInfo {
+        return PlayerInfo(
+            uuid = uuid,
+            name = name,
+            serverId = serverId,
+            proxyId = proxyId,
+            groupName = permission.group,
+            permissions = permissions
+        )
+    }
+
+    private fun CachedPlayer.toPermissionGroup(): PermissionGroup {
+        return PermissionGroup(
+            id = groupId,
+            name = groupName,
+            display = DisplayConfig(
+                chatPrefix = chatPrefix,
+                chatSuffix = chatSuffix,
+                nameColor = nameColor,
+                tabPrefix = tabPrefix
+            ),
+            weight = weight,
+            permissions = permissions
+        )
+    }
+}

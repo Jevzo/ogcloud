@@ -1,0 +1,144 @@
+### List all groups
+GET {{baseUrl}}/api/v1/groups
+Authorization: Bearer {{accessToken}}
+
+### List groups with pagination and query filtering
+GET {{baseUrl}}/api/v1/groups?page=0&size=50&query=lobby
+Authorization: Bearer {{accessToken}}
+
+### Get group by name
+GET {{baseUrl}}/api/v1/groups/proxy
+Authorization: Bearer {{accessToken}}
+
+### Create a lobby group
+POST {{baseUrl}}/api/v1/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "lobby",
+  "type": "DYNAMIC",
+  "templateBucket": "ogcloud-templates",
+  "templatePath": "lobby",
+  "templateVersion": "1.0.0",
+  "scaling": {
+    "minOnline": 1,
+    "maxInstances": 2,
+    "playersPerServer": 25,
+    "scaleUpThreshold": 0.8,
+    "scaleDownThreshold": 0.2,
+    "cooldownSeconds": 60
+  },
+  "resources": {
+    "memoryRequest": "512Mi",
+    "memoryLimit": "1Gi",
+    "cpuRequest": "250m",
+    "cpuLimit": "1000m"
+  },
+  "jvmFlags": "-Xms512M -Xmx512M",
+  "drainTimeoutSeconds": 30,
+  "serverImage": "ogwarsdev/paper:latest"
+}
+
+### Create a survival group
+POST {{baseUrl}}/api/v1/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "survival",
+  "type": "STATIC",
+  "templateBucket": "ogcloud-templates",
+  "templatePath": "survival",
+  "templateVersion": "1.0.0",
+  "scaling": {
+    "minOnline": 0,
+    "maxInstances": 10,
+    "playersPerServer": 16,
+    "scaleUpThreshold": 0.75,
+    "scaleDownThreshold": 0.1,
+    "cooldownSeconds": 120
+  },
+  "resources": {
+    "memoryRequest": "256Mi",
+    "memoryLimit": "512Mi",
+    "cpuRequest": "100m",
+    "cpuLimit": "500m"
+  },
+  "jvmFlags": "-Xms256M -Xmx256M",
+  "drainTimeoutSeconds": 60,
+  "serverImage": "ogwarsdev/paper:latest",
+  "storageSize": "5Gi"
+}
+
+### Create a proxy group
+POST {{baseUrl}}/api/v1/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "proxy",
+  "type": "PROXY",
+  "templateBucket": "ogcloud-templates",
+  "templatePath": "proxy",
+  "templateVersion": "1.0.0",
+  "scaling": {
+    "minOnline": 1,
+    "maxInstances": 3,
+    "playersPerServer": 500,
+    "scaleUpThreshold": 0.8,
+    "scaleDownThreshold": 0.2,
+    "cooldownSeconds": 120
+  },
+  "resources": {
+    "memoryRequest": "512Mi",
+    "memoryLimit": "1Gi",
+    "cpuRequest": "250m",
+    "cpuLimit": "1000m"
+  },
+  "jvmFlags": "-Xms512M -Xmx512M",
+  "drainTimeoutSeconds": 60,
+  "serverImage": "ogwarsdev/velocity:latest"
+}
+
+### Update a group
+PUT {{baseUrl}}/api/v1/groups/lobby
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "scaling": {
+    "minOnline": 1,
+    "maxInstances": 3,
+    "playersPerServer": 500,
+    "scaleUpThreshold": 0.8,
+    "scaleDownThreshold": 0.2,
+    "cooldownSeconds": 120
+  }
+}
+
+### Enable group maintenance
+PUT {{baseUrl}}/api/v1/groups/lobby/maintenance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "maintenance": true
+}
+
+### Disable group maintenance
+PUT {{baseUrl}}/api/v1/groups/lobby/maintenance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "maintenance": false
+}
+
+### Restart a whole group (requires group maintenance to already be enabled)
+POST {{baseUrl}}/api/v1/groups/lobby/restart
+Authorization: Bearer {{accessToken}}
+
+### Delete a group
+DELETE {{baseUrl}}/api/v1/groups/proxy
+Authorization: Bearer {{accessToken}}

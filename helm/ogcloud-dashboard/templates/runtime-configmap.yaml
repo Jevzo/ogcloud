@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-runtime-config
+  namespace: {{ include "ogcloud-dashboard.namespace" . }}
+  labels:
+    app.kubernetes.io/name: dashboard
+    app.kubernetes.io/part-of: ogcloud
+data:
+  runtime-config.js: |
+    window.__OGCLOUD_CONFIG__ = {
+      apiBaseUrl: {{ .Values.dashboard.runtime.apiBaseUrl | quote }}
+    };

@@ -1,0 +1,54 @@
+### List all web users (ADMIN only)
+GET {{baseUrl}}/api/v1/web/users
+Authorization: Bearer {{accessToken}}
+
+### Create a DEVELOPER user (ADMIN only)
+POST {{baseUrl}}/api/v1/web/users
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "dev-user@ogcloud.local",
+  "password": "replace-with-a-password",
+  "role": "DEVELOPER"
+}
+
+### Promote a user to ADMIN
+PUT {{baseUrl}}/api/v1/web/users/dev-user@ogcloud.local
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+### Update a user's email
+PUT {{baseUrl}}/api/v1/web/users/dev-user@ogcloud.local
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "dev-user-renamed@ogcloud.local"
+}
+
+### Update a user's username
+PUT {{baseUrl}}/api/v1/web/users/dev-user-renamed@ogcloud.local
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "username": "Linked Display Name"
+}
+
+### Update a user's password
+PUT {{baseUrl}}/api/v1/web/users/dev-user-renamed@ogcloud.local
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "replace-with-another-password"
+}
+
+### Delete a user
+DELETE {{baseUrl}}/api/v1/web/users/dev-user-renamed@ogcloud.local
+Authorization: Bearer {{accessToken}}

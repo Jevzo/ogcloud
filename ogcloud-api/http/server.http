@@ -1,0 +1,50 @@
+### List all servers
+GET {{baseUrl}}/api/v1/servers
+Authorization: Bearer {{accessToken}}
+
+### List servers by group
+GET {{baseUrl}}/api/v1/servers?group=lobby
+Authorization: Bearer {{accessToken}}
+
+### Get server by ID
+GET {{baseUrl}}/api/v1/servers/e6892b8e7c4d42d2acefca7567b3826f
+Authorization: Bearer {{accessToken}}
+
+### Request a new lobby server
+POST {{baseUrl}}/api/v1/servers/request
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "group": "lobby"
+}
+
+### Request a new survival server
+POST {{baseUrl}}/api/v1/servers/request
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "group": "survival"
+}
+
+### Request a new proxy instance
+POST {{baseUrl}}/api/v1/servers/request
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "group": "proxy"
+}
+
+### Stop a server (graceful drain)
+POST {{baseUrl}}/api/v1/servers/dac90cdabba74a79ba0880397c459ca1/stop
+Authorization: Bearer {{accessToken}}
+
+### Kill a server (force delete)
+POST {{baseUrl}}/api/v1/servers/4d6d62766bae4fb5ac4e23dd36fec518/kill
+Authorization: Bearer {{accessToken}}
+
+### Force template push
+POST {{baseUrl}}/api/v1/servers/e028246c2c224bfa859706bfabf6e8a5/template/push
+Authorization: Bearer {{accessToken}}

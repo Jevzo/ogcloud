@@ -1,0 +1,80 @@
+### Get network settings
+GET {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+
+### Get network status (online players, server count, proxy count)
+GET {{baseUrl}}/api/v1/network/status
+Authorization: Bearer {{accessToken}}
+
+### Update network settings (full example)
+PUT {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "motd": {
+    "global": "&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem! &8⋆ &e1.21.11&r\n&8➥ &7Try our system today, &c&lfor free&7!",
+    "maintenance": "&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem! &8⋆ &e&k1.21.11&r\n&8➥ &cWe are currently undergoing maintenance!"
+  },
+  "versionName": {
+    "global": "1.21.11",
+    "maintenance": "⚛ Offline"
+  },
+  "maxPlayers": 500,
+  "defaultGroup": "lobby",
+  "maintenanceKickMessage": "&cServer is currently in maintenance mode.",
+  "tablist": {
+    "header": "\n&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem!\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n",
+    "footer": "\n&7Proxy: &a%proxy% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
+  }
+}
+
+### Update only MOTD
+PUT {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "motd": {
+    "global": "&bHello from the HTTP client"
+  }
+}
+
+### Update only tablist
+PUT {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tablist": {
+    "header": "\n&e&lOgWars Network\n&7Players: &a%onlinePlayers%\n&7Group: &a%permissionGroup%\n",
+    "footer": "\n&7%server% &8| &7%group%\n&7Ping: &a%ping%ms &8| &7play.ogwars.io\n"
+  }
+}
+
+### Update maintenance kick message
+PUT {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "maintenanceKickMessage": "&cThe server is under maintenance. Please try again later."
+}
+
+### Enable network maintenance
+PUT {{baseUrl}}/api/v1/network/maintenance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "maintenance": true
+}
+
+### Disable network maintenance
+PUT {{baseUrl}}/api/v1/network/maintenance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "maintenance": false
+}

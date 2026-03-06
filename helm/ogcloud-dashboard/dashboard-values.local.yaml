@@ -1,0 +1,13 @@
+namespace:
+  name: ogcloud
+
+dashboard:
+  image:
+    repository: ogwarsdev/dashboard
+    tag: 0.2.0
+  ingress:
+    enabled: true
+    className: nginx
+    domain: dashboard.ogcloud.local
+  runtime:
+    apiBaseUrl: http://api.ogcloud.local

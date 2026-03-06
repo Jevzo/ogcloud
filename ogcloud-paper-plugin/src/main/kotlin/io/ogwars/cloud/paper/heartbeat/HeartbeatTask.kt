@@ -1,0 +1,54 @@
+package io.ogwars.cloud.paper.heartbeat
+
+import io.ogwars.cloud.api.event.ServerHeartbeatEvent
+import io.ogwars.cloud.paper.OgCloudPaperPlugin
+import io.ogwars.cloud.paper.kafka.KafkaManager
+
+class HeartbeatTask(
+    private val plugin: OgCloudPaperPlugin,
+    private val kafkaManager: KafkaManager
+) {
+
+    private var taskId: Int = NO_TASK_ID
+
+    fun start() {
+        taskId = plugin.server.scheduler.scheduleSyncRepeatingTask(
+            plugin, ::sendHeartbeat, 0L, HEARTBEAT_INTERVAL_TICKS
+        )
+        if (taskId == NO_TASK_ID) {
+            plugin.logger.severe("Failed to schedule heartbeat task")
+        }
+    }
+
+    private fun sendHeartbeat() {
+        kafkaManager.send(TOPIC, plugin.serverId, createHeartbeatEvent())
+    }
+
+    fun stop() {
+        if (taskId != NO_TASK_ID) {
+            plugin.server.scheduler.cancelTask(taskId)
+            taskId = NO_TASK_ID
+        }
+    }
+
+    private fun createHeartbeatEvent(): ServerHeartbeatEvent {
+        val runtime = Runtime.getRuntime()
+        return ServerHeartbeatEvent(
+            serverId = plugin.serverId,
+            group = plugin.groupName,
+            playerCount = plugin.server.onlinePlayers.size,
+            maxPlayers = plugin.server.maxPlayers,
+            tps = plugin.server.tps[0].coerceAtMost(MAX_TPS),
+            memoryUsedMb = (runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB,
+            gameState = plugin.gameStateManager.currentState.name
+        )
+    }
+
+    companion object {
+        private const val HEARTBEAT_INTERVAL_TICKS = 100L
+        private const val TOPIC = "ogcloud.server.heartbeat"
+        private const val BYTES_PER_MB = 1024L * 1024L
+        private const val MAX_TPS = 20.0
+        private const val NO_TASK_ID = -1
+    }
+}

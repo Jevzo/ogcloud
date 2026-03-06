@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: ogcloud-controller
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/ogcloud}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9094}
+    consumer:
+      group-id: ogcloud-controller
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+ogcloud:
+  auth:
+    service-account:
+      email: ${OGCLOUD_API_EMAIL}
+      password: ${OGCLOUD_API_PASSWORD}
+  kubernetes:
+    namespace: ${OGCLOUD_NAMESPACE:ogcloud}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+  pod:
+    minio-endpoint: ${POD_MINIO_ENDPOINT:minio.ogcloud.svc.cluster.local:9000}
+    minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}
+    minio-secret-key: ${POD_MINIO_SECRET_KEY:minioadmin123}
+    kafka-brokers: ${POD_KAFKA_BROKERS:kafka.ogcloud.svc.cluster.local:9092}
+    redis-host: ${POD_REDIS_HOST:redis.ogcloud.svc.cluster.local}
+    redis-port: ${POD_REDIS_PORT:6379}
+    mongodb-uri: ${POD_MONGODB_URI:mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud}
+    api-url: ${POD_API_URL:http://api.ogcloud.svc.cluster.local:8080}
+    api-email: ${POD_OGCLOUD_API_EMAIL:${OGCLOUD_API_EMAIL}}
+    api-password: ${POD_OGCLOUD_API_PASSWORD:${OGCLOUD_API_PASSWORD}}
+
+server:
+  port: 8081

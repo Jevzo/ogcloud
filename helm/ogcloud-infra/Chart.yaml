@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ogcloud-infra
+description: Backing infrastructure for OgCloud (MongoDB, Redis, Kafka, and MinIO).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

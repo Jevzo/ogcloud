@@ -1,0 +1,25 @@
+{{- if .Values.controller.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: controller-config
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+data:
+  MONGODB_URI: {{ .Values.connections.mongodbUri | quote }}
+  REDIS_HOST: {{ .Values.connections.redisHost | quote }}
+  REDIS_PORT: {{ .Values.connections.redisPort | quote }}
+  KAFKA_BROKERS: {{ .Values.connections.kafkaBrokers | quote }}
+  MINIO_ENDPOINT: {{ .Values.connections.minioEndpoint | quote }}
+  OGCLOUD_API_EMAIL: {{ .Values.controller.env.apiEmail | quote }}
+  OGCLOUD_NAMESPACE: {{ include "ogcloud-platform.namespace" . | quote }}
+  POD_MINIO_ENDPOINT: {{ .Values.controller.env.podMinioEndpoint | quote }}
+  POD_KAFKA_BROKERS: {{ .Values.controller.env.podKafkaBrokers | quote }}
+  POD_REDIS_HOST: {{ .Values.controller.env.podRedisHost | quote }}
+  POD_REDIS_PORT: {{ .Values.controller.env.podRedisPort | quote }}
+  POD_MONGODB_URI: {{ .Values.controller.env.podMongodbUri | quote }}
+  POD_API_URL: {{ .Values.controller.env.podApiUrl | quote }}
+  POD_OGCLOUD_API_EMAIL: {{ default .Values.controller.env.apiEmail .Values.controller.env.podApiEmail | quote }}
+{{- end }}

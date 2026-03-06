@@ -1,0 +1,79 @@
+package io.ogwars.cloud.velocity.kafka
+
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.kafka.common.serialization.StringSerializer
+import java.util.Properties
+
+class KafkaManager(
+    private val bootstrapServers: String,
+    private val clientId: String
+) {
+
+    private lateinit var producer: KafkaProducer<String, String>
+
+    fun start() {
+        producer = withPluginClassLoader { KafkaProducer(createProducerProperties()) }
+    }
+
+    fun createConsumer(
+        groupId: String,
+        clientIdSuffix: String = "consumer",
+        autoOffsetReset: String = "earliest"
+    ): KafkaConsumer<String, String> {
+        return withPluginClassLoader {
+            KafkaConsumer(createConsumerProperties(groupId, clientIdSuffix, autoOffsetReset))
+        }
+    }
+
+    fun send(topic: String, key: String, value: String) {
+        producer.send(ProducerRecord(topic, key, value))
+    }
+
+    fun close() {
+        if (::producer.isInitialized) {
+            producer.close()
+        }
+    }
+
+    private fun createProducerProperties(): Properties {
+        return Properties().apply {
+            put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+            put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
+            put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
+            put(ProducerConfig.CLIENT_ID_CONFIG, clientId)
+        }
+    }
+
+    private fun createConsumerProperties(
+        groupId: String,
+        clientIdSuffix: String,
+        autoOffsetReset: String
+    ): Properties {
+        return Properties().apply {
+            put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
+            put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
+            put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
+            put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
+            put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset)
+            put(ConsumerConfig.CLIENT_ID_CONFIG, "$clientId-$clientIdSuffix")
+        }
+    }
+
+    private fun <T> withPluginClassLoader(block: () -> T): T {
+        val currentThread = Thread.currentThread()
+        val originalClassLoader = currentThread.contextClassLoader
+
+        currentThread.contextClassLoader = this::class.java.classLoader
+
+        return try {
+            block()
+        } finally {
+            currentThread.contextClassLoader = originalClassLoader
+        }
+    }
+}

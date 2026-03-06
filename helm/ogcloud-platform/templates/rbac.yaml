@@ -1,0 +1,46 @@
+{{- if and .Values.controller.enabled .Values.controller.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.controller.serviceAccount.name }}
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: controller
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["create", "get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: controller
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.controller.serviceAccount.name }}
+    namespace: {{ include "ogcloud-platform.namespace" . }}
+roleRef:
+  kind: Role
+  name: controller
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

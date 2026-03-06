@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: {{ include "ogcloud-dashboard.namespace" . }}
+  labels:
+    app.kubernetes.io/name: dashboard
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  replicas: {{ .Values.dashboard.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dashboard
+        app.kubernetes.io/part-of: ogcloud
+      annotations:
+        checksum/runtime-config: {{ include (print $.Template.BasePath "/runtime-configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: dashboard
+          image: "{{ .Values.dashboard.image.repository }}:{{ .Values.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: runtime-config
+              mountPath: /usr/share/nginx/html/runtime-config.js
+              subPath: runtime-config.js
+          resources:
+{{ toYaml .Values.dashboard.resources | indent 12 }}
+      volumes:
+        - name: runtime-config
+          configMap:
+            name: dashboard-runtime-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: {{ include "ogcloud-dashboard.namespace" . }}
+  labels:
+    app.kubernetes.io/name: dashboard
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  selector:
+    app.kubernetes.io/name: dashboard
+  ports:
+    - name: http
+      port: {{ .Values.dashboard.service.port }}
+      targetPort: http
+{{- if .Values.dashboard.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard
+  namespace: {{ include "ogcloud-dashboard.namespace" . }}
+  labels:
+    app.kubernetes.io/name: dashboard
+    app.kubernetes.io/part-of: ogcloud
+  {{- if or .Values.dashboard.ingress.maxBodySize .Values.dashboard.ingress.annotations }}
+  annotations:
+    {{- if .Values.dashboard.ingress.maxBodySize }}
+    nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.dashboard.ingress.maxBodySize | quote }}
+    {{- end }}
+    {{- with .Values.dashboard.ingress.annotations }}
+{{ toYaml . | indent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .Values.dashboard.ingress.className }}
+  ingressClassName: {{ .Values.dashboard.ingress.className }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.dashboard.ingress.domain | quote }}
+      http:
+        paths:
+          - path: {{ .Values.dashboard.ingress.path }}
+            pathType: {{ .Values.dashboard.ingress.pathType }}
+            backend:
+              service:
+                name: dashboard
+                port:
+                  number: {{ .Values.dashboard.service.port }}
+  {{- if .Values.dashboard.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.dashboard.ingress.domain | quote }}
+      {{- if .Values.dashboard.ingress.tls.secretName }}
+      secretName: {{ .Values.dashboard.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}

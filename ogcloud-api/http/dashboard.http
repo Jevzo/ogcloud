@@ -1,0 +1,3 @@
+### Dashboard overview
+GET {{baseUrl}}/api/v1/dashboard/overview
+Authorization: Bearer {{accessToken}}

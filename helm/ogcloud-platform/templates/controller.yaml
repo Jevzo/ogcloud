@@ -1,0 +1,56 @@
+{{- if .Values.controller.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  replicas: {{ .Values.controller.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: controller
+        app.kubernetes.io/part-of: ogcloud
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/controller-configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/controller-secret.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ .Values.controller.serviceAccount.name }}
+      containers:
+        - name: controller
+          image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.controller.service.port }}
+          envFrom:
+            - configMapRef:
+                name: controller-config
+            - secretRef:
+                name: controller-secret
+          resources:
+{{ toYaml .Values.controller.resources | indent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: controller
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  type: {{ .Values.controller.service.type }}
+  selector:
+    app.kubernetes.io/name: controller
+  ports:
+    - name: http
+      port: {{ .Values.controller.service.port }}
+      targetPort: http
+{{- end }}

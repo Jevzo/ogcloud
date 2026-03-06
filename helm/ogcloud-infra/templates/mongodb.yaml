@@ -1,0 +1,80 @@
+{{- if .Values.mongodb.enabled }}
+{{- if .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-data
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  accessModes:
+    - {{ .Values.mongodb.persistence.accessMode }}
+  {{- if .Values.mongodb.persistence.storageClassName }}
+  storageClassName: {{ .Values.mongodb.persistence.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mongodb
+        app.kubernetes.io/part-of: ogcloud
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: mongodb
+              containerPort: {{ .Values.mongodb.service.port }}
+          {{- if .Values.mongodb.persistence.enabled }}
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+          {{- end }}
+          resources:
+{{ toYaml .Values.mongodb.resources | indent 12 }}
+      {{- if .Values.mongodb.persistence.enabled }}
+      volumes:
+        - name: mongodb-data
+          persistentVolumeClaim:
+            claimName: mongodb-data
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mongodb
+  ports:
+    - name: mongodb
+      port: {{ .Values.mongodb.service.port }}
+      targetPort: mongodb
+{{- end }}

@@ -1,0 +1,115 @@
+{{- if .Values.kafka.enabled }}
+{{- if .Values.kafka.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-data
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  accessModes:
+    - {{ .Values.kafka.persistence.accessMode }}
+  {{- if .Values.kafka.persistence.storageClassName }}
+  storageClassName: {{ .Values.kafka.persistence.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.kafka.persistence.size }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka
+        app.kubernetes.io/part-of: ogcloud
+    spec:
+      containers:
+        - name: kafka
+          image: "{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: internal
+              containerPort: {{ .Values.kafka.service.internalPort }}
+            - name: controller
+              containerPort: {{ .Values.kafka.service.controllerPort }}
+            - name: external
+              containerPort: {{ .Values.kafka.service.externalPort }}
+          env:
+            - name: KAFKA_NODE_ID
+              value: {{ .Values.kafka.env.nodeId | quote }}
+            - name: KAFKA_PROCESS_ROLES
+              value: {{ .Values.kafka.env.processRoles | quote }}
+            - name: KAFKA_LISTENERS
+              value: {{ .Values.kafka.env.listeners | quote }}
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: {{ default (printf "INTERNAL://kafka.%s.svc.cluster.local:%v,EXTERNAL://localhost:%v" (include "ogcloud-infra.namespace" .) .Values.kafka.service.internalPort .Values.kafka.service.externalPort) .Values.kafka.env.advertisedListeners | quote }}
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: {{ .Values.kafka.env.controllerListenerNames | quote }}
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: {{ .Values.kafka.env.listenerSecurityProtocolMap | quote }}
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: {{ .Values.kafka.env.interBrokerListenerName | quote }}
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: {{ default (printf "%s@localhost:%v" .Values.kafka.env.nodeId .Values.kafka.service.controllerPort) .Values.kafka.env.controllerQuorumVoters | quote }}
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: {{ .Values.kafka.env.offsetsTopicReplicationFactor | quote }}
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: {{ .Values.kafka.env.transactionStateLogReplicationFactor | quote }}
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: {{ .Values.kafka.env.transactionStateLogMinIsr | quote }}
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: {{ .Values.kafka.env.groupInitialRebalanceDelayMs | quote }}
+          {{- if .Values.kafka.persistence.enabled }}
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+          {{- end }}
+          resources:
+{{ toYaml .Values.kafka.resources | indent 12 }}
+      {{- if .Values.kafka.persistence.enabled }}
+      volumes:
+        - name: kafka-data
+          persistentVolumeClaim:
+            claimName: kafka-data
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: {{ include "ogcloud-infra.namespace" . }}
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: ogcloud
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kafka
+  ports:
+    - name: internal
+      port: {{ .Values.kafka.service.internalPort }}
+      targetPort: internal
+    - name: controller
+      port: {{ .Values.kafka.service.controllerPort }}
+      targetPort: controller
+    - name: external
+      port: {{ .Values.kafka.service.externalPort }}
+      targetPort: external
+{{- end }}

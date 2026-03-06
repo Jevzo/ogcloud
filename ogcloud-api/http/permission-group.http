@@ -1,0 +1,119 @@
+### List all permission groups
+GET {{baseUrl}}/api/v1/permissions/groups
+Authorization: Bearer {{accessToken}}
+
+### Get permission group by name
+GET {{baseUrl}}/api/v1/permissions/groups/admin
+Authorization: Bearer {{accessToken}}
+
+### Create default player group
+POST {{baseUrl}}/api/v1/permissions/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "player",
+  "name": "Player",
+  "display": {
+    "chatPrefix": "",
+    "chatSuffix": "&7: &f",
+    "nameColor": "&7",
+    "tabPrefix": ""
+  },
+  "weight": 100,
+  "default": true,
+  "permissions": []
+}
+
+### Create admin group
+POST {{baseUrl}}/api/v1/permissions/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "admin",
+  "name": "Admin",
+  "display": {
+    "chatPrefix": "",
+    "chatSuffix": "&7: &f",
+    "nameColor": "&4",
+    "tabPrefix": "&4Admin &7» "
+  },
+  "weight": 1,
+  "default": false,
+  "permissions": [
+    "*"
+  ]
+}
+
+### Create developer group
+POST {{baseUrl}}/api/v1/permissions/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "dev",
+  "name": "Developer",
+  "display": {
+    "chatPrefix": "",
+    "chatSuffix": "&7: &f",
+    "nameColor": "&c",
+    "tabPrefix": "&cDev &7» "
+  },
+  "weight": 10,
+  "default": false,
+  "permissions": [
+    "*"
+  ]
+}
+
+### Create premium group
+POST {{baseUrl}}/api/v1/permissions/groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "premium",
+  "name": "Premium",
+  "display": {
+    "chatPrefix": "",
+    "chatSuffix": "&7: &f",
+    "nameColor": "&6",
+    "tabPrefix": ""
+  },
+  "weight": 50,
+  "default": false,
+  "permissions": []
+}
+
+### Update a permission group (partial)
+PUT {{baseUrl}}/api/v1/permissions/groups/dev
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "display": {
+    "chatPrefix": "",
+    "chatSuffix": "&7: &f",
+    "nameColor": "&c",
+    "tabPrefix": "&cDev &7» "
+  },
+  "weight": 5
+}
+
+### Add permission to a group
+POST {{baseUrl}}/api/v1/permissions/groups/dev/permissions
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "permission": "ogcloud.command.execute"
+}
+
+### Remove permission from a group
+DELETE {{baseUrl}}/api/v1/permissions/groups/player/permissions/*
+Authorization: Bearer {{accessToken}}
+
+### Delete a permission group (moves players to default)
+DELETE {{baseUrl}}/api/v1/permissions/groups/vip
+Authorization: Bearer {{accessToken}}

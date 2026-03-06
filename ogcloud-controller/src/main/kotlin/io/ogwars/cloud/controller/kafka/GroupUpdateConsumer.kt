@@ -1,0 +1,27 @@
+package io.ogwars.cloud.controller.kafka
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.ogwars.cloud.api.event.GroupUpdateEvent
+import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.controller.service.AutoscalerService
+import org.slf4j.LoggerFactory
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.stereotype.Component
+
+@Component
+class GroupUpdateConsumer(
+    private val autoscalerService: AutoscalerService,
+    private val objectMapper: ObjectMapper
+) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    @KafkaListener(topics = [KafkaConfig.GROUP_UPDATE], groupId = "ogcloud-controller")
+    fun onGroupUpdate(message: String) {
+        val event = objectMapper.readValue(message, GroupUpdateEvent::class.java)
+
+        log.info("Group update received: groupId={}, maintenance={}", event.groupId, event.maintenance)
+
+        autoscalerService.evaluateGroupNow(event.groupId)
+    }
+}

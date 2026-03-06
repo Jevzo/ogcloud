@@ -1,0 +1,131 @@
+package io.ogwars.cloud.velocity.mongo
+
+import com.mongodb.client.MongoClient
+import com.mongodb.client.MongoClients
+import com.mongodb.client.MongoDatabase
+import io.ogwars.cloud.api.model.DisplayConfig
+import io.ogwars.cloud.api.model.MotdSettings
+import io.ogwars.cloud.api.model.NetworkSettingsDocument
+import io.ogwars.cloud.api.model.PermissionConfig
+import io.ogwars.cloud.api.model.PermissionGroupDocument
+import io.ogwars.cloud.api.model.PlayerDocument
+import io.ogwars.cloud.api.model.TablistSettings
+import io.ogwars.cloud.api.model.VersionNameSettings
+import org.bson.Document
+import java.time.Instant
+
+class MongoManager(
+    mongoUri: String,
+    databaseName: String
+) {
+
+    private val client: MongoClient = MongoClients.create(mongoUri)
+    private val database: MongoDatabase = client.getDatabase(databaseName)
+    private val playersCollection = database.getCollection(PLAYERS_COLLECTION)
+    private val permissionGroupsCollection = database.getCollection(PERMISSION_GROUPS_COLLECTION)
+    private val networkSettingsCollection = database.getCollection(NETWORK_SETTINGS_COLLECTION)
+
+    fun findPlayer(uuid: String): PlayerDocument? {
+        return playersCollection.find(Document(ID_FIELD, uuid)).first()?.toPlayerDocument()
+    }
+
+    fun findPermissionGroup(groupId: String): PermissionGroupDocument? {
+        return permissionGroupsCollection.find(Document(ID_FIELD, groupId)).first()?.toPermissionGroupDocument()
+    }
+
+    fun findAllPermissionGroups(): List<PermissionGroupDocument> {
+        return permissionGroupsCollection.find()
+            .map { document -> document.toPermissionGroupDocument() }
+            .toList()
+    }
+
+    fun findNetworkSettings(): NetworkSettingsDocument {
+        val document = networkSettingsCollection.find(Document(ID_FIELD, GLOBAL_ID)).first()
+            ?: return NetworkSettingsDocument()
+        return document.toNetworkSettingsDocument()
+    }
+
+    fun close() {
+        client.close()
+    }
+
+    private fun Document.toPlayerDocument(): PlayerDocument {
+        val permissionDocument = get("permission", Document::class.java)
+
+        return PlayerDocument(
+            id = getString(ID_FIELD),
+            name = getString("name") ?: "unknown",
+            permission = PermissionConfig(
+                group = permissionDocument?.getString("group") ?: "default",
+                length = permissionDocument?.getLong("length") ?: -1,
+                endMillis = permissionDocument?.getLong("endMillis") ?: -1
+            ),
+            firstJoin = getDate("firstJoin")?.toInstant() ?: Instant.now()
+        )
+    }
+
+    private fun Document.toPermissionGroupDocument(): PermissionGroupDocument {
+        val permissions = getList("permissions", String::class.java) ?: emptyList()
+        val displayDocument = get("display", Document::class.java)
+
+        return PermissionGroupDocument(
+            id = getString(ID_FIELD),
+            name = getString("name") ?: getString(ID_FIELD),
+            display = DisplayConfig(
+                chatPrefix = displayDocument?.getString("chatPrefix") ?: "",
+                chatSuffix = displayDocument?.getString("chatSuffix") ?: "",
+                nameColor = displayDocument?.getString("nameColor") ?: "&7",
+                tabPrefix = displayDocument?.getString("tabPrefix") ?: "&7"
+            ),
+            weight = getInteger("weight", 100),
+            default = getBoolean("default", false),
+            permissions = permissions
+        )
+    }
+
+    private fun Document.toNetworkSettingsDocument(): NetworkSettingsDocument {
+        val motdDocument = get("motd", Document::class.java)
+        val versionDocument = get("versionName", Document::class.java)
+        val tablistDocument = get("tablist", Document::class.java)
+
+        return NetworkSettingsDocument(
+            id = GLOBAL_ID,
+            motd = MotdSettings(
+                global = motdDocument?.getString("global") ?: DEFAULT_MOTD,
+                maintenance = motdDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_MOTD
+            ),
+            versionName = VersionNameSettings(
+                global = versionDocument?.getString("global") ?: DEFAULT_VERSION_NAME,
+                maintenance = versionDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_VERSION_NAME
+            ),
+            maxPlayers = getInteger("maxPlayers", 1000),
+            defaultGroup = getString("defaultGroup") ?: "lobby",
+            maintenance = getBoolean("maintenance", false),
+            maintenanceKickMessage = getString("maintenanceKickMessage")
+                ?: "&cServer is currently in maintenance mode.",
+            tablist = tablistDocument?.toTablistSettings() ?: TablistSettings()
+        )
+    }
+
+    private fun Document.toTablistSettings(): TablistSettings {
+        return TablistSettings(
+            header = getString("header") ?: DEFAULT_TABLIST_HEADER,
+            footer = getString("footer") ?: DEFAULT_TABLIST_FOOTER
+        )
+    }
+
+    companion object {
+        private const val ID_FIELD = "_id"
+        private const val GLOBAL_ID = "global"
+        private const val PLAYERS_COLLECTION = "players"
+        private const val PERMISSION_GROUPS_COLLECTION = "permission_groups"
+        private const val NETWORK_SETTINGS_COLLECTION = "network_settings"
+        private const val DEFAULT_MOTD = "&6OgCloud Network\n&7A Minecraft Server"
+        private const val DEFAULT_MAINTENANCE_MOTD = "&c&lMAINTENANCE\n&7We'll be back soon!"
+        private const val DEFAULT_VERSION_NAME = "OgCloud Network"
+        private const val DEFAULT_MAINTENANCE_VERSION_NAME = "MAINTENANCE"
+        private const val DEFAULT_TABLIST_HEADER = "\n&6&lOgCloud Network\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n"
+        private const val DEFAULT_TABLIST_FOOTER =
+            "\n&7Server: &a%server% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
+    }
+}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ogcloud-platform
+description: OgCloud control plane deployments (API, controller, and loadbalancer).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

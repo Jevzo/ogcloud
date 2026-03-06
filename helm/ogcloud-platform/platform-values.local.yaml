@@ -1,0 +1,40 @@
+namespace:
+  name: ogcloud
+
+api:
+  image:
+    repository: ogwarsdev/api
+    tag: 0.2.0
+  ingress:
+    enabled: true
+    className: nginx
+    domain: api.ogcloud.local
+  env:
+    minioAccessKey: minioadmin
+    minioSecretKey: minioadmin123
+    minioBucket: ogcloud-templates
+    jwtSecret: d64f37ed8043409eba82e62aac379dbf0fea88f2fa8442358dde8623ea1d8d3494c29ab81e514c118a8cc6028e31fd5b6549f5c216484112be6eec47249b0912206de6b198ce43cebd7c56794761dbc44d75a08d3cbd4c829a0a421107bfa2f92dec417642c144ee8306718b1ccd790166f4f63573f440238f6a62560d0e5d44da549594e38b44beabab73d5271a776742d5e7f6b3004176b456e772de6b4c6a
+    corsAllowedOrigin: http://localhost:5173
+
+controller:
+  image:
+    repository: ogwarsdev/controller
+    tag: 0.2.0
+  env:
+    apiEmail: service@ogcloud.local
+    apiPassword: TestPassword123@
+    minioAccessKey: minioadmin
+    minioSecretKey: minioadmin123
+    podMinioAccessKey: minioadmin
+    podMinioSecretKey: minioadmin123
+
+loadbalancer:
+  image:
+    repository: ogwarsdev/loadbalancer
+    tag: 0.2.0
+  service:
+    type: LoadBalancer
+    domain: mc.ogcloud.local
+  env:
+    apiEmail: service@ogcloud.local
+    apiPassword: TestPassword123@

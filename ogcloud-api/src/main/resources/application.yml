@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: ogcloud-api
+  servlet:
+    multipart:
+      max-file-size: 20GB
+      max-request-size: 20GB
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/ogcloud}
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9094}
+    consumer:
+      group-id: ogcloud-api
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "io.ogwars.cloud.api.event"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+ogcloud:
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:ogcloud-templates}
+  auth:
+    jwt-secret: ${OGCLOUD_AUTH_JWT_SECRET}
+    access-token-lifetime: ${OGCLOUD_AUTH_ACCESS_TOKEN_LIFETIME:PT10M}
+    refresh-token-lifetime: ${OGCLOUD_AUTH_REFRESH_TOKEN_LIFETIME:PT8H}
+    link-otp-lifetime: ${OGCLOUD_AUTH_LINK_OTP_LIFETIME:PT5M}
+  cors:
+    allowed-origins:
+      - ${OGCLOUD_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+
+server:
+  port: 8080
+  tomcat:
+    max-http-form-post-size: 20GB
+    max-swallow-size: 20GB

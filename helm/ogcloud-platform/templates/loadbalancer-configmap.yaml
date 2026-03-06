@@ -1,0 +1,21 @@
+{{- if .Values.loadbalancer.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loadbalancer-config
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: loadbalancer
+    app.kubernetes.io/part-of: ogcloud
+data:
+  LISTEN_ADDR: {{ .Values.loadbalancer.env.listenAddr | quote }}
+  KAFKA_BROKERS: {{ .Values.connections.kafkaBrokers | quote }}
+  KAFKA_GROUP_ID: {{ .Values.loadbalancer.env.kafkaGroupId | quote }}
+  API_URL: {{ .Values.connections.apiUrl | quote }}
+  OGCLOUD_API_EMAIL: {{ .Values.loadbalancer.env.apiEmail | quote }}
+  API_STARTUP_TIMEOUT_SECONDS: {{ .Values.loadbalancer.env.apiStartupTimeoutSeconds | quote }}
+  API_STARTUP_POLL_INTERVAL_SECONDS: {{ .Values.loadbalancer.env.apiStartupPollIntervalSeconds | quote }}
+  PROXY_PROTOCOL_ENABLED: {{ .Values.loadbalancer.env.proxyProtocolEnabled | quote }}
+  PROXY_HEALTH_TIMEOUT_SECONDS: {{ .Values.loadbalancer.env.proxyHealthTimeoutSeconds | quote }}
+  DRAIN_TIMEOUT_SECONDS: {{ .Values.loadbalancer.env.drainTimeoutSeconds | quote }}
+{{- end }}

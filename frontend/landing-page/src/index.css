@@ -1,0 +1,55 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #00e5ff;
+    --color-primary-dark: #007bff;
+    --color-secondary: #00a7ff;
+    --color-accent: #00ffd1;
+    --color-success: #2bd47a;
+    --color-background-dark: #030712;
+    --color-background: #071028;
+    --color-surface-dark: #0b1220;
+    --color-surface: rgba(7, 23, 42, 0.8);
+    --color-panel: #0a1321;
+    --color-border-dark: rgba(185, 215, 255, 0.08);
+    --color-border-strong: rgba(0, 229, 255, 0.22);
+    --color-text-main: #f8fbff;
+    --color-text-soft: #dcecff;
+    --color-text-muted: #8ba3b5;
+    --font-family-display: "Space Grotesk", sans-serif;
+    --font-family-body: "Inter", sans-serif;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+html, body, #root {
+    height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-background-dark);
+    color: var(--color-text-main);
+}
+
+::selection {
+    background-color: var(--color-primary);
+    color: #03111d;
+}

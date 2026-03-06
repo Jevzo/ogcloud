@@ -1,0 +1,21 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: {{ include "ogcloud-platform.namespace" . }}
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: ogcloud
+data:
+  MONGODB_URI: {{ .Values.connections.mongodbUri | quote }}
+  REDIS_HOST: {{ .Values.connections.redisHost | quote }}
+  REDIS_PORT: {{ .Values.connections.redisPort | quote }}
+  KAFKA_BROKERS: {{ .Values.connections.kafkaBrokers | quote }}
+  MINIO_ENDPOINT: {{ .Values.connections.minioEndpoint | quote }}
+  MINIO_BUCKET: {{ .Values.api.env.minioBucket | quote }}
+  OGCLOUD_AUTH_ACCESS_TOKEN_LIFETIME: {{ .Values.api.env.accessTokenLifetime | quote }}
+  OGCLOUD_AUTH_REFRESH_TOKEN_LIFETIME: {{ .Values.api.env.refreshTokenLifetime | quote }}
+  OGCLOUD_AUTH_LINK_OTP_LIFETIME: {{ .Values.api.env.linkOtpLifetime | quote }}
+  OGCLOUD_CORS_ALLOWED_ORIGIN: {{ .Values.api.env.corsAllowedOrigin | quote }}
+{{- end }}

@@ -1,0 +1,114 @@
+namespace:
+  name: ogcloud
+
+global:
+  imagePullPolicy: IfNotPresent
+
+connections:
+  mongodbUri: mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud
+  redisHost: redis.ogcloud.svc.cluster.local
+  redisPort: "6379"
+  kafkaBrokers: kafka.ogcloud.svc.cluster.local:9092
+  minioEndpoint: http://minio.ogcloud.svc.cluster.local:9000
+  apiUrl: http://api.ogcloud.svc.cluster.local:8080
+
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ogwarsdev/api
+    tag: 0.1.0
+  service:
+    type: ClusterIP
+    port: 8080
+  ingress:
+    enabled: false
+    className: ""
+    domain: api.ogcloud.local
+    path: /
+    pathType: Prefix
+    maxBodySize: 20g
+    annotations: {}
+    tls:
+      enabled: false
+      secretName: ""
+  env:
+    minioAccessKey: minioadmin
+    minioSecretKey: minioadmin123
+    minioBucket: ogcloud-templates
+    jwtSecret: replace-with-a-long-random-jwt-secret
+    accessTokenLifetime: PT10M
+    refreshTokenLifetime: PT8H
+    linkOtpLifetime: PT5M
+    corsAllowedOrigin: http://localhost:5173
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+controller:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ogwarsdev/controller
+    tag: 0.1.0
+  service:
+    type: ClusterIP
+    port: 8081
+  serviceAccount:
+    create: true
+    name: controller
+  env:
+    apiEmail: service@ogcloud.local
+    apiPassword: replace-with-a-long-random-service-password
+    minioAccessKey: minioadmin
+    minioSecretKey: minioadmin123
+    podMinioEndpoint: minio.ogcloud.svc.cluster.local:9000
+    podMinioAccessKey: minioadmin
+    podMinioSecretKey: minioadmin123
+    podKafkaBrokers: kafka.ogcloud.svc.cluster.local:9092
+    podRedisHost: redis.ogcloud.svc.cluster.local
+    podRedisPort: "6379"
+    podMongodbUri: mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud
+    podApiUrl: http://api.ogcloud.svc.cluster.local:8080
+    podApiEmail: ""
+    podApiPassword: ""
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+loadbalancer:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ogwarsdev/loadbalancer
+    tag: 0.1.0
+  service:
+    type: LoadBalancer
+    port: 25565
+    domain: mc.ogcloud.local
+    annotations: {}
+  env:
+    listenAddr: :25565
+    kafkaGroupId: ogcloud-loadbalancer
+    apiEmail: service@ogcloud.local
+    apiPassword: replace-with-a-long-random-service-password
+    apiStartupTimeoutSeconds: "300"
+    apiStartupPollIntervalSeconds: "5"
+    proxyProtocolEnabled: "true"
+    proxyHealthTimeoutSeconds: "30"
+    drainTimeoutSeconds: "30"
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 250m
