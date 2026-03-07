@@ -5,6 +5,7 @@ import {
   loadAuthSession,
   saveAuthSession,
 } from "@/lib/auth-storage";
+import { endApiLatencySession, startApiLatencySession } from "@/lib/api-latency";
 import { loginWithEmailPassword, refreshSessionToken } from "@/lib/api";
 import type { AuthSession, AuthUser, LoginCredentials } from "@/types/auth";
 
@@ -28,6 +29,12 @@ const initialSession = loadAuthSession();
 const SESSION_STALE_BUFFER_MS = 60_000;
 let refreshInFlight: Promise<AuthSession | null> | null = null;
 
+if (initialSession) {
+  startApiLatencySession();
+} else {
+  endApiLatencySession();
+}
+
 const isSessionStale = (
   session: AuthSession,
   bufferMs = SESSION_STALE_BUFFER_MS
@@ -45,21 +52,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const session = await loginWithEmailPassword(credentials);
       saveAuthSession(session);
+      startApiLatencySession();
       set({ status: "authenticated", session });
       return session;
     } catch (error) {
       clearAuthSession();
+      endApiLatencySession();
       set({ status: "anonymous", session: null });
       throw error;
     }
   },
   setSession(session) {
+    if (!get().session) {
+      startApiLatencySession();
+    }
     saveAuthSession(session);
     set({ status: "authenticated", session });
   },
   logout() {
     refreshInFlight = null;
     clearAuthSession();
+    endApiLatencySession();
     set({ status: "anonymous", session: null });
   },
   async refreshIfNeeded() {
@@ -96,6 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (activeSession?.refreshToken === refreshToken) {
           clearAuthSession();
+          endApiLatencySession();
           set({ status: "anonymous", session: null });
         }
 

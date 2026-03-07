@@ -130,21 +130,24 @@ class OgCloudVelocityPlugin @Inject constructor(
             maintenance = networkSettings.maintenance,
             maintenanceKickMessage = networkSettings.maintenanceKickMessage,
             maxPlayers = networkSettings.maxPlayers,
-            defaultGroup = networkSettings.defaultGroup
+            defaultGroup = networkSettings.defaultGroup,
+            permissionSystemEnabled = networkSettings.general.permissionSystemEnabled,
+            tablistEnabled = networkSettings.general.tablistEnabled
         )
 
         redisManager.loadRunningServers(serverRegistry)
 
         tablistManager = TablistManager(
             proxyServer = server,
+            networkState = networkState,
             permissionCache = permissionCache,
             serverRegistry = serverRegistry,
             proxyDisplayName = settings.proxyDisplayName,
-            maxPlayers = networkSettings.maxPlayers,
             logger = logger
         ).apply {
             headerTemplate = networkSettings.tablist.header
             footerTemplate = networkSettings.tablist.footer
+            setEnabled(networkSettings.general.tablistEnabled)
         }
     }
 
@@ -188,6 +191,7 @@ class OgCloudVelocityPlugin @Inject constructor(
         permissionUpdateConsumer = PermissionUpdateConsumer(
             kafkaManager = kafkaManager,
             permissionCache = permissionCache,
+            networkState = networkState,
             logger = logger,
             proxyId = settings.proxyId
         ).also(PermissionUpdateConsumer::start)
@@ -235,14 +239,19 @@ class OgCloudVelocityPlugin @Inject constructor(
                 logger = logger
             )
         )
-        server.eventManager.register(this, PermissionCheckListener(permissionCache))
+        server.eventManager.register(this, PermissionCheckListener(permissionCache, networkState))
         server.eventManager.register(this, InitialServerHandler(serverRegistry, permissionCache, networkState, logger))
         server.eventManager.register(this, ConnectionFailureHandler(serverRegistry, permissionCache, networkState, logger))
     }
 
     private fun startBackgroundTasks() {
         tablistManager.start()
-        permissionExpiryTask = PermissionExpiryTask(permissionCache, kafkaManager, logger).also(PermissionExpiryTask::start)
+        permissionExpiryTask = PermissionExpiryTask(
+            permissionCache,
+            kafkaManager,
+            networkState,
+            logger
+        ).also(PermissionExpiryTask::start)
         proxyHeartbeatTask = ProxyHeartbeatTask(
             proxyServer = server,
             kafkaManager = kafkaManager,

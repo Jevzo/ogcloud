@@ -13,19 +13,20 @@ export interface DashboardOverviewGroup {
   capacityPercent: number;
 }
 
-export interface DashboardOverviewInstance {
-  id: string;
-  group: string;
-  state: string;
-  tps: number;
-  onlinePlayers: number;
-  maxPlayers: number;
+export interface DashboardOverviewScalingAction {
+  id: string | null;
+  groupId: string;
+  action: string;
+  reason: string;
+  serverId: string | null;
+  details: string | null;
+  timestamp: string;
 }
 
 export interface DashboardOverviewResponse {
   stats: DashboardOverviewStats;
   groups: DashboardOverviewGroup[];
-  instances: DashboardOverviewInstance[];
+  scalingActions: DashboardOverviewScalingAction[];
 }
 
 export interface GroupListItem {

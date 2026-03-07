@@ -125,6 +125,10 @@ class PlayerTransferConsumer(
             return true
         }
 
+        if (!networkState.permissionSystemEnabled) {
+            return false
+        }
+
         return permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
     }
 

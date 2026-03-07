@@ -1,5 +1,6 @@
 package io.ogwars.cloud.paper.listener
 
+import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.papermc.paper.event.player.AsyncChatEvent
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
@@ -7,13 +8,18 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
 class ChatListener(
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val networkFeatureState: NetworkFeatureState
 ) : Listener {
 
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
     @EventHandler
     fun onChat(event: AsyncChatEvent) {
+        if (!networkFeatureState.permissionSystemEnabled) {
+            return
+        }
+
         val formatted = buildFormattedMessage(event)
         event.renderer { _, _, _, _ -> deserializeLegacy(formatted) }
     }

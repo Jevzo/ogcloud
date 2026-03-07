@@ -23,7 +23,8 @@ class PlayerService(
     private val playerRedisRepository: PlayerRedisRepository,
     private val serverRedisRepository: ServerRedisRepository,
     private val permissionUpdateProducer: PermissionUpdateProducer,
-    private val playerTransferProducer: PlayerTransferProducer
+    private val playerTransferProducer: PlayerTransferProducer,
+    private val networkService: NetworkService
 ) {
 
     fun listOnlinePlayers(
@@ -102,6 +103,8 @@ class PlayerService(
     }
 
     fun setPlayerGroup(uuid: String, request: SetPlayerGroupRequest): PlayerResponse {
+        ensurePermissionSystemEnabled()
+
         val player = playerRepository.findById(uuid)
             .orElseThrow { PlayerNotFoundException(uuid) }
 
@@ -154,5 +157,11 @@ class PlayerService(
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
         private const val API_UPDATED_BY = "api"
         private const val API_TRANSFER_REASON = "api-transfer"
+    }
+
+    private fun ensurePermissionSystemEnabled() {
+        if (!networkService.isPermissionSystemEnabled()) {
+            throw IllegalArgumentException("Permission system is disabled in network settings.")
+        }
     }
 }

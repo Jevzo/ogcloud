@@ -42,7 +42,7 @@ class PlayerConnectionListener(
 
         loadPermissions(uuid)
 
-        val hasMaintenanceBypass = permissionCache.hasPermission(uuid, MAINTENANCE_BYPASS_PERMISSION)
+        val hasMaintenanceBypass = hasMaintenanceBypass(uuid)
 
         when {
             networkState.maintenance && !hasMaintenanceBypass -> {
@@ -82,6 +82,11 @@ class PlayerConnectionListener(
     }
 
     private fun loadPermissions(uuid: UUID) {
+        if (!networkState.permissionSystemEnabled) {
+            permissionCache.removePlayer(uuid)
+            return
+        }
+
         try {
             val playerDoc = mongoManager.findPlayer(uuid.toString())
             val defaultGroup = permissionCache.getDefaultGroup()
@@ -112,6 +117,14 @@ class PlayerConnectionListener(
 
     private fun publish(topic: String, key: String, payload: Any) {
         kafkaManager.send(topic, key, gson.toJson(payload))
+    }
+
+    private fun hasMaintenanceBypass(uuid: UUID): Boolean {
+        if (!networkState.permissionSystemEnabled) {
+            return false
+        }
+
+        return permissionCache.hasPermission(uuid, MAINTENANCE_BYPASS_PERMISSION)
     }
 
     companion object {

@@ -13,6 +13,7 @@ import type { PaginatedResponse } from "@/types/dashboard";
 import type { PersistedPlayerRecord } from "@/types/player";
 
 const PLAYER_PAGE_SIZE = 10;
+const REFRESH_INTERVAL_MS = 10_000;
 
 const EMPTY_PLAYER_PAGE: PaginatedResponse<PersistedPlayerRecord> = {
   items: [],
@@ -86,18 +87,23 @@ const PlayersPage = () => {
   useEffect(() => {
     let active = true;
 
-    const runLoad = async () => {
+    const runLoad = async (showLoading = true) => {
       if (!active) {
         return;
       }
 
-      await loadPlayersPage(true);
+      await loadPlayersPage(showLoading);
     };
 
-    void runLoad();
+    void runLoad(true);
+
+    const intervalId = window.setInterval(() => {
+      void runLoad(false);
+    }, REFRESH_INTERVAL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [loadPlayersPage]);
 

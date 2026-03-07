@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.event
 
 import io.ogwars.cloud.api.model.MotdSettings
+import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.TablistSettings
 import io.ogwars.cloud.api.model.VersionNameSettings
 
@@ -12,5 +13,6 @@ data class NetworkUpdateEvent(
     val maintenance: Boolean,
     val maintenanceKickMessage: String = "&cServer is currently in maintenance mode.",
     val tablist: TablistSettings? = null,
+    val general: GeneralSettings = GeneralSettings(),
     val timestamp: Long = System.currentTimeMillis()
 )

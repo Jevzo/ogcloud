@@ -219,14 +219,16 @@ const SettingsPage = () => {
                 />
               </label>
 
-              <button
-                type="submit"
-                disabled={isSavingEmail}
-                className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <FiSave className="h-4 w-4" />
-                <span>{isSavingEmail ? "Saving..." : "Save Email"}</span>
-              </button>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSavingEmail}
+                  className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <FiSave className="h-4 w-4" />
+                  <span>{isSavingEmail ? "Saving..." : "Save Email"}</span>
+                </button>
+              </div>
             </form>
 
             <form onSubmit={handlePasswordSave} className="space-y-4 border-t border-slate-800 pt-8">
@@ -280,14 +282,16 @@ const SettingsPage = () => {
                 />
               </label>
 
-              <button
-                type="submit"
-                disabled={isSavingPassword}
-                className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <FiSave className="h-4 w-4" />
-                <span>{isSavingPassword ? "Saving..." : "Save Password"}</span>
-              </button>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isSavingPassword}
+                  className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <FiSave className="h-4 w-4" />
+                  <span>{isSavingPassword ? "Saving..." : "Save Password"}</span>
+                </button>
+              </div>
             </form>
           </div>
         </motion.section>

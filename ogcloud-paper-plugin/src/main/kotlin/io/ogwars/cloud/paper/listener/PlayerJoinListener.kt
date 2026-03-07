@@ -1,5 +1,6 @@
 package io.ogwars.cloud.paper.listener
 
+import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
@@ -16,6 +17,7 @@ class PlayerJoinListener(
     private val plugin: JavaPlugin,
     private val permissionManager: PermissionManager,
     private val tablistTeamManager: TablistTeamManager,
+    private val networkFeatureState: NetworkFeatureState,
     private val redisManager: RedisManager,
     private val logger: Logger
 ) : Listener {
@@ -39,6 +41,11 @@ class PlayerJoinListener(
     }
 
     private fun cachePlayerPermissions(player: Player) {
+        if (!networkFeatureState.permissionSystemEnabled) {
+            permissionManager.removePlayer(player.uniqueId)
+            return
+        }
+
         val uuid = player.uniqueId
         val session = redisManager.getPlayerData(uuid.toString())
 
@@ -58,10 +65,14 @@ class PlayerJoinListener(
                 return@Runnable
             }
 
-            PermissionInjector.inject(player, permissionManager, logger)
+            if (networkFeatureState.permissionSystemEnabled) {
+                PermissionInjector.inject(player, permissionManager, logger)
+            }
 
-            tablistTeamManager.setTablistForMe(player)
-            tablistTeamManager.setTablistForOthers(player)
+            if (networkFeatureState.tablistEnabled) {
+                tablistTeamManager.setTablistForMe(player)
+                tablistTeamManager.setTablistForOthers(player)
+            }
         })
     }
 }

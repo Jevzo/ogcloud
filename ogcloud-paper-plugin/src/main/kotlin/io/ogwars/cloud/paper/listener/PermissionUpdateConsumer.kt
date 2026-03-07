@@ -3,6 +3,7 @@ package io.ogwars.cloud.paper.listener
 import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
 import io.ogwars.cloud.paper.kafka.KafkaManager
+import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
@@ -17,6 +18,7 @@ class PermissionUpdateConsumer(
     private val kafkaManager: KafkaManager,
     private val permissionManager: PermissionManager,
     private val tablistTeamManager: TablistTeamManager,
+    private val networkFeatureState: NetworkFeatureState,
     private val logger: Logger,
     serverId: String
 ) {
@@ -44,6 +46,10 @@ class PermissionUpdateConsumer(
     }
 
     private fun handlePermissionUpdate(event: PermissionUpdateEvent) {
+        if (!networkFeatureState.permissionSystemEnabled) {
+            return
+        }
+
         val uuid = parseUuid(event.uuid) ?: return
         val player = Bukkit.getPlayer(uuid) ?: return
 
@@ -56,7 +62,9 @@ class PermissionUpdateConsumer(
     private fun schedulePermissionRefresh(player: Player) {
         Bukkit.getScheduler().runTask(plugin, Runnable {
             PermissionInjector.inject(player, permissionManager, logger)
-            tablistTeamManager.refreshPlayer(player)
+            if (networkFeatureState.tablistEnabled) {
+                tablistTeamManager.refreshPlayer(player)
+            }
         })
     }
 

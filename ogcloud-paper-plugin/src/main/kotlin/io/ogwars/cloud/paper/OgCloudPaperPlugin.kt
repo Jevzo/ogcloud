@@ -9,12 +9,15 @@ import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.listener.ChatListener
 import io.ogwars.cloud.paper.listener.CommandExecuteConsumer
 import io.ogwars.cloud.paper.listener.LifecycleConsumer
+import io.ogwars.cloud.paper.listener.NetworkUpdateConsumer
 import io.ogwars.cloud.paper.listener.PermissionUpdateConsumer
 import io.ogwars.cloud.paper.listener.PlayerJoinListener
+import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
 import io.ogwars.cloud.server.api.OgCloudServerAPI
+import org.bukkit.Bukkit
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -35,12 +38,17 @@ class OgCloudPaperPlugin : JavaPlugin() {
     lateinit var tablistTeamManager: TablistTeamManager
         private set
 
+    lateinit var networkFeatureState: NetworkFeatureState
+        private set
+
     private lateinit var redisManager: RedisManager
+    private lateinit var networkUpdateConsumer: NetworkUpdateConsumer
     private lateinit var permissionUpdateConsumer: PermissionUpdateConsumer
     private lateinit var commandExecuteConsumer: CommandExecuteConsumer
     private lateinit var lifecycleConsumer: LifecycleConsumer
     private lateinit var settings: PaperPluginSettings
     private lateinit var serverApi: OgCloudServerAPIImpl
+    private lateinit var apiClient: ApiClient
 
     val configuredMaxPlayers: Int
         get() = settings.configuredMaxPlayers
@@ -56,6 +64,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
         initializeInfrastructure()
         applyConfiguredMaxPlayers()
+        loadNetworkFeatures()
         registerListeners()
         registerPublicApi()
         startConsumers()
@@ -66,6 +75,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
     override fun onDisable() {
         stopConsumer(::lifecycleConsumer.isInitialized) { lifecycleConsumer.stop() }
         stopConsumer(::commandExecuteConsumer.isInitialized) { commandExecuteConsumer.stop() }
+        stopConsumer(::networkUpdateConsumer.isInitialized) { networkUpdateConsumer.stop() }
         stopConsumer(::permissionUpdateConsumer.isInitialized) { permissionUpdateConsumer.stop() }
         stopConsumer(::heartbeatTask.isInitialized) { heartbeatTask.stop() }
         stopConsumer(::kafkaManager.isInitialized) { kafkaManager.close() }
@@ -80,8 +90,10 @@ class OgCloudPaperPlugin : JavaPlugin() {
         kafkaManager = KafkaManager(settings.kafkaBrokers, serverId, logger).also(KafkaManager::start)
         redisManager = RedisManager(settings.redisHost, settings.redisPort, logger)
         permissionManager = PermissionManager()
-        tablistTeamManager = TablistTeamManager(permissionManager)
+        networkFeatureState = NetworkFeatureState()
+        tablistTeamManager = TablistTeamManager(permissionManager, networkFeatureState)
         gameStateManager = GameStateManager(serverId, groupName, kafkaManager, logger)
+        apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
         heartbeatTask = HeartbeatTask(this, kafkaManager).also(HeartbeatTask::start)
     }
 
@@ -92,15 +104,23 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
     private fun registerListeners() {
         server.pluginManager.registerEvents(
-            PlayerJoinListener(this, permissionManager, tablistTeamManager, redisManager, logger),
+            PlayerJoinListener(
+                this,
+                permissionManager,
+                tablistTeamManager,
+                networkFeatureState,
+                redisManager,
+                logger
+            ),
             this
         )
-        server.pluginManager.registerEvents(ChatListener(permissionManager), this)
+        server.pluginManager.registerEvents(
+            ChatListener(permissionManager, networkFeatureState),
+            this
+        )
     }
 
     private fun registerPublicApi() {
-        val apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
-
         serverApi = OgCloudServerAPIImpl(
             serverId = serverId,
             groupName = groupName,
@@ -123,9 +143,23 @@ class OgCloudPaperPlugin : JavaPlugin() {
             kafkaManager = kafkaManager,
             permissionManager = permissionManager,
             tablistTeamManager = tablistTeamManager,
+            networkFeatureState = networkFeatureState,
             logger = logger,
             serverId = serverId
         ).also(PermissionUpdateConsumer::start)
+
+        networkUpdateConsumer = NetworkUpdateConsumer(
+            kafkaManager = kafkaManager,
+            networkFeatureState = networkFeatureState,
+            logger = logger,
+            onFeaturesChanged = { permissionSystemEnabled, tablistEnabled ->
+                server.scheduler.runTask(
+                    this,
+                    Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) }
+                )
+            },
+            serverId = serverId
+        ).also(NetworkUpdateConsumer::start)
 
         commandExecuteConsumer = CommandExecuteConsumer(
             plugin = this,
@@ -141,6 +175,52 @@ class OgCloudPaperPlugin : JavaPlugin() {
             logger = logger,
             serverId = serverId
         ).also(LifecycleConsumer::start)
+    }
+
+    private fun loadNetworkFeatures() {
+        runCatching { apiClient.getNetworkSettingsSync() }
+            .onSuccess { settingsResponse ->
+                applyNetworkFeatures(
+                    settingsResponse.general.permissionSystemEnabled,
+                    settingsResponse.general.tablistEnabled
+                )
+            }
+            .onFailure {
+                logger.warning(
+                    "Failed to load network feature settings, defaulting to enabled: ${it.message}"
+                )
+                applyNetworkFeatures(permissionSystemEnabled = true, tablistEnabled = true)
+            }
+    }
+
+    private fun applyNetworkFeatures(permissionSystemEnabled: Boolean, tablistEnabled: Boolean) {
+        networkFeatureState.update(permissionSystemEnabled, tablistEnabled)
+
+        if (!permissionSystemEnabled) {
+            permissionManager.clear()
+        }
+
+        val onlinePlayers = Bukkit.getOnlinePlayers().toList()
+
+        onlinePlayers.forEach { player ->
+            if (permissionSystemEnabled) {
+                val session = redisManager.getPlayerData(player.uniqueId.toString())
+                if (session != null) {
+                    permissionManager.cachePlayer(player.uniqueId, session)
+                } else {
+                    permissionManager.cachePlayerDefault(player.uniqueId)
+                }
+            } else {
+                permissionManager.removePlayer(player.uniqueId)
+            }
+
+            if (tablistEnabled) {
+                tablistTeamManager.setTablistForMe(player)
+                tablistTeamManager.setTablistForOthers(player)
+            } else {
+                tablistTeamManager.removePlayer(player)
+            }
+        }
     }
 
     private inline fun stopConsumer(isInitialized: Boolean, stopAction: () -> Unit) {

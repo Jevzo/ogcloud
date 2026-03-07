@@ -1,5 +1,6 @@
 package io.ogwars.cloud.paper.tablist
 
+import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
 import net.kyori.adventure.text.format.NamedTextColor
@@ -10,12 +11,17 @@ import org.bukkit.scoreboard.Scoreboard
 import org.bukkit.scoreboard.Team
 
 class TablistTeamManager(
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val networkFeatureState: NetworkFeatureState
 ) {
 
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
     fun setTablistForMe(player: Player) {
+        if (!networkFeatureState.tablistEnabled) {
+            return
+        }
+
         val scoreboard = Bukkit.getScoreboardManager().newScoreboard
         player.scoreboard = scoreboard
 
@@ -25,6 +31,10 @@ class TablistTeamManager(
     }
 
     fun setTablistForOthers(player: Player) {
+        if (!networkFeatureState.tablistEnabled) {
+            return
+        }
+
         val cached = permissionManager.getCachedPlayer(player.uniqueId) ?: return
 
         Bukkit.getOnlinePlayers().asSequence()
@@ -33,6 +43,10 @@ class TablistTeamManager(
     }
 
     fun refreshPlayer(player: Player) {
+        if (!networkFeatureState.tablistEnabled) {
+            return
+        }
+
         val cached = permissionManager.getCachedPlayer(player.uniqueId) ?: return
         updatePlayerEntry(player, player.name, cached)
     }

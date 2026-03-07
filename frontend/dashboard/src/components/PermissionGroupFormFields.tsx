@@ -25,79 +25,87 @@ const PermissionGroupFormFields = ({
   onDefaultChange,
   disableIdentityFields = false,
 }: PermissionGroupFormFieldsProps) => (
-  <div className="space-y-8">
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-      <label className="app-field-stack">
-        <span className="app-field-label">Group ID</span>
-        <input
-          type="text"
-          value={values.id}
-          onChange={(event) => onFieldChange("id", event.target.value)}
-          disabled={disableIdentityFields}
-          className={`${DISPLAY_INPUT_CLASS_NAME} disabled:cursor-not-allowed`}
-        />
-      </label>
+  <div className="space-y-6">
+    <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+      <h4 className="text-sm font-semibold text-slate-200">
+        Core Settings
+      </h4>
 
-      <label className="app-field-stack">
-        <span className="app-field-label">Display Name</span>
-        <input
-          type="text"
-          value={values.name}
-          onChange={(event) => onFieldChange("name", event.target.value)}
-          className={DISPLAY_INPUT_CLASS_NAME}
-        />
-      </label>
+      <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+        <label className="app-field-stack">
+          <span className="app-field-label">Group ID</span>
+          <input
+            type="text"
+            value={values.id}
+            onChange={(event) => onFieldChange("id", event.target.value)}
+            disabled={disableIdentityFields}
+            className={`${DISPLAY_INPUT_CLASS_NAME} disabled:cursor-not-allowed`}
+          />
+        </label>
 
-      <label className="app-field-stack">
-        <span className="app-field-label">Weight</span>
-        <AppNumberInput
-          value={values.weight}
-          onChangeValue={(value) => onFieldChange("weight", value)}
-          step={1}
-        />
-      </label>
+        <label className="app-field-stack">
+          <span className="app-field-label">Display Name</span>
+          <input
+            type="text"
+            value={values.name}
+            onChange={(event) => onFieldChange("name", event.target.value)}
+            className={DISPLAY_INPUT_CLASS_NAME}
+          />
+        </label>
 
-      <div className="app-field-stack">
-        <span className="app-field-label">Default Group</span>
-        <button
-          type="button"
-          onClick={() => onDefaultChange(!values.default)}
-          className="app-input-field group flex w-full items-center justify-between px-3 text-left"
-          aria-pressed={values.default}
-          aria-label={`Default group ${values.default ? "enabled" : "disabled"}`}
-        >
-          <span
-            className={`text-sm font-medium ${
-              values.default ? "text-slate-100" : "text-slate-300"
-            }`}
-          >
-            {values.default ? "Enabled" : "Disabled"}
-          </span>
-          <span
-            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
-              values.default
-                ? "border-primary/40 bg-primary/85 group-hover:bg-secondary"
-                : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
-            }`}
+        <label className="app-field-stack">
+          <span className="app-field-label">Weight</span>
+          <AppNumberInput
+            value={values.weight}
+            onChangeValue={(value) => onFieldChange("weight", value)}
+            step={1}
+          />
+        </label>
+
+        <div className="app-field-stack">
+          <span className="app-field-label">Default Group</span>
+          <button
+            type="button"
+            onClick={() => onDefaultChange(!values.default)}
+            className="app-input-field group flex w-full items-center justify-between px-3 text-left"
+            aria-pressed={values.default}
+            aria-label={`Default group ${values.default ? "enabled" : "disabled"}`}
           >
             <span
-              className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+              className={`text-sm font-medium ${
                 values.default
-                  ? "translate-x-4 -translate-y-1/2"
-                  : "translate-x-0 -translate-y-1/2"
+                  ? "text-slate-100"
+                  : "text-slate-300"
               }`}
-            />
-          </span>
-        </button>
+            >
+              {values.default ? "Enabled" : "Disabled"}
+            </span>
+            <span
+              className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
+                values.default
+                  ? "border-primary/40 bg-primary/85 group-hover:bg-secondary"
+                  : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
+              }`}
+            >
+              <span
+                className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                  values.default
+                    ? "translate-x-4 -translate-y-1/2"
+                    : "translate-x-0 -translate-y-1/2"
+                }`}
+              />
+            </span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div className="space-y-4">
-      <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+    <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+      <h4 className="text-sm font-semibold text-slate-200">
         Display Formatting
       </h4>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
         <label className="app-field-stack">
           <span className="app-field-label">Chat Prefix</span>
           <input

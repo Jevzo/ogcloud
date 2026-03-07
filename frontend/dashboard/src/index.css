@@ -64,7 +64,7 @@ body {
 }
 
 .button-hover-lift {
-    --button-shadow-color: rgba(71, 85, 105, 0.18);
+    --button-shadow-color: rgba(15, 23, 42, 0.16);
     transition:
         translate 180ms ease,
         box-shadow 180ms ease,
@@ -76,7 +76,7 @@ body {
 
 .button-hover-lift:hover:not(:disabled) {
     translate: 0 -1px;
-    box-shadow: 0 10px 24px var(--button-shadow-color);
+    box-shadow: 0 3px 10px var(--button-shadow-color);
 }
 
 .button-hover-lift:active:not(:disabled) {
@@ -84,19 +84,19 @@ body {
 }
 
 .button-shadow-primary {
-    --button-shadow-color: rgba(0, 229, 255, 0.18);
+    --button-shadow-color: rgba(56, 189, 248, 0.18);
 }
 
 .button-shadow-warning {
-    --button-shadow-color: rgba(251, 191, 36, 0.18);
+    --button-shadow-color: rgba(251, 191, 36, 0.15);
 }
 
 .button-shadow-danger {
-    --button-shadow-color: rgba(248, 113, 113, 0.18);
+    --button-shadow-color: rgba(248, 113, 113, 0.15);
 }
 
 .button-shadow-neutral {
-    --button-shadow-color: rgba(71, 85, 105, 0.18);
+    --button-shadow-color: rgba(71, 85, 105, 0.14);
 }
 
 .app-field-stack {

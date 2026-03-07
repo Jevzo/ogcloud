@@ -1,5 +1,6 @@
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
+import { FiInfo } from "react-icons/fi";
 import type { GroupFormValues } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
@@ -15,6 +16,24 @@ const getTemplateOptionValue = (template: TemplateRecord) =>
 
 const getTemplateOptionLabel = (template: TemplateRecord) =>
   `${template.group} / ${template.version}`;
+
+interface FieldLabelProps {
+  label: string;
+  hint: string;
+}
+
+const FieldLabel = ({ label, hint }: FieldLabelProps) => (
+  <span className="app-field-label flex items-center gap-1.5">
+    {label}
+    <span
+      className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-800/80 text-slate-400"
+      title={hint}
+      aria-label={hint}
+    >
+      <FiInfo className="h-3 w-3" />
+    </span>
+  </span>
+);
 
 interface GroupFormFieldsProps {
   values: GroupFormValues;
@@ -64,9 +83,10 @@ const GroupFormFields = ({
       {showIdentityFields && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Group Name
-            </label>
+            <FieldLabel
+              label="Group Name"
+              hint="Unique ID used for routing, deployment, and API references."
+            />
             <input
               type="text"
               value={values.id}
@@ -75,18 +95,23 @@ const GroupFormFields = ({
               className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed"
             />
           </div>
-          <AppSelect
-            label="Group Type"
-            value={values.type}
-            onChangeValue={(value) => onFieldChange("type", value)}
-            disabled={disableIdentityFields}
-          >
-            {GROUP_TYPE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </AppSelect>
+          <div className="app-field-stack">
+            <FieldLabel
+              label="Group Type"
+              hint="DYNAMIC scales automatically, STATIC is persistent, PROXY is a network entrypoint."
+            />
+            <AppSelect
+              value={values.type}
+              onChangeValue={(value) => onFieldChange("type", value)}
+              disabled={disableIdentityFields}
+            >
+              {GROUP_TYPE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </AppSelect>
+          </div>
         </div>
       )}
 
@@ -96,9 +121,10 @@ const GroupFormFields = ({
         </h4>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Template Bucket
-            </label>
+            <FieldLabel
+              label="Template Bucket"
+              hint="Object storage bucket containing template archives."
+            />
             <input
               type="text"
               value={values.templateBucket}
@@ -106,56 +132,67 @@ const GroupFormFields = ({
               className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          <AppSelect
-            label="Template"
-            value={selectedTemplate ? getTemplateOptionValue(selectedTemplate) : "__custom__"}
-            onChangeValue={(value) => {
-              if (value === "__custom__") {
-                return;
-              }
-
-              onTemplateChange(value);
-            }}
-          >
-            {selectedTemplate ? null : (
-              <option value="__custom__">
-                {values.templateVersion && values.templatePath
-                  ? `Current / ${values.templateVersion}`
-                  : "Select a template"}
-              </option>
-            )}
-            {templates.map((template) => (
-              <option key={template.path} value={getTemplateOptionValue(template)}>
-                {getTemplateOptionLabel(template)}
-              </option>
-            ))}
-          </AppSelect>
-          <AppSelect
-            label="Server Image"
-            value={selectedServerImageExists ? values.serverImage : "__custom-image__"}
-            onChangeValue={(value) => {
-              if (value === "__custom-image__") {
-                return;
-              }
-
-              onFieldChange("serverImage", value);
-            }}
-          >
-            {selectedServerImageExists ? null : (
-              <option value="__custom-image__">
-                {values.serverImage || "Select a server image"}
-              </option>
-            )}
-            {SERVER_IMAGE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </AppSelect>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Drain Timeout (Seconds)
-            </label>
+            <FieldLabel
+              label="Template"
+              hint="Template source used when bootstrapping new instances in this group."
+            />
+            <AppSelect
+              value={selectedTemplate ? getTemplateOptionValue(selectedTemplate) : "__custom__"}
+              onChangeValue={(value) => {
+                if (value === "__custom__") {
+                  return;
+                }
+
+                onTemplateChange(value);
+              }}
+            >
+              {selectedTemplate ? null : (
+                <option value="__custom__">
+                  {values.templateVersion && values.templatePath
+                    ? `Current / ${values.templateVersion}`
+                    : "Select a template"}
+                </option>
+              )}
+              {templates.map((template) => (
+                <option key={template.path} value={getTemplateOptionValue(template)}>
+                  {getTemplateOptionLabel(template)}
+                </option>
+              ))}
+            </AppSelect>
+          </div>
+          <div className="app-field-stack">
+            <FieldLabel
+              label="Server Image"
+              hint="Container image used to run each server pod for this group."
+            />
+            <AppSelect
+              value={selectedServerImageExists ? values.serverImage : "__custom-image__"}
+              onChangeValue={(value) => {
+                if (value === "__custom-image__") {
+                  return;
+                }
+
+                onFieldChange("serverImage", value);
+              }}
+            >
+              {selectedServerImageExists ? null : (
+                <option value="__custom-image__">
+                  {values.serverImage || "Select a server image"}
+                </option>
+              )}
+              {SERVER_IMAGE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </AppSelect>
+          </div>
+          <div className="app-field-stack">
+            <FieldLabel
+              label="Drain Timeout (Seconds)"
+              hint="Grace period before forcefully stopping a draining server."
+            />
             <AppNumberInput
               value={values.drainTimeoutSeconds}
               min={1}
@@ -165,9 +202,10 @@ const GroupFormFields = ({
           </div>
           {isStaticGroup && (
             <div className="app-field-stack">
-              <label className="app-field-label">
-                Storage Size
-              </label>
+              <FieldLabel
+                label="Storage Size"
+                hint="Persistent volume size reserved for STATIC group servers."
+              />
               <input
                 type="text"
                 value={values.storageSize}
@@ -178,9 +216,10 @@ const GroupFormFields = ({
           )}
         </div>
         <div className="app-field-stack mt-4">
-          <label className="app-field-label">
-            JVM Flags
-          </label>
+          <FieldLabel
+            label="JVM Flags"
+            hint="JVM startup options passed directly to the Minecraft process."
+          />
           <input
             type="text"
             value={values.jvmFlags}
@@ -196,9 +235,10 @@ const GroupFormFields = ({
         </h4>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Min Online
-            </label>
+            <FieldLabel
+              label="Min Online"
+              hint="Minimum number of instances kept available at all times."
+            />
             <AppNumberInput
               value={values.scaling.minOnline}
               min={0}
@@ -207,9 +247,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Max Instances
-            </label>
+            <FieldLabel
+              label="Max Instances"
+              hint="Hard autoscaling cap for simultaneously running instances."
+            />
             <AppNumberInput
               value={values.scaling.maxInstances}
               min={1}
@@ -218,9 +259,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Players Per Server
-            </label>
+            <FieldLabel
+              label="Players Per Server"
+              hint="Target player capacity used for balancing and scaling calculations."
+            />
             <AppNumberInput
               value={values.scaling.playersPerServer}
               min={1}
@@ -229,9 +271,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Scale Up Threshold
-            </label>
+            <FieldLabel
+              label="Scale Up Threshold"
+              hint="Utilization level that triggers a scale-up action."
+            />
             <AppNumberInput
               value={values.scaling.scaleUpThreshold}
               step={0.01}
@@ -239,9 +282,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Scale Down Threshold
-            </label>
+            <FieldLabel
+              label="Scale Down Threshold"
+              hint="Utilization level below which downscaling can occur."
+            />
             <AppNumberInput
               value={values.scaling.scaleDownThreshold}
               step={0.01}
@@ -249,9 +293,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Cooldown (Seconds)
-            </label>
+            <FieldLabel
+              label="Cooldown (Seconds)"
+              hint="Minimum wait time between consecutive autoscaling operations."
+            />
             <AppNumberInput
               value={values.scaling.cooldownSeconds}
               min={1}
@@ -268,9 +313,10 @@ const GroupFormFields = ({
         </h4>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Memory Request
-            </label>
+            <FieldLabel
+              label="Memory Request"
+              hint="Guaranteed memory reserved for the pod by Kubernetes."
+            />
             <input
               type="text"
               value={values.resources.memoryRequest}
@@ -279,9 +325,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              Memory Limit
-            </label>
+            <FieldLabel
+              label="Memory Limit"
+              hint="Maximum memory available before the container can be OOM-killed."
+            />
             <input
               type="text"
               value={values.resources.memoryLimit}
@@ -290,9 +337,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              CPU Request
-            </label>
+            <FieldLabel
+              label="CPU Request"
+              hint="Guaranteed CPU reserved for the pod scheduler."
+            />
             <input
               type="text"
               value={values.resources.cpuRequest}
@@ -301,9 +349,10 @@ const GroupFormFields = ({
             />
           </div>
           <div className="app-field-stack">
-            <label className="app-field-label">
-              CPU Limit
-            </label>
+            <FieldLabel
+              label="CPU Limit"
+              hint="Maximum CPU the container can consume."
+            />
             <input
               type="text"
               value={values.resources.cpuLimit}

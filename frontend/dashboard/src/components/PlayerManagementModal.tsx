@@ -22,6 +22,7 @@ import {
 import { hasAdminAccess } from "@/lib/roles";
 import { formatDateTime } from "@/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type { PermissionGroupRecord } from "@/types/permission";
 import type { PersistedPlayerRecord } from "@/types/player";
 import type { ServerRecord } from "@/types/server";
@@ -53,6 +54,9 @@ const PlayerManagementModal = ({
 }: PlayerManagementModalProps) => {
   const session = useAuthStore((state) => state.session);
   const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
+  const permissionSystemEnabled = useNetworkSettingsStore(
+    (state) => state.general.permissionSystemEnabled
+  );
   const canManagePermissionGroups = hasAdminAccess(session?.user.role);
 
   const [activePlayer, setActivePlayer] = useState<PersistedPlayerRecord | null>(player);
@@ -89,7 +93,7 @@ const PlayerManagementModal = ({
     try {
       const accessToken = await getValidAccessToken();
       const [nextPermissionGroups, nextServers] = await Promise.all([
-        canManagePermissionGroups
+        canManagePermissionGroups && permissionSystemEnabled
           ? listAllPermissionGroups(accessToken)
           : Promise.resolve<PermissionGroupRecord[]>([]),
         listAllServers(accessToken),
@@ -122,7 +126,7 @@ const PlayerManagementModal = ({
     } finally {
       setIsManageDataLoading(false);
     }
-  }, [canManagePermissionGroups, getValidAccessToken, hasLoadedManageOptions]);
+  }, [canManagePermissionGroups, getValidAccessToken, hasLoadedManageOptions, permissionSystemEnabled]);
 
   useEffect(() => {
     setActivePlayer(player);
@@ -184,6 +188,11 @@ const PlayerManagementModal = ({
 
   const handleApplyPermissionGroup = async () => {
     if (!activePlayer) {
+      return;
+    }
+
+    if (!permissionSystemEnabled) {
+      setErrorMessage("Permission system is disabled in network settings.");
       return;
     }
 
@@ -423,6 +432,7 @@ const PlayerManagementModal = ({
                     value={hasPermissionGroupOption ? permissionGroupDraft : "__current__"}
                     onChangeValue={setPermissionGroupDraft}
                     disabled={
+                      !permissionSystemEnabled ||
                       !canManagePermissionGroups ||
                       isManageDataLoading ||
                       permissionGroups.length === 0
@@ -444,7 +454,10 @@ const PlayerManagementModal = ({
                     value={permissionDurationDraft}
                     onChange={(event) => setPermissionDurationDraft(event.target.value)}
                     disabled={
-                      !canManagePermissionGroups || isManageDataLoading || isUpdatingGroup
+                      !permissionSystemEnabled ||
+                      !canManagePermissionGroups ||
+                      isManageDataLoading ||
+                      isUpdatingGroup
                     }
                     className="app-input-field rounded-lg border border-slate-700 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
                     placeholder="-1 or 30d"
@@ -454,6 +467,7 @@ const PlayerManagementModal = ({
                     disabled={
                       isManageDataLoading ||
                       isUpdatingGroup ||
+                      !permissionSystemEnabled ||
                       !canManagePermissionGroups ||
                       permissionGroups.length === 0 ||
                       !permissionGroupDraft ||
@@ -468,6 +482,8 @@ const PlayerManagementModal = ({
                 <p className="text-xs text-slate-500">
                   {isManageDataLoading
                     ? "Loading available permission groups..."
+                    : !permissionSystemEnabled
+                      ? "Permission system is disabled in network settings."
                     : !canManagePermissionGroups
                       ? "Only admin and service accounts can change permission groups."
                     : permissionGroups.length === 0

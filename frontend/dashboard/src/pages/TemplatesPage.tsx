@@ -30,6 +30,7 @@ import type { GroupRecord } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
 const TEMPLATE_PAGE_SIZE = 10;
+const REFRESH_INTERVAL_MS = 10_000;
 
 const EMPTY_TEMPLATE_PAGE: PaginatedResponse<TemplateRecord> = {
   items: [],
@@ -137,18 +138,23 @@ const TemplatesPage = () => {
   useEffect(() => {
     let active = true;
 
-    const runLoad = async () => {
+    const runLoad = async (showLoading = true) => {
       if (!active) {
         return;
       }
 
-      await loadTemplatePage(true);
+      await loadTemplatePage(showLoading);
     };
 
-    void runLoad();
+    void runLoad(true);
+
+    const intervalId = window.setInterval(() => {
+      void runLoad(false);
+    }, REFRESH_INTERVAL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [loadTemplatePage]);
 

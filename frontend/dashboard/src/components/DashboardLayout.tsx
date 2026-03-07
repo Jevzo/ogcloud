@@ -16,9 +16,11 @@ import {
 
 import HeaderSearch from "@/components/HeaderSearch";
 import RequireMinecraftLinkModal from "@/components/RequireMinecraftLinkModal";
-import { getNetworkStatus } from "@/lib/api";
+import { getNetworkSettings, getNetworkStatus } from "@/lib/api";
 import { hasAdminAccess, normalizeRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import buildVersionRaw from "../../VERSION?raw";
 
 interface NavItem {
   label: string;
@@ -48,11 +50,17 @@ const NAV_ITEMS = [
   },
 ] satisfies readonly NavItem[];
 
+const BUILD_VERSION = buildVersionRaw.trim() || "0.0.0";
+
 const DashboardLayout = () => {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
   const user = useAuthStore((state) => state.session?.user);
+  const permissionSystemEnabled = useNetworkSettingsStore(
+    (state) => state.general.permissionSystemEnabled
+  );
+  const setGeneralSettings = useNetworkSettingsStore((state) => state.setGeneral);
   const userInitial = user?.username?.charAt(0).toUpperCase() ?? "U";
   const linkedPlayerHeadUrl = user?.linkedPlayerUuid
     ? `https://mc-heads.net/avatar/${user.linkedPlayerUuid}`
@@ -89,11 +97,16 @@ const DashboardLayout = () => {
           return;
         }
 
-        const status = await getNetworkStatus(nextSession.accessToken);
+        const [status, networkSettings] = await Promise.all([
+          getNetworkStatus(nextSession.accessToken),
+          getNetworkSettings(nextSession.accessToken),
+        ]);
 
         if (cancelled) {
           return;
         }
+
+        setGeneralSettings(networkSettings.general);
 
         if (status.serverCount === 0 && status.proxyCount === 0) {
           setClusterHealthState("error");
@@ -145,7 +158,7 @@ const DashboardLayout = () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [refreshIfNeeded]);
+  }, [refreshIfNeeded, setGeneralSettings]);
 
   const clusterHealthAccentClass =
     clusterHealthState === "healthy"
@@ -219,21 +232,32 @@ const DashboardLayout = () => {
 
             <nav className="flex-1 space-y-1 overflow-y-auto px-4">
               {visibleNavItems.map(({ label, to, icon: Icon }) => (
-                <NavLink
-                  key={label}
-                  to={to}
-                  end={to === "/"}
-                  className={({ isActive }) =>
-                    `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-slate-400 hover:bg-slate-800 hover:text-primary"
-                    }`
-                  }
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  <span className="leading-none">{label}</span>
-                </NavLink>
+                label === "Permissions" && !permissionSystemEnabled ? (
+                  <div
+                    key={label}
+                    title="Disabled"
+                    className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600"
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="leading-none">{label}</span>
+                  </div>
+                ) : (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    end={to === "/"}
+                    className={({ isActive }) =>
+                      `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-primary"
+                      }`
+                    }
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="leading-none">{label}</span>
+                  </NavLink>
+                )
               ))}
             </nav>
 
@@ -336,7 +360,7 @@ const DashboardLayout = () => {
             <div className="flex flex-col gap-1 sm:flex-row sm:gap-4">
               <span>Authenticated as {user?.email ?? "unknown user"}</span>
             </div>
-            <div>OgCloud Build v0.0.1</div>
+            <div>OgCloud Build v{BUILD_VERSION}</div>
           </footer>
         </div>
       </div>

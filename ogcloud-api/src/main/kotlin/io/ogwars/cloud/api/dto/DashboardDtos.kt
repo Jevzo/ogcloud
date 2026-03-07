@@ -1,12 +1,12 @@
 package io.ogwars.cloud.api.dto
 
 import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.ServerState
+import java.time.Instant
 
 data class DashboardOverviewResponse(
     val stats: DashboardOverviewStatsResponse,
     val groups: List<DashboardOverviewGroupResponse>,
-    val instances: List<DashboardOverviewInstanceResponse>
+    val scalingActions: List<DashboardOverviewScalingActionResponse>
 )
 
 data class DashboardOverviewStatsResponse(
@@ -24,11 +24,12 @@ data class DashboardOverviewGroupResponse(
     val capacityPercent: Double
 )
 
-data class DashboardOverviewInstanceResponse(
-    val id: String,
-    val group: String,
-    val state: ServerState,
-    val tps: Double,
-    val onlinePlayers: Int,
-    val maxPlayers: Int
+data class DashboardOverviewScalingActionResponse(
+    val id: String?,
+    val groupId: String,
+    val action: String,
+    val reason: String,
+    val serverId: String?,
+    val details: String?,
+    val timestamp: Instant
 )

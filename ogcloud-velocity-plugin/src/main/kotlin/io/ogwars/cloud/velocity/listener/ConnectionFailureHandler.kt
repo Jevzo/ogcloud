@@ -65,7 +65,8 @@ class ConnectionFailureHandler(
 
     private fun selectFallbackServer(playerUuid: UUID) = serverRegistry.getServersByGroup(
         networkState.defaultGroup,
-        includeMaintenance = permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
+        includeMaintenance = networkState.permissionSystemEnabled &&
+            permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
     ).minByOrNull { it.playersConnected.size }
 
     companion object {

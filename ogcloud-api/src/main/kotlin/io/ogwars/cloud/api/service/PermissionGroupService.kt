@@ -25,7 +25,8 @@ class PermissionGroupService(
     private val mongoTemplate: MongoTemplate,
     private val playerRepository: PlayerRepository,
     private val playerRedisRepository: PlayerRedisRepository,
-    private val permissionUpdateProducer: PermissionUpdateProducer
+    private val permissionUpdateProducer: PermissionUpdateProducer,
+    private val networkService: NetworkService
 ) {
 
     fun listAll(query: String?, page: Int, size: Int?): PaginatedResponse<PermissionGroupResponse> {
@@ -65,6 +66,8 @@ class PermissionGroupService(
     }
 
     fun create(request: CreatePermissionGroupRequest): PermissionGroupResponse {
+        ensurePermissionSystemEnabled()
+
         val document = PermissionGroupDocument(
             id = request.id,
             name = request.name,
@@ -89,6 +92,8 @@ class PermissionGroupService(
     }
 
     fun update(name: String, request: UpdatePermissionGroupRequest): PermissionGroupResponse {
+        ensurePermissionSystemEnabled()
+
         val existing = permissionGroupRepository.findById(name)
             .orElseThrow { PermissionGroupNotFoundException(name) }
 
@@ -117,6 +122,8 @@ class PermissionGroupService(
     }
 
     fun delete(name: String) {
+        ensurePermissionSystemEnabled()
+
         val existing = permissionGroupRepository.findById(name)
             .orElseThrow { PermissionGroupNotFoundException(name) }
 
@@ -151,6 +158,8 @@ class PermissionGroupService(
     }
 
     fun addPermission(name: String, permission: String): PermissionGroupResponse {
+        ensurePermissionSystemEnabled()
+
         val existing = permissionGroupRepository.findById(name)
             .orElseThrow { PermissionGroupNotFoundException(name) }
 
@@ -166,6 +175,8 @@ class PermissionGroupService(
     }
 
     fun removePermission(name: String, permission: String): PermissionGroupResponse {
+        ensurePermissionSystemEnabled()
+
         val existing = permissionGroupRepository.findById(name)
             .orElseThrow { PermissionGroupNotFoundException(name) }
 
@@ -197,5 +208,11 @@ class PermissionGroupService(
         private const val SYSTEM_UPDATED_BY = "system"
         private const val PERMANENT_PERMISSION_LENGTH = -1L
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
+    }
+
+    private fun ensurePermissionSystemEnabled() {
+        if (!networkService.isPermissionSystemEnabled()) {
+            throw IllegalArgumentException("Permission system is disabled in network settings.")
+        }
     }
 }

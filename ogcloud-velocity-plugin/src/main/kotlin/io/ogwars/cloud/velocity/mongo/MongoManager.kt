@@ -4,6 +4,7 @@ import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoDatabase
 import io.ogwars.cloud.api.model.DisplayConfig
+import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.MotdSettings
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
 import io.ogwars.cloud.api.model.PermissionConfig
@@ -87,6 +88,7 @@ class MongoManager(
         val motdDocument = get("motd", Document::class.java)
         val versionDocument = get("versionName", Document::class.java)
         val tablistDocument = get("tablist", Document::class.java)
+        val generalDocument = get("general", Document::class.java)
 
         return NetworkSettingsDocument(
             id = GLOBAL_ID,
@@ -103,7 +105,8 @@ class MongoManager(
             maintenance = getBoolean("maintenance", false),
             maintenanceKickMessage = getString("maintenanceKickMessage")
                 ?: "&cServer is currently in maintenance mode.",
-            tablist = tablistDocument?.toTablistSettings() ?: TablistSettings()
+            tablist = tablistDocument?.toTablistSettings() ?: TablistSettings(),
+            general = generalDocument?.toGeneralSettings() ?: GeneralSettings()
         )
     }
 
@@ -111,6 +114,13 @@ class MongoManager(
         return TablistSettings(
             header = getString("header") ?: DEFAULT_TABLIST_HEADER,
             footer = getString("footer") ?: DEFAULT_TABLIST_FOOTER
+        )
+    }
+
+    private fun Document.toGeneralSettings(): GeneralSettings {
+        return GeneralSettings(
+            permissionSystemEnabled = getBoolean("permissionSystemEnabled", true),
+            tablistEnabled = getBoolean("tablistEnabled", true)
         )
     }
 

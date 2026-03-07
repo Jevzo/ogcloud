@@ -74,7 +74,7 @@ class GroupUpdateConsumer(
         val fallback = resolveFallback(event.groupId)
 
         serverRegistry.getPlayersInGroup(event.groupId).forEach { player ->
-            if (permissionCache.hasPermission(player.uniqueId, MAINTENANCE_BYPASS_PERMISSION)) {
+            if (hasMaintenanceBypass(player)) {
                 return@forEach
             }
 
@@ -102,7 +102,7 @@ class GroupUpdateConsumer(
         }
 
         proxyServer.allPlayers.forEach { player ->
-            if (permissionCache.hasPermission(player.uniqueId, MAINTENANCE_BYPASS_PERMISSION)) {
+            if (hasMaintenanceBypass(player)) {
                 return@forEach
             }
 
@@ -115,6 +115,14 @@ class GroupUpdateConsumer(
     private fun resolveFallback(blockedGroup: String) = networkState.defaultGroup
         .takeIf { it != blockedGroup && !serverRegistry.isGroupInMaintenance(it) }
         ?.let { serverRegistry.getServersByGroup(it).minByOrNull { server -> server.playersConnected.size } }
+
+    private fun hasMaintenanceBypass(player: Player): Boolean {
+        if (!networkState.permissionSystemEnabled) {
+            return false
+        }
+
+        return permissionCache.hasPermission(player.uniqueId, MAINTENANCE_BYPASS_PERMISSION)
+    }
 
     companion object {
         private const val TOPIC = "ogcloud.group.update"

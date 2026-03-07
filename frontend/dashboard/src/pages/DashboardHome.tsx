@@ -11,21 +11,17 @@ import {
 } from "react-icons/fi";
 
 import AppToasts from "@/components/AppToasts";
-import ServerActionButtons from "@/components/ServerActionButtons";
 import TableRefreshButton from "@/components/TableRefreshButton";
+import { API_LATENCY_WINDOW_MS, getAverageApiLatency } from "@/lib/api-latency";
 import {
   getDashboardOverview,
 } from "@/lib/api";
-import {
-  getServerActionSuccessMessage,
-  runServerAction,
-} from "@/lib/server-actions";
-import { formatTps, getServerStateTone } from "@/lib/server-display";
+import { formatDateTime } from "@/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import type {
   DashboardOverviewGroup,
-  DashboardOverviewInstance,
   DashboardOverviewResponse,
+  DashboardOverviewScalingAction,
 } from "@/types/dashboard";
 
 const REFRESH_INTERVAL_MS = 10_000;
@@ -38,7 +34,7 @@ const EMPTY_OVERVIEW: DashboardOverviewResponse = {
     maintenanceEnabled: false,
   },
   groups: [],
-  instances: [],
+  scalingActions: [],
 };
 
 const getGroupModeTone = (mode: string) =>
@@ -63,11 +59,11 @@ const DashboardHome = () => {
   const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
 
   const [overview, setOverview] = useState<DashboardOverviewResponse>(EMPTY_OVERVIEW);
-  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
+  const [averageLatencyMs, setAverageLatencyMs] = useState<number | null>(
+    getAverageApiLatency()
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [instanceActionKey, setInstanceActionKey] = useState<string | null>(null);
   const [groupThumbnailMap, setGroupThumbnailMap] = useState<Record<string, string>>({});
 
   const getValidAccessToken = useCallback(async () => {
@@ -89,9 +85,10 @@ const DashboardHome = () => {
       const accessToken = await getValidAccessToken();
       const result = await getDashboardOverview(accessToken);
       setOverview(result.data);
-      setLastLatencyMs(result.latencyMs);
+      setAverageLatencyMs(getAverageApiLatency());
       setErrorMessage(null);
     } catch (error) {
+      setAverageLatencyMs(getAverageApiLatency());
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -124,20 +121,6 @@ const DashboardHome = () => {
       window.clearInterval(intervalId);
     };
   }, [loadOverview]);
-
-  useEffect(() => {
-    if (!successMessage) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setSuccessMessage(null);
-    }, 3000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [successMessage]);
 
   useEffect(() => {
     if (overview.groups.length === 0) {
@@ -185,11 +168,11 @@ const DashboardHome = () => {
       icon: FiServer,
     },
     {
-      title: "API Latency",
-      value: lastLatencyMs !== null ? `${lastLatencyMs}` : "--",
+      title: "API Latency (10m Avg)",
+      value: averageLatencyMs !== null ? `${averageLatencyMs}` : "--",
       suffix: "ms",
       tone: "text-emerald-400",
-      meta: "Last overview request",
+      meta: `Rolling average over ${Math.round(API_LATENCY_WINDOW_MS / 60000)} minutes`,
       icon: FiClock,
     },
     {
@@ -203,32 +186,7 @@ const DashboardHome = () => {
       icon: FiActivity,
     },
   ] as const;
-
-  const handleInstanceAction = async (
-    instanceId: string,
-    action: "drain" | "push" | "kill"
-  ) => {
-    const actionKey = `${instanceId}:${action}`;
-    setInstanceActionKey(actionKey);
-    setErrorMessage(null);
-
-    try {
-      const accessToken = await getValidAccessToken();
-      await runServerAction(accessToken, instanceId, action);
-      setSuccessMessage(getServerActionSuccessMessage(instanceId, action));
-      await loadOverview(false);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to execute server action."
-      );
-    } finally {
-      setInstanceActionKey(null);
-    }
-  };
-
-  const groupModesByName = new Map(
-    overview.groups.map((group) => [group.name, group.mode])
-  );
+  const scalingActions = overview.scalingActions ?? [];
 
   return (
     <div className="space-y-8">
@@ -241,16 +199,6 @@ const DashboardHome = () => {
                   message: errorMessage,
                   onDismiss: () => setErrorMessage(null),
                   tone: "error" as const,
-                },
-              ]
-            : []),
-          ...(successMessage
-            ? [
-                {
-                  id: "dashboard-success",
-                  message: successMessage,
-                  onDismiss: () => setSuccessMessage(null),
-                  tone: "success" as const,
                 },
               ]
             : []),
@@ -387,19 +335,19 @@ const DashboardHome = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="flex items-center gap-2 text-lg font-bold text-white">
               <FiLayers className="h-5 w-5 text-primary" />
-              Live Instances
+              Recent Scaling Actions
             </h2>
             <div className="flex items-center justify-between gap-3 sm:justify-end">
               <span className="text-xs text-slate-500">
-                {overview.instances.length} visible instance
-                {overview.instances.length === 1 ? "" : "s"}
+                {scalingActions.length} action
+                {scalingActions.length === 1 ? "" : "s"}
               </span>
               <TableRefreshButton
                 onClick={() => {
                   void loadOverview(false);
                 }}
                 isRefreshing={isLoading}
-                label="Refresh live instances"
+                label="Refresh scaling actions"
               />
             </div>
           </div>
@@ -410,77 +358,55 @@ const DashboardHome = () => {
             <thead>
               <tr className="border-b border-slate-800 bg-slate-800/30">
                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                  Instance ID
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
                   Group
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                  State
+                  Action
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                  TPS
+                  Reason
                 </th>
                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                  Players
+                  Server
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold uppercase text-slate-500">
-                  Actions
+                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                  Timestamp
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {overview.instances.length === 0 && !isLoading ? (
+              {scalingActions.length === 0 && !isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-6 py-10 text-center text-sm text-slate-400"
                   >
-                    No visible instances right now.
+                    No scaling actions logged yet.
                   </td>
                 </tr>
               ) : (
-                overview.instances.map((instance: DashboardOverviewInstance) => {
+                scalingActions.map((action: DashboardOverviewScalingAction) => {
                   return (
                     <tr
-                      key={instance.id}
+                      key={action.id ?? `${action.groupId}:${action.action}:${action.timestamp}`}
                       className="transition-colors hover:bg-slate-800/30"
                     >
                       <td className="px-6 py-4">
-                        <span className="font-mono text-sm text-slate-200">
-                          {instance.id}
+                        <span className="text-sm font-semibold text-slate-200">
+                          {action.groupId}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-300">
-                        {instance.group}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${getServerStateTone(
-                            instance.state
-                          )}`}
-                        >
-                          <span className="h-1 w-1 rounded-full bg-current" />
-                          {instance.state}
-                        </span>
-                      </td>
-                      <td
-                        className={`px-6 py-4 font-mono text-sm font-bold ${
-                          instance.tps >= 18 ? "text-emerald-400" : "text-amber-300"
-                        }`}
-                      >
-                        {formatTps(instance.tps)}
+                        {action.action}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-300">
-                        {instance.onlinePlayers} / {instance.maxPlayers}
+                        {action.reason}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <ServerActionButtons
-                          serverId={instance.id}
-                          serverType={groupModesByName.get(instance.group)}
-                          activeActionKey={instanceActionKey}
-                          onAction={handleInstanceAction}
-                        />
+                      <td className="px-6 py-4 text-sm text-slate-300">
+                        {action.serverId ?? "--"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
+                        {formatDateTime(action.timestamp)}
                       </td>
                     </tr>
                   );

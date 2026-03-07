@@ -7,6 +7,7 @@ import AppToasts from "@/components/AppToasts";
 import PermissionGroupFormFields from "@/components/PermissionGroupFormFields";
 import { createPermissionGroup, listAllPermissionGroups } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type {
   CreatePermissionGroupPayload,
   PermissionGroupFormValues,
@@ -38,6 +39,9 @@ const createEmptyPermissionGroup = (): PermissionGroupFormValues => ({
 
 const PermissionsPage = () => {
   const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
+  const permissionSystemEnabled = useNetworkSettingsStore(
+    (state) => state.general.permissionSystemEnabled
+  );
 
   const [groups, setGroups] = useState<PermissionGroupRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -204,6 +208,11 @@ const PermissionsPage = () => {
   };
 
   const handleCreatePermissionGroup = async () => {
+    if (!permissionSystemEnabled) {
+      setErrorMessage("Permission system is disabled in network settings.");
+      return;
+    }
+
     setIsCreating(true);
     setErrorMessage(null);
 
@@ -269,13 +278,21 @@ const PermissionsPage = () => {
         </div>
         <button
           type="button"
+          disabled={!permissionSystemEnabled}
           onClick={() => setIsCreateModalOpen(true)}
-              className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950"
+          className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+          title={permissionSystemEnabled ? "Create Group" : "Disabled"}
         >
           <FiPlus className="h-4 w-4" />
           Create Group
         </button>
       </motion.section>
+
+      {!permissionSystemEnabled ? (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Permission system is disabled. Changes are unavailable until it is enabled in Network settings.
+        </div>
+      ) : null}
 
       <motion.section
         initial={{ y: 16, opacity: 0 }}
@@ -410,9 +427,9 @@ const PermissionsPage = () => {
               </button>
               <button
                 type="button"
-                disabled={isCreating}
+                disabled={isCreating || !permissionSystemEnabled}
                 onClick={() => void handleCreatePermissionGroup()}
-                  className="app-button-field button-hover-lift button-shadow-primary rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                className="app-button-field button-hover-lift button-shadow-primary rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreating ? "Creating..." : "Create Group"}
               </button>

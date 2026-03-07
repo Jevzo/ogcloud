@@ -2,6 +2,7 @@ package io.ogwars.cloud.velocity.tablist
 
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
+import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
@@ -12,10 +13,10 @@ import java.util.concurrent.TimeUnit
 
 class TablistManager(
     private val proxyServer: ProxyServer,
+    private val networkState: NetworkState,
     private val permissionCache: PermissionCache,
     private val serverRegistry: ServerRegistry,
     private val proxyDisplayName: String,
-    private val maxPlayers: Int,
     private val logger: Logger
 ) {
 
@@ -24,6 +25,9 @@ class TablistManager(
 
     @Volatile
     var footerTemplate: String = ""
+
+    @Volatile
+    private var enabled: Boolean = true
 
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
     private lateinit var scheduler: ScheduledExecutorService
@@ -47,7 +51,19 @@ class TablistManager(
         }
     }
 
+    fun setEnabled(enabled: Boolean) {
+        this.enabled = enabled
+
+        if (!enabled) {
+            clearAll()
+        }
+    }
+
     fun sendTablist(player: Player) {
+        if (!enabled) {
+            return
+        }
+
         val placeholders = player.createPlaceholders()
 
         player.sendPlayerListHeaderAndFooter(
@@ -57,10 +73,21 @@ class TablistManager(
     }
 
     private fun refreshAll() {
+        if (!enabled) {
+            return
+        }
+
         try {
             proxyServer.allPlayers.forEach(::sendTablist)
         } catch (exception: Exception) {
             logger.error("Failed to refresh tablist", exception)
+        }
+    }
+
+    private fun clearAll() {
+        val emptyComponent = deserializeLegacy("")
+        proxyServer.allPlayers.forEach { player ->
+            player.sendPlayerListHeaderAndFooter(emptyComponent, emptyComponent)
         }
     }
 
@@ -78,7 +105,7 @@ class TablistManager(
             "%group%" to groupName,
             "%proxy%" to proxyDisplayName,
             "%onlinePlayers%" to proxyServer.playerCount.toString(),
-            "%maxPlayers%" to maxPlayers.toString(),
+            "%maxPlayers%" to networkState.maxPlayers.toString(),
             "%ping%" to ping.toString(),
             "%permissionGroup%" to (cached?.groupName ?: DEFAULT_PERMISSION_GROUP)
         )

@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.dto.NetworkSettingsResponse
 import io.ogwars.cloud.api.dto.NetworkStatusResponse
 import io.ogwars.cloud.api.dto.UpdateNetworkRequest
 import io.ogwars.cloud.api.dto.toResponse
+import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.kafka.NetworkUpdateProducer
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
@@ -24,6 +25,12 @@ class NetworkService(
     fun getSettings(): NetworkSettingsResponse {
         return findOrDefault().toResponse()
     }
+
+    fun getGeneralSettings(): GeneralSettings = findOrDefault().general
+
+    fun isPermissionSystemEnabled(): Boolean = getGeneralSettings().permissionSystemEnabled
+
+    fun isTablistEnabled(): Boolean = getGeneralSettings().tablistEnabled
 
     fun updateSettings(request: UpdateNetworkRequest): NetworkSettingsResponse {
         val current = findOrDefault()
@@ -49,6 +56,14 @@ class NetworkService(
             )
         } ?: current.tablist
 
+        val updatedGeneral = request.general?.let { req ->
+            current.general.copy(
+                permissionSystemEnabled = req.permissionSystemEnabled
+                    ?: current.general.permissionSystemEnabled,
+                tablistEnabled = req.tablistEnabled ?: current.general.tablistEnabled
+            )
+        } ?: current.general
+
         val updated = current.copy(
             motd = updatedMotd,
             versionName = updatedVersionName,
@@ -56,7 +71,8 @@ class NetworkService(
             defaultGroup = request.defaultGroup ?: current.defaultGroup,
             maintenance = request.maintenance ?: current.maintenance,
             maintenanceKickMessage = request.maintenanceKickMessage ?: current.maintenanceKickMessage,
-            tablist = updatedTablist
+            tablist = updatedTablist,
+            general = updatedGeneral
         )
         mongoTemplate.save(updated, COLLECTION)
 
@@ -70,7 +86,9 @@ class NetworkService(
             metadata = mapOf(
                 "maintenance" to updated.maintenance.toString(),
                 "defaultGroup" to updated.defaultGroup,
-                "maxPlayers" to updated.maxPlayers.toString()
+                "maxPlayers" to updated.maxPlayers.toString(),
+                "permissionSystemEnabled" to updated.general.permissionSystemEnabled.toString(),
+                "tablistEnabled" to updated.general.tablistEnabled.toString()
             )
         )
 

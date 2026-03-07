@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.dto
 
+import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.MotdSettings
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
 import io.ogwars.cloud.api.model.TablistSettings
@@ -14,7 +15,8 @@ data class NetworkSettingsResponse(
     val defaultGroup: String,
     val maintenance: Boolean,
     val maintenanceKickMessage: String,
-    val tablist: TablistSettings
+    val tablist: TablistSettings,
+    val general: GeneralSettings
 )
 
 data class UpdateMotdRequest(
@@ -32,6 +34,11 @@ data class UpdateTablistRequest(
     val footer: String? = null
 )
 
+data class UpdateGeneralSettingsRequest(
+    val permissionSystemEnabled: Boolean? = null,
+    val tablistEnabled: Boolean? = null
+)
+
 data class UpdateNetworkRequest(
     @field:Valid val motd: UpdateMotdRequest? = null,
     @field:Valid val versionName: UpdateVersionNameRequest? = null,
@@ -39,7 +46,8 @@ data class UpdateNetworkRequest(
     val defaultGroup: String? = null,
     val maintenance: Boolean? = null,
     val maintenanceKickMessage: String? = null,
-    @field:Valid val tablist: UpdateTablistRequest? = null
+    @field:Valid val tablist: UpdateTablistRequest? = null,
+    @field:Valid val general: UpdateGeneralSettingsRequest? = null
 )
 
 data class MaintenanceToggleRequest(
@@ -60,6 +68,7 @@ fun NetworkSettingsDocument.toResponse(): NetworkSettingsResponse {
         defaultGroup = defaultGroup,
         maintenance = maintenance,
         maintenanceKickMessage = maintenanceKickMessage,
-        tablist = tablist
+        tablist = tablist,
+        general = general
     )
 }

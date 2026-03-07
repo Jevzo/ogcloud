@@ -3,6 +3,7 @@ package io.ogwars.cloud.velocity.permission
 import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionExpiryEvent
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.network.NetworkState
 import org.slf4j.Logger
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit
 class PermissionExpiryTask(
     private val permissionCache: PermissionCache,
     private val kafkaManager: KafkaManager,
+    private val networkState: NetworkState,
     private val logger: Logger
 ) {
 
@@ -35,6 +37,10 @@ class PermissionExpiryTask(
     }
 
     private fun checkExpiry() {
+        if (!networkState.permissionSystemEnabled) {
+            return
+        }
+
         try {
             val now = System.currentTimeMillis()
             val activePlayers = mutableSetOf<UUID>()

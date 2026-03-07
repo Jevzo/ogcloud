@@ -39,6 +39,10 @@ class PermissionManager {
 
     fun getCachedPlayer(uuid: UUID): CachedPermission? = cache[uuid]
 
+    fun clear() {
+        cache.clear()
+    }
+
     fun hasPermission(uuid: UUID, permission: String): Boolean {
         val cached = cache[uuid] ?: return false
         return cached.permissions.grants(permission)

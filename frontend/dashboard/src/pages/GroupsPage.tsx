@@ -70,7 +70,7 @@ const getPlayersPerServerByGroupType = (groupType: string) => {
 const createEmptyGroupValues = (): GroupFormValues => ({
   id: "",
   type: "DYNAMIC",
-  templateBucket: "",
+  templateBucket: "ogcloud-templates",
   templatePath: "ogcloud-templates",
   templateVersion: "",
   jvmFlags: "-Xms512M -Xmx512M",

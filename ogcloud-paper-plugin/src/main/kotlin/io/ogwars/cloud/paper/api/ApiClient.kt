@@ -22,6 +22,15 @@ data class ApiAuthTokenResponse(
     val refreshTokenExpiresAt: String
 )
 
+data class ApiNetworkGeneralSettingsResponse(
+    val permissionSystemEnabled: Boolean = true,
+    val tablistEnabled: Boolean = true
+)
+
+data class ApiNetworkSettingsResponse(
+    val general: ApiNetworkGeneralSettingsResponse = ApiNetworkGeneralSettingsResponse()
+)
+
 class ApiClient(
     baseUrl: String,
     private val authEmail: String,
@@ -63,6 +72,15 @@ class ApiClient(
 
     fun transferPlayer(uuid: String, target: String): CompletableFuture<Void> {
         return post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
+    }
+
+    fun getNetworkSettingsSync(): ApiNetworkSettingsResponse {
+        val response = httpClient.send(
+            buildGetRequest("/api/v1/network", ensureAccessToken()),
+            HttpResponse.BodyHandlers.ofString()
+        ).validated()
+
+        return gson.fromJson(response.body(), ApiNetworkSettingsResponse::class.java)
     }
 
     private fun post(path: String, body: Any?): CompletableFuture<Void> {
@@ -143,6 +161,16 @@ class ApiClient(
             }
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
+            .build()
+    }
+
+    private fun buildGetRequest(path: String, bearerToken: String): HttpRequest {
+        return HttpRequest.newBuilder()
+            .uri(URI.create("$base$path"))
+            .timeout(REQUEST_TIMEOUT)
+            .header("Authorization", "Bearer $bearerToken")
+            .header("Content-Type", "application/json")
+            .GET()
             .build()
     }
 

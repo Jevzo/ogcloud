@@ -15,7 +15,12 @@ class NetworkUpdateProducer(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishNetworkUpdate(settings: NetworkSettingsDocument) {
-        log.info("Publishing network update: maintenance={}", settings.maintenance)
+        log.info(
+            "Publishing network update: maintenance={}, permissionSystemEnabled={}, tablistEnabled={}",
+            settings.maintenance,
+            settings.general.permissionSystemEnabled,
+            settings.general.tablistEnabled
+        )
 
         kafkaTemplate.send(
             KafkaConfig.NETWORK_UPDATE, "global", NetworkUpdateEvent(
@@ -25,7 +30,8 @@ class NetworkUpdateProducer(
                 defaultGroup = settings.defaultGroup,
                 maintenance = settings.maintenance,
                 maintenanceKickMessage = settings.maintenanceKickMessage,
-                tablist = settings.tablist
+                tablist = settings.tablist,
+                general = settings.general
             )
         )
     }

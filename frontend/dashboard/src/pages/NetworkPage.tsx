@@ -4,6 +4,7 @@ import {
   FiActivity,
   FiAlertTriangle,
   FiGlobe,
+  FiInfo,
   FiSave,
   FiServer,
   FiShield,
@@ -22,6 +23,7 @@ import {
   updateNetworkSettings,
 } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type { GroupListItem } from "@/types/dashboard";
 import type { NetworkSettingsRecord, NetworkStatusRecord } from "@/types/network";
 
@@ -35,6 +37,8 @@ interface NetworkFormValues {
   versionNameMaintenance: string;
   tablistHeader: string;
   tablistFooter: string;
+  permissionSystemEnabled: boolean;
+  tablistEnabled: boolean;
 }
 
 const DEFAULT_STATUS: NetworkStatusRecord = {
@@ -54,6 +58,8 @@ const createFormValues = (settings: NetworkSettingsRecord): NetworkFormValues =>
   versionNameMaintenance: settings.versionName.maintenance,
   tablistHeader: settings.tablist.header,
   tablistFooter: settings.tablist.footer,
+  permissionSystemEnabled: settings.general.permissionSystemEnabled,
+  tablistEnabled: settings.general.tablistEnabled,
 });
 
 const areFormValuesEqual = (
@@ -63,6 +69,7 @@ const areFormValuesEqual = (
 
 const NetworkPage = () => {
   const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
+  const setGeneralSettings = useNetworkSettingsStore((state) => state.setGeneral);
 
   const [settings, setSettings] = useState<NetworkSettingsRecord | null>(null);
   const [status, setStatus] = useState<NetworkStatusRecord>(DEFAULT_STATUS);
@@ -111,6 +118,7 @@ const NetworkPage = () => {
       setSettings(nextSettings);
       setStatus(nextStatus);
       setGroups(nextGroups);
+      setGeneralSettings(nextSettings.general);
       const nextFormValues = createFormValues(nextSettings);
       setFormValues((currentValue) => {
         const currentSettingsValues = settingsRef.current
@@ -139,7 +147,7 @@ const NetworkPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getValidAccessToken, isSaving, isTogglingMaintenance]);
+  }, [getValidAccessToken, isSaving, isTogglingMaintenance, setGeneralSettings]);
 
   useEffect(() => {
     let active = true;
@@ -193,6 +201,20 @@ const NetworkPage = () => {
     );
   };
 
+  const setBooleanField = (
+    field: Extract<keyof NetworkFormValues, "permissionSystemEnabled" | "tablistEnabled">,
+    value: boolean
+  ) => {
+    setFormValues((currentValue) =>
+      currentValue
+        ? {
+            ...currentValue,
+            [field]: value,
+          }
+        : currentValue
+    );
+  };
+
   const handleToggleMaintenance = async () => {
     if (!settings) {
       return;
@@ -211,6 +233,7 @@ const NetworkPage = () => {
       const nextSettings = await toggleNetworkMaintenance(accessToken, false);
 
       setSettings(nextSettings);
+      setGeneralSettings(nextSettings.general);
       setFormValues(createFormValues(nextSettings));
       setSuccessMessage("Network maintenance has been disabled.");
     } catch (error) {
@@ -237,6 +260,7 @@ const NetworkPage = () => {
       const nextSettings = await toggleNetworkMaintenance(accessToken, true);
 
       setSettings(nextSettings);
+      setGeneralSettings(nextSettings.general);
       setFormValues(createFormValues(nextSettings));
       setSuccessMessage("Network maintenance has been enabled.");
       setIsMaintenanceModalOpen(false);
@@ -294,9 +318,14 @@ const NetworkPage = () => {
           header: formValues.tablistHeader,
           footer: formValues.tablistFooter,
         },
+        general: {
+          permissionSystemEnabled: formValues.permissionSystemEnabled,
+          tablistEnabled: formValues.tablistEnabled,
+        },
       });
 
       setSettings(nextSettings);
+      setGeneralSettings(nextSettings.general);
       setFormValues(createFormValues(nextSettings));
       setSuccessMessage("Network settings saved.");
     } catch (error) {
@@ -351,6 +380,8 @@ const NetworkPage = () => {
     formValues && eligibleDefaultGroups.some((group) => group.id === formValues.defaultGroup)
       ? formValues.defaultGroup
       : "";
+  const tablistEnabled = formValues?.tablistEnabled ?? true;
+  const permissionSystemEnabled = formValues?.permissionSystemEnabled ?? true;
 
   return (
     <div className="space-y-8">
@@ -459,173 +490,368 @@ const NetworkPage = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.35, ease: "easeOut", delay: 0.09 }}
-        className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
+        className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
       >
         <div className="space-y-6">
-          <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
             <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                General Settings
+                Current Network Values
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Max Players
-                </label>
-                <AppNumberInput
-                  value={formValues?.maxPlayers ?? ""}
-                  onChangeValue={(value) => setField("maxPlayers", value)}
-                  min={1}
-                  disabled={isLoading || !formValues}
-                />
+            <div className="grid grid-cols-1 gap-x-6 px-6 py-5 md:grid-cols-2">
+              <div className="border-b border-slate-800/70 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Max Slots
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {settings?.maxPlayers ?? "--"}
+                </p>
               </div>
-
-              <div className="app-field-stack">
-                <label className="app-field-label">
+              <div className="border-b border-slate-800/70 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Default Group
-                </label>
-                <AppSelect
-                  value={defaultGroupValue}
-                  onChangeValue={(value) => setField("defaultGroup", value)}
-                  disabled={isLoading || !formValues || eligibleDefaultGroups.length === 0}
-                >
-                  <option value="">
-                    {eligibleDefaultGroups.length === 0
-                      ? "No eligible groups available"
-                      : "Choose default group"}
-                  </option>
-                  {eligibleDefaultGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      {group.id}
-                    </option>
-                  ))}
-                </AppSelect>
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {settings?.defaultGroup || "--"}
+                </p>
               </div>
-
-              <div className="app-field-stack md:col-span-2">
-                <label className="app-field-label">
-                  Maintenance Kick Message
-                </label>
-                <textarea
-                  value={formValues?.maintenanceKickMessage ?? ""}
-                  onChange={(event) =>
-                    setField("maintenanceKickMessage", event.target.value)
-                  }
-                  disabled={isLoading || !formValues}
-                  rows={4}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
+              <div className="py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Maintenance
+                </p>
+                <p
+                  className={`mt-1.5 text-sm font-semibold ${
+                    settings?.maintenance ? "text-amber-300" : "text-emerald-300"
+                  }`}
+                >
+                  {settings ? (settings.maintenance ? "Enabled" : "Disabled") : "--"}
+                </p>
+              </div>
+              <div className="py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Plugin Controls
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  Permission: {settings?.general.permissionSystemEnabled ? "Enabled" : "Disabled"} | Tablist:{" "}
+                  {settings?.general.tablistEnabled ? "Enabled" : "Disabled"}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
             <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                Version Name
+                MOTD Snapshot
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Global
-                </label>
-                <input
-                  type="text"
-                  value={formValues?.versionNameGlobal ?? ""}
-                  onChange={(event) =>
-                    setField("versionNameGlobal", event.target.value)
-                  }
-                  disabled={isLoading || !formValues}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
+            <div className="space-y-5 p-6">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Global MOTD
+                </p>
+                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
+                  {settings?.motd.global?.trim() ? settings.motd.global : "--"}
+                </p>
               </div>
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Maintenance
-                </label>
-                <input
-                  type="text"
-                  value={formValues?.versionNameMaintenance ?? ""}
-                  onChange={(event) =>
-                    setField("versionNameMaintenance", event.target.value)
-                  }
-                  disabled={isLoading || !formValues}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Maintenance MOTD
+                </p>
+                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
+                  {settings?.motd.maintenance?.trim() ? settings.motd.maintenance : "--"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+            <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                Version Snapshot
+              </h3>
+            </div>
+            <div className="space-y-5 p-6">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Global Version Name
+                </p>
+                <p className="mt-2 break-words text-sm text-slate-200">
+                  {settings?.versionName.global?.trim() ? settings.versionName.global : "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Maintenance Version Name
+                </p>
+                <p className="mt-2 break-words text-sm text-slate-200">
+                  {settings?.versionName.maintenance?.trim()
+                    ? settings.versionName.maintenance
+                    : "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Maintenance Kick Message
+                </p>
+                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
+                  {settings?.maintenanceKickMessage?.trim() ? settings.maintenanceKickMessage : "--"}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
-            <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                MOTD
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 gap-5 p-6">
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Global MOTD
-                </label>
-                <textarea
-                  value={formValues?.motdGlobal ?? ""}
-                  onChange={(event) => setField("motdGlobal", event.target.value)}
-                  disabled={isLoading || !formValues}
-                  rows={4}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
-              </div>
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Maintenance MOTD
-                </label>
-                <textarea
-                  value={formValues?.motdMaintenance ?? ""}
-                  onChange={(event) =>
-                    setField("motdMaintenance", event.target.value)
-                  }
-                  disabled={isLoading || !formValues}
-                  rows={4}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+          <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              Editable Configuration
+            </h3>
           </div>
+          <div className="space-y-6 p-6">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+              <h4 className="text-sm font-semibold text-slate-200">Core Settings</h4>
+              <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Max Players
+                  </label>
+                  <AppNumberInput
+                    value={formValues?.maxPlayers ?? ""}
+                    onChangeValue={(value) => setField("maxPlayers", value)}
+                    min={1}
+                    disabled={isLoading || !formValues}
+                  />
+                </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
-            <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                Tablist
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 gap-5 p-6">
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Header
-                </label>
-                <textarea
-                  value={formValues?.tablistHeader ?? ""}
-                  onChange={(event) => setField("tablistHeader", event.target.value)}
-                  disabled={isLoading || !formValues}
-                  rows={5}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Default Group
+                  </label>
+                  <AppSelect
+                    value={defaultGroupValue}
+                    onChangeValue={(value) => setField("defaultGroup", value)}
+                    disabled={isLoading || !formValues || eligibleDefaultGroups.length === 0}
+                  >
+                    <option value="">
+                      {eligibleDefaultGroups.length === 0
+                        ? "No eligible groups available"
+                        : "Choose default group"}
+                    </option>
+                    {eligibleDefaultGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.id}
+                      </option>
+                    ))}
+                  </AppSelect>
+                </div>
+
+                <div className="app-field-stack md:col-span-2">
+                  <label className="app-field-label">
+                    Maintenance Kick Message
+                  </label>
+                  <textarea
+                    value={formValues?.maintenanceKickMessage ?? ""}
+                    onChange={(event) =>
+                      setField("maintenanceKickMessage", event.target.value)
+                    }
+                    disabled={isLoading || !formValues}
+                    rows={4}
+                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
-              <div className="app-field-stack">
-                <label className="app-field-label">
-                  Footer
-                </label>
-                <textarea
-                  value={formValues?.tablistFooter ?? ""}
-                  onChange={(event) => setField("tablistFooter", event.target.value)}
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-200">General Plugin Settings</h4>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Control global permission and tablist handling across plugins.
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    permissionSystemEnabled && tablistEnabled
+                      ? "bg-emerald-500/10 text-emerald-300"
+                      : "bg-amber-500/10 text-amber-300"
+                  }`}
+                >
+                  <FiInfo className="h-3.5 w-3.5" />
+                  {permissionSystemEnabled && tablistEnabled ? "All Enabled" : "Custom"}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                <button
+                  type="button"
                   disabled={isLoading || !formValues}
-                  rows={5}
-                  className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
-                />
+                  onClick={() =>
+                    setBooleanField("permissionSystemEnabled", !permissionSystemEnabled)
+                  }
+                  className="app-input-field group flex min-h-16 w-full items-center justify-between rounded-lg border border-slate-700 px-5 py-3 text-left disabled:cursor-not-allowed"
+                  aria-pressed={permissionSystemEnabled}
+                >
+                  <span className="pr-5">
+                    <span className="block text-sm font-semibold text-slate-100">Permission System</span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      Enable permission injection and updates.
+                    </span>
+                  </span>
+                  <span
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
+                      permissionSystemEnabled
+                        ? "border-primary/40 bg-primary/85 group-hover:bg-secondary"
+                        : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                        permissionSystemEnabled
+                          ? "translate-x-4 -translate-y-1/2"
+                          : "translate-x-0 -translate-y-1/2"
+                      }`}
+                    />
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isLoading || !formValues}
+                  onClick={() => setBooleanField("tablistEnabled", !tablistEnabled)}
+                  className="app-input-field group flex min-h-16 w-full items-center justify-between rounded-lg border border-slate-700 px-5 py-3 text-left disabled:cursor-not-allowed"
+                  aria-pressed={tablistEnabled}
+                >
+                  <span className="pr-5">
+                    <span className="block text-sm font-semibold text-slate-100">Tablist</span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      Enable dynamic tablist updates and templates.
+                    </span>
+                  </span>
+                  <span
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
+                      tablistEnabled
+                        ? "border-primary/40 bg-primary/85 group-hover:bg-secondary"
+                        : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                        tablistEnabled
+                          ? "translate-x-4 -translate-y-1/2"
+                          : "translate-x-0 -translate-y-1/2"
+                      }`}
+                    />
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+              <h4 className="text-sm font-semibold text-slate-200">Version Name</h4>
+              <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Global
+                  </label>
+                  <input
+                    type="text"
+                    value={formValues?.versionNameGlobal ?? ""}
+                    onChange={(event) =>
+                      setField("versionNameGlobal", event.target.value)
+                    }
+                    disabled={isLoading || !formValues}
+                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Maintenance
+                  </label>
+                  <input
+                    type="text"
+                    value={formValues?.versionNameMaintenance ?? ""}
+                    onChange={(event) =>
+                      setField("versionNameMaintenance", event.target.value)
+                    }
+                    disabled={isLoading || !formValues}
+                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+              <h4 className="text-sm font-semibold text-slate-200">MOTD</h4>
+              <div className="mt-4 grid grid-cols-1 gap-5">
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Global MOTD
+                  </label>
+                  <textarea
+                    value={formValues?.motdGlobal ?? ""}
+                    onChange={(event) => setField("motdGlobal", event.target.value)}
+                    disabled={isLoading || !formValues}
+                    rows={4}
+                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Maintenance MOTD
+                  </label>
+                  <textarea
+                    value={formValues?.motdMaintenance ?? ""}
+                    onChange={(event) =>
+                      setField("motdMaintenance", event.target.value)
+                    }
+                    disabled={isLoading || !formValues}
+                    rows={4}
+                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
+              <h4 className="text-sm font-semibold text-slate-200">Tablist</h4>
+              <div className="relative mt-4">
+                {!tablistEnabled ? (
+                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-slate-950/55 text-center backdrop-blur-[1px]">
+                    <p className="max-w-sm px-4 text-sm font-semibold text-amber-200">
+                      Tablist configuration is disabled. Enable tablist in General Plugin Settings.
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className={`space-y-5 ${!tablistEnabled ? "blur-[7px]" : ""}`}>
+                  <div className="app-field-stack">
+                    <label className="app-field-label">
+                      Header
+                    </label>
+                    <textarea
+                      value={formValues?.tablistHeader ?? ""}
+                      onChange={(event) => setField("tablistHeader", event.target.value)}
+                      disabled={isLoading || !formValues || !tablistEnabled}
+                      rows={5}
+                      className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="app-field-stack">
+                    <label className="app-field-label">
+                      Footer
+                    </label>
+                    <textarea
+                      value={formValues?.tablistFooter ?? ""}
+                      onChange={(event) => setField("tablistFooter", event.target.value)}
+                      disabled={isLoading || !formValues || !tablistEnabled}
+                      rows={5}
+                      className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

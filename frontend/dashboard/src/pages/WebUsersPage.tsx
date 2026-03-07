@@ -35,6 +35,7 @@ import {
 } from "@/types/web-user";
 
 const WEB_USER_PAGE_SIZE = 10;
+const REFRESH_INTERVAL_MS = 10_000;
 
 const EMPTY_WEB_USER_PAGE: PaginatedResponse<WebUserRecord> = {
   items: [],
@@ -154,18 +155,23 @@ const WebUsersPage = () => {
   useEffect(() => {
     let active = true;
 
-    const runLoad = async () => {
+    const runLoad = async (showLoading = true) => {
       if (!active) {
         return;
       }
 
-      await loadWebUsers(true);
+      await loadWebUsers(showLoading);
     };
 
-    void runLoad();
+    void runLoad(true);
+
+    const intervalId = window.setInterval(() => {
+      void runLoad(false);
+    }, REFRESH_INTERVAL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [loadWebUsers]);
 

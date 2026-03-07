@@ -35,6 +35,7 @@ import type { GroupListItem } from "@/types/dashboard";
 import type { ServerActionKind, ServerRecord } from "@/types/server";
 
 const SERVER_PAGE_SIZE = 10;
+const REFRESH_INTERVAL_MS = 10_000;
 
 const EMPTY_SERVER_PAGE: PaginatedResponse<ServerRecord> = {
   items: [],
@@ -134,18 +135,23 @@ const ServersPage = () => {
   useEffect(() => {
     let active = true;
 
-    const runLoad = async () => {
+    const runLoad = async (showLoading = true) => {
       if (!active) {
         return;
       }
 
-      await loadServersPage(true);
+      await loadServersPage(showLoading);
     };
 
-    void runLoad();
+    void runLoad(true);
+
+    const intervalId = window.setInterval(() => {
+      void runLoad(false);
+    }, REFRESH_INTERVAL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [loadServersPage]);
 

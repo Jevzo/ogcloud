@@ -8,6 +8,11 @@ interface NetworkTablistSettings {
   footer: string;
 }
 
+export interface NetworkGeneralSettings {
+  permissionSystemEnabled: boolean;
+  tablistEnabled: boolean;
+}
+
 export interface NetworkSettingsRecord {
   motd: NetworkTextPair;
   versionName: NetworkTextPair;
@@ -16,6 +21,7 @@ export interface NetworkSettingsRecord {
   maintenance: boolean;
   maintenanceKickMessage: string;
   tablist: NetworkTablistSettings;
+  general: NetworkGeneralSettings;
 }
 
 export interface NetworkStatusRecord {
@@ -32,4 +38,5 @@ export interface UpdateNetworkPayload {
   maintenance?: boolean;
   maintenanceKickMessage?: string;
   tablist?: Partial<NetworkTablistSettings>;
+  general?: Partial<NetworkGeneralSettings>;
 }

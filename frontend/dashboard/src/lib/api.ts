@@ -1,4 +1,5 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { recordApiLatencySample } from "@/lib/api-latency";
 
 import type {
   ApiErrorResponse,
@@ -10,6 +11,7 @@ import type {
   ApiAuditLogRecord,
 } from "@/types/audit";
 import type {
+  DashboardOverviewScalingAction,
   DashboardOverviewResponse,
   GroupListItem,
   PaginatedResponse,
@@ -22,6 +24,7 @@ import type {
 } from "@/types/group";
 import type { ExecuteCommandPayload } from "@/types/command";
 import type {
+  NetworkGeneralSettings,
   NetworkSettingsRecord,
   NetworkStatusRecord,
   UpdateNetworkPayload,
@@ -63,6 +66,10 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 const MAX_LIST_PAGE_SIZE = 200;
+const DEFAULT_NETWORK_GENERAL_SETTINGS: NetworkGeneralSettings = {
+  permissionSystemEnabled: true,
+  tablistEnabled: true,
+};
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL || undefined,
@@ -70,6 +77,50 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+type TimedRequestConfig = InternalAxiosRequestConfig & {
+  metadata?: {
+    startedAtMs: number;
+  };
+};
+
+const getNowMs = () =>
+  typeof performance !== "undefined" && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+
+const recordRequestLatency = (config?: TimedRequestConfig) => {
+  const startedAtMs = config?.metadata?.startedAtMs;
+
+  if (typeof startedAtMs !== "number" || !Number.isFinite(startedAtMs)) {
+    return;
+  }
+
+  const latencyMs = Math.max(1, Math.round(getNowMs() - startedAtMs));
+  recordApiLatencySample(latencyMs);
+};
+
+apiClient.interceptors.request.use((config) => {
+  const nextConfig = config as TimedRequestConfig;
+  nextConfig.metadata = {
+    startedAtMs: getNowMs(),
+  };
+  return nextConfig;
+});
+
+apiClient.interceptors.response.use(
+  (response) => {
+    recordRequestLatency(response.config as TimedRequestConfig);
+    return response;
+  },
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      recordRequestLatency(error.config as TimedRequestConfig | undefined);
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 class ApiError extends Error {
   status: number;
@@ -112,6 +163,34 @@ const toApiError = (error: unknown, unauthorizedMessage?: string) => {
 
 const getAuthHeaders = (accessToken: string) => ({
   Authorization: `Bearer ${accessToken}`,
+});
+
+type DashboardOverviewApiResponse = Omit<DashboardOverviewResponse, "scalingActions"> & {
+  scalingActions?: DashboardOverviewScalingAction[] | null;
+};
+
+const normalizeDashboardOverview = (
+  payload: DashboardOverviewApiResponse
+): DashboardOverviewResponse => ({
+  ...payload,
+  scalingActions: Array.isArray(payload.scalingActions) ? payload.scalingActions : [],
+});
+
+type NetworkSettingsApiRecord = Omit<NetworkSettingsRecord, "general"> & {
+  general?: Partial<NetworkGeneralSettings> | null;
+};
+
+const normalizeNetworkSettings = (
+  payload: NetworkSettingsApiRecord
+): NetworkSettingsRecord => ({
+  ...payload,
+  general: {
+    permissionSystemEnabled:
+      payload.general?.permissionSystemEnabled ??
+      DEFAULT_NETWORK_GENERAL_SETTINGS.permissionSystemEnabled,
+    tablistEnabled:
+      payload.general?.tablistEnabled ?? DEFAULT_NETWORK_GENERAL_SETTINGS.tablistEnabled,
+  },
 });
 
 export const loginWithEmailPassword = async (credentials: LoginCredentials) => {
@@ -183,7 +262,7 @@ export const getDashboardOverview = async (accessToken: string) => {
   const startedAt = performance.now();
 
   try {
-    const response = await apiClient.get<DashboardOverviewResponse>(
+    const response = await apiClient.get<DashboardOverviewApiResponse>(
       "/api/v1/dashboard/overview",
       {
         headers: getAuthHeaders(accessToken),
@@ -191,7 +270,7 @@ export const getDashboardOverview = async (accessToken: string) => {
     );
 
     return {
-      data: response.data,
+      data: normalizeDashboardOverview(response.data),
       latencyMs: Math.max(1, Math.round(performance.now() - startedAt)),
     };
   } catch (error) {
@@ -201,11 +280,11 @@ export const getDashboardOverview = async (accessToken: string) => {
 
 export const getNetworkSettings = async (accessToken: string) => {
   try {
-    const response = await apiClient.get<NetworkSettingsRecord>("/api/v1/network", {
+    const response = await apiClient.get<NetworkSettingsApiRecord>("/api/v1/network", {
       headers: getAuthHeaders(accessToken),
     });
 
-    return response.data;
+    return normalizeNetworkSettings(response.data);
   } catch (error) {
     throw toApiError(error, SESSION_EXPIRED_MESSAGE);
   }
@@ -228,7 +307,7 @@ export const updateNetworkSettings = async (
   payload: UpdateNetworkPayload
 ) => {
   try {
-    const response = await apiClient.put<NetworkSettingsRecord>(
+    const response = await apiClient.put<NetworkSettingsApiRecord>(
       "/api/v1/network",
       payload,
       {
@@ -236,7 +315,7 @@ export const updateNetworkSettings = async (
       }
     );
 
-    return response.data;
+    return normalizeNetworkSettings(response.data);
   } catch (error) {
     throw toApiError(error, SESSION_EXPIRED_MESSAGE);
   }
@@ -247,7 +326,7 @@ export const toggleNetworkMaintenance = async (
   maintenance: boolean
 ) => {
   try {
-    const response = await apiClient.put<NetworkSettingsRecord>(
+    const response = await apiClient.put<NetworkSettingsApiRecord>(
       "/api/v1/network/maintenance",
       { maintenance },
       {
@@ -255,7 +334,7 @@ export const toggleNetworkMaintenance = async (
       }
     );
 
-    return response.data;
+    return normalizeNetworkSettings(response.data);
   } catch (error) {
     throw toApiError(error, SESSION_EXPIRED_MESSAGE);
   }

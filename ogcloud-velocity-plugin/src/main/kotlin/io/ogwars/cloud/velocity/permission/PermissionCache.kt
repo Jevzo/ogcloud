@@ -57,6 +57,10 @@ class PermissionCache {
 
     fun getAllCachedPlayers(): Map<UUID, CachedPlayer> = cache.toMap()
 
+    fun clear() {
+        cache.clear()
+    }
+
     private fun createCachedPlayer(
         groupId: String,
         groupName: String,
