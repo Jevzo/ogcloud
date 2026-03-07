@@ -4,6 +4,7 @@ interface MinecraftTextPreviewProps {
   value?: string | null;
   fallback?: string;
   className?: string;
+  useFallbackForFormatOnly?: boolean;
 }
 
 interface RenderSegment {
@@ -136,15 +137,38 @@ const parseMinecraftSegments = (rawValue: string): RenderSegment[] => {
   return segments;
 };
 
+const stripFormattingCodes = (rawValue: string) =>
+  rawValue.replace(/(?:&|§)[0-9a-fk-or]/gi, "");
+
+const hasMeaningfulVisibleContent = (rawValue: string) => {
+  const stripped = stripFormattingCodes(rawValue);
+  return /[a-z0-9]/i.test(stripped);
+};
+
 const MinecraftTextPreview = ({
   value,
   fallback = "--",
   className = "",
+  useFallbackForFormatOnly = false,
 }: MinecraftTextPreviewProps) => {
   const normalizedValue = value?.trim();
 
   if (!normalizedValue) {
     return <p className={`break-words text-sm text-slate-500 ${className}`}>{fallback}</p>;
+  }
+
+  if (useFallbackForFormatOnly && !hasMeaningfulVisibleContent(normalizedValue)) {
+    const fallbackSegments = parseMinecraftSegments(fallback);
+
+    return (
+      <p className={`break-words whitespace-pre-wrap text-sm leading-relaxed ${className}`}>
+        {fallbackSegments.map((segment, index) => (
+          <span key={`${index}-${segment.text}`} style={segment.style}>
+            {segment.text}
+          </span>
+        ))}
+      </p>
+    );
   }
 
   const segments = parseMinecraftSegments(normalizedValue);

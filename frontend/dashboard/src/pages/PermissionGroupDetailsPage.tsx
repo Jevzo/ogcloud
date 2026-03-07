@@ -28,12 +28,6 @@ import type {
 } from "@/types/permission";
 
 const PERMISSIONS_PAGE_SIZE = 10;
-const DISPLAY_PREVIEW_FALLBACKS = {
-  chatPrefix: "&7[Default] ",
-  chatSuffix: "&7: &f",
-  nameColor: "&7Player",
-  tabPrefix: "&7Default &8» ",
-} as const;
 
 const toFormValues = (group: PermissionGroupRecord): PermissionGroupFormValues => ({
   id: group.id,
@@ -322,6 +316,17 @@ const PermissionGroupDetailsPage = () => {
     permissionPageIndex * PERMISSIONS_PAGE_SIZE,
     permissionPageIndex * PERMISSIONS_PAGE_SIZE + PERMISSIONS_PAGE_SIZE
   );
+  const previewGroupName = group?.name?.trim() || group?.id?.trim() || "Group";
+  const previewNameColor = group?.display.nameColor?.trim() || "&7";
+  const previewChatPrefix = group?.display.chatPrefix?.trim() || "&7[Group] ";
+  const previewChatSuffix = group?.display.chatSuffix?.trim() || "&7: &f";
+  const previewTabPrefix = group?.display.tabPrefix?.trim() || "&7";
+  const displayPreviewFallbacks = {
+    chatPrefix: `${previewChatPrefix}${previewNameColor}${previewGroupName}`,
+    chatSuffix: `${previewNameColor}${previewGroupName}${previewChatSuffix}Hello`,
+    nameColor: `${previewNameColor}${previewGroupName}`,
+    tabPrefix: `${previewTabPrefix}${previewNameColor}${previewGroupName}`,
+  } as const;
 
   return (
     <div className="space-y-8">
@@ -457,7 +462,8 @@ const PermissionGroupDetailsPage = () => {
                 </p>
                 <MinecraftTextPreview
                   value={group?.display.chatPrefix}
-                  fallback={DISPLAY_PREVIEW_FALLBACKS.chatPrefix}
+                  fallback={displayPreviewFallbacks.chatPrefix}
+                  useFallbackForFormatOnly
                   className="mt-2 font-mono"
                 />
               </div>
@@ -467,7 +473,8 @@ const PermissionGroupDetailsPage = () => {
                 </p>
                 <MinecraftTextPreview
                   value={group?.display.chatSuffix}
-                  fallback={DISPLAY_PREVIEW_FALLBACKS.chatSuffix}
+                  fallback={displayPreviewFallbacks.chatSuffix}
+                  useFallbackForFormatOnly
                   className="mt-2 font-mono"
                 />
               </div>
@@ -478,7 +485,8 @@ const PermissionGroupDetailsPage = () => {
                   </p>
                   <MinecraftTextPreview
                     value={group?.display.nameColor}
-                    fallback={DISPLAY_PREVIEW_FALLBACKS.nameColor}
+                    fallback={displayPreviewFallbacks.nameColor}
+                    useFallbackForFormatOnly
                     className="mt-2 font-mono"
                   />
                 </div>
@@ -488,7 +496,8 @@ const PermissionGroupDetailsPage = () => {
                   </p>
                   <MinecraftTextPreview
                     value={group?.display.tabPrefix}
-                    fallback={DISPLAY_PREVIEW_FALLBACKS.tabPrefix}
+                    fallback={displayPreviewFallbacks.tabPrefix}
+                    useFallbackForFormatOnly
                     className="mt-2 font-mono"
                   />
                 </div>
