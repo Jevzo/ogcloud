@@ -25,6 +25,7 @@ logs/
 # Gradle / Kotlin / Java
 # =========================
 .gradle/
+.gradle-user/
 **/.gradle/
 **/build/
 **/out/
