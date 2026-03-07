@@ -23,7 +23,7 @@ interface FieldLabelProps {
 }
 
 const FieldLabel = ({ label, hint }: FieldLabelProps) => (
-  <span className="app-field-label inline-flex items-center gap-2">
+  <span className="app-field-label inline-flex items-center gap-3">
     {label}
     <span
       className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-slate-800/80 text-slate-400"
