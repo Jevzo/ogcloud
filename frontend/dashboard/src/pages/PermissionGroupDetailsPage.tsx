@@ -463,6 +463,7 @@ const PermissionGroupDetailsPage = () => {
                 <MinecraftTextPreview
                   value={group?.display.chatPrefix}
                   fallback={displayPreviewFallbacks.chatPrefix}
+                  emptyFallback="Not set"
                   useFallbackForFormatOnly
                   className="mt-2 font-mono"
                 />
@@ -474,6 +475,7 @@ const PermissionGroupDetailsPage = () => {
                 <MinecraftTextPreview
                   value={group?.display.chatSuffix}
                   fallback={displayPreviewFallbacks.chatSuffix}
+                  emptyFallback="Not set"
                   useFallbackForFormatOnly
                   className="mt-2 font-mono"
                 />
@@ -486,6 +488,7 @@ const PermissionGroupDetailsPage = () => {
                   <MinecraftTextPreview
                     value={group?.display.nameColor}
                     fallback={displayPreviewFallbacks.nameColor}
+                    emptyFallback="Not set"
                     useFallbackForFormatOnly
                     className="mt-2 font-mono"
                   />
@@ -497,6 +500,7 @@ const PermissionGroupDetailsPage = () => {
                   <MinecraftTextPreview
                     value={group?.display.tabPrefix}
                     fallback={displayPreviewFallbacks.tabPrefix}
+                    emptyFallback="Not set"
                     useFallbackForFormatOnly
                     className="mt-2 font-mono"
                   />

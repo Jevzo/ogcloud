@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 interface MinecraftTextPreviewProps {
   value?: string | null;
   fallback?: string;
+  emptyFallback?: string;
   className?: string;
   useFallbackForFormatOnly?: boolean;
 }
@@ -148,13 +149,18 @@ const hasMeaningfulVisibleContent = (rawValue: string) => {
 const MinecraftTextPreview = ({
   value,
   fallback = "--",
+  emptyFallback,
   className = "",
   useFallbackForFormatOnly = false,
 }: MinecraftTextPreviewProps) => {
   const normalizedValue = value?.trim();
 
   if (!normalizedValue) {
-    return <p className={`break-words text-sm text-slate-500 ${className}`}>{fallback}</p>;
+    return (
+      <p className={`break-words text-sm text-slate-500 ${className}`}>
+        {emptyFallback ?? fallback}
+      </p>
+    );
   }
 
   if (useFallbackForFormatOnly && !hasMeaningfulVisibleContent(normalizedValue)) {
