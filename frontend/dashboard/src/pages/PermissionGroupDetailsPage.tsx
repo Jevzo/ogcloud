@@ -28,6 +28,12 @@ import type {
 } from "@/types/permission";
 
 const PERMISSIONS_PAGE_SIZE = 10;
+const DISPLAY_PREVIEW_FALLBACKS = {
+  chatPrefix: "&7[Default] ",
+  chatSuffix: "&7: &f",
+  nameColor: "&7Player",
+  tabPrefix: "&7Default &8» ",
+} as const;
 
 const toFormValues = (group: PermissionGroupRecord): PermissionGroupFormValues => ({
   id: group.id,
@@ -449,26 +455,42 @@ const PermissionGroupDetailsPage = () => {
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Chat Prefix
                 </p>
-                <MinecraftTextPreview value={group?.display.chatPrefix} className="mt-2 font-mono" />
+                <MinecraftTextPreview
+                  value={group?.display.chatPrefix}
+                  fallback={DISPLAY_PREVIEW_FALLBACKS.chatPrefix}
+                  className="mt-2 font-mono"
+                />
               </div>
               <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Chat Suffix
                 </p>
-                <MinecraftTextPreview value={group?.display.chatSuffix} className="mt-2 font-mono" />
+                <MinecraftTextPreview
+                  value={group?.display.chatSuffix}
+                  fallback={DISPLAY_PREVIEW_FALLBACKS.chatSuffix}
+                  className="mt-2 font-mono"
+                />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Name Color
                   </p>
-                  <MinecraftTextPreview value={group?.display.nameColor} className="mt-2 font-mono" />
+                  <MinecraftTextPreview
+                    value={group?.display.nameColor}
+                    fallback={DISPLAY_PREVIEW_FALLBACKS.nameColor}
+                    className="mt-2 font-mono"
+                  />
                 </div>
                 <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Tab Prefix
                   </p>
-                  <MinecraftTextPreview value={group?.display.tabPrefix} className="mt-2 font-mono" />
+                  <MinecraftTextPreview
+                    value={group?.display.tabPrefix}
+                    fallback={DISPLAY_PREVIEW_FALLBACKS.tabPrefix}
+                    className="mt-2 font-mono"
+                  />
                 </div>
               </div>
             </div>

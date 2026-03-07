@@ -82,7 +82,7 @@ const parseMinecraftSegments = (rawValue: string): RenderSegment[] => {
   for (let index = 0; index < rawValue.length; index += 1) {
     const currentChar = rawValue[index];
     const nextChar = rawValue[index + 1]?.toLowerCase();
-    const isFormattingPrefix = currentChar === "&" || currentChar === "§";
+    const isFormattingPrefix = currentChar === "&" || currentChar === "\u00a7";
 
     if (!isFormattingPrefix || !nextChar) {
       buffer += currentChar;
