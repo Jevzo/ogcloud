@@ -12,6 +12,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
+import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import PermissionGroupFormFields from "@/components/PermissionGroupFormFields";
 import {
   deletePermissionGroup,
@@ -444,38 +445,30 @@ const PermissionGroupDetailsPage = () => {
               </h3>
             </div>
             <div className="space-y-4 p-6">
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Chat Prefix
                 </p>
-                <p className="mt-2 break-words font-mono text-sm text-slate-200">
-                  {group?.display.chatPrefix?.trim() ? group.display.chatPrefix : "--"}
-                </p>
+                <MinecraftTextPreview value={group?.display.chatPrefix} className="mt-2 font-mono" />
               </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Chat Suffix
                 </p>
-                <p className="mt-2 break-words font-mono text-sm text-slate-200">
-                  {group?.display.chatSuffix?.trim() ? group.display.chatSuffix : "--"}
-                </p>
+                <MinecraftTextPreview value={group?.display.chatSuffix} className="mt-2 font-mono" />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Name Color
                   </p>
-                  <p className="mt-2 break-words font-mono text-sm text-slate-200">
-                    {group?.display.nameColor?.trim() ? group.display.nameColor : "--"}
-                  </p>
+                  <MinecraftTextPreview value={group?.display.nameColor} className="mt-2 font-mono" />
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+                <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Tab Prefix
                   </p>
-                  <p className="mt-2 break-words font-mono text-sm text-slate-200">
-                    {group?.display.tabPrefix?.trim() ? group.display.tabPrefix : "--"}
-                  </p>
+                  <MinecraftTextPreview value={group?.display.tabPrefix} className="mt-2 font-mono" />
                 </div>
               </div>
             </div>
@@ -577,7 +570,7 @@ const PermissionGroupDetailsPage = () => {
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm self-start">
           <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
               Editable Configuration

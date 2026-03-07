@@ -60,7 +60,8 @@ class NetworkService(
             current.general.copy(
                 permissionSystemEnabled = req.permissionSystemEnabled
                     ?: current.general.permissionSystemEnabled,
-                tablistEnabled = req.tablistEnabled ?: current.general.tablistEnabled
+                tablistEnabled = req.tablistEnabled ?: current.general.tablistEnabled,
+                proxyRoutingStrategy = req.proxyRoutingStrategy ?: current.general.proxyRoutingStrategy
             )
         } ?: current.general
 
@@ -88,7 +89,8 @@ class NetworkService(
                 "defaultGroup" to updated.defaultGroup,
                 "maxPlayers" to updated.maxPlayers.toString(),
                 "permissionSystemEnabled" to updated.general.permissionSystemEnabled.toString(),
-                "tablistEnabled" to updated.general.tablistEnabled.toString()
+                "tablistEnabled" to updated.general.tablistEnabled.toString(),
+                "proxyRoutingStrategy" to updated.general.proxyRoutingStrategy.name
             )
         )
 

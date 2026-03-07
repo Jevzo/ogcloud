@@ -25,6 +25,7 @@ import type {
 import type { ExecuteCommandPayload } from "@/types/command";
 import type {
   NetworkGeneralSettings,
+  ProxyRoutingStrategy,
   NetworkSettingsRecord,
   NetworkStatusRecord,
   UpdateNetworkPayload,
@@ -69,6 +70,7 @@ const MAX_LIST_PAGE_SIZE = 200;
 const DEFAULT_NETWORK_GENERAL_SETTINGS: NetworkGeneralSettings = {
   permissionSystemEnabled: true,
   tablistEnabled: true,
+  proxyRoutingStrategy: "LOAD_BASED",
 };
 
 const apiClient = axios.create({
@@ -190,8 +192,19 @@ const normalizeNetworkSettings = (
       DEFAULT_NETWORK_GENERAL_SETTINGS.permissionSystemEnabled,
     tablistEnabled:
       payload.general?.tablistEnabled ?? DEFAULT_NETWORK_GENERAL_SETTINGS.tablistEnabled,
+    proxyRoutingStrategy: normalizeProxyRoutingStrategy(payload.general?.proxyRoutingStrategy),
   },
 });
+
+const normalizeProxyRoutingStrategy = (
+  strategy?: ProxyRoutingStrategy | string | null
+): ProxyRoutingStrategy => {
+  if (strategy === "ROUND_ROBIN" || strategy === "LOAD_BASED") {
+    return strategy;
+  }
+
+  return DEFAULT_NETWORK_GENERAL_SETTINGS.proxyRoutingStrategy;
+};
 
 export const loginWithEmailPassword = async (credentials: LoginCredentials) => {
   try {

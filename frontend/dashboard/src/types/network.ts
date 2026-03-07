@@ -8,9 +8,12 @@ interface NetworkTablistSettings {
   footer: string;
 }
 
+export type ProxyRoutingStrategy = "ROUND_ROBIN" | "LOAD_BASED";
+
 export interface NetworkGeneralSettings {
   permissionSystemEnabled: boolean;
   tablistEnabled: boolean;
+  proxyRoutingStrategy: ProxyRoutingStrategy;
 }
 
 export interface NetworkSettingsRecord {

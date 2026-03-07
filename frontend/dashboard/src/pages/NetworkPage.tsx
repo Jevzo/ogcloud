@@ -14,6 +14,7 @@ import {
 
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
+import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import AppToasts from "@/components/AppToasts";
 import {
   getNetworkSettings,
@@ -25,7 +26,11 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type { GroupListItem } from "@/types/dashboard";
-import type { NetworkSettingsRecord, NetworkStatusRecord } from "@/types/network";
+import type {
+  NetworkSettingsRecord,
+  NetworkStatusRecord,
+  ProxyRoutingStrategy,
+} from "@/types/network";
 
 interface NetworkFormValues {
   maxPlayers: string;
@@ -39,6 +44,7 @@ interface NetworkFormValues {
   tablistFooter: string;
   permissionSystemEnabled: boolean;
   tablistEnabled: boolean;
+  proxyRoutingStrategy: ProxyRoutingStrategy;
 }
 
 const DEFAULT_STATUS: NetworkStatusRecord = {
@@ -60,6 +66,7 @@ const createFormValues = (settings: NetworkSettingsRecord): NetworkFormValues =>
   tablistFooter: settings.tablist.footer,
   permissionSystemEnabled: settings.general.permissionSystemEnabled,
   tablistEnabled: settings.general.tablistEnabled,
+  proxyRoutingStrategy: settings.general.proxyRoutingStrategy,
 });
 
 const areFormValuesEqual = (
@@ -215,6 +222,17 @@ const NetworkPage = () => {
     );
   };
 
+  const setRoutingStrategy = (value: ProxyRoutingStrategy) => {
+    setFormValues((currentValue) =>
+      currentValue
+        ? {
+            ...currentValue,
+            proxyRoutingStrategy: value,
+          }
+        : currentValue
+    );
+  };
+
   const handleToggleMaintenance = async () => {
     if (!settings) {
       return;
@@ -321,6 +339,7 @@ const NetworkPage = () => {
         general: {
           permissionSystemEnabled: formValues.permissionSystemEnabled,
           tablistEnabled: formValues.tablistEnabled,
+          proxyRoutingStrategy: formValues.proxyRoutingStrategy,
         },
       });
 
@@ -382,6 +401,7 @@ const NetworkPage = () => {
       : "";
   const tablistEnabled = formValues?.tablistEnabled ?? true;
   const permissionSystemEnabled = formValues?.permissionSystemEnabled ?? true;
+  const proxyRoutingStrategy = formValues?.proxyRoutingStrategy ?? "LOAD_BASED";
 
   return (
     <div className="space-y-8">
@@ -444,15 +464,6 @@ const NetworkPage = () => {
                 ? "Disable Maintenance"
                 : "Enable Maintenance"}
           </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={!formValues || isSaving}
-            className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <FiSave className="h-4 w-4" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
         </div>
       </motion.section>
 
@@ -499,43 +510,73 @@ const NetworkPage = () => {
                 Current Network Values
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-x-6 px-6 py-5 md:grid-cols-2">
-              <div className="border-b border-slate-800/70 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Max Slots
-                </p>
-                <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                  {settings?.maxPlayers ?? "--"}
-                </p>
+            <div className="space-y-5 p-6">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Max Slots
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                    {settings?.maxPlayers ?? "--"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Default Group
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                    {settings?.defaultGroup || "--"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Maintenance
+                  </p>
+                  <p
+                    className={`mt-1.5 text-sm font-semibold ${
+                      settings?.maintenance ? "text-amber-300" : "text-emerald-300"
+                    }`}
+                  >
+                    {settings ? (settings.maintenance ? "Enabled" : "Disabled") : "--"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Routing Strategy
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                    {settings?.general.proxyRoutingStrategy === "ROUND_ROBIN"
+                      ? "Round Robin"
+                      : "Load Based"}
+                  </p>
+                </div>
               </div>
-              <div className="border-b border-slate-800/70 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Default Group
-                </p>
-                <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                  {settings?.defaultGroup || "--"}
-                </p>
-              </div>
-              <div className="py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Maintenance
-                </p>
-                <p
-                  className={`mt-1.5 text-sm font-semibold ${
-                    settings?.maintenance ? "text-amber-300" : "text-emerald-300"
-                  }`}
-                >
-                  {settings ? (settings.maintenance ? "Enabled" : "Disabled") : "--"}
-                </p>
-              </div>
-              <div className="py-3">
+
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Plugin Controls
                 </p>
-                <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                  Permission: {settings?.general.permissionSystemEnabled ? "Enabled" : "Disabled"} | Tablist:{" "}
-                  {settings?.general.tablistEnabled ? "Enabled" : "Disabled"}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${
+                      settings?.general.permissionSystemEnabled
+                        ? "bg-emerald-500/12 text-emerald-300"
+                        : "bg-slate-700/40 text-slate-300"
+                    }`}
+                  >
+                    Permission System:{" "}
+                    {settings?.general.permissionSystemEnabled ? "Enabled" : "Disabled"}
+                  </span>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${
+                      settings?.general.tablistEnabled
+                        ? "bg-emerald-500/12 text-emerald-300"
+                        : "bg-slate-700/40 text-slate-300"
+                    }`}
+                  >
+                    Tablist: {settings?.general.tablistEnabled ? "Enabled" : "Disabled"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -546,22 +587,18 @@ const NetworkPage = () => {
                 MOTD Snapshot
               </h3>
             </div>
-            <div className="space-y-5 p-6">
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+            <div className="grid grid-cols-1 gap-4 p-6">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Global MOTD
+                  Global
                 </p>
-                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
-                  {settings?.motd.global?.trim() ? settings.motd.global : "--"}
-                </p>
+                <MinecraftTextPreview value={settings?.motd.global} className="mt-2 font-mono" />
               </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Maintenance MOTD
+                  Maintenance
                 </p>
-                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
-                  {settings?.motd.maintenance?.trim() ? settings.motd.maintenance : "--"}
-                </p>
+                <MinecraftTextPreview value={settings?.motd.maintenance} className="mt-2 font-mono" />
               </div>
             </div>
           </div>
@@ -573,37 +610,35 @@ const NetworkPage = () => {
               </h3>
             </div>
             <div className="space-y-5 p-6">
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Global Version Name
+                  Global Version
                 </p>
-                <p className="mt-2 break-words text-sm text-slate-200">
-                  {settings?.versionName.global?.trim() ? settings.versionName.global : "--"}
-                </p>
+                <MinecraftTextPreview value={settings?.versionName.global} className="mt-2 font-mono" />
               </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Maintenance Version Name
+                  Maintenance Version
                 </p>
-                <p className="mt-2 break-words text-sm text-slate-200">
-                  {settings?.versionName.maintenance?.trim()
-                    ? settings.versionName.maintenance
-                    : "--"}
-                </p>
+                <MinecraftTextPreview
+                  value={settings?.versionName.maintenance}
+                  className="mt-2 font-mono"
+                />
               </div>
-              <div className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+              <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Maintenance Kick Message
                 </p>
-                <p className="mt-2 break-words whitespace-pre-wrap text-sm text-slate-200">
-                  {settings?.maintenanceKickMessage?.trim() ? settings.maintenanceKickMessage : "--"}
-                </p>
+                <MinecraftTextPreview
+                  value={settings?.maintenanceKickMessage}
+                  className="mt-2 font-mono"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm self-start">
           <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
               Editable Configuration
@@ -673,14 +708,16 @@ const NetworkPage = () => {
                   </p>
                 </div>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                    permissionSystemEnabled && tablistEnabled
+                  className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    permissionSystemEnabled && tablistEnabled && proxyRoutingStrategy === "LOAD_BASED"
                       ? "bg-emerald-500/10 text-emerald-300"
                       : "bg-amber-500/10 text-amber-300"
                   }`}
                 >
                   <FiInfo className="h-3.5 w-3.5" />
-                  {permissionSystemEnabled && tablistEnabled ? "All Enabled" : "Custom"}
+                  {permissionSystemEnabled && tablistEnabled && proxyRoutingStrategy === "LOAD_BASED"
+                    ? "Recommended"
+                    : "Custom"}
                 </span>
               </div>
 
@@ -747,6 +784,26 @@ const NetworkPage = () => {
                   </span>
                 </button>
               </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-5">
+                <div className="app-field-stack">
+                  <label className="app-field-label">
+                    Load Balancer Player Routing
+                  </label>
+                  <AppSelect
+                    value={proxyRoutingStrategy}
+                    onChangeValue={(value) => setRoutingStrategy(value as ProxyRoutingStrategy)}
+                    disabled={isLoading || !formValues}
+                  >
+                    <option value="LOAD_BASED">
+                      Load Based (least connected proxy)
+                    </option>
+                    <option value="ROUND_ROBIN">
+                      Round Robin (next proxy in sequence)
+                    </option>
+                  </AppSelect>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
@@ -788,7 +845,7 @@ const NetworkPage = () => {
               <div className="mt-4 grid grid-cols-1 gap-5">
                 <div className="app-field-stack">
                   <label className="app-field-label">
-                    Global MOTD
+                    Global
                   </label>
                   <textarea
                     value={formValues?.motdGlobal ?? ""}
@@ -800,7 +857,7 @@ const NetworkPage = () => {
                 </div>
                 <div className="app-field-stack">
                   <label className="app-field-label">
-                    Maintenance MOTD
+                    Maintenance
                   </label>
                   <textarea
                     value={formValues?.motdMaintenance ?? ""}
@@ -819,14 +876,14 @@ const NetworkPage = () => {
               <h4 className="text-sm font-semibold text-slate-200">Tablist</h4>
               <div className="relative mt-4">
                 {!tablistEnabled ? (
-                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-slate-950/55 text-center backdrop-blur-[1px]">
-                    <p className="max-w-sm px-4 text-sm font-semibold text-amber-200">
+                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-center">
+                    <p className="max-w-sm rounded-lg border border-slate-700/70 px-4 py-2 text-sm font-semibold text-amber-200 backdrop-blur-lg">
                       Tablist configuration is disabled. Enable tablist in General Plugin Settings.
                     </p>
                   </div>
                 ) : null}
 
-                <div className={`space-y-5 ${!tablistEnabled ? "blur-[7px]" : ""}`}>
+                <div className={`space-y-5 transition ${!tablistEnabled ? "blur-[8px] select-none" : ""}`}>
                   <div className="app-field-stack">
                     <label className="app-field-label">
                       Header
@@ -853,6 +910,18 @@ const NetworkPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-800/70 pt-5">
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={!formValues || isSaving}
+                className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FiSave className="h-4 w-4" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </div>
         </div>

@@ -59,7 +59,7 @@ func (h *Handler) handleStatus(clientConn net.Conn) {
 }
 
 func (h *Handler) handleLogin(clientConn net.Conn, rawHandshake []byte) {
-	backend, err := h.pool.SelectBackend()
+	backend, err := h.pool.SelectBackend(h.network.GetProxyRoutingStrategy())
 	if err != nil {
 		h.logger.Warn("no backend available for login", zap.Error(err))
 		return

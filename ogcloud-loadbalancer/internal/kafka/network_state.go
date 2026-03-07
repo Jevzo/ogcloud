@@ -19,6 +19,7 @@ type APINetworkResponse struct {
 	DefaultGroup           string                 `json:"defaultGroup"`
 	Maintenance            bool                   `json:"maintenance"`
 	MaintenanceKickMessage string                 `json:"maintenanceKickMessage"`
+	General                *GeneralSettings       `json:"general,omitempty"`
 }
 
 type NetworkState struct {
@@ -29,6 +30,7 @@ type NetworkState struct {
 	versionNameMaintenance string
 	maxPlayers             int
 	maintenance            bool
+	proxyRoutingStrategy   string
 	proxyPlayerCounts      map[string]int
 }
 
@@ -39,6 +41,7 @@ func NewNetworkState() *NetworkState {
 		versionName:            "OgCloud",
 		versionNameMaintenance: "Maintenance",
 		maxPlayers:             100,
+		proxyRoutingStrategy:   proxyRoutingStrategyLoadBased,
 		proxyPlayerCounts:      make(map[string]int),
 	}
 }
@@ -52,6 +55,9 @@ func (ns *NetworkState) ApplyAPISettings(settings APINetworkResponse) {
 	ns.versionNameMaintenance = settings.VersionName.Maintenance
 	ns.maxPlayers = settings.MaxPlayers
 	ns.maintenance = settings.Maintenance
+	if settings.General != nil {
+		ns.proxyRoutingStrategy = normalizeProxyRoutingStrategy(settings.General.ProxyRoutingStrategy)
+	}
 }
 
 func (ns *NetworkState) update(event NetworkUpdateEvent) {
@@ -63,6 +69,9 @@ func (ns *NetworkState) update(event NetworkUpdateEvent) {
 	ns.versionNameMaintenance = event.VersionName.Maintenance
 	ns.maxPlayers = event.MaxPlayers
 	ns.maintenance = event.Maintenance
+	if event.General != nil {
+		ns.proxyRoutingStrategy = normalizeProxyRoutingStrategy(event.General.ProxyRoutingStrategy)
+	}
 }
 
 func (ns *NetworkState) GetMOTD() string {
@@ -119,3 +128,25 @@ func (ns *NetworkState) RemoveProxyPlayerCount(proxyID string) {
 	defer ns.mu.Unlock()
 	delete(ns.proxyPlayerCounts, proxyID)
 }
+
+func (ns *NetworkState) GetProxyRoutingStrategy() string {
+	ns.mu.RLock()
+	defer ns.mu.RUnlock()
+	return ns.proxyRoutingStrategy
+}
+
+func normalizeProxyRoutingStrategy(value string) string {
+	switch value {
+	case proxyRoutingStrategyRoundRobin:
+		return proxyRoutingStrategyRoundRobin
+	case proxyRoutingStrategyLoadBased:
+		return proxyRoutingStrategyLoadBased
+	default:
+		return proxyRoutingStrategyLoadBased
+	}
+}
+
+const (
+	proxyRoutingStrategyRoundRobin = "ROUND_ROBIN"
+	proxyRoutingStrategyLoadBased  = "LOAD_BASED"
+)

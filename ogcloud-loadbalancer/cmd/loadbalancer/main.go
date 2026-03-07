@@ -33,6 +33,7 @@ func main() {
 	logger.Info("loaded network settings from API",
 		zap.Bool("maintenance", settings.Maintenance),
 		zap.Int("maxPlayers", settings.MaxPlayers),
+		zap.String("proxyRoutingStrategy", networkState.GetProxyRoutingStrategy()),
 	)
 
 	pool := proxy.NewPool(time.Duration(cfg.ProxyHealthTimeout)*time.Second, logger)

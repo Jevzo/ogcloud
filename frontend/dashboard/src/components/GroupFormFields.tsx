@@ -23,14 +23,14 @@ interface FieldLabelProps {
 }
 
 const FieldLabel = ({ label, hint }: FieldLabelProps) => (
-  <span className="app-field-label flex items-center gap-1.5">
+  <span className="app-field-label inline-flex items-center gap-2">
     {label}
     <span
-      className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-800/80 text-slate-400"
+      className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-slate-800/80 text-slate-400"
       title={hint}
       aria-label={hint}
     >
-      <FiInfo className="h-3 w-3" />
+      <FiInfo className="h-3 w-3 align-middle" />
     </span>
   </span>
 );

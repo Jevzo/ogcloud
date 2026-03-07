@@ -10,6 +10,12 @@ type VersionNameSettings struct {
 	Maintenance string `json:"maintenance"`
 }
 
+type GeneralSettings struct {
+	PermissionSystemEnabled bool   `json:"permissionSystemEnabled"`
+	TablistEnabled          bool   `json:"tablistEnabled"`
+	ProxyRoutingStrategy    string `json:"proxyRoutingStrategy"`
+}
+
 type NetworkUpdateEvent struct {
 	MOTD                   MotdSettings        `json:"motd"`
 	VersionName            VersionNameSettings `json:"versionName"`
@@ -17,6 +23,7 @@ type NetworkUpdateEvent struct {
 	DefaultGroup           string              `json:"defaultGroup"`
 	Maintenance            bool                `json:"maintenance"`
 	MaintenanceKickMessage string              `json:"maintenanceKickMessage"`
+	General                *GeneralSettings    `json:"general,omitempty"`
 }
 
 type ServerLifecycleEvent struct {

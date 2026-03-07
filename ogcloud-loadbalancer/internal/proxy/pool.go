@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -51,6 +52,7 @@ type Pool struct {
 	healthTimeout time.Duration
 	mu            sync.RWMutex
 	logger        *zap.Logger
+	roundRobinIdx atomic.Uint64
 }
 
 func NewPool(healthTimeout time.Duration, logger *zap.Logger) *Pool {
@@ -91,33 +93,54 @@ func (p *Pool) RemoveBackend(proxyID string) {
 	}
 }
 
-func (p *Pool) SelectBackend() (*Backend, error) {
+func (p *Pool) SelectBackend(strategy string) (*Backend, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	var best *Backend
-	var bestLoad int32 = -1
-
-	for _, b := range p.backends {
-		if !b.isHealthy(p.healthTimeout) {
-			continue
-		}
-		if b.isFull() {
-			continue
-		}
-
-		load := b.currentPlayers()
-		if best == nil || load < bestLoad {
-			best = b
-			bestLoad = load
-		}
-	}
-
-	if best == nil {
+	healthy := p.healthyBackendsLocked()
+	if len(healthy) == 0 {
 		return nil, ErrNoBackendAvailable
 	}
 
-	return best, nil
+	switch normalizeRoutingStrategy(strategy) {
+	case RoutingStrategyRoundRobin:
+		return p.selectRoundRobinBackend(healthy), nil
+	default:
+		return p.selectLoadBasedBackend(healthy), nil
+	}
+}
+
+func (p *Pool) healthyBackendsLocked() []*Backend {
+	healthy := make([]*Backend, 0, len(p.backends))
+	for _, backend := range p.backends {
+		if !backend.isHealthy(p.healthTimeout) || backend.isFull() {
+			continue
+		}
+		healthy = append(healthy, backend)
+	}
+	sort.Slice(healthy, func(i, j int) bool {
+		return healthy[i].ProxyID < healthy[j].ProxyID
+	})
+	return healthy
+}
+
+func (p *Pool) selectLoadBasedBackend(backends []*Backend) *Backend {
+	best := backends[0]
+	bestLoad := best.currentPlayers()
+	for _, backend := range backends[1:] {
+		load := backend.currentPlayers()
+		if load < bestLoad {
+			best = backend
+			bestLoad = load
+		}
+	}
+	return best
+}
+
+func (p *Pool) selectRoundRobinBackend(backends []*Backend) *Backend {
+	index := p.roundRobinIdx.Add(1) - 1
+	selectedIndex := int(index % uint64(len(backends)))
+	return backends[selectedIndex]
 }
 
 func (p *Pool) Dial(b *Backend) (net.Conn, error) {
@@ -144,3 +167,19 @@ func (p *Pool) RemoveStale() {
 		}
 	}
 }
+
+func normalizeRoutingStrategy(value string) string {
+	switch value {
+	case RoutingStrategyRoundRobin:
+		return RoutingStrategyRoundRobin
+	case RoutingStrategyLoadBased:
+		return RoutingStrategyLoadBased
+	default:
+		return RoutingStrategyLoadBased
+	}
+}
+
+const (
+	RoutingStrategyRoundRobin = "ROUND_ROBIN"
+	RoutingStrategyLoadBased  = "LOAD_BASED"
+)

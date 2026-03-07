@@ -16,10 +16,11 @@ class NetworkUpdateProducer(
 
     fun publishNetworkUpdate(settings: NetworkSettingsDocument) {
         log.info(
-            "Publishing network update: maintenance={}, permissionSystemEnabled={}, tablistEnabled={}",
+            "Publishing network update: maintenance={}, permissionSystemEnabled={}, tablistEnabled={}, proxyRoutingStrategy={}",
             settings.maintenance,
             settings.general.permissionSystemEnabled,
-            settings.general.tablistEnabled
+            settings.general.tablistEnabled,
+            settings.general.proxyRoutingStrategy
         )
 
         kafkaTemplate.send(

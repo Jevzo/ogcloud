@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.dto
 import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.MotdSettings
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
+import io.ogwars.cloud.api.model.ProxyRoutingStrategy
 import io.ogwars.cloud.api.model.TablistSettings
 import io.ogwars.cloud.api.model.VersionNameSettings
 import jakarta.validation.Valid
@@ -36,7 +37,8 @@ data class UpdateTablistRequest(
 
 data class UpdateGeneralSettingsRequest(
     val permissionSystemEnabled: Boolean? = null,
-    val tablistEnabled: Boolean? = null
+    val tablistEnabled: Boolean? = null,
+    val proxyRoutingStrategy: ProxyRoutingStrategy? = null
 )
 
 data class UpdateNetworkRequest(

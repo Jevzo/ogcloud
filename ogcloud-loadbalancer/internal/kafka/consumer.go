@@ -122,6 +122,7 @@ func (h *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			h.logger.Info("network settings updated",
 				zap.Bool("maintenance", event.Maintenance),
 				zap.Int("maxPlayers", event.MaxPlayers),
+				zap.String("proxyRoutingStrategy", h.network.GetProxyRoutingStrategy()),
 			)
 
 		case TopicProxyHeartbeat:
