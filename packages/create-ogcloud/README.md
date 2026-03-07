@@ -6,6 +6,8 @@ It helps users deploy and manage OgCloud on Kubernetes with minimal prerequisite
 
 Project repository: https://github.com/Jevzo/ogcloud
 
+Support Discord: [OgCloud | Support and Development](https://discord.gg/pE9gCBm822)
+
 What it does:
 
 - checks required tools (`kubectl`, `helm`, `npm`, `npx`)

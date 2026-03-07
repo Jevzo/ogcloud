@@ -9,34 +9,34 @@ interface FAQItem {
 
 const FAQ_ITEMS: FAQItem[] = [
   {
-    question: "Do I need Kubernetes experience to use OgCloud?",
+    question: "How do I set up OgCloud quickly?",
     answer:
-      "Basic Kubernetes knowledge helps, but OgCloud abstracts most of the complexity. You define server groups through the REST API or in-game commands, and OgCloud handles pod creation, scaling, and lifecycle.",
+      "Use the guided CLI: run `npx @ogcloud/setup`, generate a config, then deploy. The setup validates required tools, confirms your cluster context, downloads Helm charts automatically, and guides you through prompts.",
   },
   {
-    question: "How does game-state-aware autoscaling work?",
+    question: "What do I need before running setup?",
     answer:
-      "Servers report LOBBY, INGAME, and ENDING states over Kafka. The autoscaler evaluates capacity every 30 seconds and only scales down safe servers, so active matches are never terminated mid-session.",
+      "You need Node.js with npm/npx, kubectl configured to a cluster context, and Helm 3+. OgCloud setup checks these dependencies before it proceeds.",
   },
   {
-    question: "Can I use LuckPerms or another permissions plugin instead?",
+    question: "What is the difference between deploy and deploy --without-backing?",
     answer:
-      "Yes. The built-in permission system is optional. If you prefer LuckPerms or another plugin, leave OgCloud permission groups unconfigured and keep your existing setup.",
+      "`--deploy <network>` performs a clean deployment including infrastructure when configured. `--deploy <network> --without-backing` skips infra chart deployment and is intended for environments where backing services already exist and are healthy.",
   },
   {
-    question: "What Minecraft versions are supported?",
+    question: "Can I update a single component without full redeploy?",
     answer:
-      "OgCloud works with current Paper and Velocity versions. The load balancer currently targets protocol version 774 (Minecraft 1.21.11), and the underlying server containers run on Java 21.",
+      "Yes. Use `npx @ogcloud/setup --update <network> <component> <tag>` for `api`, `controller`, `loadbalancer`, or `dashboard`. This updates the image tag and reapplies the relevant chart.",
   },
   {
-    question: "How is this different from Pterodactyl or PufferPanel?",
+    question: "Is OgCloud production-ready today?",
     answer:
-      "Pterodactyl and PufferPanel are general-purpose game server panels. OgCloud is a Minecraft-specific orchestration platform built on Kubernetes, with native awareness of game states, proxies, and server groups.",
+      "OgCloud v1.0.0 is beta-prod ready. Core phases 1-6 are completed, Helm charts are completed, and the web dashboard is completed. Planned next are leader election and multi-version support per cluster without additional plugins.",
   },
   {
-    question: "Is OgCloud production-ready?",
+    question: "What is planned next after v1.0.0?",
     answer:
-      "Phases 1-6 are complete and ready for testing. Core systems like autoscaling, the load balancer, permissions, and tablist are implemented. Helm charts and the web dashboard remain on the roadmap.",
+      "The near-term roadmap focuses on controller leader election for high availability and native support for multiple Minecraft versions in one cluster without requiring additional plugins.",
   },
 ];
 

@@ -3,19 +3,23 @@ import { FaDiscord, FaGithub } from "react-icons/fa6";
 import { MdArrowForward, MdTerminal } from "react-icons/md";
 
 const HERO_PILLS = [
+  "One-command setup",
   "Game-state-aware autoscaling",
   "Built-in TCP load balancing",
 ] as const;
 
 const TERMINAL_LINES = [
-  "$ helm repo add ogcloud https://charts.ogcloud.dev",
-  "$ helm upgrade --install ogcloud ogcloud/platform -n ogcloud --create-namespace",
-  "$ kubectl get pods -n ogcloud",
-  "controller-7f6d8d9bcb-rx2ht      1/1   Running",
-  "loadbalancer-6cb84b6dbf-j8jz7    1/1   Running",
-  "api-5f4db4d47b-lr2pn       1/1   Running",
-  "$ kubectl get svc -n ogcloud",
-  "ogcloud-lb   LoadBalancer   65.109.xx.xx:25565",
+  "$ npx @ogcloud/setup",
+  "OgCloud Quickstart Setup",
+  "INFO Checking dependencies...",
+  "OK Dependencies available: kubectl, helm, npm, npx",
+  "> Select an action",
+  "  1) Generate config - Create or update values YAML files",
+  "  2) Deploy - Clean install of OgCloud charts",
+  "> Choose [1]: 2",
+  "> Network name [ogwars]: ogwars",
+  "INFO helm upgrade --install ogcloud-platform ... --wait",
+  "OK Deploy finished for network \"ogwars\".",
 ] as const;
 
 const Hero: React.FC = () => {
@@ -34,7 +38,7 @@ const Hero: React.FC = () => {
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
             </span>
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              Phases 1-6 are live
+              v1.0.0 released
             </span>
           </motion.div>
 
@@ -121,14 +125,15 @@ const Hero: React.FC = () => {
               </div>
               <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
                 <MdTerminal className="h-4 w-4" />
-                Deploy preview
+                Setup preview
               </span>
             </div>
 
             <div className="rounded-2xl border border-white/6 bg-slate-950/70 p-4 font-mono text-[11px] leading-6 text-slate-300">
               {TERMINAL_LINES.map((line) => {
                 const isCommand = line.startsWith("$");
-                const isService = line.includes("LoadBalancer");
+                const isSuccess = line.startsWith("OK");
+                const isPrompt = line.startsWith(">");
 
                 return (
                   <div
@@ -136,8 +141,10 @@ const Hero: React.FC = () => {
                     className={`whitespace-pre ${
                       isCommand
                         ? "text-primary"
-                        : isService
+                        : isSuccess
                           ? "text-success"
+                          : isPrompt
+                            ? "text-amber-300"
                           : "text-slate-300"
                     }`}
                   >
@@ -153,7 +160,7 @@ const Hero: React.FC = () => {
                   Install path
                 </p>
                 <p className="mt-2 text-sm font-semibold text-white">
-                  Helm first
+                  npx @ogcloud/setup
                 </p>
               </div>
               <div className="rounded-2xl border border-white/6 bg-white/3 px-4 py-3">
@@ -161,7 +168,7 @@ const Hero: React.FC = () => {
                   Runtime
                 </p>
                 <p className="mt-2 text-sm font-semibold text-white">
-                  kubectl visible
+                  guided + safe checks
                 </p>
               </div>
             </div>
