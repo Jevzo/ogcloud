@@ -14,6 +14,7 @@ import {
 import AppCreatableSelect from "@/components/AppCreatableSelect";
 import AppSelect from "@/components/AppSelect";
 import AppToasts from "@/components/AppToasts";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import TableRefreshButton from "@/components/TableRefreshButton";
 import {
   deleteTemplate,
@@ -559,6 +560,7 @@ const TemplatesPage = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <AppCreatableSelect
                   label="Target Group"
+                  labelHint="Template group namespace used by server groups when downloading artifacts."
                   value={uploadGroup}
                   onChangeValue={setUploadGroup}
                   options={groups.map((group) => group.id)}
@@ -569,7 +571,10 @@ const TemplatesPage = () => {
                 />
 
                 <label className="app-field-stack">
-                  <span className="app-field-label">Version</span>
+                  <FieldHintLabel
+                    label="Version"
+                    hint="Template version tag stored and referenced by group configurations."
+                  />
                   <input
                     type="text"
                     value={uploadVersion}
@@ -582,7 +587,10 @@ const TemplatesPage = () => {
               </div>
 
               <div className="app-field-stack">
-                <span className="app-field-label">Template Archive</span>
+                <FieldHintLabel
+                  label="Template Archive"
+                  hint="Upload a compressed template package (.tar.gz) that contains the server files."
+                />
                 <input
                   ref={fileInputRef}
                   type="file"

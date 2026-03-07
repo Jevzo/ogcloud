@@ -697,6 +697,7 @@ const WebUsersPage = () => {
 
               <AppSelect
                 label="Role"
+                labelHint="Controls which dashboard actions this account is allowed to perform."
                 value={createValues.role}
                 onChangeValue={(nextRole) =>
                   setCreateValues((currentValue) => ({
@@ -813,6 +814,7 @@ const WebUsersPage = () => {
 
               <AppSelect
                 label="Role"
+                labelHint="Controls which dashboard actions this account is allowed to perform."
                 value={editValues.role}
                 onChangeValue={(nextRole) =>
                   setEditValues((currentValue) => ({

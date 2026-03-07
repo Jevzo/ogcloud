@@ -409,8 +409,8 @@ const PermissionGroupDetailsPage = () => {
                 Group Overview
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-x-6 px-6 py-5 md:grid-cols-2">
-              <div className="border-b border-slate-800/70 py-3">
+            <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Group ID
                 </p>
@@ -418,7 +418,7 @@ const PermissionGroupDetailsPage = () => {
                   {group?.id || "--"}
                 </p>
               </div>
-              <div className="border-b border-slate-800/70 py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Default
                 </p>
@@ -430,7 +430,7 @@ const PermissionGroupDetailsPage = () => {
                   {group?.default ? "Yes" : "No"}
                 </p>
               </div>
-              <div className="py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Weight
                 </p>
@@ -438,7 +438,7 @@ const PermissionGroupDetailsPage = () => {
                   {group?.weight ?? "--"}
                 </p>
               </div>
-              <div className="py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Permissions
                 </p>

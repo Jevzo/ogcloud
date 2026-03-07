@@ -1,6 +1,6 @@
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
-import { FiInfo } from "react-icons/fi";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import type { GroupFormValues } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
@@ -23,16 +23,7 @@ interface FieldLabelProps {
 }
 
 const FieldLabel = ({ label, hint }: FieldLabelProps) => (
-  <span className="app-field-label inline-flex items-center">
-    <span>{label}</span>
-    <span
-      className="ml-2.5 inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-slate-800/80 text-slate-400"
-      title={hint}
-      aria-label={hint}
-    >
-      <FiInfo className="h-3 w-3 align-middle" />
-    </span>
-  </span>
+  <FieldHintLabel label={label} hint={hint} />
 );
 
 interface GroupFormFieldsProps {

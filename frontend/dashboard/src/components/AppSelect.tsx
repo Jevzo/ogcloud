@@ -8,10 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import { FiCheck, FiChevronDown } from "react-icons/fi";
+import FieldHintLabel from "@/components/FieldHintLabel";
 
 interface AppSelectProps {
   id?: string;
   label?: string;
+  labelHint?: string;
   value: string;
   onChangeValue: (value: string) => void;
   disabled?: boolean;
@@ -33,6 +35,7 @@ interface OptionElementProps {
 const AppSelect = ({
   id,
   label,
+  labelHint,
   value,
   onChangeValue,
   disabled = false,
@@ -105,9 +108,15 @@ const AppSelect = ({
   return (
     <div ref={rootRef} className="app-field-stack">
       {label && (
-        <label htmlFor={id} className="app-field-label">
-          {label}
-        </label>
+        labelHint ? (
+          <label htmlFor={id}>
+            <FieldHintLabel label={label} hint={labelHint} />
+          </label>
+        ) : (
+          <label htmlFor={id} className="app-field-label">
+            {label}
+          </label>
+        )
       )}
 
       <div className="relative">

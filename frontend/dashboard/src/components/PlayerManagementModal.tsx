@@ -13,6 +13,7 @@ import {
 import AppSelect from "@/components/AppSelect";
 import AppToasts from "@/components/AppToasts";
 import DetailStatCard from "@/components/DetailStatCard";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import {
   listAllPermissionGroups,
   listAllServers,
@@ -429,6 +430,8 @@ const PlayerManagementModal = ({
                 </div>
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_11rem_auto] lg:items-end">
                   <AppSelect
+                    label="Permission Group"
+                    labelHint="Select the group that should be assigned to this player."
                     value={hasPermissionGroupOption ? permissionGroupDraft : "__current__"}
                     onChangeValue={setPermissionGroupDraft}
                     disabled={
@@ -449,19 +452,25 @@ const PlayerManagementModal = ({
                       </option>
                     ))}
                   </AppSelect>
-                  <input
-                    type="text"
-                    value={permissionDurationDraft}
-                    onChange={(event) => setPermissionDurationDraft(event.target.value)}
-                    disabled={
-                      !permissionSystemEnabled ||
-                      !canManagePermissionGroups ||
-                      isManageDataLoading ||
-                      isUpdatingGroup
-                    }
-                    className="app-input-field rounded-lg border border-slate-700 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
-                    placeholder="-1 or 30d"
-                  />
+                  <div className="app-field-stack">
+                    <FieldHintLabel
+                      label="Duration"
+                      hint="Use -1 for permanent or values like 30d, 12h, or 1h 30m."
+                    />
+                    <input
+                      type="text"
+                      value={permissionDurationDraft}
+                      onChange={(event) => setPermissionDurationDraft(event.target.value)}
+                      disabled={
+                        !permissionSystemEnabled ||
+                        !canManagePermissionGroups ||
+                        isManageDataLoading ||
+                        isUpdatingGroup
+                      }
+                      className="app-input-field rounded-lg border border-slate-700 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
+                      placeholder="-1 or 30d"
+                    />
+                  </div>
                   <button
                     type="button"
                     disabled={
@@ -506,6 +515,8 @@ const PlayerManagementModal = ({
                 </div>
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
                   <AppSelect
+                    label="Target Server"
+                    labelHint="Choose the running game server where this player should be moved."
                     value={transferTargetDraft}
                     onChangeValue={setTransferTargetDraft}
                     disabled={

@@ -1,4 +1,5 @@
 import AppNumberInput from "@/components/AppNumberInput";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import type { PermissionGroupFormValues } from "@/types/permission";
 
 interface PermissionGroupFormFieldsProps {
@@ -33,7 +34,10 @@ const PermissionGroupFormFields = ({
 
       <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
         <label className="app-field-stack">
-          <span className="app-field-label">Group ID</span>
+          <FieldHintLabel
+            label="Group ID"
+            hint="Unique identifier used in permissions and assignments."
+          />
           <input
             type="text"
             value={values.id}
@@ -44,7 +48,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <label className="app-field-stack">
-          <span className="app-field-label">Display Name</span>
+          <FieldHintLabel
+            label="Display Name"
+            hint="Friendly name shown in dashboards and tools."
+          />
           <input
             type="text"
             value={values.name}
@@ -54,7 +61,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <label className="app-field-stack">
-          <span className="app-field-label">Weight</span>
+          <FieldHintLabel
+            label="Weight"
+            hint="Higher weight usually indicates stronger rank precedence."
+          />
           <AppNumberInput
             value={values.weight}
             onChangeValue={(value) => onFieldChange("weight", value)}
@@ -63,7 +73,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <div className="app-field-stack">
-          <span className="app-field-label">Default Group</span>
+          <FieldHintLabel
+            label="Default Group"
+            hint="Fallback group for players without explicit assignments."
+          />
           <button
             type="button"
             onClick={() => onDefaultChange(!values.default)}
@@ -107,7 +120,10 @@ const PermissionGroupFormFields = ({
 
       <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
         <label className="app-field-stack">
-          <span className="app-field-label">Chat Prefix</span>
+          <FieldHintLabel
+            label="Chat Prefix"
+            hint="Text shown before player names in chat."
+          />
           <input
             type="text"
             value={values.display.chatPrefix}
@@ -117,7 +133,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <label className="app-field-stack">
-          <span className="app-field-label">Chat Suffix</span>
+          <FieldHintLabel
+            label="Chat Suffix"
+            hint="Text appended after player names in chat."
+          />
           <input
             type="text"
             value={values.display.chatSuffix}
@@ -127,7 +146,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <label className="app-field-stack">
-          <span className="app-field-label">Name Color</span>
+          <FieldHintLabel
+            label="Name Color"
+            hint="Color code applied to player names."
+          />
           <input
             type="text"
             value={values.display.nameColor}
@@ -137,7 +159,10 @@ const PermissionGroupFormFields = ({
         </label>
 
         <label className="app-field-stack">
-          <span className="app-field-label">Tab Prefix</span>
+          <FieldHintLabel
+            label="Tab Prefix"
+            hint="Prefix displayed in the tab list."
+          />
           <input
             type="text"
             value={values.display.tabPrefix}

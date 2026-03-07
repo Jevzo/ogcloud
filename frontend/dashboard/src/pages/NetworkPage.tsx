@@ -14,6 +14,7 @@ import {
 
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import AppToasts from "@/components/AppToasts";
 import {
@@ -649,9 +650,10 @@ const NetworkPage = () => {
               <h4 className="text-sm font-semibold text-slate-200">Core Settings</h4>
               <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Max Players
-                  </label>
+                  <FieldHintLabel
+                    label="Max Players"
+                    hint="Maximum player slots shown and enforced across the whole network."
+                  />
                   <AppNumberInput
                     value={formValues?.maxPlayers ?? ""}
                     onChangeValue={(value) => setField("maxPlayers", value)}
@@ -661,9 +663,10 @@ const NetworkPage = () => {
                 </div>
 
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Default Group
-                  </label>
+                  <FieldHintLabel
+                    label="Default Group"
+                    hint="Fallback game group used when no explicit target is provided."
+                  />
                   <AppSelect
                     value={defaultGroupValue}
                     onChangeValue={(value) => setField("defaultGroup", value)}
@@ -683,9 +686,10 @@ const NetworkPage = () => {
                 </div>
 
                 <div className="app-field-stack md:col-span-2">
-                  <label className="app-field-label">
-                    Maintenance Kick Message
-                  </label>
+                  <FieldHintLabel
+                    label="Maintenance Kick Message"
+                    hint="Message shown to players disconnected during maintenance mode."
+                  />
                   <textarea
                     value={formValues?.maintenanceKickMessage ?? ""}
                     onChange={(event) =>
@@ -787,9 +791,10 @@ const NetworkPage = () => {
 
               <div className="mt-4 grid grid-cols-1 gap-5">
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Load Balancer Player Routing
-                  </label>
+                  <FieldHintLabel
+                    label="Load Balancer Player Routing"
+                    hint="Choose between rotating evenly across proxies or routing to the least loaded proxy."
+                  />
                   <AppSelect
                     value={proxyRoutingStrategy}
                     onChangeValue={(value) => setRoutingStrategy(value as ProxyRoutingStrategy)}
@@ -810,9 +815,10 @@ const NetworkPage = () => {
               <h4 className="text-sm font-semibold text-slate-200">Version Name</h4>
               <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Global
-                  </label>
+                  <FieldHintLabel
+                    label="Global"
+                    hint="Version name shown to players while the network is online."
+                  />
                   <input
                     type="text"
                     value={formValues?.versionNameGlobal ?? ""}
@@ -824,9 +830,10 @@ const NetworkPage = () => {
                   />
                 </div>
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Maintenance
-                  </label>
+                  <FieldHintLabel
+                    label="Maintenance"
+                    hint="Version name shown while maintenance mode is active."
+                  />
                   <input
                     type="text"
                     value={formValues?.versionNameMaintenance ?? ""}
@@ -844,9 +851,10 @@ const NetworkPage = () => {
               <h4 className="text-sm font-semibold text-slate-200">MOTD</h4>
               <div className="mt-4 grid grid-cols-1 gap-5">
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Global
-                  </label>
+                  <FieldHintLabel
+                    label="Global"
+                    hint="Primary MOTD shown to players during normal operation."
+                  />
                   <textarea
                     value={formValues?.motdGlobal ?? ""}
                     onChange={(event) => setField("motdGlobal", event.target.value)}
@@ -856,9 +864,10 @@ const NetworkPage = () => {
                   />
                 </div>
                 <div className="app-field-stack">
-                  <label className="app-field-label">
-                    Maintenance
-                  </label>
+                  <FieldHintLabel
+                    label="Maintenance"
+                    hint="MOTD shown to players while maintenance mode is enabled."
+                  />
                   <textarea
                     value={formValues?.motdMaintenance ?? ""}
                     onChange={(event) =>
@@ -885,9 +894,10 @@ const NetworkPage = () => {
 
                 <div className={`space-y-5 transition ${!tablistEnabled ? "blur-[8px] select-none" : ""}`}>
                   <div className="app-field-stack">
-                    <label className="app-field-label">
-                      Header
-                    </label>
+                    <FieldHintLabel
+                      label="Header"
+                      hint="Top section of the tablist, supports Minecraft formatting codes."
+                    />
                     <textarea
                       value={formValues?.tablistHeader ?? ""}
                       onChange={(event) => setField("tablistHeader", event.target.value)}
@@ -897,9 +907,10 @@ const NetworkPage = () => {
                     />
                   </div>
                   <div className="app-field-stack">
-                    <label className="app-field-label">
-                      Footer
-                    </label>
+                    <FieldHintLabel
+                      label="Footer"
+                      hint="Bottom section of the tablist, supports Minecraft formatting codes."
+                    />
                     <textarea
                       value={formValues?.tablistFooter ?? ""}
                       onChange={(event) => setField("tablistFooter", event.target.value)}

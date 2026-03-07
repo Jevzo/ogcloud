@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiCheck, FiChevronDown } from "react-icons/fi";
+import FieldHintLabel from "@/components/FieldHintLabel";
 
 interface AppCreatableSelectProps {
   id?: string;
   label?: string;
+  labelHint?: string;
   value: string;
   onChangeValue: (value: string) => void;
   options: string[];
@@ -16,6 +18,7 @@ interface AppCreatableSelectProps {
 const AppCreatableSelect = ({
   id,
   label,
+  labelHint,
   value,
   onChangeValue,
   options,
@@ -85,9 +88,15 @@ const AppCreatableSelect = ({
   return (
     <div ref={rootRef} className="app-field-stack">
       {label && (
-        <label htmlFor={id} className="app-field-label">
-          {label}
-        </label>
+        labelHint ? (
+          <label htmlFor={id}>
+            <FieldHintLabel label={label} hint={labelHint} />
+          </label>
+        ) : (
+          <label htmlFor={id} className="app-field-label">
+            {label}
+          </label>
+        )
       )}
 
       <div className="relative">

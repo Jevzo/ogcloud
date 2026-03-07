@@ -1,21 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  FiActivity,
   FiAlertTriangle,
   FiArrowLeft,
-  FiClock,
-  FiLayers,
   FiRefreshCw,
   FiShield,
   FiTrash2,
-  FiUsers,
   FiX,
 } from "react-icons/fi";
 import { Link, useNavigate, useParams } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
-import DetailStatCard from "@/components/DetailStatCard";
 import GroupFormFields from "@/components/GroupFormFields";
 import {
   deleteServerGroup,
@@ -585,8 +580,8 @@ const GroupDetailsPage = () => {
                 Group Overview
               </h3>
             </div>
-            <div className="grid grid-cols-1 gap-x-6 px-6 py-5 md:grid-cols-2">
-              <div className="border-b border-slate-800/70 py-3">
+            <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Type
                 </p>
@@ -594,7 +589,7 @@ const GroupDetailsPage = () => {
                   {group?.type || "--"}
                 </p>
               </div>
-              <div className="border-b border-slate-800/70 py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Maintenance
                 </p>
@@ -606,7 +601,7 @@ const GroupDetailsPage = () => {
                   {group ? (group.maintenance ? "Enabled" : "Disabled") : "--"}
                 </p>
               </div>
-              <div className="py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Created
                 </p>
@@ -614,7 +609,7 @@ const GroupDetailsPage = () => {
                   {group ? formatDateTime(group.createdAt) : "--"}
                 </p>
               </div>
-              <div className="py-3">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Last Updated
                 </p>
@@ -631,42 +626,53 @@ const GroupDetailsPage = () => {
                 Scaling Snapshot
               </h3>
             </div>
-            <div className="grid grid-cols-2 gap-4 p-6">
-              <DetailStatCard
-                label="Min Online"
-                value={group?.scaling.minOnline ?? "--"}
-                meta="Minimum warm instances"
-                icon={FiActivity}
-                tone="primary"
-              />
-              <DetailStatCard
-                label="Max Instances"
-                value={group?.scaling.maxInstances ?? "--"}
-                meta="Upper autoscaling cap"
-                icon={FiLayers}
-                tone="neutral"
-              />
-              <DetailStatCard
-                label="Players/Server"
-                value={group?.scaling.playersPerServer ?? "--"}
-                meta="Target capacity per node"
-                icon={FiUsers}
-                tone="neutral"
-              />
-              <DetailStatCard
-                label="Currently Online"
-                value={currentOnlineCount ?? "--"}
-                meta="Running instances right now"
-                icon={FiUsers}
-                tone={typeof currentOnlineCount === "number" && currentOnlineCount > 0 ? "success" : "neutral"}
-              />
-              <DetailStatCard
-                label="Cooldown"
-                value={group ? `${group.scaling.cooldownSeconds}s` : "--"}
-                meta="Delay between scale events"
-                icon={FiClock}
-                tone="warning"
-              />
+            <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Min Online
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {group?.scaling.minOnline ?? "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Max Instances
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {group?.scaling.maxInstances ?? "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Players Per Server
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {group?.scaling.playersPerServer ?? "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Currently Online
+                </p>
+                <p
+                  className={`mt-1.5 text-sm font-semibold ${
+                    typeof currentOnlineCount === "number" && currentOnlineCount > 0
+                      ? "text-emerald-300"
+                      : "text-slate-100"
+                  }`}
+                >
+                  {currentOnlineCount ?? "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3 md:col-span-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Cooldown
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {group ? `${group.scaling.cooldownSeconds}s` : "--"}
+                </p>
+              </div>
             </div>
           </div>
         </div>

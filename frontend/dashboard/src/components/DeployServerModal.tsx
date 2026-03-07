@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
+import FieldHintLabel from "@/components/FieldHintLabel";
 import AppToasts from "@/components/AppToasts";
 import { listGroups, requestServerForGroup } from "@/lib/api";
 import type { GroupListItem } from "@/types/dashboard";
@@ -174,6 +175,7 @@ const DeployServerModalContent = ({
               <AppSelect
                 id="deploy-group"
                 label="Select Group"
+                labelHint="Choose the group that should receive the new server instances."
                 value={selectedDeployGroupId}
                 onChangeValue={setSelectedDeployGroupId}
                 disabled={deployingGroupId !== null || availableGroups.length === 0}
@@ -210,9 +212,10 @@ const DeployServerModalContent = ({
               ) : null}
 
               <div className="app-field-stack">
-                <label htmlFor="deploy-count" className="app-field-label">
-                  Amount
-                </label>
+                <FieldHintLabel
+                  label="Amount"
+                  hint="How many new instances should be requested in one action."
+                />
                 <AppNumberInput
                   id="deploy-count"
                   value={String(deployCount)}

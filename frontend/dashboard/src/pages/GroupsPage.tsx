@@ -518,11 +518,11 @@ const GroupsPage = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-3 py-2">
+                  <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       Running Image
                     </p>
-                    <p className="mt-1 truncate text-sm text-slate-300">
+                    <p className="mt-1.5 truncate text-sm font-semibold text-slate-100">
                       {group.serverImage}
                     </p>
                   </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { FiTerminal, FiX } from "react-icons/fi";
 
+import FieldHintLabel from "@/components/FieldHintLabel";
 import AppToasts from "@/components/AppToasts";
 import { executeCommand } from "@/lib/api";
 import type { CommandTargetType } from "@/types/command";
@@ -170,8 +171,11 @@ const ExecuteCommandModalContent = ({
           </div>
 
           <div className="app-field-stack">
-            <label htmlFor="execute-command-input" className="app-field-label">
-              Command
+            <label htmlFor="execute-command-input">
+              <FieldHintLabel
+                label="Command"
+                hint="Minecraft console command without a leading slash, sent to the selected target scope."
+              />
             </label>
             <input
               id="execute-command-input"

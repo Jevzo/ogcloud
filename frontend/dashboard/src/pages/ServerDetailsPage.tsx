@@ -12,7 +12,6 @@ import {
 import { Link, useParams } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
-import DetailStatCard from "@/components/DetailStatCard";
 import ExecuteCommandModal from "@/components/ExecuteCommandModal";
 import ServerActionButtons from "@/components/ServerActionButtons";
 import TableRefreshButton from "@/components/TableRefreshButton";
@@ -203,8 +202,6 @@ const ServerDetailsPage = () => {
         ["Template", server.templateVersion],
       ]
     : [];
-  const splitIndex = Math.ceil(infoRows.length / 2);
-  const infoColumns = [infoRows.slice(0, splitIndex), infoRows.slice(splitIndex)];
   const statsServer = runtimeSnapshot ?? server;
 
   const totalPlayerPages = getPaginatedTotalPages(playerPage);
@@ -285,50 +282,42 @@ const ServerDetailsPage = () => {
             </h3>
           </div>
 
-          <div className="grid flex-1 grid-cols-1 gap-x-6 px-6 py-5 md:grid-cols-2">
+          <div className="p-6">
             {server ? (
-              infoColumns.map((column, columnIndex) => (
-                <div key={columnIndex} className="flex flex-col">
-                  {column.map(([label, value], rowIndex) => {
-                    const isLastRow = rowIndex === column.length - 1;
-
-                    return (
-                      <div
-                        key={label}
-                        className={`flex-1 py-3 ${isLastRow ? "" : "border-b border-slate-800/70"}`}
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {infoRows.map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      {label}
+                    </p>
+                    {label === "State" ? (
+                      <span
+                        className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${getServerStateTone(
+                          value
+                        )}`}
                       >
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                          {label}
-                        </p>
-                        {label === "State" ? (
-                          <span
-                            className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${getServerStateTone(
-                              value
-                            )}`}
-                          >
-                            <span className="h-1 w-1 rounded-full bg-current" />
-                            {value}
-                          </span>
-                        ) : (
-                          <p
-                            className={`mt-1.5 font-medium text-slate-200 ${
-                              label === "Server ID" || label === "Pod Name"
-                                ? "break-all font-mono text-xs"
-                                : "break-all text-sm"
-                            }`}
-                          >
-                            {value}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))
-            ) : (
-              <div className="md:col-span-2">
-                <p className="text-sm text-slate-400">Loading server information...</p>
+                        <span className="h-1 w-1 rounded-full bg-current" />
+                        {value}
+                      </span>
+                    ) : (
+                      <p
+                        className={`mt-1.5 font-medium text-slate-200 ${
+                          label === "Server ID" || label === "Pod Name"
+                            ? "break-all font-mono text-xs"
+                            : "break-all text-sm"
+                        }`}
+                      >
+                        {value}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
+            ) : (
+              <p className="text-sm text-slate-400">Loading server information...</p>
             )}
           </div>
         </div>
@@ -341,43 +330,45 @@ const ServerDetailsPage = () => {
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 p-6">
-              <DetailStatCard
-                label="TPS"
-                value={statsServer ? formatTps(statsServer.tps) : "--"}
-                meta="Current performance"
-                icon={FiServer}
-                tone={statsServer && statsServer.tps >= 18 ? "success" : "warning"}
-              />
-              <DetailStatCard
-                label="Players"
-                value={
-                  statsServer
+            <div className="grid grid-cols-1 gap-3 p-6 md:grid-cols-2">
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  TPS
+                </p>
+                <p
+                  className={`mt-1.5 text-sm font-semibold ${
+                    statsServer && statsServer.tps >= 18 ? "text-emerald-300" : "text-amber-300"
+                  }`}
+                >
+                  {statsServer ? formatTps(statsServer.tps) : "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Players
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {statsServer
                     ? `${statsServer.playerCount} / ${statsServer.maxPlayers}`
-                    : "--"
-                }
-                meta="Connected to this instance"
-                icon={FiUsers}
-                tone="primary"
-              />
-              <DetailStatCard
-                label="Memory"
-                value={statsServer ? formatMemoryMb(statsServer.memoryUsedMb) : "--"}
-                meta="Resident runtime usage"
-                icon={FiServer}
-                tone="neutral"
-              />
-              <DetailStatCard
-                label="Last Heartbeat"
-                value={
-                  <span className="text-sm font-semibold text-slate-100">
-                    {statsServer ? formatDateTime(statsServer.lastHeartbeat) : "--"}
-                  </span>
-                }
-                meta="Latest controller check-in"
-                icon={FiServer}
-                tone="neutral"
-              />
+                    : "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Memory
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {statsServer ? formatMemoryMb(statsServer.memoryUsedMb) : "--"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Last Heartbeat
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                  {statsServer ? formatDateTime(statsServer.lastHeartbeat) : "--"}
+                </p>
+              </div>
             </div>
           </div>
 
