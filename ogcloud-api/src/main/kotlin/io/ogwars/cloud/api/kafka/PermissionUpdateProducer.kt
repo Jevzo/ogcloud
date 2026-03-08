@@ -9,21 +9,22 @@ import org.springframework.stereotype.Component
 
 @Component
 class PermissionUpdateProducer(
-    private val kafkaTemplate: KafkaTemplate<String, PermissionUpdateEvent>
+    private val kafkaTemplate: KafkaTemplate<String, PermissionUpdateEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishPermissionUpdate(
         uuid: String,
         group: PermissionGroupDocument,
         permissionEndMillis: Long,
-        updatedBy: String
+        updatedBy: String,
     ) {
         log.info("Publishing permission update: uuid={}, groupId={}", uuid, group.id)
 
         kafkaTemplate.send(
-            KafkaConfig.PERMISSION_UPDATE, uuid, PermissionUpdateEvent(
+            KafkaConfig.PERMISSION_UPDATE,
+            uuid,
+            PermissionUpdateEvent(
                 uuid = uuid,
                 groupId = group.id,
                 groupName = group.name,
@@ -31,8 +32,8 @@ class PermissionUpdateProducer(
                 display = group.display,
                 weight = group.weight,
                 permissionEndMillis = permissionEndMillis,
-                updatedBy = updatedBy
-            )
+                updatedBy = updatedBy,
+            ),
         )
     }
 }

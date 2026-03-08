@@ -5,7 +5,6 @@ import io.minio.errors.ErrorResponseException
 import io.ogwars.cloud.api.dto.PaginatedResponse
 import io.ogwars.cloud.api.dto.PaginationSupport
 import io.ogwars.cloud.api.exception.TemplateNotFoundException
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.InputStream
@@ -14,54 +13,68 @@ import java.io.InputStream
 class TemplateService(
     private val minioClient: MinioClient,
     @Value("\${ogcloud.minio.bucket}") private val bucket: String,
-    private val auditLogService: AuditLogService
+    private val auditLogService: AuditLogService,
 ) {
-
     data class TemplateInfo(
         val group: String,
         val version: String,
-        val path: String
+        val path: String,
     )
 
     data class TemplateDownload(
         val inputStream: InputStream,
         val size: Long,
-        val fileName: String
+        val fileName: String,
     )
 
-    fun listTemplates(group: String?, query: String?, page: Int, size: Int?): PaginatedResponse<TemplateInfo> {
-        val results = minioClient.listObjects(
-            ListObjectsArgs.builder()
-                .bucket(bucket)
-                .recursive(true)
-                .build()
-        )
-
-        val templates = results.mapNotNull { result -> result.get().objectName().toTemplateInfoOrNull() }
-            .filter { template ->
-                if (group != null && template.group != group) {
-                    return@filter false
-                }
-                PaginationSupport.matchesQuery(query, template.group, template.version, template.path)
-            }.sortedWith(
-                compareBy<TemplateInfo> { it.group }
-                    .thenByDescending { it.version }
-                    .thenBy { it.path }
+    fun listTemplates(
+        group: String?,
+        query: String?,
+        page: Int,
+        size: Int?,
+    ): PaginatedResponse<TemplateInfo> {
+        val results =
+            minioClient.listObjects(
+                ListObjectsArgs
+                    .builder()
+                    .bucket(bucket)
+                    .recursive(true)
+                    .build(),
             )
+
+        val templates =
+            results
+                .mapNotNull { result -> result.get().objectName().toTemplateInfoOrNull() }
+                .filter { template ->
+                    if (group != null && template.group != group) {
+                        return@filter false
+                    }
+                    PaginationSupport.matchesQuery(query, template.group, template.version, template.path)
+                }.sortedWith(
+                    compareBy<TemplateInfo> { it.group }
+                        .thenByDescending { it.version }
+                        .thenBy { it.path },
+                )
 
         return PaginationSupport.paginate(templates, page, size)
     }
 
-    fun uploadTemplate(group: String, version: String, inputStream: InputStream, size: Long) {
+    fun uploadTemplate(
+        group: String,
+        version: String,
+        inputStream: InputStream,
+        size: Long,
+    ) {
         val objectName = templateObjectName(group, version)
 
         minioClient.putObject(
-            PutObjectArgs.builder()
+            PutObjectArgs
+                .builder()
                 .bucket(bucket)
                 .`object`(objectName)
                 .stream(inputStream, size, -1)
                 .contentType(TEMPLATE_CONTENT_TYPE)
-                .build()
+                .build(),
         )
 
         auditLogService.logApiAction(
@@ -69,37 +82,46 @@ class TemplateService(
             targetType = "TEMPLATE",
             targetId = objectName,
             summary = "Uploaded template $objectName",
-            metadata = mapOf("group" to group, "version" to version)
+            metadata = mapOf("group" to group, "version" to version),
         )
     }
 
-    fun downloadTemplate(group: String, version: String): TemplateDownload {
+    fun downloadTemplate(
+        group: String,
+        version: String,
+    ): TemplateDownload {
         val objectName = templateObjectName(group, version)
         val stat = requireTemplate(objectName, group, version)
 
-        val inputStream = minioClient.getObject(
-            GetObjectArgs.builder()
-                .bucket(bucket)
-                .`object`(objectName)
-                .build()
-        )
+        val inputStream =
+            minioClient.getObject(
+                GetObjectArgs
+                    .builder()
+                    .bucket(bucket)
+                    .`object`(objectName)
+                    .build(),
+            )
 
         return TemplateDownload(
             inputStream = inputStream,
             size = stat.size(),
-            fileName = "$group-$version-template.tar.gz"
+            fileName = "$group-$version-template.tar.gz",
         )
     }
 
-    fun deleteTemplate(group: String, version: String) {
+    fun deleteTemplate(
+        group: String,
+        version: String,
+    ) {
         val objectName = templateObjectName(group, version)
         requireTemplate(objectName, group, version)
 
         minioClient.removeObject(
-            RemoveObjectArgs.builder()
+            RemoveObjectArgs
+                .builder()
                 .bucket(bucket)
                 .`object`(objectName)
-                .build()
+                .build(),
         )
 
         auditLogService.logApiAction(
@@ -107,28 +129,33 @@ class TemplateService(
             targetType = "TEMPLATE",
             targetId = objectName,
             summary = "Deleted template $objectName",
-            metadata = mapOf("group" to group, "version" to version)
+            metadata = mapOf("group" to group, "version" to version),
         )
     }
 
-    private fun templateObjectName(group: String, version: String): String {
-        return "$group/$version/$TEMPLATE_FILE_NAME"
-    }
+    private fun templateObjectName(
+        group: String,
+        version: String,
+    ): String = "$group/$version/$TEMPLATE_FILE_NAME"
 
-    private fun requireTemplate(objectName: String, group: String, version: String) =
-        try {
-            minioClient.statObject(
-                StatObjectArgs.builder()
-                    .bucket(bucket)
-                    .`object`(objectName)
-                    .build()
-            )
-        } catch (ex: ErrorResponseException) {
-            if (ex.errorResponse().code() in NOT_FOUND_CODES) {
-                throw TemplateNotFoundException(group, version)
-            }
-            throw ex
+    private fun requireTemplate(
+        objectName: String,
+        group: String,
+        version: String,
+    ) = try {
+        minioClient.statObject(
+            StatObjectArgs
+                .builder()
+                .bucket(bucket)
+                .`object`(objectName)
+                .build(),
+        )
+    } catch (ex: ErrorResponseException) {
+        if (ex.errorResponse().code() in NOT_FOUND_CODES) {
+            throw TemplateNotFoundException(group, version)
         }
+        throw ex
+    }
 
     private fun String.toTemplateInfoOrNull(): TemplateInfo? {
         val parts = split("/")
@@ -140,7 +167,7 @@ class TemplateService(
         return TemplateInfo(
             group = parts[0],
             version = parts[1],
-            path = this
+            path = this,
         )
     }
 

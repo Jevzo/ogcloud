@@ -4,5 +4,5 @@ data class ServerRequestEvent(
     val group: String,
     val requestedBy: String,
     val serverId: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

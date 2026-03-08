@@ -12,9 +12,8 @@ import org.springframework.stereotype.Component
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class DefaultPermissionGroupBootstrap(
-    private val permissionGroupRepository: PermissionGroupRepository
+    private val permissionGroupRepository: PermissionGroupRepository,
 ) : ApplicationRunner {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun run(args: ApplicationArguments) {
@@ -22,21 +21,22 @@ class DefaultPermissionGroupBootstrap(
             return
         }
 
-        val defaultGroup = permissionGroupRepository.save(
-            PermissionGroupDocument(
-                id = DEFAULT_GROUP_ID,
-                name = DEFAULT_GROUP_NAME,
-                weight = DEFAULT_WEIGHT,
-                default = true,
-                permissions = emptyList()
+        val defaultGroup =
+            permissionGroupRepository.save(
+                PermissionGroupDocument(
+                    id = DEFAULT_GROUP_ID,
+                    name = DEFAULT_GROUP_NAME,
+                    weight = DEFAULT_WEIGHT,
+                    default = true,
+                    permissions = emptyList(),
+                ),
             )
-        )
 
         log.info(
             "Created default permission group: id={}, name={}, permissions={}",
             defaultGroup.id,
             defaultGroup.name,
-            defaultGroup.permissions.size
+            defaultGroup.permissions.size,
         )
     }
 

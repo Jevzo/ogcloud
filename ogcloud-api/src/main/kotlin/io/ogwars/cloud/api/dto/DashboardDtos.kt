@@ -6,14 +6,14 @@ import java.time.Instant
 data class DashboardOverviewResponse(
     val stats: DashboardOverviewStatsResponse,
     val groups: List<DashboardOverviewGroupResponse>,
-    val scalingActions: List<DashboardOverviewScalingActionResponse>
+    val scalingActions: List<DashboardOverviewScalingActionResponse>,
 )
 
 data class DashboardOverviewStatsResponse(
     val totalPlayers: Int,
     val maxPlayers: Int,
     val activeServers: Int,
-    val maintenanceEnabled: Boolean
+    val maintenanceEnabled: Boolean,
 )
 
 data class DashboardOverviewGroupResponse(
@@ -21,7 +21,7 @@ data class DashboardOverviewGroupResponse(
     val mode: GroupType,
     val activeInstances: Int,
     val players: Int,
-    val capacityPercent: Double
+    val capacityPercent: Double,
 )
 
 data class DashboardOverviewScalingActionResponse(
@@ -31,5 +31,5 @@ data class DashboardOverviewScalingActionResponse(
     val reason: String,
     val serverId: String?,
     val details: String?,
-    val timestamp: Instant
+    val timestamp: Instant,
 )

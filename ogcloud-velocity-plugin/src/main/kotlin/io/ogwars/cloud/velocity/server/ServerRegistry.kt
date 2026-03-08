@@ -8,9 +8,9 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 
 class ServerRegistry(
-    private val proxy: ProxyServer, private val logger: Logger
+    private val proxy: ProxyServer,
+    private val logger: Logger,
 ) {
-
     private val registeredServers = ConcurrentHashMap<String, RegisteredServer>()
     private val serverIdsByRegisteredName = ConcurrentHashMap<String, String>()
     private val serverGroups = ConcurrentHashMap<String, String>()
@@ -18,10 +18,15 @@ class ServerRegistry(
     private val drainingServers: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val maintenanceGroups: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-    fun registerServer(serverId: String, group: String, address: InetSocketAddress, displayName: String) {
+    fun registerServer(
+        serverId: String,
+        group: String,
+        address: InetSocketAddress,
+        displayName: String,
+    ) {
         registeredServers[serverId]?.let(::unregisterRegisteredServer)
 
-        val serverName = "${group}-${serverId}"
+        val serverName = "$group-$serverId"
         val serverInfo = ServerInfo(serverName, address)
         val registered = proxy.registerServer(serverInfo)
 
@@ -53,7 +58,10 @@ class ServerRegistry(
 
     fun isDraining(serverId: String): Boolean = drainingServers.contains(serverId)
 
-    fun setGroupMaintenance(group: String, enabled: Boolean) {
+    fun setGroupMaintenance(
+        group: String,
+        enabled: Boolean,
+    ) {
         if (enabled) {
             maintenanceGroups.add(group)
 
@@ -69,34 +77,39 @@ class ServerRegistry(
 
     fun getServer(serverId: String): RegisteredServer? = registeredServers[serverId]
 
-    fun findServerIdByRegistered(registered: RegisteredServer): String? {
-        return serverIdsByRegisteredName[registered.serverInfo.name]
-    }
+    fun findServerIdByRegistered(registered: RegisteredServer): String? =
+        serverIdsByRegisteredName[registered.serverInfo.name]
 
-    fun getServersByGroup(group: String, includeMaintenance: Boolean = false): List<RegisteredServer> {
+    fun getServersByGroup(
+        group: String,
+        includeMaintenance: Boolean = false,
+    ): List<RegisteredServer> {
         if (!includeMaintenance && maintenanceGroups.contains(group)) return emptyList()
-        return serverGroups.entries.filter { it.value == group && !drainingServers.contains(it.key) }
+        return serverGroups.entries
+            .filter { it.value == group && !drainingServers.contains(it.key) }
             .mapNotNull { registeredServers[it.key] }
     }
 
-    fun getPlayersOnServer(serverId: String): Collection<com.velocitypowered.api.proxy.Player> {
-        return registeredServers[serverId]?.playersConnected ?: emptyList()
-    }
+    fun getPlayersOnServer(serverId: String): Collection<com.velocitypowered.api.proxy.Player> =
+        registeredServers[serverId]?.playersConnected ?: emptyList()
 
     fun getAllServerIds(): Set<String> = registeredServers.keys.toSet()
 
-    fun getPlayersInGroup(group: String): Collection<com.velocitypowered.api.proxy.Player> {
-        return serverGroups.entries.filter { it.value == group }.mapNotNull { registeredServers[it.key] }
+    fun getPlayersInGroup(group: String): Collection<com.velocitypowered.api.proxy.Player> =
+        serverGroups.entries
+            .filter { it.value == group }
+            .mapNotNull { registeredServers[it.key] }
             .flatMap { it.playersConnected }
-    }
 
     fun getDisplayName(serverId: String): String? = displayNames[serverId]
 
     fun getAllDisplayNames(): Map<String, String> = displayNames.toMap()
 
-    fun findServerIdByDisplayName(displayName: String): String? {
-        return displayNames.entries.firstOrNull { it.value == displayName }?.key
-    }
+    fun findServerIdByDisplayName(displayName: String): String? =
+        displayNames.entries
+            .firstOrNull {
+                it.value == displayName
+            }?.key
 
     fun getGroupForServer(serverId: String): String? = serverGroups[serverId]
 

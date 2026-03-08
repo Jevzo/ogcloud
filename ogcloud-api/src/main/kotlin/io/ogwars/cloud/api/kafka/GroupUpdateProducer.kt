@@ -9,20 +9,21 @@ import org.springframework.stereotype.Component
 
 @Component
 class GroupUpdateProducer(
-    private val kafkaTemplate: KafkaTemplate<String, GroupUpdateEvent>
+    private val kafkaTemplate: KafkaTemplate<String, GroupUpdateEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishGroupUpdate(group: GroupDocument) {
         log.info("Publishing group update: groupId={}, maintenance={}", group.id, group.maintenance)
 
         kafkaTemplate.send(
-            KafkaConfig.GROUP_UPDATE, group.id, GroupUpdateEvent(
+            KafkaConfig.GROUP_UPDATE,
+            group.id,
+            GroupUpdateEvent(
                 groupId = group.id,
                 type = group.type,
-                maintenance = group.maintenance
-            )
+                maintenance = group.maintenance,
+            ),
         )
     }
 }

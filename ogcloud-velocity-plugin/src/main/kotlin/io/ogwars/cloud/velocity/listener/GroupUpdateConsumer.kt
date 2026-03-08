@@ -22,19 +22,19 @@ class GroupUpdateConsumer(
     private val proxyServer: ProxyServer,
     private val proxyGroup: String,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-group-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-group-update-consumer",
-        logger = logger,
-        consumerLabel = "group update",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-group-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-group-update-consumer",
+            logger = logger,
+            consumerLabel = "group update",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -82,7 +82,9 @@ class GroupUpdateConsumer(
                 player.disconnect(Component.text(SERVER_MAINTENANCE_MESSAGE))
 
                 logger.info(
-                    "Kicked player {} because server group {} entered maintenance", player.username, event.groupId
+                    "Kicked player {} because server group {} entered maintenance",
+                    player.username,
+                    event.groupId,
                 )
                 return@forEach
             }
@@ -93,7 +95,7 @@ class GroupUpdateConsumer(
                 "Redirecting player {} from maintained group {} to {}",
                 player.username,
                 event.groupId,
-                fallback.serverInfo.name
+                fallback.serverInfo.name,
             )
         }
     }
@@ -115,7 +117,8 @@ class GroupUpdateConsumer(
     }
 
     private fun resolveFallback(blockedGroup: String) =
-        networkState.defaultGroup.takeIf { it != blockedGroup && !serverRegistry.isGroupInMaintenance(it) }
+        networkState.defaultGroup
+            .takeIf { it != blockedGroup && !serverRegistry.isGroupInMaintenance(it) }
             ?.let { serverRegistry.getServersByGroup(it).minByOrNull { server -> server.playersConnected.size } }
 
     private fun hasMaintenanceBypass(player: Player): Boolean {

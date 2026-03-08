@@ -15,7 +15,6 @@ import io.ogwars.cloud.api.repository.WebUserRepository
 import io.ogwars.cloud.api.security.AuthenticatedUser
 import io.ogwars.cloud.api.security.JwtTokenService
 import io.ogwars.cloud.api.util.EmailAddressNormalizer
-import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.nio.charset.StandardCharsets
@@ -36,18 +35,21 @@ class AuthService(
     private val jwtTokenService: JwtTokenService,
     private val webAccountLinkOtpProducer: WebAccountLinkOtpProducer,
     private val authProperties: AuthProperties,
-    private val clock: Clock
+    private val clock: Clock,
 ) {
-
     private val secureRandom = SecureRandom()
 
-    fun login(rawEmail: String, password: String): AuthTokenResponse {
+    fun login(
+        rawEmail: String,
+        password: String,
+    ): AuthTokenResponse {
         val email = EmailAddressNormalizer.normalize(rawEmail)
         val user = webUserRepository.findByEmail(email).orElse(null)
 
-        val passwordMatches = user?.let {
-            passwordEncoder.matches(password, it.passwordHash)
-        } == true
+        val passwordMatches =
+            user?.let {
+                passwordEncoder.matches(password, it.passwordHash)
+            } == true
 
         if (user == null || !passwordMatches) {
             throw InvalidCredentialsException()
@@ -64,10 +66,15 @@ class AuthService(
         return buildTokenResponse(user, tokenValue, tokenDocument.expiresAt)
     }
 
-    fun revokeRefreshToken(currentUser: AuthenticatedUser, refreshToken: String) {
+    fun revokeRefreshToken(
+        currentUser: AuthenticatedUser,
+        refreshToken: String,
+    ) {
         val tokenValue = normalizeOpaqueToken(refreshToken, "Refresh token")
-        val tokenDocument = refreshTokenRepository.findByTokenHash(hashToken(tokenValue))
-            .orElseThrow { InvalidRefreshTokenException() }
+        val tokenDocument =
+            refreshTokenRepository
+                .findByTokenHash(hashToken(tokenValue))
+                .orElseThrow { InvalidRefreshTokenException() }
 
         if (tokenDocument.userId != currentUser.id) {
             throw InvalidRefreshTokenException()
@@ -81,7 +88,10 @@ class AuthService(
         return RevokeAllTokensResponse(count)
     }
 
-    fun updateOwnProfile(currentUser: AuthenticatedUser, request: SelfUpdateRequest): WebUserResponse {
+    fun updateOwnProfile(
+        currentUser: AuthenticatedUser,
+        request: SelfUpdateRequest,
+    ): WebUserResponse {
         val user = requireUser(currentUser.id)
 
         if (request.email == null && request.password == null) {
@@ -89,16 +99,20 @@ class AuthService(
         }
 
         val normalizedEmail = request.email?.let(EmailAddressNormalizer::normalize)
-        if (normalizedEmail != null && normalizedEmail != user.email && webUserRepository.existsByEmail(normalizedEmail)) {
+        if (normalizedEmail != null &&
+            normalizedEmail != user.email &&
+            webUserRepository.existsByEmail(normalizedEmail)
+        ) {
             throw WebUserAlreadyExistsException(normalizedEmail)
         }
 
-        val saved = webUserRepository.save(
-            user.copy(
-                email = normalizedEmail ?: user.email,
-                passwordHash = request.password?.let(passwordEncoder::encode) ?: user.passwordHash
+        val saved =
+            webUserRepository.save(
+                user.copy(
+                    email = normalizedEmail ?: user.email,
+                    passwordHash = request.password?.let(passwordEncoder::encode) ?: user.passwordHash,
+                ),
             )
-        )
 
         if (request.password != null) {
             revokeAllTokensForUser(saved.id)
@@ -107,9 +121,13 @@ class AuthService(
         return saved.toResponse()
     }
 
-    fun requestAccountLinkOtp(currentUser: AuthenticatedUser, minecraftUsername: String) {
-        val player = playerRepository.findByNameIgnoreCase(minecraftUsername.trim())
-            ?: throw PlayerLinkUnavailableException("Minecraft account not found: $minecraftUsername")
+    fun requestAccountLinkOtp(
+        currentUser: AuthenticatedUser,
+        minecraftUsername: String,
+    ) {
+        val player =
+            playerRepository.findByNameIgnoreCase(minecraftUsername.trim())
+                ?: throw PlayerLinkUnavailableException("Minecraft account not found: $minecraftUsername")
 
         if (!playerRedisRepository.isOnline(player.id)) {
             throw PlayerLinkUnavailableException("Minecraft account is not online: ${player.name}")
@@ -127,14 +145,17 @@ class AuthService(
                 playerUuid = player.id,
                 otpHash = hashToken(otp),
                 expiresAt = now.plus(authProperties.linkOtpLifetime),
-                createdAt = now
-            )
+                createdAt = now,
+            ),
         )
 
         webAccountLinkOtpProducer.publishOtp(player.id, otp, currentUser.email)
     }
 
-    fun confirmAccountLinkOtp(currentUser: AuthenticatedUser, otp: String): WebUserResponse {
+    fun confirmAccountLinkOtp(
+        currentUser: AuthenticatedUser,
+        otp: String,
+    ): WebUserResponse {
         val user = requireUser(currentUser.id)
         val normalizedOtp = normalizeOpaqueToken(otp, "OTP")
         val otpDocument = linkOtpRepository.findByUserId(currentUser.id).orElseThrow { InvalidLinkOtpException() }
@@ -155,12 +176,13 @@ class AuthService(
             throw IllegalArgumentException("Minecraft account is already linked to another web user")
         }
 
-        val saved = webUserRepository.save(
-            user.copy(
-                username = player.name,
-                linkedPlayerUuid = player.id
+        val saved =
+            webUserRepository.save(
+                user.copy(
+                    username = player.name,
+                    linkedPlayerUuid = player.id,
+                ),
             )
-        )
 
         linkOtpRepository.delete(otpDocument)
 
@@ -178,8 +200,8 @@ class AuthService(
                 userId = user.id,
                 tokenHash = hashToken(refreshToken),
                 expiresAt = refreshTokenExpiresAt,
-                createdAt = createdAt
-            )
+                createdAt = createdAt,
+            ),
         )
 
         return buildTokenResponse(user, refreshToken, refreshTokenExpiresAt)
@@ -196,8 +218,10 @@ class AuthService(
     }
 
     private fun findValidRefreshToken(tokenValue: String): RefreshTokenDocument {
-        val tokenDocument = refreshTokenRepository.findByTokenHash(hashToken(tokenValue))
-            .orElseThrow { InvalidRefreshTokenException() }
+        val tokenDocument =
+            refreshTokenRepository
+                .findByTokenHash(hashToken(tokenValue))
+                .orElseThrow { InvalidRefreshTokenException() }
 
         if (tokenDocument.expiresAt.isBefore(now())) {
             refreshTokenRepository.delete(tokenDocument)
@@ -207,17 +231,16 @@ class AuthService(
         return tokenDocument
     }
 
-    private fun findRefreshTokenUser(tokenDocument: RefreshTokenDocument): WebUserDocument {
-        return webUserRepository.findById(tokenDocument.userId).orElseThrow {
+    private fun findRefreshTokenUser(tokenDocument: RefreshTokenDocument): WebUserDocument =
+        webUserRepository.findById(tokenDocument.userId).orElseThrow {
             refreshTokenRepository.delete(tokenDocument)
             InvalidRefreshTokenException()
         }
-    }
 
     private fun buildTokenResponse(
         user: WebUserDocument,
         refreshToken: String,
-        refreshTokenExpiresAt: Instant
+        refreshTokenExpiresAt: Instant,
     ): AuthTokenResponse {
         val accessToken = jwtTokenService.issueAccessToken(user)
 
@@ -226,11 +249,14 @@ class AuthService(
             accessTokenExpiresAt = accessToken.expiresAt,
             refreshToken = refreshToken,
             refreshTokenExpiresAt = refreshTokenExpiresAt,
-            user = user.toResponse()
+            user = user.toResponse(),
         )
     }
 
-    private fun normalizeOpaqueToken(value: String, fieldName: String): String {
+    private fun normalizeOpaqueToken(
+        value: String,
+        fieldName: String,
+    ): String {
         val normalized = value.trim()
 
         if (normalized.isEmpty()) {
@@ -240,13 +266,12 @@ class AuthService(
         return normalized
     }
 
-    private fun requireUser(userId: String): WebUserDocument {
-        return webUserRepository.findById(userId).orElseThrow { InvalidCredentialsException() }
-    }
+    private fun requireUser(userId: String): WebUserDocument =
+        webUserRepository.findById(userId).orElseThrow {
+            InvalidCredentialsException()
+        }
 
-    private fun now(): Instant {
-        return Instant.now(clock)
-    }
+    private fun now(): Instant = Instant.now(clock)
 
     private fun generateRefreshToken(): String {
         val bytes = ByteArray(REFRESH_TOKEN_BYTES)
@@ -254,9 +279,7 @@ class AuthService(
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
     }
 
-    private fun generateOtp(): String {
-        return secureRandom.nextInt(OTP_UPPER_BOUND).toString().padStart(OTP_LENGTH, '0')
-    }
+    private fun generateOtp(): String = secureRandom.nextInt(OTP_UPPER_BOUND).toString().padStart(OTP_LENGTH, '0')
 
     private fun hashToken(value: String): String {
         val digest = MessageDigest.getInstance("SHA-256")

@@ -32,9 +32,8 @@ class PlayerConnectionListener(
     private val proxyGroup: String,
     private val proxyMaxPlayers: Int,
     private val proxyId: String,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     private val gson = Gson()
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
@@ -68,13 +67,13 @@ class PlayerConnectionListener(
                             "Failed to publish player connect after retries: uuid={}, attempts={}, windowMs={}",
                             uuid,
                             CONNECT_RETRY_MAX_ATTEMPTS,
-                            CONNECT_RETRY_WINDOW_MILLIS
+                            CONNECT_RETRY_WINDOW_MILLIS,
                         )
                         publishOnCurrentThread(
                             topic = TOPIC_DISCONNECT,
                             key = uuid.toString(),
                             payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
-                            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT
+                            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
                         )
                         runCatching {
                             player.disconnect(legacySerializer.deserialize(CONNECT_FAILURE_MESSAGE))
@@ -98,21 +97,28 @@ class PlayerConnectionListener(
             topic = TOPIC_DISCONNECT,
             key = uuid.toString(),
             payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
-            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT
+            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
         )
     }
 
     @Subscribe
     fun onServerConnected(event: ServerConnectedEvent) {
         val uuid = event.player.uniqueId
-        val serverId = event.server.serverInfo.name.substringAfter("-")
-        val previousServerId = event.previousServer.orElse(null)?.serverInfo?.name?.substringAfter("-")
+        val serverId =
+            event.server.serverInfo.name
+                .substringAfter("-")
+        val previousServerId =
+            event.previousServer
+                .orElse(null)
+                ?.serverInfo
+                ?.name
+                ?.substringAfter("-")
 
         publishAsync(
             topic = TOPIC_SWITCH,
             key = uuid.toString(),
             payload = PlayerSwitchEvent(uuid.toString(), serverId, previousServerId),
-            messageType = KafkaSendDispatcher.MessageType.PLAYER_SWITCH
+            messageType = KafkaSendDispatcher.MessageType.PLAYER_SWITCH,
         )
     }
 
@@ -145,34 +151,56 @@ class PlayerConnectionListener(
         }
     }
 
-    private fun denyLogin(event: LoginEvent, uuid: UUID, message: String) {
+    private fun denyLogin(
+        event: LoginEvent,
+        uuid: UUID,
+        message: String,
+    ) {
         permissionCache.removePlayer(uuid)
         event.result = ResultedEvent.ComponentResult.denied(legacySerializer.deserialize(message))
     }
 
-    private fun publishAsync(topic: String, key: String, payload: Any, messageType: KafkaSendDispatcher.MessageType) {
+    private fun publishAsync(
+        topic: String,
+        key: String,
+        payload: Any,
+        messageType: KafkaSendDispatcher.MessageType,
+    ) {
         try {
             publishExecutor.execute {
                 publishOnCurrentThread(topic, key, payload, messageType)
             }
         } catch (exception: Exception) {
             logger.error(
-                "Failed to hand off Kafka publish task: topic={}, key={}, type={}", topic, key, messageType, exception
+                "Failed to hand off Kafka publish task: topic={}, key={}, type={}",
+                topic,
+                key,
+                messageType,
+                exception,
             )
         }
     }
 
     private fun publishOnCurrentThread(
-        topic: String, key: String, payload: Any, messageType: KafkaSendDispatcher.MessageType
+        topic: String,
+        key: String,
+        payload: Any,
+        messageType: KafkaSendDispatcher.MessageType,
     ) {
         kafkaSendDispatcher.dispatch(
             KafkaSendDispatcher.Message(
-                topic = topic, key = key, payload = gson.toJson(payload), type = messageType
-            )
+                topic = topic,
+                key = key,
+                payload = gson.toJson(payload),
+                type = messageType,
+            ),
         )
     }
 
-    private fun publishConnectWithRetry(uuid: String, username: String): Boolean {
+    private fun publishConnectWithRetry(
+        uuid: String,
+        username: String,
+    ): Boolean {
         val payload = gson.toJson(PlayerConnectEvent(uuid, username, proxyId))
         val startMillis = System.currentTimeMillis()
 
@@ -183,14 +211,16 @@ class PlayerConnectionListener(
                 break
             }
 
-            val result = kafkaSendDispatcher.dispatchAndWait(
-                KafkaSendDispatcher.Message(
-                    topic = TOPIC_CONNECT,
-                    key = uuid,
-                    payload = payload,
-                    type = KafkaSendDispatcher.MessageType.PLAYER_CONNECT
-                ), remainingMillis
-            )
+            val result =
+                kafkaSendDispatcher.dispatchAndWait(
+                    KafkaSendDispatcher.Message(
+                        topic = TOPIC_CONNECT,
+                        key = uuid,
+                        payload = payload,
+                        type = KafkaSendDispatcher.MessageType.PLAYER_CONNECT,
+                    ),
+                    remainingMillis,
+                )
 
             when (result) {
                 KafkaSendDispatcher.DispatchResult.SUCCESS -> return true
@@ -199,7 +229,7 @@ class PlayerConnectionListener(
                         "Player connect publish attempt failed: uuid={}, attempt={}, maxAttempts={}",
                         uuid,
                         attempt,
-                        CONNECT_RETRY_MAX_ATTEMPTS
+                        CONNECT_RETRY_MAX_ATTEMPTS,
                     )
                 }
 
@@ -208,7 +238,7 @@ class PlayerConnectionListener(
                         "Player connect publish timed out: uuid={}, attempt={}, windowMs={}",
                         uuid,
                         attempt,
-                        CONNECT_RETRY_WINDOW_MILLIS
+                        CONNECT_RETRY_WINDOW_MILLIS,
                     )
                     return false
                 }

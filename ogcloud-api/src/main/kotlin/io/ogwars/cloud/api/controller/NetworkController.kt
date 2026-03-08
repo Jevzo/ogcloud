@@ -15,9 +15,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/network")
 class NetworkController(
-    private val networkService: NetworkService
+    private val networkService: NetworkService,
 ) {
-
     @GetMapping
     fun getSettings(): NetworkSettingsResponse = networkService.getSettings()
 
@@ -26,11 +25,11 @@ class NetworkController(
 
     @PutMapping
     fun updateSettings(
-        @RequestBody @Valid request: UpdateNetworkRequest
+        @RequestBody @Valid request: UpdateNetworkRequest,
     ): NetworkSettingsResponse = networkService.updateSettings(request)
 
     @PutMapping("/maintenance")
     fun toggleMaintenance(
-        @RequestBody request: MaintenanceToggleRequest
+        @RequestBody request: MaintenanceToggleRequest,
     ): NetworkSettingsResponse = networkService.setMaintenance(request.maintenance)
 }

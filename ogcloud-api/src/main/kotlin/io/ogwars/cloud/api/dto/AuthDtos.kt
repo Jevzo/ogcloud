@@ -11,12 +11,12 @@ data class LoginRequest(
     @field:NotBlank
     val email: String,
     @field:NotBlank
-    val password: String
+    val password: String,
 )
 
 data class RefreshTokenRequest(
     @field:NotBlank
-    val refreshToken: String
+    val refreshToken: String,
 )
 
 data class AuthTokenResponse(
@@ -24,27 +24,27 @@ data class AuthTokenResponse(
     val accessTokenExpiresAt: Instant,
     val refreshToken: String,
     val refreshTokenExpiresAt: Instant,
-    val user: WebUserResponse
+    val user: WebUserResponse,
 )
 
 data class RevokeAllTokensResponse(
-    val revokedTokens: Int
+    val revokedTokens: Int,
 )
 
 data class SelfUpdateRequest(
     @field:Email
     val email: String? = null,
     @field:Pattern(regexp = ".*\\S.*", message = "must not be blank")
-    val password: String? = null
+    val password: String? = null,
 )
 
 data class RequestLinkOtpRequest(
     @field:NotBlank
     @field:Size(min = 3, max = 16)
-    val minecraftUsername: String
+    val minecraftUsername: String,
 )
 
 data class ConfirmLinkOtpRequest(
     @field:Pattern(regexp = "^[0-9]{6}$", message = "must be a 6 digit code")
-    val otp: String
+    val otp: String,
 )

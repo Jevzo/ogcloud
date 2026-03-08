@@ -4,5 +4,5 @@ data class PlayerConnectEvent(
     val uuid: String,
     val name: String,
     val proxyId: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

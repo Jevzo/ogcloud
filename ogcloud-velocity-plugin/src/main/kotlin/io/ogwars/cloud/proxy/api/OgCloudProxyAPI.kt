@@ -24,7 +24,6 @@ private const val PROXY_API_NOT_INITIALIZED_MESSAGE = "OgCloudProxyAPI not initi
  * the time of the call.
  */
 interface OgCloudProxyAPI {
-
     /**
      * Returns all currently known backend servers.
      */
@@ -85,7 +84,10 @@ interface OgCloudProxyAPI {
      * @param uuid the player to move
      * @param serverId the destination server id
      */
-    fun transferPlayer(uuid: UUID, serverId: String): CompletableFuture<Void>
+    fun transferPlayer(
+        uuid: UUID,
+        serverId: String,
+    ): CompletableFuture<Void>
 
     /**
      * Requests a transfer of the specified player to a server in the supplied group.
@@ -95,7 +97,10 @@ interface OgCloudProxyAPI {
      * @param uuid the player to move
      * @param group the destination group
      */
-    fun transferPlayerToGroup(uuid: UUID, group: String): CompletableFuture<Void>
+    fun transferPlayerToGroup(
+        uuid: UUID,
+        group: String,
+    ): CompletableFuture<Void>
 
     /**
      * Registers a listener that will be called when a backend server reaches the ready state.

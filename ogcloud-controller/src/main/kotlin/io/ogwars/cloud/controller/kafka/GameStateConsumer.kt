@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component
 @Component
 class GameStateConsumer(
     private val serverLifecycleService: ServerLifecycleService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.SERVER_GAMESTATE], groupId = "ogcloud-controller")

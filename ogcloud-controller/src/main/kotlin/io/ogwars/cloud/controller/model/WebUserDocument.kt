@@ -10,5 +10,5 @@ data class WebUserDocument(
     val username: String,
     val password: String,
     val role: String,
-    val linkedPlayerUuid: String? = null
+    val linkedPlayerUuid: String? = null,
 )

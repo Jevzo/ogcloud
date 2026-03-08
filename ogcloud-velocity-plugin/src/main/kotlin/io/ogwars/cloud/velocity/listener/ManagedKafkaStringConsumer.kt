@@ -14,9 +14,8 @@ internal class ManagedKafkaStringConsumer(
     private val threadName: String,
     private val logger: Logger,
     private val consumerLabel: String,
-    private val onRecord: (String) -> Unit
+    private val onRecord: (String) -> Unit,
 ) {
-
     private val running = AtomicBoolean(false)
     private var consumerThread: Thread? = null
 
@@ -28,10 +27,11 @@ internal class ManagedKafkaStringConsumer(
             return
         }
 
-        consumerThread = Thread(::runConsumerLoop, threadName).also { thread ->
-            thread.isDaemon = true
-            thread.start()
-        }
+        consumerThread =
+            Thread(::runConsumerLoop, threadName).also { thread ->
+                thread.isDaemon = true
+                thread.start()
+            }
     }
 
     fun stop() {

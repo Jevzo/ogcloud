@@ -10,23 +10,33 @@ class KafkaSendDispatcher(
     private val kafkaManager: KafkaManager,
     private val logger: Logger,
     private val workerThreadName: String,
-    private val queueCapacity: Int = DEFAULT_QUEUE_CAPACITY
+    private val queueCapacity: Int = DEFAULT_QUEUE_CAPACITY,
 ) {
-
     enum class MessageType {
-        PLAYER_CONNECT, PLAYER_DISCONNECT, PLAYER_SWITCH, PROXY_HEARTBEAT, PERMISSION_EXPIRY
+        PLAYER_CONNECT,
+        PLAYER_DISCONNECT,
+        PLAYER_SWITCH,
+        PROXY_HEARTBEAT,
+        PERMISSION_EXPIRY,
     }
 
     data class Message(
-        val topic: String, val key: String, val payload: String, val type: MessageType
+        val topic: String,
+        val key: String,
+        val payload: String,
+        val type: MessageType,
     )
 
     enum class DispatchResult {
-        SUCCESS, FAILED, TIMED_OUT, INTERRUPTED
+        SUCCESS,
+        FAILED,
+        TIMED_OUT,
+        INTERRUPTED,
     }
 
     private data class DispatchRequest(
-        val message: Message, val completion: CompletableFuture<DispatchResult>?
+        val message: Message,
+        val completion: CompletableFuture<DispatchResult>?,
     )
 
     private val queue = ArrayBlockingQueue<DispatchRequest>(queueCapacity)
@@ -38,10 +48,11 @@ class KafkaSendDispatcher(
             return
         }
 
-        workerThread = Thread(::runLoop, workerThreadName).apply {
-            isDaemon = true
-            start()
-        }
+        workerThread =
+            Thread(::runLoop, workerThreadName).apply {
+                isDaemon = true
+                start()
+            }
 
         logger.info("Kafka send dispatcher started (thread={}, queueCapacity={})", workerThreadName, queueCapacity)
     }
@@ -67,7 +78,10 @@ class KafkaSendDispatcher(
         enqueue(DispatchRequest(message = message, completion = null))
     }
 
-    fun dispatchAndWait(message: Message, timeoutMillis: Long): DispatchResult {
+    fun dispatchAndWait(
+        message: Message,
+        timeoutMillis: Long,
+    ): DispatchResult {
         if (timeoutMillis <= 0) {
             return DispatchResult.TIMED_OUT
         }
@@ -104,8 +118,8 @@ class KafkaSendDispatcher(
         }
     }
 
-    private fun takeNextRequest(): DispatchRequest? {
-        return try {
+    private fun takeNextRequest(): DispatchRequest? =
+        try {
             if (running.get()) {
                 queue.take()
             } else {
@@ -114,10 +128,9 @@ class KafkaSendDispatcher(
         } catch (_: InterruptedException) {
             null
         }
-    }
 
-    private fun send(message: Message): DispatchResult {
-        return try {
+    private fun send(message: Message): DispatchResult =
+        try {
             kafkaManager.sendBlocking(message.topic, message.key, message.payload)
             DispatchResult.SUCCESS
         } catch (exception: Exception) {
@@ -126,11 +139,10 @@ class KafkaSendDispatcher(
                 message.type,
                 message.topic,
                 message.key,
-                exception
+                exception,
             )
             DispatchResult.FAILED
         }
-    }
 
     companion object {
         private const val DEFAULT_QUEUE_CAPACITY = 2048

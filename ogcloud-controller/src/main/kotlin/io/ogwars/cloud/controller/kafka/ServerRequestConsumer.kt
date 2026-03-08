@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component
 @Component
 class ServerRequestConsumer(
     private val serverLifecycleService: ServerLifecycleService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.SERVER_REQUEST], groupId = "ogcloud-controller")
@@ -24,7 +23,7 @@ class ServerRequestConsumer(
             "Received server request: group={}, requestedBy={}, serverId={}",
             event.group,
             event.requestedBy,
-            event.serverId
+            event.serverId,
         )
 
         serverLifecycleService.requestServer(event.group, event.requestedBy, event.serverId)

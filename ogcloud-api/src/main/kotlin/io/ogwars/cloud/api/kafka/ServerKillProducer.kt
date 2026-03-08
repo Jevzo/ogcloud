@@ -8,19 +8,23 @@ import org.springframework.stereotype.Component
 
 @Component
 class ServerKillProducer(
-    private val kafkaTemplate: KafkaTemplate<String, ServerKillEvent>
+    private val kafkaTemplate: KafkaTemplate<String, ServerKillEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun killServer(serverId: String, reason: String = "api-kill") {
+    fun killServer(
+        serverId: String,
+        reason: String = "api-kill",
+    ) {
         log.info("Publishing server kill: serverId={}, reason={}", serverId, reason)
 
         kafkaTemplate.send(
-            KafkaConfig.SERVER_KILL, serverId, ServerKillEvent(
+            KafkaConfig.SERVER_KILL,
+            serverId,
+            ServerKillEvent(
                 serverId = serverId,
-                reason = reason
-            )
+                reason = reason,
+            ),
         )
     }
 }

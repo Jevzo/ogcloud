@@ -3,12 +3,12 @@ package io.ogwars.cloud.api.model
 enum class WebUserRole {
     SERVICE,
     ADMIN,
-    DEVELOPER;
+    DEVELOPER,
+    ;
 
     companion object {
-        fun parse(value: String): WebUserRole {
-            return entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
+        fun parse(value: String): WebUserRole =
+            entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
                 ?: throw IllegalArgumentException("Unsupported role: $value")
-        }
     }
 }

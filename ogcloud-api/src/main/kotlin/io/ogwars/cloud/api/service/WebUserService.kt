@@ -14,7 +14,6 @@ import io.ogwars.cloud.api.model.WebUserRole
 import io.ogwars.cloud.api.repository.LinkOtpRepository
 import io.ogwars.cloud.api.repository.WebUserRepository
 import io.ogwars.cloud.api.util.EmailAddressNormalizer
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.count
@@ -30,27 +29,33 @@ class WebUserService(
     private val linkOtpRepository: LinkOtpRepository,
     private val mongoTemplate: MongoTemplate,
     private val passwordEncoder: PasswordEncoder,
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
-
-    fun listUsers(query: String?, page: Int, size: Int?): PaginatedResponse<WebUserResponse> {
+    fun listUsers(
+        query: String?,
+        page: Int,
+        size: Int?,
+    ): PaginatedResponse<WebUserResponse> {
         val pageRequest = PaginationSupport.toPageRequest(page, size)
         val queryObject = Query()
 
-        PaginationSupport.buildSearchCriteria(
-            query,
-            "email",
-            "username",
-            "role",
-            "linkedPlayerUuid"
-        )?.let(queryObject::addCriteria)
+        PaginationSupport
+            .buildSearchCriteria(
+                query,
+                "email",
+                "username",
+                "role",
+                "linkedPlayerUuid",
+            )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<WebUserDocument>(queryObject)
 
         queryObject.with(Sort.by(Sort.Order.asc("email"))).with(pageRequest)
 
-        val users = mongoTemplate.find<WebUserDocument>(queryObject)
-            .map { it.toResponse() }
+        val users =
+            mongoTemplate
+                .find<WebUserDocument>(queryObject)
+                .map { it.toResponse() }
 
         return PaginationSupport.toResponse(users, page, pageRequest.pageSize, totalItems)
     }
@@ -62,37 +67,46 @@ class WebUserService(
             throw WebUserAlreadyExistsException(email)
         }
 
-        val saved = webUserRepository.save(
-            WebUserDocument(
-                id = UUID.randomUUID().toString(),
-                email = email,
-                username = DEFAULT_USERNAME,
-                passwordHash = passwordEncoder.encode(request.password),
-                role = WebUserRole.parse(request.role)
+        val saved =
+            webUserRepository.save(
+                WebUserDocument(
+                    id = UUID.randomUUID().toString(),
+                    email = email,
+                    username = DEFAULT_USERNAME,
+                    passwordHash = passwordEncoder.encode(request.password),
+                    role = WebUserRole.parse(request.role),
+                ),
             )
-        )
 
         return saved.toResponse()
     }
 
-    fun updateUser(targetEmail: String, request: UpdateWebUserRequest): WebUserResponse {
+    fun updateUser(
+        targetEmail: String,
+        request: UpdateWebUserRequest,
+    ): WebUserResponse {
         validateUpdateRequest(request)
 
         val normalizedTargetEmail = EmailAddressNormalizer.normalize(targetEmail)
-        val user = webUserRepository.findByEmail(normalizedTargetEmail)
-            .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
+        val user =
+            webUserRepository
+                .findByEmail(normalizedTargetEmail)
+                .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
 
         val updatedEmail = request.email?.let(EmailAddressNormalizer::normalize)
         if (updatedEmail != null && updatedEmail != user.email && webUserRepository.existsByEmail(updatedEmail)) {
             throw WebUserAlreadyExistsException(updatedEmail)
         }
 
-        val saved = webUserRepository.save(user.copy(
-            email = updatedEmail ?: user.email,
-            passwordHash = request.password?.let(passwordEncoder::encode) ?: user.passwordHash,
-            username = request.username?.trim() ?: user.username,
-            role = request.parseRole() ?: user.role
-        ))
+        val saved =
+            webUserRepository.save(
+                user.copy(
+                    email = updatedEmail ?: user.email,
+                    passwordHash = request.password?.let(passwordEncoder::encode) ?: user.passwordHash,
+                    username = request.username?.trim() ?: user.username,
+                    role = request.parseRole() ?: user.role,
+                ),
+            )
 
         if (request.password != null) {
             authService.revokeAllTokensForUser(saved.id)
@@ -103,8 +117,10 @@ class WebUserService(
 
     fun deleteUser(targetEmail: String) {
         val normalizedTargetEmail = EmailAddressNormalizer.normalize(targetEmail)
-        val user = webUserRepository.findByEmail(normalizedTargetEmail)
-            .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
+        val user =
+            webUserRepository
+                .findByEmail(normalizedTargetEmail)
+                .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
 
         webUserRepository.delete(user)
 
@@ -113,18 +129,22 @@ class WebUserService(
 
     fun unlinkUserAccount(targetEmail: String): WebUserResponse {
         val normalizedTargetEmail = EmailAddressNormalizer.normalize(targetEmail)
-        val user = webUserRepository.findByEmail(normalizedTargetEmail)
-            .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
+        val user =
+            webUserRepository
+                .findByEmail(normalizedTargetEmail)
+                .orElseThrow { WebUserNotFoundException(normalizedTargetEmail) }
 
-        linkOtpRepository.findByUserId(user.id)
+        linkOtpRepository
+            .findByUserId(user.id)
             .ifPresent(linkOtpRepository::delete)
 
-        val saved = webUserRepository.save(
-            user.copy(
-                username = DEFAULT_USERNAME,
-                linkedPlayerUuid = null
+        val saved =
+            webUserRepository.save(
+                user.copy(
+                    username = DEFAULT_USERNAME,
+                    linkedPlayerUuid = null,
+                ),
             )
-        )
 
         return saved.toResponse()
     }

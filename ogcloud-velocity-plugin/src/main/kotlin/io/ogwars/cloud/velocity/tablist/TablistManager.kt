@@ -17,9 +17,8 @@ class TablistManager(
     private val permissionCache: PermissionCache,
     private val serverRegistry: ServerRegistry,
     private val proxyDisplayName: String,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     @Volatile
     var headerTemplate: String = ""
 
@@ -33,11 +32,15 @@ class TablistManager(
     private lateinit var scheduler: ScheduledExecutorService
 
     fun start() {
-        scheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
-            Thread(runnable, "ogcloud-tablist").apply { isDaemon = true }
-        }
+        scheduler =
+            Executors.newSingleThreadScheduledExecutor { runnable ->
+                Thread(runnable, "ogcloud-tablist").apply { isDaemon = true }
+            }
         scheduler.scheduleAtFixedRate(
-            ::refreshAll, REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_SECONDS, TimeUnit.SECONDS
+            ::refreshAll,
+            REFRESH_INTERVAL_SECONDS,
+            REFRESH_INTERVAL_SECONDS,
+            TimeUnit.SECONDS,
         )
         logger.info("Tablist manager started (interval={}s)", REFRESH_INTERVAL_SECONDS)
     }
@@ -68,7 +71,7 @@ class TablistManager(
 
         player.sendPlayerListHeaderAndFooter(
             deserializeLegacy(headerTemplate.applyPlaceholders(placeholders)),
-            deserializeLegacy(footerTemplate.applyPlaceholders(placeholders))
+            deserializeLegacy(footerTemplate.applyPlaceholders(placeholders)),
         )
     }
 
@@ -92,21 +95,23 @@ class TablistManager(
     }
 
     private fun Player.createPlaceholders(): Map<String, String> {
-        val cached = if (networkState.permissionSystemEnabled) {
-            permissionCache.getPlayer(uniqueId)
-        } else {
-            null
-        }
+        val cached =
+            if (networkState.permissionSystemEnabled) {
+                permissionCache.getPlayer(uniqueId)
+            } else {
+                null
+            }
         val currentServer = currentServer.orElse(null)
         val serverId = currentServer?.let { serverRegistry.findServerIdByRegistered(it.server) }
         val displayName =
             serverId?.let(serverRegistry::getDisplayName) ?: currentServer?.serverInfo?.name ?: NO_SERVER_NAME
         val groupName = serverId?.let(serverRegistry::getGroupForServer) ?: displayName.substringBefore("-")
-        val permissionGroupName = if (networkState.permissionSystemEnabled) {
-            cached?.groupName ?: DEFAULT_PERMISSION_GROUP
-        } else {
-            ""
-        }
+        val permissionGroupName =
+            if (networkState.permissionSystemEnabled) {
+                cached?.groupName ?: DEFAULT_PERMISSION_GROUP
+            } else {
+                ""
+            }
 
         return mapOf(
             "%server%" to displayName,
@@ -115,7 +120,7 @@ class TablistManager(
             "%onlinePlayers%" to proxyServer.playerCount.toString(),
             "%maxPlayers%" to networkState.maxPlayers.toString(),
             "%ping%" to ping.toString(),
-            "%permissionGroup%" to permissionGroupName
+            "%permissionGroup%" to permissionGroupName,
         )
     }
 

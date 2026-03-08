@@ -28,48 +28,52 @@ import org.springframework.web.bind.annotation.RestController
 @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
 @Validated
 class PermissionGroupController(
-    private val permissionGroupService: PermissionGroupService
+    private val permissionGroupService: PermissionGroupService,
 ) {
-
     @GetMapping
     fun listGroups(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
-        @RequestParam(required = false) @Min(1, message = "size must be greater than 0") @Max(200, message = "size must be less than or equal to 200") size: Int?
+        @RequestParam(
+            required = false,
+        ) @Min(
+            1,
+            message = "size must be greater than 0",
+        ) @Max(200, message = "size must be less than or equal to 200") size: Int?,
     ): PaginatedResponse<PermissionGroupResponse> = permissionGroupService.listAll(query, page, size)
 
     @GetMapping("/{name}")
     fun getGroup(
-        @PathVariable name: String
+        @PathVariable name: String,
     ): PermissionGroupResponse = permissionGroupService.getByName(name)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createGroup(
-        @RequestBody @Valid request: CreatePermissionGroupRequest
+        @RequestBody @Valid request: CreatePermissionGroupRequest,
     ): PermissionGroupResponse = permissionGroupService.create(request)
 
     @PutMapping("/{name}")
     fun updateGroup(
         @PathVariable name: String,
-        @RequestBody @Valid request: UpdatePermissionGroupRequest
+        @RequestBody @Valid request: UpdatePermissionGroupRequest,
     ): PermissionGroupResponse = permissionGroupService.update(name, request)
 
     @DeleteMapping("/{name}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteGroup(
-        @PathVariable name: String
+        @PathVariable name: String,
     ) = permissionGroupService.delete(name)
 
     @PostMapping("/{name}/permissions")
     fun addPermission(
         @PathVariable name: String,
-        @RequestBody @Valid request: AddPermissionRequest
+        @RequestBody @Valid request: AddPermissionRequest,
     ): PermissionGroupResponse = permissionGroupService.addPermission(name, request.permission)
 
     @DeleteMapping("/{name}/permissions/{perm}")
     fun removePermission(
         @PathVariable name: String,
-        @PathVariable perm: String
+        @PathVariable perm: String,
     ): PermissionGroupResponse = permissionGroupService.removePermission(name, perm)
 }

@@ -7,17 +7,16 @@ import io.ogwars.cloud.api.model.*
 import org.bson.Document
 
 class MongoManager(
-    mongoUri: String, databaseName: String
+    mongoUri: String,
+    databaseName: String,
 ) {
-
     private val client: MongoClient = MongoClients.create(mongoUri)
     private val database: MongoDatabase = client.getDatabase(databaseName)
     private val permissionGroupsCollection = database.getCollection(PERMISSION_GROUPS_COLLECTION)
     private val networkSettingsCollection = database.getCollection(NETWORK_SETTINGS_COLLECTION)
 
-    fun findAllPermissionGroups(): List<PermissionGroupDocument> {
-        return permissionGroupsCollection.find().map { document -> document.toPermissionGroupDocument() }.toList()
-    }
+    fun findAllPermissionGroups(): List<PermissionGroupDocument> =
+        permissionGroupsCollection.find().map { document -> document.toPermissionGroupDocument() }.toList()
 
     fun findNetworkSettings(): NetworkSettingsDocument {
         val document =
@@ -34,12 +33,18 @@ class MongoManager(
         val displayDocument = get("display", Document::class.java)
 
         return PermissionGroupDocument(
-            id = getString(ID_FIELD), name = getString("name") ?: getString(ID_FIELD), display = DisplayConfig(
-                chatPrefix = displayDocument?.getString("chatPrefix") ?: "",
-                chatSuffix = displayDocument?.getString("chatSuffix") ?: "",
-                nameColor = displayDocument?.getString("nameColor") ?: "&7",
-                tabPrefix = displayDocument?.getString("tabPrefix") ?: "&7"
-            ), weight = getInteger("weight", 100), default = getBoolean("default", false), permissions = permissions
+            id = getString(ID_FIELD),
+            name = getString("name") ?: getString(ID_FIELD),
+            display =
+                DisplayConfig(
+                    chatPrefix = displayDocument?.getString("chatPrefix") ?: "",
+                    chatSuffix = displayDocument?.getString("chatSuffix") ?: "",
+                    nameColor = displayDocument?.getString("nameColor") ?: "&7",
+                    tabPrefix = displayDocument?.getString("tabPrefix") ?: "&7",
+                ),
+            weight = getInteger("weight", 100),
+            default = getBoolean("default", false),
+            permissions = permissions,
         )
     }
 
@@ -51,37 +56,38 @@ class MongoManager(
 
         return NetworkSettingsDocument(
             id = GLOBAL_ID,
-            motd = MotdSettings(
-                global = motdDocument?.getString("global") ?: DEFAULT_MOTD,
-                maintenance = motdDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_MOTD
-            ),
-            versionName = VersionNameSettings(
-                global = versionDocument?.getString("global") ?: DEFAULT_VERSION_NAME,
-                maintenance = versionDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_VERSION_NAME
-            ),
+            motd =
+                MotdSettings(
+                    global = motdDocument?.getString("global") ?: DEFAULT_MOTD,
+                    maintenance = motdDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_MOTD,
+                ),
+            versionName =
+                VersionNameSettings(
+                    global = versionDocument?.getString("global") ?: DEFAULT_VERSION_NAME,
+                    maintenance = versionDocument?.getString("maintenance") ?: DEFAULT_MAINTENANCE_VERSION_NAME,
+                ),
             maxPlayers = getInteger("maxPlayers", 1000),
             defaultGroup = getString("defaultGroup") ?: "lobby",
             maintenance = getBoolean("maintenance", false),
-            maintenanceKickMessage = getString("maintenanceKickMessage")
-                ?: "&cServer is currently in maintenance mode.",
+            maintenanceKickMessage =
+                getString("maintenanceKickMessage")
+                    ?: "&cServer is currently in maintenance mode.",
             tablist = tablistDocument?.toTablistSettings() ?: TablistSettings(),
-            general = generalDocument?.toGeneralSettings() ?: GeneralSettings()
+            general = generalDocument?.toGeneralSettings() ?: GeneralSettings(),
         )
     }
 
-    private fun Document.toTablistSettings(): TablistSettings {
-        return TablistSettings(
+    private fun Document.toTablistSettings(): TablistSettings =
+        TablistSettings(
             header = getString("header") ?: DEFAULT_TABLIST_HEADER,
-            footer = getString("footer") ?: DEFAULT_TABLIST_FOOTER
+            footer = getString("footer") ?: DEFAULT_TABLIST_FOOTER,
         )
-    }
 
-    private fun Document.toGeneralSettings(): GeneralSettings {
-        return GeneralSettings(
+    private fun Document.toGeneralSettings(): GeneralSettings =
+        GeneralSettings(
             permissionSystemEnabled = getBoolean("permissionSystemEnabled", true),
-            tablistEnabled = getBoolean("tablistEnabled", true)
+            tablistEnabled = getBoolean("tablistEnabled", true),
         )
-    }
 
     companion object {
         private const val ID_FIELD = "_id"

@@ -4,5 +4,5 @@ data class ResourceConfig(
     val memoryRequest: String,
     val memoryLimit: String,
     val cpuRequest: String,
-    val cpuLimit: String
+    val cpuLimit: String,
 )

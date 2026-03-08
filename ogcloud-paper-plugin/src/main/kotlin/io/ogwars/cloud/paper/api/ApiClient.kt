@@ -11,28 +11,32 @@ import java.util.concurrent.CompletableFuture
 import java.util.logging.Logger
 
 data class ApiServerRequestResponse(
-    val serverId: String, val group: String
+    val serverId: String,
+    val group: String,
 )
 
 data class ApiAuthTokenResponse(
     val accessToken: String,
     val accessTokenExpiresAt: String,
     val refreshToken: String,
-    val refreshTokenExpiresAt: String
+    val refreshTokenExpiresAt: String,
 )
 
 data class ApiNetworkGeneralSettingsResponse(
-    val permissionSystemEnabled: Boolean = true, val tablistEnabled: Boolean = true
+    val permissionSystemEnabled: Boolean = true,
+    val tablistEnabled: Boolean = true,
 )
 
 data class ApiNetworkSettingsResponse(
-    val general: ApiNetworkGeneralSettingsResponse = ApiNetworkGeneralSettingsResponse()
+    val general: ApiNetworkGeneralSettingsResponse = ApiNetworkGeneralSettingsResponse(),
 )
 
 class ApiClient(
-    baseUrl: String, private val authEmail: String, private val authPassword: String, private val logger: Logger
+    baseUrl: String,
+    private val authEmail: String,
+    private val authPassword: String,
+    private val logger: Logger,
 ) {
-
     private val httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build()
 
     private val gson = Gson()
@@ -51,35 +55,42 @@ class ApiClient(
     @Volatile
     private var refreshTokenExpiresAt: Instant = Instant.EPOCH
 
-    fun requestServer(group: String): CompletableFuture<ApiServerRequestResponse> {
-        return postWithResponse(
-            "/api/v1/servers/request", mapOf("group" to group), ApiServerRequestResponse::class.java
+    fun requestServer(group: String): CompletableFuture<ApiServerRequestResponse> =
+        postWithResponse(
+            "/api/v1/servers/request",
+            mapOf("group" to group),
+            ApiServerRequestResponse::class.java,
         )
-    }
 
-    fun forceTemplatePush(id: String): CompletableFuture<Void> {
-        return post("/api/v1/servers/$id/template/push", null)
-    }
+    fun forceTemplatePush(id: String): CompletableFuture<Void> = post("/api/v1/servers/$id/template/push", null)
 
-    fun transferPlayer(uuid: String, target: String): CompletableFuture<Void> {
-        return post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
-    }
+    fun transferPlayer(
+        uuid: String,
+        target: String,
+    ): CompletableFuture<Void> = post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
 
     fun getNetworkSettingsSync(): ApiNetworkSettingsResponse {
-        val response = httpClient.send(
-            buildGetRequest("/api/v1/network", ensureAccessToken()), HttpResponse.BodyHandlers.ofString()
-        ).validated()
+        val response =
+            httpClient
+                .send(
+                    buildGetRequest("/api/v1/network", ensureAccessToken()),
+                    HttpResponse.BodyHandlers.ofString(),
+                ).validated()
 
         return gson.fromJson(response.body(), ApiNetworkSettingsResponse::class.java)
     }
 
-    private fun post(path: String, body: Any?): CompletableFuture<Void> {
-        return sendAuthorizedPost(path, body).thenApply { null }
-    }
+    private fun post(
+        path: String,
+        body: Any?,
+    ): CompletableFuture<Void> = sendAuthorizedPost(path, body).thenApply { null }
 
-    private fun <T> postWithResponse(path: String, body: Any?, type: Class<T>): CompletableFuture<T> {
-        return sendAuthorizedPost(path, body).thenApply { response -> gson.fromJson(response.body(), type) }
-    }
+    private fun <T> postWithResponse(
+        path: String,
+        body: Any?,
+        type: Class<T>,
+    ): CompletableFuture<T> =
+        sendAuthorizedPost(path, body).thenApply { response -> gson.fromJson(response.body(), type) }
 
     private fun ensureAccessToken(): String {
         synchronized(authLock) {
@@ -118,10 +129,16 @@ class ApiClient(
         setTokens(response)
     }
 
-    private fun sendAuthRequest(path: String, body: Any): ApiAuthTokenResponse {
-        val response = httpClient.send(
-            buildPostRequest(path, body), HttpResponse.BodyHandlers.ofString()
-        ).validated()
+    private fun sendAuthRequest(
+        path: String,
+        body: Any,
+    ): ApiAuthTokenResponse {
+        val response =
+            httpClient
+                .send(
+                    buildPostRequest(path, body),
+                    HttpResponse.BodyHandlers.ofString(),
+                ).validated()
         return gson.fromJson(response.body(), ApiAuthTokenResponse::class.java)
     }
 
@@ -132,25 +149,45 @@ class ApiClient(
         refreshTokenExpiresAt = Instant.parse(response.refreshTokenExpiresAt)
     }
 
-    private fun sendAuthorizedPost(path: String, body: Any?): CompletableFuture<HttpResponse<String>> {
-        return httpClient.sendAsync(
-            buildPostRequest(path, body, ensureAccessToken()), HttpResponse.BodyHandlers.ofString()
-        ).thenApply { response -> response.validated() }
-    }
+    private fun sendAuthorizedPost(
+        path: String,
+        body: Any?,
+    ): CompletableFuture<HttpResponse<String>> =
+        httpClient
+            .sendAsync(
+                buildPostRequest(path, body, ensureAccessToken()),
+                HttpResponse.BodyHandlers.ofString(),
+            ).thenApply { response -> response.validated() }
 
-    private fun buildPostRequest(path: String, body: Any?, bearerToken: String? = null): HttpRequest {
-        return HttpRequest.newBuilder().uri(URI.create("$base$path")).timeout(REQUEST_TIMEOUT).apply {
-            if (bearerToken != null) {
-                header("Authorization", "Bearer $bearerToken")
-            }
-        }.header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
+    private fun buildPostRequest(
+        path: String,
+        body: Any?,
+        bearerToken: String? = null,
+    ): HttpRequest =
+        HttpRequest
+            .newBuilder()
+            .uri(URI.create("$base$path"))
+            .timeout(REQUEST_TIMEOUT)
+            .apply {
+                if (bearerToken != null) {
+                    header("Authorization", "Bearer $bearerToken")
+                }
+            }.header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
             .build()
-    }
 
-    private fun buildGetRequest(path: String, bearerToken: String): HttpRequest {
-        return HttpRequest.newBuilder().uri(URI.create("$base$path")).timeout(REQUEST_TIMEOUT)
-            .header("Authorization", "Bearer $bearerToken").header("Content-Type", "application/json").GET().build()
-    }
+    private fun buildGetRequest(
+        path: String,
+        bearerToken: String,
+    ): HttpRequest =
+        HttpRequest
+            .newBuilder()
+            .uri(URI.create("$base$path"))
+            .timeout(REQUEST_TIMEOUT)
+            .header("Authorization", "Bearer $bearerToken")
+            .header("Content-Type", "application/json")
+            .GET()
+            .build()
 
     private fun serializeBody(body: Any?): String = gson.toJson(body ?: emptyMap<String, Any>())
 
@@ -168,5 +205,7 @@ class ApiClient(
     }
 }
 
-class ApiException(val statusCode: Int, val responseBody: String) :
-    RuntimeException("API returned $statusCode: $responseBody")
+class ApiException(
+    val statusCode: Int,
+    val responseBody: String,
+) : RuntimeException("API returned $statusCode: $responseBody")

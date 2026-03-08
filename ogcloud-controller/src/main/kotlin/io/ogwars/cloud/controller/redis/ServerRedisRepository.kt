@@ -9,9 +9,8 @@ import org.springframework.stereotype.Service
 @Service
 class ServerRedisRepository(
     private val redisTemplate: StringRedisTemplate,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     fun save(server: ServerDocument) {
         val key = serverKey(server.id)
         val json = objectMapper.writeValueAsString(server.toRedisData())
@@ -21,9 +20,7 @@ class ServerRedisRepository(
         redisTemplate.opsForSet().add(groupServersKey(server.group), server.id)
     }
 
-    fun findById(id: String): ServerDocument? {
-        return readServer(serverKey(id))
-    }
+    fun findById(id: String): ServerDocument? = readServer(serverKey(id))
 
     fun findAll(): List<ServerDocument> {
         val ids = redisTemplate.opsForSet().members(ALL_SERVERS_KEY) ?: return emptyList()
@@ -35,15 +32,17 @@ class ServerRedisRepository(
         return findByIds(ids)
     }
 
-    fun delete(id: String, group: String) {
+    fun delete(
+        id: String,
+        group: String,
+    ) {
         redisTemplate.delete(serverKey(id))
         redisTemplate.opsForSet().remove(ALL_SERVERS_KEY, id)
         redisTemplate.opsForSet().remove(groupServersKey(group), id)
     }
 
-    private fun findByIds(ids: Collection<String>): List<ServerDocument> {
-        return ids.mapNotNull { id -> readServer(serverKey(id)) }
-    }
+    private fun findByIds(ids: Collection<String>): List<ServerDocument> =
+        ids.mapNotNull { id -> readServer(serverKey(id)) }
 
     private fun readServer(key: String): ServerDocument? {
         val json = redisTemplate.opsForValue().get(key) ?: return null

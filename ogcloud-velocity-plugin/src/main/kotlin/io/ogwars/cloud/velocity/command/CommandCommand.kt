@@ -9,22 +9,30 @@ import io.ogwars.cloud.velocity.api.ApiClient
 import io.ogwars.cloud.velocity.server.ServerRegistry
 
 object CommandCommand {
-
-    fun create(apiClient: ApiClient, serverRegistry: ServerRegistry): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("command").then(
-            OgCloudCommand.wordArg("target").suggests { _, builder ->
-                builder.suggest(TARGET_ALL)
-                serverRegistry.getAllDisplayNames().values.forEach(builder::suggest)
-                builder.buildFuture()
-            }.then(
-                RequiredArgumentBuilder.argument<CommandSource, String>(
-                    "cmd", StringArgumentType.greedyString()
-                ).executes { ctx -> executeCommand(ctx, apiClient, serverRegistry) })
+    fun create(
+        apiClient: ApiClient,
+        serverRegistry: ServerRegistry,
+    ): LiteralArgumentBuilder<CommandSource> =
+        LiteralArgumentBuilder.literal<CommandSource>("command").then(
+            OgCloudCommand
+                .wordArg("target")
+                .suggests { _, builder ->
+                    builder.suggest(TARGET_ALL)
+                    serverRegistry.getAllDisplayNames().values.forEach(builder::suggest)
+                    builder.buildFuture()
+                }.then(
+                    RequiredArgumentBuilder
+                        .argument<CommandSource, String>(
+                            "cmd",
+                            StringArgumentType.greedyString(),
+                        ).executes { ctx -> executeCommand(ctx, apiClient, serverRegistry) },
+                ),
         )
-    }
 
     private fun executeCommand(
-        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>,
+        apiClient: ApiClient,
+        serverRegistry: ServerRegistry,
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("target", String::class.java)
@@ -33,17 +41,22 @@ object CommandCommand {
 
         OgCloudCommand.sendPrefixed(source, "Executing '$command' on $targetType '$input'...")
 
-        apiClient.executeCommand(target, targetType, command).thenAccept {
-            OgCloudCommand.sendPrefixed(source, "&aCommand dispatched.")
-        }.exceptionally { error ->
-            OgCloudCommand.sendFailure(source, error)
-            null
-        }
+        apiClient
+            .executeCommand(target, targetType, command)
+            .thenAccept {
+                OgCloudCommand.sendPrefixed(source, "&aCommand dispatched.")
+            }.exceptionally { error ->
+                OgCloudCommand.sendFailure(source, error)
+                null
+            }
 
         return 1
     }
 
-    private fun resolveTarget(input: String, serverRegistry: ServerRegistry): Pair<String, String> {
+    private fun resolveTarget(
+        input: String,
+        serverRegistry: ServerRegistry,
+    ): Pair<String, String> {
         if (input.equals(TARGET_ALL, ignoreCase = true)) {
             return TARGET_ALL to TARGET_ALL
         }

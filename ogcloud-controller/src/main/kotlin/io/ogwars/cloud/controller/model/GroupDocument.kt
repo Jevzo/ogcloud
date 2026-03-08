@@ -20,5 +20,5 @@ data class GroupDocument(
     val storageSize: String = "5Gi",
     val maintenance: Boolean = false,
     val createdAt: Instant = Instant.now(),
-    val updatedAt: Instant = Instant.now()
+    val updatedAt: Instant = Instant.now(),
 )

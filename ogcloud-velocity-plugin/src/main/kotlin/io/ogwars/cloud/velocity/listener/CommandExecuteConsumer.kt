@@ -13,17 +13,17 @@ class CommandExecuteConsumer(
     private val proxyId: String,
     private val groupName: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-command-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-velocity-command-consumer",
-        logger = logger,
-        consumerLabel = "command execute",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-command-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-velocity-command-consumer",
+            logger = logger,
+            consumerLabel = "command execute",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -46,14 +46,13 @@ class CommandExecuteConsumer(
         consumerRunner.stop()
     }
 
-    private fun CommandExecuteEvent.targetsThisServer(): Boolean {
-        return when (targetType) {
+    private fun CommandExecuteEvent.targetsThisServer(): Boolean =
+        when (targetType) {
             TARGET_SERVER -> target == proxyId
             TARGET_GROUP -> target == groupName
             TARGET_ALL -> true
             else -> false
         }
-    }
 
     companion object {
         private const val TOPIC = "ogcloud.command.execute"

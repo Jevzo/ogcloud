@@ -20,21 +20,21 @@ class PermissionUpdateConsumer(
     private val tablistTeamManager: TablistTeamManager,
     private val networkFeatureState: NetworkFeatureState,
     private val logger: Logger,
-    serverId: String
+    serverId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-paper-permupdate-$serverId",
-        topic = TOPIC,
-        threadName = "ogcloud-paper-perm-update-consumer",
-        clientIdSuffix = "consumer",
-        autoOffsetReset = "earliest",
-        logger = logger,
-        consumerLabel = "permission update",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-paper-permupdate-$serverId",
+            topic = TOPIC,
+            threadName = "ogcloud-paper-perm-update-consumer",
+            clientIdSuffix = "consumer",
+            autoOffsetReset = "earliest",
+            logger = logger,
+            consumerLabel = "permission update",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -60,18 +60,22 @@ class PermissionUpdateConsumer(
     }
 
     private fun schedulePermissionRefresh(player: Player) {
-        Bukkit.getScheduler().runTask(plugin, Runnable {
-            PermissionInjector.inject(player, permissionManager, logger)
-            if (networkFeatureState.tablistEnabled) {
-                tablistTeamManager.refreshPlayer(player)
-            }
-        })
+        Bukkit.getScheduler().runTask(
+            plugin,
+            Runnable {
+                PermissionInjector.inject(player, permissionManager, logger)
+                if (networkFeatureState.tablistEnabled) {
+                    tablistTeamManager.refreshPlayer(player)
+                }
+            },
+        )
     }
 
-    private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }.onFailure { logger.warning("Received permission update with invalid uuid: $rawUuid") }
+    private fun parseUuid(rawUuid: String): UUID? =
+        runCatching {
+            UUID.fromString(rawUuid)
+        }.onFailure { logger.warning("Received permission update with invalid uuid: $rawUuid") }
             .getOrNull()
-    }
 
     fun stop() {
         consumerRunner.stop()

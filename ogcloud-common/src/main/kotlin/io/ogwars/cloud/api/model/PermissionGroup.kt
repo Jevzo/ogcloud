@@ -5,5 +5,5 @@ data class PermissionGroup(
     val name: String,
     val display: DisplayConfig,
     val weight: Int,
-    val permissions: List<String>
+    val permissions: List<String>,
 )

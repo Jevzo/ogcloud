@@ -8,5 +8,5 @@ data class RedisPlayerSession(
     val permission: SessionPermission = SessionPermission(),
     val display: DisplayConfig = DisplayConfig(),
     val weight: Int = 100,
-    val permissions: List<String> = emptyList()
+    val permissions: List<String> = emptyList(),
 )

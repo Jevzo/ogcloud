@@ -16,23 +16,23 @@ class ProxyHeartbeatTask(
     private val maxPlayers: Int,
     private val podIp: String,
     private val port: Int,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     private val gson = Gson()
     private lateinit var scheduler: ScheduledExecutorService
 
     fun start() {
-        scheduler = Executors.newSingleThreadScheduledExecutor { r ->
-            Thread(r, "ogcloud-proxy-heartbeat").apply { isDaemon = true }
-        }
+        scheduler =
+            Executors.newSingleThreadScheduledExecutor { r ->
+                Thread(r, "ogcloud-proxy-heartbeat").apply { isDaemon = true }
+            }
         scheduler.scheduleAtFixedRate(::sendHeartbeat, 0, HEARTBEAT_INTERVAL_SECONDS, TimeUnit.SECONDS)
         logger.info(
             "Proxy heartbeat started (interval={}s, podIp={}, port={}, maxPlayers={})",
             HEARTBEAT_INTERVAL_SECONDS,
             podIp,
             port,
-            maxPlayers
+            maxPlayers,
         )
     }
 
@@ -49,8 +49,8 @@ class ProxyHeartbeatTask(
                     topic = TOPIC,
                     key = proxyId,
                     payload = gson.toJson(createHeartbeatEvent()),
-                    type = KafkaSendDispatcher.MessageType.PROXY_HEARTBEAT
-                )
+                    type = KafkaSendDispatcher.MessageType.PROXY_HEARTBEAT,
+                ),
             )
         } catch (exception: Exception) {
             logger.error("Failed to send proxy heartbeat", exception)
@@ -65,7 +65,7 @@ class ProxyHeartbeatTask(
             port = port,
             playerCount = proxyServer.playerCount,
             maxPlayers = maxPlayers,
-            memoryUsedMb = (runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB
+            memoryUsedMb = (runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB,
         )
     }
 

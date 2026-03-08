@@ -12,5 +12,5 @@ data class ScalingLogDocument(
     val reason: String,
     val serverId: String? = null,
     val details: String? = null,
-    val timestamp: Instant = Instant.now()
+    val timestamp: Instant = Instant.now(),
 )

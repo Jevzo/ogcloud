@@ -13,19 +13,19 @@ class PermissionUpdateConsumer(
     private val permissionCache: PermissionCache,
     private val networkState: NetworkState,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-permupdate-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-perm-update-consumer",
-        logger = logger,
-        consumerLabel = "permission update",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-permupdate-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-perm-update-consumer",
+            logger = logger,
+            consumerLabel = "permission update",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -49,13 +49,14 @@ class PermissionUpdateConsumer(
         logger.info("Permission cache refreshed: uuid={}, groupId={}", event.uuid, event.groupId)
     }
 
-    private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }.onFailure {
-            logger.warn(
-                "Received permission update with invalid uuid: {}", rawUuid
-            )
-        }.getOrNull()
-    }
+    private fun parseUuid(rawUuid: String): UUID? =
+        runCatching { UUID.fromString(rawUuid) }
+            .onFailure {
+                logger.warn(
+                    "Received permission update with invalid uuid: {}",
+                    rawUuid,
+                )
+            }.getOrNull()
 
     fun stop() {
         consumerRunner.stop()

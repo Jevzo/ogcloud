@@ -8,9 +8,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class PlayerTransferProducer(
-    private val kafkaTemplate: KafkaTemplate<String, PlayerTransferEvent>
+    private val kafkaTemplate: KafkaTemplate<String, PlayerTransferEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishTransfer(event: PlayerTransferEvent) {
@@ -18,7 +17,7 @@ class PlayerTransferProducer(
             "Publishing player transfer: serverId={}, target={}, reason={}",
             event.serverId,
             event.target,
-            event.reason
+            event.reason,
         )
 
         val key = event.serverId ?: event.playerUuid ?: "unknown"

@@ -3,8 +3,8 @@ package io.ogwars.cloud.api.dto
 import io.ogwars.cloud.api.model.WebUserDocument
 import io.ogwars.cloud.api.model.WebUserRole
 import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
 
 data class CreateWebUserRequest(
     @field:Email
@@ -13,7 +13,7 @@ data class CreateWebUserRequest(
     @field:NotBlank
     val password: String,
     @field:NotBlank
-    val role: String
+    val role: String,
 )
 
 data class UpdateWebUserRequest(
@@ -23,7 +23,7 @@ data class UpdateWebUserRequest(
     val password: String? = null,
     @field:Pattern(regexp = ".*\\S.*", message = "must not be blank")
     val username: String? = null,
-    val role: String? = null
+    val role: String? = null,
 )
 
 data class WebUserResponse(
@@ -31,17 +31,16 @@ data class WebUserResponse(
     val email: String,
     val username: String,
     val role: WebUserRole,
-    val linkedPlayerUuid: String?
+    val linkedPlayerUuid: String?,
 )
 
-fun WebUserDocument.toResponse(): WebUserResponse {
-    return WebUserResponse(
+fun WebUserDocument.toResponse(): WebUserResponse =
+    WebUserResponse(
         id = id,
         email = email,
         username = username,
         role = role,
-        linkedPlayerUuid = linkedPlayerUuid
+        linkedPlayerUuid = linkedPlayerUuid,
     )
-}
 
 fun UpdateWebUserRequest.parseRole(): WebUserRole? = role?.let(WebUserRole::parse)

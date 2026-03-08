@@ -8,5 +8,5 @@ data class PlayerInfo(
     val serverId: String? = null,
     val proxyId: String? = null,
     val groupName: String? = null,
-    val permissions: List<String> = emptyList()
+    val permissions: List<String> = emptyList(),
 )

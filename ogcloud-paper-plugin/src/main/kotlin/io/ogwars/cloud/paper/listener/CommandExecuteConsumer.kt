@@ -12,21 +12,21 @@ class CommandExecuteConsumer(
     private val kafkaManager: KafkaManager,
     private val serverId: String,
     private val groupName: String,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-paper-command-$serverId",
-        topic = TOPIC,
-        threadName = "ogcloud-paper-command-consumer",
-        clientIdSuffix = "command-consumer",
-        autoOffsetReset = "latest",
-        logger = logger,
-        consumerLabel = "command execute",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-paper-command-$serverId",
+            topic = TOPIC,
+            threadName = "ogcloud-paper-command-consumer",
+            clientIdSuffix = "command-consumer",
+            autoOffsetReset = "latest",
+            logger = logger,
+            consumerLabel = "command execute",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -42,23 +42,25 @@ class CommandExecuteConsumer(
 
         logger.info("Executing remote command: ${event.command}")
 
-        Bukkit.getScheduler().runTask(plugin, Runnable {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), event.command)
-        })
+        Bukkit.getScheduler().runTask(
+            plugin,
+            Runnable {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), event.command)
+            },
+        )
     }
 
     fun stop() {
         consumerRunner.stop()
     }
 
-    private fun CommandExecuteEvent.targetsThisServer(): Boolean {
-        return when (targetType) {
+    private fun CommandExecuteEvent.targetsThisServer(): Boolean =
+        when (targetType) {
             TARGET_SERVER -> target == serverId
             TARGET_GROUP -> target == groupName
             TARGET_ALL -> true
             else -> false
         }
-    }
 
     companion object {
         private const val TOPIC = "ogcloud.command.execute"

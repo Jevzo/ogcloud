@@ -7,7 +7,6 @@ import org.springframework.kafka.config.TopicBuilder
 
 @Configuration
 class KafkaConfig {
-
     @Bean
     fun serverLifecycleTopic(): NewTopic = buildTopic(SERVER_LIFECYCLE, BUSY_TOPIC_PARTITIONS)
 
@@ -56,13 +55,15 @@ class KafkaConfig {
     @Bean
     fun serverKillTopic(): NewTopic = buildTopic(SERVER_KILL)
 
-    private fun buildTopic(name: String, partitions: Int = LIGHT_TOPIC_PARTITIONS): NewTopic {
-        return TopicBuilder
+    private fun buildTopic(
+        name: String,
+        partitions: Int = LIGHT_TOPIC_PARTITIONS,
+    ): NewTopic =
+        TopicBuilder
             .name(name)
             .partitions(partitions)
             .replicas(DEFAULT_REPLICAS)
             .build()
-    }
 
     companion object {
         const val SERVER_LIFECYCLE = "ogcloud.server.lifecycle"

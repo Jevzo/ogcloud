@@ -8,19 +8,20 @@ import org.springframework.stereotype.Component
 
 @Component
 class ServerStopProducer(
-    private val kafkaTemplate: KafkaTemplate<String, ServerStopEvent>
+    private val kafkaTemplate: KafkaTemplate<String, ServerStopEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun stopServer(serverId: String) {
         log.info("Publishing server stop: serverId={}", serverId)
 
         kafkaTemplate.send(
-            KafkaConfig.SERVER_STOP, serverId, ServerStopEvent(
+            KafkaConfig.SERVER_STOP,
+            serverId,
+            ServerStopEvent(
                 serverId = serverId,
-                reason = "api-request"
-            )
+                reason = "api-request",
+            ),
         )
     }
 }

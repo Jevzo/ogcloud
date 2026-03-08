@@ -12,7 +12,6 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 object OgCloudCommand {
-
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
     fun register(
@@ -21,15 +20,25 @@ object OgCloudCommand {
         serverRegistry: ServerRegistry,
     ) {
         val node =
-            LiteralArgumentBuilder.literal<CommandSource>("ogcloud").requires { it.hasPermission("ogcloud.admin") }
-                .then(ServerCommands.create(apiClient, serverRegistry)).then(GroupCommands.create(apiClient))
+            LiteralArgumentBuilder
+                .literal<CommandSource>("ogcloud")
+                .requires { it.hasPermission("ogcloud.admin") }
+                .then(ServerCommands.create(apiClient, serverRegistry))
+                .then(GroupCommands.create(apiClient))
                 .then(PlayerCommands.create(apiClient, proxyServer, serverRegistry))
-                .then(NetworkCommands.create(apiClient)).then(PermCommands.create(apiClient))
-                .then(CommandCommand.create(apiClient, serverRegistry)).executes(::sendOgCloudInfoMessage).build()
+                .then(NetworkCommands.create(apiClient))
+                .then(PermCommands.create(apiClient))
+                .then(CommandCommand.create(apiClient, serverRegistry))
+                .executes(::sendOgCloudInfoMessage)
+                .build()
 
         val command = BrigadierCommand(node)
         proxyServer.commandManager.register(
-            proxyServer.commandManager.metaBuilder(command).aliases("oc").build(), command
+            proxyServer.commandManager
+                .metaBuilder(command)
+                .aliases("oc")
+                .build(),
+            command,
         )
     }
 
@@ -38,27 +47,38 @@ object OgCloudCommand {
         return 1
     }
 
-    fun sendMessage(source: CommandSource, message: String) {
+    fun sendMessage(
+        source: CommandSource,
+        message: String,
+    ) {
         source.sendMessage(legacySerializer.deserialize(message))
     }
 
-    fun sendPrefixed(source: CommandSource, message: String) {
+    fun sendPrefixed(
+        source: CommandSource,
+        message: String,
+    ) {
         sendMessage(source, "$PREFIX&7$message")
     }
 
-    fun sendError(source: CommandSource, message: String) {
+    fun sendError(
+        source: CommandSource,
+        message: String,
+    ) {
         sendMessage(source, "$PREFIX&c$message")
     }
 
-    fun sendFailure(source: CommandSource, error: Throwable) {
+    fun sendFailure(
+        source: CommandSource,
+        error: Throwable,
+    ) {
         val message = generateSequence(error) { it.cause }.firstNotNullOfOrNull(Throwable::message) ?: "Unknown error"
 
         sendError(source, "Failed: $message")
     }
 
-    fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> {
-        return RequiredArgumentBuilder.argument(name, StringArgumentType.word())
-    }
+    fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> =
+        RequiredArgumentBuilder.argument(name, StringArgumentType.word())
 
     private const val PREFIX = "&8| &6OgCloud &7> "
 }

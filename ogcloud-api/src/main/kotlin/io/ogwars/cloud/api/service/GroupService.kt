@@ -32,79 +32,88 @@ class GroupService(
     private val serverRedisRepository: ServerRedisRepository,
     private val serverStopProducer: ServerStopProducer,
     private val auditLogService: AuditLogService,
-    private val groupOperationTaskExecutor: TaskExecutor
+    private val groupOperationTaskExecutor: TaskExecutor,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun listAll(query: String?, page: Int, size: Int?): PaginatedResponse<GroupResponse> {
+    fun listAll(
+        query: String?,
+        page: Int,
+        size: Int?,
+    ): PaginatedResponse<GroupResponse> {
         val pageRequest = PaginationSupport.toPageRequest(page, size)
         val queryObject = Query()
 
-        PaginationSupport.buildSearchCriteria(
-            query,
-            "id",
-            "type",
-            "templateBucket",
-            "templatePath",
-            "templateVersion",
-            "serverImage"
-        )?.let(queryObject::addCriteria)
+        PaginationSupport
+            .buildSearchCriteria(
+                query,
+                "id",
+                "type",
+                "templateBucket",
+                "templatePath",
+                "templateVersion",
+                "serverImage",
+            )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<GroupDocument>(queryObject)
 
         queryObject.with(Sort.by(Sort.Order.asc("id"))).with(pageRequest)
 
-        val groups = mongoTemplate.find<GroupDocument>(queryObject)
-            .map { it.toResponse() }
+        val groups =
+            mongoTemplate
+                .find<GroupDocument>(queryObject)
+                .map { it.toResponse() }
 
         return PaginationSupport.toResponse(groups, page, pageRequest.pageSize, totalItems)
     }
 
-    fun getByName(name: String): GroupResponse {
-        return requireGroup(name).toResponse()
-    }
+    fun getByName(name: String): GroupResponse = requireGroup(name).toResponse()
 
     fun create(request: CreateGroupRequest): GroupResponse {
         val document = request.toDocument()
         validateScaling(document.scaling)
 
-        val saved = try {
-            groupRepository.save(document)
-        } catch (_: DuplicateKeyException) {
-            throw GroupAlreadyExistsException(request.id)
-        }
+        val saved =
+            try {
+                groupRepository.save(document)
+            } catch (_: DuplicateKeyException) {
+                throw GroupAlreadyExistsException(request.id)
+            }
 
         auditLogService.logApiAction(
             action = "GROUP_CREATED",
             targetType = "GROUP",
             targetId = saved.id,
             summary = "Created group ${saved.id}",
-            metadata = mapOf("type" to saved.type.name)
+            metadata = mapOf("type" to saved.type.name),
         )
 
         return saved.toResponse()
     }
 
-    fun update(name: String, request: UpdateGroupRequest): GroupResponse {
+    fun update(
+        name: String,
+        request: UpdateGroupRequest,
+    ): GroupResponse {
         val existing = requireGroup(name)
         val updatedScaling = request.scaling?.toModel() ?: existing.scaling
         validateScaling(updatedScaling)
 
-        val saved = groupRepository.save(
-            existing.copy(
-                templateBucket = request.templateBucket ?: existing.templateBucket,
-                templatePath = request.templatePath ?: existing.templatePath,
-                templateVersion = request.templateVersion ?: existing.templateVersion,
-                scaling = updatedScaling,
-                resources = request.resources?.toModel() ?: existing.resources,
-                jvmFlags = request.jvmFlags ?: existing.jvmFlags,
-                drainTimeoutSeconds = request.drainTimeoutSeconds ?: existing.drainTimeoutSeconds,
-                serverImage = request.serverImage ?: existing.serverImage,
-                storageSize = request.storageSize ?: existing.storageSize,
-                updatedAt = Instant.now()
+        val saved =
+            groupRepository.save(
+                existing.copy(
+                    templateBucket = request.templateBucket ?: existing.templateBucket,
+                    templatePath = request.templatePath ?: existing.templatePath,
+                    templateVersion = request.templateVersion ?: existing.templateVersion,
+                    scaling = updatedScaling,
+                    resources = request.resources?.toModel() ?: existing.resources,
+                    jvmFlags = request.jvmFlags ?: existing.jvmFlags,
+                    drainTimeoutSeconds = request.drainTimeoutSeconds ?: existing.drainTimeoutSeconds,
+                    serverImage = request.serverImage ?: existing.serverImage,
+                    storageSize = request.storageSize ?: existing.storageSize,
+                    updatedAt = Instant.now(),
+                ),
             )
-        )
 
         groupUpdateProducer.publishGroupUpdate(saved)
 
@@ -112,13 +121,16 @@ class GroupService(
             action = "GROUP_UPDATED",
             targetType = "GROUP",
             targetId = saved.id,
-            summary = "Updated group ${saved.id}"
+            summary = "Updated group ${saved.id}",
         )
 
         return saved.toResponse()
     }
 
-    fun setMaintenance(name: String, enabled: Boolean): GroupResponse {
+    fun setMaintenance(
+        name: String,
+        enabled: Boolean,
+    ): GroupResponse {
         val existing = requireGroup(name)
         val saved = groupRepository.save(existing.copy(maintenance = enabled, updatedAt = Instant.now()))
 
@@ -129,7 +141,7 @@ class GroupService(
             targetType = "GROUP",
             targetId = saved.id,
             summary = "Set maintenance=$enabled for group ${saved.id}",
-            metadata = mapOf("maintenance" to enabled.toString())
+            metadata = mapOf("maintenance" to enabled.toString()),
         )
 
         return saved.toResponse()
@@ -152,7 +164,7 @@ class GroupService(
             action = "GROUP_DELETED",
             targetType = "GROUP",
             targetId = name,
-            summary = "Deleted group $name"
+            summary = "Deleted group $name",
         )
     }
 
@@ -175,7 +187,7 @@ class GroupService(
             action = "GROUP_RESTART_REQUESTED",
             targetType = "GROUP",
             targetId = name,
-            summary = "Requested asynchronous restart for group $name"
+            summary = "Requested asynchronous restart for group $name",
         )
     }
 
@@ -210,7 +222,7 @@ class GroupService(
 
     private fun stopServersInGroup(
         group: GroupDocument,
-        timeoutException: (List<String>) -> RuntimeException
+        timeoutException: (List<String>) -> RuntimeException,
     ) {
         val requestedStopIds = mutableSetOf<String>()
         val deadline = Instant.now().plusSeconds(calculateDeleteTimeoutSeconds(group))
@@ -232,9 +244,10 @@ class GroupService(
     private fun requestStopsForActiveServers(
         groupId: String,
         servers: List<ServerDocument>,
-        requestedStopIds: MutableSet<String>
+        requestedStopIds: MutableSet<String>,
     ) {
-        servers.filterNot(::isStoppedOrStopping)
+        servers
+            .filterNot(::isStoppedOrStopping)
             .forEach { server ->
                 if (requestedStopIds.add(server.id)) {
                     serverStopProducer.stopServer(server.id)
@@ -242,7 +255,7 @@ class GroupService(
                         "Requested server stop before group deletion: group={}, serverId={}, state={}",
                         groupId,
                         server.id,
-                        server.state
+                        server.state,
                     )
                 }
             }
@@ -251,29 +264,28 @@ class GroupService(
     private fun requireBeforeDeadline(
         deadline: Instant,
         servers: List<ServerDocument>,
-        timeoutException: (List<String>) -> RuntimeException
+        timeoutException: (List<String>) -> RuntimeException,
     ) {
         if (Instant.now().isAfter(deadline)) {
             throw timeoutException(servers.map(ServerDocument::id))
         }
     }
 
-    private fun isStoppedOrStopping(server: ServerDocument): Boolean {
-        return server.state == ServerState.STOPPING || server.state == ServerState.STOPPED
-    }
+    private fun isStoppedOrStopping(server: ServerDocument): Boolean =
+        server.state == ServerState.STOPPING || server.state == ServerState.STOPPED
 
     private fun validateScaling(scaling: ScalingConfig) {
         if (scaling.minOnline > scaling.maxInstances) {
             throw IllegalArgumentException(
-                "minOnline (${scaling.minOnline}) cannot exceed maxInstances (${scaling.maxInstances})"
+                "minOnline (${scaling.minOnline}) cannot exceed maxInstances (${scaling.maxInstances})",
             )
         }
     }
 
-    private fun requireGroup(name: String): GroupDocument {
-        return groupRepository.findById(name)
+    private fun requireGroup(name: String): GroupDocument =
+        groupRepository
+            .findById(name)
             .orElseThrow { GroupNotFoundException(name) }
-    }
 
     private fun calculateDeleteTimeoutSeconds(group: GroupDocument): Long {
         val requestedDrainSeconds = group.drainTimeoutSeconds.toLong() + DELETE_TIMEOUT_BUFFER_SECONDS

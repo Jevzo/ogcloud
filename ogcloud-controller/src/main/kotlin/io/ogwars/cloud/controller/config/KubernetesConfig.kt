@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class KubernetesConfig {
-
     @Bean
     fun kubernetesClient(): KubernetesClient = KubernetesClientBuilder().build()
 }

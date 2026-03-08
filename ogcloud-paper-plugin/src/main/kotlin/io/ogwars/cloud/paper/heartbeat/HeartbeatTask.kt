@@ -6,16 +6,20 @@ import io.ogwars.cloud.paper.OgCloudPaperPlugin
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 
 class HeartbeatTask(
-    private val plugin: OgCloudPaperPlugin, private val kafkaSendDispatcher: KafkaSendDispatcher
+    private val plugin: OgCloudPaperPlugin,
+    private val kafkaSendDispatcher: KafkaSendDispatcher,
 ) {
-
     private val gson = Gson()
     private var taskId: Int = NO_TASK_ID
 
     fun start() {
-        taskId = plugin.server.scheduler.scheduleSyncRepeatingTask(
-            plugin, ::sendHeartbeat, 0L, HEARTBEAT_INTERVAL_TICKS
-        )
+        taskId =
+            plugin.server.scheduler.scheduleSyncRepeatingTask(
+                plugin,
+                ::sendHeartbeat,
+                0L,
+                HEARTBEAT_INTERVAL_TICKS,
+            )
         if (taskId == NO_TASK_ID) {
             plugin.logger.severe("Failed to schedule heartbeat task")
         }
@@ -23,16 +27,19 @@ class HeartbeatTask(
 
     private fun sendHeartbeat() {
         val heartbeatEvent = createHeartbeatEvent()
-        plugin.server.scheduler.runTaskAsynchronously(plugin, Runnable {
-            kafkaSendDispatcher.dispatch(
-                KafkaSendDispatcher.Message(
-                    topic = TOPIC,
-                    key = plugin.serverId,
-                    payload = gson.toJson(heartbeatEvent),
-                    type = KafkaSendDispatcher.MessageType.SERVER_HEARTBEAT
+        plugin.server.scheduler.runTaskAsynchronously(
+            plugin,
+            Runnable {
+                kafkaSendDispatcher.dispatch(
+                    KafkaSendDispatcher.Message(
+                        topic = TOPIC,
+                        key = plugin.serverId,
+                        payload = gson.toJson(heartbeatEvent),
+                        type = KafkaSendDispatcher.MessageType.SERVER_HEARTBEAT,
+                    ),
                 )
-            )
-        })
+            },
+        )
     }
 
     fun stop() {
@@ -51,7 +58,7 @@ class HeartbeatTask(
             maxPlayers = plugin.server.maxPlayers,
             tps = plugin.server.tps[0].coerceAtMost(MAX_TPS),
             memoryUsedMb = (runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB,
-            gameState = plugin.gameStateManager.currentState.name
+            gameState = plugin.gameStateManager.currentState.name,
         )
     }
 

@@ -12,5 +12,5 @@ data class ServerLifecycleEvent(
     val podName: String? = null,
     val podIp: String? = null,
     val port: Int? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

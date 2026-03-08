@@ -8,12 +8,14 @@ import org.springframework.stereotype.Service
 
 @Service
 class TemplateService(
-    private val minioClient: MinioClient
+    private val minioClient: MinioClient,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun templateExists(bucket: String, path: String): Boolean {
+    fun templateExists(
+        bucket: String,
+        path: String,
+    ): Boolean {
         val objectPath = templateObjectPath(path)
         if (!bucketExists(bucket)) {
             log.warn("Bucket does not exist: {}", bucket)
@@ -21,7 +23,13 @@ class TemplateService(
         }
 
         return try {
-            minioClient.statObject(StatObjectArgs.builder().bucket(bucket).`object`(objectPath).build())
+            minioClient.statObject(
+                StatObjectArgs
+                    .builder()
+                    .bucket(bucket)
+                    .`object`(objectPath)
+                    .build(),
+            )
             true
         } catch (_: Exception) {
             log.warn("Template not found: bucket={}, path={}", bucket, objectPath)
@@ -29,9 +37,8 @@ class TemplateService(
         }
     }
 
-    private fun bucketExists(bucket: String): Boolean {
-        return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())
-    }
+    private fun bucketExists(bucket: String): Boolean =
+        minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())
 
     private fun templateObjectPath(path: String): String = "$path/$TEMPLATE_FILE_NAME"
 

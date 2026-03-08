@@ -6,12 +6,13 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class MinioConfig(
-    private val minioProperties: MinioProperties
+    private val minioProperties: MinioProperties,
 ) {
-
     @Bean
-    fun minioClient(): MinioClient = MinioClient.builder()
-        .endpoint(minioProperties.endpoint)
-        .credentials(minioProperties.accessKey, minioProperties.secretKey)
-        .build()
+    fun minioClient(): MinioClient =
+        MinioClient
+            .builder()
+            .endpoint(minioProperties.endpoint)
+            .credentials(minioProperties.accessKey, minioProperties.secretKey)
+            .build()
 }

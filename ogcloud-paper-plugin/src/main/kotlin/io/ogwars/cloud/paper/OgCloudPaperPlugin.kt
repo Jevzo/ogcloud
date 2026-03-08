@@ -19,7 +19,6 @@ import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
 
 class OgCloudPaperPlugin : JavaPlugin() {
-
     lateinit var kafkaManager: KafkaManager
         private set
 
@@ -89,20 +88,24 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
     private fun initializeInfrastructure() {
         kafkaManager = KafkaManager(settings.kafkaBrokers, serverId).also(KafkaManager::start)
-        kafkaSendDispatcher = KafkaSendDispatcher(
-            kafkaManager = kafkaManager, logger = logger, workerThreadName = "ogcloud-paper-kafka-dispatcher"
-        ).also(KafkaSendDispatcher::start)
+        kafkaSendDispatcher =
+            KafkaSendDispatcher(
+                kafkaManager = kafkaManager,
+                logger = logger,
+                workerThreadName = "ogcloud-paper-kafka-dispatcher",
+            ).also(KafkaSendDispatcher::start)
         redisManager = RedisManager(settings.redisHost, settings.redisPort, logger)
         permissionManager = PermissionManager()
         networkFeatureState = NetworkFeatureState()
         tablistTeamManager = TablistTeamManager(permissionManager, networkFeatureState)
-        gameStateManager = GameStateManager(
-            serverId = serverId,
-            group = groupName,
-            kafkaSendDispatcher = kafkaSendDispatcher,
-            asyncHandoff = { runnable -> server.scheduler.runTaskAsynchronously(this, runnable) },
-            logger = logger
-        )
+        gameStateManager =
+            GameStateManager(
+                serverId = serverId,
+                group = groupName,
+                kafkaSendDispatcher = kafkaSendDispatcher,
+                asyncHandoff = { runnable -> server.scheduler.runTaskAsynchronously(this, runnable) },
+                logger = logger,
+            )
         apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
         heartbeatTask = HeartbeatTask(this, kafkaSendDispatcher).also(HeartbeatTask::start)
     }
@@ -115,25 +118,33 @@ class OgCloudPaperPlugin : JavaPlugin() {
     private fun registerListeners() {
         server.pluginManager.registerEvents(
             PlayerJoinListener(
-                this, permissionManager, tablistTeamManager, networkFeatureState, redisManager, logger
-            ), this
+                this,
+                permissionManager,
+                tablistTeamManager,
+                networkFeatureState,
+                redisManager,
+                logger,
+            ),
+            this,
         )
         server.pluginManager.registerEvents(
-            ChatListener(permissionManager, networkFeatureState), this
+            ChatListener(permissionManager, networkFeatureState),
+            this,
         )
     }
 
     private fun registerPublicApi() {
-        serverApi = OgCloudServerAPIImpl(
-            serverId = serverId,
-            groupName = groupName,
-            groupType = settings.groupType,
-            redisManager = redisManager,
-            permissionManager = permissionManager,
-            gameStateManager = gameStateManager,
-            apiClient = apiClient,
-            logger = logger
-        )
+        serverApi =
+            OgCloudServerAPIImpl(
+                serverId = serverId,
+                groupName = groupName,
+                groupType = settings.groupType,
+                redisManager = redisManager,
+                permissionManager = permissionManager,
+                gameStateManager = gameStateManager,
+                apiClient = apiClient,
+                logger = logger,
+            )
 
         server.servicesManager.register(OgCloudServerAPI::class.java, serverApi, this, ServicePriority.Normal)
 
@@ -141,50 +152,68 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     private fun startConsumers() {
-        permissionUpdateConsumer = PermissionUpdateConsumer(
-            plugin = this,
-            kafkaManager = kafkaManager,
-            permissionManager = permissionManager,
-            tablistTeamManager = tablistTeamManager,
-            networkFeatureState = networkFeatureState,
-            logger = logger,
-            serverId = serverId
-        ).also(PermissionUpdateConsumer::start)
+        permissionUpdateConsumer =
+            PermissionUpdateConsumer(
+                plugin = this,
+                kafkaManager = kafkaManager,
+                permissionManager = permissionManager,
+                tablistTeamManager = tablistTeamManager,
+                networkFeatureState = networkFeatureState,
+                logger = logger,
+                serverId = serverId,
+            ).also(PermissionUpdateConsumer::start)
 
-        networkUpdateConsumer = NetworkUpdateConsumer(
-            kafkaManager = kafkaManager,
-            networkFeatureState = networkFeatureState,
-            logger = logger,
-            onFeaturesChanged = { permissionSystemEnabled, tablistEnabled ->
-                server.scheduler.runTask(
-                    this, Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) })
-            },
-            serverId = serverId
-        ).also(NetworkUpdateConsumer::start)
+        networkUpdateConsumer =
+            NetworkUpdateConsumer(
+                kafkaManager = kafkaManager,
+                networkFeatureState = networkFeatureState,
+                logger = logger,
+                onFeaturesChanged = { permissionSystemEnabled, tablistEnabled ->
+                    server.scheduler.runTask(
+                        this,
+                        Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) },
+                    )
+                },
+                serverId = serverId,
+            ).also(NetworkUpdateConsumer::start)
 
-        commandExecuteConsumer = CommandExecuteConsumer(
-            plugin = this, kafkaManager = kafkaManager, serverId = serverId, groupName = groupName, logger = logger
-        ).also(CommandExecuteConsumer::start)
+        commandExecuteConsumer =
+            CommandExecuteConsumer(
+                plugin = this,
+                kafkaManager = kafkaManager,
+                serverId = serverId,
+                groupName = groupName,
+                logger = logger,
+            ).also(CommandExecuteConsumer::start)
 
-        lifecycleConsumer = LifecycleConsumer(
-            kafkaManager = kafkaManager, serverApi = serverApi, logger = logger, serverId = serverId
-        ).also(LifecycleConsumer::start)
+        lifecycleConsumer =
+            LifecycleConsumer(
+                kafkaManager = kafkaManager,
+                serverApi = serverApi,
+                logger = logger,
+                serverId = serverId,
+            ).also(LifecycleConsumer::start)
     }
 
     private fun loadNetworkFeatures() {
-        runCatching { apiClient.getNetworkSettingsSync() }.onSuccess { settingsResponse ->
-            applyNetworkFeatures(
-                settingsResponse.general.permissionSystemEnabled, settingsResponse.general.tablistEnabled
-            )
-        }.onFailure {
-            logger.warning(
-                "Failed to load network feature settings, defaulting to enabled: ${it.message}"
-            )
-            applyNetworkFeatures(permissionSystemEnabled = true, tablistEnabled = true)
-        }
+        runCatching { apiClient.getNetworkSettingsSync() }
+            .onSuccess { settingsResponse ->
+                applyNetworkFeatures(
+                    settingsResponse.general.permissionSystemEnabled,
+                    settingsResponse.general.tablistEnabled,
+                )
+            }.onFailure {
+                logger.warning(
+                    "Failed to load network feature settings, defaulting to enabled: ${it.message}",
+                )
+                applyNetworkFeatures(permissionSystemEnabled = true, tablistEnabled = true)
+            }
     }
 
-    private fun applyNetworkFeatures(permissionSystemEnabled: Boolean, tablistEnabled: Boolean) {
+    private fun applyNetworkFeatures(
+        permissionSystemEnabled: Boolean,
+        tablistEnabled: Boolean,
+    ) {
         networkFeatureState.update(permissionSystemEnabled, tablistEnabled)
 
         if (!permissionSystemEnabled) {
@@ -218,7 +247,10 @@ class OgCloudPaperPlugin : JavaPlugin() {
         }
     }
 
-    private inline fun stopConsumer(isInitialized: Boolean, stopAction: () -> Unit) {
+    private inline fun stopConsumer(
+        isInitialized: Boolean,
+        stopAction: () -> Unit,
+    ) {
         if (isInitialized) {
             stopAction()
         }

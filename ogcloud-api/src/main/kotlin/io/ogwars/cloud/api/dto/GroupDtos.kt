@@ -20,7 +20,7 @@ data class CreateGroupRequest(
     @field:NotBlank val jvmFlags: String,
     @field:Min(1) val drainTimeoutSeconds: Int,
     @field:NotBlank val serverImage: String,
-    val storageSize: String = "5Gi"
+    val storageSize: String = "5Gi",
 )
 
 data class ScalingConfigDto(
@@ -29,14 +29,14 @@ data class ScalingConfigDto(
     @field:Min(1) val playersPerServer: Int,
     val scaleUpThreshold: Double,
     val scaleDownThreshold: Double,
-    @field:Min(1) val cooldownSeconds: Int
+    @field:Min(1) val cooldownSeconds: Int,
 )
 
 data class ResourceConfigDto(
     @field:NotBlank val memoryRequest: String,
     @field:NotBlank val memoryLimit: String,
     @field:NotBlank val cpuRequest: String,
-    @field:NotBlank val cpuLimit: String
+    @field:NotBlank val cpuLimit: String,
 )
 
 data class UpdateGroupRequest(
@@ -48,7 +48,7 @@ data class UpdateGroupRequest(
     val jvmFlags: String? = null,
     @field:Min(1) val drainTimeoutSeconds: Int? = null,
     val serverImage: String? = null,
-    val storageSize: String? = null
+    val storageSize: String? = null,
 )
 
 data class GroupResponse(
@@ -65,11 +65,11 @@ data class GroupResponse(
     val storageSize: String,
     val maintenance: Boolean,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
 )
 
-fun GroupDocument.toResponse(): GroupResponse {
-    return GroupResponse(
+fun GroupDocument.toResponse(): GroupResponse =
+    GroupResponse(
         id = id,
         type = type,
         templateBucket = templateBucket,
@@ -83,12 +83,11 @@ fun GroupDocument.toResponse(): GroupResponse {
         storageSize = storageSize,
         maintenance = maintenance,
         createdAt = createdAt.toString(),
-        updatedAt = updatedAt.toString()
+        updatedAt = updatedAt.toString(),
     )
-}
 
-fun CreateGroupRequest.toDocument(now: Instant = Instant.now()): GroupDocument {
-    return GroupDocument(
+fun CreateGroupRequest.toDocument(now: Instant = Instant.now()): GroupDocument =
+    GroupDocument(
         id = id,
         type = type,
         templateBucket = templateBucket,
@@ -101,26 +100,23 @@ fun CreateGroupRequest.toDocument(now: Instant = Instant.now()): GroupDocument {
         serverImage = serverImage,
         storageSize = storageSize,
         createdAt = now,
-        updatedAt = now
+        updatedAt = now,
     )
-}
 
-fun ScalingConfigDto.toModel(): ScalingConfig {
-    return ScalingConfig(
+fun ScalingConfigDto.toModel(): ScalingConfig =
+    ScalingConfig(
         minOnline = minOnline,
         maxInstances = maxInstances,
         playersPerServer = playersPerServer,
         scaleUpThreshold = scaleUpThreshold,
         scaleDownThreshold = scaleDownThreshold,
-        cooldownSeconds = cooldownSeconds
+        cooldownSeconds = cooldownSeconds,
     )
-}
 
-fun ResourceConfigDto.toModel(): ResourceConfig {
-    return ResourceConfig(
+fun ResourceConfigDto.toModel(): ResourceConfig =
+    ResourceConfig(
         memoryRequest = memoryRequest,
         memoryLimit = memoryLimit,
         cpuRequest = cpuRequest,
-        cpuLimit = cpuLimit
+        cpuLimit = cpuLimit,
     )
-}

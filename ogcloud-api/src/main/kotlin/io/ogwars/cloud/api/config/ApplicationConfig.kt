@@ -7,10 +7,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 @Configuration
 class ApplicationConfig {
-
     @Bean
-    fun groupOperationTaskExecutor(): TaskExecutor {
-        return ThreadPoolTaskExecutor().apply {
+    fun groupOperationTaskExecutor(): TaskExecutor =
+        ThreadPoolTaskExecutor().apply {
             corePoolSize = GROUP_TASK_EXECUTOR_POOL_SIZE
             maxPoolSize = GROUP_TASK_EXECUTOR_POOL_SIZE
             queueCapacity = GROUP_TASK_EXECUTOR_QUEUE_CAPACITY
@@ -19,7 +18,6 @@ class ApplicationConfig {
 
             initialize()
         }
-    }
 
     companion object {
         private const val GROUP_TASK_EXECUTOR_POOL_SIZE = 1

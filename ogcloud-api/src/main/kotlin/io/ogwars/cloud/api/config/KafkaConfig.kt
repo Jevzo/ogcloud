@@ -7,7 +7,6 @@ import org.springframework.kafka.config.TopicBuilder
 
 @Configuration
 class KafkaConfig {
-
     @Bean
     fun serverRequestTopic(): NewTopic = buildTopic(SERVER_REQUEST)
 
@@ -38,12 +37,15 @@ class KafkaConfig {
     @Bean
     fun webAccountLinkOtpTopic(): NewTopic = buildTopic(WEB_ACCOUNT_LINK_OTP)
 
-    private fun buildTopic(name: String, partitions: Int = DEFAULT_TOPIC_PARTITIONS): NewTopic {
-        return TopicBuilder.name(name)
+    private fun buildTopic(
+        name: String,
+        partitions: Int = DEFAULT_TOPIC_PARTITIONS,
+    ): NewTopic =
+        TopicBuilder
+            .name(name)
             .partitions(partitions)
             .replicas(DEFAULT_TOPIC_REPLICAS)
             .build()
-    }
 
     companion object {
         const val SERVER_REQUEST = "ogcloud.server.request"

@@ -8,9 +8,9 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 
 class ChatListener(
-    private val permissionManager: PermissionManager, private val networkFeatureState: NetworkFeatureState
+    private val permissionManager: PermissionManager,
+    private val networkFeatureState: NetworkFeatureState,
 ) : Listener {
-
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
     @EventHandler

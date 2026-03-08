@@ -9,9 +9,8 @@ import java.util.*
 
 @Component
 class ServerRequestProducer(
-    private val kafkaTemplate: KafkaTemplate<String, ServerRequestEvent>
+    private val kafkaTemplate: KafkaTemplate<String, ServerRequestEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun requestServer(group: String): String {
@@ -20,11 +19,13 @@ class ServerRequestProducer(
         log.info("Publishing server request: group={}, serverId={}", group, serverId)
 
         kafkaTemplate.send(
-            KafkaConfig.SERVER_REQUEST, group, ServerRequestEvent(
+            KafkaConfig.SERVER_REQUEST,
+            group,
+            ServerRequestEvent(
                 group = group,
                 requestedBy = "api",
-                serverId = serverId
-            )
+                serverId = serverId,
+            ),
         )
 
         return serverId

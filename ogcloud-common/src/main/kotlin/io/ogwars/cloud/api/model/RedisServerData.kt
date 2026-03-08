@@ -20,5 +20,5 @@ data class RedisServerData(
     val podIpRetries: Int = 0,
     val startedAt: Long? = null,
     val lastHeartbeat: Long? = null,
-    val drainingStartedAt: Long? = null
+    val drainingStartedAt: Long? = null,
 )

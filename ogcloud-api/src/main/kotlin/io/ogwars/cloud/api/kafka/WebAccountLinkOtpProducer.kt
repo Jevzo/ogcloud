@@ -8,20 +8,25 @@ import org.springframework.stereotype.Component
 
 @Component
 class WebAccountLinkOtpProducer(
-    private val kafkaTemplate: KafkaTemplate<String, WebAccountLinkOtpEvent>
+    private val kafkaTemplate: KafkaTemplate<String, WebAccountLinkOtpEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun publishOtp(playerUuid: String, otp: String, requestedByEmail: String) {
+    fun publishOtp(
+        playerUuid: String,
+        otp: String,
+        requestedByEmail: String,
+    ) {
         log.info("Publishing web account link OTP: playerUuid={}", playerUuid)
 
         kafkaTemplate.send(
-            KafkaConfig.WEB_ACCOUNT_LINK_OTP, playerUuid, WebAccountLinkOtpEvent(
+            KafkaConfig.WEB_ACCOUNT_LINK_OTP,
+            playerUuid,
+            WebAccountLinkOtpEvent(
                 playerUuid = playerUuid,
                 otp = otp,
-                requestedByEmail = requestedByEmail
-            )
+                requestedByEmail = requestedByEmail,
+            ),
         )
     }
 }

@@ -6,5 +6,5 @@ data class GameStateUpdateEvent(
     val serverId: String,
     val group: String,
     val gameState: GameState,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

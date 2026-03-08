@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import java.util.Optional
 
 interface RefreshTokenRepository : MongoRepository<RefreshTokenDocument, String> {
-
     fun findByTokenHash(tokenHash: String): Optional<RefreshTokenDocument>
 
     fun findAllByUserId(userId: String): List<RefreshTokenDocument>

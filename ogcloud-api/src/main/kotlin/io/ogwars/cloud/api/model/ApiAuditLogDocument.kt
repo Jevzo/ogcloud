@@ -14,5 +14,5 @@ data class ApiAuditLogDocument(
     val actorEmail: String? = null,
     val summary: String,
     val metadata: Map<String, String> = emptyMap(),
-    val timestamp: Instant = Instant.now()
+    val timestamp: Instant = Instant.now(),
 )

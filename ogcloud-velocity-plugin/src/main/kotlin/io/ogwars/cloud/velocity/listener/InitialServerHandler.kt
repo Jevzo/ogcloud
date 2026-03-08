@@ -11,15 +11,16 @@ class InitialServerHandler(
     private val serverRegistry: ServerRegistry,
     private val permissionCache: PermissionCache,
     private val networkState: NetworkState,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     @Subscribe
     fun onPlayerChooseInitialServer(event: PlayerChooseInitialServerEvent) {
         val selected = selectInitialServer(event.player.uniqueId)
         if (selected == null) {
             logger.warn(
-                "No servers available in group '{}' for player {}", networkState.defaultGroup, event.player.username
+                "No servers available in group '{}' for player {}",
+                networkState.defaultGroup,
+                event.player.username,
             )
             return
         }
@@ -30,16 +31,21 @@ class InitialServerHandler(
             "Sending player {} to {} ({} players)",
             event.player.username,
             selected.serverInfo.name,
-            selected.playersConnected.size
+            selected.playersConnected.size,
         )
     }
 
-    private fun selectInitialServer(playerUuid: java.util.UUID) = serverRegistry.getServersByGroup(
-        networkState.defaultGroup,
-        includeMaintenance = networkState.permissionSystemEnabled && permissionCache.hasPermission(
-            playerUuid, MAINTENANCE_BYPASS_PERMISSION
-        )
-    ).minByOrNull { it.playersConnected.size }
+    private fun selectInitialServer(playerUuid: java.util.UUID) =
+        serverRegistry
+            .getServersByGroup(
+                networkState.defaultGroup,
+                includeMaintenance =
+                    networkState.permissionSystemEnabled &&
+                        permissionCache.hasPermission(
+                            playerUuid,
+                            MAINTENANCE_BYPASS_PERMISSION,
+                        ),
+            ).minByOrNull { it.playersConnected.size }
 
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"

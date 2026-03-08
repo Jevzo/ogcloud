@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component
 @Component
 class PermissionExpiryConsumer(
     private val playerTrackingService: PlayerTrackingService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.PERMISSION_EXPIRY], groupId = "ogcloud-controller")

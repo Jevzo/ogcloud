@@ -6,7 +6,11 @@ import io.ogwars.cloud.api.model.ServerDocument
 object ServerPresentationSupport {
     private const val NO_TPS = -1.0
 
-    fun resolveMaxPlayers(server: ServerDocument, configuredGroupMaxPlayers: Int, defaultProxyMaxPlayers: Int): Int {
+    fun resolveMaxPlayers(
+        server: ServerDocument,
+        configuredGroupMaxPlayers: Int,
+        defaultProxyMaxPlayers: Int,
+    ): Int {
         if (server.maxPlayers > 0) {
             return server.maxPlayers
         }
@@ -22,11 +26,10 @@ object ServerPresentationSupport {
         }
     }
 
-    fun resolveTps(server: ServerDocument): Double {
-        return if (server.type == GroupType.PROXY) {
+    fun resolveTps(server: ServerDocument): Double =
+        if (server.type == GroupType.PROXY) {
             NO_TPS
         } else {
             server.tps
         }
-    }
 }

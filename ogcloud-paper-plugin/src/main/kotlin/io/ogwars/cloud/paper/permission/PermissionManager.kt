@@ -14,18 +14,23 @@ data class CachedPermission(
     val chatSuffix: String,
     val nameColor: String,
     val tabPrefix: String,
-    val weight: Int
+    val weight: Int,
 )
 
 class PermissionManager {
-
     private val cache = ConcurrentHashMap<UUID, CachedPermission>()
 
-    fun cachePlayer(uuid: UUID, session: RedisPlayerSession) {
+    fun cachePlayer(
+        uuid: UUID,
+        session: RedisPlayerSession,
+    ) {
         cache[uuid] = session.toCachedPermission()
     }
 
-    fun cachePlayerFromEvent(uuid: UUID, event: PermissionUpdateEvent) {
+    fun cachePlayerFromEvent(
+        uuid: UUID,
+        event: PermissionUpdateEvent,
+    ) {
         cache[uuid] = event.toCachedPermission()
     }
 
@@ -43,15 +48,22 @@ class PermissionManager {
         cache.clear()
     }
 
-    fun hasPermission(uuid: UUID, permission: String): Boolean {
+    fun hasPermission(
+        uuid: UUID,
+        permission: String,
+    ): Boolean {
         val cached = cache[uuid] ?: return false
         return cached.permissions.grants(permission)
     }
 
     private fun createCachedPermission(
-        groupId: String, groupName: String, permissions: List<String>, display: DisplayConfig, weight: Int
-    ): CachedPermission {
-        return CachedPermission(
+        groupId: String,
+        groupName: String,
+        permissions: List<String>,
+        display: DisplayConfig,
+        weight: Int,
+    ): CachedPermission =
+        CachedPermission(
             groupId = groupId,
             groupName = groupName,
             permissions = permissions,
@@ -59,39 +71,37 @@ class PermissionManager {
             chatSuffix = display.chatSuffix,
             nameColor = display.nameColor,
             tabPrefix = display.tabPrefix,
-            weight = weight
+            weight = weight,
         )
-    }
 
-    private fun RedisPlayerSession.toCachedPermission(): CachedPermission {
-        return createCachedPermission(
+    private fun RedisPlayerSession.toCachedPermission(): CachedPermission =
+        createCachedPermission(
             groupId = permission.group,
             groupName = permission.group,
             permissions = permissions,
             display = display,
-            weight = weight
+            weight = weight,
         )
-    }
 
-    private fun PermissionUpdateEvent.toCachedPermission(): CachedPermission {
-        return createCachedPermission(
-            groupId = groupId, groupName = groupName, permissions = permissions, display = display, weight = weight
+    private fun PermissionUpdateEvent.toCachedPermission(): CachedPermission =
+        createCachedPermission(
+            groupId = groupId,
+            groupName = groupName,
+            permissions = permissions,
+            display = display,
+            weight = weight,
         )
-    }
 
-    private fun createDefaultPermission(): CachedPermission {
-        return createCachedPermission(
+    private fun createDefaultPermission(): CachedPermission =
+        createCachedPermission(
             groupId = DEFAULT_GROUP_ID,
             groupName = DEFAULT_GROUP_NAME,
             permissions = emptyList(),
             display = DisplayConfig(),
-            weight = DEFAULT_WEIGHT
+            weight = DEFAULT_WEIGHT,
         )
-    }
 
-    private fun List<String>.grants(permission: String): Boolean {
-        return WILDCARD_PERMISSION in this || permission in this
-    }
+    private fun List<String>.grants(permission: String): Boolean = WILDCARD_PERMISSION in this || permission in this
 
     companion object {
         private const val DEFAULT_GROUP_ID = "default"

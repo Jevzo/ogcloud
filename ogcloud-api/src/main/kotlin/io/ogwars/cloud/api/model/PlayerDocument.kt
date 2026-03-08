@@ -9,5 +9,5 @@ data class PlayerDocument(
     @Id val id: String,
     val name: String,
     val permission: PermissionConfig = PermissionConfig(),
-    val firstJoin: Instant
+    val firstJoin: Instant,
 )

@@ -8,9 +8,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class LifecycleEventProducer(
-    private val kafkaTemplate: KafkaTemplate<String, ServerLifecycleEvent>
+    private val kafkaTemplate: KafkaTemplate<String, ServerLifecycleEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishStateChange(event: ServerLifecycleEvent) {

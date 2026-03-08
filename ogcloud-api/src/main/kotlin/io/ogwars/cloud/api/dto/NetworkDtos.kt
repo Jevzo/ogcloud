@@ -17,28 +17,28 @@ data class NetworkSettingsResponse(
     val maintenance: Boolean,
     val maintenanceKickMessage: String,
     val tablist: TablistSettings,
-    val general: GeneralSettings
+    val general: GeneralSettings,
 )
 
 data class UpdateMotdRequest(
     val global: String? = null,
-    val maintenance: String? = null
+    val maintenance: String? = null,
 )
 
 data class UpdateVersionNameRequest(
     val global: String? = null,
-    val maintenance: String? = null
+    val maintenance: String? = null,
 )
 
 data class UpdateTablistRequest(
     val header: String? = null,
-    val footer: String? = null
+    val footer: String? = null,
 )
 
 data class UpdateGeneralSettingsRequest(
     val permissionSystemEnabled: Boolean? = null,
     val tablistEnabled: Boolean? = null,
-    val proxyRoutingStrategy: ProxyRoutingStrategy? = null
+    val proxyRoutingStrategy: ProxyRoutingStrategy? = null,
 )
 
 data class UpdateNetworkRequest(
@@ -49,21 +49,21 @@ data class UpdateNetworkRequest(
     val maintenance: Boolean? = null,
     val maintenanceKickMessage: String? = null,
     @field:Valid val tablist: UpdateTablistRequest? = null,
-    @field:Valid val general: UpdateGeneralSettingsRequest? = null
+    @field:Valid val general: UpdateGeneralSettingsRequest? = null,
 )
 
 data class MaintenanceToggleRequest(
-    val maintenance: Boolean
+    val maintenance: Boolean,
 )
 
 data class NetworkStatusResponse(
     val onlinePlayers: Int,
     val serverCount: Int,
-    val proxyCount: Int
+    val proxyCount: Int,
 )
 
-fun NetworkSettingsDocument.toResponse(): NetworkSettingsResponse {
-    return NetworkSettingsResponse(
+fun NetworkSettingsDocument.toResponse(): NetworkSettingsResponse =
+    NetworkSettingsResponse(
         motd = motd,
         versionName = versionName,
         maxPlayers = maxPlayers,
@@ -71,6 +71,5 @@ fun NetworkSettingsDocument.toResponse(): NetworkSettingsResponse {
         maintenance = maintenance,
         maintenanceKickMessage = maintenanceKickMessage,
         tablist = tablist,
-        general = general
+        general = general,
     )
-}

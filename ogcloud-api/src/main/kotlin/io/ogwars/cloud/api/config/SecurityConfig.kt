@@ -37,12 +37,11 @@ import javax.crypto.spec.SecretKeySpec
 @EnableMethodSecurity
 @EnableConfigurationProperties(AuthProperties::class, CorsProperties::class)
 class SecurityConfig {
-
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
         accessTokenAuthenticationFilter: AccessTokenAuthenticationFilter,
-        objectMapper: ObjectMapper
+        objectMapper: ObjectMapper,
     ): SecurityFilterChain {
         http
             .cors { }
@@ -53,16 +52,14 @@ class SecurityConfig {
                 it.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                 it.anyRequest().authenticated()
-            }
-            .exceptionHandling {
+            }.exceptionHandling {
                 it.authenticationEntryPoint { _, response, _ ->
                     writeError(objectMapper, response, 401, "Unauthorized")
                 }
                 it.accessDeniedHandler { _, response, _ ->
                     writeError(objectMapper, response, 403, "Forbidden")
                 }
-            }
-            .addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
+            }.addFilterBefore(accessTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()
     }
@@ -72,11 +69,12 @@ class SecurityConfig {
 
     @Bean
     fun corsConfigurationSource(corsProperties: CorsProperties): CorsConfigurationSource {
-        val configuration = CorsConfiguration().apply {
-            allowedOrigins = corsProperties.allowedOrigins
-            allowedMethods = ALLOWED_METHODS
-            allowedHeaders = ALLOWED_HEADERS
-        }
+        val configuration =
+            CorsConfiguration().apply {
+                allowedOrigins = corsProperties.allowedOrigins
+                allowedMethods = ALLOWED_METHODS
+                allowedHeaders = ALLOWED_HEADERS
+            }
 
         return UrlBasedCorsConfigurationSource().apply {
             registerCorsConfiguration(ALL_PATHS, configuration)
@@ -96,23 +94,26 @@ class SecurityConfig {
 
     @Bean
     fun jwtEncoder(secretKey: SecretKey): JwtEncoder {
-        val jwk = OctetSequenceKey.Builder(secretKey)
-            .algorithm(JWSAlgorithm.HS256)
-            .build()
+        val jwk =
+            OctetSequenceKey
+                .Builder(secretKey)
+                .algorithm(JWSAlgorithm.HS256)
+                .build()
 
-        val jwkSource = JWKSource<SecurityContext> { selector, _ ->
-            selector.select(JWKSet(jwk))
-        }
+        val jwkSource =
+            JWKSource<SecurityContext> { selector, _ ->
+                selector.select(JWKSet(jwk))
+            }
 
         return NimbusJwtEncoder(jwkSource)
     }
 
     @Bean
-    fun jwtDecoder(secretKey: SecretKey): JwtDecoder {
-        return NimbusJwtDecoder.withSecretKey(secretKey)
+    fun jwtDecoder(secretKey: SecretKey): JwtDecoder =
+        NimbusJwtDecoder
+            .withSecretKey(secretKey)
             .macAlgorithm(MacAlgorithm.HS256)
             .build()
-    }
 
     @Bean
     fun clock(): Clock = Clock.systemUTC()
@@ -121,7 +122,7 @@ class SecurityConfig {
         objectMapper: ObjectMapper,
         response: jakarta.servlet.http.HttpServletResponse,
         status: Int,
-        message: String
+        message: String,
     ) {
         response.status = status
         response.contentType = MediaType.APPLICATION_JSON_VALUE
@@ -133,13 +134,14 @@ class SecurityConfig {
         private const val ALL_PATHS = "/**"
         private const val MIN_SECRET_BYTES = 32
         private val ALLOWED_HEADERS = listOf(CorsConfiguration.ALL)
-        private val ALLOWED_METHODS = listOf(
-            HttpMethod.GET.name(),
-            HttpMethod.POST.name(),
-            HttpMethod.PUT.name(),
-            HttpMethod.PATCH.name(),
-            HttpMethod.DELETE.name(),
-            HttpMethod.OPTIONS.name()
-        )
+        private val ALLOWED_METHODS =
+            listOf(
+                HttpMethod.GET.name(),
+                HttpMethod.POST.name(),
+                HttpMethod.PUT.name(),
+                HttpMethod.PATCH.name(),
+                HttpMethod.DELETE.name(),
+                HttpMethod.OPTIONS.name(),
+            )
     }
 }

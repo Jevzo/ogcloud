@@ -26,12 +26,15 @@ class ServerLifecycleService(
     private val templateService: TemplateService,
     private val lifecycleEventProducer: LifecycleEventProducer,
     private val playerTransferProducer: PlayerTransferProducer,
-    private val networkSettingsService: NetworkSettingsService
+    private val networkSettingsService: NetworkSettingsService,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun requestServer(group: String, requestedBy: String, preGeneratedId: String? = null): ServerDocument {
+    fun requestServer(
+        group: String,
+        requestedBy: String,
+        preGeneratedId: String? = null,
+    ): ServerDocument {
         val groupConfig = requireGroup(group)
 
         ensureTemplateExists(groupConfig)
@@ -45,7 +48,7 @@ class ServerLifecycleService(
             server.id,
             server.displayName,
             group,
-            requestedBy
+            requestedBy,
         )
 
         prepareServer(server, groupConfig)
@@ -53,14 +56,17 @@ class ServerLifecycleService(
         return server
     }
 
-    private fun prepareServer(server: ServerDocument, groupConfig: GroupDocument) {
+    private fun prepareServer(
+        server: ServerDocument,
+        groupConfig: GroupDocument,
+    ) {
         val preparing = saveServer(server.copy(state = ServerState.PREPARING), publishLifecycle = true)
 
         kubernetesService.createServerPod(preparing, groupConfig)
 
         saveServer(
             preparing.copy(state = ServerState.STARTING, startedAt = Instant.now()),
-            publishLifecycle = true
+            publishLifecycle = true,
         )
     }
 
@@ -82,8 +88,9 @@ class ServerLifecycleService(
             saveServer(
                 server.withProxyHeartbeat(event).copy(
                     state = ServerState.RUNNING,
-                    podIpRetries = 0
-                ), publishLifecycle = true
+                    podIpRetries = 0,
+                ),
+                publishLifecycle = true,
             )
 
             log.info(
@@ -91,7 +98,7 @@ class ServerLifecycleService(
                 server.id,
                 server.displayName,
                 server.group,
-                event.podIp
+                event.podIp,
             )
             return
         }
@@ -111,7 +118,7 @@ class ServerLifecycleService(
             log.warn(
                 "Ignoring game state update for server not in RUNNING state: id={}, state={}",
                 server.id,
-                server.state
+                server.state,
             )
             return
         }
@@ -123,7 +130,7 @@ class ServerLifecycleService(
             server.id,
             server.group,
             server.gameState,
-            event.gameState
+            event.gameState,
         )
 
         if (event.gameState == GameState.ENDING) {
@@ -132,7 +139,10 @@ class ServerLifecycleService(
         }
     }
 
-    fun cleanupFailedServer(server: ServerDocument, reason: String) {
+    fun cleanupFailedServer(
+        server: ServerDocument,
+        reason: String,
+    ) {
         publishLifecycleEvent(server.copy(state = ServerState.STOPPED))
 
         try {
@@ -147,7 +157,7 @@ class ServerLifecycleService(
             "Failed server cleaned up: id={}, group={}, reason={}",
             server.id,
             server.group,
-            reason
+            reason,
         )
     }
 
@@ -166,7 +176,10 @@ class ServerLifecycleService(
         log.info("Server undrained, back to RUNNING: id={}, group={}", serverId, server.group)
     }
 
-    fun drainServer(serverId: String, reason: String) {
+    fun drainServer(
+        serverId: String,
+        reason: String,
+    ) {
         val server = requireServer(serverId)
 
         if (server.state != ServerState.RUNNING) {
@@ -199,13 +212,23 @@ class ServerLifecycleService(
         val networkSettings = networkSettingsService.findGlobal()
 
         return when (server.type) {
-            GroupType.DYNAMIC -> if (server.group == networkSettings.defaultGroup) server.group else networkSettings.defaultGroup
+            GroupType.DYNAMIC ->
+                if (server.group ==
+                    networkSettings.defaultGroup
+                ) {
+                    server.group
+                } else {
+                    networkSettings.defaultGroup
+                }
             GroupType.STATIC -> networkSettings.defaultGroup
             GroupType.PROXY -> null
         }
     }
 
-    fun gracefulStop(serverId: String, reason: String) {
+    fun gracefulStop(
+        serverId: String,
+        reason: String,
+    ) {
         val server = requireServer(serverId)
 
         when (server.state) {
@@ -223,11 +246,16 @@ class ServerLifecycleService(
     }
 
     fun checkDrainTimeouts() {
-        serverRedisRepository.findAll().filter { it.state == ServerState.DRAINING }
+        serverRedisRepository
+            .findAll()
+            .filter { it.state == ServerState.DRAINING }
             .forEach(::handleDrainingServer)
     }
 
-    fun killServer(serverId: String, reason: String) {
+    fun killServer(
+        serverId: String,
+        reason: String,
+    ) {
         val server = requireServer(serverId)
 
         kubernetesService.forceDeleteServerPod(server.podName)
@@ -238,7 +266,10 @@ class ServerLifecycleService(
         log.info("Server killed: id={}, group={}, reason={}", serverId, server.group, reason)
     }
 
-    fun stopServer(serverId: String, reason: String) {
+    fun stopServer(
+        serverId: String,
+        reason: String,
+    ) {
         val server = requireServer(serverId)
 
         saveServer(server.copy(state = ServerState.STOPPING), publishLifecycle = true)
@@ -252,21 +283,25 @@ class ServerLifecycleService(
     }
 
     private fun publishLifecycleEvent(server: ServerDocument) {
-        val event = ServerLifecycleEvent(
-            serverId = server.id,
-            group = server.group,
-            type = server.type,
-            state = server.state,
-            displayName = server.displayName,
-            podName = server.podName,
-            podIp = server.podIp,
-            port = server.port
-        )
+        val event =
+            ServerLifecycleEvent(
+                serverId = server.id,
+                group = server.group,
+                type = server.type,
+                state = server.state,
+                displayName = server.displayName,
+                podName = server.podName,
+                podIp = server.podIp,
+                port = server.port,
+            )
 
         lifecycleEventProducer.publishStateChange(event)
     }
 
-    private fun handleStartingServerHeartbeat(server: ServerDocument, event: ServerHeartbeatEvent) {
+    private fun handleStartingServerHeartbeat(
+        server: ServerDocument,
+        event: ServerHeartbeatEvent,
+    ) {
         val podIp = kubernetesService.getPodIp(server.podName)
         if (podIp == null) {
             handleMissingPodIp(server)
@@ -277,8 +312,9 @@ class ServerLifecycleService(
             server.withHeartbeat(event).copy(
                 state = ServerState.RUNNING,
                 podIp = podIp,
-                podIpRetries = 0
-            ), publishLifecycle = true
+                podIpRetries = 0,
+            ),
+            publishLifecycle = true,
         )
 
         log.info(
@@ -286,7 +322,7 @@ class ServerLifecycleService(
             server.id,
             server.displayName,
             server.group,
-            podIp
+            podIp,
         )
     }
 
@@ -296,7 +332,9 @@ class ServerLifecycleService(
         if (retries >= MAX_POD_IP_RETRIES) {
             log.error(
                 "Server failed to obtain pod IP after {} retries, marking as failed: id={}, group={}",
-                retries, server.id, server.group
+                retries,
+                server.id,
+                server.group,
             )
 
             cleanupFailedServer(server, "Pod IP unavailable after $retries retries")
@@ -308,8 +346,8 @@ class ServerLifecycleService(
         saveServer(
             server.copy(
                 podIpRetries = retries,
-                lastHeartbeat = Instant.now()
-            )
+                lastHeartbeat = Instant.now(),
+            ),
         )
     }
 
@@ -326,9 +364,11 @@ class ServerLifecycleService(
             return
         }
 
-        val timeout = groupRepository.findById(server.group)
-            .map { it.drainTimeoutSeconds.toLong() }
-            .orElse(DEFAULT_DRAIN_TIMEOUT_SECONDS)
+        val timeout =
+            groupRepository
+                .findById(server.group)
+                .map { it.drainTimeoutSeconds.toLong() }
+                .orElse(DEFAULT_DRAIN_TIMEOUT_SECONDS)
 
         val elapsed = Duration.between(drainingStartedAt, Instant.now()).seconds
         if (elapsed < timeout) {
@@ -344,19 +384,26 @@ class ServerLifecycleService(
         }
     }
 
-    private fun transferPlayers(server: ServerDocument, reason: String) {
+    private fun transferPlayers(
+        server: ServerDocument,
+        reason: String,
+    ) {
         log.info("Transferring players away from server: id={}, group={}, reason={}", server.id, server.group, reason)
 
         playerTransferProducer.publishTransfer(
             PlayerTransferEvent(
                 serverId = server.id,
                 target = resolveTransferTarget(server),
-                reason = reason
-            )
+                reason = reason,
+            ),
         )
     }
 
-    private fun findServerOrWarn(id: String, eventName: String, idLabel: String = "id"): ServerDocument? {
+    private fun findServerOrWarn(
+        id: String,
+        eventName: String,
+        idLabel: String = "id",
+    ): ServerDocument? {
         val server = serverRedisRepository.findById(id)
 
         if (server == null) {
@@ -366,7 +413,10 @@ class ServerLifecycleService(
         return server
     }
 
-    private fun saveServer(server: ServerDocument, publishLifecycle: Boolean = false): ServerDocument {
+    private fun saveServer(
+        server: ServerDocument,
+        publishLifecycle: Boolean = false,
+    ): ServerDocument {
         serverRedisRepository.save(server)
 
         if (publishLifecycle) {
@@ -376,15 +426,14 @@ class ServerLifecycleService(
         return server
     }
 
-    private fun requireServer(serverId: String): ServerDocument {
-        return serverRedisRepository.findById(serverId)
+    private fun requireServer(serverId: String): ServerDocument =
+        serverRedisRepository.findById(serverId)
             ?: throw ServerNotFoundException(serverId)
-    }
 
-    private fun requireGroup(groupId: String): GroupDocument {
-        return groupRepository.findById(groupId)
+    private fun requireGroup(groupId: String): GroupDocument =
+        groupRepository
+            .findById(groupId)
             .orElseThrow { GroupNotFoundException(groupId) }
-    }
 
     private fun ensureTemplateExists(group: GroupDocument) {
         val templatePath = "${group.templatePath}/${group.templateVersion}"
@@ -404,7 +453,10 @@ class ServerLifecycleService(
         }
     }
 
-    private fun createRequestedServer(group: GroupDocument, preGeneratedId: String?): ServerDocument {
+    private fun createRequestedServer(
+        group: GroupDocument,
+        preGeneratedId: String?,
+    ): ServerDocument {
         val serverId = preGeneratedId ?: generateServerId()
         return ServerDocument(
             id = serverId,
@@ -414,35 +466,31 @@ class ServerLifecycleService(
             state = ServerState.REQUESTED,
             gameState = if (group.type == GroupType.DYNAMIC) GameState.LOBBY else null,
             podName = "${group.id}-$serverId",
-            templateVersion = group.templateVersion
+            templateVersion = group.templateVersion,
         )
     }
 
-    private fun generateServerId(): String {
-        return UUID.randomUUID().toString().replace(UUID_DASH, "")
-    }
+    private fun generateServerId(): String = UUID.randomUUID().toString().replace(UUID_DASH, "")
 
-    private fun ServerDocument.withHeartbeat(event: ServerHeartbeatEvent): ServerDocument {
-        return copy(
+    private fun ServerDocument.withHeartbeat(event: ServerHeartbeatEvent): ServerDocument =
+        copy(
             playerCount = event.playerCount,
             maxPlayers = event.maxPlayers,
             tps = event.tps,
             memoryUsedMb = event.memoryUsedMb,
-            lastHeartbeat = Instant.now()
+            lastHeartbeat = Instant.now(),
         )
-    }
 
-    private fun ServerDocument.withProxyHeartbeat(event: ProxyHeartbeatEvent): ServerDocument {
-        return copy(
+    private fun ServerDocument.withProxyHeartbeat(event: ProxyHeartbeatEvent): ServerDocument =
+        copy(
             podIp = event.podIp,
             port = event.port,
             playerCount = event.playerCount,
             maxPlayers = event.maxPlayers,
             tps = NO_TPS,
             memoryUsedMb = event.memoryUsedMb,
-            lastHeartbeat = Instant.now()
+            lastHeartbeat = Instant.now(),
         )
-    }
 
     companion object {
         private const val DISPLAY_NAME_ID_LENGTH = 6

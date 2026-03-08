@@ -21,9 +21,8 @@ class OgCloudServerAPIImpl(
     private val permissionManager: PermissionManager,
     private val gameStateManager: GameStateManager,
     private val apiClient: ApiClient,
-    private val logger: Logger
+    private val logger: Logger,
 ) : OgCloudServerAPI {
-
     private val serverReadyListeners = CopyOnWriteArrayList<Consumer<ServerReadyEvent>>()
     private val resolvedGroupType = GroupType.valueOf(groupType)
 
@@ -47,9 +46,7 @@ class OgCloudServerAPIImpl(
         return ids.mapNotNull(::findRunningServer)
     }
 
-    override fun getServer(id: String): RunningServer? {
-        return findRunningServer(id)
-    }
+    override fun getServer(id: String): RunningServer? = findRunningServer(id)
 
     override fun getServerByPlayer(uuid: UUID): RunningServer? {
         val session = redisManager.getPlayerData(uuid.toString()) ?: return null
@@ -67,23 +64,22 @@ class OgCloudServerAPIImpl(
         return cached.toPermissionGroup()
     }
 
-    override fun requestServer(group: String): CompletableFuture<ServerInfo> {
-        return apiClient.requestServer(group).thenApply { response ->
+    override fun requestServer(group: String): CompletableFuture<ServerInfo> =
+        apiClient.requestServer(group).thenApply { response ->
             ServerInfo(id = response.serverId, group = response.group, displayName = response.group)
         }
-    }
 
-    override fun transferPlayer(uuid: UUID, serverId: String): CompletableFuture<Void> {
-        return apiClient.transferPlayer(uuid.toString(), serverId)
-    }
+    override fun transferPlayer(
+        uuid: UUID,
+        serverId: String,
+    ): CompletableFuture<Void> = apiClient.transferPlayer(uuid.toString(), serverId)
 
-    override fun transferPlayerToGroup(uuid: UUID, group: String): CompletableFuture<Void> {
-        return apiClient.transferPlayer(uuid.toString(), group)
-    }
+    override fun transferPlayerToGroup(
+        uuid: UUID,
+        group: String,
+    ): CompletableFuture<Void> = apiClient.transferPlayer(uuid.toString(), group)
 
-    override fun forceTemplatePush(): CompletableFuture<Void> {
-        return apiClient.forceTemplatePush(serverId)
-    }
+    override fun forceTemplatePush(): CompletableFuture<Void> = apiClient.forceTemplatePush(serverId)
 
     override fun onServerReady(listener: Consumer<ServerReadyEvent>) {
         serverReadyListeners.add(listener)
@@ -105,22 +101,28 @@ class OgCloudServerAPIImpl(
         return data.toRunningServer()
     }
 
-    private fun RedisPlayerSession.toPlayerInfo(uuid: UUID): PlayerInfo {
-        return PlayerInfo(
+    private fun RedisPlayerSession.toPlayerInfo(uuid: UUID): PlayerInfo =
+        PlayerInfo(
             uuid = uuid,
             name = name,
             serverId = serverId,
             proxyId = proxyId,
             groupName = permission.group,
-            permissions = permissions
+            permissions = permissions,
         )
-    }
 
-    private fun CachedPermission.toPermissionGroup(): PermissionGroup {
-        return PermissionGroup(
-            id = groupId, name = groupName, display = DisplayConfig(
-                chatPrefix = chatPrefix, chatSuffix = chatSuffix, nameColor = nameColor, tabPrefix = tabPrefix
-            ), weight = weight, permissions = permissions
+    private fun CachedPermission.toPermissionGroup(): PermissionGroup =
+        PermissionGroup(
+            id = groupId,
+            name = groupName,
+            display =
+                DisplayConfig(
+                    chatPrefix = chatPrefix,
+                    chatSuffix = chatSuffix,
+                    nameColor = nameColor,
+                    tabPrefix = tabPrefix,
+                ),
+            weight = weight,
+            permissions = permissions,
         )
-    }
 }

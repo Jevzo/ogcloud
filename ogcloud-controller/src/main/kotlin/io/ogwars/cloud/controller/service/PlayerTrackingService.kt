@@ -25,9 +25,8 @@ class PlayerTrackingService(
     private val playerRedisRepository: PlayerRedisRepository,
     private val kafkaTemplate: KafkaTemplate<String, PermissionUpdateEvent>,
     private val webUserRepository: WebUserRepository,
-    private val networkSettingsService: NetworkSettingsService
+    private val networkSettingsService: NetworkSettingsService,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun handleConnect(event: PlayerConnectEvent) {
@@ -35,29 +34,31 @@ class PlayerTrackingService(
         val permissionSystemEnabled = isPermissionSystemEnabled()
         val defaultGroup = if (permissionSystemEnabled) requireDefaultGroup() else null
 
-        val player = if (existing == null) {
-            val newPlayer = PlayerDocument(
-                id = event.uuid,
-                name = event.name,
-                permission = defaultGroup?.let { buildPermanentPermission(it.id) } ?: PermissionConfig(),
-                firstJoin = Instant.now()
-            )
-            playerRepository.save(newPlayer)
-            newPlayer
-        } else {
-            if (existing.name != event.name) {
-                val updated = existing.copy(name = event.name)
-                playerRepository.save(updated)
-
-                webUserRepository.findByLinkedPlayerUuid(event.uuid).ifPresent { linkedUser ->
-                    webUserRepository.save(linkedUser.copy(username = event.name))
-                }
-
-                updated
+        val player =
+            if (existing == null) {
+                val newPlayer =
+                    PlayerDocument(
+                        id = event.uuid,
+                        name = event.name,
+                        permission = defaultGroup?.let { buildPermanentPermission(it.id) } ?: PermissionConfig(),
+                        firstJoin = Instant.now(),
+                    )
+                playerRepository.save(newPlayer)
+                newPlayer
             } else {
-                existing
+                if (existing.name != event.name) {
+                    val updated = existing.copy(name = event.name)
+                    playerRepository.save(updated)
+
+                    webUserRepository.findByLinkedPlayerUuid(event.uuid).ifPresent { linkedUser ->
+                        webUserRepository.save(linkedUser.copy(username = event.name))
+                    }
+
+                    updated
+                } else {
+                    existing
+                }
             }
-        }
 
         if (!permissionSystemEnabled || defaultGroup == null) {
             playerRedisRepository.saveSession(event.uuid, player.name, event.proxyId)
@@ -70,7 +71,7 @@ class PlayerTrackingService(
             resolved.player.name,
             event.proxyId,
             resolved.group,
-            resolved.player.permission.endMillis
+            resolved.player.permission.endMillis,
         )
     }
 
@@ -95,7 +96,7 @@ class PlayerTrackingService(
             playerRedisRepository.updatePermissions(
                 event.uuid,
                 resolved.group,
-                resolved.player.permission.endMillis
+                resolved.player.permission.endMillis,
             )
         }
     }
@@ -108,9 +109,10 @@ class PlayerTrackingService(
         val defaultGroup = requireDefaultGroup()
 
         val player = playerRepository.findById(event.uuid).orElse(null) ?: return
-        val updated = player.copy(
-            permission = buildPermanentPermission(defaultGroup.id)
-        )
+        val updated =
+            player.copy(
+                permission = buildPermanentPermission(defaultGroup.id),
+            )
 
         playerRepository.save(updated)
 
@@ -140,7 +142,7 @@ class PlayerTrackingService(
                 uuid,
                 resolved.group,
                 resolved.player.permission.endMillis,
-                NETWORK_FEATURE_UPDATED_BY
+                NETWORK_FEATURE_UPDATED_BY,
             )
         }
     }
@@ -187,7 +189,7 @@ class PlayerTrackingService(
                 name = resolved.player.name,
                 proxyId = proxyId,
                 group = resolved.group,
-                permissionEndMillis = resolved.player.permission.endMillis
+                permissionEndMillis = resolved.player.permission.endMillis,
             )
             runtimeSession?.serverId?.let { playerRedisRepository.updateServerId(uuid, it) }
             warmed += 1
@@ -198,16 +200,17 @@ class PlayerTrackingService(
             onlineUuids.size,
             warmed,
             missingPlayers,
-            rebuiltWithoutRuntimeSession
+            rebuiltWithoutRuntimeSession,
         )
     }
 
-    private fun requireDefaultGroup() = permissionGroupRepository.findByDefaultTrue()
-        ?: throw IllegalStateException(NO_DEFAULT_PERMISSION_GROUP_MESSAGE)
+    private fun requireDefaultGroup() =
+        permissionGroupRepository.findByDefaultTrue()
+            ?: throw IllegalStateException(NO_DEFAULT_PERMISSION_GROUP_MESSAGE)
 
     private fun resolvePermissionAssignment(
         player: PlayerDocument,
-        defaultGroup: PermissionGroupDocument
+        defaultGroup: PermissionGroupDocument,
     ): ResolvedPermissionAssignment {
         val assignedGroup = permissionGroupRepository.findById(player.permission.group).orElse(null)
         if (assignedGroup != null) {
@@ -224,33 +227,31 @@ class PlayerTrackingService(
         uuid: String,
         group: PermissionGroupDocument,
         permissionEndMillis: Long,
-        updatedBy: String
+        updatedBy: String,
     ) {
-        val updateEvent = PermissionUpdateEvent(
-            uuid = uuid,
-            groupId = group.id,
-            groupName = group.name,
-            permissions = group.permissions,
-            display = group.display,
-            weight = group.weight,
-            permissionEndMillis = permissionEndMillis,
-            updatedBy = updatedBy
-        )
+        val updateEvent =
+            PermissionUpdateEvent(
+                uuid = uuid,
+                groupId = group.id,
+                groupName = group.name,
+                permissions = group.permissions,
+                display = group.display,
+                weight = group.weight,
+                permissionEndMillis = permissionEndMillis,
+                updatedBy = updatedBy,
+            )
 
         kafkaTemplate.send(KafkaConfig.PERMISSION_UPDATE, uuid, updateEvent)
     }
 
-    private fun buildPermanentPermission(groupId: String): PermissionConfig {
-        return PermissionConfig(group = groupId)
-    }
+    private fun buildPermanentPermission(groupId: String): PermissionConfig = PermissionConfig(group = groupId)
 
-    private fun isPermissionSystemEnabled(): Boolean {
-        return networkSettingsService.findGlobal().general.permissionSystemEnabled
-    }
+    private fun isPermissionSystemEnabled(): Boolean =
+        networkSettingsService.findGlobal().general.permissionSystemEnabled
 
     private data class ResolvedPermissionAssignment(
         val player: PlayerDocument,
-        val group: PermissionGroupDocument
+        val group: PermissionGroupDocument,
     )
 
     companion object {

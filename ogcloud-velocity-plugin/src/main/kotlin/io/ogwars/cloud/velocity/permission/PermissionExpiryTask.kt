@@ -15,17 +15,17 @@ class PermissionExpiryTask(
     private val permissionCache: PermissionCache,
     private val kafkaSendDispatcher: KafkaSendDispatcher,
     private val networkState: NetworkState,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     private val gson = Gson()
     private val notifiedExpirations = ConcurrentHashMap<UUID, Long>()
     private lateinit var scheduler: ScheduledExecutorService
 
     fun start() {
-        scheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
-            Thread(runnable, "ogcloud-perm-expiry").apply { isDaemon = true }
-        }
+        scheduler =
+            Executors.newSingleThreadScheduledExecutor { runnable ->
+                Thread(runnable, "ogcloud-perm-expiry").apply { isDaemon = true }
+            }
         scheduler.scheduleAtFixedRate(::checkExpiry, CHECK_INTERVAL_SECONDS, CHECK_INTERVAL_SECONDS, TimeUnit.SECONDS)
         logger.info("Permission expiry task started (interval={}s)", CHECK_INTERVAL_SECONDS)
     }
@@ -60,8 +60,8 @@ class PermissionExpiryTask(
                             topic = TOPIC,
                             key = uuid.toString(),
                             payload = gson.toJson(PermissionExpiryEvent(uuid = uuid.toString())),
-                            type = KafkaSendDispatcher.MessageType.PERMISSION_EXPIRY
-                        )
+                            type = KafkaSendDispatcher.MessageType.PERMISSION_EXPIRY,
+                        ),
                     )
                     logger.info("Permission expired for player: uuid={}, group={}", uuid, cached.groupId)
                 }

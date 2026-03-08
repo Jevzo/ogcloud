@@ -12,5 +12,5 @@ data class LinkOtpDocument(
     val playerUuid: String,
     val otpHash: String,
     @field:Indexed(expireAfter = "0s") val expiresAt: Instant,
-    val createdAt: Instant
+    val createdAt: Instant,
 )

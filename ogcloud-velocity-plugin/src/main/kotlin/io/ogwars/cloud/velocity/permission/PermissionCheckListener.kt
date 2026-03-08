@@ -10,9 +10,9 @@ import com.velocitypowered.api.proxy.Player
 import io.ogwars.cloud.velocity.network.NetworkState
 
 class PermissionCheckListener(
-    private val permissionCache: PermissionCache, private val networkState: NetworkState
+    private val permissionCache: PermissionCache,
+    private val networkState: NetworkState,
 ) {
-
     @Subscribe
     fun onPermissionsSetup(event: PermissionsSetupEvent) {
         if (event.subject is Player) {
@@ -21,7 +21,8 @@ class PermissionCheckListener(
     }
 
     private class OgCloudPermissionProvider(
-        private val permissionCache: PermissionCache, private val networkState: NetworkState
+        private val permissionCache: PermissionCache,
+        private val networkState: NetworkState,
     ) : PermissionProvider {
         override fun createFunction(subject: PermissionSubject): PermissionFunction {
             val player = subject as? Player ?: return PermissionFunction { Tristate.UNDEFINED }

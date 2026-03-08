@@ -11,9 +11,9 @@ import java.time.Duration
 import java.util.*
 
 class KafkaManager(
-    private val bootstrapServers: String, private val serverId: String
+    private val bootstrapServers: String,
+    private val serverId: String,
 ) {
-
     private lateinit var producer: KafkaProducer<String, String>
 
     fun start() {
@@ -21,12 +21,13 @@ class KafkaManager(
     }
 
     fun createConsumer(
-        groupId: String, clientIdSuffix: String, autoOffsetReset: String
-    ): KafkaConsumer<String, String> {
-        return createWithPluginClassLoader {
+        groupId: String,
+        clientIdSuffix: String,
+        autoOffsetReset: String,
+    ): KafkaConsumer<String, String> =
+        createWithPluginClassLoader {
             KafkaConsumer(createConsumerProperties(groupId, clientIdSuffix, autoOffsetReset))
         }
-    }
 
     fun close() {
         if (::producer.isInitialized) {
@@ -34,23 +35,28 @@ class KafkaManager(
         }
     }
 
-    fun sendBlocking(topic: String, key: String, payload: String) {
+    fun sendBlocking(
+        topic: String,
+        key: String,
+        payload: String,
+    ) {
         producer.send(ProducerRecord(topic, key, payload)).get()
     }
 
-    private fun createProducerProperties(): Properties {
-        return Properties().apply {
+    private fun createProducerProperties(): Properties =
+        Properties().apply {
             put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
             put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
             put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
             put(ProducerConfig.CLIENT_ID_CONFIG, "ogcloud-paper-$serverId")
         }
-    }
 
     private fun createConsumerProperties(
-        groupId: String, clientIdSuffix: String, autoOffsetReset: String
-    ): Properties {
-        return Properties().apply {
+        groupId: String,
+        clientIdSuffix: String,
+        autoOffsetReset: String,
+    ): Properties =
+        Properties().apply {
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
             put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
             put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
@@ -58,7 +64,6 @@ class KafkaManager(
             put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset)
             put(ConsumerConfig.CLIENT_ID_CONFIG, "ogcloud-paper-$serverId-$clientIdSuffix")
         }
-    }
 
     private fun <T> createWithPluginClassLoader(block: () -> T): T {
         val currentThread = Thread.currentThread()

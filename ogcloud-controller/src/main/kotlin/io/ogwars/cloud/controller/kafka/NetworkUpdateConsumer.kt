@@ -13,9 +13,8 @@ import org.springframework.stereotype.Component
 class NetworkUpdateConsumer(
     private val playerTrackingService: PlayerTrackingService,
     networkSettingsService: NetworkSettingsService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Volatile

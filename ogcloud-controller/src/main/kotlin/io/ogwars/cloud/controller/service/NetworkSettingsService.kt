@@ -7,13 +7,11 @@ import org.springframework.stereotype.Service
 
 @Service
 class NetworkSettingsService(
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
-
-    fun findGlobal(): NetworkSettingsDocument {
-        return mongoTemplate.findById<NetworkSettingsDocument>(GLOBAL_SETTINGS_ID, COLLECTION)
+    fun findGlobal(): NetworkSettingsDocument =
+        mongoTemplate.findById<NetworkSettingsDocument>(GLOBAL_SETTINGS_ID, COLLECTION)
             ?: NetworkSettingsDocument()
-    }
 
     companion object {
         private const val COLLECTION = "network_settings"

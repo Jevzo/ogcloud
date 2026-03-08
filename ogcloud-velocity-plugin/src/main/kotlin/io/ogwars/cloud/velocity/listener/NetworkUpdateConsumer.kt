@@ -22,20 +22,20 @@ class NetworkUpdateConsumer(
     private val adminNotificationManager: AdminNotificationManager,
     private val tablistManager: TablistManager,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-network-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-network-update-consumer",
-        logger = logger,
-        consumerLabel = "network update",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-network-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-network-update-consumer",
+            logger = logger,
+            consumerLabel = "network update",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -63,7 +63,7 @@ class NetworkUpdateConsumer(
             event.maxPlayers,
             event.defaultGroup,
             general.permissionSystemEnabled,
-            general.tablistEnabled
+            general.tablistEnabled,
         )
 
         if (event.maintenance != wasMaintenanceEnabled) {
@@ -95,7 +95,7 @@ class NetworkUpdateConsumer(
             maxPlayers = event.maxPlayers,
             defaultGroup = event.defaultGroup,
             permissionSystemEnabled = event.general.permissionSystemEnabled,
-            tablistEnabled = event.general.tablistEnabled
+            tablistEnabled = event.general.tablistEnabled,
         )
     }
 
@@ -103,9 +103,12 @@ class NetworkUpdateConsumer(
         val component = legacySerializer.deserialize(kickMessage)
 
         proxyServer.allPlayers.forEach { player ->
-            val hasBypass = networkState.permissionSystemEnabled && permissionCache.hasPermission(
-                player.uniqueId, MAINTENANCE_BYPASS_PERMISSION
-            )
+            val hasBypass =
+                networkState.permissionSystemEnabled &&
+                    permissionCache.hasPermission(
+                        player.uniqueId,
+                        MAINTENANCE_BYPASS_PERMISSION,
+                    )
 
             if (!hasBypass) {
                 player.disconnect(component)
@@ -135,7 +138,8 @@ class NetworkUpdateConsumer(
         }
 
         logger.info(
-            "Reloaded permission cache for {} online players after enabling permission system", proxyServer.playerCount
+            "Reloaded permission cache for {} online players after enabling permission system",
+            proxyServer.playerCount,
         )
     }
 

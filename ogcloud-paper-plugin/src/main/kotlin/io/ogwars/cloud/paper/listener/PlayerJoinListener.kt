@@ -19,17 +19,19 @@ class PlayerJoinListener(
     private val tablistTeamManager: TablistTeamManager,
     private val networkFeatureState: NetworkFeatureState,
     private val redisManager: RedisManager,
-    private val logger: Logger
+    private val logger: Logger,
 ) : Listener {
-
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
         val player = event.player
 
-        plugin.server.scheduler.runTaskAsynchronously(plugin, Runnable {
-            cachePlayerPermissions(player)
-            applyPlayerState(player)
-        })
+        plugin.server.scheduler.runTaskAsynchronously(
+            plugin,
+            Runnable {
+                cachePlayerPermissions(player)
+                applyPlayerState(player)
+            },
+        )
     }
 
     @EventHandler
@@ -61,23 +63,26 @@ class PlayerJoinListener(
     }
 
     private fun applyPlayerState(player: Player) {
-        plugin.server.scheduler.runTask(plugin, Runnable {
-            if (!player.isOnline) {
-                return@Runnable
-            }
+        plugin.server.scheduler.runTask(
+            plugin,
+            Runnable {
+                if (!player.isOnline) {
+                    return@Runnable
+                }
 
-            if (networkFeatureState.permissionSystemEnabled) {
-                PermissionInjector.inject(player, permissionManager, logger)
-            } else {
-                PermissionInjector.uninject(player, logger)
-            }
+                if (networkFeatureState.permissionSystemEnabled) {
+                    PermissionInjector.inject(player, permissionManager, logger)
+                } else {
+                    PermissionInjector.uninject(player, logger)
+                }
 
-            if (networkFeatureState.tablistEnabled) {
-                tablistTeamManager.setTablistForMe(player)
-                tablistTeamManager.setTablistForOthers(player)
-            } else {
-                tablistTeamManager.removePlayer(player)
-            }
-        })
+                if (networkFeatureState.tablistEnabled) {
+                    tablistTeamManager.setTablistForMe(player)
+                    tablistTeamManager.setTablistForOthers(player)
+                } else {
+                    tablistTeamManager.removePlayer(player)
+                }
+            },
+        )
     }
 }

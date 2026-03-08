@@ -12,9 +12,8 @@ import java.time.Instant
 @Service
 class StaleServerCleanupService(
     private val serverRedisRepository: ServerRedisRepository,
-    private val serverLifecycleService: ServerLifecycleService
+    private val serverLifecycleService: ServerLifecycleService,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(fixedRate = CLEANUP_INTERVAL_MS)
@@ -33,7 +32,10 @@ class StaleServerCleanupService(
         }
     }
 
-    private fun handleStartingServer(server: ServerDocument, now: Instant) {
+    private fun handleStartingServer(
+        server: ServerDocument,
+        now: Instant,
+    ) {
         val startedAt = server.startedAt ?: return
         if (!isPastDeadline(startedAt, now, STARTING_TIMEOUT)) {
             return
@@ -41,16 +43,21 @@ class StaleServerCleanupService(
 
         log.warn(
             "Server stuck in STARTING state, cleaning up: id={}, group={}, startedAt={}",
-            server.id, server.group, startedAt
+            server.id,
+            server.group,
+            startedAt,
         )
 
         serverLifecycleService.cleanupFailedServer(
             server,
-            "No heartbeat within ${STARTING_TIMEOUT.seconds}s of start"
+            "No heartbeat within ${STARTING_TIMEOUT.seconds}s of start",
         )
     }
 
-    private fun handleRunningServer(server: ServerDocument, now: Instant) {
+    private fun handleRunningServer(
+        server: ServerDocument,
+        now: Instant,
+    ) {
         val lastHeartbeat = server.lastHeartbeat ?: return
         if (!isPastDeadline(lastHeartbeat, now, HEARTBEAT_TIMEOUT)) {
             return
@@ -58,15 +65,19 @@ class StaleServerCleanupService(
 
         log.warn(
             "Server missed heartbeat deadline, stopping: id={}, group={}, lastHeartbeat={}",
-            server.id, server.group, lastHeartbeat
+            server.id,
+            server.group,
+            lastHeartbeat,
         )
 
         serverLifecycleService.stopServer(server.id, "stale-heartbeat")
     }
 
-    private fun isPastDeadline(referenceTime: Instant, now: Instant, timeout: Duration): Boolean {
-        return Duration.between(referenceTime, now) > timeout
-    }
+    private fun isPastDeadline(
+        referenceTime: Instant,
+        now: Instant,
+        timeout: Duration,
+    ): Boolean = Duration.between(referenceTime, now) > timeout
 
     companion object {
         private const val CLEANUP_INTERVAL_MS = 15_000L

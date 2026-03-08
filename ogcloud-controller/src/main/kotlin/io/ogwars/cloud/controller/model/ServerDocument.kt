@@ -25,5 +25,5 @@ data class ServerDocument(
     val podIpRetries: Int = 0,
     val startedAt: Instant? = null,
     val lastHeartbeat: Instant? = null,
-    val drainingStartedAt: Instant? = null
+    val drainingStartedAt: Instant? = null,
 )

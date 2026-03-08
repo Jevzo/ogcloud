@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotBlank
 data class PermissionConfigResponse(
     val group: String,
     val length: Long,
-    val endMillis: Long
+    val endMillis: Long,
 )
 
 data class PlayerResponse(
@@ -21,7 +21,7 @@ data class PlayerResponse(
     val proxyDisplayName: String?,
     val serverId: String?,
     val serverDisplayName: String?,
-    val connectedAt: String?
+    val connectedAt: String?,
 )
 
 data class OnlinePlayerResponse(
@@ -32,7 +32,7 @@ data class OnlinePlayerResponse(
     val serverId: String?,
     val serverDisplayName: String?,
     val groupId: String?,
-    val connectedAt: String?
+    val connectedAt: String?,
 )
 
 data class PersistedPlayerResponse(
@@ -43,24 +43,24 @@ data class PersistedPlayerResponse(
     val online: Boolean,
     val proxyId: String?,
     val serverId: String?,
-    val connectedAt: String?
+    val connectedAt: String?,
 )
 
 data class SetPlayerGroupRequest(
     @field:NotBlank val group: String,
-    @field:NotBlank val duration: String
+    @field:NotBlank val duration: String,
 )
 
 data class TransferPlayerRequest(
-    @field:NotBlank val target: String
+    @field:NotBlank val target: String,
 )
 
 fun PlayerDocument.toPlayerResponse(
     session: RedisPlayerSession?,
     serverDisplayName: String? = null,
-    proxyDisplayName: String? = null
-): PlayerResponse {
-    return PlayerResponse(
+    proxyDisplayName: String? = null,
+): PlayerResponse =
+    PlayerResponse(
         uuid = id,
         name = name,
         permission = permission.toResponse(),
@@ -70,16 +70,15 @@ fun PlayerDocument.toPlayerResponse(
         proxyDisplayName = proxyDisplayName,
         serverId = session?.serverId,
         serverDisplayName = serverDisplayName,
-        connectedAt = session?.connectedAt?.toString()
+        connectedAt = session?.connectedAt?.toString(),
     )
-}
 
 fun RedisPlayerSession.toOnlinePlayerResponse(
     uuid: String,
     serverDisplayName: String? = null,
-    proxyDisplayName: String? = null
-): OnlinePlayerResponse {
-    return OnlinePlayerResponse(
+    proxyDisplayName: String? = null,
+): OnlinePlayerResponse =
+    OnlinePlayerResponse(
         uuid = uuid,
         name = name,
         proxyId = proxyId,
@@ -87,12 +86,11 @@ fun RedisPlayerSession.toOnlinePlayerResponse(
         serverId = serverId,
         serverDisplayName = serverDisplayName,
         groupId = permission.group,
-        connectedAt = connectedAt.toString()
+        connectedAt = connectedAt.toString(),
     )
-}
 
-fun PlayerDocument.toPersistedResponse(session: RedisPlayerSession?): PersistedPlayerResponse {
-    return PersistedPlayerResponse(
+fun PlayerDocument.toPersistedResponse(session: RedisPlayerSession?): PersistedPlayerResponse =
+    PersistedPlayerResponse(
         uuid = id,
         name = name,
         permission = permission.toResponse(),
@@ -100,14 +98,12 @@ fun PlayerDocument.toPersistedResponse(session: RedisPlayerSession?): PersistedP
         online = session != null,
         proxyId = session?.proxyId,
         serverId = session?.serverId,
-        connectedAt = session?.connectedAt?.toString()
+        connectedAt = session?.connectedAt?.toString(),
     )
-}
 
-private fun PermissionConfig.toResponse(): PermissionConfigResponse {
-    return PermissionConfigResponse(
+private fun PermissionConfig.toResponse(): PermissionConfigResponse =
+    PermissionConfigResponse(
         group = group,
         length = length,
-        endMillis = endMillis
+        endMillis = endMillis,
     )
-}

@@ -21,7 +21,6 @@ private const val SERVER_API_NOT_INITIALIZED_MESSAGE = "OgCloudServerAPI not ini
  * backed view of the network and do not perform heavy blocking work on the main thread.
  */
 interface OgCloudServerAPI {
-
     /**
      * Returns the unique cloud server identifier assigned to this Paper instance.
      *
@@ -132,7 +131,10 @@ interface OgCloudServerAPI {
      * @param uuid the player to move
      * @param serverId the destination server id
      */
-    fun transferPlayer(uuid: UUID, serverId: String): CompletableFuture<Void>
+    fun transferPlayer(
+        uuid: UUID,
+        serverId: String,
+    ): CompletableFuture<Void>
 
     /**
      * Requests that a player be transferred to a server in the supplied group.
@@ -142,7 +144,10 @@ interface OgCloudServerAPI {
      * @param uuid the player to move
      * @param group the destination group
      */
-    fun transferPlayerToGroup(uuid: UUID, group: String): CompletableFuture<Void>
+    fun transferPlayerToGroup(
+        uuid: UUID,
+        group: String,
+    ): CompletableFuture<Void>
 
     /**
      * Requests an immediate template push for the current server instance.

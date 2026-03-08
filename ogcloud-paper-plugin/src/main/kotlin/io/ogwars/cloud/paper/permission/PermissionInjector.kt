@@ -7,12 +7,15 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
 object PermissionInjector {
-
     // Paper 1.21.x with Mojang mappings uses "perm" on CraftHumanEntity.
     private const val FIELD_NAME = "perm"
     private val fieldCache = ConcurrentHashMap<Class<*>, Field>()
 
-    fun inject(player: Player, permissionManager: PermissionManager, logger: Logger) {
+    fun inject(
+        player: Player,
+        permissionManager: PermissionManager,
+        logger: Logger,
+    ) {
         try {
             val field = resolvePermissionField(player.javaClass)
             val current = field.get(player)
@@ -25,7 +28,10 @@ object PermissionInjector {
         }
     }
 
-    fun uninject(player: Player, logger: Logger) {
+    fun uninject(
+        player: Player,
+        logger: Logger,
+    ) {
         try {
             val field = resolvePermissionField(player.javaClass)
             val current = field.get(player)
@@ -38,9 +44,8 @@ object PermissionInjector {
         }
     }
 
-    private fun resolvePermissionField(playerClass: Class<*>): Field {
-        return fieldCache.computeIfAbsent(playerClass, ::findPermissionField)
-    }
+    private fun resolvePermissionField(playerClass: Class<*>): Field =
+        fieldCache.computeIfAbsent(playerClass, ::findPermissionField)
 
     private fun findPermissionField(playerClass: Class<*>): Field {
         var currentClass: Class<*>? = playerClass

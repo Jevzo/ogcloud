@@ -11,9 +11,8 @@ class GameStateManager(
     private val group: String,
     private val kafkaSendDispatcher: KafkaSendDispatcher,
     private val asyncHandoff: (Runnable) -> Unit,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     private val gson = Gson()
 
     @Volatile
@@ -24,9 +23,12 @@ class GameStateManager(
         val previous = currentState
         currentState = state
 
-        val updateEvent = GameStateUpdateEvent(
-            serverId = serverId, group = group, gameState = state
-        )
+        val updateEvent =
+            GameStateUpdateEvent(
+                serverId = serverId,
+                group = group,
+                gameState = state,
+            )
 
         asyncHandoff(
             Runnable {
@@ -35,10 +37,11 @@ class GameStateManager(
                         topic = TOPIC,
                         key = serverId,
                         payload = gson.toJson(updateEvent),
-                        type = KafkaSendDispatcher.MessageType.GAME_STATE_UPDATE
-                    )
+                        type = KafkaSendDispatcher.MessageType.GAME_STATE_UPDATE,
+                    ),
                 )
-            })
+            },
+        )
 
         logger.info("Game state changed: $previous -> $state")
     }

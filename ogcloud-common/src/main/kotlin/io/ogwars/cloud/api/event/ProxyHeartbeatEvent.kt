@@ -7,5 +7,5 @@ data class ProxyHeartbeatEvent(
     val playerCount: Int,
     val maxPlayers: Int,
     val memoryUsedMb: Long,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

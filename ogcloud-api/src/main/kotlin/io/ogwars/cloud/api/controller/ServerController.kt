@@ -23,26 +23,30 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/servers")
 @Validated
 class ServerController(
-    private val serverService: ServerService
+    private val serverService: ServerService,
 ) {
-
     @GetMapping
     fun listServers(
         @RequestParam(required = false) group: String?,
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
-        @RequestParam(required = false) @Min(1, message = "size must be greater than 0") @Max(200, message = "size must be less than or equal to 200") size: Int?
+        @RequestParam(
+            required = false,
+        ) @Min(
+            1,
+            message = "size must be greater than 0",
+        ) @Max(200, message = "size must be less than or equal to 200") size: Int?,
     ): PaginatedResponse<ServerResponse> = serverService.listAll(group, query, page, size)
 
     @GetMapping("/{id}")
     fun getServer(
-        @PathVariable id: String
+        @PathVariable id: String,
     ): ServerResponse = serverService.getById(id)
 
     @PostMapping("/request")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun requestServer(
-        @RequestBody @Valid body: ServerRequestBody
+        @RequestBody @Valid body: ServerRequestBody,
     ): ServerRequestResponse {
         val serverId = serverService.requestServer(body.group)
         return ServerRequestResponse(serverId, body.group)
@@ -51,18 +55,18 @@ class ServerController(
     @PostMapping("/{id}/stop")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun stopServer(
-        @PathVariable id: String
+        @PathVariable id: String,
     ) = serverService.stopServer(id)
 
     @PostMapping("/{id}/kill")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun killServer(
-        @PathVariable id: String
+        @PathVariable id: String,
     ) = serverService.killServer(id)
 
     @PostMapping("/{id}/template/push")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun forceTemplatePush(
-        @PathVariable id: String
+        @PathVariable id: String,
     ) = serverService.forceTemplatePush(id)
 }

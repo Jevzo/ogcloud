@@ -11,21 +11,21 @@ class NetworkUpdateConsumer(
     private val networkFeatureState: NetworkFeatureState,
     private val logger: Logger,
     private val onFeaturesChanged: (permissionSystemEnabled: Boolean, tablistEnabled: Boolean) -> Unit,
-    serverId: String
+    serverId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-paper-network-$serverId",
-        topic = TOPIC,
-        threadName = "ogcloud-paper-network-consumer",
-        clientIdSuffix = "network",
-        autoOffsetReset = "earliest",
-        logger = logger,
-        consumerLabel = "network update",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-paper-network-$serverId",
+            topic = TOPIC,
+            threadName = "ogcloud-paper-network-consumer",
+            clientIdSuffix = "network",
+            autoOffsetReset = "earliest",
+            logger = logger,
+            consumerLabel = "network update",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -46,14 +46,16 @@ class NetworkUpdateConsumer(
 
         networkFeatureState.update(
             permissionSystemEnabled = event.general.permissionSystemEnabled,
-            tablistEnabled = event.general.tablistEnabled
+            tablistEnabled = event.general.tablistEnabled,
         )
 
         logger.info(
-            "Applied network feature update: permissionSystemEnabled=${event.general.permissionSystemEnabled}, tablistEnabled=${event.general.tablistEnabled}"
+            "Applied network feature update: permissionSystemEnabled=${event.general.permissionSystemEnabled}, tablistEnabled=${event.general.tablistEnabled}",
         )
 
-        if (previousPermissionSystemEnabled != event.general.permissionSystemEnabled || previousTablistEnabled != event.general.tablistEnabled) {
+        if (previousPermissionSystemEnabled != event.general.permissionSystemEnabled ||
+            previousTablistEnabled != event.general.tablistEnabled
+        ) {
             onFeaturesChanged(event.general.permissionSystemEnabled, event.general.tablistEnabled)
         }
     }

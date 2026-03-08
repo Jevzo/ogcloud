@@ -15,9 +15,8 @@ class ConnectionFailureHandler(
     private val serverRegistry: ServerRegistry,
     private val permissionCache: PermissionCache,
     private val networkState: NetworkState,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
-
     @Subscribe
     fun onKickedFromServer(event: KickedFromServerEvent) {
         if (event.serverKickReason.isPresent) {
@@ -31,9 +30,10 @@ class ConnectionFailureHandler(
             return
         }
 
-        event.result = KickedFromServerEvent.Notify.create(
-            Component.text(CONNECTION_LOST_MESSAGE, NamedTextColor.RED)
-        )
+        event.result =
+            KickedFromServerEvent.Notify.create(
+                Component.text(CONNECTION_LOST_MESSAGE, NamedTextColor.RED),
+            )
     }
 
     private fun unregisterDeadServer(deadServer: RegisteredServer) {
@@ -53,21 +53,25 @@ class ConnectionFailureHandler(
             logger.info(
                 "Redirecting {} to fallback server {} after connection failure",
                 event.player.username,
-                fallback.serverInfo.name
+                fallback.serverInfo.name,
             )
             return
         }
 
-        event.result = KickedFromServerEvent.DisconnectPlayer.create(
-            Component.text(NO_SERVERS_MESSAGE, NamedTextColor.RED)
-        )
+        event.result =
+            KickedFromServerEvent.DisconnectPlayer.create(
+                Component.text(NO_SERVERS_MESSAGE, NamedTextColor.RED),
+            )
     }
 
-    private fun selectFallbackServer(playerUuid: UUID) = serverRegistry.getServersByGroup(
-        networkState.defaultGroup,
-        includeMaintenance = networkState.permissionSystemEnabled &&
-                permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
-    ).minByOrNull { it.playersConnected.size }
+    private fun selectFallbackServer(playerUuid: UUID) =
+        serverRegistry
+            .getServersByGroup(
+                networkState.defaultGroup,
+                includeMaintenance =
+                    networkState.permissionSystemEnabled &&
+                        permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION),
+            ).minByOrNull { it.playersConnected.size }
 
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"

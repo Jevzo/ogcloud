@@ -18,19 +18,19 @@ class LifecycleConsumer(
     private val adminNotificationManager: AdminNotificationManager,
     private val proxyApi: OgCloudProxyAPIImpl,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-lifecycle-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-lifecycle-consumer",
-        logger = logger,
-        consumerLabel = "lifecycle",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-lifecycle-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-lifecycle-consumer",
+            logger = logger,
+            consumerLabel = "lifecycle",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -67,7 +67,7 @@ class LifecycleConsumer(
             serverId = event.serverId,
             group = event.group,
             address = InetSocketAddress(podIp, port),
-            displayName = event.displayName ?: defaultDisplayName(event)
+            displayName = event.displayName ?: defaultDisplayName(event),
         )
 
         proxyApi.fireServerReady(runningServer)
@@ -88,14 +88,19 @@ class LifecycleConsumer(
             type = type,
             displayName = displayName ?: serverId,
             state = ServerState.RUNNING,
-            address = "$podIp:$port"
+            address = "$podIp:$port",
         )
     }
 
     companion object {
         private const val TOPIC = "ogcloud.server.lifecycle"
-        private val NOTIFY_STATES = setOf(
-            ServerState.REQUESTED, ServerState.STARTING, ServerState.RUNNING, ServerState.DRAINING, ServerState.STOPPED
-        )
+        private val NOTIFY_STATES =
+            setOf(
+                ServerState.REQUESTED,
+                ServerState.STARTING,
+                ServerState.RUNNING,
+                ServerState.DRAINING,
+                ServerState.STOPPED,
+            )
     }
 }

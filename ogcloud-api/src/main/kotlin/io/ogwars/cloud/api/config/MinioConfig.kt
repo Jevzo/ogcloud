@@ -9,14 +9,13 @@ import org.springframework.context.annotation.Configuration
 class MinioConfig(
     @Value("\${ogcloud.minio.endpoint}") private val endpoint: String,
     @Value("\${ogcloud.minio.access-key}") private val accessKey: String,
-    @Value("\${ogcloud.minio.secret-key}") private val secretKey: String
+    @Value("\${ogcloud.minio.secret-key}") private val secretKey: String,
 ) {
-
     @Bean
-    fun minioClient(): MinioClient {
-        return MinioClient.builder()
+    fun minioClient(): MinioClient =
+        MinioClient
+            .builder()
             .endpoint(endpoint)
             .credentials(accessKey, secretKey)
             .build()
-    }
 }

@@ -16,13 +16,12 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class AccessTokenAuthenticationFilter(
     private val jwtTokenService: JwtTokenService,
-    private val webUserRepository: WebUserRepository
+    private val webUserRepository: WebUserRepository,
 ) : OncePerRequestFilter() {
-
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain
+        filterChain: FilterChain,
     ) {
         val header = request.getHeader(AUTHORIZATION_HEADER)
         if (header.isNullOrBlank() || !header.startsWith(BEARER_PREFIX)) {
@@ -43,11 +42,12 @@ class AccessTokenAuthenticationFilter(
             val principal = AuthenticatedUser(user.id, user.email, user.role)
             val authorities = buildAuthorities(user.role)
 
-            SecurityContextHolder.getContext().authentication = UsernamePasswordAuthenticationToken(
-                principal,
-                null,
-                authorities
-            )
+            SecurityContextHolder.getContext().authentication =
+                UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    authorities,
+                )
         } catch (_: InvalidCredentialsException) {
             writeUnauthorized(response)
             return
@@ -63,9 +63,10 @@ class AccessTokenAuthenticationFilter(
     }
 
     private fun buildAuthorities(role: WebUserRole): List<GrantedAuthority> {
-        val authorities = mutableListOf<GrantedAuthority>(
-            SimpleGrantedAuthority("ROLE_${role.name}")
-        )
+        val authorities =
+            mutableListOf<GrantedAuthority>(
+                SimpleGrantedAuthority("ROLE_${role.name}"),
+            )
 
         if (role == WebUserRole.SERVICE) {
             // SERVICE is admin-equivalent and must pass ADMIN role checks.

@@ -6,15 +6,14 @@ import org.springframework.stereotype.Service
 
 @Service
 class ScalingLogService(
-    private val scalingLogRepository: ScalingLogRepository
+    private val scalingLogRepository: ScalingLogRepository,
 ) {
-
     fun logDecision(
         groupId: String,
         action: String,
         reason: String,
         serverId: String? = null,
-        details: String? = null
+        details: String? = null,
     ) {
         scalingLogRepository.save(
             ScalingLogDocument(
@@ -22,8 +21,8 @@ class ScalingLogService(
                 action = action,
                 reason = reason,
                 serverId = serverId,
-                details = details
-            )
+                details = details,
+            ),
         )
     }
 }

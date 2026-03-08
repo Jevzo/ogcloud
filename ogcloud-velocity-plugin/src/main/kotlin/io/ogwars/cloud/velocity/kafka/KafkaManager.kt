@@ -11,9 +11,9 @@ import java.time.Duration
 import java.util.*
 
 class KafkaManager(
-    private val bootstrapServers: String, private val clientId: String
+    private val bootstrapServers: String,
+    private val clientId: String,
 ) {
-
     private lateinit var producer: KafkaProducer<String, String>
 
     fun start() {
@@ -21,14 +21,19 @@ class KafkaManager(
     }
 
     fun createConsumer(
-        groupId: String, clientIdSuffix: String = "consumer", autoOffsetReset: String = "earliest"
-    ): KafkaConsumer<String, String> {
-        return withPluginClassLoader {
+        groupId: String,
+        clientIdSuffix: String = "consumer",
+        autoOffsetReset: String = "earliest",
+    ): KafkaConsumer<String, String> =
+        withPluginClassLoader {
             KafkaConsumer(createConsumerProperties(groupId, clientIdSuffix, autoOffsetReset))
         }
-    }
 
-    fun sendBlocking(topic: String, key: String, value: String) {
+    fun sendBlocking(
+        topic: String,
+        key: String,
+        value: String,
+    ) {
         producer.send(ProducerRecord(topic, key, value)).get()
     }
 
@@ -38,19 +43,20 @@ class KafkaManager(
         }
     }
 
-    private fun createProducerProperties(): Properties {
-        return Properties().apply {
+    private fun createProducerProperties(): Properties =
+        Properties().apply {
             put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
             put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
             put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer::class.java.name)
             put(ProducerConfig.CLIENT_ID_CONFIG, clientId)
         }
-    }
 
     private fun createConsumerProperties(
-        groupId: String, clientIdSuffix: String, autoOffsetReset: String
-    ): Properties {
-        return Properties().apply {
+        groupId: String,
+        clientIdSuffix: String,
+        autoOffsetReset: String,
+    ): Properties =
+        Properties().apply {
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
             put(ConsumerConfig.GROUP_ID_CONFIG, groupId)
             put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
@@ -58,7 +64,6 @@ class KafkaManager(
             put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset)
             put(ConsumerConfig.CLIENT_ID_CONFIG, "$clientId-$clientIdSuffix")
         }
-    }
 
     private fun <T> withPluginClassLoader(block: () -> T): T {
         val currentThread = Thread.currentThread()

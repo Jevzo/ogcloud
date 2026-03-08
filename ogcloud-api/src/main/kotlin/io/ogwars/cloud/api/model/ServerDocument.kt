@@ -19,5 +19,5 @@ data class ServerDocument(
     val memoryUsedMb: Long = 0,
     val podIpRetries: Int = 0,
     val startedAt: Instant? = null,
-    val lastHeartbeat: Instant? = null
+    val lastHeartbeat: Instant? = null,
 )

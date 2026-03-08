@@ -5,5 +5,5 @@ data class PlayerTransferEvent(
     val serverId: String? = null,
     val target: String?,
     val reason: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

@@ -12,5 +12,5 @@ data class WebUserDocument(
     val username: String,
     @field:Field("password") val passwordHash: String,
     val role: WebUserRole,
-    @field:Indexed(unique = true, sparse = true) val linkedPlayerUuid: String? = null
+    @field:Indexed(unique = true, sparse = true) val linkedPlayerUuid: String? = null,
 )

@@ -13,21 +13,21 @@ class LifecycleConsumer(
     private val kafkaManager: KafkaManager,
     private val serverApi: OgCloudServerAPIImpl,
     private val logger: Logger,
-    serverId: String
+    serverId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-paper-lifecycle-$serverId",
-        topic = TOPIC,
-        threadName = "ogcloud-paper-lifecycle-consumer",
-        clientIdSuffix = "lifecycle",
-        autoOffsetReset = "latest",
-        logger = logger,
-        consumerLabel = "lifecycle",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-paper-lifecycle-$serverId",
+            topic = TOPIC,
+            threadName = "ogcloud-paper-lifecycle-consumer",
+            clientIdSuffix = "lifecycle",
+            autoOffsetReset = "latest",
+            logger = logger,
+            consumerLabel = "lifecycle",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -56,7 +56,7 @@ class LifecycleConsumer(
             type = this.type,
             displayName = displayName ?: this.serverId,
             state = ServerState.RUNNING,
-            address = "$ip:$port"
+            address = "$ip:$port",
         )
     }
 

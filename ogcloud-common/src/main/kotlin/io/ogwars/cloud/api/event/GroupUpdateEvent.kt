@@ -6,5 +6,5 @@ data class GroupUpdateEvent(
     val groupId: String,
     val type: GroupType,
     val maintenance: Boolean,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

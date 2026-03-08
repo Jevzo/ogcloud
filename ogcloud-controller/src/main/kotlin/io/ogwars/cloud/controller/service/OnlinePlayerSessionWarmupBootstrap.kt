@@ -9,9 +9,8 @@ import org.springframework.stereotype.Component
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
 class OnlinePlayerSessionWarmupBootstrap(
-    private val playerTrackingService: PlayerTrackingService
+    private val playerTrackingService: PlayerTrackingService,
 ) : ApplicationRunner {
-
     override fun run(args: ApplicationArguments) {
         playerTrackingService.warmupOnlinePlayerSessions()
     }

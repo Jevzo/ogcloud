@@ -7,8 +7,8 @@ import io.ogwars.cloud.api.model.ServerDocument
 import io.ogwars.cloud.api.model.ServerState
 import java.time.Instant
 
-fun RedisServerData.toDocument(): ServerDocument {
-    return ServerDocument(
+fun RedisServerData.toDocument(): ServerDocument =
+    ServerDocument(
         id = id,
         group = group,
         type = GroupType.valueOf(type),
@@ -25,6 +25,5 @@ fun RedisServerData.toDocument(): ServerDocument {
         memoryUsedMb = memoryUsedMb,
         podIpRetries = podIpRetries,
         startedAt = startedAt?.let(Instant::ofEpochMilli),
-        lastHeartbeat = lastHeartbeat?.let(Instant::ofEpochMilli)
+        lastHeartbeat = lastHeartbeat?.let(Instant::ofEpochMilli),
     )
-}

@@ -6,16 +6,15 @@ class NetworkState(
     @Volatile var maxPlayers: Int = 1000,
     @Volatile var defaultGroup: String = "lobby",
     @Volatile var permissionSystemEnabled: Boolean = true,
-    @Volatile var tablistEnabled: Boolean = true
+    @Volatile var tablistEnabled: Boolean = true,
 ) {
-
     fun update(
         maintenance: Boolean,
         maintenanceKickMessage: String,
         maxPlayers: Int,
         defaultGroup: String,
         permissionSystemEnabled: Boolean,
-        tablistEnabled: Boolean
+        tablistEnabled: Boolean,
     ) {
         this.maintenance = maintenance
         this.maintenanceKickMessage = maintenanceKickMessage

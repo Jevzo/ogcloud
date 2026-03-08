@@ -19,19 +19,19 @@ class PlayerTransferConsumer(
     private val networkState: NetworkState,
     private val proxy: ProxyServer,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-transfer-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-transfer-consumer",
-        logger = logger,
-        consumerLabel = "player transfer",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-transfer-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-transfer-consumer",
+            logger = logger,
+            consumerLabel = "player transfer",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -52,11 +52,14 @@ class PlayerTransferConsumer(
 
     private fun resolvePlayers(event: PlayerTransferEvent): List<Player>? {
         event.playerUuid?.let { rawUuid ->
-            val playerUuid = runCatching { UUID.fromString(rawUuid) }.onFailure {
-                logger.warn(
-                    "Transfer target player UUID is invalid: {}", rawUuid
-                )
-            }.getOrNull() ?: return null
+            val playerUuid =
+                runCatching { UUID.fromString(rawUuid) }
+                    .onFailure {
+                        logger.warn(
+                            "Transfer target player UUID is invalid: {}",
+                            rawUuid,
+                        )
+                    }.getOrNull() ?: return null
 
             val player = proxy.getPlayer(playerUuid).orElse(null)
             if (player == null) {
@@ -77,7 +80,10 @@ class PlayerTransferConsumer(
         return null
     }
 
-    private fun transferPlayer(player: Player, target: String?) {
+    private fun transferPlayer(
+        player: Player,
+        target: String?,
+    ) {
         if (target == null) {
             disconnectPlayer(player, SHUTDOWN_MESSAGE)
             return
@@ -104,7 +110,10 @@ class PlayerTransferConsumer(
         logger.info("Transferring player {} to {}", player.username, selected.serverInfo.name)
     }
 
-    private fun transferToSpecificServer(player: Player, serverId: String): Boolean {
+    private fun transferToSpecificServer(
+        player: Player,
+        serverId: String,
+    ): Boolean {
         val targetServer = serverRegistry.getServer(serverId) ?: return false
         val targetGroup = serverRegistry.getGroupForServer(serverId)
 
@@ -121,7 +130,10 @@ class PlayerTransferConsumer(
         return true
     }
 
-    private fun canAccessGroup(playerUuid: UUID, group: String): Boolean {
+    private fun canAccessGroup(
+        playerUuid: UUID,
+        group: String,
+    ): Boolean {
         if (!serverRegistry.isGroupInMaintenance(group)) {
             return true
         }
@@ -133,22 +145,35 @@ class PlayerTransferConsumer(
         return permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
     }
 
-    private fun resolveDirectServerId(target: String): String? {
-        return if (serverRegistry.getServer(target) != null) target else serverRegistry.findServerIdByDisplayName(target)
-    }
+    private fun resolveDirectServerId(target: String): String? =
+        if (serverRegistry.getServer(target) !=
+            null
+        ) {
+            target
+        } else {
+            serverRegistry.findServerIdByDisplayName(target)
+        }
 
-    private fun selectTargetServer(group: String) = serverRegistry.getServersByGroup(
-        group, includeMaintenance = serverRegistry.isGroupInMaintenance(group)
-    ).minByOrNull { it.playersConnected.size }
+    private fun selectTargetServer(group: String) =
+        serverRegistry
+            .getServersByGroup(
+                group,
+                includeMaintenance = serverRegistry.isGroupInMaintenance(group),
+            ).minByOrNull { it.playersConnected.size }
 
-    private fun rerouteOrKickForMaintenance(player: Player, blockedGroup: String) {
+    private fun rerouteOrKickForMaintenance(
+        player: Player,
+        blockedGroup: String,
+    ) {
         val defaultGroup = networkState.defaultGroup
 
         if (defaultGroup == blockedGroup || serverRegistry.isGroupInMaintenance(defaultGroup)) {
             disconnectPlayer(player, MAINTENANCE_MESSAGE)
 
             logger.info(
-                "Kicked player {} because maintained group {} has no available fallback", player.username, blockedGroup
+                "Kicked player {} because maintained group {} has no available fallback",
+                player.username,
+                blockedGroup,
             )
             return
         }
@@ -162,7 +187,7 @@ class PlayerTransferConsumer(
                 "No fallback server available in default group '{}' while redirecting {} from maintained group {}",
                 defaultGroup,
                 player.username,
-                blockedGroup
+                blockedGroup,
             )
             return
         }
@@ -173,11 +198,14 @@ class PlayerTransferConsumer(
             "Redirecting player {} from maintained group {} to {}",
             player.username,
             blockedGroup,
-            fallback.serverInfo.name
+            fallback.serverInfo.name,
         )
     }
 
-    private fun disconnectPlayer(player: Player, message: String) {
+    private fun disconnectPlayer(
+        player: Player,
+        message: String,
+    ) {
         player.disconnect(Component.text(message))
     }
 

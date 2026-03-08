@@ -12,19 +12,19 @@ class WebAccountLinkOtpConsumer(
     private val kafkaManager: KafkaManager,
     private val proxyServer: ProxyServer,
     private val logger: Logger,
-    proxyId: String
+    proxyId: String,
 ) {
-
     private val gson = Gson()
-    private val consumerRunner = ManagedKafkaStringConsumer(
-        kafkaManager = kafkaManager,
-        groupId = "ogcloud-velocity-web-link-otp-$proxyId",
-        topic = TOPIC,
-        threadName = "ogcloud-velocity-web-link-otp-consumer",
-        logger = logger,
-        consumerLabel = "web account link OTP",
-        onRecord = ::processRecord
-    )
+    private val consumerRunner =
+        ManagedKafkaStringConsumer(
+            kafkaManager = kafkaManager,
+            groupId = "ogcloud-velocity-web-link-otp-$proxyId",
+            topic = TOPIC,
+            threadName = "ogcloud-velocity-web-link-otp-consumer",
+            logger = logger,
+            consumerLabel = "web account link OTP",
+            onRecord = ::processRecord,
+        )
 
     fun start() {
         consumerRunner.start()
@@ -40,19 +40,21 @@ class WebAccountLinkOtpConsumer(
         val player = proxyServer.getPlayer(playerUuid).orElse(null) ?: return
 
         OgCloudCommand.sendMessage(
-            player, "&8| &6OgCloud Web &7> &7Link code for &f${event.requestedByEmail}&7: &a${event.otp}"
+            player,
+            "&8| &6OgCloud Web &7> &7Link code for &f${event.requestedByEmail}&7: &a${event.otp}",
         )
 
         logger.info("Delivered web account link OTP to playerUuid={}", event.playerUuid)
     }
 
-    private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }.onFailure {
-            logger.warn(
-                "Received web account link OTP with invalid uuid: {}", rawUuid
-            )
-        }.getOrNull()
-    }
+    private fun parseUuid(rawUuid: String): UUID? =
+        runCatching { UUID.fromString(rawUuid) }
+            .onFailure {
+                logger.warn(
+                    "Received web account link OTP with invalid uuid: {}",
+                    rawUuid,
+                )
+            }.getOrNull()
 
     companion object {
         private const val TOPIC = "ogcloud.web.account.link.otp"

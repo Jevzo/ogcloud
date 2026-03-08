@@ -17,15 +17,19 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v1/templates")
 @Validated
 class TemplateController(
-    private val templateService: TemplateService
+    private val templateService: TemplateService,
 ) {
-
     @GetMapping
     fun listTemplates(
         @RequestParam(required = false) group: String?,
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
-        @RequestParam(required = false) @Min(1, message = "size must be greater than 0") @Max(200, message = "size must be less than or equal to 200") size: Int?
+        @RequestParam(
+            required = false,
+        ) @Min(
+            1,
+            message = "size must be greater than 0",
+        ) @Max(200, message = "size must be less than or equal to 200") size: Int?,
     ): PaginatedResponse<TemplateService.TemplateInfo> = templateService.listTemplates(group, query, page, size)
 
     @PostMapping("/{group}/upload")
@@ -33,17 +37,17 @@ class TemplateController(
     fun uploadTemplate(
         @PathVariable group: String,
         @RequestParam version: String,
-        @RequestParam file: MultipartFile
+        @RequestParam file: MultipartFile,
     ) = templateService.uploadTemplate(group, version, file.inputStream, file.size)
-
 
     @GetMapping("/{group}/{version}/download")
     fun downloadTemplate(
         @PathVariable group: String,
-        @PathVariable version: String
+        @PathVariable version: String,
     ): ResponseEntity<InputStreamResource> {
         val download = templateService.downloadTemplate(group, version)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .contentType(MediaType.parseMediaType("application/gzip"))
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${download.fileName}\"")
             .contentLength(download.size)
@@ -54,6 +58,6 @@ class TemplateController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteTemplate(
         @PathVariable group: String,
-        @PathVariable version: String
+        @PathVariable version: String,
     ) = templateService.deleteTemplate(group, version)
 }

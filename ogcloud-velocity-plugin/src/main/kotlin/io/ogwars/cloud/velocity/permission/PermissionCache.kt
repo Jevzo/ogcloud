@@ -16,11 +16,10 @@ data class CachedPlayer(
     val nameColor: String,
     val tabPrefix: String,
     val weight: Int,
-    val permissionEndMillis: Long
+    val permissionEndMillis: Long,
 )
 
 class PermissionCache {
-
     private val cache = ConcurrentHashMap<UUID, CachedPlayer>()
 
     @Volatile
@@ -32,15 +31,25 @@ class PermissionCache {
 
     fun getDefaultGroup(): PermissionGroupDocument? = defaultGroup
 
-    fun cachePlayer(uuid: UUID, group: PermissionGroupDocument, permissionEndMillis: Long) {
+    fun cachePlayer(
+        uuid: UUID,
+        group: PermissionGroupDocument,
+        permissionEndMillis: Long,
+    ) {
         cache[uuid] = group.toCachedPlayer(permissionEndMillis)
     }
 
-    fun cachePlayerFromRedis(uuid: UUID, session: RedisPlayerSession) {
+    fun cachePlayerFromRedis(
+        uuid: UUID,
+        session: RedisPlayerSession,
+    ) {
         cache[uuid] = session.toCachedPlayer()
     }
 
-    fun cachePlayerFromEvent(uuid: UUID, event: PermissionUpdateEvent) {
+    fun cachePlayerFromEvent(
+        uuid: UUID,
+        event: PermissionUpdateEvent,
+    ) {
         cache[uuid] = event.toCachedPlayer()
     }
 
@@ -50,7 +59,10 @@ class PermissionCache {
 
     fun getPlayer(uuid: UUID): CachedPlayer? = cache[uuid]
 
-    fun hasPermission(uuid: UUID, permission: String): Boolean {
+    fun hasPermission(
+        uuid: UUID,
+        permission: String,
+    ): Boolean {
         val cached = cache[uuid] ?: return false
         return cached.permissions.grants(permission)
     }
@@ -67,9 +79,9 @@ class PermissionCache {
         permissions: List<String>,
         display: DisplayConfig,
         weight: Int,
-        permissionEndMillis: Long
-    ): CachedPlayer {
-        return CachedPlayer(
+        permissionEndMillis: Long,
+    ): CachedPlayer =
+        CachedPlayer(
             groupId = groupId,
             groupName = groupName,
             permissions = permissions,
@@ -78,46 +90,40 @@ class PermissionCache {
             nameColor = display.nameColor,
             tabPrefix = display.tabPrefix,
             weight = weight,
-            permissionEndMillis = permissionEndMillis
+            permissionEndMillis = permissionEndMillis,
         )
-    }
 
-    private fun PermissionGroupDocument.toCachedPlayer(permissionEndMillis: Long): CachedPlayer {
-        return createCachedPlayer(
+    private fun PermissionGroupDocument.toCachedPlayer(permissionEndMillis: Long): CachedPlayer =
+        createCachedPlayer(
             groupId = id,
             groupName = name,
             permissions = permissions,
             display = display,
             weight = weight,
-            permissionEndMillis = permissionEndMillis
+            permissionEndMillis = permissionEndMillis,
         )
-    }
 
-    private fun RedisPlayerSession.toCachedPlayer(): CachedPlayer {
-        return createCachedPlayer(
+    private fun RedisPlayerSession.toCachedPlayer(): CachedPlayer =
+        createCachedPlayer(
             groupId = permission.group,
             groupName = permission.group,
             permissions = permissions,
             display = display,
             weight = weight,
-            permissionEndMillis = permission.endMillis
+            permissionEndMillis = permission.endMillis,
         )
-    }
 
-    private fun PermissionUpdateEvent.toCachedPlayer(): CachedPlayer {
-        return createCachedPlayer(
+    private fun PermissionUpdateEvent.toCachedPlayer(): CachedPlayer =
+        createCachedPlayer(
             groupId = groupId,
             groupName = groupName,
             permissions = permissions,
             display = display,
             weight = weight,
-            permissionEndMillis = permissionEndMillis
+            permissionEndMillis = permissionEndMillis,
         )
-    }
 
-    private fun List<String>.grants(permission: String): Boolean {
-        return WILDCARD_PERMISSION in this || permission in this
-    }
+    private fun List<String>.grants(permission: String): Boolean = WILDCARD_PERMISSION in this || permission in this
 
     companion object {
         private const val WILDCARD_PERMISSION = "*"

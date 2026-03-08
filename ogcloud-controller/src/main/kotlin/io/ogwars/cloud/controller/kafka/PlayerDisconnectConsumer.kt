@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component
 @Component
 class PlayerDisconnectConsumer(
     private val playerTrackingService: PlayerTrackingService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.PLAYER_DISCONNECT], groupId = "ogcloud-controller")

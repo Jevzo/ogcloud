@@ -6,7 +6,7 @@ import io.ogwars.cloud.api.model.ServerState
 import jakarta.validation.constraints.NotBlank
 
 data class ServerRequestBody(
-    @field:NotBlank val group: String
+    @field:NotBlank val group: String,
 )
 
 data class ServerRequestResponse(
@@ -30,11 +30,11 @@ data class ServerResponse(
     val tps: Double,
     val memoryUsedMb: Long,
     val startedAt: String?,
-    val lastHeartbeat: String?
+    val lastHeartbeat: String?,
 )
 
-fun ServerDocument.toResponse(): ServerResponse {
-    return ServerResponse(
+fun ServerDocument.toResponse(): ServerResponse =
+    ServerResponse(
         id = id,
         group = group,
         type = type,
@@ -50,6 +50,5 @@ fun ServerDocument.toResponse(): ServerResponse {
         tps = tps,
         memoryUsedMb = memoryUsedMb,
         startedAt = startedAt?.toString(),
-        lastHeartbeat = lastHeartbeat?.toString()
+        lastHeartbeat = lastHeartbeat?.toString(),
     )
-}

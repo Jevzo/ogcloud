@@ -16,12 +16,14 @@ class KubernetesService(
     private val kubernetesClient: KubernetesClient,
     private val networkSettingsService: NetworkSettingsService,
     private val kubernetesProperties: KubernetesProperties,
-    private val podRuntimeProperties: PodRuntimeProperties
+    private val podRuntimeProperties: PodRuntimeProperties,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun createServerPod(server: ServerDocument, group: GroupDocument) {
+    fun createServerPod(
+        server: ServerDocument,
+        group: GroupDocument,
+    ) {
         val podSpec = group.toServerPodSpec()
 
         if (podSpec.isStatic) {
@@ -30,118 +32,150 @@ class KubernetesService(
 
         val volume = buildServerDataVolume(group.id, podSpec.isStatic)
 
-        val pod = PodBuilder()
-            .withNewMetadata()
-            .withName(server.podName)
-            .withNamespace(kubernetesProperties.namespace)
-            .addToLabels("ogcloud/component", if (podSpec.isProxy) PROXY_COMPONENT else SERVER_COMPONENT)
-            .addToLabels("ogcloud/group", server.group)
-            .addToLabels("ogcloud/group-type", group.type.name.lowercase())
-            .addToLabels("ogcloud/server-id", server.id)
-            .endMetadata()
-            .withNewSpec()
-            .withTerminationGracePeriodSeconds(podSpec.terminationGraceSeconds)
-            .withNewSecurityContext()
-            .withRunAsUser(1000L)
-            .withRunAsGroup(1000L)
-            .withFsGroup(1000L)
-            .endSecurityContext()
-            .addNewInitContainer()
-            .withName(TEMPLATE_LOADER_NAME)
-            .withImage(TEMPLATE_LOADER_IMAGE)
-            .addAllToEnv(buildTemplateLoaderEnvVars(group.templateBucket, podSpec.templatePath))
-            .addNewVolumeMount().withName(SERVER_DATA_VOLUME_NAME).withMountPath(DATA_DIR).endVolumeMount()
-            .endInitContainer()
-            .addNewContainer()
-            .withName(if (podSpec.isProxy) PROXY_CONTAINER_NAME else SERVER_CONTAINER_NAME)
-            .withImage(group.serverImage)
-            .addAllToEnv(buildRuntimeEnvVars(server, group, podSpec.isProxy))
-            .addNewPort().withContainerPort(podSpec.containerPort).endPort()
-            .withNewResources()
-            .addToRequests("memory", Quantity(group.resources.memoryRequest))
-            .addToRequests("cpu", Quantity(group.resources.cpuRequest))
-            .addToLimits("memory", Quantity(group.resources.memoryLimit))
-            .addToLimits("cpu", Quantity(group.resources.cpuLimit))
-            .endResources()
-            .addNewVolumeMount().withName(SERVER_DATA_VOLUME_NAME).withMountPath(DATA_DIR).endVolumeMount()
-            .withNewReadinessProbe()
-            .withNewTcpSocket().withNewPort(podSpec.containerPort).endTcpSocket()
-            .withInitialDelaySeconds(15)
-            .withPeriodSeconds(5)
-            .endReadinessProbe()
-            .endContainer()
-            .apply {
-                if (!podSpec.isProxy) {
-                    addNewContainer()
-                        .withName("template-pusher")
-                        .withImage(TEMPLATE_LOADER_IMAGE)
-                        .addAllToEnv(
-                            buildTemplatePusherEnvVars(
-                                group.templateBucket,
-                                podSpec.templatePath,
-                                podSpec.isStatic
-                            )
-                        )
-                        .addNewVolumeMount().withName(SERVER_DATA_VOLUME_NAME).withMountPath(DATA_DIR).endVolumeMount()
-                        .endContainer()
-                }
-            }
-            .addNewVolume()
-            .withName(volume.name)
-            .withPersistentVolumeClaim(volume.persistentVolumeClaim)
-            .withEmptyDir(volume.emptyDir)
-            .endVolume()
-            .endSpec()
-            .build()
+        val pod =
+            PodBuilder()
+                .withNewMetadata()
+                .withName(server.podName)
+                .withNamespace(kubernetesProperties.namespace)
+                .addToLabels("ogcloud/component", if (podSpec.isProxy) PROXY_COMPONENT else SERVER_COMPONENT)
+                .addToLabels("ogcloud/group", server.group)
+                .addToLabels("ogcloud/group-type", group.type.name.lowercase())
+                .addToLabels("ogcloud/server-id", server.id)
+                .endMetadata()
+                .withNewSpec()
+                .withTerminationGracePeriodSeconds(podSpec.terminationGraceSeconds)
+                .withNewSecurityContext()
+                .withRunAsUser(1000L)
+                .withRunAsGroup(1000L)
+                .withFsGroup(1000L)
+                .endSecurityContext()
+                .addNewInitContainer()
+                .withName(TEMPLATE_LOADER_NAME)
+                .withImage(TEMPLATE_LOADER_IMAGE)
+                .addAllToEnv(buildTemplateLoaderEnvVars(group.templateBucket, podSpec.templatePath))
+                .addNewVolumeMount()
+                .withName(SERVER_DATA_VOLUME_NAME)
+                .withMountPath(DATA_DIR)
+                .endVolumeMount()
+                .endInitContainer()
+                .addNewContainer()
+                .withName(if (podSpec.isProxy) PROXY_CONTAINER_NAME else SERVER_CONTAINER_NAME)
+                .withImage(group.serverImage)
+                .addAllToEnv(buildRuntimeEnvVars(server, group, podSpec.isProxy))
+                .addNewPort()
+                .withContainerPort(podSpec.containerPort)
+                .endPort()
+                .withNewResources()
+                .addToRequests("memory", Quantity(group.resources.memoryRequest))
+                .addToRequests("cpu", Quantity(group.resources.cpuRequest))
+                .addToLimits("memory", Quantity(group.resources.memoryLimit))
+                .addToLimits("cpu", Quantity(group.resources.cpuLimit))
+                .endResources()
+                .addNewVolumeMount()
+                .withName(SERVER_DATA_VOLUME_NAME)
+                .withMountPath(DATA_DIR)
+                .endVolumeMount()
+                .withNewReadinessProbe()
+                .withNewTcpSocket()
+                .withNewPort(podSpec.containerPort)
+                .endTcpSocket()
+                .withInitialDelaySeconds(15)
+                .withPeriodSeconds(5)
+                .endReadinessProbe()
+                .endContainer()
+                .apply {
+                    if (!podSpec.isProxy) {
+                        addNewContainer()
+                            .withName("template-pusher")
+                            .withImage(TEMPLATE_LOADER_IMAGE)
+                            .addAllToEnv(
+                                buildTemplatePusherEnvVars(
+                                    group.templateBucket,
+                                    podSpec.templatePath,
+                                    podSpec.isStatic,
+                                ),
+                            ).addNewVolumeMount()
+                            .withName(SERVER_DATA_VOLUME_NAME)
+                            .withMountPath(DATA_DIR)
+                            .endVolumeMount()
+                            .endContainer()
+                    }
+                }.addNewVolume()
+                .withName(volume.name)
+                .withPersistentVolumeClaim(volume.persistentVolumeClaim)
+                .withEmptyDir(volume.emptyDir)
+                .endVolume()
+                .endSpec()
+                .build()
 
-        kubernetesClient.pods().inNamespace(kubernetesProperties.namespace).resource(pod).create()
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesProperties.namespace)
+            .resource(pod)
+            .create()
 
         log.info(
             "Created pod: name={}, namespace={}, type={}, static={}",
             server.podName,
             kubernetesProperties.namespace,
             group.type,
-            podSpec.isStatic
+            podSpec.isStatic,
         )
     }
 
-    private fun createPvcIfNotExists(groupId: String, storageSize: String) {
+    private fun createPvcIfNotExists(
+        groupId: String,
+        storageSize: String,
+    ) {
         val pvcName = staticStorageClaimName(groupId)
-        val existing = kubernetesClient.persistentVolumeClaims()
-            .inNamespace(kubernetesProperties.namespace)
-            .withName(pvcName)
-            .get()
+        val existing =
+            kubernetesClient
+                .persistentVolumeClaims()
+                .inNamespace(kubernetesProperties.namespace)
+                .withName(pvcName)
+                .get()
 
         if (existing != null) {
             log.info("PVC already exists: name={}", pvcName)
             return
         }
 
-        val pvc = PersistentVolumeClaimBuilder()
-            .withNewMetadata()
-            .withName(pvcName)
-            .withNamespace(kubernetesProperties.namespace)
-            .addToLabels("ogcloud/component", "static-storage")
-            .addToLabels("ogcloud/group", groupId)
-            .endMetadata()
-            .withNewSpec()
-            .addToAccessModes("ReadWriteOnce")
-            .withNewResources()
-            .addToRequests("storage", Quantity(storageSize))
-            .endResources()
-            .endSpec()
-            .build()
+        val pvc =
+            PersistentVolumeClaimBuilder()
+                .withNewMetadata()
+                .withName(pvcName)
+                .withNamespace(kubernetesProperties.namespace)
+                .addToLabels("ogcloud/component", "static-storage")
+                .addToLabels("ogcloud/group", groupId)
+                .endMetadata()
+                .withNewSpec()
+                .addToAccessModes("ReadWriteOnce")
+                .withNewResources()
+                .addToRequests("storage", Quantity(storageSize))
+                .endResources()
+                .endSpec()
+                .build()
 
-        kubernetesClient.persistentVolumeClaims().inNamespace(kubernetesProperties.namespace).resource(pvc).create()
+        kubernetesClient
+            .persistentVolumeClaims()
+            .inNamespace(kubernetesProperties.namespace)
+            .resource(pvc)
+            .create()
 
         log.info("Created PVC: name={}, size={}", pvcName, storageSize)
     }
 
-    fun execInContainer(podName: String, containerName: String, command: List<String>): String {
+    fun execInContainer(
+        podName: String,
+        containerName: String,
+        command: List<String>,
+    ): String {
         val output = ByteArrayOutputStream()
         val errorOutput = ByteArrayOutputStream()
 
-        kubernetesClient.pods().inNamespace(kubernetesProperties.namespace)
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesProperties.namespace)
             .withName(podName)
             .inContainer(containerName)
             .writingOutput(output)
@@ -158,32 +192,42 @@ class KubernetesService(
         return result
     }
 
-    private fun buildRuntimeEnvVars(server: ServerDocument, group: GroupDocument, isProxy: Boolean): List<EnvVar> {
-        return if (isProxy) {
+    private fun buildRuntimeEnvVars(
+        server: ServerDocument,
+        group: GroupDocument,
+        isProxy: Boolean,
+    ): List<EnvVar> =
+        if (isProxy) {
             buildProxyEnvVars(server, group)
         } else {
             buildServerEnvVars(server, group)
         }
-    }
 
-    private fun buildServerEnvVars(server: ServerDocument, group: GroupDocument): List<EnvVar> = listOf(
-        envVar("EULA", "TRUE"),
-        envVar("TYPE", "PAPER"),
-        envVar("VERSION", MINECRAFT_VERSION),
-        envVar("OGCLOUD_SERVER_ID", server.id),
-        envVar("OGCLOUD_GROUP", server.group),
-        envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
-        envVar("OGCLOUD_API_URL", podRuntimeProperties.apiUrl),
-        envVar("OGCLOUD_API_EMAIL", podRuntimeProperties.apiEmail),
-        envVar("OGCLOUD_API_PASSWORD", podRuntimeProperties.apiPassword),
-        envVar("KAFKA_BROKERS", podRuntimeProperties.kafkaBrokers),
-        envVar("REDIS_HOST", podRuntimeProperties.redisHost),
-        envVar("REDIS_PORT", podRuntimeProperties.redisPort),
-        envVar("MONGODB_URI", podRuntimeProperties.mongodbUri),
-        envVar("JVM_FLAGS", group.jvmFlags)
-    )
+    private fun buildServerEnvVars(
+        server: ServerDocument,
+        group: GroupDocument,
+    ): List<EnvVar> =
+        listOf(
+            envVar("EULA", "TRUE"),
+            envVar("TYPE", "PAPER"),
+            envVar("VERSION", MINECRAFT_VERSION),
+            envVar("OGCLOUD_SERVER_ID", server.id),
+            envVar("OGCLOUD_GROUP", server.group),
+            envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
+            envVar("OGCLOUD_API_URL", podRuntimeProperties.apiUrl),
+            envVar("OGCLOUD_API_EMAIL", podRuntimeProperties.apiEmail),
+            envVar("OGCLOUD_API_PASSWORD", podRuntimeProperties.apiPassword),
+            envVar("KAFKA_BROKERS", podRuntimeProperties.kafkaBrokers),
+            envVar("REDIS_HOST", podRuntimeProperties.redisHost),
+            envVar("REDIS_PORT", podRuntimeProperties.redisPort),
+            envVar("MONGODB_URI", podRuntimeProperties.mongodbUri),
+            envVar("JVM_FLAGS", group.jvmFlags),
+        )
 
-    private fun buildProxyEnvVars(server: ServerDocument, group: GroupDocument): List<EnvVar> {
+    private fun buildProxyEnvVars(
+        server: ServerDocument,
+        group: GroupDocument,
+    ): List<EnvVar> {
         val defaultGroup = networkSettingsService.findGlobal().defaultGroup
 
         return listOf(
@@ -194,7 +238,9 @@ class KubernetesService(
             EnvVarBuilder()
                 .withName("OGCLOUD_PROXY_POD_IP")
                 .withNewValueFrom()
-                .withNewFieldRef().withFieldPath("status.podIP").endFieldRef()
+                .withNewFieldRef()
+                .withFieldPath("status.podIP")
+                .endFieldRef()
                 .endValueFrom()
                 .build(),
             envVar("OGCLOUD_PROXY_PORT", PROXY_PORT.toString()),
@@ -206,31 +252,39 @@ class KubernetesService(
             envVar("OGCLOUD_API_URL", podRuntimeProperties.apiUrl),
             envVar("OGCLOUD_API_EMAIL", podRuntimeProperties.apiEmail),
             envVar("OGCLOUD_API_PASSWORD", podRuntimeProperties.apiPassword),
-            envVar("JVM_FLAGS", group.jvmFlags)
+            envVar("JVM_FLAGS", group.jvmFlags),
         )
     }
 
-    private fun buildTemplateLoaderEnvVars(bucket: String, templatePath: String): List<EnvVar> = listOf(
-        envVar("MINIO_ENDPOINT", podRuntimeProperties.minioEndpoint),
-        envVar("MINIO_ACCESS_KEY", podRuntimeProperties.minioAccessKey),
-        envVar("MINIO_SECRET_KEY", podRuntimeProperties.minioSecretKey),
-        envVar("MINIO_BUCKET", bucket),
-        envVar("TEMPLATE_PATH", templatePath),
-        envVar("DATA_DIR", DATA_DIR)
-    )
+    private fun buildTemplateLoaderEnvVars(
+        bucket: String,
+        templatePath: String,
+    ): List<EnvVar> =
+        listOf(
+            envVar("MINIO_ENDPOINT", podRuntimeProperties.minioEndpoint),
+            envVar("MINIO_ACCESS_KEY", podRuntimeProperties.minioAccessKey),
+            envVar("MINIO_SECRET_KEY", podRuntimeProperties.minioSecretKey),
+            envVar("MINIO_BUCKET", bucket),
+            envVar("TEMPLATE_PATH", templatePath),
+            envVar("DATA_DIR", DATA_DIR),
+        )
 
     private fun buildTemplatePusherEnvVars(
         bucket: String,
         templatePath: String,
-        pushOnShutdown: Boolean
-    ): List<EnvVar> = listOf(
-        envVar("MODE", PUSH_MODE),
-        *buildTemplateLoaderEnvVars(bucket, templatePath).toTypedArray(),
-        envVar("PUSH_ON_SHUTDOWN", if (pushOnShutdown) ENABLED_VALUE else DISABLED_VALUE)
-    )
+        pushOnShutdown: Boolean,
+    ): List<EnvVar> =
+        listOf(
+            envVar("MODE", PUSH_MODE),
+            *buildTemplateLoaderEnvVars(bucket, templatePath).toTypedArray(),
+            envVar("PUSH_ON_SHUTDOWN", if (pushOnShutdown) ENABLED_VALUE else DISABLED_VALUE),
+        )
 
-    private fun buildServerDataVolume(groupId: String, isStatic: Boolean): Volume {
-        return if (isStatic) {
+    private fun buildServerDataVolume(
+        groupId: String,
+        isStatic: Boolean,
+    ): Volume =
+        if (isStatic) {
             VolumeBuilder()
                 .withName(SERVER_DATA_VOLUME_NAME)
                 .withNewPersistentVolumeClaim(staticStorageClaimName(groupId), false)
@@ -242,38 +296,50 @@ class KubernetesService(
                 .endEmptyDir()
                 .build()
         }
-    }
 
     private fun staticStorageClaimName(groupId: String): String = STATIC_STORAGE_CLAIM_PREFIX + groupId
 
-    private fun envVar(name: String, value: String): EnvVar =
-        EnvVarBuilder().withName(name).withValue(value).build()
+    private fun envVar(
+        name: String,
+        value: String,
+    ): EnvVar = EnvVarBuilder().withName(name).withValue(value).build()
 
     fun deleteServerPod(podName: String) {
-        kubernetesClient.pods().inNamespace(kubernetesProperties.namespace).withName(podName).delete()
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesProperties.namespace)
+            .withName(podName)
+            .delete()
 
         log.info("Deleted pod: name={}", podName)
     }
 
     fun forceDeleteServerPod(podName: String) {
-        kubernetesClient.pods().inNamespace(kubernetesProperties.namespace).withName(podName)
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesProperties.namespace)
+            .withName(podName)
             .withGracePeriod(0)
             .delete()
 
         log.info("Force-deleted pod: name={}", podName)
     }
 
-    fun getPodIp(podName: String): String? {
-        return kubernetesClient.pods().inNamespace(kubernetesProperties.namespace)
-            .withName(podName).get()?.status?.podIP
-    }
+    fun getPodIp(podName: String): String? =
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesProperties.namespace)
+            .withName(podName)
+            .get()
+            ?.status
+            ?.podIP
 
     private data class ServerPodSpec(
         val isProxy: Boolean,
         val isStatic: Boolean,
         val templatePath: String,
         val containerPort: Int,
-        val terminationGraceSeconds: Long
+        val terminationGraceSeconds: Long,
     )
 
     private fun GroupDocument.toServerPodSpec(): ServerPodSpec {
@@ -284,11 +350,12 @@ class KubernetesService(
             isStatic = isStatic,
             templatePath = "$templatePath/$templateVersion/template.tar.gz",
             containerPort = if (isProxy) PROXY_PORT else PAPER_PORT,
-            terminationGraceSeconds = if (isStatic) {
-                STATIC_TERMINATION_GRACE_SECONDS
-            } else {
-                DEFAULT_TERMINATION_GRACE_SECONDS
-            }
+            terminationGraceSeconds =
+                if (isStatic) {
+                    STATIC_TERMINATION_GRACE_SECONDS
+                } else {
+                    DEFAULT_TERMINATION_GRACE_SECONDS
+                },
         )
     }
 

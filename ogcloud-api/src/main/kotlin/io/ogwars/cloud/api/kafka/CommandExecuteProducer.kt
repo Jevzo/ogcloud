@@ -8,20 +8,25 @@ import org.springframework.stereotype.Component
 
 @Component
 class CommandExecuteProducer(
-    private val kafkaTemplate: KafkaTemplate<String, CommandExecuteEvent>
+    private val kafkaTemplate: KafkaTemplate<String, CommandExecuteEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun publishCommand(target: String, targetType: String, command: String) {
+    fun publishCommand(
+        target: String,
+        targetType: String,
+        command: String,
+    ) {
         log.info("Publishing command execute: target={}, targetType={}, command={}", target, targetType, command)
 
         kafkaTemplate.send(
-            KafkaConfig.COMMAND_EXECUTE, target, CommandExecuteEvent(
+            KafkaConfig.COMMAND_EXECUTE,
+            target,
+            CommandExecuteEvent(
                 target = target,
                 targetType = targetType,
-                command = command
-            )
+                command = command,
+            ),
         )
     }
 }

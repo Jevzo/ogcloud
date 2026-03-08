@@ -9,5 +9,5 @@ data class NetworkSettingsDocument(
     val maintenance: Boolean = false,
     val maintenanceKickMessage: String = "&cServer is currently in maintenance mode.",
     val tablist: TablistSettings = TablistSettings(),
-    val general: GeneralSettings = GeneralSettings()
+    val general: GeneralSettings = GeneralSettings(),
 )

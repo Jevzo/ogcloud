@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/dashboard")
 class DashboardController(
-    private val dashboardService: DashboardService
+    private val dashboardService: DashboardService,
 ) {
-
     @GetMapping("/overview")
     fun getOverview(): DashboardOverviewResponse = dashboardService.getOverview()
 }

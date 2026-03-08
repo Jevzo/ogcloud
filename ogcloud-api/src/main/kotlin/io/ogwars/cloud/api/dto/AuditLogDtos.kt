@@ -13,7 +13,7 @@ data class ApiAuditLogResponse(
     val actorEmail: String?,
     val summary: String,
     val metadata: Map<String, String>,
-    val timestamp: Instant
+    val timestamp: Instant,
 )
 
 data class ScalingLogResponse(
@@ -23,11 +23,11 @@ data class ScalingLogResponse(
     val reason: String,
     val serverId: String?,
     val details: String?,
-    val timestamp: Instant
+    val timestamp: Instant,
 )
 
-fun ApiAuditLogDocument.toResponse(): ApiAuditLogResponse {
-    return ApiAuditLogResponse(
+fun ApiAuditLogDocument.toResponse(): ApiAuditLogResponse =
+    ApiAuditLogResponse(
         id = id,
         action = action,
         targetType = targetType,
@@ -36,18 +36,16 @@ fun ApiAuditLogDocument.toResponse(): ApiAuditLogResponse {
         actorEmail = actorEmail,
         summary = summary,
         metadata = metadata,
-        timestamp = timestamp
+        timestamp = timestamp,
     )
-}
 
-fun ScalingLogDocument.toResponse(): ScalingLogResponse {
-    return ScalingLogResponse(
+fun ScalingLogDocument.toResponse(): ScalingLogResponse =
+    ScalingLogResponse(
         id = id,
         groupId = groupId,
         action = action,
         reason = reason,
         serverId = serverId,
         details = details,
-        timestamp = timestamp
+        timestamp = timestamp,
     )
-}

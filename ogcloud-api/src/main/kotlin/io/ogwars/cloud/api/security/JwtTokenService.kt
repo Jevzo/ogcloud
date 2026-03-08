@@ -18,38 +18,41 @@ class JwtTokenService(
     private val jwtEncoder: JwtEncoder,
     private val jwtDecoder: JwtDecoder,
     private val authProperties: AuthProperties,
-    private val clock: Clock
+    private val clock: Clock,
 ) {
-
     fun issueAccessToken(user: WebUserDocument): JwtAccessToken {
         val issuedAt = Instant.now(clock)
         val expiresAt = issuedAt.plus(authProperties.accessTokenLifetime)
 
-        val claims = JwtClaimsSet.builder()
-            .subject(user.id)
-            .issuedAt(issuedAt)
-            .expiresAt(expiresAt)
-            .claim("type", ACCESS_TOKEN_TYPE)
-            .claim("email", user.email)
-            .claim("role", user.role.name)
-            .build()
+        val claims =
+            JwtClaimsSet
+                .builder()
+                .subject(user.id)
+                .issuedAt(issuedAt)
+                .expiresAt(expiresAt)
+                .claim("type", ACCESS_TOKEN_TYPE)
+                .claim("email", user.email)
+                .claim("role", user.role.name)
+                .build()
 
-        val token = jwtEncoder.encode(
-            JwtEncoderParameters.from(
-                JwsHeader.with(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build(),
-                claims
+        val token =
+            jwtEncoder.encode(
+                JwtEncoderParameters.from(
+                    JwsHeader.with(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build(),
+                    claims,
+                ),
             )
-        )
 
         return JwtAccessToken(token.tokenValue, expiresAt)
     }
 
     fun parseAccessToken(token: String): Jwt {
-        val jwt = try {
-            jwtDecoder.decode(token)
-        } catch (_: Exception) {
-            throw InvalidCredentialsException()
-        }
+        val jwt =
+            try {
+                jwtDecoder.decode(token)
+            } catch (_: Exception) {
+                throw InvalidCredentialsException()
+            }
 
         if (jwt.getClaimAsString("type") != ACCESS_TOKEN_TYPE) {
             throw InvalidCredentialsException()
@@ -65,5 +68,5 @@ class JwtTokenService(
 
 data class JwtAccessToken(
     val token: String,
-    val expiresAt: Instant
+    val expiresAt: Instant,
 )

@@ -14,9 +14,8 @@ import org.springframework.stereotype.Component
 class TemplatePushConsumer(
     private val serverRedisRepository: ServerRedisRepository,
     private val kubernetesService: KubernetesService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.SERVER_TEMPLATE_PUSH], groupId = "ogcloud-controller")
@@ -40,7 +39,7 @@ class TemplatePushConsumer(
             kubernetesService.execInContainer(
                 server.podName,
                 "template-pusher",
-                listOf("kill", "-USR1", "1")
+                listOf("kill", "-USR1", "1"),
             )
             log.info("Template push signal sent: id={}", event.serverId)
         } catch (e: Exception) {

@@ -10,15 +10,18 @@ class KafkaSendDispatcher(
     private val kafkaManager: KafkaManager,
     private val logger: Logger,
     private val workerThreadName: String,
-    private val queueCapacity: Int = DEFAULT_QUEUE_CAPACITY
+    private val queueCapacity: Int = DEFAULT_QUEUE_CAPACITY,
 ) {
-
     enum class MessageType {
-        SERVER_HEARTBEAT, GAME_STATE_UPDATE
+        SERVER_HEARTBEAT,
+        GAME_STATE_UPDATE,
     }
 
     data class Message(
-        val topic: String, val key: String, val payload: String, val type: MessageType
+        val topic: String,
+        val key: String,
+        val payload: String,
+        val type: MessageType,
     )
 
     private val queue = ArrayBlockingQueue<Message>(queueCapacity)
@@ -30,10 +33,11 @@ class KafkaSendDispatcher(
             return
         }
 
-        workerThread = Thread(::runLoop, workerThreadName).apply {
-            isDaemon = true
-            start()
-        }
+        workerThread =
+            Thread(::runLoop, workerThreadName).apply {
+                isDaemon = true
+                start()
+            }
 
         logger.info("Kafka send dispatcher started (thread=$workerThreadName, queueCapacity=$queueCapacity)")
     }
@@ -70,8 +74,8 @@ class KafkaSendDispatcher(
         }
     }
 
-    private fun takeNextMessage(): Message? {
-        return try {
+    private fun takeNextMessage(): Message? =
+        try {
             if (running.get()) {
                 queue.take()
             } else {
@@ -80,7 +84,6 @@ class KafkaSendDispatcher(
         } catch (_: InterruptedException) {
             null
         }
-    }
 
     private fun send(message: Message) {
         try {
@@ -89,7 +92,7 @@ class KafkaSendDispatcher(
             logger.log(
                 Level.SEVERE,
                 "Failed to dispatch Kafka message: type=${message.type}, topic=${message.topic}, key=${message.key}",
-                exception
+                exception,
             )
         }
     }

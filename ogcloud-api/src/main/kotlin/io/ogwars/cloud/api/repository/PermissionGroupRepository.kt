@@ -4,6 +4,5 @@ import io.ogwars.cloud.api.model.PermissionGroupDocument
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface PermissionGroupRepository : MongoRepository<PermissionGroupDocument, String> {
-
     fun findByDefaultTrue(): PermissionGroupDocument?
 }

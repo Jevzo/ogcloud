@@ -6,5 +6,5 @@ data class PermissionGroupDocument(
     val display: DisplayConfig = DisplayConfig(),
     val weight: Int,
     val default: Boolean,
-    val permissions: List<String>
+    val permissions: List<String>,
 )

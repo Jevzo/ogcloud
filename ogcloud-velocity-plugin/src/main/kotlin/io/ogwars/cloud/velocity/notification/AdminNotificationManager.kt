@@ -5,12 +5,16 @@ import io.ogwars.cloud.velocity.permission.PermissionCache
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 class AdminNotificationManager(
-    private val proxyServer: ProxyServer, private val permissionCache: PermissionCache
+    private val proxyServer: ProxyServer,
+    private val permissionCache: PermissionCache,
 ) {
-
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
-    fun notifyServerLifecycle(displayName: String?, state: String, group: String) {
+    fun notifyServerLifecycle(
+        displayName: String?,
+        state: String,
+        group: String,
+    ) {
         val name = displayName ?: "unknown"
         broadcast("${PREFIX}Server &f$name &7$state &8(group: &f$group&8)")
     }
@@ -20,7 +24,10 @@ class AdminNotificationManager(
         broadcast("${PREFIX}Network maintenance $status")
     }
 
-    fun notifyGroupMaintenance(group: String, enabled: Boolean) {
+    fun notifyGroupMaintenance(
+        group: String,
+        enabled: Boolean,
+    ) {
         val status = if (enabled) "&cENABLED" else "&aDisabled"
         broadcast("${PREFIX}Group &f\"$group\" &7maintenance $status")
     }

@@ -10,13 +10,12 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/v1/command")
 class CommandController(
-    private val commandExecuteProducer: CommandExecuteProducer
+    private val commandExecuteProducer: CommandExecuteProducer,
 ) {
-
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun executeCommand(
-        @RequestBody @Valid request: CommandExecuteRequest
+        @RequestBody @Valid request: CommandExecuteRequest,
     ) = commandExecuteProducer.publishCommand(request.target, request.targetType, request.command)
 }

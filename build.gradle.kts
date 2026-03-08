@@ -46,5 +46,6 @@ subprojects {
 
     tasks.matching { it.name == "check" }.configureEach {
         dependsOn("ktlintCheck")
+        dependsOn("detekt")
     }
 }

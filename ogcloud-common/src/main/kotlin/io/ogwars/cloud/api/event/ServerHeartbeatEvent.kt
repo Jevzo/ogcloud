@@ -8,5 +8,5 @@ data class ServerHeartbeatEvent(
     val tps: Double,
     val memoryUsedMb: Long,
     val gameState: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

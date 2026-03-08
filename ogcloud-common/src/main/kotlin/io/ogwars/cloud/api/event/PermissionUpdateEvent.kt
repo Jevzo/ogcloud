@@ -11,5 +11,5 @@ data class PermissionUpdateEvent(
     val weight: Int,
     val permissionEndMillis: Long,
     val updatedBy: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )

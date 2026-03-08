@@ -6,5 +6,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class MinioProperties(
     val endpoint: String,
     val accessKey: String,
-    val secretKey: String
+    val secretKey: String,
 )

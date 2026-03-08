@@ -11,9 +11,8 @@ import org.springframework.stereotype.Component
 @Component
 class GroupUpdateConsumer(
     private val autoscalerService: AutoscalerService,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     @KafkaListener(topics = [KafkaConfig.GROUP_UPDATE], groupId = "ogcloud-controller")

@@ -16,15 +16,14 @@ import org.springframework.stereotype.Service
 @Service
 class AuditLogService(
     private val apiAuditLogRepository: ApiAuditLogRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
-
     fun logApiAction(
         action: String,
         targetType: String,
         targetId: String,
         summary: String,
-        metadata: Map<String, String> = emptyMap()
+        metadata: Map<String, String> = emptyMap(),
     ) {
         val actor = currentUser()
         apiAuditLogRepository.save(
@@ -35,69 +34,84 @@ class AuditLogService(
                 actorUserId = actor?.id,
                 actorEmail = actor?.email,
                 summary = summary,
-                metadata = metadata
-            )
+                metadata = metadata,
+            ),
         )
     }
 
-    fun listApiLogs(query: String?, page: Int, size: Int?): PaginatedResponse<ApiAuditLogResponse> {
+    fun listApiLogs(
+        query: String?,
+        page: Int,
+        size: Int?,
+    ): PaginatedResponse<ApiAuditLogResponse> {
         val pageRequest = PaginationSupport.toPageRequest(page, size)
         val queryObject = Query()
 
-        PaginationSupport.buildSearchCriteria(
-            query,
-            "action",
-            "targetType",
-            "targetId",
-            "actorUserId",
-            "actorEmail",
-            "summary"
-        )?.let(queryObject::addCriteria)
+        PaginationSupport
+            .buildSearchCriteria(
+                query,
+                "action",
+                "targetType",
+                "targetId",
+                "actorUserId",
+                "actorEmail",
+                "summary",
+            )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<ApiAuditLogDocument>(queryObject)
 
-        queryObject.with(
-            Sort.by(
-                Sort.Order.desc("timestamp"),
-                Sort.Order.desc("_id")
-            )
-        ).with(pageRequest)
+        queryObject
+            .with(
+                Sort.by(
+                    Sort.Order.desc("timestamp"),
+                    Sort.Order.desc("_id"),
+                ),
+            ).with(pageRequest)
 
-        val logs = mongoTemplate.find<ApiAuditLogDocument>(queryObject)
-            .map { it.toResponse() }
+        val logs =
+            mongoTemplate
+                .find<ApiAuditLogDocument>(queryObject)
+                .map { it.toResponse() }
 
         return PaginationSupport.toResponse(logs, page, pageRequest.pageSize, totalItems)
     }
 
-    fun listScalingLogs(query: String?, page: Int, size: Int?): PaginatedResponse<ScalingLogResponse> {
+    fun listScalingLogs(
+        query: String?,
+        page: Int,
+        size: Int?,
+    ): PaginatedResponse<ScalingLogResponse> {
         val pageRequest = PaginationSupport.toPageRequest(page, size)
         val queryObject = Query()
 
-        PaginationSupport.buildSearchCriteria(
-            query,
-            "groupId",
-            "action",
-            "reason",
-            "serverId",
-            "details"
-        )?.let(queryObject::addCriteria)
+        PaginationSupport
+            .buildSearchCriteria(
+                query,
+                "groupId",
+                "action",
+                "reason",
+                "serverId",
+                "details",
+            )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<ScalingLogDocument>(queryObject)
 
-        queryObject.with(
-            Sort.by(
-                Sort.Order.desc("timestamp"),
-                Sort.Order.desc("_id")
-            )
-        ).with(pageRequest)
+        queryObject
+            .with(
+                Sort.by(
+                    Sort.Order.desc("timestamp"),
+                    Sort.Order.desc("_id"),
+                ),
+            ).with(pageRequest)
 
-        val logs = mongoTemplate.find<ScalingLogDocument>(queryObject)
-            .map { it.toResponse() }
+        val logs =
+            mongoTemplate
+                .find<ScalingLogDocument>(queryObject)
+                .map { it.toResponse() }
 
         return PaginationSupport.toResponse(logs, page, pageRequest.pageSize, totalItems)
     }
 
-    private fun currentUser(): AuthenticatedUser? {
-        return SecurityContextHolder.getContext().authentication?.principal as? AuthenticatedUser
-    }
+    private fun currentUser(): AuthenticatedUser? =
+        SecurityContextHolder.getContext().authentication?.principal as? AuthenticatedUser
 }

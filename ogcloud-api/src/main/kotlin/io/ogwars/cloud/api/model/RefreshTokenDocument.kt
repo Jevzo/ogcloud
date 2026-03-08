@@ -11,5 +11,5 @@ data class RefreshTokenDocument(
     @field:Indexed val userId: String,
     @field:Indexed(unique = true) val tokenHash: String,
     @field:Indexed(expireAfter = "0s") val expiresAt: Instant,
-    val createdAt: Instant
+    val createdAt: Instant,
 )

@@ -9,11 +9,11 @@ data class RunningServer(
     val gameState: GameState? = null,
     val address: String? = null,
     val playerCount: Int = 0,
-    val maxPlayers: Int = 0
+    val maxPlayers: Int = 0,
 )
 
-fun RedisServerData.toRunningServer(): RunningServer {
-    return RunningServer(
+fun RedisServerData.toRunningServer(): RunningServer =
+    RunningServer(
         id = id,
         group = group,
         type = GroupType.valueOf(type),
@@ -22,6 +22,5 @@ fun RedisServerData.toRunningServer(): RunningServer {
         gameState = gameState?.let(GameState::valueOf),
         address = podIp?.let { "$it:$port" },
         playerCount = playerCount,
-        maxPlayers = maxPlayers
+        maxPlayers = maxPlayers,
     )
-}

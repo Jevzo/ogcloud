@@ -13,5 +13,5 @@ data class PodRuntimeProperties(
     val mongodbUri: String,
     val apiUrl: String,
     val apiEmail: String,
-    val apiPassword: String
+    val apiPassword: String,
 )

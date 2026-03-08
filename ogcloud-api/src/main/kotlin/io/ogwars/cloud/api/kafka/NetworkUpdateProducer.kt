@@ -9,9 +9,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class NetworkUpdateProducer(
-    private val kafkaTemplate: KafkaTemplate<String, NetworkUpdateEvent>
+    private val kafkaTemplate: KafkaTemplate<String, NetworkUpdateEvent>,
 ) {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun publishNetworkUpdate(settings: NetworkSettingsDocument) {
@@ -20,11 +19,13 @@ class NetworkUpdateProducer(
             settings.maintenance,
             settings.general.permissionSystemEnabled,
             settings.general.tablistEnabled,
-            settings.general.proxyRoutingStrategy
+            settings.general.proxyRoutingStrategy,
         )
 
         kafkaTemplate.send(
-            KafkaConfig.NETWORK_UPDATE, "global", NetworkUpdateEvent(
+            KafkaConfig.NETWORK_UPDATE,
+            "global",
+            NetworkUpdateEvent(
                 motd = settings.motd,
                 versionName = settings.versionName,
                 maxPlayers = settings.maxPlayers,
@@ -32,8 +33,8 @@ class NetworkUpdateProducer(
                 maintenance = settings.maintenance,
                 maintenanceKickMessage = settings.maintenanceKickMessage,
                 tablist = settings.tablist,
-                general = settings.general
-            )
+                general = settings.general,
+            ),
         )
     }
 }

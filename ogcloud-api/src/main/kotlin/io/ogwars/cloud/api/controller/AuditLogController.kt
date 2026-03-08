@@ -17,21 +17,30 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/audit")
 @Validated
 class AuditLogController(
-    private val auditLogService: AuditLogService
+    private val auditLogService: AuditLogService,
 ) {
-
     @GetMapping("/api")
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     fun listApiLogs(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
-        @RequestParam(required = false) @Min(1, message = "size must be greater than 0") @Max(200, message = "size must be less than or equal to 200") size: Int?
+        @RequestParam(
+            required = false,
+        ) @Min(
+            1,
+            message = "size must be greater than 0",
+        ) @Max(200, message = "size must be less than or equal to 200") size: Int?,
     ): PaginatedResponse<ApiAuditLogResponse> = auditLogService.listApiLogs(query, page, size)
 
     @GetMapping("/scaling")
     fun listScalingLogs(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
-        @RequestParam(required = false) @Min(1, message = "size must be greater than 0") @Max(200, message = "size must be less than or equal to 200") size: Int?
+        @RequestParam(
+            required = false,
+        ) @Min(
+            1,
+            message = "size must be greater than 0",
+        ) @Max(200, message = "size must be less than or equal to 200") size: Int?,
     ): PaginatedResponse<ScalingLogResponse> = auditLogService.listScalingLogs(query, page, size)
 }

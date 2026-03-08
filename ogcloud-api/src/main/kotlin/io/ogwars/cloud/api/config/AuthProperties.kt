@@ -8,5 +8,5 @@ data class AuthProperties(
     val jwtSecret: String,
     val accessTokenLifetime: Duration,
     val refreshTokenLifetime: Duration,
-    val linkOtpLifetime: Duration
+    val linkOtpLifetime: Duration,
 )

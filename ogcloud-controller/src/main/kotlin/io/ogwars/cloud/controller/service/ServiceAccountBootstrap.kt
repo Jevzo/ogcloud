@@ -14,9 +14,8 @@ import java.util.UUID
 class ServiceAccountBootstrap(
     private val webUserRepository: WebUserRepository,
     private val serviceAccountProperties: ServiceAccountProperties,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
 ) : ApplicationRunner {
-
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun run(args: ApplicationArguments) {
@@ -33,8 +32,8 @@ class ServiceAccountBootstrap(
                     email = normalizedEmail,
                     username = DEFAULT_USERNAME,
                     password = passwordEncoder.encode(password),
-                    role = SERVICE_ACCOUNT_ROLE
-                )
+                    role = SERVICE_ACCOUNT_ROLE,
+                ),
             )
 
             log.info("Created API service account: email={}", normalizedEmail)
@@ -50,8 +49,8 @@ class ServiceAccountBootstrap(
         webUserRepository.save(
             existing.copy(
                 password = if (passwordMatches) existing.password else passwordEncoder.encode(password),
-                role = SERVICE_ACCOUNT_ROLE
-            )
+                role = SERVICE_ACCOUNT_ROLE,
+            ),
         )
 
         log.info("Updated API service account: email={}", normalizedEmail)

@@ -26,9 +26,8 @@ class DashboardService(
     private val groupRepository: GroupRepository,
     private val playerRedisRepository: PlayerRedisRepository,
     private val serverRedisRepository: ServerRedisRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
 ) {
-
     fun getOverview(): DashboardOverviewResponse {
         val networkSettings = networkService.getSettings()
         val groupsById = groupRepository.findAll().associateBy { it.id }
@@ -36,54 +35,58 @@ class DashboardService(
         val visibleInstances = servers.filter(::isVisibleInstance)
 
         return DashboardOverviewResponse(
-            stats = DashboardOverviewStatsResponse(
-                totalPlayers = playerRedisRepository.findOnlinePlayerUuids().size,
-                maxPlayers = networkSettings.maxPlayers,
-                activeServers = servers.count(::isRunningServer),
-                maintenanceEnabled = networkSettings.maintenance
-            ),
+            stats =
+                DashboardOverviewStatsResponse(
+                    totalPlayers = playerRedisRepository.findOnlinePlayerUuids().size,
+                    maxPlayers = networkSettings.maxPlayers,
+                    activeServers = servers.count(::isRunningServer),
+                    maintenanceEnabled = networkSettings.maintenance,
+                ),
             groups = buildGroupOverview(visibleInstances, groupsById, networkSettings.maxPlayers),
-            scalingActions = buildScalingActions()
+            scalingActions = buildScalingActions(),
         )
     }
 
     private fun buildGroupOverview(
         visibleInstances: List<ServerDocument>,
         groupsById: Map<String, GroupDocument>,
-        defaultProxyMaxPlayers: Int
+        defaultProxyMaxPlayers: Int,
     ): List<DashboardOverviewGroupResponse> {
         val groupIds = visibleInstances.map(ServerDocument::group).distinct()
 
-        return groupIds.map { groupId ->
-            val groupServers = visibleInstances.filter { it.group == groupId }
-            val players = groupServers.sumOf(ServerDocument::playerCount)
-            val totalCapacity = groupServers.sumOf { server ->
-                ServerPresentationSupport.resolveMaxPlayers(
-                    server,
-                    groupsById[server.group]?.scaling?.playersPerServer ?: 0,
-                    defaultProxyMaxPlayers
-                )
-            }
-            val inferredMode = groupServers.firstOrNull()?.type ?: DEFAULT_GROUP_MODE
+        return groupIds
+            .map { groupId ->
+                val groupServers = visibleInstances.filter { it.group == groupId }
+                val players = groupServers.sumOf(ServerDocument::playerCount)
+                val totalCapacity =
+                    groupServers.sumOf { server ->
+                        ServerPresentationSupport.resolveMaxPlayers(
+                            server,
+                            groupsById[server.group]?.scaling?.playersPerServer ?: 0,
+                            defaultProxyMaxPlayers,
+                        )
+                    }
+                val inferredMode = groupServers.firstOrNull()?.type ?: DEFAULT_GROUP_MODE
 
-            DashboardOverviewGroupResponse(
-                name = groupId,
-                mode = groupsById[groupId]?.type ?: inferredMode,
-                activeInstances = groupServers.size,
-                players = players,
-                capacityPercent = calculateCapacityPercent(players, totalCapacity)
-            )
-        }.sortedWith(
-            compareByDescending<DashboardOverviewGroupResponse> { it.players }
-                .thenByDescending { it.activeInstances }
-                .thenBy { it.name }
-        ).take(MAX_GROUPS)
+                DashboardOverviewGroupResponse(
+                    name = groupId,
+                    mode = groupsById[groupId]?.type ?: inferredMode,
+                    activeInstances = groupServers.size,
+                    players = players,
+                    capacityPercent = calculateCapacityPercent(players, totalCapacity),
+                )
+            }.sortedWith(
+                compareByDescending<DashboardOverviewGroupResponse> { it.players }
+                    .thenByDescending { it.activeInstances }
+                    .thenBy { it.name },
+            ).take(MAX_GROUPS)
     }
 
     private fun buildScalingActions(): List<DashboardOverviewScalingActionResponse> {
-        val query = Query()
-            .with(Sort.by(Sort.Direction.DESC, "timestamp"))
-            .limit(MAX_SCALING_ACTIONS)
+        val query =
+            Query()
+                .with(Sort.by(Sort.Direction.DESC, "timestamp"))
+                .limit(MAX_SCALING_ACTIONS)
 
         return mongoTemplate.find<ScalingLogDocument>(query).map { log ->
             DashboardOverviewScalingActionResponse(
@@ -93,12 +96,15 @@ class DashboardService(
                 reason = log.reason,
                 serverId = log.serverId,
                 details = log.details,
-                timestamp = log.timestamp
+                timestamp = log.timestamp,
             )
         }
     }
 
-    private fun calculateCapacityPercent(players: Int, totalCapacity: Int): Double {
+    private fun calculateCapacityPercent(
+        players: Int,
+        totalCapacity: Int,
+    ): Double {
         if (totalCapacity <= 0) {
             return ZERO_CAPACITY_PERCENT
         }
@@ -118,12 +124,13 @@ class DashboardService(
         private const val PERCENT_MULTIPLIER = 100.0
         private const val ZERO_CAPACITY_PERCENT = 0.0
         private val DEFAULT_GROUP_MODE = GroupType.DYNAMIC
-        private val VISIBLE_INSTANCE_STATES = setOf(
-            ServerState.REQUESTED,
-            ServerState.PREPARING,
-            ServerState.STARTING,
-            ServerState.RUNNING,
-            ServerState.DRAINING
-        )
+        private val VISIBLE_INSTANCE_STATES =
+            setOf(
+                ServerState.REQUESTED,
+                ServerState.PREPARING,
+                ServerState.STARTING,
+                ServerState.RUNNING,
+                ServerState.DRAINING,
+            )
     }
 }

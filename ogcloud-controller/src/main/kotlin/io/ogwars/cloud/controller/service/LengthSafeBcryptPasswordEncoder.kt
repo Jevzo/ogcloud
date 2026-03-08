@@ -6,16 +6,14 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 class LengthSafeBcryptPasswordEncoder : PasswordEncoder {
-
     private val delegate = BCryptPasswordEncoder()
 
-    override fun encode(rawPassword: CharSequence): String {
-        return delegate.encode(preHash(rawPassword))
-    }
+    override fun encode(rawPassword: CharSequence): String = delegate.encode(preHash(rawPassword))
 
-    override fun matches(rawPassword: CharSequence, encodedPassword: String): Boolean {
-        return encodedPassword.isNotBlank() && delegate.matches(preHash(rawPassword), encodedPassword)
-    }
+    override fun matches(
+        rawPassword: CharSequence,
+        encodedPassword: String,
+    ): Boolean = encodedPassword.isNotBlank() && delegate.matches(preHash(rawPassword), encodedPassword)
 
     private fun preHash(rawPassword: CharSequence): String {
         val digest = MessageDigest.getInstance("SHA-256")

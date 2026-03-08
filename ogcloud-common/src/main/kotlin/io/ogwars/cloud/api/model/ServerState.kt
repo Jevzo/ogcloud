@@ -7,5 +7,5 @@ enum class ServerState {
     RUNNING,
     DRAINING,
     STOPPING,
-    STOPPED
+    STOPPED,
 }

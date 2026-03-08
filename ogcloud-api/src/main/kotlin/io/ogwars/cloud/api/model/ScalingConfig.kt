@@ -6,5 +6,5 @@ data class ScalingConfig(
     val playersPerServer: Int,
     val scaleUpThreshold: Double,
     val scaleDownThreshold: Double,
-    val cooldownSeconds: Int
+    val cooldownSeconds: Int,
 )
