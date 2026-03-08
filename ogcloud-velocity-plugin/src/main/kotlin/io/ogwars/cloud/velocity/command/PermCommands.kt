@@ -1,8 +1,6 @@
 package io.ogwars.cloud.velocity.command
 
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
 import io.ogwars.cloud.velocity.api.ApiClient
@@ -11,8 +9,7 @@ import java.util.concurrent.CompletableFuture
 object PermCommands {
 
     fun create(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("perm")
-            .then(createGroupNode(apiClient))
+        return LiteralArgumentBuilder.literal<CommandSource>("perm").then(createGroupNode(apiClient))
             .then(createPlayerNode(apiClient))
     }
 
@@ -21,54 +18,40 @@ object PermCommands {
             .then(LiteralArgumentBuilder.literal<CommandSource>("list").executes { ctx -> listGroups(ctx, apiClient) })
             .then(
                 LiteralArgumentBuilder.literal<CommandSource>("info")
-                    .then(stringArg("id").executes { ctx -> groupInfo(ctx, apiClient) })
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("create")
-                    .then(
-                        stringArg("id").then(
-                            stringArg("name").executes { ctx -> createGroup(ctx, apiClient) }
-                        )
-                    )
-            )
-            .then(
+                    .then(OgCloudCommand.wordArg("id").executes { ctx -> groupInfo(ctx, apiClient) })
+            ).then(
+                LiteralArgumentBuilder.literal<CommandSource>("create").then(
+                    OgCloudCommand.wordArg("id").then(
+                        OgCloudCommand.wordArg("name").executes { ctx -> createGroup(ctx, apiClient) })
+                )
+            ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("delete")
-                    .then(stringArg("id").executes { ctx -> deleteGroup(ctx, apiClient) })
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("addperm")
-                    .then(
-                        stringArg("id").then(
-                            stringArg("permission").executes { ctx -> addPermission(ctx, apiClient) }
-                        )
-                    )
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("removeperm")
-                    .then(
-                        stringArg("id").then(
-                            stringArg("permission").executes { ctx -> removePermission(ctx, apiClient) }
-                        )
-                    )
+                    .then(OgCloudCommand.wordArg("id").executes { ctx -> deleteGroup(ctx, apiClient) })
+            ).then(
+                LiteralArgumentBuilder.literal<CommandSource>("addperm").then(
+                    OgCloudCommand.wordArg("id").then(
+                        OgCloudCommand.wordArg("permission").executes { ctx -> addPermission(ctx, apiClient) })
+                )
+            ).then(
+                LiteralArgumentBuilder.literal<CommandSource>("removeperm").then(
+                    OgCloudCommand.wordArg("id").then(
+                        OgCloudCommand.wordArg("permission").executes { ctx -> removePermission(ctx, apiClient) })
+                )
             )
     }
 
     private fun createPlayerNode(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("player")
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("get")
-                    .then(stringArg("name").executes { ctx -> getPlayerPermission(ctx, apiClient) })
+        return LiteralArgumentBuilder.literal<CommandSource>("player").then(
+            LiteralArgumentBuilder.literal<CommandSource>("get")
+                .then(OgCloudCommand.wordArg("name").executes { ctx -> getPlayerPermission(ctx, apiClient) })
+        ).then(
+            LiteralArgumentBuilder.literal<CommandSource>("set").then(
+                OgCloudCommand.wordArg("name").then(
+                    OgCloudCommand.wordArg("group").then(
+                        OgCloudCommand.wordArg("duration").executes { ctx -> setPlayerGroup(ctx, apiClient) })
+                )
             )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("set")
-                    .then(
-                        stringArg("name").then(
-                            stringArg("group").then(
-                                stringArg("duration").executes { ctx -> setPlayerGroup(ctx, apiClient) }
-                            )
-                        )
-                    )
-            )
+        )
     }
 
     private fun listGroups(ctx: CommandContext<CommandSource>, apiClient: ApiClient): Int {
@@ -183,28 +166,27 @@ object PermCommands {
         val source = ctx.source
         val playerName = ctx.getArgument("name", String::class.java)
 
-        resolveOnlinePlayerUuid(apiClient, source, playerName)
-            .thenCompose { uuid -> uuid?.let(apiClient::getPlayer) ?: CompletableFuture.completedFuture(null) }
-            .thenAccept { player ->
-                if (player == null) {
-                    return@thenAccept
-                }
-
-                OgCloudCommand.sendPrefixed(source, "&fPlayer: ${player.name}")
-                OgCloudCommand.sendMessage(source, " &7Group: &f${player.permission.group}")
-
-                val duration = if (player.permission.length == PERMANENT_LENGTH) {
-                    "permanent"
-                } else {
-                    "${player.permission.length}ms"
-                }
-
-                OgCloudCommand.sendMessage(source, " &7Duration: &f$duration")
+        resolveOnlinePlayerUuid(apiClient, source, playerName).thenCompose { uuid ->
+            uuid?.let(apiClient::getPlayer) ?: CompletableFuture.completedFuture(null)
+        }.thenAccept { player ->
+            if (player == null) {
+                return@thenAccept
             }
-            .exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
+
+            OgCloudCommand.sendPrefixed(source, "&fPlayer: ${player.name}")
+            OgCloudCommand.sendMessage(source, " &7Group: &f${player.permission.group}")
+
+            val duration = if (player.permission.length == PERMANENT_LENGTH) {
+                "permanent"
+            } else {
+                "${player.permission.length}ms"
             }
+
+            OgCloudCommand.sendMessage(source, " &7Duration: &f$duration")
+        }.exceptionally { error ->
+            OgCloudCommand.sendFailure(source, error)
+            null
+        }
 
         return 1
     }
@@ -215,29 +197,24 @@ object PermCommands {
         val group = ctx.getArgument("group", String::class.java)
         val duration = ctx.getArgument("duration", String::class.java)
 
-        resolveOnlinePlayerUuid(apiClient, source, playerName)
-            .thenCompose { uuid ->
-                uuid?.let { apiClient.setPlayerGroup(it, group, duration) } ?: CompletableFuture.completedFuture(null)
+        resolveOnlinePlayerUuid(apiClient, source, playerName).thenCompose { uuid ->
+            uuid?.let { apiClient.setPlayerGroup(it, group, duration) } ?: CompletableFuture.completedFuture(null)
+        }.thenAccept { player ->
+            if (player == null) {
+                return@thenAccept
             }
-            .thenAccept { player ->
-                if (player == null) {
-                    return@thenAccept
-                }
 
-                OgCloudCommand.sendPrefixed(source, "&aSet ${player.name}'s group to '${player.permission.group}'.")
-            }
-            .exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
+            OgCloudCommand.sendPrefixed(source, "&aSet ${player.name}'s group to '${player.permission.group}'.")
+        }.exceptionally { error ->
+            OgCloudCommand.sendFailure(source, error)
+            null
+        }
 
         return 1
     }
 
     private fun resolveOnlinePlayerUuid(
-        apiClient: ApiClient,
-        source: CommandSource,
-        playerName: String
+        apiClient: ApiClient, source: CommandSource, playerName: String
     ): CompletableFuture<String?> {
         return apiClient.listOnlinePlayers(name = playerName).thenApply { players ->
             val player = players.firstOrNull()
@@ -249,10 +226,6 @@ object PermCommands {
 
             player.uuid
         }
-    }
-
-    private fun stringArg(name: String): RequiredArgumentBuilder<CommandSource, String> {
-        return RequiredArgumentBuilder.argument(name, StringArgumentType.word())
     }
 
     private const val PERMANENT_LENGTH = -1L

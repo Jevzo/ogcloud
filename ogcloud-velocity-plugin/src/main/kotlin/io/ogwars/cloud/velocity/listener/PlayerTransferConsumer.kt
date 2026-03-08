@@ -10,7 +10,7 @@ import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.Component
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 class PlayerTransferConsumer(
     private val kafkaManager: KafkaManager,
@@ -52,10 +52,11 @@ class PlayerTransferConsumer(
 
     private fun resolvePlayers(event: PlayerTransferEvent): List<Player>? {
         event.playerUuid?.let { rawUuid ->
-            val playerUuid = runCatching { UUID.fromString(rawUuid) }
-                .onFailure { logger.warn("Transfer target player UUID is invalid: {}", rawUuid) }
-                .getOrNull()
-                ?: return null
+            val playerUuid = runCatching { UUID.fromString(rawUuid) }.onFailure {
+                logger.warn(
+                    "Transfer target player UUID is invalid: {}", rawUuid
+                )
+            }.getOrNull() ?: return null
 
             val player = proxy.getPlayer(playerUuid).orElse(null)
             if (player == null) {
@@ -137,8 +138,7 @@ class PlayerTransferConsumer(
     }
 
     private fun selectTargetServer(group: String) = serverRegistry.getServersByGroup(
-        group,
-        includeMaintenance = serverRegistry.isGroupInMaintenance(group)
+        group, includeMaintenance = serverRegistry.isGroupInMaintenance(group)
     ).minByOrNull { it.playersConnected.size }
 
     private fun rerouteOrKickForMaintenance(player: Player, blockedGroup: String) {
@@ -148,15 +148,12 @@ class PlayerTransferConsumer(
             disconnectPlayer(player, MAINTENANCE_MESSAGE)
 
             logger.info(
-                "Kicked player {} because maintained group {} has no available fallback",
-                player.username,
-                blockedGroup
+                "Kicked player {} because maintained group {} has no available fallback", player.username, blockedGroup
             )
             return
         }
 
-        val fallback = serverRegistry.getServersByGroup(defaultGroup)
-            .minByOrNull { it.playersConnected.size }
+        val fallback = serverRegistry.getServersByGroup(defaultGroup).minByOrNull { it.playersConnected.size }
 
         if (fallback == null) {
             disconnectPlayer(player, NO_SERVERS_MESSAGE)

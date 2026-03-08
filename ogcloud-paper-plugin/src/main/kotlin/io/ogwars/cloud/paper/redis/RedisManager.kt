@@ -9,9 +9,7 @@ import io.ogwars.cloud.api.model.RedisServerData
 import java.util.logging.Logger
 
 class RedisManager(
-    redisHost: String,
-    redisPort: Int,
-    private val logger: Logger
+    redisHost: String, redisPort: Int, private val logger: Logger
 ) {
 
     private val client: RedisClient = RedisClient.create(

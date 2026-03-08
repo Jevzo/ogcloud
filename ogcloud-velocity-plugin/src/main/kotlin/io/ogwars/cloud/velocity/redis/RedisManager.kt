@@ -11,9 +11,7 @@ import org.slf4j.Logger
 import java.net.InetSocketAddress
 
 class RedisManager(
-    redisHost: String,
-    redisPort: Int,
-    private val logger: Logger
+    redisHost: String, redisPort: Int, private val logger: Logger
 ) {
 
     private val client: RedisClient = RedisClient.create(

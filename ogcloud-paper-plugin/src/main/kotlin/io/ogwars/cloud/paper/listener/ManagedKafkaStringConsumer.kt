@@ -1,11 +1,11 @@
 package io.ogwars.cloud.paper.listener
 
 import io.ogwars.cloud.paper.kafka.KafkaManager
+import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.common.errors.WakeupException
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.common.errors.WakeupException
 
 internal class ManagedKafkaStringConsumer(
     private val kafkaManager: KafkaManager,

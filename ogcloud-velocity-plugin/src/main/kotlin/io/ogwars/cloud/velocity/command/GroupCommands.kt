@@ -1,7 +1,6 @@
 package io.ogwars.cloud.velocity.command
 
 import com.mojang.brigadier.arguments.BoolArgumentType
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
@@ -15,16 +14,13 @@ object GroupCommands {
             .then(LiteralArgumentBuilder.literal<CommandSource>("list").executes { ctx -> listGroups(ctx, apiClient) })
             .then(
                 LiteralArgumentBuilder.literal<CommandSource>("info")
-                    .then(wordArg("id").executes { ctx -> groupInfo(ctx, apiClient) })
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("maintenance")
-                    .then(
-                        wordArg("id").then(
-                            RequiredArgumentBuilder.argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
-                                .executes { ctx -> setMaintenance(ctx, apiClient) }
-                        )
-                    )
+                    .then(OgCloudCommand.wordArg("id").executes { ctx -> groupInfo(ctx, apiClient) })
+            ).then(
+                LiteralArgumentBuilder.literal<CommandSource>("maintenance").then(
+                    OgCloudCommand.wordArg("id").then(
+                        RequiredArgumentBuilder.argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
+                            .executes { ctx -> setMaintenance(ctx, apiClient) })
+                )
             )
     }
 
@@ -64,7 +60,9 @@ object GroupCommands {
             OgCloudCommand.sendPrefixed(source, "&fGroup: ${group.id}")
             OgCloudCommand.sendMessage(source, " &7Type: &f${group.type}")
             OgCloudCommand.sendMessage(source, " &7Maintenance: &f${group.maintenance}")
-            OgCloudCommand.sendMessage(source, " &7Instances: &f${group.scaling.minOnline}-${group.scaling.maxInstances}")
+            OgCloudCommand.sendMessage(
+                source, " &7Instances: &f${group.scaling.minOnline}-${group.scaling.maxInstances}"
+            )
             OgCloudCommand.sendMessage(source, " &7Template: &f${group.templatePath}/${group.templateVersion}")
             OgCloudCommand.sendMessage(source, " &7Image: &f${group.serverImage}")
         }.exceptionally { error ->
@@ -90,9 +88,5 @@ object GroupCommands {
         }
 
         return 1
-    }
-
-    private fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> {
-        return RequiredArgumentBuilder.argument(name, StringArgumentType.word())
     }
 }

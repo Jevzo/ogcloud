@@ -9,7 +9,7 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 class ConnectionFailureHandler(
     private val serverRegistry: ServerRegistry,
@@ -66,7 +66,7 @@ class ConnectionFailureHandler(
     private fun selectFallbackServer(playerUuid: UUID) = serverRegistry.getServersByGroup(
         networkState.defaultGroup,
         includeMaintenance = networkState.permissionSystemEnabled &&
-            permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
+                permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
     ).minByOrNull { it.playersConnected.size }
 
     companion object {

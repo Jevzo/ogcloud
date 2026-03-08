@@ -13,16 +13,8 @@ import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.config.VelocityPluginSettings
 import io.ogwars.cloud.velocity.heartbeat.ProxyHeartbeatTask
 import io.ogwars.cloud.velocity.kafka.KafkaManager
-import io.ogwars.cloud.velocity.listener.CommandExecuteConsumer
-import io.ogwars.cloud.velocity.listener.ConnectionFailureHandler
-import io.ogwars.cloud.velocity.listener.GroupUpdateConsumer
-import io.ogwars.cloud.velocity.listener.InitialServerHandler
-import io.ogwars.cloud.velocity.listener.LifecycleConsumer
-import io.ogwars.cloud.velocity.listener.NetworkUpdateConsumer
-import io.ogwars.cloud.velocity.listener.PermissionUpdateConsumer
-import io.ogwars.cloud.velocity.listener.PlayerConnectionListener
-import io.ogwars.cloud.velocity.listener.PlayerTransferConsumer
-import io.ogwars.cloud.velocity.listener.WebAccountLinkOtpConsumer
+import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
+import io.ogwars.cloud.velocity.listener.*
 import io.ogwars.cloud.velocity.mongo.MongoManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager
@@ -33,6 +25,9 @@ import io.ogwars.cloud.velocity.redis.RedisManager
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import io.ogwars.cloud.velocity.tablist.TablistManager
 import org.slf4j.Logger
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Plugin(
     id = "ogcloud",
@@ -42,11 +37,12 @@ import org.slf4j.Logger
     authors = ["OgCloud"]
 )
 class OgCloudVelocityPlugin @Inject constructor(
-    private val server: ProxyServer,
-    private val logger: Logger
+    private val server: ProxyServer, private val logger: Logger
 ) {
 
     private lateinit var kafkaManager: KafkaManager
+    private lateinit var kafkaSendDispatcher: KafkaSendDispatcher
+    private lateinit var kafkaPublishExecutor: ExecutorService
     private lateinit var redisManager: RedisManager
     private lateinit var mongoManager: MongoManager
     private lateinit var serverRegistry: ServerRegistry
@@ -100,6 +96,12 @@ class OgCloudVelocityPlugin @Inject constructor(
         stopIfInitialized(::groupUpdateConsumer.isInitialized) { groupUpdateConsumer.stop() }
         stopIfInitialized(::playerTransferConsumer.isInitialized) { playerTransferConsumer.stop() }
         stopIfInitialized(::lifecycleConsumer.isInitialized) { lifecycleConsumer.stop() }
+        stopIfInitialized(::kafkaPublishExecutor.isInitialized) {
+            shutdownExecutor(
+                kafkaPublishExecutor, "velocity-kafka-handoff"
+            )
+        }
+        stopIfInitialized(::kafkaSendDispatcher.isInitialized) { kafkaSendDispatcher.stop() }
         stopIfInitialized(::kafkaManager.isInitialized) { kafkaManager.close() }
         stopIfInitialized(::redisManager.isInitialized) { redisManager.close() }
         stopIfInitialized(::mongoManager.isInitialized) { mongoManager.close() }
@@ -111,6 +113,12 @@ class OgCloudVelocityPlugin @Inject constructor(
 
     private fun initializeInfrastructure() {
         kafkaManager = KafkaManager(settings.kafkaBrokers, "velocity-${settings.proxyId}").also(KafkaManager::start)
+        kafkaSendDispatcher = KafkaSendDispatcher(
+            kafkaManager = kafkaManager, logger = logger, workerThreadName = "ogcloud-velocity-kafka-dispatcher"
+        ).also(KafkaSendDispatcher::start)
+        kafkaPublishExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "ogcloud-velocity-kafka-handoff").apply { isDaemon = true }
+        }
         redisManager = RedisManager(settings.redisHost, settings.redisPort, logger)
         mongoManager = MongoManager(settings.mongoUri, settings.mongoDatabase)
         serverRegistry = ServerRegistry(server, logger)
@@ -217,18 +225,15 @@ class OgCloudVelocityPlugin @Inject constructor(
         ).also(CommandExecuteConsumer::start)
 
         webAccountLinkOtpConsumer = WebAccountLinkOtpConsumer(
-            kafkaManager = kafkaManager,
-            proxyServer = server,
-            logger = logger,
-            proxyId = settings.proxyId
+            kafkaManager = kafkaManager, proxyServer = server, logger = logger, proxyId = settings.proxyId
         ).also(WebAccountLinkOtpConsumer::start)
     }
 
     private fun registerListeners() {
         server.eventManager.register(
-            this,
-            PlayerConnectionListener(
-                kafkaManager = kafkaManager,
+            this, PlayerConnectionListener(
+                kafkaSendDispatcher = kafkaSendDispatcher,
+                publishExecutor = kafkaPublishExecutor,
                 redisManager = redisManager,
                 permissionCache = permissionCache,
                 networkState = networkState,
@@ -242,20 +247,19 @@ class OgCloudVelocityPlugin @Inject constructor(
         )
         server.eventManager.register(this, PermissionCheckListener(permissionCache, networkState))
         server.eventManager.register(this, InitialServerHandler(serverRegistry, permissionCache, networkState, logger))
-        server.eventManager.register(this, ConnectionFailureHandler(serverRegistry, permissionCache, networkState, logger))
+        server.eventManager.register(
+            this, ConnectionFailureHandler(serverRegistry, permissionCache, networkState, logger)
+        )
     }
 
     private fun startBackgroundTasks() {
         tablistManager.start()
         permissionExpiryTask = PermissionExpiryTask(
-            permissionCache,
-            kafkaManager,
-            networkState,
-            logger
+            permissionCache, kafkaSendDispatcher, networkState, logger
         ).also(PermissionExpiryTask::start)
         proxyHeartbeatTask = ProxyHeartbeatTask(
             proxyServer = server,
-            kafkaManager = kafkaManager,
+            kafkaSendDispatcher = kafkaSendDispatcher,
             proxyId = settings.proxyId,
             maxPlayers = settings.proxyMaxPlayers,
             podIp = settings.proxyPodIp,
@@ -265,12 +269,29 @@ class OgCloudVelocityPlugin @Inject constructor(
     }
 
     private fun registerCommands() {
-        OgCloudCommand.register(server, apiClient, serverRegistry, logger)
+        OgCloudCommand.register(server, apiClient, serverRegistry)
     }
 
     private inline fun stopIfInitialized(isInitialized: Boolean, action: () -> Unit) {
         if (isInitialized) {
             action()
         }
+    }
+
+    private fun shutdownExecutor(executor: ExecutorService, name: String) {
+        executor.shutdown()
+        try {
+            if (!executor.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                logger.warn("Executor did not terminate in time: {}", name)
+                executor.shutdownNow()
+            }
+        } catch (_: InterruptedException) {
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
+    }
+
+    companion object {
+        private const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 5L
     }
 }

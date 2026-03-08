@@ -6,7 +6,7 @@ import io.ogwars.cloud.api.event.WebAccountLinkOtpEvent
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 class WebAccountLinkOtpConsumer(
     private val kafkaManager: KafkaManager,
@@ -40,17 +40,18 @@ class WebAccountLinkOtpConsumer(
         val player = proxyServer.getPlayer(playerUuid).orElse(null) ?: return
 
         OgCloudCommand.sendMessage(
-            player,
-            "&8| &6OgCloud Web &7> &7Link code for &f${event.requestedByEmail}&7: &a${event.otp}"
+            player, "&8| &6OgCloud Web &7> &7Link code for &f${event.requestedByEmail}&7: &a${event.otp}"
         )
 
         logger.info("Delivered web account link OTP to playerUuid={}", event.playerUuid)
     }
 
     private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }
-            .onFailure { logger.warn("Received web account link OTP with invalid uuid: {}", rawUuid) }
-            .getOrNull()
+        return runCatching { UUID.fromString(rawUuid) }.onFailure {
+            logger.warn(
+                "Received web account link OTP with invalid uuid: {}", rawUuid
+            )
+        }.getOrNull()
     }
 
     companion object {

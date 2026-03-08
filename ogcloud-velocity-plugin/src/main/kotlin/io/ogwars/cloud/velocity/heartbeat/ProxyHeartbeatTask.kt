@@ -3,7 +3,7 @@ package io.ogwars.cloud.velocity.heartbeat
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.api.event.ProxyHeartbeatEvent
-import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import org.slf4j.Logger
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 class ProxyHeartbeatTask(
     private val proxyServer: ProxyServer,
-    private val kafkaManager: KafkaManager,
+    private val kafkaSendDispatcher: KafkaSendDispatcher,
     private val proxyId: String,
     private val maxPlayers: Int,
     private val podIp: String,
@@ -44,7 +44,14 @@ class ProxyHeartbeatTask(
 
     private fun sendHeartbeat() {
         try {
-            kafkaManager.send(TOPIC, proxyId, gson.toJson(createHeartbeatEvent()))
+            kafkaSendDispatcher.dispatch(
+                KafkaSendDispatcher.Message(
+                    topic = TOPIC,
+                    key = proxyId,
+                    payload = gson.toJson(createHeartbeatEvent()),
+                    type = KafkaSendDispatcher.MessageType.PROXY_HEARTBEAT
+                )
+            )
         } catch (exception: Exception) {
             logger.error("Failed to send proxy heartbeat", exception)
         }

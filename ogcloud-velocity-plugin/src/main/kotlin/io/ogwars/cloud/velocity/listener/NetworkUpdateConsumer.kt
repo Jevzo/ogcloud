@@ -103,8 +103,9 @@ class NetworkUpdateConsumer(
         val component = legacySerializer.deserialize(kickMessage)
 
         proxyServer.allPlayers.forEach { player ->
-            val hasBypass = networkState.permissionSystemEnabled &&
-                permissionCache.hasPermission(player.uniqueId, MAINTENANCE_BYPASS_PERMISSION)
+            val hasBypass = networkState.permissionSystemEnabled && permissionCache.hasPermission(
+                player.uniqueId, MAINTENANCE_BYPASS_PERMISSION
+            )
 
             if (!hasBypass) {
                 player.disconnect(component)
@@ -134,8 +135,7 @@ class NetworkUpdateConsumer(
         }
 
         logger.info(
-            "Reloaded permission cache for {} online players after enabling permission system",
-            proxyServer.playerCount
+            "Reloaded permission cache for {} online players after enabling permission system", proxyServer.playerCount
         )
     }
 

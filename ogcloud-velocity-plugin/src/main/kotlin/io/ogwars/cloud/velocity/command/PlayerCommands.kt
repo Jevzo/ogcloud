@@ -1,8 +1,6 @@
 package io.ogwars.cloud.velocity.command
 
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
 import com.velocitypowered.api.proxy.ProxyServer
@@ -12,61 +10,33 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 object PlayerCommands {
 
     fun create(
-        apiClient: ApiClient,
-        proxyServer: ProxyServer,
-        serverRegistry: ServerRegistry
+        apiClient: ApiClient, proxyServer: ProxyServer, serverRegistry: ServerRegistry
     ): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("player")
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("find")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("name", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            proxyServer.allPlayers.forEach { builder.suggest(it.username) }
-                            builder.buildFuture()
-                        }
-                        .executes { ctx -> findPlayer(ctx, apiClient) }
-                )
-            )
+        return LiteralArgumentBuilder.literal<CommandSource>("player").then(
+            LiteralArgumentBuilder.literal<CommandSource>("find")
+                .then(OgCloudCommand.wordArg("name").suggests { _, builder ->
+                    proxyServer.allPlayers.forEach { builder.suggest(it.username) }
+                    builder.buildFuture()
+                }.executes { ctx -> findPlayer(ctx, apiClient) })
+        )
             .then(
                 LiteralArgumentBuilder.literal<CommandSource>("list")
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, String>("server", StringArgumentType.word())
-                            .suggests { _, builder ->
-                                serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                                builder.buildFuture()
-                            }
-                            .executes { ctx ->
-                                listPlayers(
-                                    ctx,
-                                    apiClient,
-                                    serverRegistry,
-                                    ctx.getArgument("server", String::class.java)
-                                )
-                            }
-                    )
-                    .executes { ctx -> listPlayers(ctx, apiClient, serverRegistry, null) }
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("transfer")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("name", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            proxyServer.allPlayers.forEach { builder.suggest(it.username) }
-                            builder.buildFuture()
-                        }
-                        .then(
-                            RequiredArgumentBuilder.argument<CommandSource, String>(
-                                "target",
-                                StringArgumentType.word()
-                            )
-                                .suggests { _, builder ->
-                                    serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                                    builder.buildFuture()
-                                }
-                                .executes { ctx -> transferPlayer(ctx, apiClient) }
+                    .then(OgCloudCommand.wordArg("server").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx ->
+                        listPlayers(
+                            ctx, apiClient, serverRegistry, ctx.getArgument("server", String::class.java)
                         )
-                )
+                    }).executes { ctx -> listPlayers(ctx, apiClient, serverRegistry, null) }).then(
+                LiteralArgumentBuilder.literal<CommandSource>("transfer")
+                    .then(OgCloudCommand.wordArg("name").suggests { _, builder ->
+                        proxyServer.allPlayers.forEach { builder.suggest(it.username) }
+                        builder.buildFuture()
+                    }.then(OgCloudCommand.wordArg("target").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx -> transferPlayer(ctx, apiClient) }))
             )
     }
 
@@ -95,10 +65,7 @@ object PlayerCommands {
     }
 
     private fun listPlayers(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry,
-        serverInput: String?
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry, serverInput: String?
     ): Int {
         val source = ctx.source
 
@@ -125,8 +92,7 @@ object PlayerCommands {
 
             for (p in players) {
                 OgCloudCommand.sendMessage(
-                    source,
-                    " &8- &f${p.name} &7server: &f${p.serverDisplayName ?: p.serverId ?: "none"}"
+                    source, " &8- &f${p.name} &7server: &f${p.serverDisplayName ?: p.serverId ?: "none"}"
                 )
             }
         }.exceptionally { e ->

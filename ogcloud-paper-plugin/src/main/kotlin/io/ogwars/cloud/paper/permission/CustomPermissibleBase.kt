@@ -5,8 +5,7 @@ import org.bukkit.permissions.PermissibleBase
 import org.bukkit.permissions.Permission
 
 class CustomPermissibleBase(
-    private val player: Player,
-    private val permissionManager: PermissionManager
+    private val player: Player, private val permissionManager: PermissionManager
 ) : PermissibleBase(player) {
 
     override fun hasPermission(permission: Permission): Boolean {

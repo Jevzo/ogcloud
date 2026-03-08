@@ -37,10 +37,7 @@ class TablistManager(
             Thread(runnable, "ogcloud-tablist").apply { isDaemon = true }
         }
         scheduler.scheduleAtFixedRate(
-            ::refreshAll,
-            REFRESH_INTERVAL_SECONDS,
-            REFRESH_INTERVAL_SECONDS,
-            TimeUnit.SECONDS
+            ::refreshAll, REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_SECONDS, TimeUnit.SECONDS
         )
         logger.info("Tablist manager started (interval={}s)", REFRESH_INTERVAL_SECONDS)
     }
@@ -102,9 +99,8 @@ class TablistManager(
         }
         val currentServer = currentServer.orElse(null)
         val serverId = currentServer?.let { serverRegistry.findServerIdByRegistered(it.server) }
-        val displayName = serverId?.let(serverRegistry::getDisplayName)
-            ?: currentServer?.serverInfo?.name
-            ?: NO_SERVER_NAME
+        val displayName =
+            serverId?.let(serverRegistry::getDisplayName) ?: currentServer?.serverInfo?.name ?: NO_SERVER_NAME
         val groupName = serverId?.let(serverRegistry::getGroupForServer) ?: displayName.substringBefore("-")
         val permissionGroupName = if (networkState.permissionSystemEnabled) {
             cached?.groupName ?: DEFAULT_PERMISSION_GROUP

@@ -7,11 +7,11 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
-import java.util.Properties
+import java.time.Duration
+import java.util.*
 
 class KafkaManager(
-    private val bootstrapServers: String,
-    private val clientId: String
+    private val bootstrapServers: String, private val clientId: String
 ) {
 
     private lateinit var producer: KafkaProducer<String, String>
@@ -21,22 +21,20 @@ class KafkaManager(
     }
 
     fun createConsumer(
-        groupId: String,
-        clientIdSuffix: String = "consumer",
-        autoOffsetReset: String = "earliest"
+        groupId: String, clientIdSuffix: String = "consumer", autoOffsetReset: String = "earliest"
     ): KafkaConsumer<String, String> {
         return withPluginClassLoader {
             KafkaConsumer(createConsumerProperties(groupId, clientIdSuffix, autoOffsetReset))
         }
     }
 
-    fun send(topic: String, key: String, value: String) {
-        producer.send(ProducerRecord(topic, key, value))
+    fun sendBlocking(topic: String, key: String, value: String) {
+        producer.send(ProducerRecord(topic, key, value)).get()
     }
 
     fun close() {
         if (::producer.isInitialized) {
-            producer.close()
+            producer.close(Duration.ofSeconds(PRODUCER_CLOSE_TIMEOUT_SECONDS))
         }
     }
 
@@ -50,9 +48,7 @@ class KafkaManager(
     }
 
     private fun createConsumerProperties(
-        groupId: String,
-        clientIdSuffix: String,
-        autoOffsetReset: String
+        groupId: String, clientIdSuffix: String, autoOffsetReset: String
     ): Properties {
         return Properties().apply {
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
@@ -75,5 +71,9 @@ class KafkaManager(
         } finally {
             currentThread.contextClassLoader = originalClassLoader
         }
+    }
+
+    companion object {
+        private const val PRODUCER_CLOSE_TIMEOUT_SECONDS = 5L
     }
 }

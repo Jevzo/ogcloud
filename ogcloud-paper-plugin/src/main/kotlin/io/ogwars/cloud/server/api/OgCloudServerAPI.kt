@@ -1,13 +1,9 @@
 package io.ogwars.cloud.server.api
 
 import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.GameState
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.PermissionGroup
-import io.ogwars.cloud.api.model.PlayerInfo
-import io.ogwars.cloud.api.model.RunningServer
-import io.ogwars.cloud.api.model.ServerInfo
-import java.util.UUID
+import io.ogwars.cloud.api.model.*
+import io.ogwars.cloud.server.api.OgCloudServerAPI.Companion.get
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 

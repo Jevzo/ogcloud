@@ -11,8 +11,7 @@ import org.bukkit.scoreboard.Scoreboard
 import org.bukkit.scoreboard.Team
 
 class TablistTeamManager(
-    private val permissionManager: PermissionManager,
-    private val networkFeatureState: NetworkFeatureState
+    private val permissionManager: PermissionManager, private val networkFeatureState: NetworkFeatureState
 ) {
 
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
@@ -37,8 +36,7 @@ class TablistTeamManager(
 
         val cached = permissionManager.getCachedPlayer(player.uniqueId) ?: return
 
-        Bukkit.getOnlinePlayers().asSequence()
-            .filterNot { it.uniqueId == player.uniqueId }
+        Bukkit.getOnlinePlayers().asSequence().filterNot { it.uniqueId == player.uniqueId }
             .forEach { onlinePlayer -> addEntry(onlinePlayer.scoreboard, player.name, cached) }
     }
 
@@ -52,8 +50,7 @@ class TablistTeamManager(
     }
 
     fun removePlayer(player: Player) {
-        Bukkit.getOnlinePlayers().asSequence()
-            .filterNot { it.uniqueId == player.uniqueId }
+        Bukkit.getOnlinePlayers().asSequence().filterNot { it.uniqueId == player.uniqueId }
             .forEach { onlinePlayer -> removeFromAllTeams(onlinePlayer.scoreboard, player.name) }
     }
 
@@ -73,11 +70,8 @@ class TablistTeamManager(
     }
 
     private fun updatePlayerEntry(player: Player, entryName: String, cached: CachedPermission) {
-        Bukkit.getOnlinePlayers().asSequence()
-            .filterNot { it.uniqueId == player.uniqueId }
-            .map(Player::getScoreboard)
-            .plus(sequenceOf(player.scoreboard))
-            .forEach { scoreboard ->
+        Bukkit.getOnlinePlayers().asSequence().filterNot { it.uniqueId == player.uniqueId }.map(Player::getScoreboard)
+            .plus(sequenceOf(player.scoreboard)).forEach { scoreboard ->
                 removeFromAllTeams(scoreboard, entryName)
                 addEntry(scoreboard, entryName, cached)
             }
@@ -97,8 +91,8 @@ class TablistTeamManager(
         return team
     }
 
-    private fun buildTeamName(cached: CachedPermission): String = "%04d%s".format(cached.weight, cached.groupId)
-        .take(MAX_TEAM_NAME_LENGTH)
+    private fun buildTeamName(cached: CachedPermission): String =
+        "%04d%s".format(cached.weight, cached.groupId).take(MAX_TEAM_NAME_LENGTH)
 
     private fun removeFromAllTeams(scoreboard: Scoreboard, entry: String) {
         for (team in scoreboard.teams) {

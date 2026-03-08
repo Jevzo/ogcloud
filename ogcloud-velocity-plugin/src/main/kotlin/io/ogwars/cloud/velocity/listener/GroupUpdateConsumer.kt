@@ -81,7 +81,9 @@ class GroupUpdateConsumer(
             if (fallback == null) {
                 player.disconnect(Component.text(SERVER_MAINTENANCE_MESSAGE))
 
-                logger.info("Kicked player {} because server group {} entered maintenance", player.username, event.groupId)
+                logger.info(
+                    "Kicked player {} because server group {} entered maintenance", player.username, event.groupId
+                )
                 return@forEach
             }
 
@@ -112,9 +114,9 @@ class GroupUpdateConsumer(
         }
     }
 
-    private fun resolveFallback(blockedGroup: String) = networkState.defaultGroup
-        .takeIf { it != blockedGroup && !serverRegistry.isGroupInMaintenance(it) }
-        ?.let { serverRegistry.getServersByGroup(it).minByOrNull { server -> server.playersConnected.size } }
+    private fun resolveFallback(blockedGroup: String) =
+        networkState.defaultGroup.takeIf { it != blockedGroup && !serverRegistry.isGroupInMaintenance(it) }
+            ?.let { serverRegistry.getServersByGroup(it).minByOrNull { server -> server.playersConnected.size } }
 
     private fun hasMaintenanceBypass(player: Player): Boolean {
         if (!networkState.permissionSystemEnabled) {

@@ -3,7 +3,7 @@ package io.ogwars.cloud.paper.permission
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
 import io.ogwars.cloud.api.model.DisplayConfig
 import io.ogwars.cloud.api.model.RedisPlayerSession
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 data class CachedPermission(
@@ -49,11 +49,7 @@ class PermissionManager {
     }
 
     private fun createCachedPermission(
-        groupId: String,
-        groupName: String,
-        permissions: List<String>,
-        display: DisplayConfig,
-        weight: Int
+        groupId: String, groupName: String, permissions: List<String>, display: DisplayConfig, weight: Int
     ): CachedPermission {
         return CachedPermission(
             groupId = groupId,
@@ -79,11 +75,7 @@ class PermissionManager {
 
     private fun PermissionUpdateEvent.toCachedPermission(): CachedPermission {
         return createCachedPermission(
-            groupId = groupId,
-            groupName = groupName,
-            permissions = permissions,
-            display = display,
-            weight = weight
+            groupId = groupId, groupName = groupName, permissions = permissions, display = display, weight = weight
         )
     }
 

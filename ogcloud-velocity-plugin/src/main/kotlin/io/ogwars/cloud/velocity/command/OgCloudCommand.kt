@@ -1,6 +1,8 @@
 package io.ogwars.cloud.velocity.command
 
+import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.BrigadierCommand
 import com.velocitypowered.api.command.CommandSource
@@ -8,7 +10,6 @@ import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.velocity.api.ApiClient
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-import org.slf4j.Logger
 
 object OgCloudCommand {
 
@@ -18,28 +19,18 @@ object OgCloudCommand {
         proxyServer: ProxyServer,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-        logger: Logger
     ) {
-        val node = LiteralArgumentBuilder.literal<CommandSource>("ogcloud")
-            .requires { it.hasPermission("ogcloud.admin") }
-            .then(ServerCommands.create(apiClient, serverRegistry))
-            .then(GroupCommands.create(apiClient))
-            .then(PlayerCommands.create(apiClient, proxyServer, serverRegistry))
-            .then(NetworkCommands.create(apiClient))
-            .then(PermCommands.create(apiClient))
-            .then(CommandCommand.create(apiClient, serverRegistry))
-            .then(WebCommands.create(apiClient))
-            .executes(::sendOgCloudInfoMessage)
-            .build()
+        val node =
+            LiteralArgumentBuilder.literal<CommandSource>("ogcloud").requires { it.hasPermission("ogcloud.admin") }
+                .then(ServerCommands.create(apiClient, serverRegistry)).then(GroupCommands.create(apiClient))
+                .then(PlayerCommands.create(apiClient, proxyServer, serverRegistry))
+                .then(NetworkCommands.create(apiClient)).then(PermCommands.create(apiClient))
+                .then(CommandCommand.create(apiClient, serverRegistry)).executes(::sendOgCloudInfoMessage).build()
 
         val command = BrigadierCommand(node)
         proxyServer.commandManager.register(
-            proxyServer.commandManager.metaBuilder(command)
-                .aliases("oc")
-                .build(),
-            command
+            proxyServer.commandManager.metaBuilder(command).aliases("oc").build(), command
         )
-        logger.info("Registered /ogcloud command")
     }
 
     fun sendOgCloudInfoMessage(ctx: CommandContext<CommandSource>): Int {
@@ -60,11 +51,13 @@ object OgCloudCommand {
     }
 
     fun sendFailure(source: CommandSource, error: Throwable) {
-        val message = generateSequence(error) { it.cause }
-            .firstNotNullOfOrNull(Throwable::message)
-            ?: "Unknown error"
+        val message = generateSequence(error) { it.cause }.firstNotNullOfOrNull(Throwable::message) ?: "Unknown error"
 
         sendError(source, "Failed: $message")
+    }
+
+    fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> {
+        return RequiredArgumentBuilder.argument(name, StringArgumentType.word())
     }
 
     private const val PREFIX = "&8| &6OgCloud &7> "

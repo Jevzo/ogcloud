@@ -8,8 +8,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 
 class ServerRegistry(
-    private val proxy: ProxyServer,
-    private val logger: Logger
+    private val proxy: ProxyServer, private val logger: Logger
 ) {
 
     private val registeredServers = ConcurrentHashMap<String, RegisteredServer>()
@@ -76,8 +75,7 @@ class ServerRegistry(
 
     fun getServersByGroup(group: String, includeMaintenance: Boolean = false): List<RegisteredServer> {
         if (!includeMaintenance && maintenanceGroups.contains(group)) return emptyList()
-        return serverGroups.entries
-            .filter { it.value == group && !drainingServers.contains(it.key) }
+        return serverGroups.entries.filter { it.value == group && !drainingServers.contains(it.key) }
             .mapNotNull { registeredServers[it.key] }
     }
 
@@ -88,9 +86,7 @@ class ServerRegistry(
     fun getAllServerIds(): Set<String> = registeredServers.keys.toSet()
 
     fun getPlayersInGroup(group: String): Collection<com.velocitypowered.api.proxy.Player> {
-        return serverGroups.entries
-            .filter { it.value == group }
-            .mapNotNull { registeredServers[it.key] }
+        return serverGroups.entries.filter { it.value == group }.mapNotNull { registeredServers[it.key] }
             .flatMap { it.playersConnected }
     }
 

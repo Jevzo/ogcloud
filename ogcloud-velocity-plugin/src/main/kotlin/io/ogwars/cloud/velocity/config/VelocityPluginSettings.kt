@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.config
 
-import java.util.UUID
+import java.util.*
 
 data class VelocityPluginSettings(
     val kafkaBrokers: String,
@@ -31,16 +31,15 @@ data class VelocityPluginSettings(
                 mongoUri = System.getenv("MONGODB_URI") ?: DEFAULT_MONGO_URI,
                 mongoDatabase = System.getenv("MONGODB_DATABASE") ?: DEFAULT_MONGO_DATABASE,
                 proxyId = proxyId,
-                proxyDisplayName = System.getenv("OGCLOUD_PROXY_DISPLAY_NAME")
-                    ?: "proxy-${proxyId.take(PROXY_DISPLAY_ID_LENGTH)}",
+                proxyDisplayName = System.getenv("OGCLOUD_PROXY_DISPLAY_NAME") ?: "proxy-${
+                    proxyId.take(PROXY_DISPLAY_ID_LENGTH)
+                }",
                 proxyGroup = System.getenv("OGCLOUD_GROUP") ?: DEFAULT_PROXY_GROUP,
                 defaultGroup = System.getenv("OGCLOUD_DEFAULT_GROUP") ?: DEFAULT_GROUP,
                 apiUrl = System.getenv("OGCLOUD_API_URL") ?: DEFAULT_API_URL,
                 apiEmail = requiredEnv("OGCLOUD_API_EMAIL"),
                 apiPassword = requiredEnv("OGCLOUD_API_PASSWORD"),
-                proxyMaxPlayers = System.getenv("OGCLOUD_MAX_PLAYERS")
-                    ?.toIntOrNull()
-                    ?.coerceAtLeast(MIN_MAX_PLAYERS)
+                proxyMaxPlayers = System.getenv("OGCLOUD_MAX_PLAYERS")?.toIntOrNull()?.coerceAtLeast(MIN_MAX_PLAYERS)
                     ?: Int.MAX_VALUE,
                 proxyPodIp = System.getenv("OGCLOUD_PROXY_POD_IP") ?: DEFAULT_PROXY_POD_IP,
                 proxyPort = System.getenv("OGCLOUD_PROXY_PORT")?.toIntOrNull() ?: DEFAULT_PROXY_PORT

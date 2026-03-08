@@ -6,7 +6,7 @@ import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 class PermissionUpdateConsumer(
     private val kafkaManager: KafkaManager,
@@ -50,9 +50,11 @@ class PermissionUpdateConsumer(
     }
 
     private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }
-            .onFailure { logger.warn("Received permission update with invalid uuid: {}", rawUuid) }
-            .getOrNull()
+        return runCatching { UUID.fromString(rawUuid) }.onFailure {
+            logger.warn(
+                "Received permission update with invalid uuid: {}", rawUuid
+            )
+        }.getOrNull()
     }
 
     fun stop() {

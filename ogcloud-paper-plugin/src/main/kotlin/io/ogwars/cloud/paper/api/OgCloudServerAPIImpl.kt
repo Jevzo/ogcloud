@@ -1,21 +1,13 @@
 package io.ogwars.cloud.paper.api
 
 import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.GameState
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.PermissionGroup
-import io.ogwars.cloud.api.model.PlayerInfo
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.RunningServer
-import io.ogwars.cloud.api.model.ServerInfo
-import io.ogwars.cloud.api.model.toRunningServer
+import io.ogwars.cloud.api.model.*
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.server.api.OgCloudServerAPI
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
@@ -126,16 +118,9 @@ class OgCloudServerAPIImpl(
 
     private fun CachedPermission.toPermissionGroup(): PermissionGroup {
         return PermissionGroup(
-            id = groupId,
-            name = groupName,
-            display = DisplayConfig(
-                chatPrefix = chatPrefix,
-                chatSuffix = chatSuffix,
-                nameColor = nameColor,
-                tabPrefix = tabPrefix
-            ),
-            weight = weight,
-            permissions = permissions
+            id = groupId, name = groupName, display = DisplayConfig(
+                chatPrefix = chatPrefix, chatSuffix = chatSuffix, nameColor = nameColor, tabPrefix = tabPrefix
+            ), weight = weight, permissions = permissions
         )
     }
 }

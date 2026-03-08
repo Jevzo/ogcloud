@@ -1,8 +1,6 @@
 package io.ogwars.cloud.velocity.command
 
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
-import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
 import io.ogwars.cloud.velocity.api.ApiClient
@@ -13,69 +11,38 @@ object ServerCommands {
     fun create(apiClient: ApiClient, serverRegistry: ServerRegistry): LiteralArgumentBuilder<CommandSource> {
         return LiteralArgumentBuilder.literal<CommandSource>("server")
             .then(
-                LiteralArgumentBuilder.literal<CommandSource>("list")
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, String>("group", StringArgumentType.word())
-                            .executes { ctx ->
-                                listServers(
-                                    ctx,
-                                    apiClient,
-                                    ctx.getArgument("group", String::class.java)
-                                )
-                            }
-                    )
-                    .executes { ctx -> listServers(ctx, apiClient, null) }
-            )
-            .then(
+                LiteralArgumentBuilder.literal<CommandSource>("list").then(
+                    OgCloudCommand.wordArg("group").executes { ctx ->
+                        listServers(
+                            ctx, apiClient, ctx.getArgument("group", String::class.java)
+                        )
+                    }).executes { ctx -> listServers(ctx, apiClient, null) }).then(
                 LiteralArgumentBuilder.literal<CommandSource>("info")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("server", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
-                        .executes { ctx -> serverInfo(ctx, apiClient, serverRegistry) }
-                )
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("request")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("group", StringArgumentType.word())
-                        .executes { ctx -> requestServer(ctx, apiClient) }
-                )
-            )
-            .then(
+                    .then(OgCloudCommand.wordArg("server").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx -> serverInfo(ctx, apiClient, serverRegistry) })
+            ).then(
+                LiteralArgumentBuilder.literal<CommandSource>("request").then(
+                    OgCloudCommand.wordArg("group").executes { ctx -> requestServer(ctx, apiClient) })
+            ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("stop")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("server", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
-                        .executes { ctx -> stopServer(ctx, apiClient, serverRegistry) }
-                )
-            )
-            .then(
+                    .then(OgCloudCommand.wordArg("server").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx -> stopServer(ctx, apiClient, serverRegistry) })
+            ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("kill")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("server", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
-                        .executes { ctx -> killServer(ctx, apiClient, serverRegistry) }
-                )
-            )
-            .then(
+                    .then(OgCloudCommand.wordArg("server").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx -> killServer(ctx, apiClient, serverRegistry) })
+            ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("templatepush")
-                .then(
-                    RequiredArgumentBuilder.argument<CommandSource, String>("server", StringArgumentType.word())
-                        .suggests { _, builder ->
-                            serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
-                        .executes { ctx -> templatePush(ctx, apiClient, serverRegistry) }
-                )
+                    .then(OgCloudCommand.wordArg("server").suggests { _, builder ->
+                        serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
+                        builder.buildFuture()
+                    }.executes { ctx -> templatePush(ctx, apiClient, serverRegistry) })
             )
     }
 
@@ -94,8 +61,7 @@ object ServerCommands {
 
             for (s in servers) {
                 OgCloudCommand.sendMessage(
-                    source,
-                    " &8- &f${s.displayName} &7[${s.state}] &8players: &f${s.playerCount}"
+                    source, " &8- &f${s.displayName} &7[${s.state}] &8players: &f${s.playerCount}"
                 )
             }
         }.exceptionally { e ->
@@ -117,9 +83,7 @@ object ServerCommands {
     }
 
     private fun serverInfo(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
@@ -159,9 +123,7 @@ object ServerCommands {
     }
 
     private fun stopServer(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
@@ -181,9 +143,7 @@ object ServerCommands {
     }
 
     private fun killServer(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
@@ -203,9 +163,7 @@ object ServerCommands {
     }
 
     private fun templatePush(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)

@@ -10,7 +10,7 @@ import io.ogwars.cloud.paper.tablist.TablistTeamManager
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
-import java.util.UUID
+import java.util.*
 import java.util.logging.Logger
 
 class PermissionUpdateConsumer(
@@ -69,8 +69,7 @@ class PermissionUpdateConsumer(
     }
 
     private fun parseUuid(rawUuid: String): UUID? {
-        return runCatching { UUID.fromString(rawUuid) }
-            .onFailure { logger.warning("Received permission update with invalid uuid: $rawUuid") }
+        return runCatching { UUID.fromString(rawUuid) }.onFailure { logger.warning("Received permission update with invalid uuid: $rawUuid") }
             .getOrNull()
     }
 

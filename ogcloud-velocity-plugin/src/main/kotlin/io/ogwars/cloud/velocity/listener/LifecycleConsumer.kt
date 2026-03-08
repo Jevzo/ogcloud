@@ -95,11 +95,7 @@ class LifecycleConsumer(
     companion object {
         private const val TOPIC = "ogcloud.server.lifecycle"
         private val NOTIFY_STATES = setOf(
-            ServerState.REQUESTED,
-            ServerState.STARTING,
-            ServerState.RUNNING,
-            ServerState.DRAINING,
-            ServerState.STOPPED
+            ServerState.REQUESTED, ServerState.STARTING, ServerState.RUNNING, ServerState.DRAINING, ServerState.STOPPED
         )
     }
 }

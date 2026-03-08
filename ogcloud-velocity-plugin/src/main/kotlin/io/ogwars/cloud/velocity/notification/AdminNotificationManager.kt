@@ -5,8 +5,7 @@ import io.ogwars.cloud.velocity.permission.PermissionCache
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 class AdminNotificationManager(
-    private val proxyServer: ProxyServer,
-    private val permissionCache: PermissionCache
+    private val proxyServer: ProxyServer, private val permissionCache: PermissionCache
 ) {
 
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()

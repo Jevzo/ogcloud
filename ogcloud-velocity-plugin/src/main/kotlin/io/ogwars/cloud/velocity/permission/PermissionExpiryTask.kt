@@ -2,10 +2,10 @@ package io.ogwars.cloud.velocity.permission
 
 import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionExpiryEvent
-import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.network.NetworkState
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 
 class PermissionExpiryTask(
     private val permissionCache: PermissionCache,
-    private val kafkaManager: KafkaManager,
+    private val kafkaSendDispatcher: KafkaSendDispatcher,
     private val networkState: NetworkState,
     private val logger: Logger
 ) {
@@ -55,7 +55,14 @@ class PermissionExpiryTask(
 
                 val previousExpiry = notifiedExpirations.put(uuid, cached.permissionEndMillis)
                 if (previousExpiry != cached.permissionEndMillis) {
-                    kafkaManager.send(TOPIC, uuid.toString(), gson.toJson(PermissionExpiryEvent(uuid = uuid.toString())))
+                    kafkaSendDispatcher.dispatch(
+                        KafkaSendDispatcher.Message(
+                            topic = TOPIC,
+                            key = uuid.toString(),
+                            payload = gson.toJson(PermissionExpiryEvent(uuid = uuid.toString())),
+                            type = KafkaSendDispatcher.MessageType.PERMISSION_EXPIRY
+                        )
+                    )
                     logger.info("Permission expired for player: uuid={}, group={}", uuid, cached.groupId)
                 }
             }

@@ -3,18 +3,11 @@ package io.ogwars.cloud.velocity.mongo
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoDatabase
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.GeneralSettings
-import io.ogwars.cloud.api.model.MotdSettings
-import io.ogwars.cloud.api.model.NetworkSettingsDocument
-import io.ogwars.cloud.api.model.PermissionGroupDocument
-import io.ogwars.cloud.api.model.TablistSettings
-import io.ogwars.cloud.api.model.VersionNameSettings
+import io.ogwars.cloud.api.model.*
 import org.bson.Document
 
 class MongoManager(
-    mongoUri: String,
-    databaseName: String
+    mongoUri: String, databaseName: String
 ) {
 
     private val client: MongoClient = MongoClients.create(mongoUri)
@@ -23,14 +16,12 @@ class MongoManager(
     private val networkSettingsCollection = database.getCollection(NETWORK_SETTINGS_COLLECTION)
 
     fun findAllPermissionGroups(): List<PermissionGroupDocument> {
-        return permissionGroupsCollection.find()
-            .map { document -> document.toPermissionGroupDocument() }
-            .toList()
+        return permissionGroupsCollection.find().map { document -> document.toPermissionGroupDocument() }.toList()
     }
 
     fun findNetworkSettings(): NetworkSettingsDocument {
-        val document = networkSettingsCollection.find(Document(ID_FIELD, GLOBAL_ID)).first()
-            ?: return NetworkSettingsDocument()
+        val document =
+            networkSettingsCollection.find(Document(ID_FIELD, GLOBAL_ID)).first() ?: return NetworkSettingsDocument()
         return document.toNetworkSettingsDocument()
     }
 
@@ -43,17 +34,12 @@ class MongoManager(
         val displayDocument = get("display", Document::class.java)
 
         return PermissionGroupDocument(
-            id = getString(ID_FIELD),
-            name = getString("name") ?: getString(ID_FIELD),
-            display = DisplayConfig(
+            id = getString(ID_FIELD), name = getString("name") ?: getString(ID_FIELD), display = DisplayConfig(
                 chatPrefix = displayDocument?.getString("chatPrefix") ?: "",
                 chatSuffix = displayDocument?.getString("chatSuffix") ?: "",
                 nameColor = displayDocument?.getString("nameColor") ?: "&7",
                 tabPrefix = displayDocument?.getString("tabPrefix") ?: "&7"
-            ),
-            weight = getInteger("weight", 100),
-            default = getBoolean("default", false),
-            permissions = permissions
+            ), weight = getInteger("weight", 100), default = getBoolean("default", false), permissions = permissions
         )
     }
 
@@ -106,8 +92,8 @@ class MongoManager(
         private const val DEFAULT_MAINTENANCE_MOTD = "&c&lMAINTENANCE\n&7We'll be back soon!"
         private const val DEFAULT_VERSION_NAME = "OgCloud Network"
         private const val DEFAULT_MAINTENANCE_VERSION_NAME = "MAINTENANCE"
-        private const val DEFAULT_TABLIST_HEADER = "\n&6&lOgCloud Network\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n"
-        private const val DEFAULT_TABLIST_FOOTER =
-            "\n&7Server: &a%server% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
+        private const val DEFAULT_TABLIST_HEADER =
+            "\n&6&lOgCloud Network\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n"
+        private const val DEFAULT_TABLIST_FOOTER = "\n&7Server: &a%server% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
     }
 }

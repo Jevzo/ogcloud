@@ -1,14 +1,15 @@
 package io.ogwars.cloud.paper.heartbeat
 
+import com.google.gson.Gson
 import io.ogwars.cloud.api.event.ServerHeartbeatEvent
 import io.ogwars.cloud.paper.OgCloudPaperPlugin
-import io.ogwars.cloud.paper.kafka.KafkaManager
+import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 
 class HeartbeatTask(
-    private val plugin: OgCloudPaperPlugin,
-    private val kafkaManager: KafkaManager
+    private val plugin: OgCloudPaperPlugin, private val kafkaSendDispatcher: KafkaSendDispatcher
 ) {
 
+    private val gson = Gson()
     private var taskId: Int = NO_TASK_ID
 
     fun start() {
@@ -21,7 +22,17 @@ class HeartbeatTask(
     }
 
     private fun sendHeartbeat() {
-        kafkaManager.send(TOPIC, plugin.serverId, createHeartbeatEvent())
+        val heartbeatEvent = createHeartbeatEvent()
+        plugin.server.scheduler.runTaskAsynchronously(plugin, Runnable {
+            kafkaSendDispatcher.dispatch(
+                KafkaSendDispatcher.Message(
+                    topic = TOPIC,
+                    key = plugin.serverId,
+                    payload = gson.toJson(heartbeatEvent),
+                    type = KafkaSendDispatcher.MessageType.SERVER_HEARTBEAT
+                )
+            )
+        })
     }
 
     fun stop() {

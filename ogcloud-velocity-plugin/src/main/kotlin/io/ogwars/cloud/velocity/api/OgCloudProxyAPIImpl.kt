@@ -1,19 +1,13 @@
 package io.ogwars.cloud.velocity.api
 
 import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.PermissionGroup
-import io.ogwars.cloud.api.model.PlayerInfo
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.RunningServer
-import io.ogwars.cloud.api.model.ServerInfo
-import io.ogwars.cloud.api.model.toRunningServer
+import io.ogwars.cloud.api.model.*
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.velocity.permission.CachedPlayer
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.redis.RedisManager
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Consumer
@@ -104,16 +98,9 @@ class OgCloudProxyAPIImpl(
 
     private fun CachedPlayer.toPermissionGroup(): PermissionGroup {
         return PermissionGroup(
-            id = groupId,
-            name = groupName,
-            display = DisplayConfig(
-                chatPrefix = chatPrefix,
-                chatSuffix = chatSuffix,
-                nameColor = nameColor,
-                tabPrefix = tabPrefix
-            ),
-            weight = weight,
-            permissions = permissions
+            id = groupId, name = groupName, display = DisplayConfig(
+                chatPrefix = chatPrefix, chatSuffix = chatSuffix, nameColor = nameColor, tabPrefix = tabPrefix
+            ), weight = weight, permissions = permissions
         )
     }
 }

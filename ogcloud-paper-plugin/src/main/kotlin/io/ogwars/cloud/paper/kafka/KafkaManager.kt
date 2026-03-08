@@ -1,6 +1,5 @@
 package io.ogwars.cloud.paper.kafka
 
-import com.google.gson.Gson
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -8,26 +7,21 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
-import java.util.Properties
-import java.util.logging.Logger
+import java.time.Duration
+import java.util.*
 
 class KafkaManager(
-    private val bootstrapServers: String,
-    private val serverId: String,
-    private val logger: Logger
+    private val bootstrapServers: String, private val serverId: String
 ) {
 
     private lateinit var producer: KafkaProducer<String, String>
-    private val gson = Gson()
 
     fun start() {
         producer = createWithPluginClassLoader { KafkaProducer(createProducerProperties()) }
     }
 
     fun createConsumer(
-        groupId: String,
-        clientIdSuffix: String,
-        autoOffsetReset: String
+        groupId: String, clientIdSuffix: String, autoOffsetReset: String
     ): KafkaConsumer<String, String> {
         return createWithPluginClassLoader {
             KafkaConsumer(createConsumerProperties(groupId, clientIdSuffix, autoOffsetReset))
@@ -36,8 +30,12 @@ class KafkaManager(
 
     fun close() {
         if (::producer.isInitialized) {
-            producer.close()
+            producer.close(Duration.ofSeconds(PRODUCER_CLOSE_TIMEOUT_SECONDS))
         }
+    }
+
+    fun sendBlocking(topic: String, key: String, payload: String) {
+        producer.send(ProducerRecord(topic, key, payload)).get()
     }
 
     private fun createProducerProperties(): Properties {
@@ -50,9 +48,7 @@ class KafkaManager(
     }
 
     private fun createConsumerProperties(
-        groupId: String,
-        clientIdSuffix: String,
-        autoOffsetReset: String
+        groupId: String, clientIdSuffix: String, autoOffsetReset: String
     ): Properties {
         return Properties().apply {
             put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
@@ -77,11 +73,7 @@ class KafkaManager(
         }
     }
 
-    fun <T> send(topic: String, key: String, event: T) {
-        producer.send(ProducerRecord(topic, key, gson.toJson(event))) { _, exception ->
-            if (exception != null) {
-                logger.severe("Failed to send Kafka message to $topic: ${exception.message}")
-            }
-        }
+    companion object {
+        private const val PRODUCER_CLOSE_TIMEOUT_SECONDS = 5L
     }
 }

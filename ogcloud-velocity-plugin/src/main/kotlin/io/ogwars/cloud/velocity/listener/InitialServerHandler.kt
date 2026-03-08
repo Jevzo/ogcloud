@@ -18,7 +18,9 @@ class InitialServerHandler(
     fun onPlayerChooseInitialServer(event: PlayerChooseInitialServerEvent) {
         val selected = selectInitialServer(event.player.uniqueId)
         if (selected == null) {
-            logger.warn("No servers available in group '{}' for player {}", networkState.defaultGroup, event.player.username)
+            logger.warn(
+                "No servers available in group '{}' for player {}", networkState.defaultGroup, event.player.username
+            )
             return
         }
 
@@ -34,8 +36,9 @@ class InitialServerHandler(
 
     private fun selectInitialServer(playerUuid: java.util.UUID) = serverRegistry.getServersByGroup(
         networkState.defaultGroup,
-        includeMaintenance = networkState.permissionSystemEnabled &&
-            permissionCache.hasPermission(playerUuid, MAINTENANCE_BYPASS_PERMISSION)
+        includeMaintenance = networkState.permissionSystemEnabled && permissionCache.hasPermission(
+            playerUuid, MAINTENANCE_BYPASS_PERMISSION
+        )
     ).minByOrNull { it.playersConnected.size }
 
     companion object {

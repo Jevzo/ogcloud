@@ -42,10 +42,7 @@ data class ApiScalingConfig(
 )
 
 data class ApiResourceConfig(
-    val memoryRequest: String,
-    val memoryLimit: String,
-    val cpuRequest: String,
-    val cpuLimit: String
+    val memoryRequest: String, val memoryLimit: String, val cpuRequest: String, val cpuLimit: String
 )
 
 data class ApiGroupResponse(
@@ -90,9 +87,7 @@ data class ApiPlayerResponse(
 )
 
 data class ApiPermissionConfig(
-    val group: String,
-    val length: Long,
-    val endMillis: Long
+    val group: String, val length: Long, val endMillis: Long
 )
 
 data class ApiPermissionGroupResponse(
@@ -105,10 +100,7 @@ data class ApiPermissionGroupResponse(
 )
 
 data class ApiDisplayConfig(
-    val chatPrefix: String,
-    val chatSuffix: String,
-    val nameColor: String,
-    val tabPrefix: String
+    val chatPrefix: String, val chatSuffix: String, val nameColor: String, val tabPrefix: String
 )
 
 data class ApiTablistSettings(val header: String, val footer: String)
@@ -127,22 +119,15 @@ data class ApiMotdSettings(val global: String, val maintenance: String)
 data class ApiVersionNameSettings(val global: String, val maintenance: String)
 
 data class ApiServerRequestResponse(
-    val serverId: String,
-    val group: String
+    val serverId: String, val group: String
 )
 
 data class ApiTemplateInfo(
-    val group: String,
-    val version: String,
-    val path: String
+    val group: String, val version: String, val path: String
 )
 
 data class ApiWebUserResponse(
-    val id: String,
-    val email: String,
-    val username: String,
-    val role: String,
-    val linkedPlayerUuid: String?
+    val id: String, val email: String, val username: String, val role: String, val linkedPlayerUuid: String?
 )
 
 data class ApiPaginatedResponse<T>(
@@ -164,15 +149,10 @@ data class ApiAuthTokenResponse(
 )
 
 class ApiClient(
-    baseUrl: String,
-    private val authEmail: String,
-    private val authPassword: String,
-    private val logger: Logger
+    baseUrl: String, private val authEmail: String, private val authPassword: String, private val logger: Logger
 ) {
 
-    private val httpClient = HttpClient.newBuilder()
-        .connectTimeout(CONNECT_TIMEOUT)
-        .build()
+    private val httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build()
 
     private val gson = Gson()
     private val base = baseUrl.trimEnd('/')
@@ -205,9 +185,7 @@ class ApiClient(
 
     fun requestServer(group: String): CompletableFuture<ApiServerRequestResponse> {
         return postWithResponse(
-            "/api/v1/servers/request",
-            mapOf("group" to group),
-            ApiServerRequestResponse::class.java
+            "/api/v1/servers/request", mapOf("group" to group), ApiServerRequestResponse::class.java
         )
     }
 
@@ -236,16 +214,14 @@ class ApiClient(
     }
 
     fun listOnlinePlayers(
-        name: String? = null,
-        serverId: String? = null
+        name: String? = null, serverId: String? = null
     ): CompletableFuture<List<ApiOnlinePlayerResponse>> {
         val params = mutableListOf<String>()
         if (name != null) params.add("name=${encodeQueryParam(name)}")
         if (serverId != null) params.add("serverId=${encodeQueryParam(serverId)}")
         val query = if (params.isNotEmpty()) "?" + params.joinToString("&") else ""
         return getAllPaged(
-            "/api/v1/players$query",
-            object : TypeToken<ApiPaginatedResponse<ApiOnlinePlayerResponse>>() {}.type
+            "/api/v1/players$query", object : TypeToken<ApiPaginatedResponse<ApiOnlinePlayerResponse>>() {}.type
         )
     }
 
@@ -279,8 +255,7 @@ class ApiClient(
 
     fun listPermissionGroups(): CompletableFuture<List<ApiPermissionGroupResponse>> {
         return getAllPaged(
-            "/api/v1/permissions/groups",
-            object : TypeToken<ApiPaginatedResponse<ApiPermissionGroupResponse>>() {}.type
+            "/api/v1/permissions/groups", object : TypeToken<ApiPaginatedResponse<ApiPermissionGroupResponse>>() {}.type
         )
     }
 
@@ -290,10 +265,6 @@ class ApiClient(
 
     fun createPermissionGroup(body: Map<String, Any?>): CompletableFuture<ApiPermissionGroupResponse> {
         return postWithResponse("/api/v1/permissions/groups", body, ApiPermissionGroupResponse::class.java)
-    }
-
-    fun updatePermissionGroup(id: String, body: Map<String, Any?>): CompletableFuture<ApiPermissionGroupResponse> {
-        return putWithResponse("/api/v1/permissions/groups/$id", body, ApiPermissionGroupResponse::class.java)
     }
 
     fun deletePermissionGroup(id: String): CompletableFuture<Void> {
@@ -316,38 +287,10 @@ class ApiClient(
         return post("/api/v1/command", mapOf("target" to target, "targetType" to targetType, "command" to command))
     }
 
-    fun listTemplates(): CompletableFuture<List<ApiTemplateInfo>> {
-        return getAllPaged("/api/v1/templates", object : TypeToken<ApiPaginatedResponse<ApiTemplateInfo>>() {}.type)
-    }
-
-    fun listWebUsers(): CompletableFuture<List<ApiWebUserResponse>> {
-        return getAllPaged(
-            "/api/v1/web/users",
-            object : TypeToken<ApiPaginatedResponse<ApiWebUserResponse>>() {}.type
-        )
-    }
-
-    fun createWebUser(email: String, password: String, role: String): CompletableFuture<ApiWebUserResponse> {
-        return postWithResponse(
-            "/api/v1/web/users",
-            mapOf("email" to email, "password" to password, "role" to role),
-            ApiWebUserResponse::class.java
-        )
-    }
-
-    fun updateWebUser(targetEmail: String, updates: Map<String, Any?>): CompletableFuture<ApiWebUserResponse> {
-        val encodedEmail = encodePathSegment(targetEmail)
-        return putWithResponse("/api/v1/web/users/$encodedEmail", updates, ApiWebUserResponse::class.java)
-    }
-
-    fun deleteWebUser(targetEmail: String): CompletableFuture<Void> {
-        val encodedEmail = encodePathSegment(targetEmail)
-        return delete("/api/v1/web/users/$encodedEmail")
-    }
-
     private fun <T> get(path: String, type: java.lang.reflect.Type): CompletableFuture<T> {
-        return send(requestBuilder(path, authorize = true).GET().build())
-            .thenApply { response -> gson.fromJson(response.body(), type) }
+        return send(
+            requestBuilder(path, authorize = true).GET().build()
+        ).thenApply { response -> gson.fromJson(response.body(), type) }
     }
 
     private fun <T> getAllPaged(path: String, type: java.lang.reflect.Type): CompletableFuture<List<T>> {
@@ -355,10 +298,7 @@ class ApiClient(
     }
 
     private fun <T> getAllPaged(
-        path: String,
-        page: Int,
-        accumulator: MutableList<T>,
-        type: java.lang.reflect.Type
+        path: String, page: Int, accumulator: MutableList<T>, type: java.lang.reflect.Type
     ): CompletableFuture<List<T>> {
         return get<ApiPaginatedResponse<T>>(withPageParams(path, page), type).thenCompose { response ->
             accumulator.addAll(response.items)
@@ -376,8 +316,11 @@ class ApiClient(
     }
 
     private fun <T> postWithResponse(path: String, body: Any?, type: Class<T>): CompletableFuture<T> {
-        return send(buildJsonRequest(path, body, HttpMethod.POST))
-            .thenApply { response -> gson.fromJson(response.body(), type) }
+        return send(
+            buildJsonRequest(
+                path, body, HttpMethod.POST
+            )
+        ).thenApply { response -> gson.fromJson(response.body(), type) }
     }
 
     private fun put(path: String, body: Any?): CompletableFuture<Void> {
@@ -385,8 +328,11 @@ class ApiClient(
     }
 
     private fun <T> putWithResponse(path: String, body: Any?, type: Class<T>): CompletableFuture<T> {
-        return send(buildJsonRequest(path, body, HttpMethod.PUT))
-            .thenApply { response -> gson.fromJson(response.body(), type) }
+        return send(buildJsonRequest(path, body, HttpMethod.PUT)).thenApply { response ->
+            gson.fromJson(
+                response.body(), type
+            )
+        }
     }
 
     private fun delete(path: String): CompletableFuture<Void> {
@@ -431,8 +377,7 @@ class ApiClient(
 
     private fun sendAuthRequest(path: String, body: Any): ApiAuthTokenResponse {
         val response = httpClient.send(
-            buildJsonRequest(path, body, HttpMethod.POST, authorize = false),
-            HttpResponse.BodyHandlers.ofString()
+            buildJsonRequest(path, body, HttpMethod.POST, authorize = false), HttpResponse.BodyHandlers.ofString()
         ).validated()
 
         return gson.fromJson(response.body(), ApiAuthTokenResponse::class.java)
@@ -451,13 +396,9 @@ class ApiClient(
     }
 
     private fun buildJsonRequest(
-        path: String,
-        body: Any?,
-        method: HttpMethod,
-        authorize: Boolean = true
+        path: String, body: Any?, method: HttpMethod, authorize: Boolean = true
     ): HttpRequest {
-        val builder = requestBuilder(path, authorize)
-            .header("Content-Type", "application/json")
+        val builder = requestBuilder(path, authorize).header("Content-Type", "application/json")
 
         when (method) {
             HttpMethod.POST -> builder.POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
@@ -465,10 +406,6 @@ class ApiClient(
         }
 
         return builder.build()
-    }
-
-    private fun encodePathSegment(value: String): String {
-        return encode(value)
     }
 
     private fun encodeQueryParam(value: String): String {
@@ -481,14 +418,11 @@ class ApiClient(
     }
 
     private fun requestBuilder(path: String, authorize: Boolean = false): HttpRequest.Builder {
-        return HttpRequest.newBuilder()
-            .uri(URI.create("$base$path"))
-            .timeout(REQUEST_TIMEOUT)
-            .apply {
-                if (authorize) {
-                    header("Authorization", "Bearer ${ensureAccessToken()}")
-                }
+        return HttpRequest.newBuilder().uri(URI.create("$base$path")).timeout(REQUEST_TIMEOUT).apply {
+            if (authorize) {
+                header("Authorization", "Bearer ${ensureAccessToken()}")
             }
+        }
     }
 
     private fun HttpResponse<String>.validated(): HttpResponse<String> {
@@ -505,8 +439,7 @@ class ApiClient(
     }
 
     private enum class HttpMethod {
-        POST,
-        PUT
+        POST, PUT
     }
 
     companion object {
@@ -517,5 +450,4 @@ class ApiClient(
     }
 }
 
-class ApiException(statusCode: Int, responseBody: String) :
-    RuntimeException("API returned $statusCode: $responseBody")
+class ApiException(statusCode: Int, responseBody: String) : RuntimeException("API returned $statusCode: $responseBody")

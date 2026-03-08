@@ -53,10 +53,7 @@ class NetworkUpdateConsumer(
             "Applied network feature update: permissionSystemEnabled=${event.general.permissionSystemEnabled}, tablistEnabled=${event.general.tablistEnabled}"
         )
 
-        if (
-            previousPermissionSystemEnabled != event.general.permissionSystemEnabled ||
-            previousTablistEnabled != event.general.tablistEnabled
-        ) {
+        if (previousPermissionSystemEnabled != event.general.permissionSystemEnabled || previousTablistEnabled != event.general.tablistEnabled) {
             onFeaturesChanged(event.general.permissionSystemEnabled, event.general.tablistEnabled)
         }
     }

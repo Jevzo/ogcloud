@@ -19,10 +19,8 @@ data class PaperPluginSettings(
                 serverId = requiredEnv("OGCLOUD_SERVER_ID"),
                 groupName = requiredEnv("OGCLOUD_GROUP"),
                 groupType = System.getenv("OGCLOUD_GROUP_TYPE") ?: DEFAULT_GROUP_TYPE,
-                configuredMaxPlayers = System.getenv("OGCLOUD_MAX_PLAYERS")
-                    ?.toIntOrNull()
-                    ?.coerceAtLeast(MIN_MAX_PLAYERS)
-                    ?: defaultMaxPlayers,
+                configuredMaxPlayers = System.getenv("OGCLOUD_MAX_PLAYERS")?.toIntOrNull()
+                    ?.coerceAtLeast(MIN_MAX_PLAYERS) ?: defaultMaxPlayers,
                 kafkaBrokers = System.getenv("KAFKA_BROKERS") ?: DEFAULT_KAFKA_BROKERS,
                 redisHost = System.getenv("REDIS_HOST") ?: DEFAULT_REDIS_HOST,
                 redisPort = System.getenv("REDIS_PORT")?.toIntOrNull() ?: DEFAULT_REDIS_PORT,

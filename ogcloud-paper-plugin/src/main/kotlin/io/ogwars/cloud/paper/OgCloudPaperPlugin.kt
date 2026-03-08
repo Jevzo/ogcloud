@@ -6,12 +6,8 @@ import io.ogwars.cloud.paper.config.PaperPluginSettings
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.heartbeat.HeartbeatTask
 import io.ogwars.cloud.paper.kafka.KafkaManager
-import io.ogwars.cloud.paper.listener.ChatListener
-import io.ogwars.cloud.paper.listener.CommandExecuteConsumer
-import io.ogwars.cloud.paper.listener.LifecycleConsumer
-import io.ogwars.cloud.paper.listener.NetworkUpdateConsumer
-import io.ogwars.cloud.paper.listener.PermissionUpdateConsumer
-import io.ogwars.cloud.paper.listener.PlayerJoinListener
+import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
+import io.ogwars.cloud.paper.listener.*
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
@@ -25,6 +21,9 @@ import org.bukkit.plugin.java.JavaPlugin
 class OgCloudPaperPlugin : JavaPlugin() {
 
     lateinit var kafkaManager: KafkaManager
+        private set
+
+    lateinit var kafkaSendDispatcher: KafkaSendDispatcher
         private set
 
     lateinit var heartbeatTask: HeartbeatTask
@@ -79,6 +78,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
         stopConsumer(::networkUpdateConsumer.isInitialized) { networkUpdateConsumer.stop() }
         stopConsumer(::permissionUpdateConsumer.isInitialized) { permissionUpdateConsumer.stop() }
         stopConsumer(::heartbeatTask.isInitialized) { heartbeatTask.stop() }
+        stopConsumer(::kafkaSendDispatcher.isInitialized) { kafkaSendDispatcher.stop() }
         stopConsumer(::kafkaManager.isInitialized) { kafkaManager.close() }
         stopConsumer(::redisManager.isInitialized) { redisManager.close() }
 
@@ -88,14 +88,23 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     private fun initializeInfrastructure() {
-        kafkaManager = KafkaManager(settings.kafkaBrokers, serverId, logger).also(KafkaManager::start)
+        kafkaManager = KafkaManager(settings.kafkaBrokers, serverId).also(KafkaManager::start)
+        kafkaSendDispatcher = KafkaSendDispatcher(
+            kafkaManager = kafkaManager, logger = logger, workerThreadName = "ogcloud-paper-kafka-dispatcher"
+        ).also(KafkaSendDispatcher::start)
         redisManager = RedisManager(settings.redisHost, settings.redisPort, logger)
         permissionManager = PermissionManager()
         networkFeatureState = NetworkFeatureState()
         tablistTeamManager = TablistTeamManager(permissionManager, networkFeatureState)
-        gameStateManager = GameStateManager(serverId, groupName, kafkaManager, logger)
+        gameStateManager = GameStateManager(
+            serverId = serverId,
+            group = groupName,
+            kafkaSendDispatcher = kafkaSendDispatcher,
+            asyncHandoff = { runnable -> server.scheduler.runTaskAsynchronously(this, runnable) },
+            logger = logger
+        )
         apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
-        heartbeatTask = HeartbeatTask(this, kafkaManager).also(HeartbeatTask::start)
+        heartbeatTask = HeartbeatTask(this, kafkaSendDispatcher).also(HeartbeatTask::start)
     }
 
     private fun applyConfiguredMaxPlayers() {
@@ -106,18 +115,11 @@ class OgCloudPaperPlugin : JavaPlugin() {
     private fun registerListeners() {
         server.pluginManager.registerEvents(
             PlayerJoinListener(
-                this,
-                permissionManager,
-                tablistTeamManager,
-                networkFeatureState,
-                redisManager,
-                logger
-            ),
-            this
+                this, permissionManager, tablistTeamManager, networkFeatureState, redisManager, logger
+            ), this
         )
         server.pluginManager.registerEvents(
-            ChatListener(permissionManager, networkFeatureState),
-            this
+            ChatListener(permissionManager, networkFeatureState), this
         )
     }
 
@@ -155,43 +157,31 @@ class OgCloudPaperPlugin : JavaPlugin() {
             logger = logger,
             onFeaturesChanged = { permissionSystemEnabled, tablistEnabled ->
                 server.scheduler.runTask(
-                    this,
-                    Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) }
-                )
+                    this, Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) })
             },
             serverId = serverId
         ).also(NetworkUpdateConsumer::start)
 
         commandExecuteConsumer = CommandExecuteConsumer(
-            plugin = this,
-            kafkaManager = kafkaManager,
-            serverId = serverId,
-            groupName = groupName,
-            logger = logger
+            plugin = this, kafkaManager = kafkaManager, serverId = serverId, groupName = groupName, logger = logger
         ).also(CommandExecuteConsumer::start)
 
         lifecycleConsumer = LifecycleConsumer(
-            kafkaManager = kafkaManager,
-            serverApi = serverApi,
-            logger = logger,
-            serverId = serverId
+            kafkaManager = kafkaManager, serverApi = serverApi, logger = logger, serverId = serverId
         ).also(LifecycleConsumer::start)
     }
 
     private fun loadNetworkFeatures() {
-        runCatching { apiClient.getNetworkSettingsSync() }
-            .onSuccess { settingsResponse ->
-                applyNetworkFeatures(
-                    settingsResponse.general.permissionSystemEnabled,
-                    settingsResponse.general.tablistEnabled
-                )
-            }
-            .onFailure {
-                logger.warning(
-                    "Failed to load network feature settings, defaulting to enabled: ${it.message}"
-                )
-                applyNetworkFeatures(permissionSystemEnabled = true, tablistEnabled = true)
-            }
+        runCatching { apiClient.getNetworkSettingsSync() }.onSuccess { settingsResponse ->
+            applyNetworkFeatures(
+                settingsResponse.general.permissionSystemEnabled, settingsResponse.general.tablistEnabled
+            )
+        }.onFailure {
+            logger.warning(
+                "Failed to load network feature settings, defaulting to enabled: ${it.message}"
+            )
+            applyNetworkFeatures(permissionSystemEnabled = true, tablistEnabled = true)
+        }
     }
 
     private fun applyNetworkFeatures(permissionSystemEnabled: Boolean, tablistEnabled: Boolean) {

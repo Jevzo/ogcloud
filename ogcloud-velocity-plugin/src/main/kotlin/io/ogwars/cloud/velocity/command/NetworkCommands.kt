@@ -12,29 +12,20 @@ import io.ogwars.cloud.velocity.api.ApiClient
 object NetworkCommands {
 
     fun create(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("network")
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("maintenance")
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
-                            .executes { ctx -> setMaintenance(ctx, apiClient) }
-                    )
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("motd")
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, String>("motd", StringArgumentType.greedyString())
-                            .executes { ctx -> setMotd(ctx, apiClient) }
-                    )
-            )
-            .then(
-                LiteralArgumentBuilder.literal<CommandSource>("maxplayers")
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, Int>("count", IntegerArgumentType.integer(1))
-                            .executes { ctx -> setMaxPlayers(ctx, apiClient) }
-                    )
-            )
-            .then(LiteralArgumentBuilder.literal<CommandSource>("info").executes { ctx -> networkInfo(ctx, apiClient) })
+        return LiteralArgumentBuilder.literal<CommandSource>("network").then(
+            LiteralArgumentBuilder.literal<CommandSource>("maintenance").then(
+                RequiredArgumentBuilder.argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
+                    .executes { ctx -> setMaintenance(ctx, apiClient) })
+        ).then(
+            LiteralArgumentBuilder.literal<CommandSource>("motd").then(
+                RequiredArgumentBuilder.argument<CommandSource, String>(
+                    "motd", StringArgumentType.greedyString()
+                ).executes { ctx -> setMotd(ctx, apiClient) })
+        ).then(
+            LiteralArgumentBuilder.literal<CommandSource>("maxplayers").then(
+                RequiredArgumentBuilder.argument<CommandSource, Int>("count", IntegerArgumentType.integer(1))
+                    .executes { ctx -> setMaxPlayers(ctx, apiClient) })
+        ).then(LiteralArgumentBuilder.literal<CommandSource>("info").executes { ctx -> networkInfo(ctx, apiClient) })
     }
 
     private fun setMaintenance(ctx: CommandContext<CommandSource>, apiClient: ApiClient): Int {

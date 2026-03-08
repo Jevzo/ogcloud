@@ -11,25 +11,20 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 object CommandCommand {
 
     fun create(apiClient: ApiClient, serverRegistry: ServerRegistry): LiteralArgumentBuilder<CommandSource> {
-        return LiteralArgumentBuilder.literal<CommandSource>("command")
-            .then(
-                wordArg("target")
-                    .suggests { _, builder ->
-                        builder.suggest(TARGET_ALL)
-                        serverRegistry.getAllDisplayNames().values.forEach(builder::suggest)
-                        builder.buildFuture()
-                    }
-                    .then(
-                        RequiredArgumentBuilder.argument<CommandSource, String>("cmd", StringArgumentType.greedyString())
-                            .executes { ctx -> executeCommand(ctx, apiClient, serverRegistry) }
-                    )
-            )
+        return LiteralArgumentBuilder.literal<CommandSource>("command").then(
+            OgCloudCommand.wordArg("target").suggests { _, builder ->
+                builder.suggest(TARGET_ALL)
+                serverRegistry.getAllDisplayNames().values.forEach(builder::suggest)
+                builder.buildFuture()
+            }.then(
+                RequiredArgumentBuilder.argument<CommandSource, String>(
+                    "cmd", StringArgumentType.greedyString()
+                ).executes { ctx -> executeCommand(ctx, apiClient, serverRegistry) })
+        )
     }
 
     private fun executeCommand(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-        serverRegistry: ServerRegistry
+        ctx: CommandContext<CommandSource>, apiClient: ApiClient, serverRegistry: ServerRegistry
     ): Int {
         val source = ctx.source
         val input = ctx.getArgument("target", String::class.java)
@@ -59,10 +54,6 @@ object CommandCommand {
         }
 
         return TARGET_GROUP to input
-    }
-
-    private fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> {
-        return RequiredArgumentBuilder.argument(name, StringArgumentType.word())
     }
 
     private const val TARGET_ALL = "all"

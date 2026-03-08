@@ -11,8 +11,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.logging.Logger
 
 data class ApiServerRequestResponse(
-    val serverId: String,
-    val group: String
+    val serverId: String, val group: String
 )
 
 data class ApiAuthTokenResponse(
@@ -23,8 +22,7 @@ data class ApiAuthTokenResponse(
 )
 
 data class ApiNetworkGeneralSettingsResponse(
-    val permissionSystemEnabled: Boolean = true,
-    val tablistEnabled: Boolean = true
+    val permissionSystemEnabled: Boolean = true, val tablistEnabled: Boolean = true
 )
 
 data class ApiNetworkSettingsResponse(
@@ -32,15 +30,10 @@ data class ApiNetworkSettingsResponse(
 )
 
 class ApiClient(
-    baseUrl: String,
-    private val authEmail: String,
-    private val authPassword: String,
-    private val logger: Logger
+    baseUrl: String, private val authEmail: String, private val authPassword: String, private val logger: Logger
 ) {
 
-    private val httpClient = HttpClient.newBuilder()
-        .connectTimeout(CONNECT_TIMEOUT)
-        .build()
+    private val httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build()
 
     private val gson = Gson()
     private val base = baseUrl.trimEnd('/')
@@ -60,9 +53,7 @@ class ApiClient(
 
     fun requestServer(group: String): CompletableFuture<ApiServerRequestResponse> {
         return postWithResponse(
-            "/api/v1/servers/request",
-            mapOf("group" to group),
-            ApiServerRequestResponse::class.java
+            "/api/v1/servers/request", mapOf("group" to group), ApiServerRequestResponse::class.java
         )
     }
 
@@ -76,8 +67,7 @@ class ApiClient(
 
     fun getNetworkSettingsSync(): ApiNetworkSettingsResponse {
         val response = httpClient.send(
-            buildGetRequest("/api/v1/network", ensureAccessToken()),
-            HttpResponse.BodyHandlers.ofString()
+            buildGetRequest("/api/v1/network", ensureAccessToken()), HttpResponse.BodyHandlers.ofString()
         ).validated()
 
         return gson.fromJson(response.body(), ApiNetworkSettingsResponse::class.java)
@@ -130,8 +120,7 @@ class ApiClient(
 
     private fun sendAuthRequest(path: String, body: Any): ApiAuthTokenResponse {
         val response = httpClient.send(
-            buildPostRequest(path, body),
-            HttpResponse.BodyHandlers.ofString()
+            buildPostRequest(path, body), HttpResponse.BodyHandlers.ofString()
         ).validated()
         return gson.fromJson(response.body(), ApiAuthTokenResponse::class.java)
     }
@@ -145,33 +134,22 @@ class ApiClient(
 
     private fun sendAuthorizedPost(path: String, body: Any?): CompletableFuture<HttpResponse<String>> {
         return httpClient.sendAsync(
-            buildPostRequest(path, body, ensureAccessToken()),
-            HttpResponse.BodyHandlers.ofString()
+            buildPostRequest(path, body, ensureAccessToken()), HttpResponse.BodyHandlers.ofString()
         ).thenApply { response -> response.validated() }
     }
 
     private fun buildPostRequest(path: String, body: Any?, bearerToken: String? = null): HttpRequest {
-        return HttpRequest.newBuilder()
-            .uri(URI.create("$base$path"))
-            .timeout(REQUEST_TIMEOUT)
-            .apply {
-                if (bearerToken != null) {
-                    header("Authorization", "Bearer $bearerToken")
-                }
+        return HttpRequest.newBuilder().uri(URI.create("$base$path")).timeout(REQUEST_TIMEOUT).apply {
+            if (bearerToken != null) {
+                header("Authorization", "Bearer $bearerToken")
             }
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
+        }.header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
             .build()
     }
 
     private fun buildGetRequest(path: String, bearerToken: String): HttpRequest {
-        return HttpRequest.newBuilder()
-            .uri(URI.create("$base$path"))
-            .timeout(REQUEST_TIMEOUT)
-            .header("Authorization", "Bearer $bearerToken")
-            .header("Content-Type", "application/json")
-            .GET()
-            .build()
+        return HttpRequest.newBuilder().uri(URI.create("$base$path")).timeout(REQUEST_TIMEOUT)
+            .header("Authorization", "Bearer $bearerToken").header("Content-Type", "application/json").GET().build()
     }
 
     private fun serializeBody(body: Any?): String = gson.toJson(body ?: emptyMap<String, Any>())
