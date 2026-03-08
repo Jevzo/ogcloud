@@ -56,7 +56,10 @@ class TablistManager(
 
         if (!enabled) {
             clearAll()
+            return
         }
+
+        refreshAll()
     }
 
     fun sendTablist(player: Player) {
@@ -82,6 +85,10 @@ class TablistManager(
         } catch (exception: Exception) {
             logger.error("Failed to refresh tablist", exception)
         }
+    }
+
+    fun refreshNow() {
+        refreshAll()
     }
 
     private fun clearAll() {

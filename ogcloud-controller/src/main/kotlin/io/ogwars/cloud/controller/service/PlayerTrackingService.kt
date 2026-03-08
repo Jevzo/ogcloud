@@ -7,12 +7,12 @@ import io.ogwars.cloud.api.event.PlayerDisconnectEvent
 import io.ogwars.cloud.api.event.PlayerSwitchEvent
 import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.controller.model.PermissionGroupDocument
 import io.ogwars.cloud.controller.model.PlayerDocument
 import io.ogwars.cloud.controller.redis.PlayerRedisRepository
 import io.ogwars.cloud.controller.repository.PermissionGroupRepository
 import io.ogwars.cloud.controller.repository.PlayerRepository
 import io.ogwars.cloud.controller.repository.WebUserRepository
-import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -61,13 +61,13 @@ class PlayerTrackingService(
             return
         }
 
-        val group = permissionGroupRepository.findById(player.permission.group).orElse(defaultGroup)
+        val resolved = resolvePermissionAssignment(player, defaultGroup)
         playerRedisRepository.saveSession(
             event.uuid,
-            player.name,
+            resolved.player.name,
             event.proxyId,
-            group,
-            player.permission.endMillis
+            resolved.group,
+            resolved.player.permission.endMillis
         )
     }
 
@@ -85,10 +85,15 @@ class PlayerTrackingService(
         }
 
         val player = playerRepository.findById(event.uuid).orElse(null) ?: return
-        val group = permissionGroupRepository.findById(player.permission.group).orElse(null) ?: return
+        val defaultGroup = requireDefaultGroup()
+        val resolved = resolvePermissionAssignment(player, defaultGroup)
 
         if (playerRedisRepository.isOnline(event.uuid)) {
-            playerRedisRepository.updatePermissions(event.uuid, group, player.permission.endMillis)
+            playerRedisRepository.updatePermissions(
+                event.uuid,
+                resolved.group,
+                resolved.player.permission.endMillis
+            )
         }
     }
 
@@ -110,30 +115,88 @@ class PlayerTrackingService(
             playerRedisRepository.updatePermissions(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS)
         }
 
-        val updateEvent = PermissionUpdateEvent(
-            uuid = event.uuid,
-            groupId = defaultGroup.id,
-            groupName = defaultGroup.name,
-            permissions = defaultGroup.permissions,
-            display = defaultGroup.display,
-            weight = defaultGroup.weight,
-            permissionEndMillis = PERMANENT_PERMISSION_END_MILLIS,
-            updatedBy = PERMISSION_EXPIRY_UPDATED_BY
-        )
+        publishPermissionUpdate(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS, PERMISSION_EXPIRY_UPDATED_BY)
+    }
 
-        kafkaTemplate.send(KafkaConfig.PERMISSION_UPDATE, event.uuid, updateEvent)
+    fun handleNetworkFeatureUpdate(permissionSystemEnabled: Boolean) {
+        if (!permissionSystemEnabled) {
+            return
+        }
+
+        val defaultGroup = requireDefaultGroup()
+        val onlineUuids = playerRedisRepository.findOnlinePlayerUuids()
+
+        if (onlineUuids.isEmpty()) {
+            return
+        }
+
+        val playersById = playerRepository.findAllById(onlineUuids).associateBy { it.id }
+
+        onlineUuids.forEach { uuid ->
+            val player = playersById[uuid] ?: return@forEach
+            val resolved = resolvePermissionAssignment(player, defaultGroup)
+
+            playerRedisRepository.updatePermissions(uuid, resolved.group, resolved.player.permission.endMillis)
+            publishPermissionUpdate(
+                uuid,
+                resolved.group,
+                resolved.player.permission.endMillis,
+                NETWORK_FEATURE_UPDATED_BY
+            )
+        }
     }
 
     private fun requireDefaultGroup() = permissionGroupRepository.findByDefaultTrue()
         ?: throw IllegalStateException(NO_DEFAULT_PERMISSION_GROUP_MESSAGE)
 
+    private fun resolvePermissionAssignment(
+        player: PlayerDocument,
+        defaultGroup: PermissionGroupDocument
+    ): ResolvedPermissionAssignment {
+        val assignedGroup = permissionGroupRepository.findById(player.permission.group).orElse(null)
+        if (assignedGroup != null) {
+            return ResolvedPermissionAssignment(player = player, group = assignedGroup)
+        }
+
+        val reassignedPlayer = player.copy(permission = buildPermanentPermission(defaultGroup.id))
+        playerRepository.save(reassignedPlayer)
+
+        return ResolvedPermissionAssignment(player = reassignedPlayer, group = defaultGroup)
+    }
+
+    private fun publishPermissionUpdate(
+        uuid: String,
+        group: PermissionGroupDocument,
+        permissionEndMillis: Long,
+        updatedBy: String
+    ) {
+        val updateEvent = PermissionUpdateEvent(
+            uuid = uuid,
+            groupId = group.id,
+            groupName = group.name,
+            permissions = group.permissions,
+            display = group.display,
+            weight = group.weight,
+            permissionEndMillis = permissionEndMillis,
+            updatedBy = updatedBy
+        )
+
+        kafkaTemplate.send(KafkaConfig.PERMISSION_UPDATE, uuid, updateEvent)
+    }
+
     private fun buildPermanentPermission(groupId: String): PermissionConfig {
         return PermissionConfig(group = groupId)
     }
+
+    private data class ResolvedPermissionAssignment(
+        val player: PlayerDocument,
+        val group: PermissionGroupDocument
+    )
 
     companion object {
         private const val NO_DEFAULT_PERMISSION_GROUP_MESSAGE = "No default permission group configured"
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
         private const val PERMISSION_EXPIRY_UPDATED_BY = "expiry"
+        private const val NETWORK_FEATURE_UPDATED_BY = "network-feature"
     }
 }

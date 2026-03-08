@@ -8,6 +8,7 @@ import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager
 import io.ogwars.cloud.velocity.permission.PermissionCache
+import io.ogwars.cloud.velocity.redis.RedisManager
 import io.ogwars.cloud.velocity.tablist.TablistManager
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
@@ -16,6 +17,7 @@ class NetworkUpdateConsumer(
     private val kafkaManager: KafkaManager,
     private val networkState: NetworkState,
     private val permissionCache: PermissionCache,
+    private val redisManager: RedisManager,
     private val proxyServer: ProxyServer,
     private val adminNotificationManager: AdminNotificationManager,
     private val tablistManager: TablistManager,
@@ -75,9 +77,14 @@ class NetworkUpdateConsumer(
             permissionCache.clear()
         }
 
+        if (event.general.permissionSystemEnabled && !wasPermissionSystemEnabled) {
+            reloadPermissionCacheForOnlinePlayers()
+        }
+
         tablistManager.setEnabled(event.general.tablistEnabled)
         if (event.general.tablistEnabled) {
             event.tablist?.let(::applyTablistUpdate)
+            tablistManager.refreshNow()
         }
     }
 
@@ -114,8 +121,27 @@ class NetworkUpdateConsumer(
         logger.info("Tablist template updated via network update")
     }
 
+    private fun reloadPermissionCacheForOnlinePlayers() {
+        proxyServer.allPlayers.forEach { player ->
+            val session = redisManager.getPlayerData(player.uniqueId.toString())
+            if (session != null) {
+                permissionCache.cachePlayerFromRedis(player.uniqueId, session)
+            } else {
+                permissionCache.getDefaultGroup()?.let { defaultGroup ->
+                    permissionCache.cachePlayer(player.uniqueId, defaultGroup, DEFAULT_PERMISSION_END_MILLIS)
+                }
+            }
+        }
+
+        logger.info(
+            "Reloaded permission cache for {} online players after enabling permission system",
+            proxyServer.playerCount
+        )
+    }
+
     companion object {
         private const val TOPIC = "ogcloud.network.update"
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
+        private const val DEFAULT_PERMISSION_END_MILLIS = -1L
     }
 }

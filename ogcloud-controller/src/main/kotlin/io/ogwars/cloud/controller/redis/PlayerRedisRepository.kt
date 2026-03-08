@@ -76,6 +76,10 @@ class PlayerRedisRepository(
         return redisTemplate.opsForSet().isMember(ONLINE_PLAYERS_KEY, uuid) == true
     }
 
+    fun findOnlinePlayerUuids(): Set<String> {
+        return redisTemplate.opsForSet().members(ONLINE_PLAYERS_KEY) ?: emptySet()
+    }
+
     private fun updateSession(uuid: String, transform: (RedisPlayerSession) -> RedisPlayerSession) {
         val session = findPlayerData(uuid) ?: return
         persistSession(uuid, transform(session))

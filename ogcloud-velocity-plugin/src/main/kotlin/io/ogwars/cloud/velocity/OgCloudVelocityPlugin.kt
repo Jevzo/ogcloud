@@ -200,6 +200,7 @@ class OgCloudVelocityPlugin @Inject constructor(
             kafkaManager = kafkaManager,
             networkState = networkState,
             permissionCache = permissionCache,
+            redisManager = redisManager,
             proxyServer = server,
             adminNotificationManager = adminNotificationManager,
             tablistManager = tablistManager,
