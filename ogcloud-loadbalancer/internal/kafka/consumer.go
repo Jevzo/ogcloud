@@ -16,7 +16,7 @@ const (
 	TopicServerLifecycle = "ogcloud.server.lifecycle"
 
 	ProtocolVersion1_21_11 = 774
-	proxyServerType       = "PROXY"
+	proxyServerType        = "PROXY"
 
 	initialBackoff = 1 * time.Second
 	maxBackoff     = 30 * time.Second
