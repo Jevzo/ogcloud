@@ -31,6 +31,22 @@ class PlayerRedisRepository(
         redisTemplate.opsForSet().add(ONLINE_PLAYERS_KEY, uuid)
     }
 
+    fun saveSession(
+        uuid: String,
+        name: String,
+        proxyId: String
+    ) {
+        persistSession(
+            uuid,
+            RedisPlayerSession(
+                name = name,
+                proxyId = proxyId,
+                connectedAt = System.currentTimeMillis()
+            )
+        )
+        redisTemplate.opsForSet().add(ONLINE_PLAYERS_KEY, uuid)
+    }
+
     fun updateServerId(uuid: String, serverId: String) {
         updateSession(uuid) { session -> session.copy(serverId = serverId) }
     }

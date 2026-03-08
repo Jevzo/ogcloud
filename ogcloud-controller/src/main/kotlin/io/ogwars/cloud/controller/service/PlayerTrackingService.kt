@@ -23,18 +23,20 @@ class PlayerTrackingService(
     private val permissionGroupRepository: PermissionGroupRepository,
     private val playerRedisRepository: PlayerRedisRepository,
     private val kafkaTemplate: KafkaTemplate<String, PermissionUpdateEvent>,
-    private val webUserRepository: WebUserRepository
+    private val webUserRepository: WebUserRepository,
+    private val networkSettingsService: NetworkSettingsService
 ) {
 
     fun handleConnect(event: PlayerConnectEvent) {
         val existing = playerRepository.findById(event.uuid).orElse(null)
-        val defaultGroup = requireDefaultGroup()
+        val permissionSystemEnabled = networkSettingsService.findGlobal().general.permissionSystemEnabled
+        val defaultGroup = if (permissionSystemEnabled) requireDefaultGroup() else null
 
         val player = if (existing == null) {
             val newPlayer = PlayerDocument(
                 id = event.uuid,
                 name = event.name,
-                permission = buildPermanentPermission(defaultGroup.id),
+                permission = defaultGroup?.let { buildPermanentPermission(it.id) } ?: PermissionConfig(),
                 firstJoin = Instant.now()
             )
             playerRepository.save(newPlayer)
@@ -54,9 +56,19 @@ class PlayerTrackingService(
             }
         }
 
-        val group = permissionGroupRepository.findById(player.permission.group).orElse(defaultGroup)
+        if (!permissionSystemEnabled || defaultGroup == null) {
+            playerRedisRepository.saveSession(event.uuid, player.name, event.proxyId)
+            return
+        }
 
-        playerRedisRepository.saveSession(event.uuid, player.name, event.proxyId, group, player.permission.endMillis)
+        val group = permissionGroupRepository.findById(player.permission.group).orElse(defaultGroup)
+        playerRedisRepository.saveSession(
+            event.uuid,
+            player.name,
+            event.proxyId,
+            group,
+            player.permission.endMillis
+        )
     }
 
     fun handleDisconnect(event: PlayerDisconnectEvent) {
@@ -68,6 +80,10 @@ class PlayerTrackingService(
     }
 
     fun handlePermissionUpdate(event: PermissionUpdateEvent) {
+        if (!networkSettingsService.findGlobal().general.permissionSystemEnabled) {
+            return
+        }
+
         val player = playerRepository.findById(event.uuid).orElse(null) ?: return
         val group = permissionGroupRepository.findById(player.permission.group).orElse(null) ?: return
 
@@ -77,6 +93,10 @@ class PlayerTrackingService(
     }
 
     fun handlePermissionExpiry(event: PermissionExpiryEvent) {
+        if (!networkSettingsService.findGlobal().general.permissionSystemEnabled) {
+            return
+        }
+
         val defaultGroup = requireDefaultGroup()
 
         val player = playerRepository.findById(event.uuid).orElse(null) ?: return

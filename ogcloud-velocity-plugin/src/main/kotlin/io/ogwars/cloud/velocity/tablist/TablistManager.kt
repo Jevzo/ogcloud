@@ -92,13 +92,22 @@ class TablistManager(
     }
 
     private fun Player.createPlaceholders(): Map<String, String> {
-        val cached = permissionCache.getPlayer(uniqueId)
+        val cached = if (networkState.permissionSystemEnabled) {
+            permissionCache.getPlayer(uniqueId)
+        } else {
+            null
+        }
         val currentServer = currentServer.orElse(null)
         val serverId = currentServer?.let { serverRegistry.findServerIdByRegistered(it.server) }
         val displayName = serverId?.let(serverRegistry::getDisplayName)
             ?: currentServer?.serverInfo?.name
             ?: NO_SERVER_NAME
         val groupName = serverId?.let(serverRegistry::getGroupForServer) ?: displayName.substringBefore("-")
+        val permissionGroupName = if (networkState.permissionSystemEnabled) {
+            cached?.groupName ?: DEFAULT_PERMISSION_GROUP
+        } else {
+            ""
+        }
 
         return mapOf(
             "%server%" to displayName,
@@ -107,7 +116,7 @@ class TablistManager(
             "%onlinePlayers%" to proxyServer.playerCount.toString(),
             "%maxPlayers%" to networkState.maxPlayers.toString(),
             "%ping%" to ping.toString(),
-            "%permissionGroup%" to (cached?.groupName ?: DEFAULT_PERMISSION_GROUP)
+            "%permissionGroup%" to permissionGroupName
         )
     }
 

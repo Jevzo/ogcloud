@@ -13,6 +13,7 @@ import io.ogwars.cloud.paper.listener.NetworkUpdateConsumer
 import io.ogwars.cloud.paper.listener.PermissionUpdateConsumer
 import io.ogwars.cloud.paper.listener.PlayerJoinListener
 import io.ogwars.cloud.paper.network.NetworkFeatureState
+import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
@@ -210,16 +211,20 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 } else {
                     permissionManager.cachePlayerDefault(player.uniqueId)
                 }
+                PermissionInjector.inject(player, permissionManager, logger)
             } else {
                 permissionManager.removePlayer(player.uniqueId)
+                PermissionInjector.uninject(player, logger)
             }
+        }
 
-            if (tablistEnabled) {
+        if (tablistEnabled) {
+            onlinePlayers.forEach { player ->
                 tablistTeamManager.setTablistForMe(player)
                 tablistTeamManager.setTablistForOthers(player)
-            } else {
-                tablistTeamManager.removePlayer(player)
             }
+        } else {
+            tablistTeamManager.clearAll()
         }
     }
 

@@ -1,6 +1,7 @@
 package io.ogwars.cloud.paper.permission
 
 import org.bukkit.entity.Player
+import org.bukkit.permissions.PermissibleBase
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
@@ -21,6 +22,19 @@ object PermissionInjector {
             }
         } catch (exception: Exception) {
             logger.severe("Failed to inject PermissibleBase for ${player.uniqueId}: ${exception.message}")
+        }
+    }
+
+    fun uninject(player: Player, logger: Logger) {
+        try {
+            val field = resolvePermissionField(player.javaClass)
+            val current = field.get(player)
+
+            if (current is CustomPermissibleBase) {
+                field.set(player, PermissibleBase(player))
+            }
+        } catch (exception: Exception) {
+            logger.severe("Failed to uninject PermissibleBase for ${player.uniqueId}: ${exception.message}")
         }
     }
 

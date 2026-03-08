@@ -38,6 +38,7 @@ class PlayerJoinListener(
 
         tablistTeamManager.removePlayer(player)
         permissionManager.removePlayer(player.uniqueId)
+        PermissionInjector.uninject(player, logger)
     }
 
     private fun cachePlayerPermissions(player: Player) {
@@ -67,11 +68,15 @@ class PlayerJoinListener(
 
             if (networkFeatureState.permissionSystemEnabled) {
                 PermissionInjector.inject(player, permissionManager, logger)
+            } else {
+                PermissionInjector.uninject(player, logger)
             }
 
             if (networkFeatureState.tablistEnabled) {
                 tablistTeamManager.setTablistForMe(player)
                 tablistTeamManager.setTablistForOthers(player)
+            } else {
+                tablistTeamManager.removePlayer(player)
             }
         })
     }

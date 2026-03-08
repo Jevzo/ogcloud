@@ -57,6 +57,16 @@ class TablistTeamManager(
             .forEach { onlinePlayer -> removeFromAllTeams(onlinePlayer.scoreboard, player.name) }
     }
 
+    fun clearAll() {
+        val onlinePlayers = Bukkit.getOnlinePlayers().toList()
+        onlinePlayers.forEach { viewer ->
+            val scoreboard = viewer.scoreboard
+            onlinePlayers.forEach { target ->
+                removeFromAllTeams(scoreboard, target.name)
+            }
+        }
+    }
+
     private fun addPlayerToScoreboard(scoreboard: Scoreboard, player: Player) {
         val cached = permissionManager.getCachedPlayer(player.uniqueId) ?: return
         addEntry(scoreboard, player.name, cached)
