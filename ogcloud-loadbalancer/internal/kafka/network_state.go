@@ -1,6 +1,9 @@
 package kafka
 
-import "sync"
+import (
+	"strings"
+	"sync"
+)
 
 type APIMotdSettings struct {
 	Global      string `json:"global"`
@@ -49,29 +52,29 @@ func NewNetworkState() *NetworkState {
 func (ns *NetworkState) ApplyAPISettings(settings APINetworkResponse) {
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
-	ns.motd = settings.MOTD.Global
-	ns.motdMaintenance = settings.MOTD.Maintenance
-	ns.versionName = settings.VersionName.Global
-	ns.versionNameMaintenance = settings.VersionName.Maintenance
-	ns.maxPlayers = settings.MaxPlayers
-	ns.maintenance = settings.Maintenance
-	if settings.General != nil {
-		ns.proxyRoutingStrategy = normalizeProxyRoutingStrategy(settings.General.ProxyRoutingStrategy)
-	}
+	ns.applySettingsLocked(
+		settings.MOTD.Global,
+		settings.MOTD.Maintenance,
+		settings.VersionName.Global,
+		settings.VersionName.Maintenance,
+		settings.MaxPlayers,
+		settings.Maintenance,
+		settings.General,
+	)
 }
 
 func (ns *NetworkState) update(event NetworkUpdateEvent) {
 	ns.mu.Lock()
 	defer ns.mu.Unlock()
-	ns.motd = event.MOTD.Global
-	ns.motdMaintenance = event.MOTD.Maintenance
-	ns.versionName = event.VersionName.Global
-	ns.versionNameMaintenance = event.VersionName.Maintenance
-	ns.maxPlayers = event.MaxPlayers
-	ns.maintenance = event.Maintenance
-	if event.General != nil {
-		ns.proxyRoutingStrategy = normalizeProxyRoutingStrategy(event.General.ProxyRoutingStrategy)
-	}
+	ns.applySettingsLocked(
+		event.MOTD.Global,
+		event.MOTD.Maintenance,
+		event.VersionName.Global,
+		event.VersionName.Maintenance,
+		event.MaxPlayers,
+		event.Maintenance,
+		event.General,
+	)
 }
 
 func (ns *NetworkState) GetMOTD() string {
@@ -135,8 +138,28 @@ func (ns *NetworkState) GetProxyRoutingStrategy() string {
 	return ns.proxyRoutingStrategy
 }
 
+func (ns *NetworkState) applySettingsLocked(
+	motd string,
+	motdMaintenance string,
+	versionName string,
+	versionNameMaintenance string,
+	maxPlayers int,
+	maintenance bool,
+	general *GeneralSettings,
+) {
+	ns.motd = motd
+	ns.motdMaintenance = motdMaintenance
+	ns.versionName = versionName
+	ns.versionNameMaintenance = versionNameMaintenance
+	ns.maxPlayers = maxPlayers
+	ns.maintenance = maintenance
+	if general != nil {
+		ns.proxyRoutingStrategy = normalizeProxyRoutingStrategy(general.ProxyRoutingStrategy)
+	}
+}
+
 func normalizeProxyRoutingStrategy(value string) string {
-	switch value {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case proxyRoutingStrategyRoundRobin:
 		return proxyRoutingStrategyRoundRobin
 	case proxyRoutingStrategyLoadBased:

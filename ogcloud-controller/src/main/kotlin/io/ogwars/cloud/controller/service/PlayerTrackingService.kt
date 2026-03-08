@@ -29,7 +29,7 @@ class PlayerTrackingService(
 
     fun handleConnect(event: PlayerConnectEvent) {
         val existing = playerRepository.findById(event.uuid).orElse(null)
-        val permissionSystemEnabled = networkSettingsService.findGlobal().general.permissionSystemEnabled
+        val permissionSystemEnabled = isPermissionSystemEnabled()
         val defaultGroup = if (permissionSystemEnabled) requireDefaultGroup() else null
 
         val player = if (existing == null) {
@@ -80,7 +80,7 @@ class PlayerTrackingService(
     }
 
     fun handlePermissionUpdate(event: PermissionUpdateEvent) {
-        if (!networkSettingsService.findGlobal().general.permissionSystemEnabled) {
+        if (!isPermissionSystemEnabled()) {
             return
         }
 
@@ -98,7 +98,7 @@ class PlayerTrackingService(
     }
 
     fun handlePermissionExpiry(event: PermissionExpiryEvent) {
-        if (!networkSettingsService.findGlobal().general.permissionSystemEnabled) {
+        if (!isPermissionSystemEnabled()) {
             return
         }
 
@@ -118,11 +118,7 @@ class PlayerTrackingService(
         publishPermissionUpdate(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS, PERMISSION_EXPIRY_UPDATED_BY)
     }
 
-    fun handleNetworkFeatureUpdate(permissionSystemEnabled: Boolean) {
-        if (!permissionSystemEnabled) {
-            return
-        }
-
+    fun handlePermissionSystemEnabled() {
         val defaultGroup = requireDefaultGroup()
         val onlineUuids = playerRedisRepository.findOnlinePlayerUuids()
 
@@ -186,6 +182,10 @@ class PlayerTrackingService(
 
     private fun buildPermanentPermission(groupId: String): PermissionConfig {
         return PermissionConfig(group = groupId)
+    }
+
+    private fun isPermissionSystemEnabled(): Boolean {
+        return networkSettingsService.findGlobal().general.permissionSystemEnabled
     }
 
     private data class ResolvedPermissionAssignment(

@@ -33,10 +33,11 @@ class NetworkUpdateConsumer(
 
     private fun handleNetworkUpdate(event: NetworkUpdateEvent) {
         val wasPermissionSystemEnabled = previousPermissionSystemEnabled
-        previousPermissionSystemEnabled = event.general.permissionSystemEnabled
+        val permissionSystemEnabled = event.general.permissionSystemEnabled
+        previousPermissionSystemEnabled = permissionSystemEnabled
 
-        if (event.general.permissionSystemEnabled && !wasPermissionSystemEnabled) {
-            playerTrackingService.handleNetworkFeatureUpdate(permissionSystemEnabled = true)
+        if (permissionSystemEnabled && !wasPermissionSystemEnabled) {
+            playerTrackingService.handlePermissionSystemEnabled()
             log.info("Permission system re-enabled; refreshed online player permission sessions")
         }
     }

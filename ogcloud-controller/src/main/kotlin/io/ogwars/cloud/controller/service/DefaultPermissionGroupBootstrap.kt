@@ -19,7 +19,7 @@ class DefaultPermissionGroupBootstrap(
             return
         }
 
-        permissionGroupRepository.save(
+        val defaultGroup = permissionGroupRepository.save(
             PermissionGroupDocument(
                 id = DEFAULT_GROUP_ID,
                 name = DEFAULT_GROUP_NAME,
@@ -31,9 +31,9 @@ class DefaultPermissionGroupBootstrap(
 
         log.info(
             "Created default permission group: id={}, name={}, permissions={}",
-            DEFAULT_GROUP_ID,
-            DEFAULT_GROUP_NAME,
-            0
+            defaultGroup.id,
+            defaultGroup.name,
+            defaultGroup.permissions.size
         )
     }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -169,7 +170,7 @@ func (p *Pool) RemoveStale() {
 }
 
 func normalizeRoutingStrategy(value string) string {
-	switch value {
+	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case RoutingStrategyRoundRobin:
 		return RoutingStrategyRoundRobin
 	case RoutingStrategyLoadBased:

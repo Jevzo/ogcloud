@@ -51,6 +51,7 @@ class NetworkUpdateConsumer(
     }
 
     private fun applyNetworkUpdate(event: NetworkUpdateEvent) {
+        val general = event.general
         val wasMaintenanceEnabled = networkState.maintenance
         val wasPermissionSystemEnabled = networkState.permissionSystemEnabled
 
@@ -61,8 +62,8 @@ class NetworkUpdateConsumer(
             event.maintenance,
             event.maxPlayers,
             event.defaultGroup,
-            event.general.permissionSystemEnabled,
-            event.general.tablistEnabled
+            general.permissionSystemEnabled,
+            general.tablistEnabled
         )
 
         if (event.maintenance != wasMaintenanceEnabled) {
@@ -73,19 +74,18 @@ class NetworkUpdateConsumer(
             kickNonBypassedPlayers(event.maintenanceKickMessage)
         }
 
-        if (!event.general.permissionSystemEnabled && wasPermissionSystemEnabled) {
+        if (!general.permissionSystemEnabled && wasPermissionSystemEnabled) {
             permissionCache.clear()
         }
 
-        if (event.general.permissionSystemEnabled && !wasPermissionSystemEnabled) {
+        if (general.permissionSystemEnabled && !wasPermissionSystemEnabled) {
             reloadPermissionCacheForOnlinePlayers()
         }
 
-        tablistManager.setEnabled(event.general.tablistEnabled)
-        if (event.general.tablistEnabled) {
+        if (general.tablistEnabled) {
             event.tablist?.let(::applyTablistUpdate)
-            tablistManager.refreshNow()
         }
+        tablistManager.setEnabled(general.tablistEnabled)
     }
 
     private fun updateNetworkState(event: NetworkUpdateEvent) {

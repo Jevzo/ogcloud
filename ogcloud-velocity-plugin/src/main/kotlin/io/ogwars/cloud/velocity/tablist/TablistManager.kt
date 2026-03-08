@@ -87,10 +87,6 @@ class TablistManager(
         }
     }
 
-    fun refreshNow() {
-        refreshAll()
-    }
-
     private fun clearAll() {
         val emptyComponent = deserializeLegacy("")
         proxyServer.allPlayers.forEach { player ->
