@@ -7,13 +7,10 @@ import io.ogwars.cloud.api.model.DisplayConfig
 import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.MotdSettings
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
-import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.api.model.PermissionGroupDocument
-import io.ogwars.cloud.api.model.PlayerDocument
 import io.ogwars.cloud.api.model.TablistSettings
 import io.ogwars.cloud.api.model.VersionNameSettings
 import org.bson.Document
-import java.time.Instant
 
 class MongoManager(
     mongoUri: String,
@@ -22,17 +19,8 @@ class MongoManager(
 
     private val client: MongoClient = MongoClients.create(mongoUri)
     private val database: MongoDatabase = client.getDatabase(databaseName)
-    private val playersCollection = database.getCollection(PLAYERS_COLLECTION)
     private val permissionGroupsCollection = database.getCollection(PERMISSION_GROUPS_COLLECTION)
     private val networkSettingsCollection = database.getCollection(NETWORK_SETTINGS_COLLECTION)
-
-    fun findPlayer(uuid: String): PlayerDocument? {
-        return playersCollection.find(Document(ID_FIELD, uuid)).first()?.toPlayerDocument()
-    }
-
-    fun findPermissionGroup(groupId: String): PermissionGroupDocument? {
-        return permissionGroupsCollection.find(Document(ID_FIELD, groupId)).first()?.toPermissionGroupDocument()
-    }
 
     fun findAllPermissionGroups(): List<PermissionGroupDocument> {
         return permissionGroupsCollection.find()
@@ -48,21 +36,6 @@ class MongoManager(
 
     fun close() {
         client.close()
-    }
-
-    private fun Document.toPlayerDocument(): PlayerDocument {
-        val permissionDocument = get("permission", Document::class.java)
-
-        return PlayerDocument(
-            id = getString(ID_FIELD),
-            name = getString("name") ?: "unknown",
-            permission = PermissionConfig(
-                group = permissionDocument?.getString("group") ?: "default",
-                length = permissionDocument?.getLong("length") ?: -1,
-                endMillis = permissionDocument?.getLong("endMillis") ?: -1
-            ),
-            firstJoin = getDate("firstJoin")?.toInstant() ?: Instant.now()
-        )
     }
 
     private fun Document.toPermissionGroupDocument(): PermissionGroupDocument {
@@ -127,7 +100,6 @@ class MongoManager(
     companion object {
         private const val ID_FIELD = "_id"
         private const val GLOBAL_ID = "global"
-        private const val PLAYERS_COLLECTION = "players"
         private const val PERMISSION_GROUPS_COLLECTION = "permission_groups"
         private const val NETWORK_SETTINGS_COLLECTION = "network_settings"
         private const val DEFAULT_MOTD = "&6OgCloud Network\n&7A Minecraft Server"

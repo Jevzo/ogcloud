@@ -5,9 +5,12 @@ import io.ogwars.cloud.controller.repository.PermissionGroupRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 class DefaultPermissionGroupBootstrap(
     private val permissionGroupRepository: PermissionGroupRepository
 ) : ApplicationRunner {

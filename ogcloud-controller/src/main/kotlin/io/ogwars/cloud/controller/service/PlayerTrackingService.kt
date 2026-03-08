@@ -13,6 +13,7 @@ import io.ogwars.cloud.controller.redis.PlayerRedisRepository
 import io.ogwars.cloud.controller.repository.PermissionGroupRepository
 import io.ogwars.cloud.controller.repository.PlayerRepository
 import io.ogwars.cloud.controller.repository.WebUserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -26,6 +27,8 @@ class PlayerTrackingService(
     private val webUserRepository: WebUserRepository,
     private val networkSettingsService: NetworkSettingsService
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     fun handleConnect(event: PlayerConnectEvent) {
         val existing = playerRepository.findById(event.uuid).orElse(null)
@@ -142,6 +145,63 @@ class PlayerTrackingService(
         }
     }
 
+    fun warmupOnlinePlayerSessions() {
+        val onlineUuids = playerRedisRepository.findOnlinePlayerUuids()
+        if (onlineUuids.isEmpty()) {
+            log.info("Online player session warmup skipped: no online players")
+            return
+        }
+
+        val permissionSystemEnabled = isPermissionSystemEnabled()
+        val defaultGroup = if (permissionSystemEnabled) requireDefaultGroup() else null
+        val playersById = playerRepository.findAllById(onlineUuids).associateBy { it.id }
+
+        var warmed = 0
+        var missingPlayers = 0
+        var rebuiltWithoutRuntimeSession = 0
+
+        onlineUuids.forEach { uuid ->
+            val player = playersById[uuid]
+            if (player == null) {
+                missingPlayers += 1
+                return@forEach
+            }
+
+            val runtimeSession = playerRedisRepository.findPlayerData(uuid)
+            val proxyId = runtimeSession?.proxyId ?: UNKNOWN_PROXY_ID
+
+            if (runtimeSession == null) {
+                rebuiltWithoutRuntimeSession += 1
+            }
+
+            if (!permissionSystemEnabled || defaultGroup == null) {
+                playerRedisRepository.saveSession(uuid, player.name, proxyId)
+                runtimeSession?.serverId?.let { playerRedisRepository.updateServerId(uuid, it) }
+                warmed += 1
+                return@forEach
+            }
+
+            val resolved = resolvePermissionAssignment(player, defaultGroup)
+            playerRedisRepository.saveSession(
+                uuid = uuid,
+                name = resolved.player.name,
+                proxyId = proxyId,
+                group = resolved.group,
+                permissionEndMillis = resolved.player.permission.endMillis
+            )
+            runtimeSession?.serverId?.let { playerRedisRepository.updateServerId(uuid, it) }
+            warmed += 1
+        }
+
+        log.info(
+            "Online player session warmup completed: online={}, warmed={}, missingPlayers={}, rebuiltWithoutRuntimeSession={}",
+            onlineUuids.size,
+            warmed,
+            missingPlayers,
+            rebuiltWithoutRuntimeSession
+        )
+    }
+
     private fun requireDefaultGroup() = permissionGroupRepository.findByDefaultTrue()
         ?: throw IllegalStateException(NO_DEFAULT_PERMISSION_GROUP_MESSAGE)
 
@@ -198,5 +258,6 @@ class PlayerTrackingService(
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
         private const val PERMISSION_EXPIRY_UPDATED_BY = "expiry"
         private const val NETWORK_FEATURE_UPDATED_BY = "network-feature"
+        private const val UNKNOWN_PROXY_ID = "unknown"
     }
 }

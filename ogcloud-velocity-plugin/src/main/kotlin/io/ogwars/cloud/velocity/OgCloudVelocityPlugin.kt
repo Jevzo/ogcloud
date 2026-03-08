@@ -229,7 +229,7 @@ class OgCloudVelocityPlugin @Inject constructor(
             this,
             PlayerConnectionListener(
                 kafkaManager = kafkaManager,
-                mongoManager = mongoManager,
+                redisManager = redisManager,
                 permissionCache = permissionCache,
                 networkState = networkState,
                 serverRegistry = serverRegistry,

@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.listener
 
 import com.google.gson.Gson
+import com.velocitypowered.api.event.EventTask
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.connection.DisconnectEvent
@@ -11,9 +12,9 @@ import io.ogwars.cloud.api.event.PlayerConnectEvent
 import io.ogwars.cloud.api.event.PlayerDisconnectEvent
 import io.ogwars.cloud.api.event.PlayerSwitchEvent
 import io.ogwars.cloud.velocity.kafka.KafkaManager
-import io.ogwars.cloud.velocity.mongo.MongoManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
+import io.ogwars.cloud.velocity.redis.RedisManager
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
@@ -21,7 +22,7 @@ import java.util.UUID
 
 class PlayerConnectionListener(
     private val kafkaManager: KafkaManager,
-    private val mongoManager: MongoManager,
+    private val redisManager: RedisManager,
     private val permissionCache: PermissionCache,
     private val networkState: NetworkState,
     private val serverRegistry: ServerRegistry,
@@ -36,29 +37,31 @@ class PlayerConnectionListener(
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
 
     @Subscribe
-    fun onLogin(event: LoginEvent) {
+    fun onLogin(event: LoginEvent): EventTask {
         val player = event.player
         val uuid = player.uniqueId
 
-        loadPermissions(uuid)
+        return EventTask.async {
+            loadPermissions(uuid)
 
-        val hasMaintenanceBypass = hasMaintenanceBypass(uuid)
+            val hasMaintenanceBypass = hasMaintenanceBypass(uuid)
 
-        when {
-            networkState.maintenance && !hasMaintenanceBypass -> {
-                denyLogin(event, uuid, networkState.maintenanceKickMessage)
-            }
+            when {
+                networkState.maintenance && !hasMaintenanceBypass -> {
+                    denyLogin(event, uuid, networkState.maintenanceKickMessage)
+                }
 
-            serverRegistry.isGroupInMaintenance(proxyGroup) && !hasMaintenanceBypass -> {
-                denyLogin(event, uuid, PROXY_MAINTENANCE_MESSAGE)
-            }
+                serverRegistry.isGroupInMaintenance(proxyGroup) && !hasMaintenanceBypass -> {
+                    denyLogin(event, uuid, PROXY_MAINTENANCE_MESSAGE)
+                }
 
-            proxyServer.playerCount >= proxyMaxPlayers -> {
-                denyLogin(event, uuid, PROXY_FULL_MESSAGE)
-            }
+                proxyServer.playerCount >= proxyMaxPlayers -> {
+                    denyLogin(event, uuid, PROXY_FULL_MESSAGE)
+                }
 
-            else -> {
-                publish(TOPIC_CONNECT, uuid.toString(), PlayerConnectEvent(uuid.toString(), player.username, proxyId))
+                else -> {
+                    publish(TOPIC_CONNECT, uuid.toString(), PlayerConnectEvent(uuid.toString(), player.username, proxyId))
+                }
             }
         }
     }
@@ -87,26 +90,26 @@ class PlayerConnectionListener(
             return
         }
 
+        permissionCache.removePlayer(uuid)
+
         try {
-            val playerDoc = mongoManager.findPlayer(uuid.toString())
-            val defaultGroup = permissionCache.getDefaultGroup()
-            val resolvedGroup = playerDoc?.let { mongoManager.findPermissionGroup(it.permission.group) }
-
-            when {
-                playerDoc != null && resolvedGroup != null -> {
-                    permissionCache.cachePlayer(uuid, resolvedGroup, playerDoc.permission.endMillis)
-                }
-
-                defaultGroup != null -> {
-                    permissionCache.cachePlayer(uuid, defaultGroup, DEFAULT_PERMISSION_END_MILLIS)
-                }
+            val session = redisManager.getPlayerData(uuid.toString())
+            if (session != null) {
+                permissionCache.cachePlayerFromRedis(uuid, session)
+                return
             }
+
+            cacheDefaultPermissions(uuid)
+            logger.warn("No Redis permission session for player: uuid={}, using default group fallback", uuid)
         } catch (exception: Exception) {
-            logger.error("Failed to load permissions for player: uuid={}", uuid, exception)
+            logger.error("Failed to load permission session from Redis for player: uuid={}", uuid, exception)
+            cacheDefaultPermissions(uuid)
+        }
+    }
 
-            permissionCache.getDefaultGroup()?.let {
-                permissionCache.cachePlayer(uuid, it, DEFAULT_PERMISSION_END_MILLIS)
-            }
+    private fun cacheDefaultPermissions(uuid: UUID) {
+        permissionCache.getDefaultGroup()?.let {
+            permissionCache.cachePlayer(uuid, it, DEFAULT_PERMISSION_END_MILLIS)
         }
     }
 
