@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.GroupUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
@@ -29,7 +29,7 @@ class GroupUpdateConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-group-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.GROUP_UPDATE,
             threadName = "ogcloud-group-update-consumer",
             logger = logger,
             consumerLabel = "group update",
@@ -130,7 +130,6 @@ class GroupUpdateConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.group.update"
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
         private const val PROXY_MAINTENANCE_MESSAGE = "Proxy is in maintenance"
         private const val SERVER_MAINTENANCE_MESSAGE = "Server is in maintenance"

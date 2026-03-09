@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.listener
-
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector
@@ -27,7 +27,7 @@ class PermissionUpdateConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-paper-permupdate-$serverId",
-            topic = TOPIC,
+            topic = KafkaTopics.PERMISSION_UPDATE,
             threadName = "ogcloud-paper-perm-update-consumer",
             clientIdSuffix = "consumer",
             autoOffsetReset = "earliest",
@@ -82,6 +82,5 @@ class PermissionUpdateConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.permission.update"
     }
 }

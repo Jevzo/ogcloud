@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.PermissionGroupUpdatedEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.PermissionGroupDocument
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
@@ -17,7 +17,7 @@ class PermissionGroupUpdatedProducer(
         log.info("Publishing permission group upsert: groupId={}", group.id)
 
         kafkaTemplate.send(
-            KafkaConfig.PERMISSION_GROUP_UPDATED,
+            KafkaTopics.PERMISSION_GROUP_UPDATED,
             group.id,
             PermissionGroupUpdatedEvent(
                 groupId = group.id,
@@ -31,7 +31,7 @@ class PermissionGroupUpdatedProducer(
         log.info("Publishing permission group delete: groupId={}", groupId)
 
         kafkaTemplate.send(
-            KafkaConfig.PERMISSION_GROUP_UPDATED,
+            KafkaTopics.PERMISSION_GROUP_UPDATED,
             groupId,
             PermissionGroupUpdatedEvent(
                 groupId = groupId,

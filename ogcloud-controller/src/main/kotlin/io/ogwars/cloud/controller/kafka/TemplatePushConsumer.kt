@@ -1,8 +1,8 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.TemplatePushEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.ServerState
-import io.ogwars.cloud.controller.config.KafkaConfig
 import io.ogwars.cloud.controller.redis.ServerRedisRepository
 import io.ogwars.cloud.controller.service.KubernetesService
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -18,7 +18,7 @@ class TemplatePushConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.SERVER_TEMPLATE_PUSH], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.SERVER_TEMPLATE_PUSH], groupId = "ogcloud-controller")
     fun onTemplatePush(message: String) {
         val event = objectMapper.readValue(message, TemplatePushEvent::class.java)
 

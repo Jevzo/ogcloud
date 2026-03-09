@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.PlayerTransferEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
@@ -26,7 +26,7 @@ class PlayerTransferConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-transfer-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.PLAYER_TRANSFER,
             threadName = "ogcloud-transfer-consumer",
             logger = logger,
             consumerLabel = "player transfer",
@@ -210,7 +210,6 @@ class PlayerTransferConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.player.transfer"
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
         private const val SHUTDOWN_MESSAGE = "Server shutting down"
         private const val MAINTENANCE_MESSAGE = "Server is in maintenance"

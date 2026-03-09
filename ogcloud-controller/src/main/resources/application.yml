@@ -25,6 +25,11 @@ ogcloud:
     service-account:
       email: ${OGCLOUD_API_EMAIL}
       password: ${OGCLOUD_API_PASSWORD}
+  permission-reenable-sync:
+    target-players-per-second: ${OGCLOUD_PERMISSION_REENABLE_SYNC_TARGET_PLAYERS_PER_SECOND:1000}
+    min-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MIN_BATCH_SIZE:100}
+    max-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MAX_BATCH_SIZE:2000}
+    lock-ttl: ${OGCLOUD_PERMISSION_REENABLE_SYNC_LOCK_TTL:PT5M}
   kubernetes:
     namespace: ${OGCLOUD_NAMESPACE:ogcloud}
   minio:

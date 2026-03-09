@@ -1,8 +1,8 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.PlayerConnectEvent
 import io.ogwars.cloud.api.event.PlayerDisconnectEvent
 import io.ogwars.cloud.api.event.PlayerSwitchEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
@@ -70,7 +70,7 @@ class PlayerConnectionListener(
                             CONNECT_RETRY_WINDOW_MILLIS,
                         )
                         publishOnCurrentThread(
-                            topic = TOPIC_DISCONNECT,
+                            topic = KafkaTopics.PLAYER_DISCONNECT,
                             key = uuid.toString(),
                             payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
                             messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
@@ -94,7 +94,7 @@ class PlayerConnectionListener(
         permissionCache.removePlayer(uuid)
 
         publishAsync(
-            topic = TOPIC_DISCONNECT,
+            topic = KafkaTopics.PLAYER_DISCONNECT,
             key = uuid.toString(),
             payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
             messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
@@ -115,7 +115,7 @@ class PlayerConnectionListener(
                 ?.substringAfter("-")
 
         publishAsync(
-            topic = TOPIC_SWITCH,
+            topic = KafkaTopics.PLAYER_SWITCH,
             key = uuid.toString(),
             payload = PlayerSwitchEvent(uuid.toString(), serverId, previousServerId),
             messageType = KafkaSendDispatcher.MessageType.PLAYER_SWITCH,
@@ -214,7 +214,7 @@ class PlayerConnectionListener(
             val result =
                 kafkaSendDispatcher.dispatchAndWait(
                     KafkaSendDispatcher.Message(
-                        topic = TOPIC_CONNECT,
+                        topic = KafkaTopics.PLAYER_CONNECT,
                         key = uuid,
                         payload = payload,
                         type = KafkaSendDispatcher.MessageType.PLAYER_CONNECT,
@@ -278,9 +278,6 @@ class PlayerConnectionListener(
     }
 
     companion object {
-        private const val TOPIC_CONNECT = "ogcloud.player.connect"
-        private const val TOPIC_DISCONNECT = "ogcloud.player.disconnect"
-        private const val TOPIC_SWITCH = "ogcloud.player.switch"
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
         private const val DEFAULT_PERMISSION_END_MILLIS = -1L
         private const val PROXY_FULL_MESSAGE = "&cThis proxy is full."

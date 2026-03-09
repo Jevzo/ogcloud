@@ -31,6 +31,7 @@ class GlobalExceptionHandler {
         GroupRestartTimeoutException::class,
         GroupAlreadyExistsException::class,
         PermissionGroupAlreadyExistsException::class,
+        PermissionReenableSyncInProgressException::class,
         WebUserAlreadyExistsException::class,
         DuplicateKeyException::class,
     )

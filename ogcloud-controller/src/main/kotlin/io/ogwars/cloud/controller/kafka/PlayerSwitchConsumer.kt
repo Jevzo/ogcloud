@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.PlayerSwitchEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class PlayerSwitchConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.PLAYER_SWITCH], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.PLAYER_SWITCH], groupId = "ogcloud-controller")
     fun onPlayerSwitch(message: String) {
         try {
             val event = objectMapper.readValue(message, PlayerSwitchEvent::class.java)

@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.listener
-
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
 import io.ogwars.cloud.api.model.ServerState
@@ -20,7 +20,7 @@ class LifecycleConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-paper-lifecycle-$serverId",
-            topic = TOPIC,
+            topic = KafkaTopics.SERVER_LIFECYCLE,
             threadName = "ogcloud-paper-lifecycle-consumer",
             clientIdSuffix = "lifecycle",
             autoOffsetReset = "latest",
@@ -61,6 +61,5 @@ class LifecycleConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.server.lifecycle"
     }
 }

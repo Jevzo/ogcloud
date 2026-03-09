@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.ServerRequestEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.ServerLifecycleService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class ServerRequestConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.SERVER_REQUEST], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.SERVER_REQUEST], groupId = "ogcloud-controller")
     fun onServerRequest(message: String) {
         val event = objectMapper.readValue(message, ServerRequestEvent::class.java)
 

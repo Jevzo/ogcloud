@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
@@ -15,6 +15,6 @@ class LifecycleEventProducer(
     fun publishStateChange(event: ServerLifecycleEvent) {
         log.info("Publishing lifecycle event: serverId={}, state={}", event.serverId, event.state)
 
-        kafkaTemplate.send(KafkaConfig.SERVER_LIFECYCLE, event.serverId, event)
+        kafkaTemplate.send(KafkaTopics.SERVER_LIFECYCLE, event.serverId, event)
     }
 }

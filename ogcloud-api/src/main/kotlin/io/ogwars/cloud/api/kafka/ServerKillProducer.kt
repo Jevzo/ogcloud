@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.ServerKillEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
@@ -19,7 +19,7 @@ class ServerKillProducer(
         log.info("Publishing server kill: serverId={}, reason={}", serverId, reason)
 
         kafkaTemplate.send(
-            KafkaConfig.SERVER_KILL,
+            KafkaTopics.SERVER_KILL,
             serverId,
             ServerKillEvent(
                 serverId = serverId,

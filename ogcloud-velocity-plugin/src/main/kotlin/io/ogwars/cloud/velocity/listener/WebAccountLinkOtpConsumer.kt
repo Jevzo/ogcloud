@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.WebAccountLinkOtpEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import com.google.gson.Gson
@@ -19,7 +19,7 @@ class WebAccountLinkOtpConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-web-link-otp-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.WEB_ACCOUNT_LINK_OTP,
             threadName = "ogcloud-velocity-web-link-otp-consumer",
             logger = logger,
             consumerLabel = "web account link OTP",
@@ -57,6 +57,5 @@ class WebAccountLinkOtpConsumer(
             }.getOrNull()
 
     companion object {
-        private const val TOPIC = "ogcloud.web.account.link.otp"
     }
 }

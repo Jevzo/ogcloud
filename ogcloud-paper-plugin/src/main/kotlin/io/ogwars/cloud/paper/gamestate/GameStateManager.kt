@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.gamestate
-
 import io.ogwars.cloud.api.event.GameStateUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GameState
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import com.google.gson.Gson
@@ -34,7 +34,7 @@ class GameStateManager(
             Runnable {
                 kafkaSendDispatcher.dispatch(
                     KafkaSendDispatcher.Message(
-                        topic = TOPIC,
+                        topic = KafkaTopics.SERVER_GAMESTATE,
                         key = serverId,
                         payload = gson.toJson(updateEvent),
                         type = KafkaSendDispatcher.MessageType.GAME_STATE_UPDATE,
@@ -47,6 +47,5 @@ class GameStateManager(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.server.gamestate"
     }
 }

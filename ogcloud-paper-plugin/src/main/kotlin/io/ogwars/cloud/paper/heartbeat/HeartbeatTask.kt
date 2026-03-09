@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.heartbeat
-
 import io.ogwars.cloud.api.event.ServerHeartbeatEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.paper.OgCloudPaperPlugin
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import com.google.gson.Gson
@@ -32,7 +32,7 @@ class HeartbeatTask(
             Runnable {
                 kafkaSendDispatcher.dispatch(
                     KafkaSendDispatcher.Message(
-                        topic = TOPIC,
+                        topic = KafkaTopics.SERVER_HEARTBEAT,
                         key = plugin.serverId,
                         payload = gson.toJson(heartbeatEvent),
                         type = KafkaSendDispatcher.MessageType.SERVER_HEARTBEAT,
@@ -64,7 +64,6 @@ class HeartbeatTask(
 
     companion object {
         private const val HEARTBEAT_INTERVAL_TICKS = 100L
-        private const val TOPIC = "ogcloud.server.heartbeat"
         private const val BYTES_PER_MB = 1024L * 1024L
         private const val MAX_TPS = 20.0
         private const val NO_TASK_ID = -1

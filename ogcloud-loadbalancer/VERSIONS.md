@@ -62,5 +62,3 @@ Source: [PrismarineJS/minecraft-data](https://github.com/PrismarineJS/minecraft-
 | 1.9.2             | 109              |
 | 1.9               | 107              |
 | 1.8               | 47               |
-| 1.7.6             | 5                |
-| 1.7.2             | 4                |

@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.PermissionGroupDocument
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
@@ -22,7 +22,7 @@ class PermissionUpdateProducer(
         log.info("Publishing permission update: uuid={}, groupId={}", uuid, group.id)
 
         kafkaTemplate.send(
-            KafkaConfig.PERMISSION_UPDATE,
+            KafkaTopics.PERMISSION_UPDATE,
             uuid,
             PermissionUpdateEvent(
                 uuid = uuid,

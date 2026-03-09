@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.PermissionExpiryEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class PermissionExpiryConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.PERMISSION_EXPIRY], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.PERMISSION_EXPIRY], groupId = "ogcloud-controller")
     fun onPermissionExpiry(message: String) {
         try {
             val event = objectMapper.readValue(message, PermissionExpiryEvent::class.java)

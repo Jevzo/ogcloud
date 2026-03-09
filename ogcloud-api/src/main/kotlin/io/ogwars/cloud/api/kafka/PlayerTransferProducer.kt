@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.PlayerTransferEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
@@ -20,7 +20,7 @@ class PlayerTransferProducer(
         log.info("Publishing player transfer: uuid={}, target={}", uuid, target)
 
         kafkaTemplate.send(
-            KafkaConfig.PLAYER_TRANSFER,
+            KafkaTopics.PLAYER_TRANSFER,
             uuid,
             PlayerTransferEvent(
                 playerUuid = uuid,

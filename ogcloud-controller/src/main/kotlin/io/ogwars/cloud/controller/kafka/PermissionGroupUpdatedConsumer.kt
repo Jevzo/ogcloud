@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.PermissionGroupUpdatedEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class PermissionGroupUpdatedConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.PERMISSION_GROUP_UPDATED], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.PERMISSION_GROUP_UPDATED], groupId = "ogcloud-controller")
     fun onPermissionGroupUpdated(message: String) {
         try {
             val event = objectMapper.readValue(message, PermissionGroupUpdatedEvent::class.java)

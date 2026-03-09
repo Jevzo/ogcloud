@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
 import io.ogwars.cloud.api.model.ServerState
@@ -25,7 +25,7 @@ class LifecycleConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-lifecycle-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.SERVER_LIFECYCLE,
             threadName = "ogcloud-lifecycle-consumer",
             logger = logger,
             consumerLabel = "lifecycle",
@@ -93,7 +93,6 @@ class LifecycleConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.server.lifecycle"
         private val NOTIFY_STATES =
             setOf(
                 ServerState.REQUESTED,

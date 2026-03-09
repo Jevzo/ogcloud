@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.CommandExecuteEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
@@ -18,7 +18,7 @@ class CommandExecuteConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-command-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.COMMAND_EXECUTE,
             threadName = "ogcloud-velocity-command-consumer",
             logger = logger,
             consumerLabel = "command execute",
@@ -55,7 +55,6 @@ class CommandExecuteConsumer(
         }
 
     companion object {
-        private const val TOPIC = "ogcloud.command.execute"
         private const val TARGET_SERVER = "server"
         private const val TARGET_GROUP = "group"
         private const val TARGET_ALL = "all"

@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.listener
-
 import io.ogwars.cloud.api.event.CommandExecuteEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import com.google.gson.Gson
 import org.bukkit.Bukkit
@@ -19,7 +19,7 @@ class CommandExecuteConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-paper-command-$serverId",
-            topic = TOPIC,
+            topic = KafkaTopics.COMMAND_EXECUTE,
             threadName = "ogcloud-paper-command-consumer",
             clientIdSuffix = "command-consumer",
             autoOffsetReset = "latest",
@@ -63,7 +63,6 @@ class CommandExecuteConsumer(
         }
 
     companion object {
-        private const val TOPIC = "ogcloud.command.execute"
         private const val TARGET_SERVER = "server"
         private const val TARGET_GROUP = "group"
         private const val TARGET_ALL = "all"

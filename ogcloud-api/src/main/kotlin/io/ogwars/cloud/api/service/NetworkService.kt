@@ -4,13 +4,16 @@ import io.ogwars.cloud.api.dto.NetworkSettingsResponse
 import io.ogwars.cloud.api.dto.NetworkStatusResponse
 import io.ogwars.cloud.api.dto.UpdateNetworkRequest
 import io.ogwars.cloud.api.dto.toResponse
+import io.ogwars.cloud.api.exception.PermissionReenableSyncInProgressException
 import io.ogwars.cloud.api.kafka.NetworkUpdateProducer
 import io.ogwars.cloud.api.model.GeneralSettings
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
+import io.ogwars.cloud.api.redis.RedisKeys
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
 
 @Service
@@ -18,6 +21,7 @@ class NetworkService(
     private val mongoTemplate: MongoTemplate,
     private val networkUpdateProducer: NetworkUpdateProducer,
     private val serverRedisRepository: ServerRedisRepository,
+    private val redisTemplate: StringRedisTemplate,
     private val auditLogService: AuditLogService,
 ) {
     fun getSettings(): NetworkSettingsResponse = findOrDefault().toResponse()
@@ -28,6 +32,9 @@ class NetworkService(
 
     fun updateSettings(request: UpdateNetworkRequest): NetworkSettingsResponse {
         val current = findOrDefault()
+        if (isPermissionSystemToggleRequested(request, current) && isPermissionReenableSyncLockActive()) {
+            throw PermissionReenableSyncInProgressException()
+        }
 
         val updatedMotd =
             request.motd?.let { req ->
@@ -131,6 +138,17 @@ class NetworkService(
     private fun findOrDefault(): NetworkSettingsDocument =
         mongoTemplate.findById<NetworkSettingsDocument>("global", COLLECTION)
             ?: NetworkSettingsDocument()
+
+    private fun isPermissionSystemToggleRequested(
+        request: UpdateNetworkRequest,
+        current: NetworkSettingsDocument,
+    ): Boolean {
+        val requestedPermissionState = request.general?.permissionSystemEnabled ?: return false
+        return requestedPermissionState != current.general.permissionSystemEnabled
+    }
+
+    private fun isPermissionReenableSyncLockActive(): Boolean =
+        redisTemplate.hasKey(RedisKeys.PERMISSION_REENABLE_SYNC_LOCK_KEY) == true
 
     companion object {
         private const val COLLECTION = "network_settings"

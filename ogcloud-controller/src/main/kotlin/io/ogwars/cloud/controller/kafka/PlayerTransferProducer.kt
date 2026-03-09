@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.PlayerTransferEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
@@ -21,6 +21,6 @@ class PlayerTransferProducer(
         )
 
         val key = event.serverId ?: event.playerUuid ?: "unknown"
-        kafkaTemplate.send(KafkaConfig.PLAYER_TRANSFER, key, event)
+        kafkaTemplate.send(KafkaTopics.PLAYER_TRANSFER, key, event)
     }
 }

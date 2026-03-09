@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.listener
-
 import io.ogwars.cloud.api.event.NetworkUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import com.google.gson.Gson
@@ -18,7 +18,7 @@ class NetworkUpdateConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-paper-network-$serverId",
-            topic = TOPIC,
+            topic = KafkaTopics.NETWORK_UPDATE,
             threadName = "ogcloud-paper-network-consumer",
             clientIdSuffix = "network",
             autoOffsetReset = "earliest",
@@ -61,6 +61,5 @@ class NetworkUpdateConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.network.update"
     }
 }

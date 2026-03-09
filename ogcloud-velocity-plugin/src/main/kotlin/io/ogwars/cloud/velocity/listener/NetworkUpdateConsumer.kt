@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.NetworkUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.TablistSettings
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
@@ -30,7 +30,7 @@ class NetworkUpdateConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-network-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.NETWORK_UPDATE,
             threadName = "ogcloud-network-update-consumer",
             logger = logger,
             consumerLabel = "network update",
@@ -144,7 +144,6 @@ class NetworkUpdateConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.network.update"
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
         private const val DEFAULT_PERMISSION_END_MILLIS = -1L
     }

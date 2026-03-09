@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.heartbeat
-
 import io.ogwars.cloud.api.event.ProxyHeartbeatEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
@@ -46,7 +46,7 @@ class ProxyHeartbeatTask(
         try {
             kafkaSendDispatcher.dispatch(
                 KafkaSendDispatcher.Message(
-                    topic = TOPIC,
+                    topic = KafkaTopics.PROXY_HEARTBEAT,
                     key = proxyId,
                     payload = gson.toJson(createHeartbeatEvent()),
                     type = KafkaSendDispatcher.MessageType.PROXY_HEARTBEAT,
@@ -71,7 +71,6 @@ class ProxyHeartbeatTask(
 
     companion object {
         private const val HEARTBEAT_INTERVAL_SECONDS = 10L
-        private const val TOPIC = "ogcloud.proxy.heartbeat"
         private const val BYTES_PER_MB = 1024L * 1024L
     }
 }

@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.TemplatePushEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
@@ -16,7 +16,7 @@ class TemplatePushProducer(
         log.info("Publishing template push request: serverId={}", serverId)
 
         kafkaTemplate.send(
-            KafkaConfig.SERVER_TEMPLATE_PUSH,
+            KafkaTopics.SERVER_TEMPLATE_PUSH,
             serverId,
             TemplatePushEvent(
                 serverId = serverId,

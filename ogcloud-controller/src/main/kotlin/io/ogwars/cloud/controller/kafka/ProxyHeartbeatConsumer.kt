@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.ProxyHeartbeatEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.ServerLifecycleService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.kafka.annotation.KafkaListener
@@ -12,7 +12,7 @@ class ProxyHeartbeatConsumer(
     private val serverLifecycleService: ServerLifecycleService,
     private val objectMapper: ObjectMapper,
 ) {
-    @KafkaListener(topics = [KafkaConfig.PROXY_HEARTBEAT], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.PROXY_HEARTBEAT], groupId = "ogcloud-controller")
     fun onProxyHeartbeat(message: String) {
         val event = objectMapper.readValue(message, ProxyHeartbeatEvent::class.java)
         serverLifecycleService.handleProxyHeartbeat(event)

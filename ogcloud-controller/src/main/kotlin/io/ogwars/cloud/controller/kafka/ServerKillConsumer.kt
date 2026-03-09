@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.ServerKillEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.ServerLifecycleService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class ServerKillConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.SERVER_KILL], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.SERVER_KILL], groupId = "ogcloud-controller")
     fun onServerKill(message: String) {
         val event = objectMapper.readValue(message, ServerKillEvent::class.java)
 

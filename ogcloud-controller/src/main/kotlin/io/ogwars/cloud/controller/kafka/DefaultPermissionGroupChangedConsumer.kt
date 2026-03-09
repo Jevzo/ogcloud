@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
 import io.ogwars.cloud.api.event.DefaultPermissionGroupChangedEvent
-import io.ogwars.cloud.controller.config.KafkaConfig
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class DefaultPermissionGroupChangedConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaConfig.DEFAULT_PERMISSION_GROUP_CHANGED], groupId = "ogcloud-controller")
+    @KafkaListener(topics = [KafkaTopics.DEFAULT_PERMISSION_GROUP_CHANGED], groupId = "ogcloud-controller")
     fun onDefaultPermissionGroupChanged(message: String) {
         try {
             val event = objectMapper.readValue(message, DefaultPermissionGroupChangedEvent::class.java)

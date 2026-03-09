@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.permission
-
 import io.ogwars.cloud.api.event.PermissionExpiryEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.network.NetworkState
 import com.google.gson.Gson
@@ -57,7 +57,7 @@ class PermissionExpiryTask(
                 if (previousExpiry != cached.permissionEndMillis) {
                     kafkaSendDispatcher.dispatch(
                         KafkaSendDispatcher.Message(
-                            topic = TOPIC,
+                            topic = KafkaTopics.PERMISSION_EXPIRY,
                             key = uuid.toString(),
                             payload = gson.toJson(PermissionExpiryEvent(uuid = uuid.toString())),
                             type = KafkaSendDispatcher.MessageType.PERMISSION_EXPIRY,
@@ -75,7 +75,6 @@ class PermissionExpiryTask(
 
     companion object {
         private const val CHECK_INTERVAL_SECONDS = 60L
-        private const val TOPIC = "ogcloud.permission.expiry"
         private const val PERMANENT_PERMISSION_END = -1L
     }
 }

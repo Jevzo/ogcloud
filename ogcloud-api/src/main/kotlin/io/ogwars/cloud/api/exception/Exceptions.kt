@@ -68,3 +68,6 @@ class InvalidLinkOtpException : RuntimeException("Invalid or expired OTP")
 class PlayerLinkUnavailableException(
     message: String,
 ) : RuntimeException(message)
+
+class PermissionReenableSyncInProgressException :
+    RuntimeException("Permission system enable/disable is blocked while re-enable sync is in progress")

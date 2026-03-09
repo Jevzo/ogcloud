@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.listener
-
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
@@ -20,7 +20,7 @@ class PermissionUpdateConsumer(
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
             groupId = "ogcloud-velocity-permupdate-$proxyId",
-            topic = TOPIC,
+            topic = KafkaTopics.PERMISSION_UPDATE,
             threadName = "ogcloud-perm-update-consumer",
             logger = logger,
             consumerLabel = "permission update",
@@ -63,6 +63,5 @@ class PermissionUpdateConsumer(
     }
 
     companion object {
-        private const val TOPIC = "ogcloud.permission.update"
     }
 }

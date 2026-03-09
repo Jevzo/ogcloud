@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.config.KafkaConfig
 import io.ogwars.cloud.api.event.GroupUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupDocument
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
@@ -17,7 +17,7 @@ class GroupUpdateProducer(
         log.info("Publishing group update: groupId={}, maintenance={}", group.id, group.maintenance)
 
         kafkaTemplate.send(
-            KafkaConfig.GROUP_UPDATE,
+            KafkaTopics.GROUP_UPDATE,
             group.id,
             GroupUpdateEvent(
                 groupId = group.id,
