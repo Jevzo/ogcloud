@@ -1,6 +1,6 @@
-import { StrictMode, type ReactElement } from "react";
-import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, type RouteObject } from "react-router";
+import {type ReactElement, StrictMode} from "react";
+import {createRoot} from "react-dom/client";
+import {createBrowserRouter, type RouteObject, RouterProvider} from "react-router";
 
 import "@/index.css";
 
@@ -26,64 +26,64 @@ import TemplatesPage from "@/pages/TemplatesPage";
 import WebUsersPage from "@/pages/WebUsersPage";
 
 const withAdminAccess = (element: ReactElement) => (
-  <RequireAdminAccess>{element}</RequireAdminAccess>
+    <RequireAdminAccess>{element}</RequireAdminAccess>
 );
 
 const dashboardRoutes: RouteObject[] = [
-  { index: true, element: <DashboardHome /> },
-  { path: "servers", element: <ServersPage /> },
-  { path: "servers/:serverId", element: <ServerDetailsPage /> },
-  { path: "groups", element: <GroupsPage /> },
-  { path: "groups/:groupName", element: <GroupDetailsPage /> },
-  { path: "players", element: <PlayersPage /> },
-  { path: "inbox", element: withAdminAccess(<InboxPage />) },
-  { path: "network", element: <NetworkPage /> },
-  { path: "permissions", element: withAdminAccess(<PermissionsPage />) },
-  {
-    path: "permissions/:groupName",
-    element: withAdminAccess(<PermissionGroupDetailsPage />),
-  },
-  { path: "templates", element: <TemplatesPage /> },
-  { path: "web-users", element: withAdminAccess(<WebUsersPage />) },
-  { path: "settings", element: <SettingsPage /> },
+    {index: true, element: <DashboardHome/>},
+    {path: "servers", element: <ServersPage/>},
+    {path: "servers/:serverId", element: <ServerDetailsPage/>},
+    {path: "groups", element: <GroupsPage/>},
+    {path: "groups/:groupName", element: <GroupDetailsPage/>},
+    {path: "players", element: <PlayersPage/>},
+    {path: "inbox", element: withAdminAccess(<InboxPage/>)},
+    {path: "network", element: <NetworkPage/>},
+    {path: "permissions", element: withAdminAccess(<PermissionsPage/>)},
+    {
+        path: "permissions/:groupName",
+        element: withAdminAccess(<PermissionGroupDetailsPage/>),
+    },
+    {path: "templates", element: <TemplatesPage/>},
+    {path: "web-users", element: withAdminAccess(<WebUsersPage/>)},
+    {path: "settings", element: <SettingsPage/>},
 ];
 
 const appRoutes: RouteObject[] = [
-  {
-    element: <AppShell />,
-    errorElement: <NotFound />,
-    children: [
-      {
-        path: "/login",
-        element: (
-          <GuestOnlyRoute>
-            <LoginPage />
-          </GuestOnlyRoute>
-        ),
-      },
-      {
-        path: "/",
-        element: (
-          <RequireAuth>
-            <DashboardLayout />
-          </RequireAuth>
-        ),
-        children: dashboardRoutes,
-      },
-    ],
-  },
+    {
+        element: <AppShell/>,
+        errorElement: <NotFound/>,
+        children: [
+            {
+                path: "/login",
+                element: (
+                    <GuestOnlyRoute>
+                        <LoginPage/>
+                    </GuestOnlyRoute>
+                ),
+            },
+            {
+                path: "/",
+                element: (
+                    <RequireAuth>
+                        <DashboardLayout/>
+                    </RequireAuth>
+                ),
+                children: dashboardRoutes,
+            },
+        ],
+    },
 ];
 
 const rootElement = document.getElementById("root");
 
 if (!rootElement) {
-  throw new Error("Root element '#root' was not found.");
+    throw new Error("Root element '#root' was not found.");
 }
 
 const router = createBrowserRouter(appRoutes);
 
 createRoot(rootElement).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
+    <StrictMode>
+        <RouterProvider router={router}/>
+    </StrictMode>
 );

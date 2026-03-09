@@ -1,20 +1,20 @@
-import type { ReactNode } from "react";
-import { Navigate } from "react-router";
+import type {ReactNode} from "react";
+import {Navigate} from "react-router";
 
-import { useAuthStore } from "@/store/auth-store";
+import {useAuthStore} from "@/store/auth-store";
 
 interface GuestOnlyRouteProps {
-  children: ReactNode;
+    children: ReactNode;
 }
 
-const GuestOnlyRoute = ({ children }: GuestOnlyRouteProps) => {
-  const session = useAuthStore((state) => state.session);
+const GuestOnlyRoute = ({children}: GuestOnlyRouteProps) => {
+    const session = useAuthStore((state) => state.session);
 
-  if (session) {
-    return <Navigate to="/" replace />;
-  }
+    if (session) {
+        return <Navigate to="/" replace/>;
+    }
 
-  return children;
+    return children;
 };
 
 export default GuestOnlyRoute;
