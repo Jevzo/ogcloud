@@ -231,7 +231,7 @@ Docker build + push examples:
 ## :package: Publish `@ogcloud/setup`
 
 ```bash
-cd packages/create-ogcloud
+cd helper/ogcloud-setup-cli
 npm install
 npm run build
 npm version patch

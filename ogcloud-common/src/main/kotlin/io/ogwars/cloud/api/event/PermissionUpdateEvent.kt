@@ -10,6 +10,7 @@ data class PermissionUpdateEvent(
     val display: DisplayConfig,
     val weight: Int,
     val permissionEndMillis: Long,
+    val permissionVersion: Long = 0,
     val updatedBy: String,
     val timestamp: Long = System.currentTimeMillis(),
 )

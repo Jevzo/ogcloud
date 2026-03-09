@@ -8,6 +8,7 @@ import io.ogwars.cloud.controller.config.PermissionReenableSyncProperties
 import io.ogwars.cloud.controller.model.PermissionGroupDocument
 import io.ogwars.cloud.controller.model.PlayerDocument
 import io.ogwars.cloud.controller.redis.PlayerRedisRepository
+import io.ogwars.cloud.controller.redis.PlayerRedisRepository.SessionUpdateOutcome
 import io.ogwars.cloud.controller.repository.PlayerRepository
 import io.ogwars.cloud.controller.repository.WebUserRepository
 import org.slf4j.LoggerFactory
@@ -19,6 +20,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.LockSupport
 import kotlin.math.ceil
 
@@ -35,6 +37,11 @@ class PlayerTrackingService(
     private val permissionReenableSyncProperties: PermissionReenableSyncProperties,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+    private val permissionMissingSessionNoopCount = AtomicLong(0)
+    private val permissionVersionRejectedCount = AtomicLong(0)
+    private val permissionRetryExhaustedCount = AtomicLong(0)
+    private val switchMissingSessionNoopCount = AtomicLong(0)
+    private val switchRetryExhaustedCount = AtomicLong(0)
 
     fun handleConnect(event: PlayerConnectEvent) {
         if (!playerConnectRuntimeState.tryStartConnect(event.uuid, event.proxyId)) {
@@ -88,6 +95,7 @@ class PlayerTrackingService(
             event.proxyId,
             resolved.group,
             resolved.player.permission.endMillis,
+            resolved.player.permission.version,
         )
     }
 
@@ -97,7 +105,8 @@ class PlayerTrackingService(
     }
 
     fun handleSwitch(event: PlayerSwitchEvent) {
-        playerRedisRepository.updateServerId(event.uuid, event.serverId)
+        val outcome = playerRedisRepository.updateServerId(event.uuid, event.serverId)
+        handleSwitchRedisOutcome(event.uuid, event.serverId, outcome)
     }
 
     fun handlePermissionUpdate(event: PermissionUpdateEvent) {
@@ -105,17 +114,23 @@ class PlayerTrackingService(
             return
         }
 
-        val player = playerRepository.findById(event.uuid).orElse(null) ?: return
-        val defaultGroup = requireDefaultGroup()
-        val resolved = resolvePermissionAssignment(player, defaultGroup)
-
-        if (playerRedisRepository.isOnline(event.uuid)) {
+        val outcome =
             playerRedisRepository.updatePermissions(
-                event.uuid,
-                resolved.group,
-                resolved.player.permission.endMillis,
+                uuid = event.uuid,
+                groupId = event.groupId,
+                display = event.display,
+                weight = event.weight,
+                permissions = event.permissions,
+                permissionEndMillis = event.permissionEndMillis,
+                permissionVersion = event.permissionVersion,
             )
-        }
+        handlePermissionRedisOutcome(
+            uuid = event.uuid,
+            permissionVersion = event.permissionVersion,
+            updatedBy = event.updatedBy,
+            context = "permission-event",
+            outcome = outcome,
+        )
     }
 
     fun handlePermissionExpiry(event: PermissionExpiryEvent) {
@@ -126,18 +141,36 @@ class PlayerTrackingService(
         val defaultGroup = requireDefaultGroup()
 
         val player = playerRepository.findById(event.uuid).orElse(null) ?: return
+        val nextPermissionVersion = player.permission.version + 1
         val updated =
             player.copy(
-                permission = buildPermanentPermission(defaultGroup.id),
+                permission = buildPermanentPermission(defaultGroup.id, nextPermissionVersion),
             )
 
         playerRepository.save(updated)
 
-        if (playerRedisRepository.isOnline(event.uuid)) {
-            playerRedisRepository.updatePermissions(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS)
-        }
+        val redisUpdateOutcome =
+            playerRedisRepository.updatePermissions(
+                uuid = event.uuid,
+                group = defaultGroup,
+                permissionEndMillis = PERMANENT_PERMISSION_END_MILLIS,
+                permissionVersion = nextPermissionVersion,
+            )
+        handlePermissionRedisOutcome(
+            uuid = event.uuid,
+            permissionVersion = nextPermissionVersion,
+            updatedBy = PERMISSION_EXPIRY_UPDATED_BY,
+            context = "permission-expiry",
+            outcome = redisUpdateOutcome,
+        )
 
-        publishPermissionUpdate(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS, PERMISSION_EXPIRY_UPDATED_BY)
+        publishPermissionUpdate(
+            uuid = event.uuid,
+            group = defaultGroup,
+            permissionEndMillis = PERMANENT_PERMISSION_END_MILLIS,
+            permissionVersion = nextPermissionVersion,
+            updatedBy = PERMISSION_EXPIRY_UPDATED_BY,
+        )
     }
 
     fun handlePermissionGroupUpdated(event: PermissionGroupUpdatedEvent) {
@@ -201,7 +234,20 @@ class PlayerTrackingService(
                     }
 
                     val resolved = resolvePermissionAssignment(player, defaultGroup)
-                    playerRedisRepository.updatePermissions(uuid, resolved.group, resolved.player.permission.endMillis)
+                    val redisUpdateOutcome =
+                        playerRedisRepository.updatePermissions(
+                            uuid = uuid,
+                            group = resolved.group,
+                            permissionEndMillis = resolved.player.permission.endMillis,
+                            permissionVersion = resolved.player.permission.version,
+                        )
+                    handlePermissionRedisOutcome(
+                        uuid = uuid,
+                        permissionVersion = resolved.player.permission.version,
+                        updatedBy = NETWORK_FEATURE_UPDATED_BY,
+                        context = "permission-reenable-sync",
+                        outcome = redisUpdateOutcome,
+                    )
 
                     kafkaAttempts += 1
                     val kafkaFuture =
@@ -209,6 +255,7 @@ class PlayerTrackingService(
                             uuid = uuid,
                             group = resolved.group,
                             permissionEndMillis = resolved.player.permission.endMillis,
+                            permissionVersion = resolved.player.permission.version,
                             updatedBy = NETWORK_FEATURE_UPDATED_BY,
                             onFailure = { throwable ->
                                 kafkaFailures.incrementAndGet()
@@ -315,6 +362,90 @@ class PlayerTrackingService(
         }
     }
 
+    private fun handleSwitchRedisOutcome(
+        uuid: String,
+        serverId: String,
+        outcome: SessionUpdateOutcome,
+    ) {
+        when (outcome) {
+            SessionUpdateOutcome.UPDATED -> Unit
+            SessionUpdateOutcome.MISSING -> {
+                val totalMissing = switchMissingSessionNoopCount.incrementAndGet()
+                log.debug(
+                    "Switch Redis session update skipped for missing session: uuid={}, serverId={}, missingSessionCount={}",
+                    uuid,
+                    serverId,
+                    totalMissing,
+                )
+            }
+
+            SessionUpdateOutcome.VERSION_REJECTED -> {
+                log.warn(
+                    "Unexpected switch Redis session version rejection: uuid={}, serverId={}",
+                    uuid,
+                    serverId,
+                )
+            }
+
+            SessionUpdateOutcome.RETRY_EXHAUSTED -> {
+                val totalRetryExhausted = switchRetryExhaustedCount.incrementAndGet()
+                log.warn(
+                    "Switch Redis session update retry exhausted: uuid={}, serverId={}, retryExhaustedCount={}",
+                    uuid,
+                    serverId,
+                    totalRetryExhausted,
+                )
+            }
+        }
+    }
+
+    private fun handlePermissionRedisOutcome(
+        uuid: String,
+        permissionVersion: Long,
+        updatedBy: String,
+        context: String,
+        outcome: SessionUpdateOutcome,
+    ) {
+        when (outcome) {
+            SessionUpdateOutcome.UPDATED -> Unit
+            SessionUpdateOutcome.MISSING -> {
+                val totalMissing = permissionMissingSessionNoopCount.incrementAndGet()
+                log.debug(
+                    "Permission Redis session update skipped for missing session: context={}, uuid={}, permissionVersion={}, updatedBy={}, missingSessionCount={}",
+                    context,
+                    uuid,
+                    permissionVersion,
+                    updatedBy,
+                    totalMissing,
+                )
+            }
+
+            SessionUpdateOutcome.VERSION_REJECTED -> {
+                val totalRejected = permissionVersionRejectedCount.incrementAndGet()
+                log.debug(
+                    "Permission Redis session update rejected by stale version gate: context={}, uuid={}, permissionVersion={}, updatedBy={}, versionRejectedCount={}",
+                    context,
+                    uuid,
+                    permissionVersion,
+                    updatedBy,
+                    totalRejected,
+                )
+            }
+
+            SessionUpdateOutcome.RETRY_EXHAUSTED -> {
+                val totalRetryExhausted = permissionRetryExhaustedCount.incrementAndGet()
+                log.warn(
+                    "Permission Redis session update retry exhausted: context={}, uuid={}, permissionVersion={}, updatedBy={}, retryExhaustedCount={}",
+                    context,
+                    uuid,
+                    permissionVersion,
+                    updatedBy,
+                    totalRetryExhausted,
+                )
+            }
+        }
+    }
+
     fun warmupOnlinePlayerSessions() {
         val onlineUuids = playerRedisRepository.findOnlinePlayerUuids()
         if (onlineUuids.isEmpty()) {
@@ -358,6 +489,7 @@ class PlayerTrackingService(
                 proxyId = proxyId,
                 group = resolved.group,
                 permissionEndMillis = resolved.player.permission.endMillis,
+                permissionVersion = resolved.player.permission.version,
             )
             runtimeSession?.serverId?.let { playerRedisRepository.updateServerId(uuid, it) }
             warmed += 1
@@ -384,7 +516,10 @@ class PlayerTrackingService(
             return ResolvedPermissionAssignment(player = player, group = assignedGroup)
         }
 
-        val reassignedPlayer = player.copy(permission = buildPermanentPermission(defaultGroup.id))
+        val reassignedPlayer =
+            player.copy(
+                permission = buildPermanentPermission(defaultGroup.id, player.permission.version + 1),
+            )
         playerRepository.save(reassignedPlayer)
 
         return ResolvedPermissionAssignment(player = reassignedPlayer, group = defaultGroup)
@@ -394,6 +529,7 @@ class PlayerTrackingService(
         uuid: String,
         group: PermissionGroupDocument,
         permissionEndMillis: Long,
+        permissionVersion: Long,
         updatedBy: String,
         onFailure: ((Throwable) -> Unit)? = null,
     ): CompletableFuture<SendResult<String, PermissionUpdateEvent>> {
@@ -406,6 +542,7 @@ class PlayerTrackingService(
                 display = group.display,
                 weight = group.weight,
                 permissionEndMillis = permissionEndMillis,
+                permissionVersion = permissionVersion,
                 updatedBy = updatedBy,
             )
 
@@ -421,7 +558,10 @@ class PlayerTrackingService(
         return publishFuture
     }
 
-    private fun buildPermanentPermission(groupId: String): PermissionConfig = PermissionConfig(group = groupId)
+    private fun buildPermanentPermission(
+        groupId: String,
+        version: Long = INITIAL_PERMISSION_VERSION,
+    ): PermissionConfig = PermissionConfig(group = groupId, version = version)
 
     private fun isPermissionSystemEnabled(): Boolean = playerConnectRuntimeState.isPermissionSystemEnabled()
 
@@ -442,6 +582,7 @@ class PlayerTrackingService(
 
     companion object {
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
+        private const val INITIAL_PERMISSION_VERSION = 0L
         private const val PERMISSION_EXPIRY_UPDATED_BY = "expiry"
         private const val NETWORK_FEATURE_UPDATED_BY = "network-feature"
         private const val UNKNOWN_PROXY_ID = "unknown"

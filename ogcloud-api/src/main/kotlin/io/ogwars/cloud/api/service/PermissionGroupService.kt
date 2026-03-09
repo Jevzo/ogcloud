@@ -166,6 +166,7 @@ class PermissionGroupService(
 
         val players = playerRepository.findByPermissionGroup(name)
         for (player in players) {
+            val nextPermissionVersion = player.permission.version + 1
             playerRepository.save(
                 player.copy(
                     permission =
@@ -173,15 +174,17 @@ class PermissionGroupService(
                             group = defaultGroup.id,
                             length = PERMANENT_PERMISSION_LENGTH,
                             endMillis = PERMANENT_PERMISSION_END_MILLIS,
+                            version = nextPermissionVersion,
                         ),
                 ),
             )
 
             permissionUpdateProducer.publishPermissionUpdate(
-                player.id,
-                defaultGroup,
-                PERMANENT_PERMISSION_END_MILLIS,
-                SYSTEM_UPDATED_BY,
+                uuid = player.id,
+                group = defaultGroup,
+                permissionEndMillis = PERMANENT_PERMISSION_END_MILLIS,
+                permissionVersion = nextPermissionVersion,
+                updatedBy = SYSTEM_UPDATED_BY,
             )
         }
 
@@ -239,11 +242,19 @@ class PermissionGroupService(
             .findByPermissionGroup(groupId)
             .filter { it.id in onlineUuids }
             .forEach { player ->
+                val nextPermissionVersion = player.permission.version + 1
+                val updatedPlayer =
+                    player.copy(
+                        permission = player.permission.copy(version = nextPermissionVersion),
+                    )
+                playerRepository.save(updatedPlayer)
+
                 permissionUpdateProducer.publishPermissionUpdate(
-                    player.id,
-                    group,
-                    player.permission.endMillis,
-                    API_UPDATED_BY,
+                    uuid = updatedPlayer.id,
+                    group = group,
+                    permissionEndMillis = updatedPlayer.permission.endMillis,
+                    permissionVersion = nextPermissionVersion,
+                    updatedBy = API_UPDATED_BY,
                 )
             }
     }

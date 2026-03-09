@@ -130,6 +130,7 @@ class PlayerService(
             } else {
                 System.currentTimeMillis() + durationMillis
             }
+        val nextPermissionVersion = player.permission.version + 1
 
         val updated =
             player.copy(
@@ -138,11 +139,18 @@ class PlayerService(
                         group = request.group,
                         length = durationMillis,
                         endMillis = endMillis,
+                        version = nextPermissionVersion,
                     ),
             )
         playerRepository.save(updated)
 
-        permissionUpdateProducer.publishPermissionUpdate(uuid, group, endMillis, API_UPDATED_BY)
+        permissionUpdateProducer.publishPermissionUpdate(
+            uuid = uuid,
+            group = group,
+            permissionEndMillis = endMillis,
+            permissionVersion = nextPermissionVersion,
+            updatedBy = API_UPDATED_BY,
+        )
 
         return buildPlayerResponse(updated)
     }

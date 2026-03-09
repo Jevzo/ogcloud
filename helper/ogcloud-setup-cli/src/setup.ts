@@ -7,9 +7,13 @@ import * as path from "node:path";
 import * as https from "node:https";
 import * as readline from "node:readline";
 import * as nodeCrypto from "node:crypto";
-import {spawnSync, type SpawnSyncReturns} from "node:child_process";
+import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 
 type CliCommand = "generate-config" | "deploy" | "update" | "destroy";
+type BackingMode = "managed" | "external";
+type ComponentName = "dashboard" | "api" | "loadbalancer" | "controller";
+type ValuesFileKey = "infra" | "platform" | "dashboard";
+type JsonMap = Record<string, unknown>;
 
 type Choice<T = string> = {
     label: string;
@@ -47,21 +51,71 @@ type StateFile = {
     networks: Record<string, { namespace: string; configPath: string; updatedAt: string }>;
 };
 
-type AnyRecord = Record<string, any>;
-
-type ValuesPaths = {
-  config: string;
-  infra: string;
-  platform: string;
-  dashboard: string;
+type NetworkConnections = {
+    mongodbUri: string;
+    redisHost: string;
+    redisPort: string;
+    kafkaBrokers: string;
+    minioEndpoint: string;
+    apiUrl: string;
 };
 
-const COMMAND_DOCS: Record<string, string> = {
-  kubectl: "https://kubernetes.io/docs/tasks/tools/",
-  helm: "https://helm.sh/docs/intro/install/",
-  npm: "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
-  npx: "https://docs.npmjs.com/cli/v11/commands/npx",
-  node: "https://nodejs.org/en/download"
+type ImageTags = {
+    api: string;
+    controller: string;
+    loadbalancer: string;
+    dashboard: string;
+};
+
+type NetworkValues = Record<ValuesFileKey, JsonMap>;
+type NetworkFiles = Record<ValuesFileKey, string>;
+
+type NetworkConfig = {
+    schemaVersion: number;
+    network: string;
+    namespace: string;
+    backingMode: BackingMode;
+    ingressEnabled: boolean;
+    ingressClassName: string;
+    apiDomain: string;
+    dashboardDomain: string;
+    loadbalancerDomain: string;
+    imageTags: ImageTags;
+    apiEmail: string;
+    apiPassword: string;
+    jwtSecret: string;
+    corsAllowedOrigin: string;
+    minioAccessKey: string;
+    minioSecretKey: string;
+    connections: NetworkConnections;
+    apiBaseUrl: string;
+    values: NetworkValues;
+    files: NetworkFiles;
+    updatedAt: string;
+};
+
+type ExistingNetworkConfig = Partial<NetworkConfig> & {
+    imageTags?: Partial<ImageTags>;
+    connections?: Partial<NetworkConnections>;
+    values?: Partial<NetworkValues>;
+    files?: Partial<NetworkFiles>;
+};
+
+type ValuesPaths = {
+    config: string;
+    infra: string;
+    platform: string;
+    dashboard: string;
+};
+
+type RequiredCommand = "kubectl" | "helm" | "npm" | "npx" | "node";
+
+const COMMAND_DOCS: Record<RequiredCommand, string> = {
+    kubectl: "https://kubernetes.io/docs/tasks/tools/",
+    helm: "https://helm.sh/docs/intro/install/",
+    npm: "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+    npx: "https://docs.npmjs.com/cli/v11/commands/npx",
+    node: "https://nodejs.org/en/download",
 };
 
 const REPO_OWNER = "Jevzo";
@@ -73,7 +127,7 @@ const HELM_REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/${REPO
 const RELEASES = {
     infra: "ogcloud-infra",
     platform: "ogcloud-platform",
-    dashboard: "ogcloud-dashboard"
+    dashboard: "ogcloud-dashboard",
 };
 
 const COLORS = {
@@ -85,7 +139,7 @@ const COLORS = {
     yellow: "\u001b[33m",
     blue: "\u001b[34m",
     magenta: "\u001b[35m",
-    cyan: "\u001b[36m"
+    cyan: "\u001b[36m",
 };
 
 const STATE_ROOT = path.join(os.homedir(), ".ogcloud-setup");
@@ -98,13 +152,13 @@ const CACHE_META_FILE = path.join(HELM_CACHE_ROOT, "meta.json");
 const STATE_FILE = path.join(STATE_ROOT, "state.json");
 
 const BACKING_SERVICES = ["mongodb", "redis", "minio", "kafka"];
-const COMPONENTS = ["dashboard", "api", "loadbalancer", "controller"];
+const COMPONENTS: ComponentName[] = ["dashboard", "api", "loadbalancer", "controller"];
 const NETWORK_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const FIXED_IMAGE_REPOSITORIES = {
-  api: "ogwarsdev/api",
-  controller: "ogwarsdev/controller",
-  loadbalancer: "ogwarsdev/loadbalancer",
-  dashboard: "ogwarsdev/dashboard"
+    api: "ogwarsdev/api",
+    controller: "ogwarsdev/controller",
+    loadbalancer: "ogwarsdev/loadbalancer",
+    dashboard: "ogwarsdev/dashboard",
 };
 
 function color(text: string, ...codes: string[]): string {
@@ -145,69 +199,103 @@ function parseArgs(argv: string[]): ParsedArgs {
         command: null,
         network: null,
         component: null,
-        imageVersion: null
+        imageVersion: null,
+    };
+
+    const consumeOptionalValue = (index: number): string | null => {
+        const value = argv[index + 1];
+        if (!value || value.startsWith("-")) {
+            return null;
+        }
+        return value;
+    };
+
+    const setCommand = (command: CliCommand): void => {
+        if (parsed.command && parsed.command !== command) {
+            throw new Error(
+                `Multiple commands provided: "${parsed.command}" and "${command}". Use only one command.`,
+            );
+        }
+        parsed.command = command;
+    };
+
+    const setNetwork = (network: string | null): void => {
+        if (!network) {
+            return;
+        }
+        if (parsed.network && parsed.network !== network) {
+            throw new Error(`Conflicting network values: "${parsed.network}" and "${network}".`);
+        }
+        parsed.network = network;
     };
 
     for (let i = 0; i < argv.length; i += 1) {
         const arg = argv[i];
         const next = () => {
-            i += 1;
-            return argv[i];
+            const value = consumeOptionalValue(i);
+            if (value != null) {
+                i += 1;
+            }
+            return value;
         };
 
-        if (arg === "--help" || arg === "-h") {
-            parsed.help = true;
-            continue;
-        }
-        if (arg === "--interactive") {
-            parsed.interactive = true;
-            continue;
-        }
-        if (arg === "--refresh-helm") {
-            parsed.refreshHelm = true;
-            continue;
-        }
-        if (arg === "--without-backing") {
-            parsed.withoutBacking = true;
-            continue;
-        }
-        if (arg === "--context") {
-            parsed.context = next() ?? null;
-            continue;
-        }
-        if (arg === "--generate-config") {
-            parsed.command = "generate-config";
-            parsed.network = next() ?? null;
-            continue;
-        }
-        if (arg === "--deploy") {
-            parsed.command = "deploy";
-            parsed.network = next() ?? null;
-            continue;
-        }
-        if (arg === "--update") {
-            parsed.command = "update";
-            parsed.network = next() ?? null;
-            parsed.component = next() ?? null;
-            parsed.imageVersion = next() ?? null;
-            continue;
-        }
-        if (arg === "--destroy") {
-            parsed.command = "destroy";
-            parsed.network = next() ?? null;
-            continue;
-        }
+        switch (arg) {
+            case "--help":
+            case "-h":
+                parsed.help = true;
+                continue;
+            case "--interactive":
+                parsed.interactive = true;
+                continue;
+            case "--refresh-helm":
+                parsed.refreshHelm = true;
+                continue;
+            case "--without-backing":
+                parsed.withoutBacking = true;
+                continue;
+            case "--context":
+                parsed.context = next();
+                continue;
+            case "--generate-config":
+                setCommand("generate-config");
+                setNetwork(next());
+                continue;
+            case "--deploy":
+                setCommand("deploy");
+                setNetwork(next());
+                continue;
+            case "--update":
+                setCommand("update");
+                setNetwork(next());
+                parsed.component = next();
+                parsed.imageVersion = next();
+                continue;
+            case "--destroy":
+                setCommand("destroy");
+                setNetwork(next());
+                continue;
+            default:
+                if (arg.startsWith("-")) {
+                    throw new Error(`Unknown argument: ${arg}`);
+                }
 
-        if (arg.startsWith("-")) {
-            throw new Error(`Unknown argument: ${arg}`);
-        }
+                if (!parsed.network) {
+                    parsed.network = arg;
+                    continue;
+                }
 
-        if (!parsed.network) {
-            parsed.network = arg;
-            continue;
-        }
+                if (parsed.command === "update" && !parsed.component) {
+                    parsed.component = arg;
+                    continue;
+                }
 
-        throw new Error(`Unexpected positional argument: ${arg}`);
+                if (parsed.command === "update" && !parsed.imageVersion) {
+                    parsed.imageVersion = arg;
+                    continue;
+                }
+
+                throw new Error(`Unexpected positional argument: ${arg}`);
+        }
     }
 
     return parsed;
@@ -243,29 +331,40 @@ ${color("Flags", COLORS.bold)}
 }
 
 function resolveExecutable(command: string): string {
-  if (process.platform === "win32" && (command === "npm" || command === "npx")) {
-    return `${command}.cmd`;
-  }
-  return command;
+    if (process.platform === "win32" && (command === "npm" || command === "npx")) {
+        return `${command}.cmd`;
+    }
+    return command;
 }
 
-function runCommand(command: string, args: string[], options: RunCommandOptions = {}): SpawnSyncReturns<string> {
-  const executable = resolveExecutable(command);
-  const result = spawnSync(executable, args, {
-    encoding: "utf8",
-    stdio: options.stdio || "pipe",
-    cwd: options.cwd || process.cwd()
-  });
-
-  if (result.error) {
-    const runError = result.error as NodeJS.ErrnoException;
-    if (runError.code === "ENOENT") {
-      const docs = COMMAND_DOCS[command];
-      const docsSuffix = docs ? `\nInstall/docs: ${docs}` : "";
-      throw new Error(`Command not found: ${command}${docsSuffix}`);
+function getCommandDocs(command: string): string | undefined {
+    if (Object.prototype.hasOwnProperty.call(COMMAND_DOCS, command)) {
+        return COMMAND_DOCS[command as RequiredCommand];
     }
-    throw runError;
-  }
+    return undefined;
+}
+
+function runCommand(
+    command: string,
+    args: string[],
+    options: RunCommandOptions = {},
+): SpawnSyncReturns<string> {
+    const executable = resolveExecutable(command);
+    const result = spawnSync(executable, args, {
+        encoding: "utf8",
+        stdio: options.stdio || "pipe",
+        cwd: options.cwd || process.cwd(),
+    });
+
+    if (result.error) {
+        const runError = result.error as NodeJS.ErrnoException;
+        if (runError.code === "ENOENT") {
+            const docs = getCommandDocs(command);
+            const docsSuffix = docs ? `\nInstall/docs: ${docs}` : "";
+            throw new Error(`Command not found: ${command}${docsSuffix}`);
+        }
+        throw runError;
+    }
 
     if (!options.allowFailure && result.status !== 0) {
         const stderr = (result.stderr || "").trim();
@@ -278,14 +377,14 @@ function runCommand(command: string, args: string[], options: RunCommandOptions 
 }
 
 function commandExists(command: string, args: string[] = ["--help"]): boolean {
-  try {
-    const executable = resolveExecutable(command);
-    const result = spawnSync(executable, args, {
-      encoding: "utf8",
-      stdio: "pipe"
-    });
+    try {
+        const executable = resolveExecutable(command);
+        const result = spawnSync(executable, args, {
+            encoding: "utf8",
+            stdio: "pipe",
+        });
         return !(result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT");
-    } catch (_error) {
+    } catch {
         return false;
     }
 }
@@ -308,37 +407,89 @@ function sanitizeComponent(component: string | null | undefined): string {
     return component.trim().toLowerCase();
 }
 
+function isComponentName(component: string): component is ComponentName {
+    return COMPONENTS.includes(component as ComponentName);
+}
+
 function ensureDependencies(): void {
-    const required = [
-        {command: "kubectl", args: ["version", "--client=true"]},
-        {command: "helm", args: ["version"]},
-        {command: "npm", args: ["--version"]},
-        {command: "npx", args: ["--version"]}
+    const required: Array<{ command: RequiredCommand; args: string[] }> = [
+        { command: "kubectl", args: ["version", "--client=true"] },
+        { command: "helm", args: ["version"] },
+        { command: "npm", args: ["--version"] },
+        { command: "npx", args: ["--version"] },
+        { command: "node", args: ["--version"] },
     ];
 
-  const missing = required
-    .filter((entry) => !commandExists(entry.command, entry.args))
-    .map((entry) => entry.command);
+    const missing = required
+        .filter((entry) => !commandExists(entry.command, entry.args))
+        .map((entry) => entry.command);
 
-  if (missing.length > 0) {
-    const helpLines = missing
-      .map((name) => {
-        const docs = COMMAND_DOCS[name];
-        return docs ? `- ${name}: ${docs}` : `- ${name}`;
-      })
-      .join("\n");
-    throw new Error(`Missing required dependencies: ${missing.join(", ")}\n${helpLines}`);
-  }
+    if (missing.length > 0) {
+        const helpLines = missing
+            .map((name) => {
+                const docs = COMMAND_DOCS[name];
+                return docs ? `- ${name}: ${docs}` : `- ${name}`;
+            })
+            .join("\n");
+        throw new Error(`Missing required dependencies: ${missing.join(", ")}\n${helpLines}`);
+    }
+}
+
+let promptInterface: readline.Interface | null = null;
+let promptInputClosed = false;
+
+function getPromptInterface(): readline.Interface {
+    if (promptInputClosed) {
+        throw new Error("Standard input is closed. Interactive prompts cannot continue.");
+    }
+
+    if (!promptInterface) {
+        promptInterface = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
+        promptInterface.once("close", () => {
+            promptInterface = null;
+            promptInputClosed = true;
+        });
+    }
+
+    return promptInterface;
+}
+
+function closePromptInterface(): void {
+    if (promptInterface) {
+        promptInterface.close();
+        promptInterface = null;
+    }
 }
 
 function question(query: string): Promise<string> {
-    return new Promise<string>((resolve) => {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
+    return new Promise<string>((resolve, reject) => {
+        let rl: readline.Interface;
+        try {
+            rl = getPromptInterface();
+        } catch (error) {
+            reject(error);
+            return;
+        }
+
+        let settled = false;
+        const onClose = () => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            reject(new Error("Standard input closed before the prompt was answered."));
+        };
+
+        rl.once("close", onClose);
         rl.question(query, (answer) => {
-            rl.close();
+            if (settled) {
+                return;
+            }
+            settled = true;
+            rl.removeListener("close", onClose);
             resolve(answer);
         });
     });
@@ -367,7 +518,11 @@ async function askInput(message: string, options: AskInputOptions = {}): Promise
     }
 }
 
-async function askSelect<T>(message: string, choices: Array<Choice<T>>, defaultIndex = 0): Promise<T> {
+async function askSelect<T>(
+    message: string,
+    choices: Array<Choice<T>>,
+    defaultIndex = 0,
+): Promise<T> {
     if (!Array.isArray(choices) || choices.length === 0) {
         throw new Error("askSelect requires at least one choice.");
     }
@@ -377,7 +532,9 @@ async function askSelect<T>(message: string, choices: Array<Choice<T>>, defaultI
         const choice = choices[i];
         const label = `${i + 1}) ${choice.label}`;
         if (choice.description) {
-            console.log(`  ${color(label, COLORS.magenta)} ${color(`- ${choice.description}`, COLORS.dim)}`);
+            console.log(
+                `  ${color(label, COLORS.magenta)} ${color(`- ${choice.description}`, COLORS.dim)}`,
+            );
         } else {
             console.log(`  ${color(label, COLORS.magenta)}`);
         }
@@ -391,7 +548,7 @@ async function askSelect<T>(message: string, choices: Array<Choice<T>>, defaultI
                 return `Enter a number between 1 and ${choices.length}.`;
             }
             return true;
-        }
+        },
     });
     const index = Number.parseInt(value, 10) - 1;
     return choices[index].value;
@@ -401,10 +558,10 @@ async function askConfirm(message: string, defaultYes = true): Promise<boolean> 
     const value = await askSelect(
         message,
         [
-            {label: "Yes", value: true},
-            {label: "No", value: false}
+            { label: "Yes", value: true },
+            { label: "No", value: false },
         ],
-        defaultYes ? 0 : 1
+        defaultYes ? 0 : 1,
     );
     return Boolean(value);
 }
@@ -423,7 +580,7 @@ async function readJsonFile<T>(filePath: string, fallbackValue: T): Promise<T> {
 }
 
 async function saveJsonFile(filePath: string, value: unknown): Promise<void> {
-    await fs.mkdir(path.dirname(filePath), {recursive: true});
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
@@ -443,7 +600,7 @@ function yamlScalar(value: unknown): string {
         text.length === 0 ||
         /^\d+$/.test(text) ||
         ["null", "true", "false", "~"].includes(lower) ||
-        /[:#\[\]{},&*!?|>'"%@`-]/.test(text) ||
+        /[:#[\]{},&*!?|>'"%@`-]/.test(text) ||
         /\s/.test(text);
     return shouldQuote ? JSON.stringify(text) : text;
 }
@@ -500,14 +657,18 @@ function toYaml(value: unknown): string {
     return `${renderYamlLines(value, 0).join("\n")}\n`;
 }
 
-function setDeepValue(target: AnyRecord, pathParts: string[], value: unknown): void {
-    let current: AnyRecord = target;
+function setDeepValue(target: JsonMap, pathParts: string[], value: unknown): void {
+    let current: JsonMap = target;
     for (let i = 0; i < pathParts.length - 1; i += 1) {
         const key = pathParts[i];
-        if (!isObject(current[key])) {
-            current[key] = {};
+        const nextValue = current[key];
+        if (!isObject(nextValue)) {
+            const nested: JsonMap = {};
+            current[key] = nested;
+            current = nested;
+            continue;
         }
-        current = current[key];
+        current = nextValue;
     }
     current[pathParts[pathParts.length - 1]] = value;
 }
@@ -520,7 +681,11 @@ function encodeRepoPath(repoPath: string): string {
         .join("/");
 }
 
-function httpsGetBuffer(url: string, headers: Record<string, string> = {}): Promise<Buffer> {
+function httpsGetBuffer(
+    url: string,
+    headers: Record<string, string> = {},
+    redirectCount = 0,
+): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
         const request = https.get(
             url,
@@ -528,61 +693,88 @@ function httpsGetBuffer(url: string, headers: Record<string, string> = {}): Prom
                 headers: {
                     "User-Agent": "ogcloud-setup-cli",
                     Accept: "application/vnd.github+json",
-                    ...headers
-                }
+                    ...headers,
+                },
             },
             (response) => {
                 const statusCode = response.statusCode || 0;
 
                 if ([301, 302, 307, 308].includes(statusCode) && response.headers.location) {
+                    if (redirectCount >= 10) {
+                        response.resume();
+                        reject(new Error(`Too many redirects while requesting ${url}`));
+                        return;
+                    }
+
                     const redirectTarget = Array.isArray(response.headers.location)
                         ? response.headers.location[0]
                         : response.headers.location;
+                    const redirectUrl = new URL(redirectTarget, url).toString();
                     response.resume();
-                    resolve(httpsGetBuffer(redirectTarget, headers));
+                    resolve(httpsGetBuffer(redirectUrl, headers, redirectCount + 1));
                     return;
                 }
 
-                const chunks = [];
+                const chunks: Buffer[] = [];
                 response.on("data", (chunk) => chunks.push(chunk));
                 response.on("end", () => {
                     const body = Buffer.concat(chunks);
                     if (statusCode < 200 || statusCode >= 300) {
-                        reject(new Error(`HTTP ${statusCode} for ${url}: ${body.toString("utf8").slice(0, 240)}`));
+                        reject(
+                            new Error(
+                                `HTTP ${statusCode} for ${url}: ${body.toString("utf8").slice(0, 240)}`,
+                            ),
+                        );
                         return;
                     }
                     resolve(body);
                 });
-            }
+            },
         );
 
         request.on("error", (error) => reject(error));
     });
 }
 
-async function fetchJson(url: string): Promise<AnyRecord | AnyRecord[]> {
+async function fetchJson<T>(url: string): Promise<T> {
     const buffer = await httpsGetBuffer(url);
-    return JSON.parse(buffer.toString("utf8"));
+    return JSON.parse(buffer.toString("utf8")) as T;
 }
 
 async function downloadGithubDirectory(repoPath: string, localPath: string): Promise<void> {
-    await fs.mkdir(localPath, {recursive: true});
+    await fs.mkdir(localPath, { recursive: true });
     const apiUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodeRepoPath(repoPath)}?ref=${REPO_REF}`;
-    const entries = await fetchJson(apiUrl);
+    const entries = await fetchJson<unknown>(apiUrl);
 
     if (!Array.isArray(entries)) {
         throw new Error(`Unexpected GitHub API response while reading ${repoPath}.`);
     }
 
-    for (const entry of entries) {
-        const targetPath = path.join(localPath, entry.name);
-        if (entry.type === "dir") {
-            await downloadGithubDirectory(`${repoPath}/${entry.name}`, targetPath);
+    for (const entryRaw of entries) {
+        if (!isObject(entryRaw)) {
+            throw new Error(`Unexpected directory entry while reading ${repoPath}.`);
+        }
+
+        const entryName = typeof entryRaw.name === "string" ? entryRaw.name : "";
+        const entryType = typeof entryRaw.type === "string" ? entryRaw.type : "";
+        if (!entryName || !entryType) {
+            throw new Error(`Invalid directory entry while reading ${repoPath}.`);
+        }
+
+        const targetPath = path.join(localPath, entryName);
+        if (entryType === "dir") {
+            await downloadGithubDirectory(`${repoPath}/${entryName}`, targetPath);
             continue;
         }
-        if (entry.type === "file") {
-            const content = await httpsGetBuffer(entry.download_url, {
-                Accept: "application/octet-stream"
+
+        if (entryType === "file") {
+            const downloadUrl =
+                typeof entryRaw.download_url === "string" ? entryRaw.download_url : "";
+            if (!downloadUrl) {
+                throw new Error(`Missing download URL for ${repoPath}/${entryName}.`);
+            }
+            const content = await httpsGetBuffer(downloadUrl, {
+                Accept: "application/octet-stream",
             });
             await fs.writeFile(targetPath, content);
         }
@@ -593,7 +785,7 @@ function helmCacheIsReady(): boolean {
     const chartFiles = [
         path.join(HELM_CACHE_DIR, "ogcloud-infra", "Chart.yaml"),
         path.join(HELM_CACHE_DIR, "ogcloud-platform", "Chart.yaml"),
-        path.join(HELM_CACHE_DIR, "ogcloud-dashboard", "Chart.yaml")
+        path.join(HELM_CACHE_DIR, "ogcloud-dashboard", "Chart.yaml"),
     ];
     return chartFiles.every((filePath) => fsSync.existsSync(filePath));
 }
@@ -605,24 +797,26 @@ async function ensureHelmCache(refresh: boolean): Promise<string> {
     }
 
     info(`Downloading Helm files from ${HELM_REPO_URL}`);
-    await fs.rm(HELM_CACHE_ROOT, {recursive: true, force: true});
-    await fs.mkdir(HELM_CACHE_ROOT, {recursive: true});
+    await fs.rm(HELM_CACHE_ROOT, { recursive: true, force: true });
+    await fs.mkdir(HELM_CACHE_ROOT, { recursive: true });
     await downloadGithubDirectory(REMOTE_HELM_PATH, HELM_CACHE_DIR);
     await saveJsonFile(CACHE_META_FILE, {
         source: HELM_REPO_URL,
-        downloadedAt: new Date().toISOString()
+        downloadedAt: new Date().toISOString(),
     });
     ok(`Helm files downloaded to ${HELM_CACHE_DIR}`);
     return HELM_CACHE_DIR;
 }
 
 function getCurrentContext(): string {
-    const result = runCommand("kubectl", ["config", "current-context"], {allowFailure: true});
+    const result = runCommand("kubectl", ["config", "current-context"], { allowFailure: true });
     return (result.stdout || "").trim();
 }
 
 function getContexts(): string[] {
-    const result = runCommand("kubectl", ["config", "get-contexts", "-o", "name"], {allowFailure: true});
+    const result = runCommand("kubectl", ["config", "get-contexts", "-o", "name"], {
+        allowFailure: true,
+    });
     if (result.status !== 0) {
         return [];
     }
@@ -635,13 +829,15 @@ function getContexts(): string[] {
 async function ensureClusterContext(requestedContext?: string | null): Promise<string> {
     if (requestedContext) {
         info(`Switching context to ${requestedContext}`);
-        runCommand("kubectl", ["config", "use-context", requestedContext], {stdio: "inherit"});
+        runCommand("kubectl", ["config", "use-context", requestedContext], { stdio: "inherit" });
     }
 
     if (!process.stdin.isTTY) {
         const context = getCurrentContext();
         if (!context) {
-            throw new Error("No active kubectl context and no TTY available for interactive selection.");
+            throw new Error(
+                "No active kubectl context and no TTY available for interactive selection.",
+            );
         }
         warn(`Non-interactive terminal detected. Using context: ${context}`);
         return context;
@@ -653,7 +849,7 @@ async function ensureClusterContext(requestedContext?: string | null): Promise<s
             throw new Error("No active kubectl context found. Configure kubeconfig and try again.");
         }
 
-        const infoResult = runCommand("kubectl", ["cluster-info"], {allowFailure: true});
+        const infoResult = runCommand("kubectl", ["cluster-info"], { allowFailure: true });
         console.log(color(`\nCurrent context: ${current}`, COLORS.bold, COLORS.blue));
         if (infoResult.status === 0) {
             console.log(color((infoResult.stdout || "").trim(), COLORS.dim));
@@ -680,22 +876,22 @@ async function ensureClusterContext(requestedContext?: string | null): Promise<s
                 ...contexts.map((contextName) => ({
                     label: contextName,
                     value: contextName,
-                    description: "Use this context"
+                    description: "Use this context",
                 })),
                 {
                     label: "Exit",
                     value: "__exit__",
-                    description: "Abort this run"
-                }
+                    description: "Abort this run",
+                },
             ],
-            0
+            0,
         );
 
         if (selected === "__exit__") {
             throw new Error("Cancelled by user.");
         }
 
-        runCommand("kubectl", ["config", "use-context", selected], {stdio: "inherit"});
+        runCommand("kubectl", ["config", "use-context", selected], { stdio: "inherit" });
     }
 }
 
@@ -705,7 +901,7 @@ function valuesPaths(network: string): ValuesPaths {
         config: path.join(networkDir, "config.json"),
         infra: path.join(networkDir, "values.infra.yaml"),
         platform: path.join(networkDir, "values.platform.yaml"),
-        dashboard: path.join(networkDir, "values.dashboard.yaml")
+        dashboard: path.join(networkDir, "values.dashboard.yaml"),
     };
 }
 
@@ -713,7 +909,7 @@ async function loadState(): Promise<StateFile> {
     return readJsonFile(STATE_FILE, {
         lastNetwork: "",
         lastContext: "",
-        networks: {}
+        networks: {},
     });
 }
 
@@ -725,187 +921,209 @@ function randomSecret() {
     return nodeCrypto.randomBytes(20).toString("hex");
 }
 
-function defaultConnections(namespace: string): AnyRecord {
+function defaultConnections(namespace: string): NetworkConnections {
     return {
         mongodbUri: `mongodb://mongodb.${namespace}.svc.cluster.local:27017/ogcloud`,
         redisHost: `redis.${namespace}.svc.cluster.local`,
         redisPort: "6379",
         kafkaBrokers: `kafka.${namespace}.svc.cluster.local:9092`,
         minioEndpoint: `http://minio.${namespace}.svc.cluster.local:9000`,
-        apiUrl: `http://api.${namespace}.svc.cluster.local:8080`
+        apiUrl: `http://api.${namespace}.svc.cluster.local:8080`,
     };
 }
 
-async function generateConfig(networkArg: string | null | undefined, state: StateFile): Promise<void> {
+async function generateConfig(
+    networkArg: string | null | undefined,
+    state: StateFile,
+): Promise<void> {
     const fallbackNetwork = sanitizeNetworkName(networkArg || state.lastNetwork || "ogwars");
     let network = sanitizeNetworkName(networkArg);
     if (!network) {
         network = sanitizeNetworkName(
             await askInput("Network name", {
                 defaultValue: fallbackNetwork,
-                validator: (value) => validateNetworkName(value) || "Use lowercase letters, numbers and dashes only."
-            })
+                validator: (value) =>
+                    validateNetworkName(value) || "Use lowercase letters, numbers and dashes only.",
+            }),
         );
     }
     if (!validateNetworkName(network)) {
-        throw new Error(`Invalid network name "${network}". Use lowercase letters, numbers and dashes.`);
+        throw new Error(
+            `Invalid network name "${network}". Use lowercase letters, numbers and dashes.`,
+        );
     }
 
     const paths = valuesPaths(network);
-    const existing = await readJsonFile(paths.config, null);
+    const existing = await readJsonFile<ExistingNetworkConfig | null>(paths.config, null);
 
     const namespace = await askInput("Kubernetes namespace", {
         defaultValue: existing?.namespace || "ogcloud",
-        validator: (value) => validateNetworkName(value) || "Use lowercase letters, numbers and dashes only."
+        validator: (value) =>
+            validateNetworkName(value) || "Use lowercase letters, numbers and dashes only.",
     });
 
-    const backingMode = await askSelect(
+    const backingMode = await askSelect<BackingMode>(
         "Backing services mode",
         [
             {
                 label: "Managed in cluster",
                 value: "managed",
-                description: "Deploy MongoDB/Redis/Kafka/MinIO via Helm"
+                description: "Deploy MongoDB/Redis/Kafka/MinIO via Helm",
             },
             {
                 label: "External services",
                 value: "external",
-                description: "Skip infra chart and use existing backing services"
-            }
+                description: "Skip infra chart and use existing backing services",
+            },
         ],
-        existing?.backingMode === "external" ? 1 : 0
+        existing?.backingMode === "external" ? 1 : 0,
     );
 
-    const ingressEnabled = await askConfirm("Enable ingress for API and dashboard?", existing?.ingressEnabled || false);
+    const ingressEnabled = await askConfirm(
+        "Enable ingress for API and dashboard?",
+        existing?.ingressEnabled || false,
+    );
     const ingressClassName = ingressEnabled
         ? await askInput("Ingress class name", {
-            defaultValue: existing?.ingressClassName || "nginx"
-        })
+              defaultValue: existing?.ingressClassName || "nginx",
+          })
         : "";
 
     const apiDomain = ingressEnabled
         ? await askInput("API public domain", {
-            defaultValue: existing?.apiDomain || `api.${network}.local`
-        })
+              defaultValue: existing?.apiDomain || `api.${network}.local`,
+          })
         : "";
 
     const dashboardDomain = ingressEnabled
         ? await askInput("Dashboard public domain", {
-            defaultValue: existing?.dashboardDomain || `dashboard.${network}.local`
-        })
+              defaultValue: existing?.dashboardDomain || `dashboard.${network}.local`,
+          })
         : "";
 
     const lbDomain = await askInput("Load balancer domain", {
-        defaultValue: existing?.loadbalancerDomain || `mc.${network}.local`
+        defaultValue: existing?.loadbalancerDomain || `mc.${network}.local`,
     });
 
-    const requiredTagValidator = (value: string) => value.trim().length > 0 || "Image tag is required.";
+    const requiredTagValidator = (value: string) =>
+        value.trim().length > 0 || "Image tag is required.";
     const apiImageTag = await askInput("API image tag", {
         defaultValue: existing?.imageTags?.api || "",
-        validator: requiredTagValidator
+        validator: requiredTagValidator,
     });
     const controllerImageTag = await askInput("Controller image tag", {
         defaultValue: existing?.imageTags?.controller || "",
-        validator: requiredTagValidator
+        validator: requiredTagValidator,
     });
     const loadbalancerImageTag = await askInput("Loadbalancer image tag", {
         defaultValue: existing?.imageTags?.loadbalancer || "",
-        validator: requiredTagValidator
+        validator: requiredTagValidator,
     });
     const dashboardImageTag = await askInput("Dashboard image tag", {
         defaultValue: existing?.imageTags?.dashboard || "",
-        validator: requiredTagValidator
+        validator: requiredTagValidator,
     });
 
     const apiEmail = await askInput("Service API email", {
-        defaultValue: existing?.apiEmail || "service@ogcloud.local"
+        defaultValue: existing?.apiEmail || "service@ogcloud.local",
     });
     const apiPassword = await askInput("Service API password", {
-        defaultValue: existing?.apiPassword || randomSecret()
+        defaultValue: existing?.apiPassword || randomSecret(),
     });
     const jwtSecret = await askInput("JWT secret", {
-        defaultValue: existing?.jwtSecret || randomSecret()
+        defaultValue: existing?.jwtSecret || randomSecret(),
     });
     const corsAllowedOrigin = await askInput("Dashboard CORS origin", {
-        defaultValue: existing?.corsAllowedOrigin || "http://localhost:5173"
+        defaultValue: existing?.corsAllowedOrigin || "http://localhost:5173",
     });
     const minioAccessKey = await askInput("MinIO access key", {
-        defaultValue: existing?.minioAccessKey || "minioadmin"
+        defaultValue: existing?.minioAccessKey || "minioadmin",
     });
     const minioSecretKey = await askInput("MinIO secret key", {
-        defaultValue: existing?.minioSecretKey || "minioadmin123"
+        defaultValue: existing?.minioSecretKey || "minioadmin123",
     });
 
-    const connections = backingMode === "external"
-        ? {
-            mongodbUri: await askInput("MongoDB URI", {
-                defaultValue: existing?.connections?.mongodbUri || "mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud"
-            }),
-            redisHost: await askInput("Redis host", {
-                defaultValue: existing?.connections?.redisHost || "redis.ogcloud.svc.cluster.local"
-            }),
-            redisPort: await askInput("Redis port", {
-                defaultValue: existing?.connections?.redisPort || "6379"
-            }),
-            kafkaBrokers: await askInput("Kafka brokers", {
-                defaultValue: existing?.connections?.kafkaBrokers || "kafka.ogcloud.svc.cluster.local:9092"
-            }),
-            minioEndpoint: await askInput("MinIO endpoint", {
-                defaultValue: existing?.connections?.minioEndpoint || "http://minio.ogcloud.svc.cluster.local:9000"
-            }),
-            apiUrl: `http://api.${namespace}.svc.cluster.local:8080`
-        }
-        : defaultConnections(namespace);
+    const connections =
+        backingMode === "external"
+            ? {
+                  mongodbUri: await askInput("MongoDB URI", {
+                      defaultValue:
+                          existing?.connections?.mongodbUri ||
+                          "mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud",
+                  }),
+                  redisHost: await askInput("Redis host", {
+                      defaultValue:
+                          existing?.connections?.redisHost || "redis.ogcloud.svc.cluster.local",
+                  }),
+                  redisPort: await askInput("Redis port", {
+                      defaultValue: existing?.connections?.redisPort || "6379",
+                  }),
+                  kafkaBrokers: await askInput("Kafka brokers", {
+                      defaultValue:
+                          existing?.connections?.kafkaBrokers ||
+                          "kafka.ogcloud.svc.cluster.local:9092",
+                  }),
+                  minioEndpoint: await askInput("MinIO endpoint", {
+                      defaultValue:
+                          existing?.connections?.minioEndpoint ||
+                          "http://minio.ogcloud.svc.cluster.local:9000",
+                  }),
+                  apiUrl: `http://api.${namespace}.svc.cluster.local:8080`,
+              }
+            : defaultConnections(namespace);
 
     const apiBaseUrl = await askInput("Dashboard runtime API base URL", {
         defaultValue:
             existing?.apiBaseUrl ||
-            (ingressEnabled ? `https://${apiDomain}` : `http://api.${namespace}.svc.cluster.local:8080`)
+            (ingressEnabled
+                ? `https://${apiDomain}`
+                : `http://api.${namespace}.svc.cluster.local:8080`),
     });
 
-    const infraValues = backingMode === "managed"
-        ? {
-            namespace: {name: namespace},
-            minio: {
-                rootCredentials: {
-                    accessKey: minioAccessKey,
-                    secretKey: minioSecretKey
-                }
-            }
-        }
-        : {
-            namespace: {name: namespace},
-            mongodb: {enabled: false},
-            redis: {enabled: false},
-            minio: {enabled: false},
-            kafka: {enabled: false}
-        };
+    const infraValues: JsonMap =
+        backingMode === "managed"
+            ? {
+                  namespace: { name: namespace },
+                  minio: {
+                      rootCredentials: {
+                          accessKey: minioAccessKey,
+                          secretKey: minioSecretKey,
+                      },
+                  },
+              }
+            : {
+                  namespace: { name: namespace },
+                  mongodb: { enabled: false },
+                  redis: { enabled: false },
+                  minio: { enabled: false },
+                  kafka: { enabled: false },
+              };
 
-    const platformValues = {
-        namespace: {name: namespace},
+    const platformValues: JsonMap = {
+        namespace: { name: namespace },
         connections,
         api: {
             image: {
                 repository: FIXED_IMAGE_REPOSITORIES.api,
-                tag: apiImageTag
+                tag: apiImageTag,
             },
             ingress: {
                 enabled: ingressEnabled,
                 className: ingressEnabled ? ingressClassName : "",
-                domain: ingressEnabled ? apiDomain : `api.${network}.local`
+                domain: ingressEnabled ? apiDomain : `api.${network}.local`,
             },
             env: {
                 minioAccessKey,
                 minioSecretKey,
                 minioBucket: "ogcloud-templates",
                 jwtSecret,
-                corsAllowedOrigin
-            }
+                corsAllowedOrigin,
+            },
         },
         controller: {
             image: {
                 repository: FIXED_IMAGE_REPOSITORIES.controller,
-                tag: controllerImageTag
+                tag: controllerImageTag,
             },
             env: {
                 apiEmail,
@@ -915,48 +1133,48 @@ async function generateConfig(networkArg: string | null | undefined, state: Stat
                 podMinioAccessKey: minioAccessKey,
                 podMinioSecretKey: minioSecretKey,
                 podApiEmail: apiEmail,
-                podApiPassword: apiPassword
-            }
+                podApiPassword: apiPassword,
+            },
         },
         loadbalancer: {
             image: {
                 repository: FIXED_IMAGE_REPOSITORIES.loadbalancer,
-                tag: loadbalancerImageTag
+                tag: loadbalancerImageTag,
             },
             service: {
-                domain: lbDomain
+                domain: lbDomain,
             },
             env: {
                 apiEmail,
-                apiPassword
-            }
-        }
+                apiPassword,
+            },
+        },
     };
 
-    const dashboardValues = {
-        namespace: {name: namespace},
+    const dashboardValues: JsonMap = {
+        namespace: { name: namespace },
         dashboard: {
             image: {
                 repository: FIXED_IMAGE_REPOSITORIES.dashboard,
-                tag: dashboardImageTag
+                tag: dashboardImageTag,
             },
             ingress: {
                 enabled: ingressEnabled,
                 className: ingressEnabled ? ingressClassName : "",
-                domain: ingressEnabled ? dashboardDomain : `dashboard.${network}.local`
+                domain: ingressEnabled ? dashboardDomain : `dashboard.${network}.local`,
             },
             runtime: {
-                apiBaseUrl
-            }
-        }
+                apiBaseUrl,
+            },
+        },
     };
 
-    await fs.mkdir(path.dirname(paths.config), {recursive: true});
+    await fs.mkdir(path.dirname(paths.config), { recursive: true });
     await fs.writeFile(paths.infra, toYaml(infraValues), "utf8");
     await fs.writeFile(paths.platform, toYaml(platformValues), "utf8");
     await fs.writeFile(paths.dashboard, toYaml(dashboardValues), "utf8");
 
-    const networkConfig = {
+    const networkConfig: NetworkConfig = {
         schemaVersion: 1,
         network,
         namespace,
@@ -970,7 +1188,7 @@ async function generateConfig(networkArg: string | null | undefined, state: Stat
             api: apiImageTag,
             controller: controllerImageTag,
             loadbalancer: loadbalancerImageTag,
-            dashboard: dashboardImageTag
+            dashboard: dashboardImageTag,
         },
         apiEmail,
         apiPassword,
@@ -983,14 +1201,14 @@ async function generateConfig(networkArg: string | null | undefined, state: Stat
         values: {
             infra: infraValues,
             platform: platformValues,
-            dashboard: dashboardValues
+            dashboard: dashboardValues,
         },
         files: {
             infra: paths.infra,
             platform: paths.platform,
-            dashboard: paths.dashboard
+            dashboard: paths.dashboard,
         },
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
     };
 
     await saveJsonFile(paths.config, networkConfig);
@@ -999,7 +1217,7 @@ async function generateConfig(networkArg: string | null | undefined, state: Stat
     state.networks[network] = {
         namespace,
         configPath: paths.config,
-        updatedAt: networkConfig.updatedAt
+        updatedAt: networkConfig.updatedAt,
     };
     await saveState(state);
 
@@ -1009,19 +1227,21 @@ async function generateConfig(networkArg: string | null | undefined, state: Stat
     console.log(color(`  ${paths.dashboard}`, COLORS.dim));
 }
 
-function ensureNetworkConfigLoaded(network: string): Promise<AnyRecord | null> {
+function ensureNetworkConfigLoaded(network: string): Promise<NetworkConfig | null> {
     if (!network) {
         throw new Error("Network name is required.");
     }
-    return readJsonFile(valuesPaths(network).config, null);
+    return readJsonFile<NetworkConfig | null>(valuesPaths(network).config, null);
 }
 
 function ensureNamespaceDoesNotExist(namespace: string): void {
     const result = runCommand("kubectl", ["get", "namespace", namespace], {
-        allowFailure: true
+        allowFailure: true,
     });
     if (result.status === 0) {
-        throw new Error(`Namespace "${namespace}" already exists. Clean deploy is blocked by design.`);
+        throw new Error(
+            `Namespace "${namespace}" already exists. Clean deploy is blocked by design.`,
+        );
     }
 }
 
@@ -1030,7 +1250,7 @@ function helmUpgradeInstall(
     chartPath: string,
     namespace: string,
     valuesFilePath: string,
-    createNamespace: boolean
+    createNamespace: boolean,
 ): void {
     const args = [
         "upgrade",
@@ -1043,7 +1263,7 @@ function helmUpgradeInstall(
         valuesFilePath,
         "--wait",
         "--timeout",
-        "15m"
+        "15m",
     ];
 
     if (createNamespace) {
@@ -1051,7 +1271,7 @@ function helmUpgradeInstall(
     }
 
     info(`helm ${args.join(" ")}`);
-    runCommand("helm", args, {stdio: "inherit"});
+    runCommand("helm", args, { stdio: "inherit" });
 }
 
 async function waitForBackingServices(namespace: string, strict: boolean): Promise<void> {
@@ -1060,7 +1280,7 @@ async function waitForBackingServices(namespace: string, strict: boolean): Promi
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < timeoutMs) {
-        const pending = [];
+        const pending: string[] = [];
         for (const service of BACKING_SERVICES) {
             const result = runCommand(
                 "kubectl",
@@ -1071,9 +1291,9 @@ async function waitForBackingServices(namespace: string, strict: boolean): Promi
                     "-n",
                     namespace,
                     "-o",
-                    "jsonpath={.subsets[0].addresses[0].ip}"
+                    "jsonpath={.subsets[0].addresses[0].ip}",
                 ],
-                {allowFailure: true}
+                { allowFailure: true },
             );
 
             if (result.status !== 0 || !(result.stdout || "").trim()) {
@@ -1086,7 +1306,9 @@ async function waitForBackingServices(namespace: string, strict: boolean): Promi
             return;
         }
 
-        process.stdout.write(`${color("Waiting", COLORS.yellow)} backing services: ${pending.join(", ")}   \r`);
+        process.stdout.write(
+            `${color("Waiting", COLORS.yellow)} backing services: ${pending.join(", ")}   \r`,
+        );
         await sleep(5000);
     }
 
@@ -1101,7 +1323,7 @@ async function waitForBackingServices(namespace: string, strict: boolean): Promi
 function waitForDeployments(namespace: string, names: string[]): void {
     for (const deployment of names) {
         const exists = runCommand("kubectl", ["get", "deployment", deployment, "-n", namespace], {
-            allowFailure: true
+            allowFailure: true,
         });
         if (exists.status !== 0) {
             warn(`Deployment "${deployment}" not found. Skipping rollout wait.`);
@@ -1111,15 +1333,22 @@ function waitForDeployments(namespace: string, names: string[]): void {
         runCommand(
             "kubectl",
             ["rollout", "status", `deployment/${deployment}`, "-n", namespace, "--timeout=10m"],
-            {stdio: "inherit"}
+            { stdio: "inherit" },
         );
     }
 }
 
-async function deploy(network: string, withoutBacking: boolean, helmRoot: string, state: StateFile): Promise<void> {
+async function deploy(
+    network: string,
+    withoutBacking: boolean,
+    helmRoot: string,
+    state: StateFile,
+): Promise<void> {
     const config = await ensureNetworkConfigLoaded(network);
     if (!config) {
-        throw new Error(`No config found for network "${network}". Run --generate-config ${network} first.`);
+        throw new Error(
+            `No config found for network "${network}". Run --generate-config ${network} first.`,
+        );
     }
 
     const namespace = config.namespace;
@@ -1134,17 +1363,21 @@ async function deploy(network: string, withoutBacking: boolean, helmRoot: string
             path.join(helmRoot, "ogcloud-infra"),
             namespace,
             paths.infra,
-            true
+            true,
         );
 
         if (config.backingMode === "managed") {
+            // Helm --wait confirms release resources become ready. This adds endpoint-level
+            // validation before platform charts install, so managed backing can take longer overall.
             await waitForBackingServices(namespace, true);
         }
     } else {
         warn("Skipping infra deployment (--without-backing).");
         if (config.backingMode === "managed") {
-            warn("Config is set to managed backing mode. Waiting for existing backing services to be healthy.");
-            runCommand("kubectl", ["create", "namespace", namespace], {allowFailure: true});
+            warn(
+                "Config is set to managed backing mode. Waiting for existing backing services to be healthy.",
+            );
+            runCommand("kubectl", ["create", "namespace", namespace], { allowFailure: true });
             await waitForBackingServices(namespace, true);
         } else {
             info("External backing mode is configured. Skipping in-cluster backing health wait.");
@@ -1156,7 +1389,7 @@ async function deploy(network: string, withoutBacking: boolean, helmRoot: string
         path.join(helmRoot, "ogcloud-platform"),
         namespace,
         paths.platform,
-        true
+        true,
     );
 
     helmUpgradeInstall(
@@ -1164,7 +1397,7 @@ async function deploy(network: string, withoutBacking: boolean, helmRoot: string
         path.join(helmRoot, "ogcloud-dashboard"),
         namespace,
         paths.dashboard,
-        false
+        false,
     );
 
     waitForDeployments(namespace, ["api", "controller", "loadbalancer", "dashboard"]);
@@ -1173,7 +1406,7 @@ async function deploy(network: string, withoutBacking: boolean, helmRoot: string
     state.networks[network] = {
         namespace,
         configPath: paths.config,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
     };
     await saveState(state);
 
@@ -1185,10 +1418,10 @@ async function update(
     componentArg: string,
     imageVersion: string,
     helmRoot: string,
-    state: StateFile
+    state: StateFile,
 ): Promise<void> {
     const component = sanitizeComponent(componentArg);
-    if (!COMPONENTS.includes(component)) {
+    if (!isComponentName(component)) {
         throw new Error(`Invalid component "${componentArg}". Allowed: ${COMPONENTS.join(", ")}`);
     }
     if (!imageVersion) {
@@ -1197,7 +1430,9 @@ async function update(
 
     const config = await ensureNetworkConfigLoaded(network);
     if (!config) {
-        throw new Error(`No config found for network "${network}". Run --generate-config ${network} first.`);
+        throw new Error(
+            `No config found for network "${network}". Run --generate-config ${network} first.`,
+        );
     }
 
     const mapping = {
@@ -1207,7 +1442,7 @@ async function update(
             imageTagKey: "dashboard",
             chart: "ogcloud-dashboard",
             release: RELEASES.dashboard,
-            waitFor: ["dashboard"]
+            waitFor: ["dashboard"],
         },
         api: {
             valuesRoot: "platform",
@@ -1215,7 +1450,7 @@ async function update(
             imageTagKey: "api",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
-            waitFor: ["api"]
+            waitFor: ["api"],
         },
         loadbalancer: {
             valuesRoot: "platform",
@@ -1223,7 +1458,7 @@ async function update(
             imageTagKey: "loadbalancer",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
-            waitFor: ["loadbalancer"]
+            waitFor: ["loadbalancer"],
         },
         controller: {
             valuesRoot: "platform",
@@ -1231,16 +1466,25 @@ async function update(
             imageTagKey: "controller",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
-            waitFor: ["controller"]
+            waitFor: ["controller"],
+        },
+    } satisfies Record<
+        ComponentName,
+        {
+            valuesRoot: ValuesFileKey;
+            tagPath: string[];
+            imageTagKey: keyof ImageTags;
+            chart: "ogcloud-dashboard" | "ogcloud-platform";
+            release: string;
+            waitFor: string[];
         }
-    };
+    >;
 
-    const target = mapping[component as keyof typeof mapping];
+    const target = mapping[component];
     setDeepValue(config.values[target.valuesRoot], target.tagPath, imageVersion);
 
     const paths = valuesPaths(network);
     await fs.writeFile(paths[target.valuesRoot], toYaml(config.values[target.valuesRoot]), "utf8");
-    config.imageTags = config.imageTags || {};
     config.imageTags[target.imageTagKey] = imageVersion;
     config.updatedAt = new Date().toISOString();
     await saveJsonFile(paths.config, config);
@@ -1251,7 +1495,7 @@ async function update(
         path.join(helmRoot, target.chart),
         config.namespace,
         paths[target.valuesRoot],
-        false
+        false,
     );
     waitForDeployments(config.namespace, target.waitFor);
 
@@ -1259,7 +1503,7 @@ async function update(
     state.networks[network] = {
         namespace: config.namespace,
         configPath: paths.config,
-        updatedAt: config.updatedAt
+        updatedAt: config.updatedAt,
     };
     await saveState(state);
     ok(`Component "${component}" updated to image tag "${imageVersion}".`);
@@ -1267,13 +1511,15 @@ async function update(
 
 async function destroy(network: string, state: StateFile): Promise<void> {
     const config = await ensureNetworkConfigLoaded(network);
-    const namespace = config?.namespace || await askInput("Namespace to destroy", {
-        defaultValue: "ogcloud"
-    });
+    const namespace =
+        config?.namespace ||
+        (await askInput("Namespace to destroy", {
+            defaultValue: "ogcloud",
+        }));
 
     const confirmed = await askConfirm(
         `Destroy network "${network}" in namespace "${namespace}"? This will uninstall charts and delete the namespace.`,
-        false
+        false,
     );
     if (!confirmed) {
         warn("Destroy cancelled.");
@@ -1285,17 +1531,21 @@ async function destroy(network: string, state: StateFile): Promise<void> {
         info(`Uninstalling ${release}...`);
         runCommand("helm", ["uninstall", release, "-n", namespace], {
             allowFailure: true,
-            stdio: "inherit"
+            stdio: "inherit",
         });
     }
 
     info(`Deleting namespace ${namespace}...`);
-    runCommand("kubectl", ["delete", "namespace", namespace, "--ignore-not-found=true", "--wait=true"], {
-        allowFailure: true,
-        stdio: "inherit"
-    });
+    runCommand(
+        "kubectl",
+        ["delete", "namespace", namespace, "--ignore-not-found=true", "--wait=true"],
+        {
+            allowFailure: true,
+            stdio: "inherit",
+        },
+    );
 
-    await fs.rm(path.dirname(valuesPaths(network).config), {recursive: true, force: true});
+    await fs.rm(path.dirname(valuesPaths(network).config), { recursive: true, force: true });
     delete state.networks[network];
     if (state.lastNetwork === network) {
         state.lastNetwork = "";
@@ -1305,7 +1555,10 @@ async function destroy(network: string, state: StateFile): Promise<void> {
     ok(`Network "${network}" destroyed.`);
 }
 
-async function chooseCommandInteractively(parsed: ParsedArgs, state: StateFile): Promise<ParsedArgs> {
+async function chooseCommandInteractively(
+    parsed: ParsedArgs,
+    state: StateFile,
+): Promise<ParsedArgs> {
     if (!parsed.interactive && parsed.command) {
         return parsed;
     }
@@ -1313,13 +1566,17 @@ async function chooseCommandInteractively(parsed: ParsedArgs, state: StateFile):
     const command = await askSelect<CliCommand | "exit">(
         "Select an action",
         [
-            {label: "Generate config", value: "generate-config", description: "Create or update values YAML files"},
-            {label: "Deploy", value: "deploy", description: "Clean install of OgCloud charts"},
-            {label: "Update", value: "update", description: "Update one component image tag"},
-            {label: "Destroy", value: "destroy", description: "Uninstall and remove namespace"},
-            {label: "Exit", value: "exit", description: "Abort"}
+            {
+                label: "Generate config",
+                value: "generate-config",
+                description: "Create or update values YAML files",
+            },
+            { label: "Deploy", value: "deploy", description: "Clean install of OgCloud charts" },
+            { label: "Update", value: "update", description: "Update one component image tag" },
+            { label: "Destroy", value: "destroy", description: "Uninstall and remove namespace" },
+            { label: "Exit", value: "exit", description: "Abort" },
         ],
-        0
+        0,
     );
 
     if (command === "exit") {
@@ -1327,66 +1584,80 @@ async function chooseCommandInteractively(parsed: ParsedArgs, state: StateFile):
     }
     const selectedCommand = command as CliCommand;
 
-    const network = sanitizeNetworkName(await askInput("Network name", {
-        defaultValue: sanitizeNetworkName(parsed.network || state.lastNetwork || "ogwars"),
-        validator: (value) => validateNetworkName(value) || "Use lowercase letters, numbers and dashes only."
-    }));
+    const network = sanitizeNetworkName(
+        await askInput("Network name", {
+            defaultValue: sanitizeNetworkName(parsed.network || state.lastNetwork || "ogwars"),
+            validator: (value) =>
+                validateNetworkName(value) || "Use lowercase letters, numbers and dashes only.",
+        }),
+    );
 
     if (selectedCommand === "deploy") {
         const withoutBacking = await askConfirm("Deploy without backing services?", false);
-        return {...parsed, command: selectedCommand, network, withoutBacking};
+        return { ...parsed, command: selectedCommand, network, withoutBacking };
     }
 
     if (selectedCommand === "update") {
         const component = await askSelect(
             "Select component",
-            COMPONENTS.map((name) => ({label: name, value: name, description: "Update this component image tag"})),
-            1
+            COMPONENTS.map((name) => ({
+                label: name,
+                value: name,
+                description: "Update this component image tag",
+            })),
+            1,
         );
         const imageVersion = await askInput("Image version (e.g. 0.0.1)", {
-            defaultValue: "0.0.1"
+            defaultValue: "0.0.1",
         });
-        return {...parsed, command: selectedCommand, network, component, imageVersion};
+        return { ...parsed, command: selectedCommand, network, component, imageVersion };
     }
 
-    return {...parsed, command: selectedCommand, network};
+    return { ...parsed, command: selectedCommand, network };
 }
 
 async function completeMissingArgs(parsed: ParsedArgs, state: StateFile): Promise<ParsedArgs> {
-    const completed = {...parsed};
+    const completed = { ...parsed };
 
     if (!completed.command) {
         return completed;
     }
 
     if (!completed.network) {
-        completed.network = sanitizeNetworkName(await askInput("Network name", {
-            defaultValue: sanitizeNetworkName(state.lastNetwork || "ogwars"),
-            validator: (value) => validateNetworkName(value) || "Use lowercase letters, numbers and dashes only."
-        }));
+        completed.network = sanitizeNetworkName(
+            await askInput("Network name", {
+                defaultValue: sanitizeNetworkName(state.lastNetwork || "ogwars"),
+                validator: (value) =>
+                    validateNetworkName(value) || "Use lowercase letters, numbers and dashes only.",
+            }),
+        );
     } else {
         completed.network = sanitizeNetworkName(completed.network);
     }
 
     if (!validateNetworkName(completed.network)) {
-        throw new Error(`Invalid network name "${completed.network}". Use lowercase letters, numbers and dashes.`);
+        throw new Error(
+            `Invalid network name "${completed.network}". Use lowercase letters, numbers and dashes.`,
+        );
     }
 
     if (completed.command === "update") {
         if (!completed.component) {
             completed.component = await askSelect(
                 "Select component",
-                COMPONENTS.map((name) => ({label: name, value: name}))
+                COMPONENTS.map((name) => ({ label: name, value: name })),
             );
         }
         completed.component = sanitizeComponent(completed.component);
-        if (!COMPONENTS.includes(completed.component)) {
-            throw new Error(`Invalid component "${completed.component}". Allowed: ${COMPONENTS.join(", ")}`);
+        if (!isComponentName(completed.component)) {
+            throw new Error(
+                `Invalid component "${completed.component}". Allowed: ${COMPONENTS.join(", ")}`,
+            );
         }
 
         if (!completed.imageVersion) {
             completed.imageVersion = await askInput("Image version (e.g. 0.0.1)", {
-                defaultValue: "0.0.1"
+                defaultValue: "0.0.1",
             });
         }
     }
@@ -1404,7 +1675,7 @@ async function main(): Promise<void> {
     heading("\nOgCloud Quickstart Setup\n");
     info("Checking dependencies...");
     ensureDependencies();
-    ok("Dependencies available: kubectl, helm, npm, npx");
+    ok("Dependencies available: node, kubectl, helm, npm, npx");
 
     const state = await loadState();
 
@@ -1419,45 +1690,73 @@ async function main(): Promise<void> {
         return;
     }
 
-    const needsHelmDownload = commandContext.command === "generate-config" ||
+    const needsHelmDownload =
+        commandContext.command === "generate-config" ||
         commandContext.command === "deploy" ||
         commandContext.command === "update";
 
-    let helmRoot = null;
+    let helmRoot: string | null = null;
     if (needsHelmDownload) {
         helmRoot = await ensureHelmCache(commandContext.refreshHelm);
     }
 
-    if (commandContext.command === "generate-config") {
-        await generateConfig(commandContext.network, state);
-        return;
+    switch (commandContext.command) {
+        case "generate-config":
+            await generateConfig(commandContext.network, state);
+            return;
+        case "deploy": {
+            if (!commandContext.network) {
+                throw new Error("Network name is required.");
+            }
+            if (!helmRoot) {
+                throw new Error("Helm cache path is unavailable. Cannot deploy.");
+            }
+            await deploy(
+                commandContext.network,
+                Boolean(commandContext.withoutBacking),
+                helmRoot,
+                state,
+            );
+            return;
+        }
+        case "update": {
+            if (!commandContext.network) {
+                throw new Error("Network name is required.");
+            }
+            if (!helmRoot) {
+                throw new Error("Helm cache path is unavailable. Cannot update.");
+            }
+            if (!commandContext.component) {
+                throw new Error("Component is required for update.");
+            }
+            if (!commandContext.imageVersion) {
+                throw new Error("Image version is required for update.");
+            }
+            await update(
+                commandContext.network,
+                commandContext.component,
+                commandContext.imageVersion,
+                helmRoot,
+                state,
+            );
+            return;
+        }
+        case "destroy":
+            if (!commandContext.network) {
+                throw new Error("Network name is required.");
+            }
+            await destroy(commandContext.network, state);
+            return;
+        default:
+            throw new Error(`Unsupported command: ${commandContext.command}`);
     }
-
-    if (commandContext.command === "deploy") {
-        await deploy(commandContext.network, Boolean(commandContext.withoutBacking), helmRoot, state);
-        return;
-    }
-
-    if (commandContext.command === "update") {
-        await update(
-            commandContext.network,
-            commandContext.component,
-            commandContext.imageVersion,
-            helmRoot,
-            state
-        );
-        return;
-    }
-
-    if (commandContext.command === "destroy") {
-        await destroy(commandContext.network, state);
-        return;
-    }
-
-    throw new Error(`Unsupported command: ${commandContext.command}`);
 }
 
-main().catch((error) => {
-    fail(error.message || String(error));
-    process.exitCode = 1;
-});
+main()
+    .catch((error) => {
+        fail(error.message || String(error));
+        process.exitCode = 1;
+    })
+    .finally(() => {
+        closePromptInterface();
+    });

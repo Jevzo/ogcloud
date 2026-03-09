@@ -65,8 +65,3 @@ yarn-error.log*
 *.secret
 *.key
 *.pem
-
-# =========================
-# Repository specific
-# =========================
-packages/create-ogcloud/helm

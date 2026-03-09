@@ -17,6 +17,7 @@ class PermissionUpdateProducer(
         uuid: String,
         group: PermissionGroupDocument,
         permissionEndMillis: Long,
+        permissionVersion: Long,
         updatedBy: String,
     ) {
         log.info("Publishing permission update: uuid={}, groupId={}", uuid, group.id)
@@ -32,6 +33,7 @@ class PermissionUpdateProducer(
                 display = group.display,
                 weight = group.weight,
                 permissionEndMillis = permissionEndMillis,
+                permissionVersion = permissionVersion,
                 updatedBy = updatedBy,
             ),
         )
