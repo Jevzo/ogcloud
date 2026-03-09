@@ -1,5 +1,5 @@
-import type {ReactNode} from "react";
-import type {IconType} from "react-icons";
+import type { ReactNode } from "react";
+import type { IconType } from "react-icons";
 
 interface DetailStatCardProps {
     label: string;
@@ -37,13 +37,13 @@ const TONE_CLASSES: Record<
 };
 
 const DetailStatCard = ({
-                            label,
-                            value,
-                            meta,
-                            icon: Icon,
-                            tone = "neutral",
-                            compact = false,
-                        }: DetailStatCardProps) => {
+    label,
+    value,
+    meta,
+    icon: Icon,
+    tone = "neutral",
+    compact = false,
+}: DetailStatCardProps) => {
     const toneStyle = TONE_CLASSES[tone];
 
     return (
@@ -76,7 +76,9 @@ const DetailStatCard = ({
                         {value}
                     </div>
                     {meta ? (
-                        <div className={`text-slate-500 ${compact ? "mt-1 text-[11px]" : "mt-1.5 text-xs"}`}>
+                        <div
+                            className={`text-slate-500 ${compact ? "mt-1 text-[11px]" : "mt-1.5 text-xs"}`}
+                        >
                             {meta}
                         </div>
                     ) : null}
@@ -88,7 +90,7 @@ const DetailStatCard = ({
                             compact ? "h-9 w-9" : "h-10 w-10"
                         }`}
                     >
-                        <Icon className={compact ? "h-4 w-4" : "h-4.5 w-4.5"}/>
+                        <Icon className={compact ? "h-4 w-4" : "h-4.5 w-4.5"} />
                     </div>
                 ) : null}
             </div>

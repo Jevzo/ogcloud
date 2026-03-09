@@ -1,10 +1,10 @@
 import * as React from "react";
-import {useEffect, useState} from "react";
-import {motion} from "motion/react";
+import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 
-import {confirmMinecraftLinkOtp, requestMinecraftLinkOtp,} from "@/lib/api";
-import {normalizeRole} from "@/lib/roles";
-import {useAuthStore} from "@/store/auth-store";
+import { confirmMinecraftLinkOtp, requestMinecraftLinkOtp } from "@/lib/api";
+import { normalizeRole } from "@/lib/roles";
+import { useAuthStore } from "@/store/auth-store";
 
 type LinkStep = "confirm-online" | "offline" | "enter-username" | "enter-otp";
 
@@ -71,9 +71,7 @@ const RequireMinecraftLinkModal = () => {
             setLinkStep("enter-otp");
             setLinkMessage("A 6-digit code was sent to your in-game chat.");
         } catch (error) {
-            setLinkError(
-                error instanceof Error ? error.message : "Unable to request a link code."
-            );
+            setLinkError(error instanceof Error ? error.message : "Unable to request a link code.");
         } finally {
             setIsLinkBusy(false);
         }
@@ -100,7 +98,7 @@ const RequireMinecraftLinkModal = () => {
             setLinkMessage("Minecraft account linked.");
         } catch (error) {
             setLinkError(
-                error instanceof Error ? error.message : "Unable to confirm the link code."
+                error instanceof Error ? error.message : "Unable to confirm the link code.",
             );
         } finally {
             setIsLinkBusy(false);
@@ -122,13 +120,15 @@ const RequireMinecraftLinkModal = () => {
     return (
         <div className="fixed inset-0 z-80 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
             <motion.div
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.25, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
                 className="w-full max-w-lg rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
             >
                 <div className="border-b border-slate-800 px-6 py-4">
-                    <h3 className="text-base font-semibold text-white">Connect Minecraft Account</h3>
+                    <h3 className="text-base font-semibold text-white">
+                        Connect Minecraft Account
+                    </h3>
                     <p className="text-sm text-slate-400">
                         This dashboard is locked until a Minecraft account is linked.
                     </p>
@@ -137,10 +137,9 @@ const RequireMinecraftLinkModal = () => {
                 <div className="space-y-5 p-6">
                     {linkStep === "confirm-online" && (
                         <>
-                            <div
-                                className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-4 text-sm text-slate-300">
-                                Are you currently online on the Minecraft server with the account you
-                                want to link?
+                            <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-4 text-sm text-slate-300">
+                                Are you currently online on the Minecraft server with the account
+                                you want to link?
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <button
@@ -163,8 +162,7 @@ const RequireMinecraftLinkModal = () => {
 
                     {linkStep === "offline" && (
                         <>
-                            <div
-                                className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
+                            <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
                                 The server must deliver a one-time code in Minecraft chat. Come back
                                 once you are online in-game.
                             </div>
@@ -210,15 +208,13 @@ const RequireMinecraftLinkModal = () => {
                             </label>
 
                             {linkError && (
-                                <div
-                                    className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                                     {linkError}
                                 </div>
                             )}
 
                             {linkMessage && (
-                                <div
-                                    className="rounded-lg border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+                                <div className="rounded-lg border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
                                     {linkMessage}
                                 </div>
                             )}
@@ -245,9 +241,9 @@ const RequireMinecraftLinkModal = () => {
 
                     {linkStep === "enter-otp" && (
                         <form onSubmit={handleConfirmOtp} className="space-y-4">
-                            <div
-                                className="rounded-lg border border-primary/10 bg-primary/5 px-4 py-4 text-sm text-slate-300">
-                                {linkMessage ?? "A code has been sent to your in-game chat. Enter it below."}
+                            <div className="rounded-lg border border-primary/10 bg-primary/5 px-4 py-4 text-sm text-slate-300">
+                                {linkMessage ??
+                                    "A code has been sent to your in-game chat. Enter it below."}
                             </div>
 
                             <label className="app-field-stack">
@@ -268,8 +264,7 @@ const RequireMinecraftLinkModal = () => {
                             </label>
 
                             {linkError && (
-                                <div
-                                    className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                                     {linkError}
                                 </div>
                             )}

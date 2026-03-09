@@ -1,4 +1,4 @@
-import {FiRefreshCw} from "react-icons/fi";
+import { FiRefreshCw } from "react-icons/fi";
 
 interface TableRefreshButtonProps {
     onClick: () => void | Promise<void>;
@@ -7,10 +7,10 @@ interface TableRefreshButtonProps {
 }
 
 const TableRefreshButton = ({
-                                onClick,
-                                isRefreshing = false,
-                                label = "Refresh table",
-                            }: TableRefreshButtonProps) => (
+    onClick,
+    isRefreshing = false,
+    label = "Refresh table",
+}: TableRefreshButtonProps) => (
     <button
         type="button"
         onClick={onClick}
@@ -20,7 +20,7 @@ const TableRefreshButton = ({
         title={label}
         aria-busy={isRefreshing}
     >
-        <FiRefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}/>
+        <FiRefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
     </button>
 );
 

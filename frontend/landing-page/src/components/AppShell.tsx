@@ -1,11 +1,11 @@
-import {Outlet} from "react-router";
-import {Suspense} from "react";
+import { Outlet } from "react-router";
+import { Suspense } from "react";
 
 const AppShell = () => {
     return (
         <div className="min-h-screen bg-background-dark text-text-main">
             <Suspense fallback={null}>
-                <Outlet/>
+                <Outlet />
             </Suspense>
         </div>
     );

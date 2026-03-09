@@ -1,13 +1,13 @@
-import {useEffect, useState} from "react";
-import {motion} from "motion/react";
-import {FiX} from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { FiX } from "react-icons/fi";
 
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
 import FieldHintLabel from "@/components/FieldHintLabel";
 import AppToasts from "@/components/AppToasts";
-import {listGroups, requestServerForGroup} from "@/lib/api";
-import type {GroupListItem} from "@/types/dashboard";
+import { listGroups, requestServerForGroup } from "@/lib/api";
+import type { GroupListItem } from "@/types/dashboard";
 
 interface DeployServerModalProps {
     isOpen: boolean;
@@ -23,16 +23,14 @@ const MIN_DEPLOY_COUNT = 1;
 const MAX_DEPLOY_COUNT = 25;
 
 const getGroupModeTone = (mode: string) =>
-    mode.toUpperCase() === "STATIC"
-        ? "bg-amber-400 text-slate-950"
-        : "bg-primary text-slate-950";
+    mode.toUpperCase() === "STATIC" ? "bg-amber-400 text-slate-950" : "bg-primary text-slate-950";
 
 const DeployServerModalContent = ({
-                                      onClose,
-                                      getAccessToken,
-                                      onSuccess,
-                                      onRequested,
-                                  }: DeployServerModalContentProps) => {
+    onClose,
+    getAccessToken,
+    onSuccess,
+    onRequested,
+}: DeployServerModalContentProps) => {
     const [availableGroups, setAvailableGroups] = useState<GroupListItem[]>([]);
     const [isLoadingGroups, setIsLoadingGroups] = useState(false);
     const [deployError, setDeployError] = useState<string | null>(null);
@@ -110,12 +108,12 @@ const DeployServerModalContent = ({
             onSuccess(
                 `Requested ${deployCount} new ${selectedDeployGroupId} instance${
                     deployCount === 1 ? "" : "s"
-                }.`
+                }.`,
             );
             onClose();
         } catch (error) {
             setDeployError(
-                error instanceof Error ? error.message : "Unable to request a new instance."
+                error instanceof Error ? error.message : "Unable to request a new instance.",
             );
             setDeployingGroupId(null);
         }
@@ -127,9 +125,9 @@ const DeployServerModalContent = ({
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
             <motion.div
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.25, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
                 className="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
             >
                 <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -146,7 +144,7 @@ const DeployServerModalContent = ({
                         className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label="Close"
                     >
-                        <FiX className="h-4 w-4"/>
+                        <FiX className="h-4 w-4" />
                     </button>
                 </div>
 
@@ -155,20 +153,19 @@ const DeployServerModalContent = ({
                         items={
                             deployError
                                 ? [
-                                    {
-                                        id: "deploy-modal-error",
-                                        message: deployError,
-                                        onDismiss: () => setDeployError(null),
-                                        tone: "error" as const,
-                                    },
-                                ]
+                                      {
+                                          id: "deploy-modal-error",
+                                          message: deployError,
+                                          onDismiss: () => setDeployError(null),
+                                          tone: "error" as const,
+                                      },
+                                  ]
                                 : []
                         }
                     />
 
                     {isLoadingGroups ? (
-                        <div
-                            className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-8 text-center text-sm text-slate-400">
+                        <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-8 text-center text-sm text-slate-400">
                             Loading available groups...
                         </div>
                     ) : (
@@ -195,14 +192,16 @@ const DeployServerModalContent = ({
                             {selectedGroup ? (
                                 <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
-                                        <span className="text-sm font-semibold text-white">{selectedGroup.id}</span>
+                                        <span className="text-sm font-semibold text-white">
+                                            {selectedGroup.id}
+                                        </span>
                                         <span
                                             className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${getGroupModeTone(
-                                                selectedGroup.type
+                                                selectedGroup.type,
                                             )}`}
                                         >
-                      {selectedGroup.type}
-                    </span>
+                                            {selectedGroup.type}
+                                        </span>
                                     </div>
                                     <p className="mt-1 text-xs text-slate-400">
                                         {selectedGroup.maintenance
@@ -226,7 +225,9 @@ const DeployServerModalContent = ({
                                     onChangeValue={(nextValue) => {
                                         const parsedValue = Number.parseInt(nextValue, 10);
                                         setDeployCount(
-                                            Number.isNaN(parsedValue) ? MIN_DEPLOY_COUNT : parsedValue
+                                            Number.isNaN(parsedValue)
+                                                ? MIN_DEPLOY_COUNT
+                                                : parsedValue,
                                         );
                                     }}
                                 />
@@ -243,7 +244,9 @@ const DeployServerModalContent = ({
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={deployingGroupId !== null || availableGroups.length === 0}
+                                    disabled={
+                                        deployingGroupId !== null || availableGroups.length === 0
+                                    }
                                     onClick={() => void handleDeployGroup()}
                                     className="app-button-field button-hover-lift button-shadow-primary rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
@@ -260,7 +263,7 @@ const DeployServerModalContent = ({
     );
 };
 
-const DeployServerModal = ({isOpen, ...contentProps}: DeployServerModalProps) => {
+const DeployServerModal = ({ isOpen, ...contentProps }: DeployServerModalProps) => {
     if (!isOpen) {
         return null;
     }

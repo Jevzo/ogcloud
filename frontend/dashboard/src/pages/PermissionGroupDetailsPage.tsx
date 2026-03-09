@@ -1,15 +1,27 @@
-import {useCallback, useEffect, useState} from "react";
-import {motion} from "motion/react";
-import {FiArrowLeft, FiChevronLeft, FiChevronRight, FiPlus, FiShield, FiTrash2, FiX,} from "react-icons/fi";
-import {Link, useNavigate, useParams} from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import {
+    FiArrowLeft,
+    FiChevronLeft,
+    FiChevronRight,
+    FiPlus,
+    FiShield,
+    FiTrash2,
+    FiX,
+} from "react-icons/fi";
+import { Link, useNavigate, useParams } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import PermissionGroupFormFields from "@/components/PermissionGroupFormFields";
-import {deletePermissionGroup, getPermissionGroupByName, updatePermissionGroup,} from "@/lib/api";
-import {useAuthStore} from "@/store/auth-store";
-import {useNetworkSettingsStore} from "@/store/network-settings-store";
-import type {PermissionGroupFormValues, PermissionGroupRecord, UpdatePermissionGroupPayload,} from "@/types/permission";
+import { deletePermissionGroup, getPermissionGroupByName, updatePermissionGroup } from "@/lib/api";
+import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import type {
+    PermissionGroupFormValues,
+    PermissionGroupRecord,
+    UpdatePermissionGroupPayload,
+} from "@/types/permission";
 
 const PERMISSIONS_PAGE_SIZE = 10;
 
@@ -31,7 +43,7 @@ const PermissionGroupDetailsPage = () => {
     const navigate = useNavigate();
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
     const permissionSystemEnabled = useNetworkSettingsStore(
-        (state) => state.general.permissionSystemEnabled
+        (state) => state.general.permissionSystemEnabled,
     );
     const groupName = decodeURIComponent(params.groupName ?? "");
 
@@ -57,32 +69,35 @@ const PermissionGroupDetailsPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadPermissionGroup = useCallback(async (showLoading = true) => {
-        if (!groupName) {
-            setErrorMessage("Missing permission group name.");
-            setIsLoading(false);
-            return;
-        }
+    const loadPermissionGroup = useCallback(
+        async (showLoading = true) => {
+            if (!groupName) {
+                setErrorMessage("Missing permission group name.");
+                setIsLoading(false);
+                return;
+            }
 
-        if (showLoading) {
-            setIsLoading(true);
-        }
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const nextGroup = await getPermissionGroupByName(accessToken, groupName);
-            setGroup(nextGroup);
-            setFormValues(toFormValues(nextGroup));
-            setPermissionsDraft(nextGroup.permissions);
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to load permission group."
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [getValidAccessToken, groupName]);
+            try {
+                const accessToken = await getValidAccessToken();
+                const nextGroup = await getPermissionGroupByName(accessToken, groupName);
+                setGroup(nextGroup);
+                setFormValues(toFormValues(nextGroup));
+                setPermissionsDraft(nextGroup.permissions);
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load permission group.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [getValidAccessToken, groupName],
+    );
 
     useEffect(() => {
         void loadPermissionGroup(true);
@@ -109,47 +124,42 @@ const PermissionGroupDetailsPage = () => {
     useEffect(() => {
         const maxPageIndex = Math.max(
             0,
-            Math.ceil(permissionsDraft.length / PERMISSIONS_PAGE_SIZE) - 1
+            Math.ceil(permissionsDraft.length / PERMISSIONS_PAGE_SIZE) - 1,
         );
 
-        setPermissionPageIndex((currentValue) =>
-            Math.min(currentValue, maxPageIndex)
-        );
+        setPermissionPageIndex((currentValue) => Math.min(currentValue, maxPageIndex));
     }, [permissionsDraft.length]);
 
     const setTopLevelField = (
         field: Exclude<keyof PermissionGroupFormValues, "display" | "default">,
-        value: string
+        value: string,
     ) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    [field]: value,
-                }
-                : currentValue
+                      ...currentValue,
+                      [field]: value,
+                  }
+                : currentValue,
         );
     };
 
-    const setDisplayField = (
-        field: keyof PermissionGroupFormValues["display"],
-        value: string
-    ) => {
+    const setDisplayField = (field: keyof PermissionGroupFormValues["display"], value: string) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    display: {
-                        ...currentValue.display,
-                        [field]: value,
-                    },
-                }
-                : currentValue
+                      ...currentValue,
+                      display: {
+                          ...currentValue.display,
+                          [field]: value,
+                      },
+                  }
+                : currentValue,
         );
     };
 
     const buildUpdatePayload = (
-        values: PermissionGroupFormValues
+        values: PermissionGroupFormValues,
     ): UpdatePermissionGroupPayload => {
         const normalizedName = values.name.trim();
         const parsedWeight = Number.parseInt(values.weight, 10);
@@ -181,13 +191,13 @@ const PermissionGroupDetailsPage = () => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    name: nextGroup.name,
-                    weight: String(nextGroup.weight),
-                    default: nextGroup.default,
-                    display: nextGroup.display,
-                }
-                : toFormValues(nextGroup)
+                      ...currentValue,
+                      name: nextGroup.name,
+                      weight: String(nextGroup.weight),
+                      default: nextGroup.default,
+                      display: nextGroup.display,
+                  }
+                : toFormValues(nextGroup),
         );
     };
 
@@ -206,21 +216,15 @@ const PermissionGroupDetailsPage = () => {
 
         try {
             const accessToken = await getValidAccessToken();
-            const updatedGroup = await updatePermissionGroup(
-                accessToken,
-                group.id,
-                {
-                    ...buildUpdatePayload(formValues),
-                    permissions: permissionsDraft,
-                }
-            );
+            const updatedGroup = await updatePermissionGroup(accessToken, group.id, {
+                ...buildUpdatePayload(formValues),
+                permissions: permissionsDraft,
+            });
             syncGroupState(updatedGroup);
             setSuccessMessage(`Updated permission group ${updatedGroup.name}.`);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to update permission group."
+                error instanceof Error ? error.message : "Unable to update permission group.",
             );
         } finally {
             setIsSaving(false);
@@ -261,7 +265,7 @@ const PermissionGroupDetailsPage = () => {
         }
 
         setPermissionsDraft((currentValue) =>
-            currentValue.filter((currentPermission) => currentPermission !== permission)
+            currentValue.filter((currentPermission) => currentPermission !== permission),
         );
         setErrorMessage(null);
     };
@@ -282,10 +286,10 @@ const PermissionGroupDetailsPage = () => {
         try {
             const accessToken = await getValidAccessToken();
             await deletePermissionGroup(accessToken, group.id);
-            navigate("/permissions", {replace: true});
+            navigate("/permissions", { replace: true });
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to delete permission group."
+                error instanceof Error ? error.message : "Unable to delete permission group.",
             );
             setIsDeletingGroup(false);
             setIsDeleteModalOpen(false);
@@ -294,11 +298,11 @@ const PermissionGroupDetailsPage = () => {
 
     const totalPermissionPages = Math.max(
         1,
-        Math.ceil(permissionsDraft.length / PERMISSIONS_PAGE_SIZE)
+        Math.ceil(permissionsDraft.length / PERMISSIONS_PAGE_SIZE),
     );
     const visiblePermissions = permissionsDraft.slice(
         permissionPageIndex * PERMISSIONS_PAGE_SIZE,
-        permissionPageIndex * PERMISSIONS_PAGE_SIZE + PERMISSIONS_PAGE_SIZE
+        permissionPageIndex * PERMISSIONS_PAGE_SIZE + PERMISSIONS_PAGE_SIZE,
     );
     const previewGroupName = group?.name?.trim() || group?.id?.trim() || "Group";
     const previewNameColor = group?.display.nameColor?.trim() || "&7";
@@ -318,31 +322,31 @@ const PermissionGroupDetailsPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "permission-detail-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "permission-detail-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "permission-detail-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "permission-detail-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div>
@@ -350,11 +354,11 @@ const PermissionGroupDetailsPage = () => {
                         to="/permissions"
                         className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-primary"
                     >
-                        <FiArrowLeft className="h-4 w-4"/>
+                        <FiArrowLeft className="h-4 w-4" />
                         Back to permission groups
                     </Link>
                     <h2 className="mt-3 flex items-center gap-2 text-lg font-bold text-white">
-                        <FiShield className="h-5 w-5 text-primary"/>
+                        <FiShield className="h-5 w-5 text-primary" />
                         {group?.name || groupName || "Permission Group"}
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
@@ -369,21 +373,22 @@ const PermissionGroupDetailsPage = () => {
                     className="app-button-field button-hover-lift button-shadow-danger inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                     title={permissionSystemEnabled ? "Delete Group" : "Disabled"}
                 >
-                    <FiTrash2 className="h-4 w-4"/>
+                    <FiTrash2 className="h-4 w-4" />
                     Delete Group
                 </button>
             </motion.section>
 
             {!permissionSystemEnabled ? (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-                    Permission system is disabled. This page is read-only until it is enabled in Network settings.
+                    Permission system is disabled. This page is read-only until it is enabled in
+                    Network settings.
                 </div>
             ) : null}
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                 className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
             >
                 <div className="space-y-6">
@@ -440,8 +445,7 @@ const PermissionGroupDetailsPage = () => {
                             </h3>
                         </div>
                         <div className="space-y-4 p-6">
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Chat Prefix
                                 </p>
@@ -453,8 +457,7 @@ const PermissionGroupDetailsPage = () => {
                                     className="mt-2 font-mono"
                                 />
                             </div>
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Chat Suffix
                                 </p>
@@ -467,8 +470,7 @@ const PermissionGroupDetailsPage = () => {
                                 />
                             </div>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div
-                                    className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                                <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                         Name Color
                                     </p>
@@ -480,8 +482,7 @@ const PermissionGroupDetailsPage = () => {
                                         className="mt-2 font-mono"
                                     />
                                 </div>
-                                <div
-                                    className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                                <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                         Tab Prefix
                                     </p>
@@ -519,21 +520,19 @@ const PermissionGroupDetailsPage = () => {
                                     onClick={() => void handleAddPermission()}
                                     className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    <FiPlus className="h-4 w-4"/>
+                                    <FiPlus className="h-4 w-4" />
                                     Add
                                 </button>
                             </div>
 
-                            <div
-                                className="rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-xs text-amber-200">
-                                Adding or removing permissions takes immediate effect across online players after you
-                                save this group.
+                            <div className="rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-xs text-amber-200">
+                                Adding or removing permissions takes immediate effect across online
+                                players after you save this group.
                             </div>
 
                             <div className="space-y-3">
                                 {permissionsDraft.length === 0 ? (
-                                    <div
-                                        className="rounded-lg border border-slate-800 bg-slate-800/30 px-4 py-4 text-sm text-slate-400">
+                                    <div className="rounded-lg border border-slate-800 bg-slate-800/30 px-4 py-4 text-sm text-slate-400">
                                         No explicit permissions assigned.
                                     </div>
                                 ) : (
@@ -542,10 +541,9 @@ const PermissionGroupDetailsPage = () => {
                                             key={permission}
                                             className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-800 bg-slate-800/30 px-3 py-1.5"
                                         >
-                      <span
-                          className="flex min-h-4 min-w-0 flex-1 items-center break-all font-mono text-sm text-slate-200">
-                        {permission}
-                      </span>
+                                            <span className="flex min-h-4 min-w-0 flex-1 items-center break-all font-mono text-sm text-slate-200">
+                                                {permission}
+                                            </span>
                                             <button
                                                 type="button"
                                                 disabled={!permissionSystemEnabled || isSaving}
@@ -553,7 +551,7 @@ const PermissionGroupDetailsPage = () => {
                                                 className="button-hover-lift inline-flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                                                 aria-label={`Remove ${permission}`}
                                             >
-                                                <FiTrash2 className="h-3.5 w-3.5"/>
+                                                <FiTrash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>
                                     ))
@@ -561,35 +559,38 @@ const PermissionGroupDetailsPage = () => {
                             </div>
 
                             {permissionsDraft.length > PERMISSIONS_PAGE_SIZE && (
-                                <div
-                                    className="flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-sm text-slate-400">
-                    Page {permissionPageIndex + 1} of {totalPermissionPages}
-                  </span>
+                                <div className="flex flex-col gap-3 border-t border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <span className="text-sm text-slate-400">
+                                        Page {permissionPageIndex + 1} of {totalPermissionPages}
+                                    </span>
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             disabled={permissionPageIndex === 0}
                                             onClick={() =>
-                                                setPermissionPageIndex((value) => Math.max(0, value - 1))
+                                                setPermissionPageIndex((value) =>
+                                                    Math.max(0, value - 1),
+                                                )
                                             }
                                             className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
-                                            <FiChevronLeft className="h-4 w-4"/>
+                                            <FiChevronLeft className="h-4 w-4" />
                                             Previous
                                         </button>
                                         <button
                                             type="button"
-                                            disabled={permissionPageIndex >= totalPermissionPages - 1}
+                                            disabled={
+                                                permissionPageIndex >= totalPermissionPages - 1
+                                            }
                                             onClick={() =>
                                                 setPermissionPageIndex((value) =>
-                                                    Math.min(totalPermissionPages - 1, value + 1)
+                                                    Math.min(totalPermissionPages - 1, value + 1),
                                                 )
                                             }
                                             className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             Next
-                                            <FiChevronRight className="h-4 w-4"/>
+                                            <FiChevronRight className="h-4 w-4" />
                                         </button>
                                     </div>
                                 </div>
@@ -620,10 +621,10 @@ const PermissionGroupDetailsPage = () => {
                                         setFormValues((currentValue) =>
                                             currentValue
                                                 ? {
-                                                    ...currentValue,
-                                                    default: value,
-                                                }
-                                                : currentValue
+                                                      ...currentValue,
+                                                      default: value,
+                                                  }
+                                                : currentValue,
                                         )
                                     }
                                     disableIdentityFields
@@ -646,12 +647,11 @@ const PermissionGroupDetailsPage = () => {
             </motion.section>
 
             {isDeleteModalOpen && group && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -667,14 +667,14 @@ const PermissionGroupDetailsPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
                         <div className="px-6 py-5">
                             <p className="text-sm leading-6 text-slate-300">
-                                Players currently assigned to this group will be moved to the default
-                                permission group after deletion.
+                                Players currently assigned to this group will be moved to the
+                                default permission group after deletion.
                             </p>
                         </div>
 

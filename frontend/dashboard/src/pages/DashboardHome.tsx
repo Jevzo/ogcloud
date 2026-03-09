@@ -1,14 +1,14 @@
-import {useCallback, useEffect, useState} from "react";
-import {motion} from "motion/react";
-import {Link, useNavigate} from "react-router";
-import {FiActivity, FiClock, FiGrid, FiLayers, FiServer, FiUsers,} from "react-icons/fi";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { Link, useNavigate } from "react-router";
+import { FiActivity, FiClock, FiGrid, FiLayers, FiServer, FiUsers } from "react-icons/fi";
 
 import AppToasts from "@/components/AppToasts";
 import TableRefreshButton from "@/components/TableRefreshButton";
-import {API_LATENCY_WINDOW_MS, getAverageApiLatency} from "@/lib/api-latency";
-import {getDashboardOverview,} from "@/lib/api";
-import {formatDateTime} from "@/lib/server-display";
-import {useAuthStore} from "@/store/auth-store";
+import { API_LATENCY_WINDOW_MS, getAverageApiLatency } from "@/lib/api-latency";
+import { getDashboardOverview } from "@/lib/api";
+import { formatDateTime } from "@/lib/server-display";
+import { useAuthStore } from "@/store/auth-store";
 import type {
     DashboardOverviewGroup,
     DashboardOverviewResponse,
@@ -29,9 +29,7 @@ const EMPTY_OVERVIEW: DashboardOverviewResponse = {
 };
 
 const getGroupModeTone = (mode: string) =>
-    mode.toUpperCase() === "STATIC"
-        ? "bg-amber-400 text-slate-950"
-        : "bg-primary text-slate-950";
+    mode.toUpperCase() === "STATIC" ? "bg-amber-400 text-slate-950" : "bg-primary text-slate-950";
 
 const GROUP_THUMBNAILS = [
     "/static/thumbnails/thumbnail-1.jpg",
@@ -50,9 +48,7 @@ const DashboardHome = () => {
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
 
     const [overview, setOverview] = useState<DashboardOverviewResponse>(EMPTY_OVERVIEW);
-    const [averageLatencyMs, setAverageLatencyMs] = useState<number | null>(
-        getAverageApiLatency()
-    );
+    const [averageLatencyMs, setAverageLatencyMs] = useState<number | null>(getAverageApiLatency());
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [groupThumbnailMap, setGroupThumbnailMap] = useState<Record<string, string>>({});
@@ -67,28 +63,29 @@ const DashboardHome = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadOverview = useCallback(async (showLoading = false) => {
-        if (showLoading) {
-            setIsLoading(true);
-        }
+    const loadOverview = useCallback(
+        async (showLoading = false) => {
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const result = await getDashboardOverview(accessToken);
-            setOverview(result.data);
-            setAverageLatencyMs(getAverageApiLatency());
-            setErrorMessage(null);
-        } catch (error) {
-            setAverageLatencyMs(getAverageApiLatency());
-            setErrorMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to load dashboard overview."
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [getValidAccessToken]);
+            try {
+                const accessToken = await getValidAccessToken();
+                const result = await getDashboardOverview(accessToken);
+                setOverview(result.data);
+                setAverageLatencyMs(getAverageApiLatency());
+                setErrorMessage(null);
+            } catch (error) {
+                setAverageLatencyMs(getAverageApiLatency());
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load dashboard overview.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [getValidAccessToken],
+    );
 
     useEffect(() => {
         let active = true;
@@ -119,7 +116,7 @@ const DashboardHome = () => {
         }
 
         setGroupThumbnailMap((currentMap) => {
-            const nextMap = {...currentMap};
+            const nextMap = { ...currentMap };
             let didChange = false;
 
             for (const group of overview.groups) {
@@ -136,9 +133,9 @@ const DashboardHome = () => {
     const playerLoadPercent =
         overview.stats.maxPlayers > 0
             ? Math.min(
-                100,
-                Math.round((overview.stats.totalPlayers / overview.stats.maxPlayers) * 100)
-            )
+                  100,
+                  Math.round((overview.stats.totalPlayers / overview.stats.maxPlayers) * 100),
+              )
             : 0;
 
     const statsCards = [
@@ -185,48 +182,52 @@ const DashboardHome = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "dashboard-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "dashboard-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
             >
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiActivity className="h-5 w-5 text-primary"/>
+                        <FiActivity className="h-5 w-5 text-primary" />
                         Status Overview
                     </h2>
                     <span className="text-xs text-slate-500">Auto-refreshing every 10s</span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-                    {statsCards.map(({title, value, suffix, tone, meta, icon: Icon}) => (
+                    {statsCards.map(({ title, value, suffix, tone, meta, icon: Icon }) => (
                         <div
                             key={title}
                             className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm"
                         >
                             <div className="mb-4 flex items-start justify-between">
                                 <p className="text-sm font-medium text-slate-400">{title}</p>
-                                <Icon className={`h-5 w-5 ${tone}`}/>
+                                <Icon className={`h-5 w-5 ${tone}`} />
                             </div>
                             <div>
                                 <h3 className="text-3xl font-bold tracking-tight text-white">
                                     {isLoading ? "--" : value}{" "}
                                     {suffix && (
-                                        <span className="text-lg font-medium text-slate-500">{suffix}</span>
+                                        <span className="text-lg font-medium text-slate-500">
+                                            {suffix}
+                                        </span>
                                     )}
                                 </h3>
-                                <p className={`mt-2 text-xs font-medium uppercase tracking-wide ${tone}`}>
+                                <p
+                                    className={`mt-2 text-xs font-medium uppercase tracking-wide ${tone}`}
+                                >
                                     {meta}
                                 </p>
                             </div>
@@ -236,13 +237,13 @@ const DashboardHome = () => {
             </motion.section>
 
             <motion.section
-                initial={{y: 14, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 14, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
             >
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiGrid className="h-5 w-5 text-primary"/>
+                        <FiGrid className="h-5 w-5 text-primary" />
                         Server Groups
                     </h2>
                     <button
@@ -256,8 +257,7 @@ const DashboardHome = () => {
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {overview.groups.length === 0 && !isLoading ? (
-                        <div
-                            className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400 lg:col-span-3">
+                        <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400 lg:col-span-3">
                             No visible groups right now.
                         </div>
                     ) : (
@@ -269,20 +269,22 @@ const DashboardHome = () => {
                             >
                                 <div className="relative h-28 overflow-hidden bg-slate-800 sm:h-28">
                                     <img
-                                        src={groupThumbnailMap[group.name] ?? getRandomGroupThumbnail()}
+                                        src={
+                                            groupThumbnailMap[group.name] ??
+                                            getRandomGroupThumbnail()
+                                        }
                                         alt=""
                                         className="h-full w-full object-cover opacity-65 transition-transform duration-300 group-hover:scale-105"
                                     />
-                                    <div
-                                        className="absolute inset-0 bg-linear-to-b from-slate-950/0 via-slate-950/10 via-35% to-slate-900"/>
+                                    <div className="absolute inset-0 bg-linear-to-b from-slate-950/0 via-slate-950/10 via-35% to-slate-900" />
                                     <div className="absolute left-4 top-4">
-                    <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${getGroupModeTone(
-                            group.mode
-                        )}`}
-                    >
-                      {group.mode}
-                    </span>
+                                        <span
+                                            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${getGroupModeTone(
+                                                group.mode,
+                                            )}`}
+                                        >
+                                            {group.mode}
+                                        </span>
                                     </div>
                                     <div className="absolute inset-x-4 bottom-2">
                                         <h4 className="text-base font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]">
@@ -294,20 +296,22 @@ const DashboardHome = () => {
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Instances</span>
                                         <span className="font-medium text-slate-200">
-                      {group.activeInstances} Active
-                    </span>
+                                            {group.activeInstances} Active
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Player Load</span>
                                         <span className="font-medium text-slate-200">
-                      {group.players} players
-                    </span>
+                                            {group.players} players
+                                        </span>
                                     </div>
                                     <div className="pt-2">
                                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
                                             <div
                                                 className="h-full bg-primary"
-                                                style={{width: `${Math.min(100, group.capacityPercent)}%`}}
+                                                style={{
+                                                    width: `${Math.min(100, group.capacityPercent)}%`,
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -319,22 +323,22 @@ const DashboardHome = () => {
             </motion.section>
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.09}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.09 }}
                 className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm"
             >
                 <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                            <FiLayers className="h-5 w-5 text-primary"/>
+                            <FiLayers className="h-5 w-5 text-primary" />
                             Recent Scaling Actions
                         </h2>
                         <div className="flex items-center justify-between gap-3 sm:justify-end">
-              <span className="text-xs text-slate-500">
-                {scalingActions.length} action
-                  {scalingActions.length === 1 ? "" : "s"}
-              </span>
+                            <span className="text-xs text-slate-500">
+                                {scalingActions.length} action
+                                {scalingActions.length === 1 ? "" : "s"}
+                            </span>
                             <TableRefreshButton
                                 onClick={() => {
                                     void loadOverview(false);
@@ -349,62 +353,65 @@ const DashboardHome = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-left">
                         <thead>
-                        <tr className="border-b border-slate-800 bg-slate-800/30">
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Group
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Action
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Reason
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Server
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Timestamp
-                            </th>
-                        </tr>
+                            <tr className="border-b border-slate-800 bg-slate-800/30">
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Group
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Action
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Reason
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Server
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Timestamp
+                                </th>
+                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                        {scalingActions.length === 0 && !isLoading ? (
-                            <tr>
-                                <td
-                                    colSpan={5}
-                                    className="px-6 py-10 text-center text-sm text-slate-400"
-                                >
-                                    No scaling actions logged yet.
-                                </td>
-                            </tr>
-                        ) : (
-                            scalingActions.map((action: DashboardOverviewScalingAction) => {
-                                return (
-                                    <tr
-                                        key={action.id ?? `${action.groupId}:${action.action}:${action.timestamp}`}
-                                        className="transition-colors hover:bg-slate-800/30"
+                            {scalingActions.length === 0 && !isLoading ? (
+                                <tr>
+                                    <td
+                                        colSpan={5}
+                                        className="px-6 py-10 text-center text-sm text-slate-400"
                                     >
-                                        <td className="px-6 py-4">
-                        <span className="text-sm font-semibold text-slate-200">
-                          {action.groupId}
-                        </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-300">
-                                            {action.action}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-300">
-                                            {action.reason}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-300">
-                                            {action.serverId ?? "--"}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-400">
-                                            {formatDateTime(action.timestamp)}
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
+                                        No scaling actions logged yet.
+                                    </td>
+                                </tr>
+                            ) : (
+                                scalingActions.map((action: DashboardOverviewScalingAction) => {
+                                    return (
+                                        <tr
+                                            key={
+                                                action.id ??
+                                                `${action.groupId}:${action.action}:${action.timestamp}`
+                                            }
+                                            className="transition-colors hover:bg-slate-800/30"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm font-semibold text-slate-200">
+                                                    {action.groupId}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-300">
+                                                {action.action}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-300">
+                                                {action.reason}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-300">
+                                                {action.serverId ?? "--"}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-400">
+                                                {formatDateTime(action.timestamp)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>

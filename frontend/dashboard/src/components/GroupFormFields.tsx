@@ -1,13 +1,10 @@
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
 import FieldHintLabel from "@/components/FieldHintLabel";
-import type {GroupFormValues} from "@/types/group";
-import type {TemplateRecord} from "@/types/template";
+import type { GroupFormValues } from "@/types/group";
+import type { TemplateRecord } from "@/types/template";
 
-const SERVER_IMAGE_OPTIONS = [
-    "ogwarsdev/paper:latest",
-    "ogwarsdev/velocity:latest",
-] as const;
+const SERVER_IMAGE_OPTIONS = ["ogwarsdev/paper:latest", "ogwarsdev/velocity:latest"] as const;
 const GROUP_TYPE_OPTIONS = ["DYNAMIC", "STATIC", "PROXY"] as const;
 const SECTION_CLASS_NAME = "rounded-xl border border-slate-800 bg-slate-800/30 p-5";
 
@@ -22,27 +19,18 @@ interface FieldLabelProps {
     hint: string;
 }
 
-const FieldLabel = ({label, hint}: FieldLabelProps) => (
-    <FieldHintLabel label={label} hint={hint}/>
+const FieldLabel = ({ label, hint }: FieldLabelProps) => (
+    <FieldHintLabel label={label} hint={hint} />
 );
 
 interface GroupFormFieldsProps {
     values: GroupFormValues;
     onFieldChange: (
-        field: Exclude<
-            keyof GroupFormValues,
-            "scaling" | "resources"
-        >,
-        value: string
+        field: Exclude<keyof GroupFormValues, "scaling" | "resources">,
+        value: string,
     ) => void;
-    onScalingChange: (
-        field: keyof GroupFormValues["scaling"],
-        value: string
-    ) => void;
-    onResourceChange: (
-        field: keyof GroupFormValues["resources"],
-        value: string
-    ) => void;
+    onScalingChange: (field: keyof GroupFormValues["scaling"], value: string) => void;
+    onResourceChange: (field: keyof GroupFormValues["resources"], value: string) => void;
     templates: TemplateRecord[];
     onTemplateChange: (templatePath: string) => void;
     showIdentityFields?: boolean;
@@ -50,23 +38,22 @@ interface GroupFormFieldsProps {
 }
 
 const GroupFormFields = ({
-                             values,
-                             onFieldChange,
-                             onScalingChange,
-                             onResourceChange,
-                             templates,
-                             onTemplateChange,
-                             showIdentityFields = true,
-                             disableIdentityFields = false,
-                         }: GroupFormFieldsProps) => {
+    values,
+    onFieldChange,
+    onScalingChange,
+    onResourceChange,
+    templates,
+    onTemplateChange,
+    showIdentityFields = true,
+    disableIdentityFields = false,
+}: GroupFormFieldsProps) => {
     const isStaticGroup = values.type.toUpperCase() === "STATIC";
     const selectedTemplate = templates.find(
         (template) =>
-            template.group === values.templatePath &&
-            template.version === values.templateVersion
+            template.group === values.templatePath && template.version === values.templateVersion,
     );
     const selectedServerImageExists = SERVER_IMAGE_OPTIONS.includes(
-        values.serverImage as (typeof SERVER_IMAGE_OPTIONS)[number]
+        values.serverImage as (typeof SERVER_IMAGE_OPTIONS)[number],
     );
 
     return (
@@ -119,7 +106,9 @@ const GroupFormFields = ({
                         <input
                             type="text"
                             value={values.templateBucket}
-                            onChange={(event) => onFieldChange("templateBucket", event.target.value)}
+                            onChange={(event) =>
+                                onFieldChange("templateBucket", event.target.value)
+                            }
                             className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                     </div>
@@ -129,7 +118,11 @@ const GroupFormFields = ({
                             hint="Template source used when bootstrapping new instances in this group."
                         />
                         <AppSelect
-                            value={selectedTemplate ? getTemplateOptionValue(selectedTemplate) : "__custom__"}
+                            value={
+                                selectedTemplate
+                                    ? getTemplateOptionValue(selectedTemplate)
+                                    : "__custom__"
+                            }
                             onChangeValue={(value) => {
                                 if (value === "__custom__") {
                                     return;
@@ -146,7 +139,10 @@ const GroupFormFields = ({
                                 </option>
                             )}
                             {templates.map((template) => (
-                                <option key={template.path} value={getTemplateOptionValue(template)}>
+                                <option
+                                    key={template.path}
+                                    value={getTemplateOptionValue(template)}
+                                >
                                     {getTemplateOptionLabel(template)}
                                 </option>
                             ))}
@@ -158,7 +154,9 @@ const GroupFormFields = ({
                             hint="Container image used to run each server pod for this group."
                         />
                         <AppSelect
-                            value={selectedServerImageExists ? values.serverImage : "__custom-image__"}
+                            value={
+                                selectedServerImageExists ? values.serverImage : "__custom-image__"
+                            }
                             onChangeValue={(value) => {
                                 if (value === "__custom-image__") {
                                     return;
@@ -200,7 +198,9 @@ const GroupFormFields = ({
                             <input
                                 type="text"
                                 value={values.storageSize}
-                                onChange={(event) => onFieldChange("storageSize", event.target.value)}
+                                onChange={(event) =>
+                                    onFieldChange("storageSize", event.target.value)
+                                }
                                 className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                             />
                         </div>
@@ -311,7 +311,9 @@ const GroupFormFields = ({
                         <input
                             type="text"
                             value={values.resources.memoryRequest}
-                            onChange={(event) => onResourceChange("memoryRequest", event.target.value)}
+                            onChange={(event) =>
+                                onResourceChange("memoryRequest", event.target.value)
+                            }
                             className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                     </div>
@@ -323,7 +325,9 @@ const GroupFormFields = ({
                         <input
                             type="text"
                             value={values.resources.memoryLimit}
-                            onChange={(event) => onResourceChange("memoryLimit", event.target.value)}
+                            onChange={(event) =>
+                                onResourceChange("memoryLimit", event.target.value)
+                            }
                             className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                     </div>

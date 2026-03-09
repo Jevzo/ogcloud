@@ -1,5 +1,13 @@
-import {Children, isValidElement, type ReactNode, useEffect, useMemo, useRef, useState,} from "react";
-import {FiCheck, FiChevronDown} from "react-icons/fi";
+import {
+    Children,
+    isValidElement,
+    type ReactNode,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
+import { FiCheck, FiChevronDown } from "react-icons/fi";
 import FieldHintLabel from "@/components/FieldHintLabel";
 
 interface AppSelectProps {
@@ -25,14 +33,14 @@ interface OptionElementProps {
 }
 
 const AppSelect = ({
-                       id,
-                       label,
-                       labelHint,
-                       value,
-                       onChangeValue,
-                       disabled = false,
-                       children,
-                   }: AppSelectProps) => {
+    id,
+    label,
+    labelHint,
+    value,
+    onChangeValue,
+    disabled = false,
+    children,
+}: AppSelectProps) => {
     const rootRef = useRef<HTMLDivElement | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const listboxId = id ? `${id}-options` : undefined;
@@ -99,17 +107,16 @@ const AppSelect = ({
 
     return (
         <div ref={rootRef} className="app-field-stack">
-            {label && (
-                labelHint ? (
+            {label &&
+                (labelHint ? (
                     <label htmlFor={id}>
-                        <FieldHintLabel label={label} hint={labelHint}/>
+                        <FieldHintLabel label={label} hint={labelHint} />
                     </label>
                 ) : (
                     <label htmlFor={id} className="app-field-label">
                         {label}
                     </label>
-                )
-            )}
+                ))}
 
             <div className="relative">
                 <button
@@ -122,23 +129,21 @@ const AppSelect = ({
                     onClick={() => setIsOpen((currentValue) => !currentValue)}
                     className="app-select-field relative flex items-center text-left"
                 >
-          <span
-              className={`min-w-0 flex-1 ${
-                  disabled
-                      ? "text-slate-500"
-                      : selectedOption
-                          ? "text-slate-100"
-                          : "text-slate-500"
-              }`}
-          >
-            {displayLabel}
-          </span>
+                    <span
+                        className={`min-w-0 flex-1 ${
+                            disabled
+                                ? "text-slate-500"
+                                : selectedOption
+                                  ? "text-slate-100"
+                                  : "text-slate-500"
+                        }`}
+                    >
+                        {displayLabel}
+                    </span>
                     <FiChevronDown
                         className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 transition-transform duration-150 ${
                             disabled ? "text-slate-600" : "text-slate-500"
-                        } ${
-                            isDropdownOpen ? "rotate-180" : ""
-                        }`}
+                        } ${isDropdownOpen ? "rotate-180" : ""}`}
                     />
                 </button>
 
@@ -176,12 +181,14 @@ const AppSelect = ({
                                             option.disabled
                                                 ? "bg-slate-950/70 text-slate-600"
                                                 : isSelected
-                                                    ? "bg-primary/12 text-primary"
-                                                    : "text-slate-200 hover:bg-slate-800 hover:text-white"
+                                                  ? "bg-primary/12 text-primary"
+                                                  : "text-slate-200 hover:bg-slate-800 hover:text-white"
                                         }`}
                                     >
                                         <span className="min-w-0 flex-1">{option.label}</span>
-                                        {isSelected && <FiCheck className="ml-auto h-4 w-4 shrink-0"/>}
+                                        {isSelected && (
+                                            <FiCheck className="ml-auto h-4 w-4 shrink-0" />
+                                        )}
                                     </button>
                                 );
                             })}

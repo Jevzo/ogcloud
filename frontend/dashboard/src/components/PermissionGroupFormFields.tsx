@@ -1,17 +1,14 @@
 import AppNumberInput from "@/components/AppNumberInput";
 import FieldHintLabel from "@/components/FieldHintLabel";
-import type {PermissionGroupFormValues} from "@/types/permission";
+import type { PermissionGroupFormValues } from "@/types/permission";
 
 interface PermissionGroupFormFieldsProps {
     values: PermissionGroupFormValues;
     onFieldChange: (
         field: Exclude<keyof PermissionGroupFormValues, "display" | "default">,
-        value: string
+        value: string,
     ) => void;
-    onDisplayChange: (
-        field: keyof PermissionGroupFormValues["display"],
-        value: string
-    ) => void;
+    onDisplayChange: (field: keyof PermissionGroupFormValues["display"], value: string) => void;
     onDefaultChange: (value: boolean) => void;
     disableIdentityFields?: boolean;
 }
@@ -20,17 +17,15 @@ const DISPLAY_INPUT_CLASS_NAME =
     "app-input-field block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10";
 
 const PermissionGroupFormFields = ({
-                                       values,
-                                       onFieldChange,
-                                       onDisplayChange,
-                                       onDefaultChange,
-                                       disableIdentityFields = false,
-                                   }: PermissionGroupFormFieldsProps) => (
+    values,
+    onFieldChange,
+    onDisplayChange,
+    onDefaultChange,
+    disableIdentityFields = false,
+}: PermissionGroupFormFieldsProps) => (
     <div className="space-y-6">
         <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
-            <h4 className="text-sm font-semibold text-slate-200">
-                Core Settings
-            </h4>
+            <h4 className="text-sm font-semibold text-slate-200">Core Settings</h4>
 
             <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
                 <label className="app-field-stack">
@@ -84,15 +79,13 @@ const PermissionGroupFormFields = ({
                         aria-pressed={values.default}
                         aria-label={`Default group ${values.default ? "enabled" : "disabled"}`}
                     >
-            <span
-                className={`text-sm font-medium ${
-                    values.default
-                        ? "text-slate-100"
-                        : "text-slate-300"
-                }`}
-            >
-              {values.default ? "Enabled" : "Disabled"}
-            </span>
+                        <span
+                            className={`text-sm font-medium ${
+                                values.default ? "text-slate-100" : "text-slate-300"
+                            }`}
+                        >
+                            {values.default ? "Enabled" : "Disabled"}
+                        </span>
                         <span
                             className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
                                 values.default
@@ -100,23 +93,21 @@ const PermissionGroupFormFields = ({
                                     : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
                             }`}
                         >
-              <span
-                  className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
-                      values.default
-                          ? "translate-x-4 -translate-y-1/2"
-                          : "translate-x-0 -translate-y-1/2"
-                  }`}
-              />
-            </span>
+                            <span
+                                className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                                    values.default
+                                        ? "translate-x-4 -translate-y-1/2"
+                                        : "translate-x-0 -translate-y-1/2"
+                                }`}
+                            />
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
-            <h4 className="text-sm font-semibold text-slate-200">
-                Display Formatting
-            </h4>
+            <h4 className="text-sm font-semibold text-slate-200">Display Formatting</h4>
 
             <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
                 <label className="app-field-stack">
@@ -146,10 +137,7 @@ const PermissionGroupFormFields = ({
                 </label>
 
                 <label className="app-field-stack">
-                    <FieldHintLabel
-                        label="Name Color"
-                        hint="Color code applied to player names."
-                    />
+                    <FieldHintLabel label="Name Color" hint="Color code applied to player names." />
                     <input
                         type="text"
                         value={values.display.nameColor}
@@ -159,10 +147,7 @@ const PermissionGroupFormFields = ({
                 </label>
 
                 <label className="app-field-stack">
-                    <FieldHintLabel
-                        label="Tab Prefix"
-                        hint="Prefix displayed in the tab list."
-                    />
+                    <FieldHintLabel label="Tab Prefix" hint="Prefix displayed in the tab list." />
                     <input
                         type="text"
                         value={values.display.tabPrefix}

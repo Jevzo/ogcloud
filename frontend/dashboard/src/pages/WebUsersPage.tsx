@@ -1,5 +1,5 @@
-import {useCallback, useEffect, useState} from "react";
-import {motion} from "motion/react";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
 import {
     FiChevronLeft,
     FiChevronRight,
@@ -15,11 +15,17 @@ import {
 import AppSelect from "@/components/AppSelect";
 import AppToasts from "@/components/AppToasts";
 import TableRefreshButton from "@/components/TableRefreshButton";
-import {createWebUser, deleteWebUser, listWebUsers, unlinkWebUserAccount, updateWebUser,} from "@/lib/api";
-import {hasAdminAccess, normalizeRole} from "@/lib/roles";
-import {useAuthStore} from "@/store/auth-store";
-import type {PaginatedResponse} from "@/types/dashboard";
-import {getPaginatedHasNext, getPaginatedTotalPages} from "@/types/dashboard";
+import {
+    createWebUser,
+    deleteWebUser,
+    listWebUsers,
+    unlinkWebUserAccount,
+    updateWebUser,
+} from "@/lib/api";
+import { hasAdminAccess, normalizeRole } from "@/lib/roles";
+import { useAuthStore } from "@/store/auth-store";
+import type { PaginatedResponse } from "@/types/dashboard";
+import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import {
     type CreateWebUserPayload,
     type UpdateWebUserPayload,
@@ -92,7 +98,7 @@ const WebUsersPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [createValues, setCreateValues] = useState<CreateWebUserPayload>(
-        createEmptyWebUserValues()
+        createEmptyWebUserValues(),
     );
     const [editTargetUser, setEditTargetUser] = useState<WebUserRecord | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -118,33 +124,38 @@ const WebUsersPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadWebUsers = useCallback(async (showLoading = true) => {
-        if (!canManageWebUsers) {
-            setWebUserPage(EMPTY_WEB_USER_PAGE);
-            setIsLoading(false);
-            return;
-        }
+    const loadWebUsers = useCallback(
+        async (showLoading = true) => {
+            if (!canManageWebUsers) {
+                setWebUserPage(EMPTY_WEB_USER_PAGE);
+                setIsLoading(false);
+                return;
+            }
 
-        if (showLoading) {
-            setIsLoading(true);
-        }
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const nextPage = await listWebUsers(accessToken, {
-                query: query.trim() || undefined,
-                page: currentPage,
-                size: WEB_USER_PAGE_SIZE,
-            });
+            try {
+                const accessToken = await getValidAccessToken();
+                const nextPage = await listWebUsers(accessToken, {
+                    query: query.trim() || undefined,
+                    page: currentPage,
+                    size: WEB_USER_PAGE_SIZE,
+                });
 
-            setWebUserPage(nextPage);
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Unable to load web users.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [canManageWebUsers, currentPage, getValidAccessToken, query]);
+                setWebUserPage(nextPage);
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load web users.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [canManageWebUsers, currentPage, getValidAccessToken, query],
+    );
 
     useEffect(() => {
         let active = true;
@@ -380,7 +391,7 @@ const WebUsersPage = () => {
             await loadWebUsers(false);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to unlink Minecraft account."
+                error instanceof Error ? error.message : "Unable to unlink Minecraft account.",
             );
         } finally {
             setActiveUnlinkEmail(null);
@@ -395,36 +406,36 @@ const WebUsersPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "web-users-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "web-users-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "web-users-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "web-users-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiUserPlus className="h-5 w-5 text-primary"/>
+                        <FiUserPlus className="h-5 w-5 text-primary" />
                         Web Users
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
@@ -447,7 +458,7 @@ const WebUsersPage = () => {
                             onClick={() => setIsCreateModalOpen(true)}
                             className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-slate-950"
                         >
-                            <FiPlus className="h-4 w-4"/>
+                            <FiPlus className="h-4 w-4" />
                             Create User
                         </button>
                     </div>
@@ -456,14 +467,14 @@ const WebUsersPage = () => {
 
             {!canManageWebUsers ? (
                 <motion.section
-                    initial={{y: 16, opacity: 0}}
-                    animate={{y: 0, opacity: 1}}
-                    transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                    initial={{ y: 16, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                     className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm"
                 >
                     <div className="flex items-start gap-3">
                         <div className="rounded-lg bg-amber-500/10 p-2 text-amber-300">
-                            <FiShield className="h-5 w-5"/>
+                            <FiShield className="h-5 w-5" />
                         </div>
                         <div>
                             <h3 className="text-sm font-semibold text-white">Restricted</h3>
@@ -475,9 +486,9 @@ const WebUsersPage = () => {
                 </motion.section>
             ) : (
                 <motion.section
-                    initial={{y: 16, opacity: 0}}
-                    animate={{y: 0, opacity: 1}}
-                    transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                    initial={{ y: 16, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                     className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm"
                 >
                     <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
@@ -486,9 +497,10 @@ const WebUsersPage = () => {
                                 Accounts
                             </h3>
                             <div className="flex items-center justify-between gap-3 sm:justify-end">
-                <span className="text-xs text-slate-500">
-                  {webUserPage.totalItems} user{webUserPage.totalItems === 1 ? "" : "s"}
-                </span>
+                                <span className="text-xs text-slate-500">
+                                    {webUserPage.totalItems} user
+                                    {webUserPage.totalItems === 1 ? "" : "s"}
+                                </span>
                                 <TableRefreshButton
                                     onClick={() => {
                                         void loadWebUsers(false);
@@ -503,109 +515,120 @@ const WebUsersPage = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-left">
                             <thead>
-                            <tr className="border-b border-slate-800 bg-slate-800/30">
-                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Email
-                                </th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Username
-                                </th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Role
-                                </th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Linked Player
-                                </th>
-                                <th className="px-6 py-4 text-right text-xs font-semibold uppercase text-slate-500">
-                                    Actions
-                                </th>
-                            </tr>
+                                <tr className="border-b border-slate-800 bg-slate-800/30">
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                        Email
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                        Username
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                        Role
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                        Linked Player
+                                    </th>
+                                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase text-slate-500">
+                                        Actions
+                                    </th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
-                            {isLoading ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400">
-                                        Loading web users...
-                                    </td>
-                                </tr>
-                            ) : webUserPage.items.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400">
-                                        No web users matched your search.
-                                    </td>
-                                </tr>
-                            ) : (
-                                webUserPage.items.map((user) => (
-                                    <tr key={user.id}>
-                                        <td className="px-6 py-4">
-                                            <p className="text-sm font-semibold text-white">{user.email}</p>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-300">{user.username}</td>
-                                        <td className="px-6 py-4">
-                        <span
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(
-                                user.role
-                            )}`}
-                        >
-                          {user.role}
-                        </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="font-mono text-xs text-slate-400">
-                                                {user.linkedPlayerUuid || "--"}
-                                            </p>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void handleUnlinkWebUser(user)}
-                                                    disabled={
-                                                        isUpdating ||
-                                                        isDeleting ||
-                                                        activeUnlinkEmail !== null ||
-                                                        !user.linkedPlayerUuid
-                                                    }
-                                                    className="button-hover-lift button-shadow-warning inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                                    aria-label={`Unlink ${user.email}`}
-                                                    title={`Unlink ${user.email}`}
-                                                >
-                                                    <FiLink className="h-4 w-4"/>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openEditModal(user)}
-                                                    disabled={isUpdating || isDeleting}
-                                                    className="button-hover-lift button-shadow-primary inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary disabled:cursor-not-allowed disabled:opacity-60"
-                                                    aria-label={`Edit ${user.email}`}
-                                                    title={`Edit ${user.email}`}
-                                                >
-                                                    <FiEdit2 className="h-4 w-4"/>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDeleteModal(user)}
-                                                    disabled={isUpdating || isDeleting}
-                                                    className="button-hover-lift button-shadow-danger inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                                    aria-label={`Delete ${user.email}`}
-                                                    title={`Delete ${user.email}`}
-                                                >
-                                                    <FiTrash2 className="h-4 w-4"/>
-                                                </button>
-                                            </div>
+                                {isLoading ? (
+                                    <tr>
+                                        <td
+                                            colSpan={5}
+                                            className="px-6 py-10 text-center text-sm text-slate-400"
+                                        >
+                                            Loading web users...
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                ) : webUserPage.items.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan={5}
+                                            className="px-6 py-10 text-center text-sm text-slate-400"
+                                        >
+                                            No web users matched your search.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    webUserPage.items.map((user) => (
+                                        <tr key={user.id}>
+                                            <td className="px-6 py-4">
+                                                <p className="text-sm font-semibold text-white">
+                                                    {user.email}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-300">
+                                                {user.username}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(
+                                                        user.role,
+                                                    )}`}
+                                                >
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-mono text-xs text-slate-400">
+                                                    {user.linkedPlayerUuid || "--"}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            void handleUnlinkWebUser(user)
+                                                        }
+                                                        disabled={
+                                                            isUpdating ||
+                                                            isDeleting ||
+                                                            activeUnlinkEmail !== null ||
+                                                            !user.linkedPlayerUuid
+                                                        }
+                                                        className="button-hover-lift button-shadow-warning inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        aria-label={`Unlink ${user.email}`}
+                                                        title={`Unlink ${user.email}`}
+                                                    >
+                                                        <FiLink className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditModal(user)}
+                                                        disabled={isUpdating || isDeleting}
+                                                        className="button-hover-lift button-shadow-primary inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                                        aria-label={`Edit ${user.email}`}
+                                                        title={`Edit ${user.email}`}
+                                                    >
+                                                        <FiEdit2 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openDeleteModal(user)}
+                                                        disabled={isUpdating || isDeleting}
+                                                        className="button-hover-lift button-shadow-danger inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        aria-label={`Delete ${user.email}`}
+                                                        title={`Delete ${user.email}`}
+                                                    >
+                                                        <FiTrash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
 
-                    <div
-                        className="flex flex-col gap-3 border-t border-slate-800 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm text-slate-400">
-              Page {webUserPage.page + 1} of {totalPages}
-            </span>
+                    <div className="flex flex-col gap-3 border-t border-slate-800 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-sm text-slate-400">
+                            Page {webUserPage.page + 1} of {totalPages}
+                        </span>
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
@@ -613,7 +636,7 @@ const WebUsersPage = () => {
                                 onClick={() => setCurrentPage((value) => Math.max(0, value - 1))}
                                 className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <FiChevronLeft className="h-4 w-4"/>
+                                <FiChevronLeft className="h-4 w-4" />
                                 Previous
                             </button>
                             <button
@@ -623,7 +646,7 @@ const WebUsersPage = () => {
                                 className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Next
-                                <FiChevronRight className="h-4 w-4"/>
+                                <FiChevronRight className="h-4 w-4" />
                             </button>
                         </div>
                     </div>
@@ -631,12 +654,11 @@ const WebUsersPage = () => {
             )}
 
             {isCreateModalOpen ? (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -652,7 +674,7 @@ const WebUsersPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
@@ -733,12 +755,11 @@ const WebUsersPage = () => {
             ) : null}
 
             {isEditModalOpen && editTargetUser ? (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -755,7 +776,7 @@ const WebUsersPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
@@ -852,12 +873,11 @@ const WebUsersPage = () => {
             ) : null}
 
             {isDeleteModalOpen && deleteTargetUser ? (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-lg rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="border-b border-slate-800 px-6 py-4">

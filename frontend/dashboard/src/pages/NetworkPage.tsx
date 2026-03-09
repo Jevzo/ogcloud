@@ -1,6 +1,16 @@
-import {useCallback, useEffect, useRef, useState} from "react";
-import {motion} from "motion/react";
-import {FiActivity, FiAlertTriangle, FiGlobe, FiInfo, FiSave, FiServer, FiShield, FiUsers, FiX,} from "react-icons/fi";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import {
+    FiActivity,
+    FiAlertTriangle,
+    FiGlobe,
+    FiInfo,
+    FiSave,
+    FiServer,
+    FiShield,
+    FiUsers,
+    FiX,
+} from "react-icons/fi";
 
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
@@ -14,10 +24,14 @@ import {
     toggleNetworkMaintenance,
     updateNetworkSettings,
 } from "@/lib/api";
-import {useAuthStore} from "@/store/auth-store";
-import {useNetworkSettingsStore} from "@/store/network-settings-store";
-import type {GroupListItem} from "@/types/dashboard";
-import type {NetworkSettingsRecord, NetworkStatusRecord, ProxyRoutingStrategy,} from "@/types/network";
+import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import type { GroupListItem } from "@/types/dashboard";
+import type {
+    NetworkSettingsRecord,
+    NetworkStatusRecord,
+    ProxyRoutingStrategy,
+} from "@/types/network";
 
 interface NetworkFormValues {
     maxPlayers: string;
@@ -56,10 +70,8 @@ const createFormValues = (settings: NetworkSettingsRecord): NetworkFormValues =>
     proxyRoutingStrategy: settings.general.proxyRoutingStrategy,
 });
 
-const areFormValuesEqual = (
-    left: NetworkFormValues | null,
-    right: NetworkFormValues | null
-) => JSON.stringify(left) === JSON.stringify(right);
+const areFormValuesEqual = (left: NetworkFormValues | null, right: NetworkFormValues | null) =>
+    JSON.stringify(left) === JSON.stringify(right);
 
 const NetworkPage = () => {
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
@@ -96,52 +108,56 @@ const NetworkPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadNetworkData = useCallback(async (showLoading = true) => {
-        if (showLoading) {
-            setIsLoading(true);
-        }
+    const loadNetworkData = useCallback(
+        async (showLoading = true) => {
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const [nextSettings, nextStatus, nextGroups] = await Promise.all([
-                getNetworkSettings(accessToken),
-                getNetworkStatus(accessToken),
-                listGroups(accessToken),
-            ]);
+            try {
+                const accessToken = await getValidAccessToken();
+                const [nextSettings, nextStatus, nextGroups] = await Promise.all([
+                    getNetworkSettings(accessToken),
+                    getNetworkStatus(accessToken),
+                    listGroups(accessToken),
+                ]);
 
-            setSettings(nextSettings);
-            setStatus(nextStatus);
-            setGroups(nextGroups);
-            setGeneralSettings(nextSettings.general);
-            const nextFormValues = createFormValues(nextSettings);
-            setFormValues((currentValue) => {
-                const currentSettingsValues = settingsRef.current
-                    ? createFormValues(settingsRef.current)
-                    : null;
-                const liveFormValues = currentValue ?? formValuesRef.current;
-                const isDirty = currentValue && !areFormValuesEqual(currentValue, currentSettingsValues);
+                setSettings(nextSettings);
+                setStatus(nextStatus);
+                setGroups(nextGroups);
+                setGeneralSettings(nextSettings.general);
+                const nextFormValues = createFormValues(nextSettings);
+                setFormValues((currentValue) => {
+                    const currentSettingsValues = settingsRef.current
+                        ? createFormValues(settingsRef.current)
+                        : null;
+                    const liveFormValues = currentValue ?? formValuesRef.current;
+                    const isDirty =
+                        currentValue && !areFormValuesEqual(currentValue, currentSettingsValues);
 
-                if (
-                    !liveFormValues ||
-                    !isDirty ||
-                    showLoading ||
-                    isSaving ||
-                    isTogglingMaintenance
-                ) {
-                    return nextFormValues;
-                }
+                    if (
+                        !liveFormValues ||
+                        !isDirty ||
+                        showLoading ||
+                        isSaving ||
+                        isTogglingMaintenance
+                    ) {
+                        return nextFormValues;
+                    }
 
-                return liveFormValues;
-            });
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to load network settings."
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [getValidAccessToken, isSaving, isTogglingMaintenance, setGeneralSettings]);
+                    return liveFormValues;
+                });
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load network settings.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [getValidAccessToken, isSaving, isTogglingMaintenance, setGeneralSettings],
+    );
 
     useEffect(() => {
         let active = true;
@@ -188,24 +204,24 @@ const NetworkPage = () => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    [field]: value,
-                }
-                : currentValue
+                      ...currentValue,
+                      [field]: value,
+                  }
+                : currentValue,
         );
     };
 
     const setBooleanField = (
         field: Extract<keyof NetworkFormValues, "permissionSystemEnabled" | "tablistEnabled">,
-        value: boolean
+        value: boolean,
     ) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    [field]: value,
-                }
-                : currentValue
+                      ...currentValue,
+                      [field]: value,
+                  }
+                : currentValue,
         );
     };
 
@@ -213,10 +229,10 @@ const NetworkPage = () => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    proxyRoutingStrategy: value,
-                }
-                : currentValue
+                      ...currentValue,
+                      proxyRoutingStrategy: value,
+                  }
+                : currentValue,
         );
     };
 
@@ -243,9 +259,7 @@ const NetworkPage = () => {
             setSuccessMessage("Network maintenance has been disabled.");
         } catch (error) {
             setErrorMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to update network maintenance."
+                error instanceof Error ? error.message : "Unable to update network maintenance.",
             );
         } finally {
             setIsTogglingMaintenance(false);
@@ -271,9 +285,7 @@ const NetworkPage = () => {
             setIsMaintenanceModalOpen(false);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to update network maintenance."
+                error instanceof Error ? error.message : "Unable to update network maintenance.",
             );
         } finally {
             setIsTogglingMaintenance(false);
@@ -294,7 +306,7 @@ const NetworkPage = () => {
 
         const normalizedDefaultGroup = formValues.defaultGroup.trim();
         const hasEligibleDefaultGroup = eligibleDefaultGroups.some(
-            (group) => group.id === normalizedDefaultGroup
+            (group) => group.id === normalizedDefaultGroup,
         );
 
         if (!normalizedDefaultGroup || !hasEligibleDefaultGroup) {
@@ -336,7 +348,7 @@ const NetworkPage = () => {
             setSuccessMessage("Network settings saved.");
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to save network settings."
+                error instanceof Error ? error.message : "Unable to save network settings.",
             );
         } finally {
             setIsSaving(false);
@@ -373,15 +385,11 @@ const NetworkPage = () => {
             value: settings?.maintenance ? "Enabled" : "Disabled",
             suffix: null,
             tone: settings?.maintenance ? "text-amber-300" : "text-slate-400",
-            meta: settings?.maintenance
-                ? "New joins are restricted"
-                : "Network open for players",
+            meta: settings?.maintenance ? "New joins are restricted" : "Network open for players",
             icon: FiShield,
         },
     ] as const;
-    const eligibleDefaultGroups = groups.filter(
-        (group) => group.type.toUpperCase() !== "PROXY"
-    );
+    const eligibleDefaultGroups = groups.filter((group) => group.type.toUpperCase() !== "PROXY");
     const defaultGroupValue =
         formValues && eligibleDefaultGroups.some((group) => group.id === formValues.defaultGroup)
             ? formValues.defaultGroup
@@ -396,41 +404,41 @@ const NetworkPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "network-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "network-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "network-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "network-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiGlobe className="h-5 w-5 text-primary"/>
+                        <FiGlobe className="h-5 w-5 text-primary" />
                         Network
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
-                        Configure global MOTD, join routing, tablist copy, and maintenance
-                        behavior for the whole network.
+                        Configure global MOTD, join routing, tablist copy, and maintenance behavior
+                        for the whole network.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -444,39 +452,43 @@ const NetworkPage = () => {
                                 : "button-shadow-warning bg-amber-500/12 text-amber-300"
                         }`}
                     >
-                        <FiShield className="h-4 w-4"/>
+                        <FiShield className="h-4 w-4" />
                         {isTogglingMaintenance
                             ? "Updating..."
                             : settings?.maintenance
-                                ? "Disable Maintenance"
-                                : "Enable Maintenance"}
+                              ? "Disable Maintenance"
+                              : "Enable Maintenance"}
                     </button>
                 </div>
             </motion.section>
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                 className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
             >
-                {statusCards.map(({title, value, suffix, tone, meta, icon: Icon}) => (
+                {statusCards.map(({ title, value, suffix, tone, meta, icon: Icon }) => (
                     <div
                         key={title}
                         className="rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-sm"
                     >
                         <div className="mb-4 flex items-start justify-between">
                             <p className="text-sm font-medium text-slate-400">{title}</p>
-                            <Icon className={`h-5 w-5 ${tone}`}/>
+                            <Icon className={`h-5 w-5 ${tone}`} />
                         </div>
                         <div>
                             <h3 className="text-3xl font-bold tracking-tight text-white">
                                 {isLoading ? "--" : value}{" "}
                                 {suffix && (
-                                    <span className="text-lg font-medium text-slate-500">{suffix}</span>
+                                    <span className="text-lg font-medium text-slate-500">
+                                        {suffix}
+                                    </span>
                                 )}
                             </h3>
-                            <p className={`mt-2 text-xs font-medium uppercase tracking-wide ${tone}`}>
+                            <p
+                                className={`mt-2 text-xs font-medium uppercase tracking-wide ${tone}`}
+                            >
                                 {meta}
                             </p>
                         </div>
@@ -485,9 +497,9 @@ const NetworkPage = () => {
             </motion.section>
 
             <motion.section
-                initial={{y: 20, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.09}}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.09 }}
                 className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
             >
                 <div className="space-y-6">
@@ -521,10 +533,16 @@ const NetworkPage = () => {
                                     </p>
                                     <p
                                         className={`mt-1.5 text-sm font-semibold ${
-                                            settings?.maintenance ? "text-amber-300" : "text-emerald-300"
+                                            settings?.maintenance
+                                                ? "text-amber-300"
+                                                : "text-emerald-300"
                                         }`}
                                     >
-                                        {settings ? (settings.maintenance ? "Enabled" : "Disabled") : "--"}
+                                        {settings
+                                            ? settings.maintenance
+                                                ? "Enabled"
+                                                : "Disabled"
+                                            : "--"}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
@@ -544,16 +562,18 @@ const NetworkPage = () => {
                                     Plugin Controls
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                  <span
-                      className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${
-                          settings?.general.permissionSystemEnabled
-                              ? "bg-emerald-500/12 text-emerald-300"
-                              : "bg-slate-700/40 text-slate-300"
-                      }`}
-                  >
-                    Permission System:{" "}
-                      {settings?.general.permissionSystemEnabled ? "Enabled" : "Disabled"}
-                  </span>
+                                    <span
+                                        className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${
+                                            settings?.general.permissionSystemEnabled
+                                                ? "bg-emerald-500/12 text-emerald-300"
+                                                : "bg-slate-700/40 text-slate-300"
+                                        }`}
+                                    >
+                                        Permission System:{" "}
+                                        {settings?.general.permissionSystemEnabled
+                                            ? "Enabled"
+                                            : "Disabled"}
+                                    </span>
                                     <span
                                         className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${
                                             settings?.general.tablistEnabled
@@ -561,8 +581,9 @@ const NetworkPage = () => {
                                                 : "bg-slate-700/40 text-slate-300"
                                         }`}
                                     >
-                    Tablist: {settings?.general.tablistEnabled ? "Enabled" : "Disabled"}
-                  </span>
+                                        Tablist:{" "}
+                                        {settings?.general.tablistEnabled ? "Enabled" : "Disabled"}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -575,19 +596,23 @@ const NetworkPage = () => {
                             </h3>
                         </div>
                         <div className="grid grid-cols-1 gap-4 p-6">
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Global
                                 </p>
-                                <MinecraftTextPreview value={settings?.motd.global} className="mt-2 font-mono"/>
+                                <MinecraftTextPreview
+                                    value={settings?.motd.global}
+                                    className="mt-2 font-mono"
+                                />
                             </div>
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Maintenance
                                 </p>
-                                <MinecraftTextPreview value={settings?.motd.maintenance} className="mt-2 font-mono"/>
+                                <MinecraftTextPreview
+                                    value={settings?.motd.maintenance}
+                                    className="mt-2 font-mono"
+                                />
                             </div>
                         </div>
                     </div>
@@ -599,15 +624,16 @@ const NetworkPage = () => {
                             </h3>
                         </div>
                         <div className="space-y-5 p-6">
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Global Version
                                 </p>
-                                <MinecraftTextPreview value={settings?.versionName.global} className="mt-2 font-mono"/>
+                                <MinecraftTextPreview
+                                    value={settings?.versionName.global}
+                                    className="mt-2 font-mono"
+                                />
                             </div>
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Maintenance Version
                                 </p>
@@ -616,8 +642,7 @@ const NetworkPage = () => {
                                     className="mt-2 font-mono"
                                 />
                             </div>
-                            <div
-                                className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
+                            <div className="rounded-lg border border-slate-700/70 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 p-4">
                                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                                     Maintenance Kick Message
                                 </p>
@@ -661,7 +686,11 @@ const NetworkPage = () => {
                                     <AppSelect
                                         value={defaultGroupValue}
                                         onChangeValue={(value) => setField("defaultGroup", value)}
-                                        disabled={isLoading || !formValues || eligibleDefaultGroups.length === 0}
+                                        disabled={
+                                            isLoading ||
+                                            !formValues ||
+                                            eligibleDefaultGroups.length === 0
+                                        }
                                     >
                                         <option value="">
                                             {eligibleDefaultGroups.length === 0
@@ -697,23 +726,30 @@ const NetworkPage = () => {
                         <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-5">
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-200">General Plugin Settings</h4>
+                                    <h4 className="text-sm font-semibold text-slate-200">
+                                        General Plugin Settings
+                                    </h4>
                                     <p className="mt-1 text-xs text-slate-500">
-                                        Control global permission and tablist handling across plugins.
+                                        Control global permission and tablist handling across
+                                        plugins.
                                     </p>
                                 </div>
                                 <span
                                     className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                        permissionSystemEnabled && tablistEnabled && proxyRoutingStrategy === "LOAD_BASED"
+                                        permissionSystemEnabled &&
+                                        tablistEnabled &&
+                                        proxyRoutingStrategy === "LOAD_BASED"
                                             ? "bg-emerald-500/10 text-emerald-300"
                                             : "bg-amber-500/10 text-amber-300"
                                     }`}
                                 >
-                  <FiInfo className="h-3.5 w-3.5"/>
-                                    {permissionSystemEnabled && tablistEnabled && proxyRoutingStrategy === "LOAD_BASED"
+                                    <FiInfo className="h-3.5 w-3.5" />
+                                    {permissionSystemEnabled &&
+                                    tablistEnabled &&
+                                    proxyRoutingStrategy === "LOAD_BASED"
                                         ? "Recommended"
                                         : "Custom"}
-                </span>
+                                </span>
                             </div>
 
                             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -721,17 +757,22 @@ const NetworkPage = () => {
                                     type="button"
                                     disabled={isLoading || !formValues}
                                     onClick={() =>
-                                        setBooleanField("permissionSystemEnabled", !permissionSystemEnabled)
+                                        setBooleanField(
+                                            "permissionSystemEnabled",
+                                            !permissionSystemEnabled,
+                                        )
                                     }
                                     className="app-input-field group flex min-h-16 w-full items-center justify-between rounded-lg border border-slate-700 px-5 py-3 text-left disabled:cursor-not-allowed"
                                     aria-pressed={permissionSystemEnabled}
                                 >
-                  <span className="pr-5">
-                    <span className="block text-sm font-semibold text-slate-100">Permission System</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Enable permission injection and updates.
-                    </span>
-                  </span>
+                                    <span className="pr-5">
+                                        <span className="block text-sm font-semibold text-slate-100">
+                                            Permission System
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-slate-500">
+                                            Enable permission injection and updates.
+                                        </span>
+                                    </span>
                                     <span
                                         className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
                                             permissionSystemEnabled
@@ -739,29 +780,33 @@ const NetworkPage = () => {
                                                 : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
                                         }`}
                                     >
-                    <span
-                        className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
-                            permissionSystemEnabled
-                                ? "translate-x-4 -translate-y-1/2"
-                                : "translate-x-0 -translate-y-1/2"
-                        }`}
-                    />
-                  </span>
+                                        <span
+                                            className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                                                permissionSystemEnabled
+                                                    ? "translate-x-4 -translate-y-1/2"
+                                                    : "translate-x-0 -translate-y-1/2"
+                                            }`}
+                                        />
+                                    </span>
                                 </button>
 
                                 <button
                                     type="button"
                                     disabled={isLoading || !formValues}
-                                    onClick={() => setBooleanField("tablistEnabled", !tablistEnabled)}
+                                    onClick={() =>
+                                        setBooleanField("tablistEnabled", !tablistEnabled)
+                                    }
                                     className="app-input-field group flex min-h-16 w-full items-center justify-between rounded-lg border border-slate-700 px-5 py-3 text-left disabled:cursor-not-allowed"
                                     aria-pressed={tablistEnabled}
                                 >
-                  <span className="pr-5">
-                    <span className="block text-sm font-semibold text-slate-100">Tablist</span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Enable dynamic tablist updates and templates.
-                    </span>
-                  </span>
+                                    <span className="pr-5">
+                                        <span className="block text-sm font-semibold text-slate-100">
+                                            Tablist
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-slate-500">
+                                            Enable dynamic tablist updates and templates.
+                                        </span>
+                                    </span>
                                     <span
                                         className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-all duration-500 ease-in-out ${
                                             tablistEnabled
@@ -769,14 +814,14 @@ const NetworkPage = () => {
                                                 : "border-slate-600 bg-slate-700/70 group-hover:bg-slate-700"
                                         }`}
                                     >
-                    <span
-                        className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
-                            tablistEnabled
-                                ? "translate-x-4 -translate-y-1/2"
-                                : "translate-x-0 -translate-y-1/2"
-                        }`}
-                    />
-                  </span>
+                                        <span
+                                            className={`absolute top-1/2 left-0.5 h-4 w-4 rounded-full border border-white/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.3)] transition-transform duration-500 ease-in-out ${
+                                                tablistEnabled
+                                                    ? "translate-x-4 -translate-y-1/2"
+                                                    : "translate-x-0 -translate-y-1/2"
+                                            }`}
+                                        />
+                                    </span>
                                 </button>
                             </div>
 
@@ -788,7 +833,9 @@ const NetworkPage = () => {
                                     />
                                     <AppSelect
                                         value={proxyRoutingStrategy}
-                                        onChangeValue={(value) => setRoutingStrategy(value as ProxyRoutingStrategy)}
+                                        onChangeValue={(value) =>
+                                            setRoutingStrategy(value as ProxyRoutingStrategy)
+                                        }
                                         disabled={isLoading || !formValues}
                                     >
                                         <option value="LOAD_BASED">
@@ -848,7 +895,9 @@ const NetworkPage = () => {
                                     />
                                     <textarea
                                         value={formValues?.motdGlobal ?? ""}
-                                        onChange={(event) => setField("motdGlobal", event.target.value)}
+                                        onChange={(event) =>
+                                            setField("motdGlobal", event.target.value)
+                                        }
                                         disabled={isLoading || !formValues}
                                         rows={4}
                                         className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
@@ -876,17 +925,17 @@ const NetworkPage = () => {
                             <h4 className="text-sm font-semibold text-slate-200">Tablist</h4>
                             <div className="relative mt-4">
                                 {!tablistEnabled ? (
-                                    <div
-                                        className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-center">
+                                    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-center">
                                         <p className="max-w-sm rounded-lg border border-slate-700/70 px-4 py-2 text-sm font-semibold text-amber-200 backdrop-blur-lg">
-                                            Tablist configuration is disabled. Enable tablist in General Plugin
-                                            Settings.
+                                            Tablist configuration is disabled. Enable tablist in
+                                            General Plugin Settings.
                                         </p>
                                     </div>
                                 ) : null}
 
                                 <div
-                                    className={`space-y-5 transition ${!tablistEnabled ? "blur-[8px] select-none" : ""}`}>
+                                    className={`space-y-5 transition ${!tablistEnabled ? "blur-[8px] select-none" : ""}`}
+                                >
                                     <div className="app-field-stack">
                                         <FieldHintLabel
                                             label="Header"
@@ -894,7 +943,9 @@ const NetworkPage = () => {
                                         />
                                         <textarea
                                             value={formValues?.tablistHeader ?? ""}
-                                            onChange={(event) => setField("tablistHeader", event.target.value)}
+                                            onChange={(event) =>
+                                                setField("tablistHeader", event.target.value)
+                                            }
                                             disabled={isLoading || !formValues || !tablistEnabled}
                                             rows={5}
                                             className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
@@ -907,7 +958,9 @@ const NetworkPage = () => {
                                         />
                                         <textarea
                                             value={formValues?.tablistFooter ?? ""}
-                                            onChange={(event) => setField("tablistFooter", event.target.value)}
+                                            onChange={(event) =>
+                                                setField("tablistFooter", event.target.value)
+                                            }
                                             disabled={isLoading || !formValues || !tablistEnabled}
                                             rows={5}
                                             className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed"
@@ -924,7 +977,7 @@ const NetworkPage = () => {
                                 disabled={!formValues || isSaving}
                                 className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <FiSave className="h-4 w-4"/>
+                                <FiSave className="h-4 w-4" />
                                 {isSaving ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
@@ -933,12 +986,11 @@ const NetworkPage = () => {
             </motion.section>
 
             {isMaintenanceModalOpen && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -956,18 +1008,17 @@ const NetworkPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
                         <div className="space-y-4 px-6 py-5">
-                            <div
-                                className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
                                 <div className="flex items-start gap-3">
-                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300"/>
+                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
                                     <p>
-                                        Enabling maintenance will remove all players from the network
-                                        and block normal joins until you disable it again.
+                                        Enabling maintenance will remove all players from the
+                                        network and block normal joins until you disable it again.
                                     </p>
                                 </div>
                             </div>

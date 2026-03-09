@@ -1,14 +1,18 @@
-import {useCallback, useEffect, useState} from "react";
-import {motion} from "motion/react";
-import {FiPlus, FiShield, FiStar, FiX} from "react-icons/fi";
-import {Link} from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { FiPlus, FiShield, FiStar, FiX } from "react-icons/fi";
+import { Link } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
 import PermissionGroupFormFields from "@/components/PermissionGroupFormFields";
-import {createPermissionGroup, listAllPermissionGroups} from "@/lib/api";
-import {useAuthStore} from "@/store/auth-store";
-import {useNetworkSettingsStore} from "@/store/network-settings-store";
-import type {CreatePermissionGroupPayload, PermissionGroupFormValues, PermissionGroupRecord,} from "@/types/permission";
+import { createPermissionGroup, listAllPermissionGroups } from "@/lib/api";
+import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import type {
+    CreatePermissionGroupPayload,
+    PermissionGroupFormValues,
+    PermissionGroupRecord,
+} from "@/types/permission";
 
 const REFRESH_INTERVAL_MS = 10_000;
 const GROUP_THUMBNAILS = [
@@ -36,7 +40,7 @@ const createEmptyPermissionGroup = (): PermissionGroupFormValues => ({
 const PermissionsPage = () => {
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
     const permissionSystemEnabled = useNetworkSettingsStore(
-        (state) => state.general.permissionSystemEnabled
+        (state) => state.general.permissionSystemEnabled,
     );
 
     const [groups, setGroups] = useState<PermissionGroupRecord[]>([]);
@@ -46,7 +50,7 @@ const PermissionsPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [createValues, setCreateValues] = useState<PermissionGroupFormValues>(
-        createEmptyPermissionGroup()
+        createEmptyPermissionGroup(),
     );
     const [groupThumbnailMap, setGroupThumbnailMap] = useState<Record<string, string>>({});
 
@@ -60,28 +64,32 @@ const PermissionsPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadPermissionGroups = useCallback(async (showLoading = true) => {
-        if (showLoading) {
-            setIsLoading(true);
-        }
+    const loadPermissionGroups = useCallback(
+        async (showLoading = true) => {
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const nextGroups = await listAllPermissionGroups(accessToken);
-            setGroups(
-                [...nextGroups].sort(
-                    (left, right) => left.weight - right.weight || left.name.localeCompare(right.name)
-                )
-            );
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to load permission groups."
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [getValidAccessToken]);
+            try {
+                const accessToken = await getValidAccessToken();
+                const nextGroups = await listAllPermissionGroups(accessToken);
+                setGroups(
+                    [...nextGroups].sort(
+                        (left, right) =>
+                            left.weight - right.weight || left.name.localeCompare(right.name),
+                    ),
+                );
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load permission groups.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [getValidAccessToken],
+    );
 
     useEffect(() => {
         let active = true;
@@ -126,7 +134,7 @@ const PermissionsPage = () => {
         }
 
         setGroupThumbnailMap((currentMap) => {
-            const nextMap = {...currentMap};
+            const nextMap = { ...currentMap };
             let didChange = false;
 
             for (const group of groups) {
@@ -143,7 +151,7 @@ const PermissionsPage = () => {
 
     const setTopLevelField = (
         field: Exclude<keyof PermissionGroupFormValues, "display" | "default">,
-        value: string
+        value: string,
     ) => {
         setCreateValues((currentValue) => ({
             ...currentValue,
@@ -151,10 +159,7 @@ const PermissionsPage = () => {
         }));
     };
 
-    const setDisplayField = (
-        field: keyof PermissionGroupFormValues["display"],
-        value: string
-    ) => {
+    const setDisplayField = (field: keyof PermissionGroupFormValues["display"], value: string) => {
         setCreateValues((currentValue) => ({
             ...currentValue,
             display: {
@@ -165,7 +170,7 @@ const PermissionsPage = () => {
     };
 
     const buildCreatePayload = (
-        values: PermissionGroupFormValues
+        values: PermissionGroupFormValues,
     ): CreatePermissionGroupPayload => {
         const normalizedId = values.id.trim();
         const normalizedName = values.name.trim();
@@ -221,9 +226,7 @@ const PermissionsPage = () => {
             await loadPermissionGroups(false);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to create permission group."
+                error instanceof Error ? error.message : "Unable to create permission group.",
             );
         } finally {
             setIsCreating(false);
@@ -236,36 +239,36 @@ const PermissionsPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "permissions-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "permissions-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "permissions-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "permissions-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
             >
                 <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiShield className="h-5 w-5 text-primary"/>
+                        <FiShield className="h-5 w-5 text-primary" />
                         Permission Groups
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
@@ -279,26 +282,26 @@ const PermissionsPage = () => {
                     className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                     title={permissionSystemEnabled ? "Create Group" : "Disabled"}
                 >
-                    <FiPlus className="h-4 w-4"/>
+                    <FiPlus className="h-4 w-4" />
                     Create Group
                 </button>
             </motion.section>
 
             {!permissionSystemEnabled ? (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-                    Permission system is disabled. Changes are unavailable until it is enabled in Network settings.
+                    Permission system is disabled. Changes are unavailable until it is enabled in
+                    Network settings.
                 </div>
             ) : null}
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
             >
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-4">
                     {!isLoading && groups.length === 0 ? (
-                        <div
-                            className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400 md:col-span-2 2xl:col-span-4">
+                        <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400 md:col-span-2 2xl:col-span-4">
                             No permission groups exist yet.
                         </div>
                     ) : (
@@ -314,15 +317,13 @@ const PermissionsPage = () => {
                                         alt=""
                                         className="h-full w-full object-cover opacity-65 transition-transform duration-300 group-hover:scale-105"
                                     />
-                                    <div
-                                        className="absolute inset-0 bg-linear-to-b from-slate-950/0 via-slate-950/10 via-35% to-slate-900"/>
+                                    <div className="absolute inset-0 bg-linear-to-b from-slate-950/0 via-slate-950/10 via-35% to-slate-900" />
                                     {group.default && (
                                         <div className="absolute left-4 top-4">
-                      <span
-                          className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                        <FiStar className="h-3 w-3"/>
-                        Default
-                      </span>
+                                            <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                                                <FiStar className="h-3 w-3" />
+                                                Default
+                                            </span>
                                         </div>
                                     )}
                                     <div className="absolute inset-x-4 bottom-2">
@@ -376,12 +377,11 @@ const PermissionsPage = () => {
             </motion.section>
 
             {isCreateModalOpen && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -399,7 +399,7 @@ const PermissionsPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 

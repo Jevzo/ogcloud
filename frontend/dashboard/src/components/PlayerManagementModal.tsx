@@ -1,20 +1,25 @@
-import {useCallback, useEffect, useMemo, useState} from "react";
-import {motion} from "motion/react";
-import {createPortal} from "react-dom";
-import {FiClock, FiShield, FiShuffle, FiTag, FiUsers, FiX,} from "react-icons/fi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
+import { createPortal } from "react-dom";
+import { FiClock, FiShield, FiShuffle, FiTag, FiUsers, FiX } from "react-icons/fi";
 
 import AppSelect from "@/components/AppSelect";
 import AppToasts from "@/components/AppToasts";
 import DetailStatCard from "@/components/DetailStatCard";
 import FieldHintLabel from "@/components/FieldHintLabel";
-import {listAllPermissionGroups, listAllServers, transferPlayerToTarget, updatePlayerPermissionGroup,} from "@/lib/api";
-import {hasAdminAccess} from "@/lib/roles";
-import {formatDateTime} from "@/lib/server-display";
-import {useAuthStore} from "@/store/auth-store";
-import {useNetworkSettingsStore} from "@/store/network-settings-store";
-import type {PermissionGroupRecord} from "@/types/permission";
-import type {PersistedPlayerRecord} from "@/types/player";
-import type {ServerRecord} from "@/types/server";
+import {
+    listAllPermissionGroups,
+    listAllServers,
+    transferPlayerToTarget,
+    updatePlayerPermissionGroup,
+} from "@/lib/api";
+import { hasAdminAccess } from "@/lib/roles";
+import { formatDateTime } from "@/lib/server-display";
+import { useAuthStore } from "@/store/auth-store";
+import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import type { PermissionGroupRecord } from "@/types/permission";
+import type { PersistedPlayerRecord } from "@/types/player";
+import type { ServerRecord } from "@/types/server";
 
 interface PlayerManagementModalProps {
     player: PersistedPlayerRecord | null;
@@ -36,15 +41,15 @@ const formatPermissionExpiry = (endMillis: number) => {
 };
 
 const PlayerManagementModal = ({
-                                   player,
-                                   onClose,
-                                   onPlayerUpdated,
-                                   onTransferComplete,
-                               }: PlayerManagementModalProps) => {
+    player,
+    onClose,
+    onPlayerUpdated,
+    onTransferComplete,
+}: PlayerManagementModalProps) => {
     const session = useAuthStore((state) => state.session);
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
     const permissionSystemEnabled = useNetworkSettingsStore(
-        (state) => state.general.permissionSystemEnabled
+        (state) => state.general.permissionSystemEnabled,
     );
     const canManagePermissionGroups = hasAdminAccess(session?.user.role);
 
@@ -90,32 +95,39 @@ const PlayerManagementModal = ({
 
             setPermissionGroups(
                 [...nextPermissionGroups].sort(
-                    (left, right) => left.weight - right.weight || left.name.localeCompare(right.name)
-                )
+                    (left, right) =>
+                        left.weight - right.weight || left.name.localeCompare(right.name),
+                ),
             );
             setTransferTargets(
                 nextServers
                     .filter(
                         (server) =>
                             server.state.toUpperCase() === "RUNNING" &&
-                            server.type.toUpperCase() !== "PROXY"
+                            server.type.toUpperCase() !== "PROXY",
                     )
-                    .sort((left, right) =>
-                        left.podName.localeCompare(right.podName) ||
-                        left.displayName.localeCompare(right.displayName) ||
-                        left.id.localeCompare(right.id)
-                    )
+                    .sort(
+                        (left, right) =>
+                            left.podName.localeCompare(right.podName) ||
+                            left.displayName.localeCompare(right.displayName) ||
+                            left.id.localeCompare(right.id),
+                    ),
             );
             setHasLoadedManageOptions(true);
             setErrorMessage(null);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to load player actions."
+                error instanceof Error ? error.message : "Unable to load player actions.",
             );
         } finally {
             setIsManageDataLoading(false);
         }
-    }, [canManagePermissionGroups, getValidAccessToken, hasLoadedManageOptions, permissionSystemEnabled]);
+    }, [
+        canManagePermissionGroups,
+        getValidAccessToken,
+        hasLoadedManageOptions,
+        permissionSystemEnabled,
+    ]);
 
     useEffect(() => {
         setActivePlayer(player);
@@ -163,14 +175,14 @@ const PlayerManagementModal = ({
         setActivePlayer((currentValue) =>
             currentValue?.uuid === updatedPlayer.uuid
                 ? {
-                    ...currentValue,
-                    permission: updatedPlayer.permission,
-                    online: updatedPlayer.online,
-                    proxyId: updatedPlayer.proxyId,
-                    serverId: updatedPlayer.serverId,
-                    connectedAt: updatedPlayer.connectedAt,
-                }
-                : currentValue
+                      ...currentValue,
+                      permission: updatedPlayer.permission,
+                      online: updatedPlayer.online,
+                      proxyId: updatedPlayer.proxyId,
+                      serverId: updatedPlayer.serverId,
+                      connectedAt: updatedPlayer.connectedAt,
+                  }
+                : currentValue,
         );
         onPlayerUpdated?.(updatedPlayer);
     };
@@ -204,18 +216,18 @@ const PlayerManagementModal = ({
                 accessToken,
                 activePlayer.uuid,
                 permissionGroupDraft.trim(),
-                permissionDurationDraft.trim()
+                permissionDurationDraft.trim(),
             );
 
             applyUpdatedPlayer(updatedPlayer);
             setSuccessMessage(
-                `Updated ${activePlayer.name} to permission group ${permissionGroupDraft.trim()}.`
+                `Updated ${activePlayer.name} to permission group ${permissionGroupDraft.trim()}.`,
             );
         } catch (error) {
             setErrorMessage(
                 error instanceof Error
                     ? error.message
-                    : "Unable to update this player's permission group."
+                    : "Unable to update this player's permission group.",
             );
         } finally {
             setIsUpdatingGroup(false);
@@ -246,15 +258,13 @@ const PlayerManagementModal = ({
             await transferPlayerToTarget(
                 accessToken,
                 activePlayer.uuid,
-                transferTargetDraft.trim()
+                transferTargetDraft.trim(),
             );
 
             await onTransferComplete?.();
             closeManageModal(true);
         } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to move this player."
-            );
+            setErrorMessage(error instanceof Error ? error.message : "Unable to move this player.");
         } finally {
             setIsTransferring(false);
         }
@@ -269,7 +279,7 @@ const PlayerManagementModal = ({
 
         if (!linkedPlayerUuid) {
             setErrorMessage(
-                "Your web account is not linked to Minecraft. Use the global link modal first."
+                "Your web account is not linked to Minecraft. Use the global link modal first.",
             );
             return;
         }
@@ -296,7 +306,9 @@ const PlayerManagementModal = ({
             setSuccessMessage(`Transfer requested: you -> ${activePlayer.serverId}.`);
             closeManageModal(true);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Unable to transfer your account.");
+            setErrorMessage(
+                error instanceof Error ? error.message : "Unable to transfer your account.",
+            );
         } finally {
             setIsTransferringMe(false);
         }
@@ -305,12 +317,13 @@ const PlayerManagementModal = ({
     const availableTransferTargets = useMemo(
         () =>
             transferTargets.filter(
-                (server) => !activePlayer || !activePlayer.serverId || server.id !== activePlayer.serverId
+                (server) =>
+                    !activePlayer || !activePlayer.serverId || server.id !== activePlayer.serverId,
             ),
-        [activePlayer, transferTargets]
+        [activePlayer, transferTargets],
     );
     const hasPermissionGroupOption = permissionGroups.some(
-        (group) => group.id === permissionGroupDraft
+        (group) => group.id === permissionGroupDraft,
     );
 
     if (!activePlayer) {
@@ -323,32 +336,32 @@ const PlayerManagementModal = ({
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "player-modal-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "player-modal-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "player-modal-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "player-modal-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                 <motion.div
-                    initial={{y: 12, opacity: 0}}
-                    animate={{y: 0, opacity: 1}}
-                    transition={{duration: 0.25, ease: "easeOut"}}
+                    initial={{ y: 12, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
                     className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                 >
                     <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -357,8 +370,8 @@ const PlayerManagementModal = ({
                             <p className="text-sm text-slate-400">
                                 {activePlayer.name}
                                 <span className="ml-2 font-mono text-xs text-slate-500">
-                  {activePlayer.uuid}
-                </span>
+                                    {activePlayer.uuid}
+                                </span>
                             </p>
                         </div>
                         <button
@@ -367,7 +380,7 @@ const PlayerManagementModal = ({
                             className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                             aria-label="Close"
                         >
-                            <FiX className="h-4 w-4"/>
+                            <FiX className="h-4 w-4" />
                         </button>
                     </div>
 
@@ -385,7 +398,9 @@ const PlayerManagementModal = ({
                                 label="Status"
                                 value={activePlayer.online ? "Online" : "Offline"}
                                 meta={
-                                    activePlayer.online ? "Eligible for live actions" : "Cannot be moved now"
+                                    activePlayer.online
+                                        ? "Eligible for live actions"
+                                        : "Cannot be moved now"
                                 }
                                 icon={FiUsers}
                                 tone={activePlayer.online ? "success" : "neutral"}
@@ -395,8 +410,8 @@ const PlayerManagementModal = ({
                                 label="Connected"
                                 value={
                                     <span className="text-sm font-semibold whitespace-nowrap text-slate-100">
-                    {formatDateTime(activePlayer.connectedAt)}
-                  </span>
+                                        {formatDateTime(activePlayer.connectedAt)}
+                                    </span>
                                 }
                                 meta="Current network session"
                                 icon={FiClock}
@@ -409,18 +424,23 @@ const PlayerManagementModal = ({
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                                        <FiShield className="h-4 w-4 text-primary"/>
+                                        <FiShield className="h-4 w-4 text-primary" />
                                         Permission Group
                                     </h4>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Apply a permanent or temporary permission group to this player.
+                                        Apply a permanent or temporary permission group to this
+                                        player.
                                     </p>
                                 </div>
                                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_11rem_auto] lg:items-end">
                                     <AppSelect
                                         label="Permission Group"
                                         labelHint="Select the group that should be assigned to this player."
-                                        value={hasPermissionGroupOption ? permissionGroupDraft : "__current__"}
+                                        value={
+                                            hasPermissionGroupOption
+                                                ? permissionGroupDraft
+                                                : "__current__"
+                                        }
                                         onChangeValue={setPermissionGroupDraft}
                                         disabled={
                                             !permissionSystemEnabled ||
@@ -448,7 +468,9 @@ const PlayerManagementModal = ({
                                         <input
                                             type="text"
                                             value={permissionDurationDraft}
-                                            onChange={(event) => setPermissionDurationDraft(event.target.value)}
+                                            onChange={(event) =>
+                                                setPermissionDurationDraft(event.target.value)
+                                            }
                                             disabled={
                                                 !permissionSystemEnabled ||
                                                 !canManagePermissionGroups ||
@@ -480,12 +502,12 @@ const PlayerManagementModal = ({
                                     {isManageDataLoading
                                         ? "Loading available permission groups..."
                                         : !permissionSystemEnabled
-                                            ? "Permission system is disabled in network settings."
-                                            : !canManagePermissionGroups
-                                                ? "Only admin and service accounts can change permission groups."
-                                                : permissionGroups.length === 0
-                                                    ? "No permission groups are available."
-                                                    : "Use -1 for permanent, or values like 30d or 1h 30m."}
+                                          ? "Permission system is disabled in network settings."
+                                          : !canManagePermissionGroups
+                                            ? "Only admin and service accounts can change permission groups."
+                                            : permissionGroups.length === 0
+                                              ? "No permission groups are available."
+                                              : "Use -1 for permanent, or values like 30d or 1h 30m."}
                                 </p>
                             </div>
                         </div>
@@ -494,7 +516,7 @@ const PlayerManagementModal = ({
                             <div className="space-y-4">
                                 <div>
                                     <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                                        <FiShuffle className="h-4 w-4 text-primary"/>
+                                        <FiShuffle className="h-4 w-4 text-primary" />
                                         Move To Server
                                     </h4>
                                     <p className="mt-1 text-sm text-slate-500">
@@ -553,12 +575,12 @@ const PlayerManagementModal = ({
                                     {!activePlayer.online
                                         ? "This player is currently offline and cannot be transferred."
                                         : isManageDataLoading
-                                            ? "Loading running server targets..."
-                                            : availableTransferTargets.length === 0
-                                                ? "No alternate running game servers are available right now."
-                                                : !session?.user.linkedPlayerUuid
-                                                    ? "Link your account through the global link modal before using Transfer Me."
-                                                    : "Only currently running static and dynamic servers are shown."}
+                                          ? "Loading running server targets..."
+                                          : availableTransferTargets.length === 0
+                                            ? "No alternate running game servers are available right now."
+                                            : !session?.user.linkedPlayerUuid
+                                              ? "Link your account through the global link modal before using Transfer Me."
+                                              : "Only currently running static and dynamic servers are shown."}
                                 </p>
                             </div>
                         </div>
@@ -566,7 +588,7 @@ const PlayerManagementModal = ({
                 </motion.div>
             </div>
         </>,
-        document.body
+        document.body,
     );
 };
 

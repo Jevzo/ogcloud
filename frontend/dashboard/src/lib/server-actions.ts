@@ -1,5 +1,5 @@
-import {forceServerTemplatePush, killServerInstance, stopServerGracefully,} from "@/lib/api";
-import type {ServerActionKind} from "@/types/server";
+import { forceServerTemplatePush, killServerInstance, stopServerGracefully } from "@/lib/api";
+import type { ServerActionKind } from "@/types/server";
 
 const ACTION_EXECUTORS: Record<
     ServerActionKind,
@@ -19,13 +19,11 @@ const ACTION_SUCCESS_MESSAGE: Record<ServerActionKind, string> = {
 export const runServerAction = async (
     accessToken: string,
     serverId: string,
-    action: ServerActionKind
+    action: ServerActionKind,
 ) => {
     const executeAction = ACTION_EXECUTORS[action];
     await executeAction(accessToken, serverId);
 };
 
-export const getServerActionSuccessMessage = (
-    serverId: string,
-    action: ServerActionKind
-) => `${ACTION_SUCCESS_MESSAGE[action]} for ${serverId}.`;
+export const getServerActionSuccessMessage = (serverId: string, action: ServerActionKind) =>
+    `${ACTION_SUCCESS_MESSAGE[action]} for ${serverId}.`;

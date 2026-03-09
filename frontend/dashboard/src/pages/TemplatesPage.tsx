@@ -1,5 +1,5 @@
-import {useCallback, useEffect, useRef, useState} from "react";
-import {motion} from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import {
     FiChevronLeft,
     FiChevronRight,
@@ -24,11 +24,11 @@ import {
     listTemplates,
     uploadTemplate,
 } from "@/lib/api";
-import {useAuthStore} from "@/store/auth-store";
-import type {GroupListItem, PaginatedResponse} from "@/types/dashboard";
-import {getPaginatedHasNext, getPaginatedTotalPages} from "@/types/dashboard";
-import type {GroupRecord} from "@/types/group";
-import type {TemplateRecord} from "@/types/template";
+import { useAuthStore } from "@/store/auth-store";
+import type { GroupListItem, PaginatedResponse } from "@/types/dashboard";
+import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
+import type { GroupRecord } from "@/types/group";
+import type { TemplateRecord } from "@/types/template";
 
 const TEMPLATE_PAGE_SIZE = 10;
 const REFRESH_INTERVAL_MS = 10_000;
@@ -58,9 +58,7 @@ const TemplatesPage = () => {
     const [uploadVersion, setUploadVersion] = useState("");
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [activeTemplateActionKey, setActiveTemplateActionKey] = useState<string | null>(
-        null
-    );
+    const [activeTemplateActionKey, setActiveTemplateActionKey] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const getValidAccessToken = useCallback(async () => {
@@ -73,29 +71,32 @@ const TemplatesPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadTemplatePage = useCallback(async (showLoading = true) => {
-        if (showLoading) {
-            setIsLoading(true);
-        }
+    const loadTemplatePage = useCallback(
+        async (showLoading = true) => {
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const nextPage = await listTemplates(accessToken, {
-                group: groupFilter || undefined,
-                page: currentPage,
-                size: TEMPLATE_PAGE_SIZE,
-            });
+            try {
+                const accessToken = await getValidAccessToken();
+                const nextPage = await listTemplates(accessToken, {
+                    group: groupFilter || undefined,
+                    page: currentPage,
+                    size: TEMPLATE_PAGE_SIZE,
+                });
 
-            setTemplatePage(nextPage);
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to load templates."
-            );
-        } finally {
-            setIsLoading(false);
-        }
-    }, [currentPage, getValidAccessToken, groupFilter]);
+                setTemplatePage(nextPage);
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(
+                    error instanceof Error ? error.message : "Unable to load templates.",
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [currentPage, getValidAccessToken, groupFilter],
+    );
 
     useEffect(() => {
         let active = true;
@@ -119,9 +120,7 @@ const TemplatesPage = () => {
                     return;
                 }
 
-                setErrorMessage(
-                    error instanceof Error ? error.message : "Unable to load groups."
-                );
+                setErrorMessage(error instanceof Error ? error.message : "Unable to load groups.");
             } finally {
                 if (active) {
                     setIsLoadingGroups(false);
@@ -221,16 +220,9 @@ const TemplatesPage = () => {
 
         try {
             const accessToken = await getValidAccessToken();
-            await uploadTemplate(
-                accessToken,
-                uploadGroup.trim(),
-                uploadVersion.trim(),
-                uploadFile
-            );
+            await uploadTemplate(accessToken, uploadGroup.trim(), uploadVersion.trim(), uploadFile);
 
-            setSuccessMessage(
-                `Uploaded ${uploadGroup.trim()} / ${uploadVersion.trim()}.`
-            );
+            setSuccessMessage(`Uploaded ${uploadGroup.trim()} / ${uploadVersion.trim()}.`);
             setIsUploadModalOpen(false);
             setUploadGroup("");
             setUploadVersion("");
@@ -240,9 +232,7 @@ const TemplatesPage = () => {
             }
             await loadTemplatePage(false);
         } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to upload template."
-            );
+            setErrorMessage(error instanceof Error ? error.message : "Unable to upload template.");
         } finally {
             setIsUploading(false);
         }
@@ -259,7 +249,7 @@ const TemplatesPage = () => {
             setSuccessMessage(`Downloaded ${template.group} / ${template.version}.`);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to download template."
+                error instanceof Error ? error.message : "Unable to download template.",
             );
         } finally {
             setActiveTemplateActionKey(null);
@@ -282,9 +272,7 @@ const TemplatesPage = () => {
                 await loadTemplatePage(false);
             }
         } catch (error) {
-            setErrorMessage(
-                error instanceof Error ? error.message : "Unable to delete template."
-            );
+            setErrorMessage(error instanceof Error ? error.message : "Unable to delete template.");
         } finally {
             setActiveTemplateActionKey(null);
         }
@@ -292,7 +280,7 @@ const TemplatesPage = () => {
 
     const totalPages = getPaginatedTotalPages(templatePage);
     const usedTemplateKeys = new Set(
-        serverGroups.map((group) => `${group.templatePath}::${group.templateVersion}`)
+        serverGroups.map((group) => `${group.templatePath}::${group.templateVersion}`),
     );
 
     return (
@@ -301,36 +289,36 @@ const TemplatesPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "templates-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "templates-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "templates-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "templates-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                        <FiFileText className="h-5 w-5 text-primary"/>
+                        <FiFileText className="h-5 w-5 text-primary" />
                         Templates
                     </h2>
                     <p className="mt-1 text-sm text-slate-400">
@@ -361,7 +349,7 @@ const TemplatesPage = () => {
                             onClick={openUploadModal}
                             className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-slate-950"
                         >
-                            <FiUpload className="h-4 w-4"/>
+                            <FiUpload className="h-4 w-4" />
                             Upload Template
                         </button>
                     </div>
@@ -369,9 +357,9 @@ const TemplatesPage = () => {
             </motion.section>
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                 className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm"
             >
                 <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
@@ -382,10 +370,10 @@ const TemplatesPage = () => {
                             </h3>
                         </div>
                         <div className="flex items-center justify-between gap-3 sm:justify-end">
-              <span className="text-xs text-slate-500">
-                {templatePage.totalItems} template
-                  {templatePage.totalItems === 1 ? "" : "s"}
-              </span>
+                            <span className="text-xs text-slate-500">
+                                {templatePage.totalItems} template
+                                {templatePage.totalItems === 1 ? "" : "s"}
+                            </span>
                             <TableRefreshButton
                                 onClick={() => {
                                     void loadTemplatePage(false);
@@ -400,118 +388,122 @@ const TemplatesPage = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-left">
                         <thead>
-                        <tr className="border-b border-slate-800 bg-slate-800/30">
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Group
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Version
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Path
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Artifact
-                            </th>
-                            <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                Used
-                            </th>
-                            <th className="px-6 py-4 text-right text-xs font-semibold uppercase text-slate-500">
-                                Actions
-                            </th>
-                        </tr>
+                            <tr className="border-b border-slate-800 bg-slate-800/30">
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Group
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Version
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Path
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Artifact
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Used
+                                </th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold uppercase text-slate-500">
+                                    Actions
+                                </th>
+                            </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800">
-                        {isLoading ? (
-                            <tr>
-                                <td
-                                    colSpan={6}
-                                    className="px-6 py-10 text-center text-sm text-slate-400"
-                                >
-                                    Loading templates...
-                                </td>
-                            </tr>
-                        ) : templatePage.items.length === 0 ? (
-                            <tr>
-                                <td
-                                    colSpan={6}
-                                    className="px-6 py-10 text-center text-sm text-slate-400"
-                                >
-                                    No templates matched this filter.
-                                </td>
-                            </tr>
-                        ) : (
-                            templatePage.items.map((template) => (
-                                <tr key={`${template.group}:${template.version}:${template.path}`}>
-                                    <td className="px-6 py-4">
-                      <span
-                          className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                        <FiFolder className="h-3.5 w-3.5"/>
-                          {template.group}
-                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-semibold text-slate-100">
-                        {template.version}
-                      </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="break-all font-mono text-xs text-slate-400">
-                                            {template.path}
-                                        </p>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-300">
-                                        template.tar.gz
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {usedTemplateKeys.has(`${template.group}::${template.version}`) ? (
-                                            <span
-                                                className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                          Yes
-                        </span>
-                                        ) : (
-                                            <span
-                                                className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300">
-                          No
-                        </span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                disabled={activeTemplateActionKey !== null}
-                                                onClick={() => void handleDownloadTemplate(template)}
-                                                className="button-hover-lift button-shadow-primary inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary disabled:cursor-not-allowed disabled:opacity-60"
-                                                aria-label={`Download ${template.group} ${template.version}`}
-                                                title="Download template"
-                                            >
-                                                <FiDownload className="h-4 w-4"/>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={activeTemplateActionKey !== null}
-                                                onClick={() => void handleDeleteTemplate(template)}
-                                                className="button-hover-lift button-shadow-danger inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                                                aria-label={`Delete ${template.group} ${template.version}`}
-                                                title="Delete template"
-                                            >
-                                                <FiTrash2 className="h-4 w-4"/>
-                                            </button>
-                                        </div>
+                            {isLoading ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="px-6 py-10 text-center text-sm text-slate-400"
+                                    >
+                                        Loading templates...
                                     </td>
                                 </tr>
-                            ))
-                        )}
+                            ) : templatePage.items.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="px-6 py-10 text-center text-sm text-slate-400"
+                                    >
+                                        No templates matched this filter.
+                                    </td>
+                                </tr>
+                            ) : (
+                                templatePage.items.map((template) => (
+                                    <tr
+                                        key={`${template.group}:${template.version}:${template.path}`}
+                                    >
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                                <FiFolder className="h-3.5 w-3.5" />
+                                                {template.group}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-sm font-semibold text-slate-100">
+                                                {template.version}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="break-all font-mono text-xs text-slate-400">
+                                                {template.path}
+                                            </p>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-300">
+                                            template.tar.gz
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {usedTemplateKeys.has(
+                                                `${template.group}::${template.version}`,
+                                            ) ? (
+                                                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                                    Yes
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300">
+                                                    No
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={activeTemplateActionKey !== null}
+                                                    onClick={() =>
+                                                        void handleDownloadTemplate(template)
+                                                    }
+                                                    className="button-hover-lift button-shadow-primary inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                                    aria-label={`Download ${template.group} ${template.version}`}
+                                                    title="Download template"
+                                                >
+                                                    <FiDownload className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={activeTemplateActionKey !== null}
+                                                    onClick={() =>
+                                                        void handleDeleteTemplate(template)
+                                                    }
+                                                    className="button-hover-lift button-shadow-danger inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    aria-label={`Delete ${template.group} ${template.version}`}
+                                                    title="Delete template"
+                                                >
+                                                    <FiTrash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                <div
-                    className="flex flex-col gap-3 border-t border-slate-800 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-slate-400">
-            Page {templatePage.page + 1} of {totalPages}
-          </span>
+                <div className="flex flex-col gap-3 border-t border-slate-800 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm text-slate-400">
+                        Page {templatePage.page + 1} of {totalPages}
+                    </span>
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
@@ -519,7 +511,7 @@ const TemplatesPage = () => {
                             onClick={() => setCurrentPage((value) => Math.max(0, value - 1))}
                             className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            <FiChevronLeft className="h-4 w-4"/>
+                            <FiChevronLeft className="h-4 w-4" />
                             Previous
                         </button>
                         <button
@@ -529,24 +521,25 @@ const TemplatesPage = () => {
                             className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Next
-                            <FiChevronRight className="h-4 w-4"/>
+                            <FiChevronRight className="h-4 w-4" />
                         </button>
                     </div>
                 </div>
             </motion.section>
 
             {isUploadModalOpen && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-2xl rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
                             <div>
-                                <h3 className="text-base font-semibold text-white">Upload Template</h3>
+                                <h3 className="text-base font-semibold text-white">
+                                    Upload Template
+                                </h3>
                                 <p className="text-sm text-slate-400">
                                     Publish a new `template.tar.gz` archive for a server group.
                                 </p>
@@ -557,7 +550,7 @@ const TemplatesPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
@@ -601,7 +594,9 @@ const TemplatesPage = () => {
                                     type="file"
                                     accept=".gz,.tar.gz,application/gzip,application/x-gzip"
                                     className="hidden"
-                                    onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
+                                    onChange={(event) =>
+                                        setUploadFile(event.target.files?.[0] ?? null)
+                                    }
                                 />
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                     <button
@@ -609,16 +604,15 @@ const TemplatesPage = () => {
                                         onClick={() => fileInputRef.current?.click()}
                                         className="app-button-field button-hover-lift button-shadow-neutral inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200"
                                     >
-                                        <FiUpload className="h-4 w-4"/>
+                                        <FiUpload className="h-4 w-4" />
                                         Choose File
                                     </button>
-                                    <div
-                                        className="min-h-12 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-400">
+                                    <div className="min-h-12 flex-1 rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm text-slate-400">
                                         {uploadFile
                                             ? `${uploadFile.name} (${Math.max(
-                                                1,
-                                                Math.round(uploadFile.size / 1024)
-                                            )} KB)`
+                                                  1,
+                                                  Math.round(uploadFile.size / 1024),
+                                              )} KB)`
                                             : "No file selected"}
                                     </div>
                                 </div>

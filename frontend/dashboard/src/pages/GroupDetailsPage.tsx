@@ -1,7 +1,7 @@
-import {useCallback, useEffect, useState} from "react";
-import {motion} from "motion/react";
-import {FiAlertTriangle, FiArrowLeft, FiRefreshCw, FiShield, FiTrash2, FiX,} from "react-icons/fi";
-import {Link, useNavigate, useParams} from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { FiAlertTriangle, FiArrowLeft, FiRefreshCw, FiShield, FiTrash2, FiX } from "react-icons/fi";
+import { Link, useNavigate, useParams } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
 import GroupFormFields from "@/components/GroupFormFields";
@@ -14,10 +14,10 @@ import {
     toggleServerGroupMaintenance,
     updateServerGroup,
 } from "@/lib/api";
-import {formatDateTime} from "@/lib/server-display";
-import {useAuthStore} from "@/store/auth-store";
-import type {GroupFormValues, GroupRecord, UpdateGroupPayload,} from "@/types/group";
-import type {TemplateRecord} from "@/types/template";
+import { formatDateTime } from "@/lib/server-display";
+import { useAuthStore } from "@/store/auth-store";
+import type { GroupFormValues, GroupRecord, UpdateGroupPayload } from "@/types/group";
+import type { TemplateRecord } from "@/types/template";
 
 const toGroupFormValues = (group: GroupRecord): GroupFormValues => ({
     id: group.id,
@@ -75,39 +75,43 @@ const GroupDetailsPage = () => {
         return nextSession.accessToken;
     }, [refreshIfNeeded]);
 
-    const loadGroup = useCallback(async (showLoading = true) => {
-        if (!groupName) {
-            setErrorMessage("Missing group name.");
-            setIsLoading(false);
-            return;
-        }
+    const loadGroup = useCallback(
+        async (showLoading = true) => {
+            if (!groupName) {
+                setErrorMessage("Missing group name.");
+                setIsLoading(false);
+                return;
+            }
 
-        if (showLoading) {
-            setIsLoading(true);
-        }
+            if (showLoading) {
+                setIsLoading(true);
+            }
 
-        try {
-            const accessToken = await getValidAccessToken();
-            const [nextGroup, groupServers] = await Promise.all([
-                getGroupByName(accessToken, groupName),
-                listServers(accessToken, {
-                    group: groupName,
-                    page: 0,
-                    size: 200,
-                }),
-            ]);
-            setGroup(nextGroup);
-            setFormValues(toGroupFormValues(nextGroup));
-            setCurrentOnlineCount(
-                groupServers.items.filter((server) => server.state.toUpperCase() === "RUNNING").length
-            );
-            setErrorMessage(null);
-        } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : "Unable to load group.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [getValidAccessToken, groupName]);
+            try {
+                const accessToken = await getValidAccessToken();
+                const [nextGroup, groupServers] = await Promise.all([
+                    getGroupByName(accessToken, groupName),
+                    listServers(accessToken, {
+                        group: groupName,
+                        page: 0,
+                        size: 200,
+                    }),
+                ]);
+                setGroup(nextGroup);
+                setFormValues(toGroupFormValues(nextGroup));
+                setCurrentOnlineCount(
+                    groupServers.items.filter((server) => server.state.toUpperCase() === "RUNNING")
+                        .length,
+                );
+                setErrorMessage(null);
+            } catch (error) {
+                setErrorMessage(error instanceof Error ? error.message : "Unable to load group.");
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [getValidAccessToken, groupName],
+    );
 
     useEffect(() => {
         void loadGroup(true);
@@ -154,58 +158,50 @@ const GroupDetailsPage = () => {
 
     const setTopLevelField = (
         field: Exclude<keyof GroupFormValues, "scaling" | "resources">,
-        value: string
+        value: string,
     ) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    [field]: value,
-                }
-                : currentValue
+                      ...currentValue,
+                      [field]: value,
+                  }
+                : currentValue,
         );
     };
 
-    const setScalingField = (
-        field: keyof GroupFormValues["scaling"],
-        value: string
-    ) => {
+    const setScalingField = (field: keyof GroupFormValues["scaling"], value: string) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    scaling: {
-                        ...currentValue.scaling,
-                        [field]: value,
-                    },
-                }
-                : currentValue
+                      ...currentValue,
+                      scaling: {
+                          ...currentValue.scaling,
+                          [field]: value,
+                      },
+                  }
+                : currentValue,
         );
     };
 
-    const setResourceField = (
-        field: keyof GroupFormValues["resources"],
-        value: string
-    ) => {
+    const setResourceField = (field: keyof GroupFormValues["resources"], value: string) => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    resources: {
-                        ...currentValue.resources,
-                        [field]: value,
-                    },
-                }
-                : currentValue
+                      ...currentValue,
+                      resources: {
+                          ...currentValue.resources,
+                          [field]: value,
+                      },
+                  }
+                : currentValue,
         );
     };
 
     const handleTemplateChange = (templatePath: string) => {
         const [templateGroup, templateVersion] = templatePath.split("::");
         const nextTemplate = templates.find(
-            (template) =>
-                template.group === templateGroup &&
-                template.version === templateVersion
+            (template) => template.group === templateGroup && template.version === templateVersion,
         );
 
         if (!nextTemplate) {
@@ -215,11 +211,11 @@ const GroupDetailsPage = () => {
         setFormValues((currentValue) =>
             currentValue
                 ? {
-                    ...currentValue,
-                    templatePath: nextTemplate.group,
-                    templateVersion: nextTemplate.version,
-                }
-                : currentValue
+                      ...currentValue,
+                      templatePath: nextTemplate.group,
+                      templateVersion: nextTemplate.version,
+                  }
+                : currentValue,
         );
     };
 
@@ -282,7 +278,7 @@ const GroupDetailsPage = () => {
                 cpuLimit: values.resources.cpuLimit.trim(),
             },
             ...(values.type.toUpperCase() === "STATIC"
-                ? {storageSize: values.storageSize.trim()}
+                ? { storageSize: values.storageSize.trim() }
                 : {}),
         };
     };
@@ -324,17 +320,13 @@ const GroupDetailsPage = () => {
 
         try {
             const accessToken = await getValidAccessToken();
-            const updatedGroup = await toggleServerGroupMaintenance(
-                accessToken,
-                group.id,
-                false
-            );
+            const updatedGroup = await toggleServerGroupMaintenance(accessToken, group.id, false);
             setGroup(updatedGroup);
             setFormValues(toGroupFormValues(updatedGroup));
             setSuccessMessage(`${updatedGroup.id} maintenance disabled.`);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to update maintenance."
+                error instanceof Error ? error.message : "Unable to update maintenance.",
             );
         } finally {
             setIsTogglingMaintenance(false);
@@ -371,18 +363,14 @@ const GroupDetailsPage = () => {
 
         try {
             const accessToken = await getValidAccessToken();
-            const updatedGroup = await toggleServerGroupMaintenance(
-                accessToken,
-                group.id,
-                true
-            );
+            const updatedGroup = await toggleServerGroupMaintenance(accessToken, group.id, true);
             setGroup(updatedGroup);
             setFormValues(toGroupFormValues(updatedGroup));
             setSuccessMessage(`${updatedGroup.id} maintenance enabled.`);
             setIsMaintenanceModalOpen(false);
         } catch (error) {
             setErrorMessage(
-                error instanceof Error ? error.message : "Unable to update maintenance."
+                error instanceof Error ? error.message : "Unable to update maintenance.",
             );
         } finally {
             setIsTogglingMaintenance(false);
@@ -400,7 +388,7 @@ const GroupDetailsPage = () => {
         try {
             const accessToken = await getValidAccessToken();
             await deleteServerGroup(accessToken, group.id);
-            navigate("/groups", {replace: true});
+            navigate("/groups", { replace: true });
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "Unable to delete group.");
             setIsDeleting(false);
@@ -414,31 +402,31 @@ const GroupDetailsPage = () => {
                 items={[
                     ...(errorMessage
                         ? [
-                            {
-                                id: "group-detail-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "group-detail-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []),
                     ...(successMessage
                         ? [
-                            {
-                                id: "group-detail-success",
-                                message: successMessage,
-                                onDismiss: () => setSuccessMessage(null),
-                                tone: "success" as const,
-                            },
-                        ]
+                              {
+                                  id: "group-detail-success",
+                                  message: successMessage,
+                                  onDismiss: () => setSuccessMessage(null),
+                                  tone: "success" as const,
+                              },
+                          ]
                         : []),
                 ]}
             />
 
             <motion.section
-                initial={{y: 12, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 12, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div>
@@ -446,7 +434,7 @@ const GroupDetailsPage = () => {
                         to="/groups"
                         className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-primary"
                     >
-                        <FiArrowLeft className="h-4 w-4"/>
+                        <FiArrowLeft className="h-4 w-4" />
                         Back to groups
                     </Link>
                     <h2 className="mt-3 text-lg font-bold text-white">
@@ -464,7 +452,9 @@ const GroupDetailsPage = () => {
                         onClick={() => void handleRestartGroup()}
                         className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <FiRefreshCw className={`h-4 w-4 ${isRestartingGroup ? "animate-spin" : ""}`}/>
+                        <FiRefreshCw
+                            className={`h-4 w-4 ${isRestartingGroup ? "animate-spin" : ""}`}
+                        />
                         {isRestartingGroup ? "Restarting..." : "Restart Group"}
                     </button>
                     <button
@@ -477,12 +467,12 @@ const GroupDetailsPage = () => {
                                 : "button-shadow-warning bg-amber-500/12 text-amber-300"
                         }`}
                     >
-                        <FiShield className="h-4 w-4"/>
+                        <FiShield className="h-4 w-4" />
                         {isTogglingMaintenance
                             ? "Updating..."
                             : group?.maintenance
-                                ? "Disable Maintenance"
-                                : "Enable Maintenance"}
+                              ? "Disable Maintenance"
+                              : "Enable Maintenance"}
                     </button>
                     <button
                         type="button"
@@ -490,19 +480,18 @@ const GroupDetailsPage = () => {
                         onClick={() => setIsDeleteModalOpen(true)}
                         className="app-button-field button-hover-lift button-shadow-danger inline-flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <FiTrash2 className="h-4 w-4"/>
+                        <FiTrash2 className="h-4 w-4" />
                         Delete Group
                     </button>
                 </div>
             </motion.section>
 
             {isMaintenanceModalOpen && group && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -520,15 +509,14 @@ const GroupDetailsPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
                         <div className="space-y-4 px-6 py-5">
-                            <div
-                                className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
                                 <div className="flex items-start gap-3">
-                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300"/>
+                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
                                     <p>
                                         Enabling maintenance can disconnect active players from this
                                         group and block new joins until you disable it again.
@@ -559,9 +547,9 @@ const GroupDetailsPage = () => {
             )}
 
             <motion.section
-                initial={{y: 16, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut", delay: 0.05}}
+                initial={{ y: 16, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
                 className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
             >
                 <div className="space-y-6">
@@ -648,7 +636,8 @@ const GroupDetailsPage = () => {
                                 </p>
                                 <p
                                     className={`mt-1.5 text-sm font-semibold ${
-                                        typeof currentOnlineCount === "number" && currentOnlineCount > 0
+                                        typeof currentOnlineCount === "number" &&
+                                        currentOnlineCount > 0
                                             ? "text-emerald-300"
                                             : "text-slate-100"
                                     }`}
@@ -707,12 +696,11 @@ const GroupDetailsPage = () => {
             </motion.section>
 
             {isDeleteModalOpen && group && (
-                <div
-                    className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
                     <motion.div
-                        initial={{y: 12, opacity: 0}}
-                        animate={{y: 0, opacity: 1}}
-                        transition={{duration: 0.25, ease: "easeOut"}}
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
                     >
                         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
@@ -728,14 +716,15 @@ const GroupDetailsPage = () => {
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
                                 aria-label="Close"
                             >
-                                <FiX className="h-4 w-4"/>
+                                <FiX className="h-4 w-4" />
                             </button>
                         </div>
 
                         <div className="px-6 py-5">
                             <p className="text-sm leading-6 text-slate-300">
-                                Existing servers in this group may fail to deploy or scale after this
-                                action. Make sure the group is no longer needed before deleting it.
+                                Existing servers in this group may fail to deploy or scale after
+                                this action. Make sure the group is no longer needed before deleting
+                                it.
                             </p>
                         </div>
 

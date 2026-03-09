@@ -1,5 +1,5 @@
-import {motion} from "motion/react";
-import {MdBolt, MdCode, MdLayers, MdPublic, MdShield, MdViewList,} from "react-icons/md";
+import { motion } from "motion/react";
+import { MdBolt, MdCode, MdLayers, MdPublic, MdShield, MdViewList } from "react-icons/md";
 import FeatureCard from "./FeatureCard";
 
 const FEATURES = [
@@ -58,22 +58,21 @@ const FeaturesSection = () => {
         <section id="features" className="px-5 py-24 sm:px-6 md:py-32 lg:px-8">
             <div className="mx-auto max-w-7xl">
                 <motion.div
-                    initial={{opacity: 0, y: 30}}
-                    whileInView={{opacity: 1, y: 0}}
-                    viewport={{once: true, margin: "-100px"}}
-                    transition={{duration: 0.5}}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.5 }}
                     className="mx-auto mb-14 max-w-3xl text-center"
                 >
-          <span className="mb-4 block text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-            Platform Features
-          </span>
+                    <span className="mb-4 block text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                        Platform Features
+                    </span>
                     <h2 className="font-display text-3xl font-bold tracking-[-0.03em] text-white md:text-5xl">
                         Core capabilities for Minecraft operations
                     </h2>
                     <p className="mt-5 text-base leading-8 text-text-muted md:text-lg">
-                        The template changes, but the promise stays the same: remove
-                        operational drag from scaling, routing, and managing a distributed
-                        Minecraft network.
+                        The template changes, but the promise stays the same: remove operational
+                        drag from scaling, routing, and managing a distributed Minecraft network.
                     </p>
                 </motion.div>
 

@@ -1,4 +1,4 @@
-import type {AuthSession} from "@/types/auth";
+import type { AuthSession } from "@/types/auth";
 
 const AUTH_STORAGE_KEY = "ogcloud.dashboard.auth-session";
 
@@ -19,8 +19,7 @@ const isAuthSession = (value: unknown): value is AuthSession => {
         typeof value.user.email === "string" &&
         typeof value.user.username === "string" &&
         typeof value.user.role === "string" &&
-        (typeof value.user.linkedPlayerUuid === "string" ||
-            value.user.linkedPlayerUuid === null)
+        (typeof value.user.linkedPlayerUuid === "string" || value.user.linkedPlayerUuid === null)
     );
 };
 

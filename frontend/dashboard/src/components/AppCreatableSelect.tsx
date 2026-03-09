@@ -1,5 +1,5 @@
-import {useEffect, useMemo, useRef, useState} from "react";
-import {FiCheck, FiChevronDown} from "react-icons/fi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { FiCheck, FiChevronDown } from "react-icons/fi";
 import FieldHintLabel from "@/components/FieldHintLabel";
 
 interface AppCreatableSelectProps {
@@ -16,17 +16,17 @@ interface AppCreatableSelectProps {
 }
 
 const AppCreatableSelect = ({
-                                id,
-                                label,
-                                labelHint,
-                                value,
-                                onChangeValue,
-                                options,
-                                disabled = false,
-                                placeholder = "Select an option",
-                                hint,
-                                emptyLabel = "No options available",
-                            }: AppCreatableSelectProps) => {
+    id,
+    label,
+    labelHint,
+    value,
+    onChangeValue,
+    options,
+    disabled = false,
+    placeholder = "Select an option",
+    hint,
+    emptyLabel = "No options available",
+}: AppCreatableSelectProps) => {
     const rootRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [isOpen, setIsOpen] = useState(false);
@@ -46,7 +46,7 @@ const AppCreatableSelect = ({
 
     const hasExactMatch = useMemo(
         () => options.some((option) => option.toLowerCase() === normalizedValue.toLowerCase()),
-        [options, normalizedValue]
+        [options, normalizedValue],
     );
 
     useEffect(() => {
@@ -87,17 +87,16 @@ const AppCreatableSelect = ({
 
     return (
         <div ref={rootRef} className="app-field-stack">
-            {label && (
-                labelHint ? (
+            {label &&
+                (labelHint ? (
                     <label htmlFor={id}>
-                        <FieldHintLabel label={label} hint={labelHint}/>
+                        <FieldHintLabel label={label} hint={labelHint} />
                     </label>
                 ) : (
                     <label htmlFor={id} className="app-field-label">
                         {label}
                     </label>
-                )
-            )}
+                ))}
 
             <div className="relative">
                 <div
@@ -171,9 +170,7 @@ const AppCreatableSelect = ({
                                     onClick={useCustomValue}
                                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-slate-800 hover:text-white"
                                 >
-                  <span className="min-w-0 flex-1">
-                    Use "{normalizedValue}"
-                  </span>
+                                    <span className="min-w-0 flex-1">Use "{normalizedValue}"</span>
                                 </button>
                             ) : null}
 
@@ -194,13 +191,18 @@ const AppCreatableSelect = ({
                                         }`}
                                     >
                                         <span className="min-w-0 flex-1">{option}</span>
-                                        {isSelected && <FiCheck className="ml-auto h-4 w-4 shrink-0"/>}
+                                        {isSelected && (
+                                            <FiCheck className="ml-auto h-4 w-4 shrink-0" />
+                                        )}
                                     </button>
                                 );
                             })}
 
-                            {filteredOptions.length === 0 && !(normalizedValue && !hasExactMatch) ? (
-                                <p className="rounded-lg px-3 py-2.5 text-sm text-slate-500">{emptyLabel}</p>
+                            {filteredOptions.length === 0 &&
+                            !(normalizedValue && !hasExactMatch) ? (
+                                <p className="rounded-lg px-3 py-2.5 text-sm text-slate-500">
+                                    {emptyLabel}
+                                </p>
                             ) : null}
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-import type {CSSProperties} from "react";
+import type { CSSProperties } from "react";
 
 interface MinecraftTextPreviewProps {
     value?: string | null;
@@ -39,7 +39,7 @@ const buildStyle = (
     bold: boolean,
     italic: boolean,
     underline: boolean,
-    strikethrough: boolean
+    strikethrough: boolean,
 ): CSSProperties => {
     const decorations: string[] = [];
 
@@ -138,8 +138,7 @@ const parseMinecraftSegments = (rawValue: string): RenderSegment[] => {
     return segments;
 };
 
-const stripFormattingCodes = (rawValue: string) =>
-    rawValue.replace(/(?:&|§)[0-9a-fk-or]/gi, "");
+const stripFormattingCodes = (rawValue: string) => rawValue.replace(/(?:&|§)[0-9a-fk-or]/gi, "");
 
 const hasMeaningfulVisibleContent = (rawValue: string) => {
     const stripped = stripFormattingCodes(rawValue);
@@ -147,12 +146,12 @@ const hasMeaningfulVisibleContent = (rawValue: string) => {
 };
 
 const MinecraftTextPreview = ({
-                                  value,
-                                  fallback = "--",
-                                  emptyFallback,
-                                  className = "",
-                                  useFallbackForFormatOnly = false,
-                              }: MinecraftTextPreviewProps) => {
+    value,
+    fallback = "--",
+    emptyFallback,
+    className = "",
+    useFallbackForFormatOnly = false,
+}: MinecraftTextPreviewProps) => {
     const normalizedValue = value?.trim();
 
     if (!normalizedValue) {
@@ -170,8 +169,8 @@ const MinecraftTextPreview = ({
             <p className={`break-words whitespace-pre-wrap text-sm leading-relaxed ${className}`}>
                 {fallbackSegments.map((segment, index) => (
                     <span key={`${index}-${segment.text}`} style={segment.style}>
-            {segment.text}
-          </span>
+                        {segment.text}
+                    </span>
                 ))}
             </p>
         );
@@ -183,8 +182,8 @@ const MinecraftTextPreview = ({
         <p className={`break-words whitespace-pre-wrap text-sm leading-relaxed ${className}`}>
             {segments.map((segment, index) => (
                 <span key={`${index}-${segment.text}`} style={segment.style}>
-          {segment.text}
-        </span>
+                    {segment.text}
+                </span>
             ))}
         </p>
     );

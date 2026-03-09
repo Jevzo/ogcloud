@@ -1,10 +1,10 @@
-import {startTransition, type SubmitEventHandler, useState} from "react";
-import {motion} from "motion/react";
-import {useLocation, useNavigate} from "react-router";
-import {FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail} from "react-icons/fi";
+import { startTransition, type SubmitEventHandler, useState } from "react";
+import { motion } from "motion/react";
+import { useLocation, useNavigate } from "react-router";
+import { FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
 
 import AppToasts from "@/components/AppToasts";
-import {useAuthStore} from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth-store";
 
 const LoginPage = () => {
     const location = useLocation();
@@ -31,13 +31,11 @@ const LoginPage = () => {
             const nextPath = typeof nextState?.from === "string" ? nextState.from : "/";
 
             startTransition(() => {
-                navigate(nextPath, {replace: true});
+                navigate(nextPath, { replace: true });
             });
         } catch (error) {
             const nextMessage =
-                error instanceof Error
-                    ? error.message
-                    : "Unable to sign in. Please try again.";
+                error instanceof Error ? error.message : "Unable to sign in. Please try again.";
 
             setErrorMessage(nextMessage);
         }
@@ -46,19 +44,18 @@ const LoginPage = () => {
     const isSubmitting = status === "authenticating";
 
     return (
-        <div
-            className="relative flex min-h-screen flex-col items-center justify-center bg-background-dark p-4 text-slate-100">
+        <div className="relative flex min-h-screen flex-col items-center justify-center bg-background-dark p-4 text-slate-100">
             <AppToasts
                 items={
                     errorMessage
                         ? [
-                            {
-                                id: "login-error",
-                                message: errorMessage,
-                                onDismiss: () => setErrorMessage(null),
-                                tone: "error" as const,
-                            },
-                        ]
+                              {
+                                  id: "login-error",
+                                  message: errorMessage,
+                                  onDismiss: () => setErrorMessage(null),
+                                  tone: "error" as const,
+                              },
+                          ]
                         : []
                 }
             />
@@ -67,25 +64,19 @@ const LoginPage = () => {
                 className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
                 aria-hidden="true"
             >
-                <div
-                    className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px]"/>
-                <div
-                    className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]"/>
+                <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px]" />
+                <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]" />
             </div>
 
             <motion.div
-                initial={{y: 20, opacity: 0}}
-                animate={{y: 0, opacity: 1}}
-                transition={{duration: 0.35, ease: "easeOut"}}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="flex w-full max-w-120 flex-col items-center"
             >
                 <div className="mb-8 flex flex-col items-center">
                     <div className="mb-6 flex items-center gap-3">
-                        <img
-                            src="/static/logo.webp"
-                            alt="OgCloud"
-                            className="h-10 w-auto"
-                        />
+                        <img src="/static/logo.webp" alt="OgCloud" className="h-10 w-auto" />
                         <h2 className="text-2xl font-bold tracking-tight text-white">OgCloud</h2>
                     </div>
                     <h1 className="mb-2 text-center text-3xl font-bold leading-tight text-white">
@@ -96,17 +87,13 @@ const LoginPage = () => {
                     </p>
                 </div>
 
-                <div
-                    className="w-full rounded-xl border border-slate-800 bg-slate-900/50 p-8 shadow-xl backdrop-blur-sm">
+                <div className="w-full rounded-xl border border-slate-800 bg-slate-900/50 p-8 shadow-xl backdrop-blur-sm">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="app-field-stack">
-                            <label className="app-field-label">
-                                Email Address
-                            </label>
+                            <label className="app-field-label">Email Address</label>
                             <div className="group relative">
-                                <div
-                                    className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
-                                    <FiMail className="h-5 w-5"/>
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
+                                    <FiMail className="h-5 w-5" />
                                 </div>
                                 <input
                                     type="email"
@@ -127,14 +114,11 @@ const LoginPage = () => {
 
                         <div className="app-field-stack">
                             <div className="flex items-center justify-between">
-                                <label className="app-field-label">
-                                    Password
-                                </label>
+                                <label className="app-field-label">Password</label>
                             </div>
                             <div className="group relative">
-                                <div
-                                    className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
-                                    <FiLock className="h-5 w-5"/>
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
+                                    <FiLock className="h-5 w-5" />
                                 </div>
                                 <input
                                     type={showPassword ? "text" : "password"}
@@ -157,9 +141,9 @@ const LoginPage = () => {
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
                                     {showPassword ? (
-                                        <FiEyeOff className="h-5 w-5"/>
+                                        <FiEyeOff className="h-5 w-5" />
                                     ) : (
-                                        <FiEye className="h-5 w-5"/>
+                                        <FiEye className="h-5 w-5" />
                                     )}
                                 </button>
                             </div>
@@ -171,7 +155,7 @@ const LoginPage = () => {
                             className="app-button-field button-hover-lift button-shadow-primary flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-bold text-slate-950 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                         >
                             <span>{isSubmitting ? "Signing In" : "Sign In"}</span>
-                            <FiArrowRight className="h-4 w-4"/>
+                            <FiArrowRight className="h-4 w-4" />
                         </button>
                     </form>
 
@@ -183,12 +167,11 @@ const LoginPage = () => {
                 </div>
 
                 <div className="mt-10 text-center">
-                    <div
-                        className="mt-8 flex items-center justify-center gap-6 text-xs font-semibold uppercase tracking-widest text-slate-500">
+                    <div className="mt-8 flex items-center justify-center gap-6 text-xs font-semibold uppercase tracking-widest text-slate-500">
                         <span className="transition-colors hover:text-primary">Website</span>
-                        <span className="size-1 rounded-full bg-slate-700"/>
+                        <span className="size-1 rounded-full bg-slate-700" />
                         <span className="transition-colors hover:text-primary">Discord</span>
-                        <span className="size-1 rounded-full bg-slate-700"/>
+                        <span className="size-1 rounded-full bg-slate-700" />
                         <span className="transition-colors hover:text-primary">Support</span>
                     </div>
                 </div>

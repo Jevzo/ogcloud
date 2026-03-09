@@ -1,6 +1,6 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
-import type {NetworkGeneralSettings} from "@/types/network";
+import type { NetworkGeneralSettings } from "@/types/network";
 
 const DEFAULT_GENERAL_SETTINGS: NetworkGeneralSettings = {
     permissionSystemEnabled: true,
@@ -14,7 +14,7 @@ interface NetworkSettingsState {
 }
 
 const sanitizeGeneralSettings = (
-    general?: Partial<NetworkGeneralSettings> | null
+    general?: Partial<NetworkGeneralSettings> | null,
 ): NetworkGeneralSettings => ({
     permissionSystemEnabled:
         general?.permissionSystemEnabled ?? DEFAULT_GENERAL_SETTINGS.permissionSystemEnabled,
@@ -25,5 +25,5 @@ const sanitizeGeneralSettings = (
 
 export const useNetworkSettingsStore = create<NetworkSettingsState>((set) => ({
     general: DEFAULT_GENERAL_SETTINGS,
-    setGeneral: (general) => set({general: sanitizeGeneralSettings(general)}),
+    setGeneral: (general) => set({ general: sanitizeGeneralSettings(general) }),
 }));

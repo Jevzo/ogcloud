@@ -1,4 +1,4 @@
-import {FiChevronDown, FiChevronUp} from "react-icons/fi";
+import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 interface AppNumberInputProps {
     id?: string;
@@ -27,28 +27,23 @@ const clampValue = (value: number, min?: number, max?: number) => {
     return nextValue;
 };
 
-const normalizeStep = (step: number) =>
-    Number.isFinite(step) && step > 0 ? step : DEFAULT_STEP;
+const normalizeStep = (step: number) => (Number.isFinite(step) && step > 0 ? step : DEFAULT_STEP);
 
 const AppNumberInput = ({
-                            id,
-                            value,
-                            onChangeValue,
-                            min,
-                            max,
-                            step = DEFAULT_STEP,
-                            disabled = false,
-                            placeholder,
-                        }: AppNumberInputProps) => {
+    id,
+    value,
+    onChangeValue,
+    min,
+    max,
+    step = DEFAULT_STEP,
+    disabled = false,
+    placeholder,
+}: AppNumberInputProps) => {
     const effectiveStep = normalizeStep(step);
 
     const nudgeValue = (direction: 1 | -1) => {
         const parsed = Number.parseFloat(value);
-        const baseValue = Number.isFinite(parsed)
-            ? parsed
-            : typeof min === "number"
-                ? min
-                : 0;
+        const baseValue = Number.isFinite(parsed) ? parsed : typeof min === "number" ? min : 0;
         const nextValue = clampValue(baseValue + direction * effectiveStep, min, max);
         onChangeValue(String(nextValue));
     };
@@ -75,8 +70,7 @@ const AppNumberInput = ({
                 }}
                 className="app-input-field block w-full px-3 pr-12"
             />
-            <div
-                className="absolute inset-y-1.5 right-1.5 flex w-9 flex-col overflow-hidden rounded-md border border-slate-700/90 bg-slate-950/80">
+            <div className="absolute inset-y-1.5 right-1.5 flex w-9 flex-col overflow-hidden rounded-md border border-slate-700/90 bg-slate-950/80">
                 <button
                     type="button"
                     disabled={disabled}
@@ -84,9 +78,9 @@ const AppNumberInput = ({
                     className="flex flex-1 items-center justify-center text-slate-300 transition-colors hover:bg-slate-800/90 hover:text-primary disabled:cursor-not-allowed disabled:text-slate-500"
                     aria-label="Increase value"
                 >
-                    <FiChevronUp className="h-3.5 w-3.5"/>
+                    <FiChevronUp className="h-3.5 w-3.5" />
                 </button>
-                <div className="h-px bg-slate-700"/>
+                <div className="h-px bg-slate-700" />
                 <button
                     type="button"
                     disabled={disabled}
@@ -94,7 +88,7 @@ const AppNumberInput = ({
                     className="flex flex-1 items-center justify-center text-slate-300 transition-colors hover:bg-slate-800/90 hover:text-primary disabled:cursor-not-allowed disabled:text-slate-500"
                     aria-label="Decrease value"
                 >
-                    <FiChevronDown className="h-3.5 w-3.5"/>
+                    <FiChevronDown className="h-3.5 w-3.5" />
                 </button>
             </div>
         </div>

@@ -1,24 +1,24 @@
-import {Link} from "react-router";
-import {FaDiscord, FaGithub} from "react-icons/fa6";
+import { Link } from "react-router";
+import { FaDiscord, FaGithub } from "react-icons/fa6";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 const PRODUCT_LINKS = [
-    {label: "Features", href: "#features"},
-    {label: "Comparison", href: "#comparison"},
-    {label: "Roadmap", href: "#roadmap"},
+    { label: "Features", href: "#features" },
+    { label: "Comparison", href: "#comparison" },
+    { label: "Roadmap", href: "#roadmap" },
 ] as const;
 
 const RESOURCE_LINKS = [
-    {label: "GitHub", href: "https://github.com/Jevzo/ogcloud"},
-    {label: "Discord", href: "https://discord.gg/8TgdaDMdY7"},
-    {label: "FAQ", href: "#faq"},
+    { label: "GitHub", href: "https://github.com/Jevzo/ogcloud" },
+    { label: "Discord", href: "https://discord.gg/8TgdaDMdY7" },
+    { label: "FAQ", href: "#faq" },
 ] as const;
 
 const LEGAL_LINKS = [
-    {label: "Imprint", href: "/imprint"},
-    {label: "Privacy", href: "/privacy"},
-    {label: "Terms", href: "/terms"},
+    { label: "Imprint", href: "/imprint" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
 ] as const;
 
 const Footer = () => {
@@ -32,22 +32,21 @@ const Footer = () => {
                             aria-label="OgCloud home"
                             className="inline-flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
-              <span
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                <img
-                    src="/static/logo.webp"
-                    alt=""
-                    className="h-7 w-auto"
-                    aria-hidden="true"
-                />
-              </span>
+                            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                                <img
+                                    src="/static/logo.webp"
+                                    alt=""
+                                    className="h-7 w-auto"
+                                    aria-hidden="true"
+                                />
+                            </span>
                             <span className="font-display text-lg font-bold tracking-[-0.02em] text-white">
-                OgCloud
-              </span>
+                                OgCloud
+                            </span>
                         </a>
                         <p className="mt-5 max-w-xs text-sm leading-7 text-text-muted">
-                            The original gangster cloud for Kubernetes-native Minecraft
-                            networks that need ruthless reliability and fast operations.
+                            The original gangster cloud for Kubernetes-native Minecraft networks
+                            that need ruthless reliability and fast operations.
                         </p>
                     </div>
 
@@ -116,7 +115,7 @@ const Footer = () => {
                             aria-label="Discord"
                             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-text-muted transition-colors hover:border-primary/30 hover:text-white"
                         >
-                            <FaDiscord className="h-4 w-4"/>
+                            <FaDiscord className="h-4 w-4" />
                         </a>
                         <a
                             href="https://github.com/Jevzo/ogcloud"
@@ -125,7 +124,7 @@ const Footer = () => {
                             aria-label="GitHub"
                             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-text-muted transition-colors hover:border-primary/30 hover:text-white"
                         >
-                            <FaGithub className="h-4 w-4"/>
+                            <FaGithub className="h-4 w-4" />
                         </a>
                     </div>
                 </div>

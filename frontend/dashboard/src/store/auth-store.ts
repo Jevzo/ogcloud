@@ -1,15 +1,11 @@
-import {create} from "zustand";
+import { create } from "zustand";
 
-import {clearAuthSession, loadAuthSession, saveAuthSession,} from "@/lib/auth-storage";
-import {endApiLatencySession, startApiLatencySession} from "@/lib/api-latency";
-import {loginWithEmailPassword, refreshSessionToken} from "@/lib/api";
-import type {AuthSession, AuthUser, LoginCredentials} from "@/types/auth";
+import { clearAuthSession, loadAuthSession, saveAuthSession } from "@/lib/auth-storage";
+import { endApiLatencySession, startApiLatencySession } from "@/lib/api-latency";
+import { loginWithEmailPassword, refreshSessionToken } from "@/lib/api";
+import type { AuthSession, AuthUser, LoginCredentials } from "@/types/auth";
 
-type AuthStatus =
-    | "anonymous"
-    | "authenticating"
-    | "authenticated"
-    | "refreshing";
+type AuthStatus = "anonymous" | "authenticating" | "authenticated" | "refreshing";
 
 interface AuthState {
     status: AuthStatus;
@@ -31,10 +27,7 @@ if (initialSession) {
     endApiLatencySession();
 }
 
-const isSessionStale = (
-    session: AuthSession,
-    bufferMs = SESSION_STALE_BUFFER_MS
-) => {
+const isSessionStale = (session: AuthSession, bufferMs = SESSION_STALE_BUFFER_MS) => {
     const expiresAt = new Date(session.accessTokenExpiresAt).getTime();
     return Number.isNaN(expiresAt) || expiresAt <= Date.now() + bufferMs;
 };
@@ -43,18 +36,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     status: initialSession ? "authenticated" : "anonymous",
     session: initialSession,
     async login(credentials) {
-        set({status: "authenticating"});
+        set({ status: "authenticating" });
 
         try {
             const session = await loginWithEmailPassword(credentials);
             saveAuthSession(session);
             startApiLatencySession();
-            set({status: "authenticated", session});
+            set({ status: "authenticated", session });
             return session;
         } catch (error) {
             clearAuthSession();
             endApiLatencySession();
-            set({status: "anonymous", session: null});
+            set({ status: "anonymous", session: null });
             throw error;
         }
     },
@@ -63,13 +56,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             startApiLatencySession();
         }
         saveAuthSession(session);
-        set({status: "authenticated", session});
+        set({ status: "authenticated", session });
     },
     logout() {
         refreshInFlight = null;
         clearAuthSession();
         endApiLatencySession();
-        set({status: "anonymous", session: null});
+        set({ status: "anonymous", session: null });
     },
     async refreshIfNeeded() {
         const currentSession = get().session;
@@ -86,7 +79,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return refreshInFlight;
         }
 
-        set({status: "refreshing"});
+        set({ status: "refreshing" });
         const refreshToken = currentSession.refreshToken;
         refreshInFlight = (async () => {
             try {
@@ -98,7 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
 
                 saveAuthSession(nextSession);
-                set({status: "authenticated", session: nextSession});
+                set({ status: "authenticated", session: nextSession });
                 return nextSession;
             } catch (error) {
                 const activeSession = get().session;
@@ -106,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 if (activeSession?.refreshToken === refreshToken) {
                     clearAuthSession();
                     endApiLatencySession();
-                    set({status: "anonymous", session: null});
+                    set({ status: "anonymous", session: null });
                 }
 
                 throw error;
@@ -132,6 +125,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         };
 
         saveAuthSession(nextSession);
-        set({session: nextSession});
+        set({ session: nextSession });
     },
 }));

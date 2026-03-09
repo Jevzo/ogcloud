@@ -1,17 +1,17 @@
-import axios, {AxiosError, type InternalAxiosRequestConfig} from "axios";
-import {recordApiLatencySample} from "@/lib/api-latency";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { recordApiLatencySample } from "@/lib/api-latency";
 
-import type {ApiErrorResponse, AuthSession, AuthUser, LoginCredentials,} from "@/types/auth";
-import type {ApiAuditLogRecord,} from "@/types/audit";
+import type { ApiErrorResponse, AuthSession, AuthUser, LoginCredentials } from "@/types/auth";
+import type { ApiAuditLogRecord } from "@/types/audit";
 import type {
     DashboardOverviewResponse,
     DashboardOverviewScalingAction,
     GroupListItem,
     PaginatedResponse,
 } from "@/types/dashboard";
-import {getPaginatedHasNext} from "@/types/dashboard";
-import type {CreateGroupPayload, GroupRecord, UpdateGroupPayload,} from "@/types/group";
-import type {ExecuteCommandPayload} from "@/types/command";
+import { getPaginatedHasNext } from "@/types/dashboard";
+import type { CreateGroupPayload, GroupRecord, UpdateGroupPayload } from "@/types/group";
+import type { ExecuteCommandPayload } from "@/types/command";
 import type {
     NetworkGeneralSettings,
     NetworkSettingsRecord,
@@ -24,11 +24,11 @@ import type {
     PermissionGroupRecord,
     UpdatePermissionGroupPayload,
 } from "@/types/permission";
-import type {PersistedPlayerRecord, PlayerRecord} from "@/types/player";
-import type {SearchResponse} from "@/types/search";
-import type {TemplateRecord} from "@/types/template";
-import type {OnlinePlayerRecord, ServerRecord} from "@/types/server";
-import type {CreateWebUserPayload, UpdateWebUserPayload, WebUserRecord,} from "@/types/web-user";
+import type { PersistedPlayerRecord, PlayerRecord } from "@/types/player";
+import type { SearchResponse } from "@/types/search";
+import type { TemplateRecord } from "@/types/template";
+import type { OnlinePlayerRecord, ServerRecord } from "@/types/server";
+import type { CreateWebUserPayload, UpdateWebUserPayload, WebUserRecord } from "@/types/web-user";
 
 type RuntimeConfigHost = {
     __OGCLOUD_CONFIG__?: {
@@ -46,7 +46,7 @@ const getApiBaseUrl = () => {
     const runtimeConfig = (globalThis as RuntimeConfigHost).__OGCLOUD_CONFIG__;
     return (runtimeConfig?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "").replace(
         /\/+$/,
-        ""
+        "",
     );
 };
 
@@ -106,7 +106,7 @@ apiClient.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    }
+    },
 );
 
 class ApiError extends Error {
@@ -137,15 +137,15 @@ const toApiError = (error: unknown, unauthorizedMessage?: string) => {
                 message: payload?.message || fallbackMessage,
                 details: payload?.details ?? [],
             },
-            status
+            status,
         );
     }
 
     if (error instanceof Error && error.message) {
-        return new ApiError({message: error.message, details: []}, 0);
+        return new ApiError({ message: error.message, details: [] }, 0);
     }
 
-    return new ApiError({message: DEFAULT_ERROR_MESSAGE, details: []}, 0);
+    return new ApiError({ message: DEFAULT_ERROR_MESSAGE, details: [] }, 0);
 };
 
 const getAuthHeaders = (accessToken: string) => ({
@@ -157,7 +157,7 @@ type DashboardOverviewApiResponse = Omit<DashboardOverviewResponse, "scalingActi
 };
 
 const normalizeDashboardOverview = (
-    payload: DashboardOverviewApiResponse
+    payload: DashboardOverviewApiResponse,
 ): DashboardOverviewResponse => ({
     ...payload,
     scalingActions: Array.isArray(payload.scalingActions) ? payload.scalingActions : [],
@@ -167,9 +167,7 @@ type NetworkSettingsApiRecord = Omit<NetworkSettingsRecord, "general"> & {
     general?: Partial<NetworkGeneralSettings> | null;
 };
 
-const normalizeNetworkSettings = (
-    payload: NetworkSettingsApiRecord
-): NetworkSettingsRecord => ({
+const normalizeNetworkSettings = (payload: NetworkSettingsApiRecord): NetworkSettingsRecord => ({
     ...payload,
     general: {
         permissionSystemEnabled:
@@ -182,7 +180,7 @@ const normalizeNetworkSettings = (
 });
 
 const normalizeProxyRoutingStrategy = (
-    strategy?: ProxyRoutingStrategy | string | null
+    strategy?: ProxyRoutingStrategy | string | null,
 ): ProxyRoutingStrategy => {
     if (strategy === "ROUND_ROBIN" || strategy === "LOAD_BASED") {
         return strategy;
@@ -213,7 +211,7 @@ export const refreshSessionToken = async (refreshToken: string) => {
 
 export const updateOwnProfile = async (
     accessToken: string,
-    updates: { email?: string; password?: string }
+    updates: { email?: string; password?: string },
 ) => {
     try {
         const response = await apiClient.put<AuthUser>("/api/v1/auth/me", updates, {
@@ -225,30 +223,24 @@ export const updateOwnProfile = async (
     }
 };
 
-export const requestMinecraftLinkOtp = async (
-    accessToken: string,
-    minecraftUsername: string
-) => {
+export const requestMinecraftLinkOtp = async (accessToken: string, minecraftUsername: string) => {
     try {
         await apiClient.post(
             "/api/v1/auth/link/request",
-            {minecraftUsername},
-            {headers: getAuthHeaders(accessToken)}
+            { minecraftUsername },
+            { headers: getAuthHeaders(accessToken) },
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const confirmMinecraftLinkOtp = async (
-    accessToken: string,
-    otp: string
-) => {
+export const confirmMinecraftLinkOtp = async (accessToken: string, otp: string) => {
     try {
         const response = await apiClient.post<AuthUser>(
             "/api/v1/auth/link/confirm",
-            {otp},
-            {headers: getAuthHeaders(accessToken)}
+            { otp },
+            { headers: getAuthHeaders(accessToken) },
         );
         return response.data;
     } catch (error) {
@@ -264,7 +256,7 @@ export const getDashboardOverview = async (accessToken: string) => {
             "/api/v1/dashboard/overview",
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return {
@@ -300,18 +292,11 @@ export const getNetworkStatus = async (accessToken: string) => {
     }
 };
 
-export const updateNetworkSettings = async (
-    accessToken: string,
-    payload: UpdateNetworkPayload
-) => {
+export const updateNetworkSettings = async (accessToken: string, payload: UpdateNetworkPayload) => {
     try {
-        const response = await apiClient.put<NetworkSettingsApiRecord>(
-            "/api/v1/network",
-            payload,
-            {
-                headers: getAuthHeaders(accessToken),
-            }
-        );
+        const response = await apiClient.put<NetworkSettingsApiRecord>("/api/v1/network", payload, {
+            headers: getAuthHeaders(accessToken),
+        });
 
         return normalizeNetworkSettings(response.data);
     } catch (error) {
@@ -319,17 +304,14 @@ export const updateNetworkSettings = async (
     }
 };
 
-export const toggleNetworkMaintenance = async (
-    accessToken: string,
-    maintenance: boolean
-) => {
+export const toggleNetworkMaintenance = async (accessToken: string, maintenance: boolean) => {
     try {
         const response = await apiClient.put<NetworkSettingsApiRecord>(
             "/api/v1/network/maintenance",
-            {maintenance},
+            { maintenance },
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return normalizeNetworkSettings(response.data);
@@ -344,7 +326,7 @@ export const listApiAuditLogs = async (
         query?: string;
         page?: number;
         size?: number;
-    }
+    },
 ) => {
     try {
         const response = await apiClient.get<PaginatedResponse<ApiAuditLogRecord>>(
@@ -352,7 +334,7 @@ export const listApiAuditLogs = async (
             {
                 headers: getAuthHeaders(accessToken),
                 params,
-            }
+            },
         );
 
         return response.data;
@@ -367,7 +349,7 @@ export const listWebUsers = async (
         query?: string;
         page?: number;
         size?: number;
-    }
+    },
 ) => {
     try {
         const response = await apiClient.get<PaginatedResponse<WebUserRecord>>(
@@ -375,7 +357,7 @@ export const listWebUsers = async (
             {
                 headers: getAuthHeaders(accessToken),
                 params,
-            }
+            },
         );
 
         return response.data;
@@ -384,10 +366,7 @@ export const listWebUsers = async (
     }
 };
 
-export const createWebUser = async (
-    accessToken: string,
-    payload: CreateWebUserPayload
-) => {
+export const createWebUser = async (accessToken: string, payload: CreateWebUserPayload) => {
     try {
         const response = await apiClient.post<WebUserRecord>("/api/v1/web/users", payload, {
             headers: getAuthHeaders(accessToken),
@@ -402,7 +381,7 @@ export const createWebUser = async (
 export const updateWebUser = async (
     accessToken: string,
     targetEmail: string,
-    payload: UpdateWebUserPayload
+    payload: UpdateWebUserPayload,
 ) => {
     try {
         const response = await apiClient.put<WebUserRecord>(
@@ -410,7 +389,7 @@ export const updateWebUser = async (
             payload,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -429,16 +408,13 @@ export const deleteWebUser = async (accessToken: string, targetEmail: string) =>
     }
 };
 
-export const unlinkWebUserAccount = async (
-    accessToken: string,
-    targetEmail: string
-) => {
+export const unlinkWebUserAccount = async (accessToken: string, targetEmail: string) => {
     try {
         const response = await apiClient.delete<WebUserRecord>(
             `/api/v1/web/users/${encodeURIComponent(targetEmail)}/link`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -450,7 +426,7 @@ export const unlinkWebUserAccount = async (
 const fetchAllPagedItems = async <T>(
     path: string,
     accessToken: string,
-    params?: Record<string, number | string | undefined>
+    params?: Record<string, number | string | undefined>,
 ) => {
     const items: T[] = [];
     let page = 0;
@@ -480,7 +456,7 @@ const fetchAllPagedItems = async <T>(
             message: `Pagination exceeded ${MAX_LIST_PAGE_COUNT} pages for ${path}.`,
             details: [],
         },
-        500
+        500,
     );
 };
 
@@ -507,7 +483,7 @@ export const listAllTemplates = async (
     params?: {
         group?: string;
         query?: string;
-    }
+    },
 ) => {
     try {
         return await fetchAllPagedItems<TemplateRecord>("/api/v1/templates", accessToken, params);
@@ -523,7 +499,7 @@ export const listTemplates = async (
         query?: string;
         page?: number;
         size?: number;
-    }
+    },
 ) => {
     try {
         const response = await apiClient.get<PaginatedResponse<TemplateRecord>>(
@@ -531,7 +507,7 @@ export const listTemplates = async (
             {
                 headers: getAuthHeaders(accessToken),
                 params,
-            }
+            },
         );
 
         return response.data;
@@ -544,45 +520,37 @@ export const uploadTemplate = async (
     accessToken: string,
     group: string,
     version: string,
-    file: File
+    file: File,
 ) => {
     try {
         const formData = new FormData();
         formData.append("file", file);
 
-        await apiClient.post(
-            `/api/v1/templates/${encodeURIComponent(group)}/upload`,
-            formData,
-            {
-                headers: {
-                    ...getAuthHeaders(accessToken),
-                    "Content-Type": "multipart/form-data",
-                },
-                params: {
-                    version,
-                },
-            }
-        );
+        await apiClient.post(`/api/v1/templates/${encodeURIComponent(group)}/upload`, formData, {
+            headers: {
+                ...getAuthHeaders(accessToken),
+                "Content-Type": "multipart/form-data",
+            },
+            params: {
+                version,
+            },
+        });
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const downloadTemplate = async (
-    accessToken: string,
-    group: string,
-    version: string
-) => {
+export const downloadTemplate = async (accessToken: string, group: string, version: string) => {
     try {
         const response = await apiClient.get<BlobPart>(
             `/api/v1/templates/${encodeURIComponent(group)}/${encodeURIComponent(version)}/download`,
             {
                 headers: getAuthHeaders(accessToken),
                 responseType: "blob",
-            }
+            },
         );
 
-        const blob = new Blob([response.data], {type: "application/gzip"});
+        const blob = new Blob([response.data], { type: "application/gzip" });
         const downloadUrl = window.URL.createObjectURL(blob);
         const fileName = `${group}-${version}-template.tar.gz`;
         const link = document.createElement("a");
@@ -598,17 +566,13 @@ export const downloadTemplate = async (
     }
 };
 
-export const deleteTemplate = async (
-    accessToken: string,
-    group: string,
-    version: string
-) => {
+export const deleteTemplate = async (accessToken: string, group: string, version: string) => {
     try {
         await apiClient.delete(
             `/api/v1/templates/${encodeURIComponent(group)}/${encodeURIComponent(version)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
@@ -621,7 +585,7 @@ export const getGroupByName = async (accessToken: string, groupName: string) => 
             `/api/v1/groups/${encodeURIComponent(groupName)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -632,22 +596,15 @@ export const getGroupByName = async (accessToken: string, groupName: string) => 
 
 export const restartServerGroup = async (accessToken: string, groupName: string) => {
     try {
-        await apiClient.post(
-            `/api/v1/groups/${encodeURIComponent(groupName)}/restart`,
-            undefined,
-            {
-                headers: getAuthHeaders(accessToken),
-            }
-        );
+        await apiClient.post(`/api/v1/groups/${encodeURIComponent(groupName)}/restart`, undefined, {
+            headers: getAuthHeaders(accessToken),
+        });
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const createServerGroup = async (
-    accessToken: string,
-    payload: CreateGroupPayload
-) => {
+export const createServerGroup = async (accessToken: string, payload: CreateGroupPayload) => {
     try {
         const response = await apiClient.post<GroupRecord>("/api/v1/groups", payload, {
             headers: getAuthHeaders(accessToken),
@@ -662,7 +619,7 @@ export const createServerGroup = async (
 export const updateServerGroup = async (
     accessToken: string,
     groupName: string,
-    payload: UpdateGroupPayload
+    payload: UpdateGroupPayload,
 ) => {
     try {
         const response = await apiClient.put<GroupRecord>(
@@ -670,7 +627,7 @@ export const updateServerGroup = async (
             payload,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -682,15 +639,15 @@ export const updateServerGroup = async (
 export const toggleServerGroupMaintenance = async (
     accessToken: string,
     groupName: string,
-    maintenance: boolean
+    maintenance: boolean,
 ) => {
     try {
         const response = await apiClient.put<GroupRecord>(
             `/api/v1/groups/${encodeURIComponent(groupName)}/maintenance`,
-            {maintenance},
+            { maintenance },
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -716,16 +673,13 @@ export const listServers = async (
         query?: string;
         page?: number;
         size?: number;
-    }
+    },
 ) => {
     try {
-        const response = await apiClient.get<PaginatedResponse<ServerRecord>>(
-            "/api/v1/servers",
-            {
-                headers: getAuthHeaders(accessToken),
-                params,
-            }
-        );
+        const response = await apiClient.get<PaginatedResponse<ServerRecord>>("/api/v1/servers", {
+            headers: getAuthHeaders(accessToken),
+            params,
+        });
 
         return response.data;
     } catch (error) {
@@ -738,7 +692,7 @@ export const listAllServers = async (
     params?: {
         group?: string;
         query?: string;
-    }
+    },
 ) => {
     try {
         return await fetchAllPagedItems<ServerRecord>("/api/v1/servers", accessToken, params);
@@ -753,7 +707,7 @@ export const getServerById = async (accessToken: string, serverId: string) => {
             `/api/v1/servers/${encodeURIComponent(serverId)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -768,7 +722,7 @@ export const listPersistedPlayers = async (
         page?: number;
         size?: number;
         query?: string;
-    }
+    },
 ) => {
     try {
         const response = await apiClient.get<PaginatedResponse<PersistedPlayerRecord>>(
@@ -776,7 +730,7 @@ export const listPersistedPlayers = async (
             {
                 headers: getAuthHeaders(accessToken),
                 params,
-            }
+            },
         );
 
         return response.data;
@@ -791,7 +745,7 @@ export const getPlayerByUuid = async (accessToken: string, playerUuid: string) =
             `/api/v1/players/${encodeURIComponent(playerUuid)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -809,7 +763,7 @@ export const listOnlinePlayers = async (
         proxyId?: string;
         query?: string;
         name?: string;
-    }
+    },
 ) => {
     try {
         const response = await apiClient.get<PaginatedResponse<OnlinePlayerRecord>>(
@@ -817,7 +771,7 @@ export const listOnlinePlayers = async (
             {
                 headers: getAuthHeaders(accessToken),
                 params,
-            }
+            },
         );
 
         return response.data;
@@ -831,23 +785,20 @@ export const listAllPermissionGroups = async (accessToken: string, query?: strin
         return await fetchAllPagedItems<PermissionGroupRecord>(
             "/api/v1/permissions/groups",
             accessToken,
-            {query}
+            { query },
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const getPermissionGroupByName = async (
-    accessToken: string,
-    groupName: string
-) => {
+export const getPermissionGroupByName = async (accessToken: string, groupName: string) => {
     try {
         const response = await apiClient.get<PermissionGroupRecord>(
             `/api/v1/permissions/groups/${encodeURIComponent(groupName)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -858,7 +809,7 @@ export const getPermissionGroupByName = async (
 
 export const createPermissionGroup = async (
     accessToken: string,
-    payload: CreatePermissionGroupPayload
+    payload: CreatePermissionGroupPayload,
 ) => {
     try {
         const response = await apiClient.post<PermissionGroupRecord>(
@@ -866,7 +817,7 @@ export const createPermissionGroup = async (
             payload,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -878,7 +829,7 @@ export const createPermissionGroup = async (
 export const updatePermissionGroup = async (
     accessToken: string,
     groupName: string,
-    payload: UpdatePermissionGroupPayload
+    payload: UpdatePermissionGroupPayload,
 ) => {
     try {
         const response = await apiClient.put<PermissionGroupRecord>(
@@ -886,7 +837,7 @@ export const updatePermissionGroup = async (
             payload,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -895,10 +846,7 @@ export const updatePermissionGroup = async (
     }
 };
 
-export const deletePermissionGroup = async (
-    accessToken: string,
-    groupName: string
-) => {
+export const deletePermissionGroup = async (accessToken: string, groupName: string) => {
     try {
         await apiClient.delete(`/api/v1/permissions/groups/${encodeURIComponent(groupName)}`, {
             headers: getAuthHeaders(accessToken),
@@ -911,15 +859,15 @@ export const deletePermissionGroup = async (
 export const addPermissionToGroup = async (
     accessToken: string,
     groupName: string,
-    permission: string
+    permission: string,
 ) => {
     try {
         const response = await apiClient.post<PermissionGroupRecord>(
             `/api/v1/permissions/groups/${encodeURIComponent(groupName)}/permissions`,
-            {permission},
+            { permission },
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -931,14 +879,14 @@ export const addPermissionToGroup = async (
 export const removePermissionFromGroup = async (
     accessToken: string,
     groupName: string,
-    permission: string
+    permission: string,
 ) => {
     try {
         const response = await apiClient.delete<PermissionGroupRecord>(
             `/api/v1/permissions/groups/${encodeURIComponent(groupName)}/permissions/${encodeURIComponent(permission)}`,
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -951,15 +899,15 @@ export const updatePlayerPermissionGroup = async (
     accessToken: string,
     playerUuid: string,
     group: string,
-    duration = "-1"
+    duration = "-1",
 ) => {
     try {
         const response = await apiClient.put<PersistedPlayerRecord>(
             `/api/v1/players/${encodeURIComponent(playerUuid)}/group`,
-            {group, duration},
+            { group, duration },
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
 
         return response.data;
@@ -971,26 +919,22 @@ export const updatePlayerPermissionGroup = async (
 export const transferPlayerToTarget = async (
     accessToken: string,
     playerUuid: string,
-    target: string
+    target: string,
 ) => {
     try {
         await apiClient.post(
             `/api/v1/players/${encodeURIComponent(playerUuid)}/transfer`,
-            {target},
+            { target },
             {
                 headers: getAuthHeaders(accessToken),
-            }
+            },
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const searchEverything = async (
-    accessToken: string,
-    query: string,
-    limit?: number
-) => {
+export const searchEverything = async (accessToken: string, query: string, limit?: number) => {
     try {
         const response = await apiClient.get<SearchResponse>(
             `/api/v1/search/${encodeURIComponent(query)}`,
@@ -999,7 +943,7 @@ export const searchEverything = async (
                 params: {
                     limit,
                 },
-            }
+            },
         );
 
         return response.data;
@@ -1008,19 +952,15 @@ export const searchEverything = async (
     }
 };
 
-export const requestServerForGroup = async (
-    accessToken: string,
-    group: string,
-    count = 1
-) => {
+export const requestServerForGroup = async (accessToken: string, group: string, count = 1) => {
     const normalizedCount = Math.max(1, Math.trunc(count));
 
     try {
         for (let index = 0; index < normalizedCount; index += 1) {
             await apiClient.post(
                 "/api/v1/servers/request",
-                {group},
-                {headers: getAuthHeaders(accessToken)}
+                { group },
+                { headers: getAuthHeaders(accessToken) },
             );
         }
     } catch (error) {
@@ -1030,25 +970,20 @@ export const requestServerForGroup = async (
 
 export const stopServerGracefully = async (accessToken: string, serverId: string) => {
     try {
-        await apiClient.post(
-            `/api/v1/servers/${encodeURIComponent(serverId)}/stop`,
-            undefined,
-            {headers: getAuthHeaders(accessToken)}
-        );
+        await apiClient.post(`/api/v1/servers/${encodeURIComponent(serverId)}/stop`, undefined, {
+            headers: getAuthHeaders(accessToken),
+        });
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const forceServerTemplatePush = async (
-    accessToken: string,
-    serverId: string
-) => {
+export const forceServerTemplatePush = async (accessToken: string, serverId: string) => {
     try {
         await apiClient.post(
             `/api/v1/servers/${encodeURIComponent(serverId)}/template/push`,
             undefined,
-            {headers: getAuthHeaders(accessToken)}
+            { headers: getAuthHeaders(accessToken) },
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
@@ -1057,20 +992,15 @@ export const forceServerTemplatePush = async (
 
 export const killServerInstance = async (accessToken: string, serverId: string) => {
     try {
-        await apiClient.post(
-            `/api/v1/servers/${encodeURIComponent(serverId)}/kill`,
-            undefined,
-            {headers: getAuthHeaders(accessToken)}
-        );
+        await apiClient.post(`/api/v1/servers/${encodeURIComponent(serverId)}/kill`, undefined, {
+            headers: getAuthHeaders(accessToken),
+        });
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
 
-export const executeCommand = async (
-    accessToken: string,
-    payload: ExecuteCommandPayload
-) => {
+export const executeCommand = async (accessToken: string, payload: ExecuteCommandPayload) => {
     try {
         await apiClient.post("/api/v1/command", payload, {
             headers: getAuthHeaders(accessToken),

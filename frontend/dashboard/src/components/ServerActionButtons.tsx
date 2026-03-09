@@ -1,7 +1,7 @@
-import {FiClock, FiXCircle} from "react-icons/fi";
-import {MdPublishedWithChanges} from "react-icons/md";
+import { FiClock, FiXCircle } from "react-icons/fi";
+import { MdPublishedWithChanges } from "react-icons/md";
 
-import type {ServerActionKind} from "@/types/server";
+import type { ServerActionKind } from "@/types/server";
 
 interface ServerActionButtonsProps {
     serverId: string;
@@ -37,25 +37,25 @@ const getActionButtonClassName = (action: ServerActionKind) => {
 
 const getActionIcon = (action: ServerActionKind) => {
     if (action === "drain") {
-        return <FiClock className="h-4 w-4"/>;
+        return <FiClock className="h-4 w-4" />;
     }
 
     if (action === "push") {
-        return <MdPublishedWithChanges className="h-4 w-4"/>;
+        return <MdPublishedWithChanges className="h-4 w-4" />;
     }
 
-    return <FiXCircle className="h-4 w-4"/>;
+    return <FiXCircle className="h-4 w-4" />;
 };
 
 const ACTION_ORDER: ServerActionKind[] = ["drain", "push", "kill"];
 
 const ServerActionButtons = ({
-                                 serverId,
-                                 serverType,
-                                 activeActionKey,
-                                 onAction,
-                                 iconOnly = true,
-                             }: ServerActionButtonsProps) => {
+    serverId,
+    serverType,
+    activeActionKey,
+    onAction,
+    iconOnly = true,
+}: ServerActionButtonsProps) => {
     const isActionInProgress = activeActionKey !== null;
     const visibleActions =
         serverType?.toUpperCase() === "PROXY"
@@ -63,11 +63,7 @@ const ServerActionButtons = ({
             : ACTION_ORDER;
 
     return (
-        <div
-            className={`flex items-center gap-1.5 ${
-                iconOnly ? "justify-end" : "justify-center"
-            }`}
-        >
+        <div className={`flex items-center gap-1.5 ${iconOnly ? "justify-end" : "justify-center"}`}>
             {visibleActions.map((action) => {
                 const actionKey = `${serverId}:${action}`;
                 const label = getActionLabel(action);
@@ -91,7 +87,9 @@ const ServerActionButtons = ({
                         {getActionIcon(action)}
                         {!iconOnly && <span>{isBusy ? `${label}...` : label}</span>}
                         {iconOnly ? (
-                            <span className="sr-only">{isBusy ? `${label} in progress` : label}</span>
+                            <span className="sr-only">
+                                {isBusy ? `${label} in progress` : label}
+                            </span>
                         ) : null}
                     </button>
                 );
