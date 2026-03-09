@@ -1,11 +1,11 @@
 package io.ogwars.cloud.velocity.command
 
+import io.ogwars.cloud.velocity.api.ApiClient
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
-import io.ogwars.cloud.velocity.api.ApiClient
 
 object NetworkCommands {
     fun create(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> =

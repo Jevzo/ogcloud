@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.permission
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionExpiryEvent
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.network.NetworkState
+import com.google.gson.Gson
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap

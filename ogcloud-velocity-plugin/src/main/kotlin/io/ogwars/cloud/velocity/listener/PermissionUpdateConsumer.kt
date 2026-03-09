@@ -1,10 +1,10 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
+import com.google.gson.Gson
 import org.slf4j.Logger
 import java.util.*
 

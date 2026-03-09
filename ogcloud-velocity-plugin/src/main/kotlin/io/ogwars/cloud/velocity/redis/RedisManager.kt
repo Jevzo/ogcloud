@@ -1,12 +1,12 @@
 package io.ogwars.cloud.velocity.redis
 
+import io.ogwars.cloud.api.model.RedisPlayerSession
+import io.ogwars.cloud.api.model.RedisServerData
+import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.google.gson.Gson
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.RedisServerData
-import io.ogwars.cloud.velocity.server.ServerRegistry
 import org.slf4j.Logger
 import java.net.InetSocketAddress
 

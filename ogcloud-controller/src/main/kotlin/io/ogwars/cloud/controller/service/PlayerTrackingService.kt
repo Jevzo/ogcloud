@@ -1,16 +1,11 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.event.PermissionExpiryEvent
-import io.ogwars.cloud.api.event.PermissionUpdateEvent
-import io.ogwars.cloud.api.event.PlayerConnectEvent
-import io.ogwars.cloud.api.event.PlayerDisconnectEvent
-import io.ogwars.cloud.api.event.PlayerSwitchEvent
+import io.ogwars.cloud.api.event.*
 import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.controller.config.KafkaConfig
 import io.ogwars.cloud.controller.model.PermissionGroupDocument
 import io.ogwars.cloud.controller.model.PlayerDocument
 import io.ogwars.cloud.controller.redis.PlayerRedisRepository
-import io.ogwars.cloud.controller.repository.PermissionGroupRepository
 import io.ogwars.cloud.controller.repository.PlayerRepository
 import io.ogwars.cloud.controller.repository.WebUserRepository
 import org.slf4j.LoggerFactory
@@ -18,18 +13,28 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import java.time.Instant
 
+typealias ApiPermissionGroupDocument = io.ogwars.cloud.api.model.PermissionGroupDocument
+
 @Service
 class PlayerTrackingService(
     private val playerRepository: PlayerRepository,
-    private val permissionGroupRepository: PermissionGroupRepository,
     private val playerRedisRepository: PlayerRedisRepository,
     private val kafkaTemplate: KafkaTemplate<String, PermissionUpdateEvent>,
     private val webUserRepository: WebUserRepository,
-    private val networkSettingsService: NetworkSettingsService,
+    private val playerConnectRuntimeState: PlayerConnectRuntimeState,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun handleConnect(event: PlayerConnectEvent) {
+        if (!playerConnectRuntimeState.tryStartConnect(event.uuid, event.proxyId)) {
+            log.debug(
+                "Skipping duplicated player connect event within dedupe window: uuid={}, proxyId={}",
+                event.uuid,
+                event.proxyId,
+            )
+            return
+        }
+
         val existing = playerRepository.findById(event.uuid).orElse(null)
         val permissionSystemEnabled = isPermissionSystemEnabled()
         val defaultGroup = if (permissionSystemEnabled) requireDefaultGroup() else null
@@ -76,6 +81,7 @@ class PlayerTrackingService(
     }
 
     fun handleDisconnect(event: PlayerDisconnectEvent) {
+        playerConnectRuntimeState.resetConnectDedupe(event.uuid)
         playerRedisRepository.deleteSession(event.uuid)
     }
 
@@ -121,6 +127,24 @@ class PlayerTrackingService(
         }
 
         publishPermissionUpdate(event.uuid, defaultGroup, PERMANENT_PERMISSION_END_MILLIS, PERMISSION_EXPIRY_UPDATED_BY)
+    }
+
+    fun handlePermissionGroupUpdated(event: PermissionGroupUpdatedEvent) {
+        val group = event.group
+        if (event.deleted || group == null) {
+            playerConnectRuntimeState.removePermissionGroup(event.groupId)
+            return
+        }
+
+        playerConnectRuntimeState.upsertPermissionGroup(group.toControllerPermissionGroupDocument())
+    }
+
+    fun handleDefaultPermissionGroupChanged(event: DefaultPermissionGroupChangedEvent) {
+        playerConnectRuntimeState.markDefaultPermissionGroup(event.groupId)
+    }
+
+    fun updatePermissionSystemEnabled(enabled: Boolean) {
+        playerConnectRuntimeState.updatePermissionSystemEnabled(enabled)
     }
 
     fun handlePermissionSystemEnabled() {
@@ -204,15 +228,14 @@ class PlayerTrackingService(
         )
     }
 
-    private fun requireDefaultGroup() =
-        permissionGroupRepository.findByDefaultTrue()
-            ?: throw IllegalStateException(NO_DEFAULT_PERMISSION_GROUP_MESSAGE)
+    private fun requireDefaultGroup(): PermissionGroupDocument =
+        playerConnectRuntimeState.requireDefaultPermissionGroup()
 
     private fun resolvePermissionAssignment(
         player: PlayerDocument,
         defaultGroup: PermissionGroupDocument,
     ): ResolvedPermissionAssignment {
-        val assignedGroup = permissionGroupRepository.findById(player.permission.group).orElse(null)
+        val assignedGroup = playerConnectRuntimeState.findPermissionGroup(player.permission.group)
         if (assignedGroup != null) {
             return ResolvedPermissionAssignment(player = player, group = assignedGroup)
         }
@@ -246,8 +269,17 @@ class PlayerTrackingService(
 
     private fun buildPermanentPermission(groupId: String): PermissionConfig = PermissionConfig(group = groupId)
 
-    private fun isPermissionSystemEnabled(): Boolean =
-        networkSettingsService.findGlobal().general.permissionSystemEnabled
+    private fun isPermissionSystemEnabled(): Boolean = playerConnectRuntimeState.isPermissionSystemEnabled()
+
+    private fun ApiPermissionGroupDocument.toControllerPermissionGroupDocument(): PermissionGroupDocument =
+        PermissionGroupDocument(
+            id = id,
+            name = name,
+            display = display,
+            weight = weight,
+            default = default,
+            permissions = permissions,
+        )
 
     private data class ResolvedPermissionAssignment(
         val player: PlayerDocument,
@@ -255,7 +287,6 @@ class PlayerTrackingService(
     )
 
     companion object {
-        private const val NO_DEFAULT_PERMISSION_GROUP_MESSAGE = "No default permission group configured"
         private const val PERMANENT_PERMISSION_END_MILLIS = -1L
         private const val PERMISSION_EXPIRY_UPDATED_BY = "expiry"
         private const val NETWORK_FEATURE_UPDATED_BY = "network-feature"

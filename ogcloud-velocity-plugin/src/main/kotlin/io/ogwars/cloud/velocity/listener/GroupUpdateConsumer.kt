@@ -1,8 +1,5 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.google.gson.Gson
-import com.velocitypowered.api.proxy.Player
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.api.event.GroupUpdateEvent
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.velocity.kafka.KafkaManager
@@ -10,6 +7,9 @@ import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
+import com.google.gson.Gson
+import com.velocitypowered.api.proxy.Player
+import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.Component
 import org.slf4j.Logger
 

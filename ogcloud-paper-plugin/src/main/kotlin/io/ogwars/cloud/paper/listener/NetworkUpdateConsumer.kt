@@ -1,9 +1,9 @@
 package io.ogwars.cloud.paper.listener
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.NetworkUpdateEvent
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.network.NetworkFeatureState
+import com.google.gson.Gson
 import java.util.logging.Logger
 
 class NetworkUpdateConsumer(

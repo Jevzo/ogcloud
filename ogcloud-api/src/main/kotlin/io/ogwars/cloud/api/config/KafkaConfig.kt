@@ -26,6 +26,12 @@ class KafkaConfig {
     fun permissionUpdateTopic(): NewTopic = buildTopic(PERMISSION_UPDATE)
 
     @Bean
+    fun permissionGroupUpdatedTopic(): NewTopic = buildTopic(PERMISSION_GROUP_UPDATED)
+
+    @Bean
+    fun defaultPermissionGroupChangedTopic(): NewTopic = buildTopic(DEFAULT_PERMISSION_GROUP_CHANGED)
+
+    @Bean
     fun playerTransferTopic(): NewTopic = buildTopic(PLAYER_TRANSFER)
 
     @Bean
@@ -54,6 +60,8 @@ class KafkaConfig {
         const val GROUP_UPDATE = "ogcloud.group.update"
         const val SERVER_TEMPLATE_PUSH = "ogcloud.server.template.push"
         const val PERMISSION_UPDATE = "ogcloud.permission.update"
+        const val PERMISSION_GROUP_UPDATED = "ogcloud.permission.group.updated"
+        const val DEFAULT_PERMISSION_GROUP_CHANGED = "ogcloud.permission.group.default.changed"
         const val PLAYER_TRANSFER = "ogcloud.player.transfer"
         const val SERVER_KILL = "ogcloud.server.kill"
         const val COMMAND_EXECUTE = "ogcloud.command.execute"

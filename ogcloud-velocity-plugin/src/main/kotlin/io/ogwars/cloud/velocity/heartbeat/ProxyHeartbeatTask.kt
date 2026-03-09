@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.heartbeat
 
-import com.google.gson.Gson
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.api.event.ProxyHeartbeatEvent
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
+import com.google.gson.Gson
+import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService

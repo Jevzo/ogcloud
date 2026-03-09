@@ -1,12 +1,12 @@
 package io.ogwars.cloud.paper.listener
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
 import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
 import io.ogwars.cloud.paper.kafka.KafkaManager
+import com.google.gson.Gson
 import java.util.logging.Logger
 
 class LifecycleConsumer(

@@ -1,6 +1,5 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
@@ -9,6 +8,7 @@ import io.ogwars.cloud.velocity.api.OgCloudProxyAPIImpl
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager
 import io.ogwars.cloud.velocity.server.ServerRegistry
+import com.google.gson.Gson
 import org.slf4j.Logger
 import java.net.InetSocketAddress
 

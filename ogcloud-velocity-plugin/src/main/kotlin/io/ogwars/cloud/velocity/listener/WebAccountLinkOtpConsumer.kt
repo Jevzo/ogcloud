@@ -1,10 +1,10 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.google.gson.Gson
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.api.event.WebAccountLinkOtpEvent
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import com.google.gson.Gson
+import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 import java.util.*
 

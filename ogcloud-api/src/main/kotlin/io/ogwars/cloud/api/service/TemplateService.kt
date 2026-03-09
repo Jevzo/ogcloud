@@ -1,10 +1,10 @@
 package io.ogwars.cloud.api.service
 
-import io.minio.*
-import io.minio.errors.ErrorResponseException
 import io.ogwars.cloud.api.dto.PaginatedResponse
 import io.ogwars.cloud.api.dto.PaginationSupport
 import io.ogwars.cloud.api.exception.TemplateNotFoundException
+import io.minio.*
+import io.minio.errors.ErrorResponseException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.InputStream

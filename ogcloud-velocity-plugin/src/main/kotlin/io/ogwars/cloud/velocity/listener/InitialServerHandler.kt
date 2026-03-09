@@ -1,10 +1,10 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.velocitypowered.api.event.Subscribe
-import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
+import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent
 import org.slf4j.Logger
 
 class InitialServerHandler(

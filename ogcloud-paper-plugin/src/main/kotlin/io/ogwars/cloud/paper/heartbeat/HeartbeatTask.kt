@@ -1,9 +1,9 @@
 package io.ogwars.cloud.paper.heartbeat
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.ServerHeartbeatEvent
 import io.ogwars.cloud.paper.OgCloudPaperPlugin
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
+import com.google.gson.Gson
 
 class HeartbeatTask(
     private val plugin: OgCloudPaperPlugin,

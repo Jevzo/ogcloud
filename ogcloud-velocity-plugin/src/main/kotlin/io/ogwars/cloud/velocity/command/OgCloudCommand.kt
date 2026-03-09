@@ -1,5 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
+import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
@@ -7,8 +9,6 @@ import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.BrigadierCommand
 import com.velocitypowered.api.command.CommandSource
 import com.velocitypowered.api.proxy.ProxyServer
-import io.ogwars.cloud.velocity.api.ApiClient
-import io.ogwars.cloud.velocity.server.ServerRegistry
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 object OgCloudCommand {

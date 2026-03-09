@@ -1,7 +1,7 @@
 package io.ogwars.cloud.velocity.notification
 
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.velocity.permission.PermissionCache
+import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 
 class AdminNotificationManager(

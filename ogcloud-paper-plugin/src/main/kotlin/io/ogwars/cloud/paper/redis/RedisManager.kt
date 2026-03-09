@@ -1,11 +1,11 @@
 package io.ogwars.cloud.paper.redis
 
+import io.ogwars.cloud.api.model.RedisPlayerSession
+import io.ogwars.cloud.api.model.RedisServerData
 import com.google.gson.Gson
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.StatefulRedisConnection
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.RedisServerData
 import java.util.logging.Logger
 
 class RedisManager(

@@ -3,6 +3,8 @@ package io.ogwars.cloud.api.service
 import io.ogwars.cloud.api.dto.*
 import io.ogwars.cloud.api.exception.PermissionGroupAlreadyExistsException
 import io.ogwars.cloud.api.exception.PermissionGroupNotFoundException
+import io.ogwars.cloud.api.kafka.DefaultPermissionGroupChangedProducer
+import io.ogwars.cloud.api.kafka.PermissionGroupUpdatedProducer
 import io.ogwars.cloud.api.kafka.PermissionUpdateProducer
 import io.ogwars.cloud.api.model.DisplayConfig
 import io.ogwars.cloud.api.model.PermissionConfig
@@ -25,6 +27,8 @@ class PermissionGroupService(
     private val playerRepository: PlayerRepository,
     private val playerRedisRepository: PlayerRedisRepository,
     private val permissionUpdateProducer: PermissionUpdateProducer,
+    private val permissionGroupUpdatedProducer: PermissionGroupUpdatedProducer,
+    private val defaultPermissionGroupChangedProducer: DefaultPermissionGroupChangedProducer,
     private val networkService: NetworkService,
 ) {
     fun listAll(
@@ -99,6 +103,9 @@ class PermissionGroupService(
                 throw PermissionGroupAlreadyExistsException(request.id)
             }
 
+        permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)
+        publishDefaultGroupChangeIfRequired(saved.default, saved.id)
+
         return saved.toResponse()
     }
 
@@ -135,6 +142,8 @@ class PermissionGroupService(
             )
 
         publishUpdateForGroupPlayers(name)
+        permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)
+        publishDefaultGroupChangeIfRequired(request.default == true, saved.id)
 
         return saved.toResponse()
     }
@@ -177,6 +186,7 @@ class PermissionGroupService(
         }
 
         permissionGroupRepository.deleteById(name)
+        permissionGroupUpdatedProducer.publishPermissionGroupDeleted(name)
     }
 
     fun addPermission(
@@ -197,6 +207,7 @@ class PermissionGroupService(
         val saved = permissionGroupRepository.save(existing.copy(permissions = existing.permissions + permission))
 
         publishUpdateForGroupPlayers(name)
+        permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)
 
         return saved.toResponse()
     }
@@ -215,6 +226,7 @@ class PermissionGroupService(
         val saved = permissionGroupRepository.save(existing.copy(permissions = existing.permissions - permission))
 
         publishUpdateForGroupPlayers(name)
+        permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)
 
         return saved.toResponse()
     }
@@ -236,16 +248,25 @@ class PermissionGroupService(
             }
     }
 
-    companion object {
-        private const val API_UPDATED_BY = "api"
-        private const val SYSTEM_UPDATED_BY = "system"
-        private const val PERMANENT_PERMISSION_LENGTH = -1L
-        private const val PERMANENT_PERMISSION_END_MILLIS = -1L
+    private fun publishDefaultGroupChangeIfRequired(
+        shouldPublish: Boolean,
+        groupId: String,
+    ) {
+        if (shouldPublish) {
+            defaultPermissionGroupChangedProducer.publishDefaultPermissionGroupChanged(groupId)
+        }
     }
 
     private fun ensurePermissionSystemEnabled() {
         if (!networkService.isPermissionSystemEnabled()) {
             throw IllegalArgumentException("Permission system is disabled in network settings.")
         }
+    }
+
+    companion object {
+        private const val API_UPDATED_BY = "api"
+        private const val SYSTEM_UPDATED_BY = "system"
+        private const val PERMANENT_PERMISSION_LENGTH = -1L
+        private const val PERMANENT_PERMISSION_END_MILLIS = -1L
     }
 }

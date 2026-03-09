@@ -7,3 +7,5 @@ max_line_length = 120
 
 ktlint_code_style = ktlint_official
 ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_no-unused-imports = enabled
+ij_kotlin_imports_layout = io.ogwars.cloud.**,*,java.**,javax.**,kotlin.**,^

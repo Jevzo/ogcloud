@@ -1,10 +1,10 @@
 package io.ogwars.cloud.velocity.command
 
+import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
-import io.ogwars.cloud.velocity.api.ApiClient
-import io.ogwars.cloud.velocity.server.ServerRegistry
 
 object ServerCommands {
     fun create(

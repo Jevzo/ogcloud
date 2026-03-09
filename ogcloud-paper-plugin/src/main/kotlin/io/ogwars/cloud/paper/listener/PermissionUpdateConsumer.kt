@@ -1,12 +1,12 @@
 package io.ogwars.cloud.paper.listener
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.PermissionUpdateEvent
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
+import com.google.gson.Gson
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin

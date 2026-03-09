@@ -1,9 +1,9 @@
 package io.ogwars.cloud.paper.gamestate
 
-import com.google.gson.Gson
 import io.ogwars.cloud.api.event.GameStateUpdateEvent
 import io.ogwars.cloud.api.model.GameState
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
+import com.google.gson.Gson
 import java.util.logging.Logger
 
 class GameStateManager(

@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.google.gson.Gson
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.api.event.CommandExecuteEvent
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import com.google.gson.Gson
+import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 
 class CommandExecuteConsumer(

@@ -1,11 +1,5 @@
 package io.ogwars.cloud.velocity
 
-import com.google.inject.Inject
-import com.velocitypowered.api.event.Subscribe
-import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
-import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
-import com.velocitypowered.api.plugin.Plugin
-import com.velocitypowered.api.proxy.ProxyServer
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.velocity.api.ApiClient
 import io.ogwars.cloud.velocity.api.OgCloudProxyAPIImpl
@@ -24,6 +18,12 @@ import io.ogwars.cloud.velocity.permission.PermissionExpiryTask
 import io.ogwars.cloud.velocity.redis.RedisManager
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import io.ogwars.cloud.velocity.tablist.TablistManager
+import com.google.inject.Inject
+import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
+import com.velocitypowered.api.plugin.Plugin
+import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors

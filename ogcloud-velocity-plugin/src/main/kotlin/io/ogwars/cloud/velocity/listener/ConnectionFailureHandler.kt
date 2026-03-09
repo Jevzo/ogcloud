@@ -1,11 +1,11 @@
 package io.ogwars.cloud.velocity.listener
 
-import com.velocitypowered.api.event.Subscribe
-import com.velocitypowered.api.event.player.KickedFromServerEvent
-import com.velocitypowered.api.proxy.server.RegisteredServer
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
+import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.player.KickedFromServerEvent
+import com.velocitypowered.api.proxy.server.RegisteredServer
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.slf4j.Logger

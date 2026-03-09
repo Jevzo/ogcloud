@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.command
 
+import io.ogwars.cloud.velocity.api.ApiClient
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
-import io.ogwars.cloud.velocity.api.ApiClient
 import java.util.concurrent.CompletableFuture
 
 object PermCommands {
