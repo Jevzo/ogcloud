@@ -60,7 +60,7 @@ const FEATURES = [
   },
 ] as const;
 
-const FeaturesSection: React.FC = () => {
+const FeaturesSection = () => {
   return (
     <section id="features" className="px-5 py-24 sm:px-6 md:py-32 lg:px-8">
       <div className="mx-auto max-w-7xl">

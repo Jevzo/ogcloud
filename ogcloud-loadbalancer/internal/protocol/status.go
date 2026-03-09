@@ -9,10 +9,7 @@ import (
 )
 
 const (
-	StatusRequestPacketID  = 0x00
 	StatusResponsePacketID = 0x00
-	PingPacketID           = 0x01
-	PongPacketID           = 0x01
 )
 
 type StatusResponse struct {

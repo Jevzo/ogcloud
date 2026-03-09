@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import type { IconType } from "react-icons";
+import * as React from "react";
 
 interface FeatureCardProps {
   title: string;
@@ -24,7 +25,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5, delay: index * 0.06 }}
-      className="group relative overflow-hidden rounded-3xl border border-white/8 bg-white/[0.04] p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+      className="group relative overflow-hidden rounded-3xl border border-white/8 bg-white/4 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
     >
       <div
         aria-hidden="true"

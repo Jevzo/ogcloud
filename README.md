@@ -129,12 +129,6 @@ OgCloud exposes APIs for both Paper and Velocity plugins.
 This routes players to a different lobby group depending on their resolved permission group.
 
 ```kotlin
-import io.ogwars.cloud.server.api.OgCloudServerAPI
-import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
-import org.bukkit.command.CommandSender
-import org.bukkit.entity.Player
-
 class LobbyCommand : CommandExecutor {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         val player = sender as? Player ?: return true
@@ -162,9 +156,6 @@ class LobbyCommand : CommandExecutor {
 ### Paper Example: Match Flow + Warm Spare Request
 
 ```kotlin
-import io.ogwars.cloud.api.model.GameState
-import io.ogwars.cloud.server.api.OgCloudServerAPI
-
 val cloud = OgCloudServerAPI.get()
 
 cloud.setGameState(GameState.INGAME)
@@ -177,10 +168,6 @@ cloud.requestServer("minigame").thenAccept { serverInfo ->
 ### Velocity Example: Route On Join With `getPlayerGroup`
 
 ```kotlin
-import com.velocitypowered.api.event.Subscribe
-import com.velocitypowered.api.event.connection.PostLoginEvent
-import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
-
 class AutoRouteListener {
     @Subscribe
     fun onJoin(event: PostLoginEvent) {

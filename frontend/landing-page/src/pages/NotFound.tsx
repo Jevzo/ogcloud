@@ -2,7 +2,7 @@ import { NavLink } from "react-router";
 import { motion } from "motion/react";
 import { MdArrowBack } from "react-icons/md";
 
-const NotFound: React.FC = () => {
+const NotFound = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background-dark px-4">
       <div className="text-center max-w-md">

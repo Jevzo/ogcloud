@@ -206,6 +206,6 @@ class ApiClient(
 }
 
 class ApiException(
-    val statusCode: Int,
-    val responseBody: String,
+    statusCode: Int,
+    responseBody: String,
 ) : RuntimeException("API returned $statusCode: $responseBody")

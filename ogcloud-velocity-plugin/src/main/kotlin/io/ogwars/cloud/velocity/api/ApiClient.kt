@@ -141,12 +141,6 @@ data class ApiServerRequestResponse(
     val group: String,
 )
 
-data class ApiTemplateInfo(
-    val group: String,
-    val version: String,
-    val path: String,
-)
-
 data class ApiWebUserResponse(
     val id: String,
     val email: String,
@@ -273,8 +267,6 @@ class ApiClient(
     fun setNetworkMaintenance(enabled: Boolean): CompletableFuture<Void> =
         put("/api/v1/network/maintenance", mapOf("maintenance" to enabled))
 
-    fun updateNetwork(updates: Map<String, Any?>): CompletableFuture<Void> = put("/api/v1/network", updates)
-
     fun listPermissionGroups(): CompletableFuture<List<ApiPermissionGroupResponse>> =
         getAllPaged(
             "/api/v1/permissions/groups",
@@ -283,26 +275,6 @@ class ApiClient(
 
     fun getPermissionGroup(id: String): CompletableFuture<ApiPermissionGroupResponse> =
         get("/api/v1/permissions/groups/$id", ApiPermissionGroupResponse::class.java)
-
-    fun createPermissionGroup(body: Map<String, Any?>): CompletableFuture<ApiPermissionGroupResponse> =
-        postWithResponse("/api/v1/permissions/groups", body, ApiPermissionGroupResponse::class.java)
-
-    fun deletePermissionGroup(id: String): CompletableFuture<Void> = delete("/api/v1/permissions/groups/$id")
-
-    fun addPermission(
-        groupId: String,
-        permission: String,
-    ): CompletableFuture<ApiPermissionGroupResponse> =
-        postWithResponse(
-            "/api/v1/permissions/groups/$groupId/permissions",
-            mapOf("permission" to permission),
-            ApiPermissionGroupResponse::class.java,
-        )
-
-    fun removePermission(
-        groupId: String,
-        permission: String,
-    ): CompletableFuture<Void> = delete("/api/v1/permissions/groups/$groupId/permissions/$permission")
 
     fun executeCommand(
         target: String,
@@ -322,7 +294,7 @@ class ApiClient(
     private fun <T> getAllPaged(
         path: String,
         type: java.lang.reflect.Type,
-    ): CompletableFuture<List<T>> = getAllPaged(path, 0, mutableListOf<T>(), type)
+    ): CompletableFuture<List<T>> = getAllPaged(path, 0, mutableListOf(), type)
 
     private fun <T> getAllPaged(
         path: String,
@@ -379,11 +351,6 @@ class ApiClient(
                 response.body(),
                 type,
             )
-        }
-
-    private fun delete(path: String): CompletableFuture<Void> =
-        send(requestBuilder(path, authorize = true).DELETE().build()).thenApply {
-            null
         }
 
     private fun ensureAccessToken(): String {

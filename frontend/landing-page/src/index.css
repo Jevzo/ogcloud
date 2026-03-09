@@ -26,13 +26,13 @@
 
 @keyframes gradient {
     0% {
-        background-position: 0% 50%;
+        background-position: 0 50%;
     }
     50% {
         background-position: 100% 50%;
     }
     100% {
-        background-position: 0% 50%;
+        background-position: 0 50%;
     }
 }
 
@@ -42,7 +42,7 @@ html, body, #root {
 }
 
 body {
-    font-family: var(--font-family-body);
+    font-family: var(--font-family-body), sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--color-background-dark);

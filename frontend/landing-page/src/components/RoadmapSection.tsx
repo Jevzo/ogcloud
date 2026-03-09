@@ -28,7 +28,7 @@ const ROADMAP_POINTS: RoadmapPoint[] = [
   },
 ];
 
-const RoadmapSection: React.FC = () => {
+const RoadmapSection = () => {
   return (
     <section id="roadmap" className="px-5 py-24 sm:px-6 md:py-32 lg:px-8">
       <div className="mx-auto max-w-5xl">
@@ -55,7 +55,7 @@ const RoadmapSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.45 }}
-          className="relative rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-8"
+          className="relative rounded-3xl border border-white/10 bg-white/4 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-8"
         >
           <div
             aria-hidden="true"

@@ -26,8 +26,6 @@ class NetworkService(
 
     fun isPermissionSystemEnabled(): Boolean = getGeneralSettings().permissionSystemEnabled
 
-    fun isTablistEnabled(): Boolean = getGeneralSettings().tablistEnabled
-
     fun updateSettings(request: UpdateNetworkRequest): NetworkSettingsResponse {
         val current = findOrDefault()
 

@@ -1,8 +1,6 @@
 package io.ogwars.cloud.velocity.command
 
 import com.mojang.brigadier.arguments.BoolArgumentType
-import com.mojang.brigadier.arguments.IntegerArgumentType
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
@@ -18,20 +16,6 @@ object NetworkCommands {
                     RequiredArgumentBuilder
                         .argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
                         .executes { ctx -> setMaintenance(ctx, apiClient) },
-                ),
-            ).then(
-                LiteralArgumentBuilder.literal<CommandSource>("motd").then(
-                    RequiredArgumentBuilder
-                        .argument<CommandSource, String>(
-                            "motd",
-                            StringArgumentType.greedyString(),
-                        ).executes { ctx -> setMotd(ctx, apiClient) },
-                ),
-            ).then(
-                LiteralArgumentBuilder.literal<CommandSource>("maxplayers").then(
-                    RequiredArgumentBuilder
-                        .argument<CommandSource, Int>("count", IntegerArgumentType.integer(1))
-                        .executes { ctx -> setMaxPlayers(ctx, apiClient) },
                 ),
             ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("info").executes { ctx ->
@@ -52,44 +36,6 @@ object NetworkCommands {
             .setNetworkMaintenance(enabled)
             .thenAccept {
                 OgCloudCommand.sendPrefixed(source, "&aNetwork maintenance updated.")
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun setMotd(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val motd = ctx.getArgument("motd", String::class.java)
-
-        apiClient
-            .updateNetwork(mapOf("motd" to mapOf("global" to motd)))
-            .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aMOTD updated.")
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun setMaxPlayers(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val count = ctx.getArgument("count", Int::class.java)
-
-        apiClient
-            .updateNetwork(mapOf("maxPlayers" to count))
-            .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aMax players set to $count.")
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null

@@ -60,7 +60,7 @@ const FEATURE_ROWS: FeatureRow[] = [
   },
 ] as const;
 
-const ComparisonSection: React.FC = () => {
+const ComparisonSection = () => {
   return (
     <section
       id="comparison"

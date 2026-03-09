@@ -16,7 +16,7 @@ import java.util.logging.Logger
 class OgCloudServerAPIImpl(
     private val serverId: String,
     private val groupName: String,
-    private val groupType: String,
+    groupType: String,
     private val redisManager: RedisManager,
     private val permissionManager: PermissionManager,
     private val gameStateManager: GameStateManager,

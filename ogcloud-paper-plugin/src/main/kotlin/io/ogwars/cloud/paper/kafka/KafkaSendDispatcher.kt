@@ -51,7 +51,7 @@ class KafkaSendDispatcher(
             workerThread.interrupt()
             try {
                 workerThread.join(STOP_JOIN_TIMEOUT_MILLIS)
-            } catch (interrupted: InterruptedException) {
+            } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
             }
         }
@@ -62,7 +62,7 @@ class KafkaSendDispatcher(
     fun dispatch(message: Message) {
         try {
             queue.put(message)
-        } catch (interrupted: InterruptedException) {
+        } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
         }
     }

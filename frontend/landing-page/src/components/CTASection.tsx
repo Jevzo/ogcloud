@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { FaDiscord, FaGithub } from "react-icons/fa6";
 
-const CTASection: React.FC = () => {
+const CTASection = () => {
   return (
     <section className="px-5 py-24 sm:px-6 md:py-32 lg:px-8">
       <div className="mx-auto max-w-6xl">

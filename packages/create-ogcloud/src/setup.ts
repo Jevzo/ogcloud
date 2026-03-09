@@ -738,8 +738,7 @@ function defaultConnections(namespace: string): AnyRecord {
 
 async function generateConfig(networkArg: string | null | undefined, state: StateFile): Promise<void> {
     const fallbackNetwork = sanitizeNetworkName(networkArg || state.lastNetwork || "ogwars");
-    const providedNetwork = sanitizeNetworkName(networkArg);
-    let network = providedNetwork;
+    let network = sanitizeNetworkName(networkArg);
     if (!network) {
         network = sanitizeNetworkName(
             await askInput("Network name", {

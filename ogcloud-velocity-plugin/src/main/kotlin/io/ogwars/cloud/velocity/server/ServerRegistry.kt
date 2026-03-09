@@ -56,8 +56,6 @@ class ServerRegistry(
         logger.info("Server marked as draining: {}", serverId)
     }
 
-    fun isDraining(serverId: String): Boolean = drainingServers.contains(serverId)
-
     fun setGroupMaintenance(
         group: String,
         enabled: Boolean,
@@ -92,8 +90,6 @@ class ServerRegistry(
 
     fun getPlayersOnServer(serverId: String): Collection<com.velocitypowered.api.proxy.Player> =
         registeredServers[serverId]?.playersConnected ?: emptyList()
-
-    fun getAllServerIds(): Set<String> = registeredServers.keys.toSet()
 
     fun getPlayersInGroup(group: String): Collection<com.velocitypowered.api.proxy.Player> =
         serverGroups.entries

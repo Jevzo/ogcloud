@@ -22,14 +22,22 @@ object OgCloudCommand {
         val node =
             LiteralArgumentBuilder
                 .literal<CommandSource>("ogcloud")
-                .requires { it.hasPermission("ogcloud.admin") }
-                .then(ServerCommands.create(apiClient, serverRegistry))
-                .then(GroupCommands.create(apiClient))
-                .then(PlayerCommands.create(apiClient, proxyServer, serverRegistry))
-                .then(NetworkCommands.create(apiClient))
-                .then(PermCommands.create(apiClient))
-                .then(CommandCommand.create(apiClient, serverRegistry))
-                .executes(::sendOgCloudInfoMessage)
+                .then(
+                    ServerCommands
+                        .create(apiClient, serverRegistry)
+                        .requires { it.hasPermission("ogcloud.admin.server") },
+                ).then(GroupCommands.create(apiClient).requires { it.hasPermission("ogcloud.admin.group") })
+                .then(
+                    PlayerCommands
+                        .create(apiClient, proxyServer, serverRegistry)
+                        .requires { it.hasPermission("ogcloud.admin.player") },
+                ).then(NetworkCommands.create(apiClient).requires { it.hasPermission("ogcloud.admin.network") })
+                .then(PermCommands.create(apiClient).requires { it.hasPermission("ogcloud.admin.permission") })
+                .then(
+                    CommandCommand
+                        .create(apiClient, serverRegistry)
+                        .requires { it.hasPermission("ogcloud.admin.command") },
+                ).executes(::sendOgCloudInfoMessage)
                 .build()
 
         val command = BrigadierCommand(node)

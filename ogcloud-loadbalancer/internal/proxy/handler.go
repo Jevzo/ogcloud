@@ -4,7 +4,7 @@ import (
 	"io"
 	"net"
 
-	proxyproto "github.com/pires/go-proxyproto"
+	"github.com/pires/go-proxyproto"
 	"go.uber.org/zap"
 
 	"github.com/ogwars/ogcloud-loadbalancer/internal/kafka"

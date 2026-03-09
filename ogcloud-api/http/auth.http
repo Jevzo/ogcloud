@@ -79,7 +79,3 @@ Content-Type: application/json
 {
   "otp": "123456"
 }
-
-### Unlink the currently linked Minecraft account
-DELETE {{baseUrl}}/api/v1/auth/link
-Authorization: Bearer {{accessToken}}

@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { label: "FAQ", target: "faq" },
 ] as const;
 
-const Header: React.FC = () => {
+const Header = () => {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };

@@ -21,28 +21,6 @@ object PermCommands {
                 LiteralArgumentBuilder
                     .literal<CommandSource>("info")
                     .then(OgCloudCommand.wordArg("id").executes { ctx -> groupInfo(ctx, apiClient) }),
-            ).then(
-                LiteralArgumentBuilder.literal<CommandSource>("create").then(
-                    OgCloudCommand.wordArg("id").then(
-                        OgCloudCommand.wordArg("name").executes { ctx -> createGroup(ctx, apiClient) },
-                    ),
-                ),
-            ).then(
-                LiteralArgumentBuilder
-                    .literal<CommandSource>("delete")
-                    .then(OgCloudCommand.wordArg("id").executes { ctx -> deleteGroup(ctx, apiClient) }),
-            ).then(
-                LiteralArgumentBuilder.literal<CommandSource>("addperm").then(
-                    OgCloudCommand.wordArg("id").then(
-                        OgCloudCommand.wordArg("permission").executes { ctx -> addPermission(ctx, apiClient) },
-                    ),
-                ),
-            ).then(
-                LiteralArgumentBuilder.literal<CommandSource>("removeperm").then(
-                    OgCloudCommand.wordArg("id").then(
-                        OgCloudCommand.wordArg("permission").executes { ctx -> removePermission(ctx, apiClient) },
-                    ),
-                ),
             )
 
     private fun createPlayerNode(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> =
@@ -113,85 +91,6 @@ object PermCommands {
                 group.permissions.forEach { permission ->
                     OgCloudCommand.sendMessage(source, "   &8- &f$permission")
                 }
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun createGroup(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val groupId = ctx.getArgument("id", String::class.java)
-        val groupName = ctx.getArgument("name", String::class.java)
-
-        apiClient
-            .createPermissionGroup(mapOf("id" to groupId, "name" to groupName))
-            .thenAccept { group ->
-                OgCloudCommand.sendPrefixed(source, "&aPermission group '${group.id}' created.")
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun deleteGroup(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val groupId = ctx.getArgument("id", String::class.java)
-
-        apiClient
-            .deletePermissionGroup(groupId)
-            .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aPermission group '$groupId' deleted.")
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun addPermission(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val groupId = ctx.getArgument("id", String::class.java)
-        val permission = ctx.getArgument("permission", String::class.java)
-
-        apiClient
-            .addPermission(groupId, permission)
-            .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aPermission '$permission' added to group '$groupId'.")
-            }.exceptionally { error ->
-                OgCloudCommand.sendFailure(source, error)
-                null
-            }
-
-        return 1
-    }
-
-    private fun removePermission(
-        ctx: CommandContext<CommandSource>,
-        apiClient: ApiClient,
-    ): Int {
-        val source = ctx.source
-        val groupId = ctx.getArgument("id", String::class.java)
-        val permission = ctx.getArgument("permission", String::class.java)
-
-        apiClient
-            .removePermission(groupId, permission)
-            .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aPermission '$permission' removed from group '$groupId'.")
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null

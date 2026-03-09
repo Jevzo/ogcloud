@@ -1,8 +1,12 @@
-### List all web users (ADMIN only)
+### List all web users (ADMIN or SERVICE)
 GET {{baseUrl}}/api/v1/web/users
 Authorization: Bearer {{accessToken}}
 
-### Create a DEVELOPER user (ADMIN only)
+### List web users with pagination and query filtering
+GET {{baseUrl}}/api/v1/web/users?page=0&size=50&query=dev-user
+Authorization: Bearer {{accessToken}}
+
+### Create a DEVELOPER user (ADMIN or SERVICE)
 POST {{baseUrl}}/api/v1/web/users
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
@@ -48,6 +52,10 @@ Content-Type: application/json
 {
   "password": "replace-with-another-password"
 }
+
+### Unlink a user's Minecraft account (resets username + clears linked player)
+DELETE {{baseUrl}}/api/v1/web/users/dev-user-renamed@ogcloud.local/link
+Authorization: Bearer {{accessToken}}
 
 ### Delete a user
 DELETE {{baseUrl}}/api/v1/web/users/dev-user-renamed@ogcloud.local

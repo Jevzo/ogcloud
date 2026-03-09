@@ -21,7 +21,7 @@ const LEGAL_LINKS = [
   { label: "Terms", href: "/terms" },
 ] as const;
 
-const Footer: React.FC = () => {
+const Footer = () => {
   return (
     <footer className="relative z-10 border-t border-white/5 px-5 pb-10 pt-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -113,7 +113,7 @@ const Footer: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Discord"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-text-muted transition-colors hover:border-primary/30 hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-text-muted transition-colors hover:border-primary/30 hover:text-white"
             >
               <FaDiscord className="h-4 w-4" />
             </a>
@@ -122,7 +122,7 @@ const Footer: React.FC = () => {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-text-muted transition-colors hover:border-primary/30 hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-text-muted transition-colors hover:border-primary/30 hover:text-white"
             >
               <FaGithub className="h-4 w-4" />
             </a>

@@ -22,7 +22,7 @@ const TERMINAL_LINES = [
   "OK Deploy finished for network \"ogwars\".",
 ] as const;
 
-const Hero: React.FC = () => {
+const Hero = () => {
   return (
     <section className="px-5 pb-24 pt-36 sm:px-6 md:pb-32 md:pt-48 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-10 lg:gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,35rem)] lg:items-center">

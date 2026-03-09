@@ -2,6 +2,10 @@
 GET {{baseUrl}}/api/v1/permissions/groups
 Authorization: Bearer {{accessToken}}
 
+### List permission groups with pagination and query filtering
+GET {{baseUrl}}/api/v1/permissions/groups?page=0&size=50&query=admin
+Authorization: Bearer {{accessToken}}
+
 ### Get permission group by name
 GET {{baseUrl}}/api/v1/permissions/groups/admin
 Authorization: Bearer {{accessToken}}
@@ -37,7 +41,7 @@ Content-Type: application/json
     "chatPrefix": "",
     "chatSuffix": "&7: &f",
     "nameColor": "&4",
-    "tabPrefix": "&4Admin &7» "
+    "tabPrefix": "&4Admin &7>> "
   },
   "weight": 1,
   "default": false,
@@ -58,7 +62,7 @@ Content-Type: application/json
     "chatPrefix": "",
     "chatSuffix": "&7: &f",
     "nameColor": "&c",
-    "tabPrefix": "&cDev &7» "
+    "tabPrefix": "&cDev &7>> "
   },
   "weight": 10,
   "default": false,
@@ -96,7 +100,7 @@ Content-Type: application/json
     "chatPrefix": "",
     "chatSuffix": "&7: &f",
     "nameColor": "&c",
-    "tabPrefix": "&cDev &7» "
+    "tabPrefix": "&cDev &7>> "
   },
   "weight": 5
 }
@@ -111,7 +115,7 @@ Content-Type: application/json
 }
 
 ### Remove permission from a group
-DELETE {{baseUrl}}/api/v1/permissions/groups/player/permissions/*
+DELETE {{baseUrl}}/api/v1/permissions/groups/dev/permissions/ogcloud.command.execute
 Authorization: Bearer {{accessToken}}
 
 ### Delete a permission group (moves players to default)

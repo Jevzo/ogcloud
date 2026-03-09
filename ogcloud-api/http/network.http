@@ -13,19 +13,25 @@ Content-Type: application/json
 
 {
   "motd": {
-    "global": "&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem! &8⋆ &e1.21.11&r\n&8➥ &7Try our system today, &c&lfor free&7!",
-    "maintenance": "&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem! &8⋆ &e&k1.21.11&r\n&8➥ &cWe are currently undergoing maintenance!"
+    "global": "&e&lOgCloud &7| &7All in one k8s cloud system! &8* &e1.21.11&r\n&8> &7Try our system today, &c&lfor free&7!",
+    "maintenance": "&e&lOgCloud &7| &7All in one k8s cloud system! &8* &e&k1.21.11&r\n&8> &cWe are currently undergoing maintenance!"
   },
   "versionName": {
     "global": "1.21.11",
-    "maintenance": "⚛ Offline"
+    "maintenance": "Offline"
   },
   "maxPlayers": 500,
   "defaultGroup": "lobby",
+  "maintenance": false,
   "maintenanceKickMessage": "&cServer is currently in maintenance mode.",
   "tablist": {
-    "header": "\n&e&lOgCloud &7▰&8▰ &7All in one k8s cloudsystem!\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n",
+    "header": "\n&e&lOgCloud &7| &7All in one k8s cloud system!\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n",
     "footer": "\n&7Proxy: &a%proxy% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
+  },
+  "general": {
+    "permissionSystemEnabled": true,
+    "tablistEnabled": true,
+    "proxyRoutingStrategy": "LOAD_BASED"
   }
 }
 
@@ -49,6 +55,19 @@ Content-Type: application/json
   "tablist": {
     "header": "\n&e&lOgWars Network\n&7Players: &a%onlinePlayers%\n&7Group: &a%permissionGroup%\n",
     "footer": "\n&7%server% &8| &7%group%\n&7Ping: &a%ping%ms &8| &7play.ogwars.io\n"
+  }
+}
+
+### Update general settings only
+PUT {{baseUrl}}/api/v1/network
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "general": {
+    "permissionSystemEnabled": true,
+    "tablistEnabled": true,
+    "proxyRoutingStrategy": "ROUND_ROBIN"
   }
 }
 

@@ -1,7 +1,7 @@
 import { Outlet } from "react-router";
 import { Suspense } from "react";
 
-const AppShell: React.FC = () => {
+const AppShell = () => {
   return (
     <div className="min-h-screen bg-background-dark text-text-main">
       <Suspense fallback={null}>
