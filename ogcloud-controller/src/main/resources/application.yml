@@ -30,6 +30,24 @@ ogcloud:
     min-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MIN_BATCH_SIZE:100}
     max-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MAX_BATCH_SIZE:2000}
     lock-ttl: ${OGCLOUD_PERMISSION_REENABLE_SYNC_LOCK_TTL:PT5M}
+  kafka:
+    consumer:
+      busy:
+        concurrency: ${OGCLOUD_KAFKA_BUSY_CONCURRENCY:6}
+        max-poll-records: ${OGCLOUD_KAFKA_BUSY_MAX_POLL_RECORDS:500}
+      light:
+        concurrency: ${OGCLOUD_KAFKA_LIGHT_CONCURRENCY:3}
+        max-poll-records: ${OGCLOUD_KAFKA_LIGHT_MAX_POLL_RECORDS:250}
+      single:
+        concurrency: ${OGCLOUD_KAFKA_SINGLE_CONCURRENCY:1}
+        max-poll-records: ${OGCLOUD_KAFKA_SINGLE_MAX_POLL_RECORDS:100}
+      max-poll-interval-ms: ${OGCLOUD_KAFKA_MAX_POLL_INTERVAL_MS:300000}
+      session-timeout-ms: ${OGCLOUD_KAFKA_SESSION_TIMEOUT_MS:15000}
+      heartbeat-interval-ms: ${OGCLOUD_KAFKA_HEARTBEAT_INTERVAL_MS:5000}
+      poll-timeout-ms: ${OGCLOUD_KAFKA_LISTENER_POLL_TIMEOUT_MS:1500}
+      retry:
+        max-retries: ${OGCLOUD_KAFKA_RETRY_MAX_RETRIES:3}
+        backoff-ms: ${OGCLOUD_KAFKA_RETRY_BACKOFF_MS:1000}
   kubernetes:
     namespace: ${OGCLOUD_NAMESPACE:ogcloud}
   minio:

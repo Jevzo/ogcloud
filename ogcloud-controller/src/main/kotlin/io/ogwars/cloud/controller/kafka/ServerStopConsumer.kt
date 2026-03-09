@@ -15,7 +15,11 @@ class ServerStopConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.SERVER_STOP], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_STOP],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onServerStop(message: String) {
         val event = objectMapper.readValue(message, ServerStopEvent::class.java)
 

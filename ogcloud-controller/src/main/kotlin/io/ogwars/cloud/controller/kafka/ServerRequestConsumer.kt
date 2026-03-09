@@ -15,7 +15,11 @@ class ServerRequestConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.SERVER_REQUEST], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_REQUEST],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onServerRequest(message: String) {
         val event = objectMapper.readValue(message, ServerRequestEvent::class.java)
 

@@ -4,7 +4,6 @@ import io.ogwars.cloud.api.event.PlayerSwitchEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
@@ -13,15 +12,13 @@ class PlayerSwitchConsumer(
     private val playerTrackingService: PlayerTrackingService,
     private val objectMapper: ObjectMapper,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
-
-    @KafkaListener(topics = [KafkaTopics.PLAYER_SWITCH], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.PLAYER_SWITCH],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onPlayerSwitch(message: String) {
-        try {
-            val event = objectMapper.readValue(message, PlayerSwitchEvent::class.java)
-            playerTrackingService.handleSwitch(event)
-        } catch (e: Exception) {
-            log.error("Failed to process player switch event", e)
-        }
+        val event = objectMapper.readValue(message, PlayerSwitchEvent::class.java)
+        playerTrackingService.handleSwitch(event)
     }
 }

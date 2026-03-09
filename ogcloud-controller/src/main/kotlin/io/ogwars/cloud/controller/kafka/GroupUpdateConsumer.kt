@@ -15,7 +15,11 @@ class GroupUpdateConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.GROUP_UPDATE], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.GROUP_UPDATE],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onGroupUpdate(message: String) {
         val event = objectMapper.readValue(message, GroupUpdateEvent::class.java)
 

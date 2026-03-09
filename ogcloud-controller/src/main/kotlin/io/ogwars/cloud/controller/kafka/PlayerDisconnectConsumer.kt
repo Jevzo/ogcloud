@@ -4,7 +4,6 @@ import io.ogwars.cloud.api.event.PlayerDisconnectEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.PlayerTrackingService
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.slf4j.LoggerFactory
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 
@@ -13,15 +12,13 @@ class PlayerDisconnectConsumer(
     private val playerTrackingService: PlayerTrackingService,
     private val objectMapper: ObjectMapper,
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
-
-    @KafkaListener(topics = [KafkaTopics.PLAYER_DISCONNECT], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.PLAYER_DISCONNECT],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onPlayerDisconnect(message: String) {
-        try {
-            val event = objectMapper.readValue(message, PlayerDisconnectEvent::class.java)
-            playerTrackingService.handleDisconnect(event)
-        } catch (e: Exception) {
-            log.error("Failed to process player disconnect event", e)
-        }
+        val event = objectMapper.readValue(message, PlayerDisconnectEvent::class.java)
+        playerTrackingService.handleDisconnect(event)
     }
 }

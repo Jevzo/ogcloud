@@ -12,7 +12,11 @@ class ProxyHeartbeatConsumer(
     private val serverLifecycleService: ServerLifecycleService,
     private val objectMapper: ObjectMapper,
 ) {
-    @KafkaListener(topics = [KafkaTopics.PROXY_HEARTBEAT], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.PROXY_HEARTBEAT],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onProxyHeartbeat(message: String) {
         val event = objectMapper.readValue(message, ProxyHeartbeatEvent::class.java)
         serverLifecycleService.handleProxyHeartbeat(event)

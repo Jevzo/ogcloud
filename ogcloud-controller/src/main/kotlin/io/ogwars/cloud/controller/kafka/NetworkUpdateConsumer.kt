@@ -20,14 +20,14 @@ class NetworkUpdateConsumer(
     @Volatile
     private var previousPermissionSystemEnabled = networkSettingsService.findGlobal().general.permissionSystemEnabled
 
-    @KafkaListener(topics = [KafkaTopics.NETWORK_UPDATE], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.NETWORK_UPDATE],
+        groupId = "ogcloud-controller",
+        containerFactory = "singleKafkaListenerFactory",
+    )
     fun onNetworkUpdate(message: String) {
-        try {
-            val event = objectMapper.readValue(message, NetworkUpdateEvent::class.java)
-            handleNetworkUpdate(event)
-        } catch (exception: Exception) {
-            log.error("Failed to process network update event", exception)
-        }
+        val event = objectMapper.readValue(message, NetworkUpdateEvent::class.java)
+        handleNetworkUpdate(event)
     }
 
     private fun handleNetworkUpdate(event: NetworkUpdateEvent) {

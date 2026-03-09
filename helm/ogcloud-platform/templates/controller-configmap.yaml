@@ -22,4 +22,16 @@ data:
   POD_MONGODB_URI: {{ .Values.controller.env.podMongodbUri | quote }}
   POD_API_URL: {{ .Values.controller.env.podApiUrl | quote }}
   POD_OGCLOUD_API_EMAIL: {{ default .Values.controller.env.apiEmail .Values.controller.env.podApiEmail | quote }}
+  OGCLOUD_KAFKA_BUSY_CONCURRENCY: {{ .Values.controller.env.kafkaBusyConcurrency | quote }}
+  OGCLOUD_KAFKA_BUSY_MAX_POLL_RECORDS: {{ .Values.controller.env.kafkaBusyMaxPollRecords | quote }}
+  OGCLOUD_KAFKA_LIGHT_CONCURRENCY: {{ .Values.controller.env.kafkaLightConcurrency | quote }}
+  OGCLOUD_KAFKA_LIGHT_MAX_POLL_RECORDS: {{ .Values.controller.env.kafkaLightMaxPollRecords | quote }}
+  OGCLOUD_KAFKA_SINGLE_CONCURRENCY: {{ .Values.controller.env.kafkaSingleConcurrency | quote }}
+  OGCLOUD_KAFKA_SINGLE_MAX_POLL_RECORDS: {{ .Values.controller.env.kafkaSingleMaxPollRecords | quote }}
+  OGCLOUD_KAFKA_MAX_POLL_INTERVAL_MS: {{ .Values.controller.env.kafkaMaxPollIntervalMs | quote }}
+  OGCLOUD_KAFKA_SESSION_TIMEOUT_MS: {{ .Values.controller.env.kafkaSessionTimeoutMs | quote }}
+  OGCLOUD_KAFKA_HEARTBEAT_INTERVAL_MS: {{ .Values.controller.env.kafkaHeartbeatIntervalMs | quote }}
+  OGCLOUD_KAFKA_LISTENER_POLL_TIMEOUT_MS: {{ .Values.controller.env.kafkaListenerPollTimeoutMs | quote }}
+  OGCLOUD_KAFKA_RETRY_MAX_RETRIES: {{ .Values.controller.env.kafkaRetryMaxRetries | quote }}
+  OGCLOUD_KAFKA_RETRY_BACKOFF_MS: {{ .Values.controller.env.kafkaRetryBackoffMs | quote }}
 {{- end }}

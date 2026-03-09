@@ -18,7 +18,11 @@ class TemplatePushConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.SERVER_TEMPLATE_PUSH], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_TEMPLATE_PUSH],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onTemplatePush(message: String) {
         val event = objectMapper.readValue(message, TemplatePushEvent::class.java)
 
@@ -35,15 +39,11 @@ class TemplatePushConsumer(
 
         log.info("Triggering template push via exec: id={}, pod={}", event.serverId, server.podName)
 
-        try {
-            kubernetesService.execInContainer(
-                server.podName,
-                "template-pusher",
-                listOf("kill", "-USR1", "1"),
-            )
-            log.info("Template push signal sent: id={}", event.serverId)
-        } catch (e: Exception) {
-            log.error("Failed to trigger template push: id={}", event.serverId, e)
-        }
+        kubernetesService.execInContainer(
+            server.podName,
+            "template-pusher",
+            listOf("kill", "-USR1", "1"),
+        )
+        log.info("Template push signal sent: id={}", event.serverId)
     }
 }

@@ -15,19 +15,37 @@ class KafkaConfig {
     fun serverRequestTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_REQUEST)
 
     @Bean
+    fun serverRequestDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_REQUEST)
+
+    @Bean
     fun serverStopTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_STOP)
+
+    @Bean
+    fun serverStopDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_STOP)
 
     @Bean
     fun serverHeartbeatTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_HEARTBEAT, BUSY_TOPIC_PARTITIONS)
 
     @Bean
+    fun serverHeartbeatDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_HEARTBEAT, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
     fun proxyHeartbeatTopic(): NewTopic = buildTopic(KafkaTopics.PROXY_HEARTBEAT)
+
+    @Bean
+    fun proxyHeartbeatDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PROXY_HEARTBEAT)
 
     @Bean
     fun networkUpdateTopic(): NewTopic = buildTopic(KafkaTopics.NETWORK_UPDATE, SINGLE_TOPIC_PARTITION)
 
     @Bean
+    fun networkUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.NETWORK_UPDATE, SINGLE_TOPIC_PARTITION)
+
+    @Bean
     fun serverGamestateTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_GAMESTATE, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
+    fun serverGamestateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_GAMESTATE, BUSY_TOPIC_PARTITIONS)
 
     @Bean
     fun playerTransferTopic(): NewTopic = buildTopic(KafkaTopics.PLAYER_TRANSFER)
@@ -36,31 +54,61 @@ class KafkaConfig {
     fun groupUpdateTopic(): NewTopic = buildTopic(KafkaTopics.GROUP_UPDATE)
 
     @Bean
+    fun groupUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.GROUP_UPDATE)
+
+    @Bean
     fun serverTemplatePushTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_TEMPLATE_PUSH)
+
+    @Bean
+    fun serverTemplatePushDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_TEMPLATE_PUSH)
 
     @Bean
     fun playerConnectTopic(): NewTopic = buildTopic(KafkaTopics.PLAYER_CONNECT)
 
     @Bean
+    fun playerConnectDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PLAYER_CONNECT)
+
+    @Bean
     fun playerDisconnectTopic(): NewTopic = buildTopic(KafkaTopics.PLAYER_DISCONNECT)
+
+    @Bean
+    fun playerDisconnectDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PLAYER_DISCONNECT)
 
     @Bean
     fun playerSwitchTopic(): NewTopic = buildTopic(KafkaTopics.PLAYER_SWITCH)
 
     @Bean
+    fun playerSwitchDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PLAYER_SWITCH)
+
+    @Bean
     fun permissionUpdateTopic(): NewTopic = buildTopic(KafkaTopics.PERMISSION_UPDATE)
+
+    @Bean
+    fun permissionUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PERMISSION_UPDATE)
 
     @Bean
     fun permissionGroupUpdatedTopic(): NewTopic = buildTopic(KafkaTopics.PERMISSION_GROUP_UPDATED)
 
     @Bean
+    fun permissionGroupUpdatedDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PERMISSION_GROUP_UPDATED)
+
+    @Bean
     fun defaultPermissionGroupChangedTopic(): NewTopic = buildTopic(KafkaTopics.DEFAULT_PERMISSION_GROUP_CHANGED)
+
+    @Bean
+    fun defaultPermissionGroupChangedDltTopic(): NewTopic = buildDltTopic(KafkaTopics.DEFAULT_PERMISSION_GROUP_CHANGED)
 
     @Bean
     fun permissionExpiryTopic(): NewTopic = buildTopic(KafkaTopics.PERMISSION_EXPIRY)
 
     @Bean
+    fun permissionExpiryDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PERMISSION_EXPIRY)
+
+    @Bean
     fun serverKillTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_KILL)
+
+    @Bean
+    fun serverKillDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_KILL)
 
     private fun buildTopic(
         name: String,
@@ -72,10 +120,16 @@ class KafkaConfig {
             .replicas(DEFAULT_REPLICAS)
             .build()
 
+    private fun buildDltTopic(
+        sourceTopicName: String,
+        partitions: Int = LIGHT_TOPIC_PARTITIONS,
+    ): NewTopic = buildTopic("$sourceTopicName$DLT_SUFFIX", partitions)
+
     companion object {
         private const val DEFAULT_REPLICAS = 1
         private const val LIGHT_TOPIC_PARTITIONS = 3
         private const val BUSY_TOPIC_PARTITIONS = 6
         private const val SINGLE_TOPIC_PARTITION = 1
+        private const val DLT_SUFFIX = ".dlt"
     }
 }

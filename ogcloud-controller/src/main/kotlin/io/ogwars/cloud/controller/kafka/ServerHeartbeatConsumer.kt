@@ -12,7 +12,11 @@ class ServerHeartbeatConsumer(
     private val serverLifecycleService: ServerLifecycleService,
     private val objectMapper: ObjectMapper,
 ) {
-    @KafkaListener(topics = [KafkaTopics.SERVER_HEARTBEAT], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_HEARTBEAT],
+        groupId = "ogcloud-controller",
+        containerFactory = "busyKafkaListenerFactory",
+    )
     fun onServerHeartbeat(message: String) {
         val event = objectMapper.readValue(message, ServerHeartbeatEvent::class.java)
         serverLifecycleService.handleHeartbeat(event)

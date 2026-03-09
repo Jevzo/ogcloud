@@ -15,7 +15,11 @@ class ServerKillConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.SERVER_KILL], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_KILL],
+        groupId = "ogcloud-controller",
+        containerFactory = "lightKafkaListenerFactory",
+    )
     fun onServerKill(message: String) {
         val event = objectMapper.readValue(message, ServerKillEvent::class.java)
 

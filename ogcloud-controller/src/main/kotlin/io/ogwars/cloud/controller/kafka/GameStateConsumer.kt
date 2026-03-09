@@ -15,7 +15,11 @@ class GameStateConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @KafkaListener(topics = [KafkaTopics.SERVER_GAMESTATE], groupId = "ogcloud-controller")
+    @KafkaListener(
+        topics = [KafkaTopics.SERVER_GAMESTATE],
+        groupId = "ogcloud-controller",
+        containerFactory = "busyKafkaListenerFactory",
+    )
     fun onGameStateUpdate(message: String) {
         val event = objectMapper.readValue(message, GameStateUpdateEvent::class.java)
 

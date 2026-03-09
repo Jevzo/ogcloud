@@ -76,6 +76,18 @@ controller:
     podApiUrl: http://api.ogcloud.svc.cluster.local:8080
     podApiEmail: ""
     podApiPassword: ""
+    kafkaBusyConcurrency: "6"
+    kafkaBusyMaxPollRecords: "500"
+    kafkaLightConcurrency: "3"
+    kafkaLightMaxPollRecords: "250"
+    kafkaSingleConcurrency: "1"
+    kafkaSingleMaxPollRecords: "100"
+    kafkaMaxPollIntervalMs: "300000"
+    kafkaSessionTimeoutMs: "15000"
+    kafkaHeartbeatIntervalMs: "5000"
+    kafkaListenerPollTimeoutMs: "1500"
+    kafkaRetryMaxRetries: "3"
+    kafkaRetryBackoffMs: "1000"
   resources:
     requests:
       memory: 256Mi
