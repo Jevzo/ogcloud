@@ -22,6 +22,7 @@ object OgCloudCommand {
         val node =
             LiteralArgumentBuilder
                 .literal<CommandSource>("ogcloud")
+                .executes(::sendOgCloudInfoMessage)
                 .then(
                     ServerCommands
                         .create(apiClient, serverRegistry)
@@ -37,8 +38,7 @@ object OgCloudCommand {
                     CommandCommand
                         .create(apiClient, serverRegistry)
                         .requires { it.hasPermission("ogcloud.admin.command") },
-                ).executes(::sendOgCloudInfoMessage)
-                .build()
+                ).build()
 
         val command = BrigadierCommand(node)
         proxyServer.commandManager.register(
