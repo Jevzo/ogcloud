@@ -1,5 +1,3 @@
-﻿# OgCloud
-
 <p align="center">
   <img src=".github/images/logo.webp" alt="OgCloud Logo" width="220" />
 </p>
