@@ -70,7 +70,7 @@ Competitor reality check:
 - **PoloCloud**: promising, but still feels like a moving target and adds platform overhead before operational confidence.
 - **CloudNet**: historically important, but still rooted in node-centric, host-first architecture from an older era.
 - **Shulker**: technically strong, but closer to a substrate than a complete opinionated platform; teams still assemble too much themselves.
-- **SimpleCloud**: calls itself "simply the best," but their own positioning admits Kubernetes is "not possible right now" and the Docker push stalled out. That is legacy process management with cloud branding.
+- **SimpleCloud**: calls itself "simply the best" but their own positioning admits Kubernetes is "not possible right now" and the Docker push stalled out. That is legacy process management with cloud branding.
 
 For serious Minecraft networks, the gap is clear: OgCloud is built as a modern control plane, while most alternatives are either legacy models or incomplete platform stories.
 
