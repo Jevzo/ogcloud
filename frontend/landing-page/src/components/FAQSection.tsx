@@ -27,10 +27,10 @@ const FAQ_ITEMS: FAQItem[] = [
     },
     {
         question: "Is OgCloud production-ready today?",
-        answer: "OgCloud v1.0.0 is beta-prod ready. Core phases 1-6 are completed, Helm charts are completed, and the web dashboard is completed. Planned next are leader election and multi-version support per cluster without additional plugins.",
+        answer: "OgCloud v1.2.1 is beta-prod ready. Core phases 1-6 are completed, Helm charts are completed, and the web dashboard is completed. Planned next are leader election and multi-version support per cluster without additional plugins.",
     },
     {
-        question: "What is planned next after v1.0.0?",
+        question: "What is planned next after v1.2.1?",
         answer: "The near-term roadmap focuses on controller leader election for high availability and native support for multiple Minecraft versions in one cluster without requiring additional plugins.",
     },
 ];

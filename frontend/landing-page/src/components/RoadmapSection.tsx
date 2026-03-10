@@ -43,7 +43,7 @@ const RoadmapSection = () => {
                         Roadmap
                     </span>
                     <h2 className="font-display text-3xl font-bold tracking-[-0.03em] text-white md:text-5xl">
-                        v1.0.0 overview and next steps
+                        v1.2.1 overview and next steps
                     </h2>
                     <p className="mt-5 text-base leading-8 text-text-muted md:text-lg">
                         Quick overview of completed delivery and the next planned milestones.

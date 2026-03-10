@@ -27,21 +27,6 @@ const Hero = () => {
         <section className="px-5 pb-24 pt-36 sm:px-6 md:pb-32 md:pt-48 lg:px-8">
             <div className="mx-auto grid max-w-7xl gap-10 lg:gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,35rem)] lg:items-center">
                 <div className="text-center lg:text-left">
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.45 }}
-                        className="mb-8 inline-flex items-center gap-3 rounded-full border border-primary/20 bg-primary/10 px-4 py-2"
-                    >
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                        </span>
-                        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                            v1.0.0 released
-                        </span>
-                    </motion.div>
-
                     <motion.h1
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
