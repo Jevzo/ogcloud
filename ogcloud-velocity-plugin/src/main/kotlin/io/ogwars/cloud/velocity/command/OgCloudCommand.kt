@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -51,7 +52,7 @@ object OgCloudCommand {
     }
 
     fun sendOgCloudInfoMessage(ctx: CommandContext<CommandSource>): Int {
-        sendPrefixed(ctx.source, "This server is running on OgCloud <https://ogcloud.dev/>")
+        sendPrefixed(ctx.source, VelocityMessages.Command.OGCLOUD_INFO)
         return 1
     }
 
@@ -66,27 +67,48 @@ object OgCloudCommand {
         source: CommandSource,
         message: String,
     ) {
-        sendMessage(source, "$PREFIX&7$message")
+        sendMessage(source, "${VelocityMessages.Prefix.COMMAND}&7$message")
     }
 
     fun sendError(
         source: CommandSource,
         message: String,
     ) {
-        sendMessage(source, "$PREFIX&c$message")
+        sendMessage(source, "${VelocityMessages.Prefix.COMMAND}&c$message")
+    }
+
+    fun sendPrefixedTemplate(
+        source: CommandSource,
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ) {
+        sendPrefixed(source, format(template, *placeholders))
+    }
+
+    fun sendErrorTemplate(
+        source: CommandSource,
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ) {
+        sendError(source, format(template, *placeholders))
     }
 
     fun sendFailure(
         source: CommandSource,
         error: Throwable,
     ) {
-        val message = generateSequence(error) { it.cause }.firstNotNullOfOrNull(Throwable::message) ?: "Unknown error"
+        val message =
+            generateSequence(error) { it.cause }.firstNotNullOfOrNull(Throwable::message)
+                ?: VelocityMessages.Command.FAILURE_UNKNOWN_ERROR
 
-        sendError(source, "Failed: $message")
+        sendErrorTemplate(source, VelocityMessages.Command.FAILURE_TEMPLATE, "error" to message)
     }
 
     fun wordArg(name: String): RequiredArgumentBuilder<CommandSource, String> =
         RequiredArgumentBuilder.argument(name, StringArgumentType.word())
 
-    private const val PREFIX = "&8| &6OgCloud &7> "
+    fun format(
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ): String = VelocityMessages.format(template, *placeholders)
 }

@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
@@ -30,12 +31,16 @@ object NetworkCommands {
         val source = ctx.source
         val enabled = ctx.getArgument("enabled", Boolean::class.java)
 
-        OgCloudCommand.sendPrefixed(source, "Setting network maintenance to $enabled...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Network.MAINTENANCE_SETTING,
+            "enabled" to enabled,
+        )
 
         apiClient
             .setNetworkMaintenance(enabled)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aNetwork maintenance updated.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Network.MAINTENANCE_UPDATED)
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null
@@ -53,12 +58,39 @@ object NetworkCommands {
         apiClient
             .getNetworkSettings()
             .thenAccept { settings ->
-                OgCloudCommand.sendPrefixed(source, "&fNetwork Settings:")
-                OgCloudCommand.sendMessage(source, " &7Maintenance: &f${settings.maintenance}")
-                OgCloudCommand.sendMessage(source, " &7Max Players: &f${settings.maxPlayers}")
-                OgCloudCommand.sendMessage(source, " &7Default Group: &f${settings.defaultGroup}")
-                OgCloudCommand.sendMessage(source, " &7MOTD: &f${settings.motd.global}")
-                OgCloudCommand.sendMessage(source, " &7Version: &f${settings.versionName.global}")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Network.INFO_HEADER)
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Network.INFO_MAINTENANCE,
+                        "maintenance" to settings.maintenance,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Network.INFO_MAX_PLAYERS,
+                        "max_players" to settings.maxPlayers,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Network.INFO_DEFAULT_GROUP,
+                        "default_group" to settings.defaultGroup,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(VelocityMessages.Command.Network.INFO_MOTD, "motd" to settings.motd.global),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Network.INFO_VERSION,
+                        "version" to settings.versionName.global,
+                    ),
+                )
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null

@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.event.PlayerDisconnectEvent
 import io.ogwars.cloud.api.event.PlayerSwitchEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.redis.RedisManager
@@ -57,7 +58,7 @@ class PlayerConnectionListener(
                 }
 
                 proxyServer.playerCount >= proxyMaxPlayers -> {
-                    denyLogin(event, uuid, PROXY_FULL_MESSAGE)
+                    denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.PROXY_FULL)
                 }
 
                 else -> {
@@ -76,11 +77,15 @@ class PlayerConnectionListener(
                             messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
                         )
                         runCatching {
-                            player.disconnect(legacySerializer.deserialize(CONNECT_FAILURE_MESSAGE))
+                            player.disconnect(
+                                legacySerializer.deserialize(
+                                    VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE,
+                                ),
+                            )
                         }.onFailure {
                             logger.warn("Failed to disconnect player after connect publish failure: uuid={}", uuid, it)
                         }
-                        denyLogin(event, uuid, CONNECT_FAILURE_MESSAGE)
+                        denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE)
                     }
                 }
             }
@@ -280,9 +285,6 @@ class PlayerConnectionListener(
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
         private const val DEFAULT_PERMISSION_END_MILLIS = -1L
-        private const val PROXY_FULL_MESSAGE = "&cThis proxy is full."
-        private const val CONNECT_FAILURE_MESSAGE =
-            "&cConnection failed due to backend communication issues. Please retry."
         private const val CONNECT_RETRY_MAX_ATTEMPTS = 5
         private const val CONNECT_RETRY_WINDOW_MILLIS = 30_000L
         private const val CONNECT_RETRY_BACKOFF_MILLIS = 1_000L

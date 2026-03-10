@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
@@ -82,22 +83,31 @@ object ServerCommands {
     ): Int {
         val source = ctx.source
 
-        OgCloudCommand.sendPrefixed(source, "Fetching servers...")
+        OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.LIST_FETCHING)
 
         apiClient
             .listServers(group)
             .thenAccept { servers ->
                 if (servers.isEmpty()) {
-                    OgCloudCommand.sendPrefixed(source, "No servers found.")
+                    OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.LIST_EMPTY)
                     return@thenAccept
                 }
 
-                OgCloudCommand.sendPrefixed(source, "&fServers (${servers.size}):")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Server.LIST_HEADER,
+                    "count" to servers.size,
+                )
 
                 for (s in servers) {
                     OgCloudCommand.sendMessage(
                         source,
-                        " &8- &f${s.displayName} &7[${s.state}] &8players: &f${s.playerCount}",
+                        OgCloudCommand.format(
+                            VelocityMessages.Command.Server.LIST_ENTRY,
+                            "display_name" to s.displayName,
+                            "state" to s.state,
+                            "player_count" to s.playerCount,
+                        ),
                     )
                 }
             }.exceptionally { e ->
@@ -116,7 +126,11 @@ object ServerCommands {
         val serverId = serverRegistry.findServerIdByDisplayName(input)
 
         if (serverId == null) {
-            OgCloudCommand.sendError(source, "Server '$input' not found.")
+            OgCloudCommand.sendErrorTemplate(
+                source,
+                VelocityMessages.Command.Server.NOT_FOUND,
+                "server" to input,
+            )
         }
 
         return serverId
@@ -134,14 +148,56 @@ object ServerCommands {
         apiClient
             .getServer(serverId)
             .thenAccept { s ->
-                OgCloudCommand.sendPrefixed(source, "&fServer: ${s.displayName}")
-                OgCloudCommand.sendMessage(source, " &7ID: &f${s.id}")
-                OgCloudCommand.sendMessage(source, " &7Group: &f${s.group}")
-                OgCloudCommand.sendMessage(source, " &7State: &f${s.state}")
-                OgCloudCommand.sendMessage(source, " &7Players: &f${s.playerCount}/${s.maxPlayers}")
-                OgCloudCommand.sendMessage(source, " &7TPS: &f${String.format("%.1f", s.tps)}")
-                OgCloudCommand.sendMessage(source, " &7Memory: &f${s.memoryUsedMb}MB")
-                OgCloudCommand.sendMessage(source, " &7Pod: &f${s.podName} &7(${s.podIp ?: "no IP"})")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Server.INFO_HEADER,
+                    "display_name" to s.displayName,
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Server.INFO_ID,
+                        "id" to s.id,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(VelocityMessages.Command.Server.INFO_GROUP, "group" to s.group),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(VelocityMessages.Command.Server.INFO_STATE, "state" to s.state),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Server.INFO_PLAYERS,
+                        "online" to s.playerCount,
+                        "max" to s.maxPlayers,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Server.INFO_TPS,
+                        "tps" to String.format("%.1f", s.tps),
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Server.INFO_MEMORY,
+                        "memory_mb" to s.memoryUsedMb,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Server.INFO_POD,
+                        "pod_name" to s.podName,
+                        "pod_ip" to (s.podIp ?: VelocityMessages.Common.NO_IP),
+                    ),
+                )
             }.exceptionally { e ->
                 OgCloudCommand.sendFailure(source, e)
                 null
@@ -157,12 +213,16 @@ object ServerCommands {
         val source = ctx.source
         val group = ctx.getArgument("group", String::class.java)
 
-        OgCloudCommand.sendPrefixed(source, "Requesting server in group '$group'...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Server.REQUEST_REQUESTING,
+            "group" to group,
+        )
 
         apiClient
             .requestServer(group)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aServer requested successfully.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.REQUEST_SUCCESS)
             }.exceptionally { e ->
                 OgCloudCommand.sendFailure(source, e)
                 null
@@ -181,12 +241,16 @@ object ServerCommands {
         val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
-        OgCloudCommand.sendPrefixed(source, "Stopping server '$displayName'...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Server.STOP_REQUESTING,
+            "display_name" to displayName,
+        )
 
         apiClient
             .stopServer(serverId)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aServer stop requested.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.STOP_SUCCESS)
             }.exceptionally { e ->
                 OgCloudCommand.sendFailure(source, e)
                 null
@@ -205,12 +269,16 @@ object ServerCommands {
         val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
-        OgCloudCommand.sendPrefixed(source, "Killing server '$displayName'...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Server.KILL_REQUESTING,
+            "display_name" to displayName,
+        )
 
         apiClient
             .killServer(serverId)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aServer killed.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.KILL_SUCCESS)
             }.exceptionally { e ->
                 OgCloudCommand.sendFailure(source, e)
                 null
@@ -229,14 +297,18 @@ object ServerCommands {
         val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
-        OgCloudCommand.sendPrefixed(source, "Forcing template push for '$displayName'...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Server.TEMPLATE_PUSH_REQUESTING,
+            "display_name" to displayName,
+        )
 
         apiClient
             .forceTemplatePush(serverId)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aTemplate push requested.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.TEMPLATE_PUSH_SUCCESS)
             }.exceptionally { e ->
-                OgCloudCommand.sendError(source, "Failed: ${e.message}")
+                OgCloudCommand.sendFailure(source, e)
                 null
             }
 

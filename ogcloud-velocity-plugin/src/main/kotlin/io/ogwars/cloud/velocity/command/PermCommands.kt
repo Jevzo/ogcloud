@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
@@ -50,17 +51,33 @@ object PermCommands {
             .listPermissionGroups()
             .thenAccept { groups ->
                 if (groups.isEmpty()) {
-                    OgCloudCommand.sendPrefixed(source, "No permission groups found.")
+                    OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Permission.Group.LIST_EMPTY)
                     return@thenAccept
                 }
 
-                OgCloudCommand.sendPrefixed(source, "&fPermission Groups (${groups.size}):")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Permission.Group.LIST_HEADER,
+                    "count" to groups.size,
+                )
 
                 groups.forEach { group ->
-                    val defaultMarker = if (group.default) " &a[default]" else ""
+                    val defaultMarker =
+                        if (group.default) {
+                            VelocityMessages.Command.Permission.Group.LIST_DEFAULT_MARKER
+                        } else {
+                            ""
+                        }
                     OgCloudCommand.sendMessage(
                         source,
-                        " &8- &f${group.id} &7(${group.name}) weight: ${group.weight}$defaultMarker &8perms: &f${group.permissions.size}",
+                        OgCloudCommand.format(
+                            VelocityMessages.Command.Permission.Group.LIST_ENTRY,
+                            "group_id" to group.id,
+                            "group_name" to group.name,
+                            "weight" to group.weight,
+                            "default_marker" to defaultMarker,
+                            "permission_count" to group.permissions.size,
+                        ),
                     )
                 }
             }.exceptionally { error ->
@@ -81,15 +98,61 @@ object PermCommands {
         apiClient
             .getPermissionGroup(groupId)
             .thenAccept { group ->
-                OgCloudCommand.sendPrefixed(source, "&fPermission Group: ${group.id}")
-                OgCloudCommand.sendMessage(source, " &7Name: &f${group.name}")
-                OgCloudCommand.sendMessage(source, " &7Weight: &f${group.weight}")
-                OgCloudCommand.sendMessage(source, " &7Default: &f${group.default}")
-                OgCloudCommand.sendMessage(source, " &7Prefix: &f${group.display.chatPrefix}")
-                OgCloudCommand.sendMessage(source, " &7Suffix: &f${group.display.chatSuffix}")
-                OgCloudCommand.sendMessage(source, " &7Permissions (${group.permissions.size}):")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Permission.Group.INFO_HEADER,
+                    "group_id" to group.id,
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_NAME,
+                        "group_name" to group.name,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_WEIGHT,
+                        "weight" to group.weight,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_DEFAULT,
+                        "is_default" to group.default,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_PREFIX,
+                        "chat_prefix" to group.display.chatPrefix,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_SUFFIX,
+                        "chat_suffix" to group.display.chatSuffix,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Group.INFO_PERMISSIONS_HEADER,
+                        "count" to group.permissions.size,
+                    ),
+                )
                 group.permissions.forEach { permission ->
-                    OgCloudCommand.sendMessage(source, "   &8- &f$permission")
+                    OgCloudCommand.sendMessage(
+                        source,
+                        OgCloudCommand.format(
+                            VelocityMessages.Command.Permission.Group.INFO_PERMISSION_ENTRY,
+                            "permission" to permission,
+                        ),
+                    )
                 }
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
@@ -114,17 +177,33 @@ object PermCommands {
                     return@thenAccept
                 }
 
-                OgCloudCommand.sendPrefixed(source, "&fPlayer: ${player.name}")
-                OgCloudCommand.sendMessage(source, " &7Group: &f${player.permission.group}")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Permission.Player.INFO_HEADER,
+                    "player_name" to player.name,
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Player.INFO_GROUP,
+                        "group" to player.permission.group,
+                    ),
+                )
 
                 val duration =
                     if (player.permission.length == PERMANENT_LENGTH) {
-                        "permanent"
+                        VelocityMessages.Command.Permission.Player.DURATION_PERMANENT
                     } else {
                         "${player.permission.length}ms"
                     }
 
-                OgCloudCommand.sendMessage(source, " &7Duration: &f$duration")
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Permission.Player.INFO_DURATION,
+                        "duration" to duration,
+                    ),
+                )
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null
@@ -150,7 +229,12 @@ object PermCommands {
                     return@thenAccept
                 }
 
-                OgCloudCommand.sendPrefixed(source, "&aSet ${player.name}'s group to '${player.permission.group}'.")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Permission.Player.SET_SUCCESS,
+                    "player_name" to player.name,
+                    "group" to player.permission.group,
+                )
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null
@@ -168,7 +252,11 @@ object PermCommands {
             val player = players.firstOrNull()
 
             if (player == null) {
-                OgCloudCommand.sendError(source, "Player '$playerName' not found online.")
+                OgCloudCommand.sendErrorTemplate(
+                    source,
+                    VelocityMessages.Command.Permission.Player.NOT_FOUND_ONLINE,
+                    "player_name" to playerName,
+                )
                 return@thenApply null
             }
 

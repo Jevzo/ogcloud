@@ -3,6 +3,7 @@ import io.ogwars.cloud.api.event.WebAccountLinkOtpEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
@@ -41,7 +42,12 @@ class WebAccountLinkOtpConsumer(
 
         OgCloudCommand.sendMessage(
             player,
-            "&8| &6OgCloud Web &7> &7Link code for &f${event.requestedByEmail}&7: &a${event.otp}",
+            VelocityMessages.format(
+                VelocityMessages.Listener.WebLink.OTP,
+                "prefix" to VelocityMessages.Prefix.WEB,
+                "email" to event.requestedByEmail,
+                "otp" to event.otp,
+            ),
         )
 
         logger.info("Delivered web account link OTP to playerUuid={}", event.playerUuid)

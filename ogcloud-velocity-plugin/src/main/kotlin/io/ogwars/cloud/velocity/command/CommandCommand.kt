@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -39,12 +40,18 @@ object CommandCommand {
         val command = ctx.getArgument("cmd", String::class.java)
         val (targetType, target) = resolveTarget(input, serverRegistry)
 
-        OgCloudCommand.sendPrefixed(source, "Executing '$command' on $targetType '$input'...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.RemoteCommand.EXECUTE_REQUESTING,
+            "command" to command,
+            "target_type" to targetType,
+            "target_input" to input,
+        )
 
         apiClient
             .executeCommand(target, targetType, command)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aCommand dispatched.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.RemoteCommand.EXECUTE_DISPATCHED)
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null

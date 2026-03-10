@@ -1,13 +1,13 @@
 package io.ogwars.cloud.velocity.listener
 
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.player.KickedFromServerEvent
 import com.velocitypowered.api.proxy.server.RegisteredServer
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
 import java.util.*
 
@@ -17,6 +17,8 @@ class ConnectionFailureHandler(
     private val networkState: NetworkState,
     private val logger: Logger,
 ) {
+    private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
+
     @Subscribe
     fun onKickedFromServer(event: KickedFromServerEvent) {
         if (event.serverKickReason.isPresent) {
@@ -32,7 +34,7 @@ class ConnectionFailureHandler(
 
         event.result =
             KickedFromServerEvent.Notify.create(
-                Component.text(CONNECTION_LOST_MESSAGE, NamedTextColor.RED),
+                legacySerializer.deserialize(VelocityMessages.Listener.ConnectionFailure.CONNECTION_LOST),
             )
     }
 
@@ -60,7 +62,7 @@ class ConnectionFailureHandler(
 
         event.result =
             KickedFromServerEvent.DisconnectPlayer.create(
-                Component.text(NO_SERVERS_MESSAGE, NamedTextColor.RED),
+                legacySerializer.deserialize(VelocityMessages.Listener.ConnectionFailure.NO_SERVERS),
             )
     }
 
@@ -75,7 +77,5 @@ class ConnectionFailureHandler(
 
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
-        private const val NO_SERVERS_MESSAGE = "No available servers. Please try again later."
-        private const val CONNECTION_LOST_MESSAGE = "The server you were connecting to went down."
     }
 }

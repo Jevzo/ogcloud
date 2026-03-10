@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.command
 
 import io.ogwars.cloud.velocity.api.ApiClient
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
@@ -32,23 +33,40 @@ object GroupCommands {
     ): Int {
         val source = ctx.source
 
-        OgCloudCommand.sendPrefixed(source, "Fetching groups...")
+        OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Group.LIST_FETCHING)
 
         apiClient
             .listGroups()
             .thenAccept { groups ->
                 if (groups.isEmpty()) {
-                    OgCloudCommand.sendPrefixed(source, "No groups found.")
+                    OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Group.LIST_EMPTY)
                     return@thenAccept
                 }
 
-                OgCloudCommand.sendPrefixed(source, "&fGroups (${groups.size}):")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Group.LIST_HEADER,
+                    "count" to groups.size,
+                )
 
                 groups.forEach { group ->
-                    val maintenanceMarker = if (group.maintenance) " &c[MAINT]" else ""
+                    val maintenanceMarker =
+                        if (group.maintenance) {
+                            VelocityMessages.Command.Group.LIST_MAINTENANCE_MARKER
+                        } else {
+                            ""
+                        }
+
                     OgCloudCommand.sendMessage(
                         source,
-                        " &8- &f${group.id} &7(${group.type})$maintenanceMarker &8instances: &f${group.scaling.minOnline}-${group.scaling.maxInstances}",
+                        OgCloudCommand.format(
+                            VelocityMessages.Command.Group.LIST_ENTRY,
+                            "group_id" to group.id,
+                            "group_type" to group.type,
+                            "maintenance_marker" to maintenanceMarker,
+                            "min_online" to group.scaling.minOnline,
+                            "max_instances" to group.scaling.maxInstances,
+                        ),
                     )
                 }
             }.exceptionally { error ->
@@ -69,15 +87,45 @@ object GroupCommands {
         apiClient
             .getGroup(groupId)
             .thenAccept { group ->
-                OgCloudCommand.sendPrefixed(source, "&fGroup: ${group.id}")
-                OgCloudCommand.sendMessage(source, " &7Type: &f${group.type}")
-                OgCloudCommand.sendMessage(source, " &7Maintenance: &f${group.maintenance}")
+                OgCloudCommand.sendPrefixedTemplate(
+                    source,
+                    VelocityMessages.Command.Group.INFO_HEADER,
+                    "group_id" to group.id,
+                )
                 OgCloudCommand.sendMessage(
                     source,
-                    " &7Instances: &f${group.scaling.minOnline}-${group.scaling.maxInstances}",
+                    OgCloudCommand.format(VelocityMessages.Command.Group.INFO_TYPE, "group_type" to group.type),
                 )
-                OgCloudCommand.sendMessage(source, " &7Template: &f${group.templatePath}/${group.templateVersion}")
-                OgCloudCommand.sendMessage(source, " &7Image: &f${group.serverImage}")
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Group.INFO_MAINTENANCE,
+                        "maintenance" to group.maintenance,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Group.INFO_INSTANCES,
+                        "min_online" to group.scaling.minOnline,
+                        "max_instances" to group.scaling.maxInstances,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Group.INFO_TEMPLATE,
+                        "template_path" to group.templatePath,
+                        "template_version" to group.templateVersion,
+                    ),
+                )
+                OgCloudCommand.sendMessage(
+                    source,
+                    OgCloudCommand.format(
+                        VelocityMessages.Command.Group.INFO_IMAGE,
+                        "server_image" to group.serverImage,
+                    ),
+                )
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null
@@ -94,12 +142,17 @@ object GroupCommands {
         val groupId = ctx.getArgument("id", String::class.java)
         val enabled = ctx.getArgument("enabled", Boolean::class.java)
 
-        OgCloudCommand.sendPrefixed(source, "Setting group '$groupId' maintenance to $enabled...")
+        OgCloudCommand.sendPrefixedTemplate(
+            source,
+            VelocityMessages.Command.Group.MAINTENANCE_SETTING,
+            "group_id" to groupId,
+            "enabled" to enabled,
+        )
 
         apiClient
             .setGroupMaintenance(groupId, enabled)
             .thenAccept {
-                OgCloudCommand.sendPrefixed(source, "&aGroup maintenance updated.")
+                OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Group.MAINTENANCE_UPDATED)
             }.exceptionally { error ->
                 OgCloudCommand.sendFailure(source, error)
                 null

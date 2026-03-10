@@ -1,5 +1,6 @@
 package io.ogwars.cloud.paper.listener
 
+import io.ogwars.cloud.paper.message.PaperMessages
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.papermc.paper.event.player.AsyncChatEvent
@@ -27,17 +28,19 @@ class ChatListener(
         val player = event.player
         val cached = permissionManager.getCachedPlayer(player.uniqueId)
         val prefix = cached?.chatPrefix.orEmpty()
-        val nameColor = cached?.nameColor ?: DEFAULT_NAME_COLOR
-        val suffix = cached?.chatSuffix ?: DEFAULT_CHAT_SUFFIX
+        val nameColor = cached?.nameColor ?: PaperMessages.Chat.DEFAULT_NAME_COLOR
+        val suffix = cached?.chatSuffix ?: PaperMessages.Chat.DEFAULT_SUFFIX
         val message = legacySerializer.serialize(event.message())
 
-        return "$prefix$nameColor${player.name}$suffix$message"
+        return PaperMessages.format(
+            PaperMessages.Chat.FORMAT,
+            "prefix" to prefix,
+            "name_color" to nameColor,
+            "player_name" to player.name,
+            "suffix" to suffix,
+            "message" to message,
+        )
     }
 
     private fun deserializeLegacy(text: String) = legacySerializer.deserialize(text.replace('\u00A7', '&'))
-
-    companion object {
-        private const val DEFAULT_NAME_COLOR = "&7"
-        private const val DEFAULT_CHAT_SUFFIX = ": &f"
-    }
 }

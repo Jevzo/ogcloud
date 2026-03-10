@@ -2,13 +2,14 @@ package io.ogwars.cloud.velocity.listener
 import io.ogwars.cloud.api.event.PlayerTransferEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
-import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
 import java.util.*
 
@@ -22,6 +23,7 @@ class PlayerTransferConsumer(
     proxyId: String,
 ) {
     private val gson = Gson()
+    private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
     private val consumerRunner =
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
@@ -85,7 +87,7 @@ class PlayerTransferConsumer(
         target: String?,
     ) {
         if (target == null) {
-            disconnectPlayer(player, SHUTDOWN_MESSAGE)
+            disconnectPlayer(player, VelocityMessages.Listener.PlayerTransfer.SHUTDOWN)
             return
         }
 
@@ -101,7 +103,7 @@ class PlayerTransferConsumer(
 
         val selected = selectTargetServer(target)
         if (selected == null) {
-            disconnectPlayer(player, SHUTDOWN_MESSAGE)
+            disconnectPlayer(player, VelocityMessages.Listener.PlayerTransfer.SHUTDOWN)
             logger.warn("No target servers in group '{}', kicking {}", target, player.username)
             return
         }
@@ -168,7 +170,7 @@ class PlayerTransferConsumer(
         val defaultGroup = networkState.defaultGroup
 
         if (defaultGroup == blockedGroup || serverRegistry.isGroupInMaintenance(defaultGroup)) {
-            disconnectPlayer(player, MAINTENANCE_MESSAGE)
+            disconnectPlayer(player, VelocityMessages.Listener.PlayerTransfer.MAINTENANCE)
 
             logger.info(
                 "Kicked player {} because maintained group {} has no available fallback",
@@ -181,7 +183,7 @@ class PlayerTransferConsumer(
         val fallback = serverRegistry.getServersByGroup(defaultGroup).minByOrNull { it.playersConnected.size }
 
         if (fallback == null) {
-            disconnectPlayer(player, NO_SERVERS_MESSAGE)
+            disconnectPlayer(player, VelocityMessages.Listener.PlayerTransfer.NO_SERVERS)
 
             logger.warn(
                 "No fallback server available in default group '{}' while redirecting {} from maintained group {}",
@@ -206,13 +208,10 @@ class PlayerTransferConsumer(
         player: Player,
         message: String,
     ) {
-        player.disconnect(Component.text(message))
+        player.disconnect(legacySerializer.deserialize(message))
     }
 
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
-        private const val SHUTDOWN_MESSAGE = "Server shutting down"
-        private const val MAINTENANCE_MESSAGE = "Server is in maintenance"
-        private const val NO_SERVERS_MESSAGE = "No available servers. Please try again later."
     }
 }

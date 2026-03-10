@@ -3,6 +3,7 @@ import io.ogwars.cloud.api.event.GroupUpdateEvent
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.velocity.kafka.KafkaManager
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager
 import io.ogwars.cloud.velocity.permission.PermissionCache
@@ -10,7 +11,7 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
-import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
 
 class GroupUpdateConsumer(
@@ -25,6 +26,7 @@ class GroupUpdateConsumer(
     proxyId: String,
 ) {
     private val gson = Gson()
+    private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
     private val consumerRunner =
         ManagedKafkaStringConsumer(
             kafkaManager = kafkaManager,
@@ -79,7 +81,9 @@ class GroupUpdateConsumer(
             }
 
             if (fallback == null) {
-                player.disconnect(Component.text(SERVER_MAINTENANCE_MESSAGE))
+                player.disconnect(
+                    legacySerializer.deserialize(VelocityMessages.Listener.GroupUpdate.SERVER_MAINTENANCE),
+                )
 
                 logger.info(
                     "Kicked player {} because server group {} entered maintenance",
@@ -110,7 +114,7 @@ class GroupUpdateConsumer(
                 return@forEach
             }
 
-            player.disconnect(Component.text(PROXY_MAINTENANCE_MESSAGE))
+            player.disconnect(legacySerializer.deserialize(VelocityMessages.Listener.GroupUpdate.PROXY_MAINTENANCE))
 
             logger.info("Kicked player {} because proxy group {} entered maintenance", player.username, groupId)
         }
@@ -131,7 +135,5 @@ class GroupUpdateConsumer(
 
     companion object {
         private const val MAINTENANCE_BYPASS_PERMISSION = "ogcloud.maintenance.bypass"
-        private const val PROXY_MAINTENANCE_MESSAGE = "Proxy is in maintenance"
-        private const val SERVER_MAINTENANCE_MESSAGE = "Server is in maintenance"
     }
 }

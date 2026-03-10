@@ -1,5 +1,6 @@
 package io.ogwars.cloud.velocity.notification
 
+import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
@@ -15,21 +16,54 @@ class AdminNotificationManager(
         state: String,
         group: String,
     ) {
-        val name = displayName ?: "unknown"
-        broadcast("${PREFIX}Server &f$name &7$state &8(group: &f$group&8)")
+        val name = displayName ?: VelocityMessages.Common.UNKNOWN
+        broadcast(
+            VelocityMessages.format(
+                VelocityMessages.Notification.SERVER_LIFECYCLE,
+                "prefix" to VelocityMessages.Prefix.ADMIN,
+                "display_name" to name,
+                "state" to state,
+                "group" to group,
+            ),
+        )
     }
 
     fun notifyNetworkMaintenance(enabled: Boolean) {
-        val status = if (enabled) "&cENABLED" else "&aDisabled"
-        broadcast("${PREFIX}Network maintenance $status")
+        val status =
+            if (enabled) {
+                VelocityMessages.Notification.STATUS_ENABLED
+            } else {
+                VelocityMessages.Notification.STATUS_DISABLED
+            }
+
+        broadcast(
+            VelocityMessages.format(
+                VelocityMessages.Notification.NETWORK_MAINTENANCE,
+                "prefix" to VelocityMessages.Prefix.ADMIN,
+                "status" to status,
+            ),
+        )
     }
 
     fun notifyGroupMaintenance(
         group: String,
         enabled: Boolean,
     ) {
-        val status = if (enabled) "&cENABLED" else "&aDisabled"
-        broadcast("${PREFIX}Group &f\"$group\" &7maintenance $status")
+        val status =
+            if (enabled) {
+                VelocityMessages.Notification.STATUS_ENABLED
+            } else {
+                VelocityMessages.Notification.STATUS_DISABLED
+            }
+
+        broadcast(
+            VelocityMessages.format(
+                VelocityMessages.Notification.GROUP_MAINTENANCE,
+                "prefix" to VelocityMessages.Prefix.ADMIN,
+                "group" to group,
+                "status" to status,
+            ),
+        )
     }
 
     private fun broadcast(message: String) {
@@ -44,6 +78,5 @@ class AdminNotificationManager(
 
     companion object {
         private const val NOTIFY_PERMISSION = "ogcloud.notify"
-        private const val PREFIX = "&8| &6OgCloud &7> "
     }
 }
