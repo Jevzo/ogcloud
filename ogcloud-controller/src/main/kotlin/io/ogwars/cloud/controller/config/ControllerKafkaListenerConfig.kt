@@ -1,5 +1,8 @@
 package io.ogwars.cloud.controller.config
 
+import io.ogwars.cloud.api.event.PermissionUpdateEvent
+import io.ogwars.cloud.api.event.PlayerTransferEvent
+import io.ogwars.cloud.api.event.ServerLifecycleEvent
 import com.fasterxml.jackson.core.JsonProcessingException
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -77,6 +80,18 @@ class ControllerKafkaListenerConfig(
     ): KafkaTemplate<String, String> = KafkaTemplate(deadLetterProducerFactory)
 
     @Bean
+    fun permissionUpdateKafkaTemplate(): KafkaTemplate<String, PermissionUpdateEvent> =
+        KafkaTemplate(buildEventProducerFactory())
+
+    @Bean
+    fun serverLifecycleKafkaTemplate(): KafkaTemplate<String, ServerLifecycleEvent> =
+        KafkaTemplate(buildEventProducerFactory())
+
+    @Bean
+    fun playerTransferKafkaTemplate(): KafkaTemplate<String, PlayerTransferEvent> =
+        KafkaTemplate(buildEventProducerFactory())
+
+    @Bean
     fun deadLetterPublishingRecoverer(
         deadLetterKafkaTemplate: KafkaTemplate<String, String>,
     ): DeadLetterPublishingRecoverer =
@@ -102,7 +117,7 @@ class ControllerKafkaListenerConfig(
         val backOff = FixedBackOff(consumerProperties.retry.backoffMs, consumerProperties.retry.maxRetries)
         val errorHandler = DefaultErrorHandler(deadLetterPublishingRecoverer, backOff)
 
-        errorHandler.setCommitRecovered(true)
+        errorHandler.setCommitRecovered(true) // cannot use property access syntax (protected)
         errorHandler.addNotRetryableExceptions(
             JsonProcessingException::class.java,
             IllegalArgumentException::class.java,
@@ -203,6 +218,11 @@ class ControllerKafkaListenerConfig(
         consumerConfig[ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG] = consumerProperties.sessionTimeoutMs
         consumerConfig[ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG] = consumerProperties.heartbeatIntervalMs
         return DefaultKafkaConsumerFactory(consumerConfig)
+    }
+
+    private fun <T> buildEventProducerFactory(): ProducerFactory<String, T> {
+        val producerConfig = HashMap(kafkaProperties.buildProducerProperties(null))
+        return DefaultKafkaProducerFactory(producerConfig)
     }
 
     companion object {
