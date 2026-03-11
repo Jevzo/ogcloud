@@ -36,10 +36,6 @@ data class UpdatePermissionGroupRequest(
     val permissions: List<String>? = null,
 )
 
-data class AddPermissionRequest(
-    @field:NotBlank val permission: String,
-)
-
 data class PermissionGroupResponse(
     val id: String,
     val name: String,
