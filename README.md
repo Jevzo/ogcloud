@@ -12,7 +12,6 @@
 
 <p align="center">
   <img alt="Kubernetes" src="https://img.shields.io/badge/Kubernetes-Native-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
-  <img alt="Minecraft" src="https://img.shields.io/badge/Minecraft-Network%20Platform-5E7C16?style=for-the-badge" />
   <img alt="Spring" src="https://img.shields.io/badge/Spring%20%2B%20Kotlin-Control%20Plane-6DB33F?style=for-the-badge&logo=spring&logoColor=white" />
   <img alt="Go" src="https://img.shields.io/badge/Go-Load%20Balancer-00ADD8?style=for-the-badge&logo=go&logoColor=white" />
 </p>
