@@ -4,6 +4,7 @@ import org.slf4j.Logger
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
 class KafkaSendDispatcher(
@@ -94,7 +95,7 @@ class KafkaSendDispatcher(
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             DispatchResult.INTERRUPTED
-        } catch (_: java.util.concurrent.TimeoutException) {
+        } catch (_: TimeoutException) {
             DispatchResult.TIMED_OUT
         } catch (_: Exception) {
             DispatchResult.FAILED

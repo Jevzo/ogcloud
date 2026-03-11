@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.CommandSource
 import com.velocitypowered.api.proxy.ProxyServer
+import java.util.concurrent.CompletableFuture
 
 object PlayerCommands {
     fun create(
@@ -191,8 +192,7 @@ object PlayerCommands {
                         VelocityMessages.Command.Player.TRANSFER_NOT_FOUND,
                         "player_name" to name,
                     )
-                    return@thenCompose java.util.concurrent.CompletableFuture
-                        .completedFuture(null)
+                    return@thenCompose CompletableFuture.completedFuture(null)
                 }
 
                 val uuid = players.first().uuid
