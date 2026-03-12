@@ -863,8 +863,8 @@ export const addPermissionToGroup = async (
 ) => {
     try {
         const response = await apiClient.post<PermissionGroupRecord>(
-            `/api/v1/permissions/groups/${encodeURIComponent(groupName)}/permissions`,
-            { permission },
+            `/api/v1/permissions/groups/${encodeURIComponent(groupName)}/permissions/${encodeURIComponent(permission)}`,
+            undefined,
             {
                 headers: getAuthHeaders(accessToken),
             },

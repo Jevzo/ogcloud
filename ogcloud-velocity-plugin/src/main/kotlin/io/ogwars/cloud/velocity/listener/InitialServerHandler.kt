@@ -6,6 +6,7 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent
 import org.slf4j.Logger
+import java.util.UUID
 
 class InitialServerHandler(
     private val serverRegistry: ServerRegistry,
@@ -35,7 +36,7 @@ class InitialServerHandler(
         )
     }
 
-    private fun selectInitialServer(playerUuid: java.util.UUID) =
+    private fun selectInitialServer(playerUuid: UUID) =
         serverRegistry
             .getServersByGroup(
                 networkState.defaultGroup,

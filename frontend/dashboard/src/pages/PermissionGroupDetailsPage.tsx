@@ -14,7 +14,13 @@ import { Link, useNavigate, useParams } from "react-router";
 import AppToasts from "@/components/AppToasts";
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import PermissionGroupFormFields from "@/components/PermissionGroupFormFields";
-import { deletePermissionGroup, getPermissionGroupByName, updatePermissionGroup } from "@/lib/api";
+import {
+    addPermissionToGroup,
+    deletePermissionGroup,
+    getPermissionGroupByName,
+    removePermissionFromGroup,
+    updatePermissionGroup,
+} from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type {
@@ -54,6 +60,7 @@ const PermissionGroupDetailsPage = () => {
     const [permissionPageIndex, setPermissionPageIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUpdatingPermissions, setIsUpdatingPermissions] = useState(false);
     const [isDeletingGroup, setIsDeletingGroup] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -201,6 +208,18 @@ const PermissionGroupDetailsPage = () => {
         );
     };
 
+    const syncPermissionListState = (nextGroup: PermissionGroupRecord) => {
+        setGroup((currentValue) =>
+            currentValue
+                ? {
+                      ...currentValue,
+                      permissions: nextGroup.permissions,
+                  }
+                : nextGroup,
+        );
+        setPermissionsDraft(nextGroup.permissions);
+    };
+
     const handleSaveGroup = async () => {
         if (!group || !formValues) {
             return;
@@ -251,12 +270,30 @@ const PermissionGroupDetailsPage = () => {
             return;
         }
 
-        setPermissionsDraft((currentValue) => [...currentValue, normalizedPermission]);
-        setNewPermission("");
+        setIsUpdatingPermissions(true);
         setErrorMessage(null);
+
+        try {
+            const accessToken = await getValidAccessToken();
+            const updatedGroup = await addPermissionToGroup(
+                accessToken,
+                group.id,
+                normalizedPermission,
+            );
+            syncPermissionListState(updatedGroup);
+            setNewPermission("");
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to add permission to permission group.",
+            );
+        } finally {
+            setIsUpdatingPermissions(false);
+        }
     };
 
-    const handleRemovePermission = (permission: string) => {
+    const handleRemovePermission = async (permission: string) => {
         if (!group || !permissionSystemEnabled) {
             if (!permissionSystemEnabled) {
                 setErrorMessage("Permission system is disabled in network settings.");
@@ -264,10 +301,23 @@ const PermissionGroupDetailsPage = () => {
             return;
         }
 
-        setPermissionsDraft((currentValue) =>
-            currentValue.filter((currentPermission) => currentPermission !== permission),
-        );
         setErrorMessage(null);
+
+        setIsUpdatingPermissions(true);
+
+        try {
+            const accessToken = await getValidAccessToken();
+            const updatedGroup = await removePermissionFromGroup(accessToken, group.id, permission);
+            syncPermissionListState(updatedGroup);
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to remove permission from permission group.",
+            );
+        } finally {
+            setIsUpdatingPermissions(false);
+        }
     };
 
     const handleDeleteGroup = async () => {
@@ -510,13 +560,13 @@ const PermissionGroupDetailsPage = () => {
                                     type="text"
                                     value={newPermission}
                                     onChange={(event) => setNewPermission(event.target.value)}
-                                    disabled={!permissionSystemEnabled || isSaving}
+                                    disabled={!permissionSystemEnabled || isSaving || isUpdatingPermissions}
                                     className="app-input-field min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
                                     placeholder="ogcloud.command.execute"
                                 />
                                 <button
                                     type="button"
-                                    disabled={!permissionSystemEnabled || isSaving}
+                                    disabled={!permissionSystemEnabled || isSaving || isUpdatingPermissions}
                                     onClick={() => void handleAddPermission()}
                                     className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
@@ -527,7 +577,7 @@ const PermissionGroupDetailsPage = () => {
 
                             <div className="rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-xs text-amber-200">
                                 Adding or removing permissions takes immediate effect across online
-                                players after you save this group.
+                                players. No group save is required.
                             </div>
 
                             <div className="space-y-3">
@@ -546,8 +596,12 @@ const PermissionGroupDetailsPage = () => {
                                             </span>
                                             <button
                                                 type="button"
-                                                disabled={!permissionSystemEnabled || isSaving}
-                                                onClick={() => handleRemovePermission(permission)}
+                                                disabled={
+                                                    !permissionSystemEnabled ||
+                                                    isSaving ||
+                                                    isUpdatingPermissions
+                                                }
+                                                onClick={() => void handleRemovePermission(permission)}
                                                 className="button-hover-lift inline-flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                                                 aria-label={`Remove ${permission}`}
                                             >
@@ -633,7 +687,11 @@ const PermissionGroupDetailsPage = () => {
                                 <div className="flex justify-end">
                                     <button
                                         type="button"
-                                        disabled={isSaving || !permissionSystemEnabled}
+                                        disabled={
+                                            isSaving ||
+                                            isUpdatingPermissions ||
+                                            !permissionSystemEnabled
+                                        }
                                         onClick={() => void handleSaveGroup()}
                                         className="app-button-field button-hover-lift button-shadow-primary rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                     >

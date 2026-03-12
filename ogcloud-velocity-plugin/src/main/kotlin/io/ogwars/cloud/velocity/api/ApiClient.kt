@@ -3,6 +3,7 @@ package io.ogwars.cloud.velocity.api
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.slf4j.Logger
+import java.lang.reflect.Type
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -285,7 +286,7 @@ class ApiClient(
 
     private fun <T> get(
         path: String,
-        type: java.lang.reflect.Type,
+        type: Type,
     ): CompletableFuture<T> =
         send(
             requestBuilder(path, authorize = true).GET().build(),
@@ -293,14 +294,14 @@ class ApiClient(
 
     private fun <T> getAllPaged(
         path: String,
-        type: java.lang.reflect.Type,
+        type: Type,
     ): CompletableFuture<List<T>> = getAllPaged(path, 0, mutableListOf(), type)
 
     private fun <T> getAllPaged(
         path: String,
         page: Int,
         accumulator: MutableList<T>,
-        type: java.lang.reflect.Type,
+        type: Type,
     ): CompletableFuture<List<T>> =
         get<ApiPaginatedResponse<T>>(withPageParams(path, page), type).thenCompose { response ->
             accumulator.addAll(response.items)

@@ -106,13 +106,8 @@ Content-Type: application/json
 }
 
 ### Add permission to a group
-POST {{baseUrl}}/api/v1/permissions/groups/dev/permissions
+POST {{baseUrl}}/api/v1/permissions/groups/dev/permissions/ogcloud.command.execute
 Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "permission": "ogcloud.command.execute"
-}
 
 ### Remove permission from a group
 DELETE {{baseUrl}}/api/v1/permissions/groups/dev/permissions/ogcloud.command.execute
