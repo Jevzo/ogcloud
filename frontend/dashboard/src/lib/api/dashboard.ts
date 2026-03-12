@@ -1,7 +1,4 @@
-import type {
-    DashboardOverviewResponse,
-    DashboardOverviewScalingAction,
-} from "@/types/dashboard";
+import type { DashboardOverviewResponse, DashboardOverviewScalingAction } from "@/types/dashboard";
 
 import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
 

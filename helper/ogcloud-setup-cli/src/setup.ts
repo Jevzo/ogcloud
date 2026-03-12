@@ -74,6 +74,8 @@ type NetworkConfig = {
     schemaVersion: number;
     network: string;
     namespace: string;
+    deployBackingServices: boolean;
+    deployDashboard: boolean;
     backingMode: BackingMode;
     ingressEnabled: boolean;
     ingressClassName: string;
@@ -154,6 +156,8 @@ const STATE_FILE = path.join(STATE_ROOT, "state.json");
 const BACKING_SERVICES = ["mongodb", "redis", "minio", "kafka"];
 const COMPONENTS: ComponentName[] = ["dashboard", "api", "loadbalancer", "controller"];
 const NETWORK_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+const DEFAULT_IMAGE_VERSION = "1.2.2";
+const DEFAULT_INGRESS_CLASS_NAME = "nginx";
 const FIXED_IMAGE_REPOSITORIES = {
     api: "ogwarsdev/api",
     controller: "ogwarsdev/controller",
@@ -308,7 +312,7 @@ Quickstart lifecycle utility for OgCloud Helm deployment.
 
 ${color("Usage", COLORS.bold)}
   ogcloud-setup --generate-config <network_name>
-  ogcloud-setup --deploy <network_name> [--without-backing]
+  ogcloud-setup --deploy <network_name>
   ogcloud-setup --update <network_name> <component> <image_version>
   ogcloud-setup --destroy <network_name>
 
@@ -324,7 +328,7 @@ ${color("npx examples", COLORS.bold)}
 ${color("Flags", COLORS.bold)}
   --context <name>       Use a specific kube context before prompting
   --refresh-helm         Force fresh download of remote Helm files
-  --without-backing      Skip infra chart deployment
+  --without-backing      Deprecated; ignored. Backing deployment is now stored in config
   --interactive          Open guided flow
   --help                 Show this help
 `);
@@ -921,6 +925,25 @@ function randomSecret() {
     return nodeCrypto.randomBytes(20).toString("hex");
 }
 
+function resolveStoredImageTag(existingTag: string | undefined): string {
+    const normalizedTag = existingTag?.trim() ?? "";
+    return normalizedTag || DEFAULT_IMAGE_VERSION;
+}
+
+function resolveDeployBackingServices(existing: ExistingNetworkConfig | null): boolean {
+    if (typeof existing?.deployBackingServices === "boolean") {
+        return existing.deployBackingServices;
+    }
+    return existing?.backingMode !== "external";
+}
+
+function resolveDeployDashboard(existing: ExistingNetworkConfig | null): boolean {
+    if (typeof existing?.deployDashboard === "boolean") {
+        return existing.deployDashboard;
+    }
+    return true;
+}
+
 function defaultConnections(namespace: string): NetworkConnections {
     return {
         mongodbUri: `mongodb://mongodb.${namespace}.svc.cluster.local:27017/ogcloud`,
@@ -962,32 +985,21 @@ async function generateConfig(
             validateNetworkName(value) || "Use lowercase letters, numbers and dashes only.",
     });
 
-    const backingMode = await askSelect<BackingMode>(
-        "Backing services mode",
-        [
-            {
-                label: "Managed in cluster",
-                value: "managed",
-                description: "Deploy MongoDB/Redis/Kafka/MinIO via Helm",
-            },
-            {
-                label: "External services",
-                value: "external",
-                description: "Skip infra chart and use existing backing services",
-            },
-        ],
-        existing?.backingMode === "external" ? 1 : 0,
+    const deployBackingServices = await askConfirm(
+        "Deploy backing services?",
+        resolveDeployBackingServices(existing),
     );
+    const deployDashboard = await askConfirm(
+        "Deploy frontend dashboard?",
+        resolveDeployDashboard(existing),
+    );
+    const backingMode: BackingMode = deployBackingServices ? "managed" : "external";
 
     const ingressEnabled = await askConfirm(
-        "Enable ingress for API and dashboard?",
+        deployDashboard ? "Enable ingress for API and dashboard?" : "Enable ingress for API?",
         existing?.ingressEnabled || false,
     );
-    const ingressClassName = ingressEnabled
-        ? await askInput("Ingress class name", {
-              defaultValue: existing?.ingressClassName || "nginx",
-          })
-        : "";
+    const ingressClassName = ingressEnabled ? DEFAULT_INGRESS_CLASS_NAME : "";
 
     const apiDomain = ingressEnabled
         ? await askInput("API public domain", {
@@ -995,34 +1007,21 @@ async function generateConfig(
           })
         : "";
 
-    const dashboardDomain = ingressEnabled
-        ? await askInput("Dashboard public domain", {
-              defaultValue: existing?.dashboardDomain || `dashboard.${network}.local`,
-          })
-        : "";
+    const dashboardDomain =
+        ingressEnabled && deployDashboard
+            ? await askInput("Dashboard public domain", {
+                  defaultValue: existing?.dashboardDomain || `dashboard.${network}.local`,
+              })
+            : "";
 
     const lbDomain = await askInput("Load balancer domain", {
         defaultValue: existing?.loadbalancerDomain || `mc.${network}.local`,
     });
 
-    const requiredTagValidator = (value: string) =>
-        value.trim().length > 0 || "Image tag is required.";
-    const apiImageTag = await askInput("API image tag", {
-        defaultValue: existing?.imageTags?.api || "",
-        validator: requiredTagValidator,
-    });
-    const controllerImageTag = await askInput("Controller image tag", {
-        defaultValue: existing?.imageTags?.controller || "",
-        validator: requiredTagValidator,
-    });
-    const loadbalancerImageTag = await askInput("Loadbalancer image tag", {
-        defaultValue: existing?.imageTags?.loadbalancer || "",
-        validator: requiredTagValidator,
-    });
-    const dashboardImageTag = await askInput("Dashboard image tag", {
-        defaultValue: existing?.imageTags?.dashboard || "",
-        validator: requiredTagValidator,
-    });
+    const apiImageTag = resolveStoredImageTag(existing?.imageTags?.api);
+    const controllerImageTag = resolveStoredImageTag(existing?.imageTags?.controller);
+    const loadbalancerImageTag = resolveStoredImageTag(existing?.imageTags?.loadbalancer);
+    const dashboardImageTag = resolveStoredImageTag(existing?.imageTags?.dashboard);
 
     const apiEmail = await askInput("Service API email", {
         defaultValue: existing?.apiEmail || "service@ogcloud.local",
@@ -1033,9 +1032,11 @@ async function generateConfig(
     const jwtSecret = await askInput("JWT secret", {
         defaultValue: existing?.jwtSecret || randomSecret(),
     });
-    const corsAllowedOrigin = await askInput("Dashboard CORS origin", {
-        defaultValue: existing?.corsAllowedOrigin || "http://localhost:5173",
-    });
+    const corsAllowedOrigin = deployDashboard
+        ? await askInput("Dashboard CORS origin", {
+              defaultValue: existing?.corsAllowedOrigin || "http://localhost:5173",
+          })
+        : existing?.corsAllowedOrigin || "";
     const minioAccessKey = await askInput("MinIO access key", {
         defaultValue: existing?.minioAccessKey || "minioadmin",
     });
@@ -1049,11 +1050,12 @@ async function generateConfig(
                   mongodbUri: await askInput("MongoDB URI", {
                       defaultValue:
                           existing?.connections?.mongodbUri ||
-                          "mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud",
+                          `mongodb://mongodb.${namespace}.svc.cluster.local:27017/ogcloud`,
                   }),
                   redisHost: await askInput("Redis host", {
                       defaultValue:
-                          existing?.connections?.redisHost || "redis.ogcloud.svc.cluster.local",
+                          existing?.connections?.redisHost ||
+                          `redis.${namespace}.svc.cluster.local`,
                   }),
                   redisPort: await askInput("Redis port", {
                       defaultValue: existing?.connections?.redisPort || "6379",
@@ -1061,24 +1063,27 @@ async function generateConfig(
                   kafkaBrokers: await askInput("Kafka brokers", {
                       defaultValue:
                           existing?.connections?.kafkaBrokers ||
-                          "kafka.ogcloud.svc.cluster.local:9092",
+                          `kafka.${namespace}.svc.cluster.local:9092`,
                   }),
                   minioEndpoint: await askInput("MinIO endpoint", {
                       defaultValue:
                           existing?.connections?.minioEndpoint ||
-                          "http://minio.ogcloud.svc.cluster.local:9000",
+                          `http://minio.${namespace}.svc.cluster.local:9000`,
                   }),
                   apiUrl: `http://api.${namespace}.svc.cluster.local:8080`,
               }
             : defaultConnections(namespace);
 
-    const apiBaseUrl = await askInput("Dashboard runtime API base URL", {
-        defaultValue:
-            existing?.apiBaseUrl ||
-            (ingressEnabled
-                ? `https://${apiDomain}`
-                : `http://api.${namespace}.svc.cluster.local:8080`),
-    });
+    const defaultApiBaseUrl =
+        existing?.apiBaseUrl ||
+        (ingressEnabled
+            ? `https://${apiDomain}`
+            : `http://api.${namespace}.svc.cluster.local:8080`);
+    const apiBaseUrl = deployDashboard
+        ? await askInput("Dashboard runtime API base URL", {
+              defaultValue: defaultApiBaseUrl,
+          })
+        : defaultApiBaseUrl;
 
     const infraValues: JsonMap =
         backingMode === "managed"
@@ -1159,9 +1164,12 @@ async function generateConfig(
                 tag: dashboardImageTag,
             },
             ingress: {
-                enabled: ingressEnabled,
-                className: ingressEnabled ? ingressClassName : "",
-                domain: ingressEnabled ? dashboardDomain : `dashboard.${network}.local`,
+                enabled: deployDashboard && ingressEnabled,
+                className: deployDashboard && ingressEnabled ? ingressClassName : "",
+                domain:
+                    deployDashboard && ingressEnabled
+                        ? dashboardDomain
+                        : existing?.dashboardDomain || `dashboard.${network}.local`,
             },
             runtime: {
                 apiBaseUrl,
@@ -1175,9 +1183,11 @@ async function generateConfig(
     await fs.writeFile(paths.dashboard, toYaml(dashboardValues), "utf8");
 
     const networkConfig: NetworkConfig = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         network,
         namespace,
+        deployBackingServices,
+        deployDashboard,
         backingMode,
         ingressEnabled,
         ingressClassName,
@@ -1338,12 +1348,7 @@ function waitForDeployments(namespace: string, names: string[]): void {
     }
 }
 
-async function deploy(
-    network: string,
-    withoutBacking: boolean,
-    helmRoot: string,
-    state: StateFile,
-): Promise<void> {
+async function deploy(network: string, helmRoot: string, state: StateFile): Promise<void> {
     const config = await ensureNetworkConfigLoaded(network);
     if (!config) {
         throw new Error(
@@ -1352,12 +1357,14 @@ async function deploy(
     }
 
     const namespace = config.namespace;
+    const deployBackingServices = resolveDeployBackingServices(config);
+    const deployDashboard = resolveDeployDashboard(config);
     ensureNamespaceDoesNotExist(namespace);
 
     const paths = valuesPaths(network);
     info(`Starting clean deploy for network "${network}" in namespace "${namespace}"`);
 
-    if (!withoutBacking) {
+    if (deployBackingServices) {
         helmUpgradeInstall(
             RELEASES.infra,
             path.join(helmRoot, "ogcloud-infra"),
@@ -1372,16 +1379,8 @@ async function deploy(
             await waitForBackingServices(namespace, true);
         }
     } else {
-        warn("Skipping infra deployment (--without-backing).");
-        if (config.backingMode === "managed") {
-            warn(
-                "Config is set to managed backing mode. Waiting for existing backing services to be healthy.",
-            );
-            runCommand("kubectl", ["create", "namespace", namespace], { allowFailure: true });
-            await waitForBackingServices(namespace, true);
-        } else {
-            info("External backing mode is configured. Skipping in-cluster backing health wait.");
-        }
+        info("Skipping infra deployment per generated config.");
+        info("External backing mode is configured. Skipping in-cluster backing health wait.");
     }
 
     helmUpgradeInstall(
@@ -1392,15 +1391,23 @@ async function deploy(
         true,
     );
 
-    helmUpgradeInstall(
-        RELEASES.dashboard,
-        path.join(helmRoot, "ogcloud-dashboard"),
-        namespace,
-        paths.dashboard,
-        false,
-    );
+    if (deployDashboard) {
+        helmUpgradeInstall(
+            RELEASES.dashboard,
+            path.join(helmRoot, "ogcloud-dashboard"),
+            namespace,
+            paths.dashboard,
+            false,
+        );
+    } else {
+        info("Skipping dashboard deployment per generated config.");
+    }
 
-    waitForDeployments(namespace, ["api", "controller", "loadbalancer", "dashboard"]);
+    const deploymentsToWait = ["api", "controller", "loadbalancer"];
+    if (deployDashboard) {
+        deploymentsToWait.push("dashboard");
+    }
+    waitForDeployments(namespace, deploymentsToWait);
 
     state.lastNetwork = network;
     state.networks[network] = {
@@ -1593,8 +1600,7 @@ async function chooseCommandInteractively(
     );
 
     if (selectedCommand === "deploy") {
-        const withoutBacking = await askConfirm("Deploy without backing services?", false);
-        return { ...parsed, command: selectedCommand, network, withoutBacking };
+        return { ...parsed, command: selectedCommand, network };
     }
 
     if (selectedCommand === "update") {
@@ -1711,12 +1717,12 @@ async function main(): Promise<void> {
             if (!helmRoot) {
                 throw new Error("Helm cache path is unavailable. Cannot deploy.");
             }
-            await deploy(
-                commandContext.network,
-                Boolean(commandContext.withoutBacking),
-                helmRoot,
-                state,
-            );
+            if (commandContext.withoutBacking) {
+                warn(
+                    "--without-backing is deprecated and ignored. Use --generate-config to store deploy choices.",
+                );
+            }
+            await deploy(commandContext.network, helmRoot, state);
             return;
         }
         case "update": {

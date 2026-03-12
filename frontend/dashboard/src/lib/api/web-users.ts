@@ -1,9 +1,5 @@
 import type { PaginatedResponse } from "@/types/dashboard";
-import type {
-    CreateWebUserPayload,
-    UpdateWebUserPayload,
-    WebUserRecord,
-} from "@/types/web-user";
+import type { CreateWebUserPayload, UpdateWebUserPayload, WebUserRecord } from "@/types/web-user";
 
 import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
 

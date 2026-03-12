@@ -1,6 +1,6 @@
 {
     "name": "@ogcloud/setup",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "Interactive CLI to generate config, deploy, update, and destroy OgCloud on Kubernetes using Helm",
     "keywords": [
         "ogcloud",
