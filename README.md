@@ -144,6 +144,60 @@ A typical OgCloud deployment exposes:
 
 OgCloud exposes APIs for both Paper and Velocity plugins.
 
+Use these artifacts as `compileOnly` or `provided` dependencies in your plugin. The OgCloud Paper or Velocity plugin
+provides the runtime classes on the server.
+
+GitHub Packages still requires authentication for Gradle and Maven downloads. Configure `gpr.user` and `gpr.key` in
+your Gradle properties or export `GITHUB_ACTOR` and `GITHUB_TOKEN`.
+
+### Gradle Repository
+
+```kotlin
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/jevzo/ogcloud")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+```
+
+### Paper Dependency
+
+```kotlin
+dependencies {
+    compileOnly("io.ogwars.cloud:ogcloud-paper-plugin:LATEST_VERSION")
+}
+```
+
+```xml
+<dependency>
+  <groupId>io.ogwars.cloud</groupId>
+  <artifactId>ogcloud-paper-plugin</artifactId>
+  <version>LATEST_VERSION</version>
+  <scope>provided</scope>
+</dependency>
+```
+
+### Velocity Dependency
+
+```kotlin
+dependencies {
+    compileOnly("io.ogwars.cloud:ogcloud-velocity-plugin:LATEST_VERSION")
+}
+```
+
+```xml
+<dependency>
+  <groupId>io.ogwars.cloud</groupId>
+  <artifactId>ogcloud-velocity-plugin</artifactId>
+  <version>LATEST_VERSION</version>
+  <scope>provided</scope>
+</dependency>
+```
+
 ### Paper Example: Lobby Switcher Using `getPlayerGroup`
 
 This routes players to a different lobby group depending on their resolved permission group.

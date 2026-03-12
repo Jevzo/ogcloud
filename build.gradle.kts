@@ -25,6 +25,59 @@ fun readProjectVersion(projectDir: File): String {
     return version
 }
 
+val githubPackagesOwner = providers.gradleProperty("gpr.owner")
+    .orElse(providers.environmentVariable("GITHUB_REPOSITORY_OWNER"))
+    .orElse("Jevzo")
+
+val githubPackagesRepository = providers.gradleProperty("gpr.repo")
+    .orElse(providers.environmentVariable("GITHUB_REPOSITORY").map { it.substringAfter('/') })
+    .orElse("ogcloud")
+
+val githubPackagesUsername = providers.gradleProperty("gpr.user")
+    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+
+val githubPackagesToken = providers.gradleProperty("gpr.key")
+    .orElse(providers.environmentVariable("GITHUB_TOKEN"))
+
+fun Project.configureGitHubPackagesPublication() {
+    apply(plugin = "maven-publish")
+
+    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        extensions.configure<JavaPluginExtension> {
+            withSourcesJar()
+        }
+
+        val publishedGroup = project.group.toString()
+        val publishedArtifact = project.name
+        val publishedVersion = project.version.toString()
+
+        extensions.configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "GitHubPackages"
+                    url = uri(
+                        "https://maven.pkg.github.com/${githubPackagesOwner.get().lowercase()}/${githubPackagesRepository.get()}",
+                    )
+                    credentials {
+                        username = githubPackagesUsername.orNull
+                        password = githubPackagesToken.orNull
+                    }
+                }
+            }
+
+            publications {
+                register<MavenPublication>("gpr") {
+                    from(components["java"])
+
+                    groupId = publishedGroup
+                    artifactId = publishedArtifact
+                    version = publishedVersion
+                }
+            }
+        }
+    }
+}
+
 subprojects {
     group = "io.ogwars.cloud"
     version = readProjectVersion(projectDir)
@@ -47,4 +100,12 @@ subprojects {
     tasks.matching { it.name == "check" }.configureEach {
         dependsOn("ktlintCheck")
     }
+}
+
+listOf(
+    project(":ogcloud-common"),
+    project(":ogcloud-paper-plugin"),
+    project(":ogcloud-velocity-plugin"),
+).forEach { project ->
+    project.configureGitHubPackagesPublication()
 }
