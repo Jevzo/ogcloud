@@ -560,13 +560,21 @@ const PermissionGroupDetailsPage = () => {
                                     type="text"
                                     value={newPermission}
                                     onChange={(event) => setNewPermission(event.target.value)}
-                                    disabled={!permissionSystemEnabled || isSaving || isUpdatingPermissions}
+                                    disabled={
+                                        !permissionSystemEnabled ||
+                                        isSaving ||
+                                        isUpdatingPermissions
+                                    }
                                     className="app-input-field min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-100 outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/10"
                                     placeholder="ogcloud.command.execute"
                                 />
                                 <button
                                     type="button"
-                                    disabled={!permissionSystemEnabled || isSaving || isUpdatingPermissions}
+                                    disabled={
+                                        !permissionSystemEnabled ||
+                                        isSaving ||
+                                        isUpdatingPermissions
+                                    }
                                     onClick={() => void handleAddPermission()}
                                     className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
@@ -601,7 +609,9 @@ const PermissionGroupDetailsPage = () => {
                                                     isSaving ||
                                                     isUpdatingPermissions
                                                 }
-                                                onClick={() => void handleRemovePermission(permission)}
+                                                onClick={() =>
+                                                    void handleRemovePermission(permission)
+                                                }
                                                 className="button-hover-lift inline-flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                                                 aria-label={`Remove ${permission}`}
                                             >

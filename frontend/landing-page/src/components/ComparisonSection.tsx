@@ -39,32 +39,28 @@ const OGCLOUD_STRENGTHS: StrengthCard[] = [
 const COMPETITOR_BREAKDOWN: CompetitorCard[] = [
     {
         name: "PoloCloud",
-        summary:
-            "Pre-release theater dressed up as a platform.",
+        summary: "Pre-release theater dressed up as a platform.",
         evidence:
             "Snapshot-track releases and split hosted-vs-self-host paths are a signal that you are still testing their roadmap in production.",
         verdict: "Interesting for experiments, weak for operators who need predictability.",
     },
     {
         name: "CloudNet",
-        summary:
-            "Legacy host-fleet architecture with refreshed branding.",
+        summary: "Legacy host-fleet architecture with refreshed branding.",
         evidence:
             "Node-centric clustering, manual host identity, and machine-first assumptions keep you in yesterday's operating model.",
         verdict: "Historical relevance is not modern control-plane architecture.",
     },
     {
         name: "Shulker",
-        summary:
-            "Strong primitives, incomplete platform story.",
+        summary: "Strong primitives, incomplete platform story.",
         evidence:
             "Operator plus plugin plus agent plus addon composition is technically solid but still pushes core product assembly back onto your team.",
         verdict: "Good substrate. You still build the platform yourself.",
     },
     {
         name: "SimpleCloud",
-        summary:
-            "Marketing confidence, infrastructure lag.",
+        summary: "Marketing confidence, infrastructure lag.",
         evidence:
             "When Kubernetes is off the table and container support is still unfinished, you are looking at legacy process orchestration with cloud paint.",
         verdict: "Future-facing copy, past-tense operational model.",
@@ -98,8 +94,8 @@ const ComparisonSection = () => {
                     <p className="mt-5 text-base leading-8 text-text-muted md:text-lg">
                         Blunt version: most Minecraft cloud stacks are old architecture, incomplete
                         infrastructure sold as a platform, or legacy process orchestration with new
-                        branding. OgCloud is a real control plane with real orchestration, a real API,
-                        and a real ingress layer built for traffic under load.
+                        branding. OgCloud is a real control plane with real orchestration, a real
+                        API, and a real ingress layer built for traffic under load.
                     </p>
                 </motion.div>
 
@@ -114,8 +110,8 @@ const ComparisonSection = () => {
                         <div className="flex items-start gap-3 text-sm leading-7 text-primary">
                             <MdCheckCircle className="mt-1 h-5 w-5 shrink-0 text-success" />
                             <p>
-                                OgCloud is not trying to be another recycled "cloud system." It is
-                                a platform stack designed for scale, churn, and failure handling.
+                                OgCloud is not trying to be another recycled "cloud system." It is a
+                                platform stack designed for scale, churn, and failure handling.
                             </p>
                         </div>
                     </div>
