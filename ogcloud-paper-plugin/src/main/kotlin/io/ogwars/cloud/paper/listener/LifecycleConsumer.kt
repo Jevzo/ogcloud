@@ -1,18 +1,23 @@
 package io.ogwars.cloud.paper.listener
+
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
 import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import com.google.gson.Gson
+import java.util.concurrent.CompletableFuture
 import java.util.logging.Logger
 
 class LifecycleConsumer(
     private val kafkaManager: KafkaManager,
     private val serverApi: OgCloudServerAPIImpl,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     serverId: String,
 ) {
     private val gson = Gson()
@@ -26,7 +31,11 @@ class LifecycleConsumer(
             autoOffsetReset = "latest",
             logger = logger,
             consumerLabel = "lifecycle",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {
@@ -47,8 +56,8 @@ class LifecycleConsumer(
             return null
         }
 
-        val ip = podIp ?: return null
-        val port = port ?: return null
+        val ip = podIp ?: throw NonRetryableKafkaRecordException("Running server lifecycle event is missing podIp")
+        val port = port ?: throw NonRetryableKafkaRecordException("Running server lifecycle event is missing port")
 
         return RunningServer(
             id = this.serverId,
@@ -58,8 +67,5 @@ class LifecycleConsumer(
             state = ServerState.RUNNING,
             address = "$ip:$port",
         )
-    }
-
-    companion object {
     }
 }

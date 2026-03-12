@@ -21,4 +21,11 @@ object KafkaTopics {
     const val SERVER_KILL = "ogcloud.server.kill"
     const val COMMAND_EXECUTE = "ogcloud.command.execute"
     const val WEB_ACCOUNT_LINK_OTP = "ogcloud.web.account.link.otp"
+
+    fun retryTopic(sourceTopic: String): String = "$sourceTopic$RETRY_SUFFIX"
+
+    fun dltTopic(sourceTopic: String): String = "$sourceTopic$DLT_SUFFIX"
+
+    private const val RETRY_SUFFIX = ".retry"
+    private const val DLT_SUFFIX = ".dlt"
 }

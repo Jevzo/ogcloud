@@ -181,6 +181,7 @@ class OgCloudVelocityPlugin
                     adminNotificationManager = adminNotificationManager,
                     proxyApi = proxyApi,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(LifecycleConsumer::start)
 
@@ -192,6 +193,7 @@ class OgCloudVelocityPlugin
                     networkState = networkState,
                     proxy = server,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(PlayerTransferConsumer::start)
 
@@ -205,6 +207,7 @@ class OgCloudVelocityPlugin
                     proxyServer = server,
                     proxyGroup = settings.proxyGroup,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(GroupUpdateConsumer::start)
 
@@ -214,6 +217,7 @@ class OgCloudVelocityPlugin
                     permissionCache = permissionCache,
                     networkState = networkState,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(PermissionUpdateConsumer::start)
 
@@ -227,6 +231,7 @@ class OgCloudVelocityPlugin
                     adminNotificationManager = adminNotificationManager,
                     tablistManager = tablistManager,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(NetworkUpdateConsumer::start)
 
@@ -237,6 +242,7 @@ class OgCloudVelocityPlugin
                     logger = logger,
                     proxyId = settings.proxyId,
                     groupName = settings.proxyGroup,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 ).also(CommandExecuteConsumer::start)
 
             webAccountLinkOtpConsumer =
@@ -244,6 +250,7 @@ class OgCloudVelocityPlugin
                     kafkaManager = kafkaManager,
                     proxyServer = server,
                     logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(WebAccountLinkOtpConsumer::start)
         }

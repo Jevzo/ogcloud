@@ -1,6 +1,9 @@
 package io.ogwars.cloud.velocity.listener
+
 import io.ogwars.cloud.api.event.ServerLifecycleEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.RunningServer
 import io.ogwars.cloud.api.model.ServerState
@@ -11,6 +14,7 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.google.gson.Gson
 import org.slf4j.Logger
 import java.net.InetSocketAddress
+import java.util.concurrent.CompletableFuture
 
 class LifecycleConsumer(
     private val kafkaManager: KafkaManager,
@@ -18,6 +22,7 @@ class LifecycleConsumer(
     private val adminNotificationManager: AdminNotificationManager,
     private val proxyApi: OgCloudProxyAPIImpl,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
 ) {
     private val gson = Gson()
@@ -29,7 +34,11 @@ class LifecycleConsumer(
             threadName = "ogcloud-lifecycle-consumer",
             logger = logger,
             consumerLabel = "lifecycle",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {
@@ -59,9 +68,23 @@ class LifecycleConsumer(
     }
 
     private fun registerRunningServer(event: ServerLifecycleEvent) {
-        val runningServer = event.toRunningServerOrNull() ?: return
-        val podIp = event.podIp ?: return
-        val port = event.port ?: return
+        val podIp =
+            event.podIp ?: throw NonRetryableKafkaRecordException(
+                "Running server lifecycle event is missing podIp",
+            )
+        val port =
+            event.port ?: throw NonRetryableKafkaRecordException(
+                "Running server lifecycle event is missing port",
+            )
+        val runningServer =
+            RunningServer(
+                id = event.serverId,
+                group = event.group,
+                type = event.type,
+                displayName = event.displayName ?: event.serverId,
+                state = ServerState.RUNNING,
+                address = "$podIp:$port",
+            )
 
         serverRegistry.registerServer(
             serverId = event.serverId,
@@ -76,20 +99,6 @@ class LifecycleConsumer(
     private fun defaultDisplayName(event: ServerLifecycleEvent): String {
         val shortServerId = event.serverId.take(6)
         return "${event.group}-$shortServerId"
-    }
-
-    private fun ServerLifecycleEvent.toRunningServerOrNull(): RunningServer? {
-        val podIp = podIp ?: return null
-        val port = port ?: return null
-
-        return RunningServer(
-            id = serverId,
-            group = group,
-            type = type,
-            displayName = displayName ?: serverId,
-            state = ServerState.RUNNING,
-            address = "$podIp:$port",
-        )
     }
 
     companion object {

@@ -70,6 +70,9 @@ controller:
     podMinioAccessKey: minioadmin
     podMinioSecretKey: minioadmin123
     podKafkaBrokers: kafka.ogcloud.svc.cluster.local:9092
+    podKafkaConsumerRestartInitialBackoffMs: "1000"
+    podKafkaConsumerRestartMaxBackoffMs: "30000"
+    podKafkaConsumerRestartJitterMs: "500"
     podRedisHost: redis.ogcloud.svc.cluster.local
     podRedisPort: "6379"
     podMongodbUri: mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud

@@ -17,6 +17,7 @@ import io.ogwars.cloud.server.api.OgCloudServerAPI
 import org.bukkit.Bukkit
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
+import java.util.concurrent.CompletableFuture
 
 class OgCloudPaperPlugin : JavaPlugin() {
     lateinit var kafkaManager: KafkaManager
@@ -160,6 +161,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 tablistTeamManager = tablistTeamManager,
                 networkFeatureState = networkFeatureState,
                 logger = logger,
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 serverId = serverId,
             ).also(PermissionUpdateConsumer::start)
 
@@ -169,11 +171,9 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 networkFeatureState = networkFeatureState,
                 logger = logger,
                 onFeaturesChanged = { permissionSystemEnabled, tablistEnabled ->
-                    server.scheduler.runTask(
-                        this,
-                        Runnable { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) },
-                    )
+                    runOnMainThread { applyNetworkFeatures(permissionSystemEnabled, tablistEnabled) }
                 },
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 serverId = serverId,
             ).also(NetworkUpdateConsumer::start)
 
@@ -184,6 +184,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 serverId = serverId,
                 groupName = groupName,
                 logger = logger,
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
             ).also(CommandExecuteConsumer::start)
 
         lifecycleConsumer =
@@ -191,6 +192,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 kafkaManager = kafkaManager,
                 serverApi = serverApi,
                 logger = logger,
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 serverId = serverId,
             ).also(LifecycleConsumer::start)
     }
@@ -254,5 +256,24 @@ class OgCloudPaperPlugin : JavaPlugin() {
         if (isInitialized) {
             stopAction()
         }
+    }
+
+    private fun runOnMainThread(action: () -> Unit): CompletableFuture<Unit> {
+        val completion = CompletableFuture<Unit>()
+
+        try {
+            server.scheduler.runTask(
+                this,
+                Runnable {
+                    runCatching(action)
+                        .onSuccess { completion.complete(Unit) }
+                        .onFailure { completion.completeExceptionally(it) }
+                },
+            )
+        } catch (exception: Exception) {
+            completion.completeExceptionally(exception)
+        }
+
+        return completion
     }
 }

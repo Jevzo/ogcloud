@@ -1,5 +1,7 @@
 package io.ogwars.cloud.paper.config
 
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
+
 data class PaperPluginSettings(
     val serverId: String,
     val groupName: String,
@@ -11,6 +13,7 @@ data class PaperPluginSettings(
     val apiUrl: String,
     val apiEmail: String,
     val apiPassword: String,
+    val kafkaConsumerRecoverySettings: KafkaConsumerRecoverySettings,
 ) {
     companion object {
         fun fromEnvironment(defaultMaxPlayers: Int): PaperPluginSettings =
@@ -29,9 +32,32 @@ data class PaperPluginSettings(
                 apiUrl = System.getenv("OGCLOUD_API_URL") ?: DEFAULT_API_URL,
                 apiEmail = requiredEnv("OGCLOUD_API_EMAIL"),
                 apiPassword = requiredEnv("OGCLOUD_API_PASSWORD"),
+                kafkaConsumerRecoverySettings =
+                    KafkaConsumerRecoverySettings(
+                        restartInitialBackoffMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS,
+                            ),
+                        restartMaxBackoffMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS,
+                            ),
+                        restartJitterMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_JITTER_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_JITTER_MS,
+                            ),
+                    ),
             )
 
         private fun requiredEnv(name: String): String = System.getenv(name) ?: error("$name not set")
+
+        private fun envLong(
+            name: String,
+            defaultValue: Long,
+        ): Long = System.getenv(name)?.toLongOrNull() ?: defaultValue
 
         private const val DEFAULT_GROUP_TYPE = "DYNAMIC"
         private const val DEFAULT_KAFKA_BROKERS = "kafka.ogcloud.svc.cluster.local:9092"
@@ -39,5 +65,8 @@ data class PaperPluginSettings(
         private const val DEFAULT_REDIS_PORT = 6379
         private const val DEFAULT_API_URL = "http://api.ogcloud.svc.cluster.local:8080"
         private const val MIN_MAX_PLAYERS = 1
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS = 1000L
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS = 30000L
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_JITTER_MS = 500L
     }
 }

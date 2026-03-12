@@ -17,6 +17,9 @@ data:
   OGCLOUD_NAMESPACE: {{ include "ogcloud-platform.namespace" . | quote }}
   POD_MINIO_ENDPOINT: {{ .Values.controller.env.podMinioEndpoint | quote }}
   POD_KAFKA_BROKERS: {{ .Values.controller.env.podKafkaBrokers | quote }}
+  POD_OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS: {{ .Values.controller.env.podKafkaConsumerRestartInitialBackoffMs | quote }}
+  POD_OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS: {{ .Values.controller.env.podKafkaConsumerRestartMaxBackoffMs | quote }}
+  POD_OGCLOUD_KAFKA_CONSUMER_RESTART_JITTER_MS: {{ .Values.controller.env.podKafkaConsumerRestartJitterMs | quote }}
   POD_REDIS_HOST: {{ .Values.controller.env.podRedisHost | quote }}
   POD_REDIS_PORT: {{ .Values.controller.env.podRedisPort | quote }}
   POD_MONGODB_URI: {{ .Values.controller.env.podMongodbUri | quote }}

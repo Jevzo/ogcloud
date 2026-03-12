@@ -42,7 +42,19 @@ class KafkaConfig {
     fun commandExecuteTopic(): NewTopic = buildTopic(KafkaTopics.COMMAND_EXECUTE)
 
     @Bean
+    fun commandExecuteRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.COMMAND_EXECUTE)
+
+    @Bean
+    fun commandExecuteDltTopic(): NewTopic = buildDltTopic(KafkaTopics.COMMAND_EXECUTE)
+
+    @Bean
     fun webAccountLinkOtpTopic(): NewTopic = buildTopic(KafkaTopics.WEB_ACCOUNT_LINK_OTP)
+
+    @Bean
+    fun webAccountLinkOtpRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.WEB_ACCOUNT_LINK_OTP)
+
+    @Bean
+    fun webAccountLinkOtpDltTopic(): NewTopic = buildDltTopic(KafkaTopics.WEB_ACCOUNT_LINK_OTP)
 
     private fun buildTopic(
         name: String,
@@ -53,6 +65,16 @@ class KafkaConfig {
             .partitions(partitions)
             .replicas(DEFAULT_TOPIC_REPLICAS)
             .build()
+
+    private fun buildRetryTopic(
+        sourceTopicName: String,
+        partitions: Int = DEFAULT_TOPIC_PARTITIONS,
+    ): NewTopic = buildTopic(KafkaTopics.retryTopic(sourceTopicName), partitions)
+
+    private fun buildDltTopic(
+        sourceTopicName: String,
+        partitions: Int = DEFAULT_TOPIC_PARTITIONS,
+    ): NewTopic = buildTopic(KafkaTopics.dltTopic(sourceTopicName), partitions)
 
     companion object {
         private const val DEFAULT_TOPIC_PARTITIONS = 3

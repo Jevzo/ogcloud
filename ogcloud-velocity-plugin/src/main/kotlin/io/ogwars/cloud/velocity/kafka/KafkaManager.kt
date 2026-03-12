@@ -34,7 +34,11 @@ class KafkaManager(
         key: String,
         value: String,
     ) {
-        producer.send(ProducerRecord(topic, key, value)).get()
+        sendBlocking(ProducerRecord(topic, key, value))
+    }
+
+    fun sendBlocking(record: ProducerRecord<String, String>) {
+        producer.send(record).get()
     }
 
     fun close() {
@@ -62,6 +66,7 @@ class KafkaManager(
             put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
             put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer::class.java.name)
             put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset)
+            put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false)
             put(ConsumerConfig.CLIENT_ID_CONFIG, "$clientId-$clientIdSuffix")
         }
 

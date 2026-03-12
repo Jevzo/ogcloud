@@ -1,6 +1,9 @@
 package io.ogwars.cloud.velocity.listener
+
 import io.ogwars.cloud.api.event.WebAccountLinkOtpEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.message.VelocityMessages
@@ -8,11 +11,13 @@ import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 class WebAccountLinkOtpConsumer(
     private val kafkaManager: KafkaManager,
     private val proxyServer: ProxyServer,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
 ) {
     private val gson = Gson()
@@ -24,7 +29,11 @@ class WebAccountLinkOtpConsumer(
             threadName = "ogcloud-velocity-web-link-otp-consumer",
             logger = logger,
             consumerLabel = "web account link OTP",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {
@@ -55,13 +64,7 @@ class WebAccountLinkOtpConsumer(
 
     private fun parseUuid(rawUuid: String): UUID? =
         runCatching { UUID.fromString(rawUuid) }
-            .onFailure {
-                logger.warn(
-                    "Received web account link OTP with invalid uuid: {}",
-                    rawUuid,
-                )
-            }.getOrNull()
-
-    companion object {
-    }
+            .getOrElse {
+                throw NonRetryableKafkaRecordException("Received web account link OTP with invalid uuid: $rawUuid", it)
+            }
 }

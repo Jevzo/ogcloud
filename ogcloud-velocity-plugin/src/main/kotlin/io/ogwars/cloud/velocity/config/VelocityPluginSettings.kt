@@ -1,5 +1,6 @@
 package io.ogwars.cloud.velocity.config
 
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import java.util.*
 
 data class VelocityPluginSettings(
@@ -18,6 +19,7 @@ data class VelocityPluginSettings(
     val proxyMaxPlayers: Int,
     val proxyPodIp: String,
     val proxyPort: Int,
+    val kafkaConsumerRecoverySettings: KafkaConsumerRecoverySettings,
 ) {
     companion object {
         fun fromEnvironment(): VelocityPluginSettings {
@@ -44,10 +46,33 @@ data class VelocityPluginSettings(
                         ?: Int.MAX_VALUE,
                 proxyPodIp = System.getenv("OGCLOUD_PROXY_POD_IP") ?: DEFAULT_PROXY_POD_IP,
                 proxyPort = System.getenv("OGCLOUD_PROXY_PORT")?.toIntOrNull() ?: DEFAULT_PROXY_PORT,
+                kafkaConsumerRecoverySettings =
+                    KafkaConsumerRecoverySettings(
+                        restartInitialBackoffMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS,
+                            ),
+                        restartMaxBackoffMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS,
+                            ),
+                        restartJitterMs =
+                            envLong(
+                                "OGCLOUD_KAFKA_CONSUMER_RESTART_JITTER_MS",
+                                DEFAULT_KAFKA_CONSUMER_RESTART_JITTER_MS,
+                            ),
+                    ),
             )
         }
 
         private fun requiredEnv(name: String): String = System.getenv(name) ?: error("$name must be configured")
+
+        private fun envLong(
+            name: String,
+            defaultValue: Long,
+        ): Long = System.getenv(name)?.toLongOrNull() ?: defaultValue
 
         private const val PROXY_ID_LENGTH = 5
         private const val PROXY_DISPLAY_ID_LENGTH = 6
@@ -62,5 +87,8 @@ data class VelocityPluginSettings(
         private const val DEFAULT_API_URL = "http://api.ogcloud.svc.cluster.local:8080"
         private const val DEFAULT_PROXY_POD_IP = "localhost"
         private const val DEFAULT_PROXY_PORT = 25577
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS = 1000L
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS = 30000L
+        private const val DEFAULT_KAFKA_CONSUMER_RESTART_JITTER_MS = 500L
     }
 }

@@ -148,7 +148,7 @@ class NetworkService(
     }
 
     private fun isPermissionReenableSyncLockActive(): Boolean =
-        redisTemplate.hasKey(RedisKeys.PERMISSION_REENABLE_SYNC_LOCK_KEY) == true
+        redisTemplate.hasKey(RedisKeys.PERMISSION_REENABLE_SYNC_LOCK_KEY)
 
     companion object {
         private const val COLLECTION = "network_settings"

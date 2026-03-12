@@ -59,6 +59,9 @@ ogcloud:
     minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}
     minio-secret-key: ${POD_MINIO_SECRET_KEY:minioadmin123}
     kafka-brokers: ${POD_KAFKA_BROKERS:kafka.ogcloud.svc.cluster.local:9092}
+    kafka-consumer-restart-initial-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS:1000}
+    kafka-consumer-restart-max-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS:30000}
+    kafka-consumer-restart-jitter-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_JITTER_MS:500}
     redis-host: ${POD_REDIS_HOST:redis.ogcloud.svc.cluster.local}
     redis-port: ${POD_REDIS_PORT:6379}
     mongodb-uri: ${POD_MONGODB_URI:mongodb://mongodb.ogcloud.svc.cluster.local:27017/ogcloud}

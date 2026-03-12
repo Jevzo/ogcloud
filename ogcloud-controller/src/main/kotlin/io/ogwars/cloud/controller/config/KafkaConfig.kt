@@ -12,6 +12,12 @@ class KafkaConfig {
     fun serverLifecycleTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_LIFECYCLE, BUSY_TOPIC_PARTITIONS)
 
     @Bean
+    fun serverLifecycleRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.SERVER_LIFECYCLE, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
+    fun serverLifecycleDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_LIFECYCLE, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
     fun serverRequestTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_REQUEST)
 
     @Bean
@@ -39,6 +45,9 @@ class KafkaConfig {
     fun networkUpdateTopic(): NewTopic = buildTopic(KafkaTopics.NETWORK_UPDATE, SINGLE_TOPIC_PARTITION)
 
     @Bean
+    fun networkUpdateRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.NETWORK_UPDATE, SINGLE_TOPIC_PARTITION)
+
+    @Bean
     fun networkUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.NETWORK_UPDATE, SINGLE_TOPIC_PARTITION)
 
     @Bean
@@ -51,7 +60,16 @@ class KafkaConfig {
     fun playerTransferTopic(): NewTopic = buildTopic(KafkaTopics.PLAYER_TRANSFER)
 
     @Bean
+    fun playerTransferRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.PLAYER_TRANSFER)
+
+    @Bean
+    fun playerTransferDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PLAYER_TRANSFER)
+
+    @Bean
     fun groupUpdateTopic(): NewTopic = buildTopic(KafkaTopics.GROUP_UPDATE)
+
+    @Bean
+    fun groupUpdateRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.GROUP_UPDATE)
 
     @Bean
     fun groupUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.GROUP_UPDATE)
@@ -82,6 +100,9 @@ class KafkaConfig {
 
     @Bean
     fun permissionUpdateTopic(): NewTopic = buildTopic(KafkaTopics.PERMISSION_UPDATE)
+
+    @Bean
+    fun permissionUpdateRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.PERMISSION_UPDATE)
 
     @Bean
     fun permissionUpdateDltTopic(): NewTopic = buildDltTopic(KafkaTopics.PERMISSION_UPDATE)
@@ -123,13 +144,17 @@ class KafkaConfig {
     private fun buildDltTopic(
         sourceTopicName: String,
         partitions: Int = LIGHT_TOPIC_PARTITIONS,
-    ): NewTopic = buildTopic("$sourceTopicName$DLT_SUFFIX", partitions)
+    ): NewTopic = buildTopic(KafkaTopics.dltTopic(sourceTopicName), partitions)
+
+    private fun buildRetryTopic(
+        sourceTopicName: String,
+        partitions: Int = LIGHT_TOPIC_PARTITIONS,
+    ): NewTopic = buildTopic(KafkaTopics.retryTopic(sourceTopicName), partitions)
 
     companion object {
         private const val DEFAULT_REPLICAS = 1
         private const val LIGHT_TOPIC_PARTITIONS = 3
         private const val BUSY_TOPIC_PARTITIONS = 6
         private const val SINGLE_TOPIC_PARTITION = 1
-        private const val DLT_SUFFIX = ".dlt"
     }
 }

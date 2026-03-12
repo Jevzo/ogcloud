@@ -1,5 +1,7 @@
 package io.ogwars.cloud.velocity.listener
+
 import io.ogwars.cloud.api.event.GroupUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.velocity.kafka.KafkaManager
@@ -13,6 +15,7 @@ import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
+import java.util.concurrent.CompletableFuture
 
 class GroupUpdateConsumer(
     private val kafkaManager: KafkaManager,
@@ -23,6 +26,7 @@ class GroupUpdateConsumer(
     private val proxyServer: ProxyServer,
     private val proxyGroup: String,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
 ) {
     private val gson = Gson()
@@ -35,7 +39,11 @@ class GroupUpdateConsumer(
             threadName = "ogcloud-group-update-consumer",
             logger = logger,
             consumerLabel = "group update",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {

@@ -1,6 +1,9 @@
 package io.ogwars.cloud.velocity.listener
+
 import io.ogwars.cloud.api.event.PlayerTransferEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
@@ -12,6 +15,7 @@ import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 class PlayerTransferConsumer(
     private val kafkaManager: KafkaManager,
@@ -20,6 +24,7 @@ class PlayerTransferConsumer(
     private val networkState: NetworkState,
     private val proxy: ProxyServer,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
 ) {
     private val gson = Gson()
@@ -32,7 +37,11 @@ class PlayerTransferConsumer(
             threadName = "ogcloud-transfer-consumer",
             logger = logger,
             consumerLabel = "player transfer",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {
@@ -56,12 +65,12 @@ class PlayerTransferConsumer(
         event.playerUuid?.let { rawUuid ->
             val playerUuid =
                 runCatching { UUID.fromString(rawUuid) }
-                    .onFailure {
-                        logger.warn(
-                            "Transfer target player UUID is invalid: {}",
-                            rawUuid,
+                    .getOrElse {
+                        throw NonRetryableKafkaRecordException(
+                            "Transfer target player UUID is invalid: $rawUuid",
+                            it,
                         )
-                    }.getOrNull() ?: return null
+                    }
 
             val player = proxy.getPlayer(playerUuid).orElse(null)
             if (player == null) {
@@ -77,9 +86,7 @@ class PlayerTransferConsumer(
             return players.takeIf { it.isNotEmpty() }?.toList()
         }
 
-        logger.warn("Transfer event has neither playerUuid nor serverId")
-
-        return null
+        throw NonRetryableKafkaRecordException("Transfer event has neither playerUuid nor serverId")
     }
 
     private fun transferPlayer(

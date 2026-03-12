@@ -1,7 +1,6 @@
 package io.ogwars.cloud.api.kafka
 
 import io.ogwars.cloud.api.event.NetworkUpdateEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.NetworkSettingsDocument
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate

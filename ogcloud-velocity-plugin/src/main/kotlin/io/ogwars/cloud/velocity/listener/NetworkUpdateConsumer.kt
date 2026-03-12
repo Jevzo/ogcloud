@@ -1,5 +1,7 @@
 package io.ogwars.cloud.velocity.listener
+
 import io.ogwars.cloud.api.event.NetworkUpdateEvent
+import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.TablistSettings
 import io.ogwars.cloud.velocity.kafka.KafkaManager
@@ -12,6 +14,7 @@ import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
+import java.util.concurrent.CompletableFuture
 
 class NetworkUpdateConsumer(
     private val kafkaManager: KafkaManager,
@@ -22,6 +25,7 @@ class NetworkUpdateConsumer(
     private val adminNotificationManager: AdminNotificationManager,
     private val tablistManager: TablistManager,
     private val logger: Logger,
+    private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
 ) {
     private val gson = Gson()
@@ -34,7 +38,11 @@ class NetworkUpdateConsumer(
             threadName = "ogcloud-network-update-consumer",
             logger = logger,
             consumerLabel = "network update",
-            onRecord = ::processRecord,
+            consumerRecoverySettings = consumerRecoverySettings,
+            onRecord = { payload ->
+                processRecord(payload)
+                CompletableFuture.completedFuture(Unit)
+            },
         )
 
     fun start() {

@@ -126,8 +126,6 @@ class PlayerRedisRepository(
         redisTemplate.opsForSet().remove(ONLINE_PLAYERS_KEY, uuid)
     }
 
-    fun isOnline(uuid: String): Boolean = redisTemplate.opsForSet().isMember(ONLINE_PLAYERS_KEY, uuid) == true
-
     fun findOnlinePlayerUuids(): Set<String> = redisTemplate.opsForSet().members(ONLINE_PLAYERS_KEY) ?: emptySet()
 
     private fun updateSession(
@@ -165,7 +163,7 @@ class PlayerRedisRepository(
                                 serialize(objectMapper.writeValueAsString(mutationDecision.session)),
                             )
                             val execResult = connection.exec()
-                            if (execResult.isNullOrEmpty()) {
+                            if (execResult.isEmpty()) {
                                 SessionUpdateAttemptResult.Conflict
                             } else {
                                 SessionUpdateAttemptResult.Updated
@@ -264,12 +262,6 @@ class PlayerRedisRepository(
             version = permissionVersion,
         )
 
-    companion object {
-        private const val PLAYER_KEY_PREFIX = "player:"
-        private const val ONLINE_PLAYERS_KEY = "online_players"
-        private const val MAX_TRANSACTION_RETRIES = 8
-    }
-
     private sealed interface SessionMutationDecision {
         data class Apply(
             val session: RedisPlayerSession,
@@ -290,5 +282,11 @@ class PlayerRedisRepository(
         MISSING,
         VERSION_REJECTED,
         RETRY_EXHAUSTED,
+    }
+
+    companion object {
+        private const val PLAYER_KEY_PREFIX = "player:"
+        private const val ONLINE_PLAYERS_KEY = "online_players"
+        private const val MAX_TRANSACTION_RETRIES = 8
     }
 }

@@ -45,7 +45,4 @@ class GameStateManager(
 
         logger.info("Game state changed: $previous -> $state")
     }
-
-    companion object {
-    }
 }

@@ -1,7 +1,6 @@
 package io.ogwars.cloud.api.kafka
 
 import io.ogwars.cloud.api.event.GroupUpdateEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.model.GroupDocument
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
