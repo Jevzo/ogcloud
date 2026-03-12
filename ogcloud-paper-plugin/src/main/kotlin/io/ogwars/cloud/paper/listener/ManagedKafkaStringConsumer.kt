@@ -6,6 +6,7 @@ import io.ogwars.cloud.api.kafka.KafkaTopics
 import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import com.google.gson.JsonParseException
+import org.apache.kafka.clients.consumer.CloseOptions
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -132,7 +133,7 @@ internal class ManagedKafkaStringConsumer(
             ConsumerSessionResult(failure = exception, healthySession = healthySession)
         } finally {
             consumer = null
-            runCatching { activeConsumer.close(CONSUMER_CLOSE_TIMEOUT) }
+            runCatching { activeConsumer.close(CloseOptions.timeout(CONSUMER_CLOSE_TIMEOUT)) }
                 .onFailure { closeFailure ->
                     logger.log(Level.WARNING, "$consumerLabel consumer close failed", closeFailure)
                 }
