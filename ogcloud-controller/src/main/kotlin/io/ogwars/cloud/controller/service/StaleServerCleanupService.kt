@@ -1,6 +1,5 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.controller.model.ServerDocument
 import io.ogwars.cloud.controller.redis.ServerRedisRepository
 import org.slf4j.LoggerFactory
@@ -19,17 +18,13 @@ class StaleServerCleanupService(
     @Scheduled(fixedRate = CLEANUP_INTERVAL_MS)
     fun checkStaleServers() {
         val now = Instant.now()
-        val allServers = serverRedisRepository.findAll()
+        serverRedisRepository
+            .findStartingServersStartedBefore(now.minus(STARTING_TIMEOUT))
+            .forEach { server -> handleStartingServer(server, now) }
 
-        for (server in allServers) {
-            when (server.state) {
-                ServerState.STARTING -> handleStartingServer(server, now)
-
-                ServerState.RUNNING -> handleRunningServer(server, now)
-
-                else -> {}
-            }
-        }
+        serverRedisRepository
+            .findRunningServersWithHeartbeatBefore(now.minus(HEARTBEAT_TIMEOUT))
+            .forEach { server -> handleRunningServer(server, now) }
     }
 
     private fun handleStartingServer(

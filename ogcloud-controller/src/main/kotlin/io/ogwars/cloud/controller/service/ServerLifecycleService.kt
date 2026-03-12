@@ -246,10 +246,28 @@ class ServerLifecycleService(
     }
 
     fun checkDrainTimeouts() {
+        val now = Instant.now()
+        val drainTimeoutByGroup =
+            groupRepository
+                .findAll()
+                .associate { group ->
+                    group.id to group.drainTimeoutSeconds.toLong().coerceAtLeast(0L)
+                }
+
         serverRedisRepository
-            .findAll()
-            .filter { it.state == ServerState.DRAINING }
-            .forEach(::handleDrainingServer)
+            .findDrainingServersDueByGroup(
+                drainCutoffByGroup =
+                    drainTimeoutByGroup.mapValues { (_, timeoutSeconds) ->
+                        now.minusSeconds(timeoutSeconds)
+                    },
+                fallbackCutoff = now.minusSeconds(DEFAULT_DRAIN_TIMEOUT_SECONDS),
+            ).forEach { server ->
+                handleDrainingServer(
+                    server = server,
+                    now = now,
+                    timeoutSeconds = drainTimeoutByGroup[server.group] ?: DEFAULT_DRAIN_TIMEOUT_SECONDS,
+                )
+            }
     }
 
     fun killServer(
@@ -351,7 +369,11 @@ class ServerLifecycleService(
         )
     }
 
-    private fun handleDrainingServer(server: ServerDocument) {
+    private fun handleDrainingServer(
+        server: ServerDocument,
+        now: Instant = Instant.now(),
+        timeoutSeconds: Long? = null,
+    ) {
         val drainingStartedAt = server.drainingStartedAt ?: return
 
         if (server.playerCount == 0) {
@@ -365,12 +387,13 @@ class ServerLifecycleService(
         }
 
         val timeout =
-            groupRepository
-                .findById(server.group)
-                .map { it.drainTimeoutSeconds.toLong() }
-                .orElse(DEFAULT_DRAIN_TIMEOUT_SECONDS)
+            timeoutSeconds
+                ?: groupRepository
+                    .findById(server.group)
+                    .map { it.drainTimeoutSeconds.toLong() }
+                    .orElse(DEFAULT_DRAIN_TIMEOUT_SECONDS)
 
-        val elapsed = Duration.between(drainingStartedAt, Instant.now()).seconds
+        val elapsed = Duration.between(drainingStartedAt, now).seconds
         if (elapsed < timeout) {
             return
         }
