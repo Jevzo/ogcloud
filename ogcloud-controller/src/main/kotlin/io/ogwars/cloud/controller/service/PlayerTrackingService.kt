@@ -1,9 +1,9 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.event.*
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.model.PermissionConfig
-import io.ogwars.cloud.api.redis.RedisKeys
+import io.ogwars.cloud.common.event.*
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.model.PermissionConfig
+import io.ogwars.cloud.common.redis.RedisKeys
 import io.ogwars.cloud.controller.config.PermissionReenableSyncProperties
 import io.ogwars.cloud.controller.model.PermissionGroupDocument
 import io.ogwars.cloud.controller.model.PlayerDocument
@@ -17,14 +17,14 @@ import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Service
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.LockSupport
 import kotlin.math.ceil
 
-typealias ApiPermissionGroupDocument = io.ogwars.cloud.api.model.PermissionGroupDocument
+typealias CommonPermissionGroupDocument = io.ogwars.cloud.common.model.PermissionGroupDocument
 
 @Service
 class PlayerTrackingService(
@@ -565,7 +565,7 @@ class PlayerTrackingService(
 
     private fun isPermissionSystemEnabled(): Boolean = playerConnectRuntimeState.isPermissionSystemEnabled()
 
-    private fun ApiPermissionGroupDocument.toControllerPermissionGroupDocument(): PermissionGroupDocument =
+    private fun CommonPermissionGroupDocument.toControllerPermissionGroupDocument(): PermissionGroupDocument =
         PermissionGroupDocument(
             id = id,
             name = name,

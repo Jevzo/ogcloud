@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.heartbeat
-import io.ogwars.cloud.api.event.ProxyHeartbeatEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+
+import io.ogwars.cloud.common.event.ProxyHeartbeatEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import com.google.gson.Gson
 import com.velocitypowered.api.proxy.ProxyServer

@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.listener
 
-import io.ogwars.cloud.api.event.NetworkUpdateEvent
-import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.model.TablistSettings
+import io.ogwars.cloud.common.event.NetworkUpdateEvent
+import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.model.TablistSettings
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager

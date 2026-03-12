@@ -1,12 +1,12 @@
 package io.ogwars.cloud.velocity.listener
 
-import io.ogwars.cloud.api.event.ServerLifecycleEvent
-import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.RunningServer
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.event.ServerLifecycleEvent
+import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.kafka.NonRetryableKafkaRecordException
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.RunningServer
+import io.ogwars.cloud.common.model.ServerState
 import io.ogwars.cloud.velocity.api.OgCloudProxyAPIImpl
 import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.notification.AdminNotificationManager

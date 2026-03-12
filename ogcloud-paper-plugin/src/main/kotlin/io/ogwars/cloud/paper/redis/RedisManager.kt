@@ -1,7 +1,7 @@
 package io.ogwars.cloud.paper.redis
 
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.RedisServerData
+import io.ogwars.cloud.common.model.RedisPlayerSession
+import io.ogwars.cloud.common.model.RedisServerData
 import com.google.gson.Gson
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI

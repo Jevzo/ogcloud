@@ -1,8 +1,8 @@
 package io.ogwars.cloud.controller.redis
 
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.RedisPlayerSession
-import io.ogwars.cloud.api.model.SessionPermission
+import io.ogwars.cloud.common.model.DisplayConfig
+import io.ogwars.cloud.common.model.RedisPlayerSession
+import io.ogwars.cloud.common.model.SessionPermission
 import io.ogwars.cloud.controller.model.PermissionGroupDocument
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory

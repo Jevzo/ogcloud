@@ -1,9 +1,9 @@
 package io.ogwars.cloud.paper.listener
 
-import io.ogwars.cloud.api.event.PermissionUpdateEvent
-import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.kafka.NonRetryableKafkaRecordException
+import io.ogwars.cloud.common.event.PermissionUpdateEvent
+import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.kafka.NonRetryableKafkaRecordException
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.PermissionInjector

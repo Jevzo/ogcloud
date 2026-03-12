@@ -1,8 +1,8 @@
 package io.ogwars.cloud.controller.config
 
-import io.ogwars.cloud.api.event.PermissionUpdateEvent
-import io.ogwars.cloud.api.event.PlayerTransferEvent
-import io.ogwars.cloud.api.event.ServerLifecycleEvent
+import io.ogwars.cloud.common.event.PermissionUpdateEvent
+import io.ogwars.cloud.common.event.PlayerTransferEvent
+import io.ogwars.cloud.common.event.ServerLifecycleEvent
 import com.fasterxml.jackson.core.JsonProcessingException
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord

@@ -1,6 +1,6 @@
 package io.ogwars.cloud.controller.config
 
-import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

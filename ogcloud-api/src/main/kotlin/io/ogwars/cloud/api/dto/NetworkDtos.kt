@@ -1,11 +1,11 @@
 package io.ogwars.cloud.api.dto
 
-import io.ogwars.cloud.api.model.GeneralSettings
-import io.ogwars.cloud.api.model.MotdSettings
-import io.ogwars.cloud.api.model.NetworkSettingsDocument
-import io.ogwars.cloud.api.model.ProxyRoutingStrategy
-import io.ogwars.cloud.api.model.TablistSettings
-import io.ogwars.cloud.api.model.VersionNameSettings
+import io.ogwars.cloud.common.model.GeneralSettings
+import io.ogwars.cloud.common.model.MotdSettings
+import io.ogwars.cloud.common.model.NetworkSettingsDocument
+import io.ogwars.cloud.common.model.ProxyRoutingStrategy
+import io.ogwars.cloud.common.model.TablistSettings
+import io.ogwars.cloud.common.model.VersionNameSettings
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
 

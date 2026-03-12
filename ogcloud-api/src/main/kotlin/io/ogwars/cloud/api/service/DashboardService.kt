@@ -5,14 +5,14 @@ import io.ogwars.cloud.api.dto.DashboardOverviewResponse
 import io.ogwars.cloud.api.dto.DashboardOverviewScalingActionResponse
 import io.ogwars.cloud.api.dto.DashboardOverviewStatsResponse
 import io.ogwars.cloud.api.model.GroupDocument
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.ScalingLogDocument
 import io.ogwars.cloud.api.model.ServerDocument
-import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.api.redis.PlayerRedisRepository
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import io.ogwars.cloud.api.repository.GroupRepository
 import io.ogwars.cloud.api.util.ServerPresentationSupport
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find

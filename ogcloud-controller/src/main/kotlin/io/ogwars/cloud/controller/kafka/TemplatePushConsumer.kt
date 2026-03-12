@@ -1,8 +1,8 @@
 package io.ogwars.cloud.controller.kafka
 
-import io.ogwars.cloud.api.event.TemplatePushEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.event.TemplatePushEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.model.ServerState
 import io.ogwars.cloud.controller.redis.ServerRedisRepository
 import io.ogwars.cloud.controller.service.KubernetesService
 import com.fasterxml.jackson.databind.ObjectMapper

@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.dto
 
-import io.ogwars.cloud.api.model.DisplayConfig
 import io.ogwars.cloud.api.model.PermissionGroupDocument
+import io.ogwars.cloud.common.model.DisplayConfig
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 

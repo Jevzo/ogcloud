@@ -1,6 +1,7 @@
 package io.ogwars.cloud.paper.heartbeat
-import io.ogwars.cloud.api.event.ServerHeartbeatEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+
+import io.ogwars.cloud.common.event.ServerHeartbeatEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.paper.OgCloudPaperPlugin
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import com.google.gson.Gson

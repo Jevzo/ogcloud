@@ -1,9 +1,9 @@
 package io.ogwars.cloud.api.dto
 
 import io.ogwars.cloud.api.model.GroupDocument
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.ResourceConfig
 import io.ogwars.cloud.api.model.ScalingConfig
+import io.ogwars.cloud.common.model.GroupType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank

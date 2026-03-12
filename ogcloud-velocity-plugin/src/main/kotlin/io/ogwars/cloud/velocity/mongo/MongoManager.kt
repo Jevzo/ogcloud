@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.mongo
 
-import io.ogwars.cloud.api.model.*
+import io.ogwars.cloud.common.model.*
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoDatabase

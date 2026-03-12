@@ -1,6 +1,6 @@
 package io.ogwars.cloud.controller.model
 
-import io.ogwars.cloud.api.model.PermissionConfig
+import io.ogwars.cloud.common.model.PermissionConfig
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant

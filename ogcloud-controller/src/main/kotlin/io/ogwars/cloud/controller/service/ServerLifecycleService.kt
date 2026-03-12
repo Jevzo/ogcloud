@@ -1,9 +1,9 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.event.*
-import io.ogwars.cloud.api.model.GameState
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.event.*
+import io.ogwars.cloud.common.model.GameState
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import io.ogwars.cloud.controller.exception.GroupNotFoundException
 import io.ogwars.cloud.controller.exception.ServerNotFoundException
 import io.ogwars.cloud.controller.kafka.LifecycleEventProducer

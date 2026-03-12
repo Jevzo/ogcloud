@@ -1,8 +1,8 @@
 package io.ogwars.cloud.api.dto
 
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.ServerDocument
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import jakarta.validation.constraints.NotBlank
 
 data class ServerRequestBody(

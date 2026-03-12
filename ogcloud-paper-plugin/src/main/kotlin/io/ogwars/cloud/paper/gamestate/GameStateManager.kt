@@ -1,7 +1,8 @@
 package io.ogwars.cloud.paper.gamestate
-import io.ogwars.cloud.api.event.GameStateUpdateEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
-import io.ogwars.cloud.api.model.GameState
+
+import io.ogwars.cloud.common.event.GameStateUpdateEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.model.GameState
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import com.google.gson.Gson
 import java.util.logging.Logger

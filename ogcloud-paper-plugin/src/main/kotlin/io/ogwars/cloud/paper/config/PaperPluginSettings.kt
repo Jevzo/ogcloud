@@ -1,6 +1,6 @@
 package io.ogwars.cloud.paper.config
 
-import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
+import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
 
 data class PaperPluginSettings(
     val serverId: String,

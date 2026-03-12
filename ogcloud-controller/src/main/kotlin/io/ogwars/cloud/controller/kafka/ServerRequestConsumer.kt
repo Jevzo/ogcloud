@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
-import io.ogwars.cloud.api.event.ServerRequestEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.common.event.ServerRequestEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.ServerLifecycleService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory

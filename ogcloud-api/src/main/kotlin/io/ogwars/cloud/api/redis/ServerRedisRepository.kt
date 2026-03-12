@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.redis
 
-import io.ogwars.cloud.api.model.RedisServerData
 import io.ogwars.cloud.api.model.ServerDocument
+import io.ogwars.cloud.common.model.RedisServerData
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service

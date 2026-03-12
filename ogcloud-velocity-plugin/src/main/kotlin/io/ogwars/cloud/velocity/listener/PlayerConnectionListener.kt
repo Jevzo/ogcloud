@@ -1,8 +1,9 @@
 package io.ogwars.cloud.velocity.listener
-import io.ogwars.cloud.api.event.PlayerConnectEvent
-import io.ogwars.cloud.api.event.PlayerDisconnectEvent
-import io.ogwars.cloud.api.event.PlayerSwitchEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+
+import io.ogwars.cloud.common.event.PlayerConnectEvent
+import io.ogwars.cloud.common.event.PlayerDisconnectEvent
+import io.ogwars.cloud.common.event.PlayerSwitchEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState

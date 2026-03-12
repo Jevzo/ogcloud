@@ -1,5 +1,8 @@
 package io.ogwars.cloud.api.model
 
+import io.ogwars.cloud.common.model.GameState
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import java.time.Instant
 
 data class ServerDocument(

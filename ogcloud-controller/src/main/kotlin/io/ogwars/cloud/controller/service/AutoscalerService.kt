@@ -1,8 +1,8 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.model.GameState
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.model.GameState
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import io.ogwars.cloud.controller.model.GroupDocument
 import io.ogwars.cloud.controller.model.ServerDocument
 import io.ogwars.cloud.controller.redis.ServerRedisRepository

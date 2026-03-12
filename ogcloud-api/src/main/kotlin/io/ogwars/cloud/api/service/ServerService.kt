@@ -9,12 +9,12 @@ import io.ogwars.cloud.api.kafka.ServerKillProducer
 import io.ogwars.cloud.api.kafka.ServerRequestProducer
 import io.ogwars.cloud.api.kafka.ServerStopProducer
 import io.ogwars.cloud.api.kafka.TemplatePushProducer
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.ServerDocument
-import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import io.ogwars.cloud.api.repository.GroupRepository
 import io.ogwars.cloud.api.util.ServerPresentationSupport
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.ServerState
 import org.springframework.stereotype.Service
 
 @Service

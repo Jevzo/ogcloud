@@ -1,7 +1,7 @@
 package io.ogwars.cloud.paper.api
 
-import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.*
+import io.ogwars.cloud.common.event.ServerReadyEvent
+import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager

@@ -1,10 +1,13 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.event.PermissionGroupUpdatedEvent
 import io.ogwars.cloud.api.model.PermissionGroupDocument
+import io.ogwars.cloud.common.event.PermissionGroupUpdatedEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
+
+typealias CommonPermissionGroupDocument = io.ogwars.cloud.common.model.PermissionGroupDocument
 
 @Component
 class PermissionGroupUpdatedProducer(
@@ -20,7 +23,7 @@ class PermissionGroupUpdatedProducer(
             group.id,
             PermissionGroupUpdatedEvent(
                 groupId = group.id,
-                group = group,
+                group = group.toCommonPermissionGroupDocument(),
                 deleted = false,
             ),
         )
@@ -40,3 +43,13 @@ class PermissionGroupUpdatedProducer(
         )
     }
 }
+
+private fun PermissionGroupDocument.toCommonPermissionGroupDocument(): CommonPermissionGroupDocument =
+    CommonPermissionGroupDocument(
+        id = id,
+        name = name,
+        display = display,
+        weight = weight,
+        default = default,
+        permissions = permissions,
+    )

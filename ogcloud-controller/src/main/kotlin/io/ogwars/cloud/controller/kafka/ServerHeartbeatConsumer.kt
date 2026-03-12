@@ -1,7 +1,7 @@
 package io.ogwars.cloud.controller.kafka
 
-import io.ogwars.cloud.api.event.ServerHeartbeatEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+import io.ogwars.cloud.common.event.ServerHeartbeatEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.controller.service.ServerLifecycleService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.kafka.annotation.KafkaListener

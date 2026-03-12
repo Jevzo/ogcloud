@@ -1,6 +1,6 @@
 package io.ogwars.cloud.api.dto
 
-import io.ogwars.cloud.api.model.GroupType
+import io.ogwars.cloud.common.model.GroupType
 import java.time.Instant
 
 data class DashboardOverviewResponse(

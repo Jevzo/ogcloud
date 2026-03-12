@@ -1,9 +1,9 @@
 package io.ogwars.cloud.velocity.permission
 
-import io.ogwars.cloud.api.event.PermissionUpdateEvent
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.PermissionGroupDocument
-import io.ogwars.cloud.api.model.RedisPlayerSession
+import io.ogwars.cloud.common.event.PermissionUpdateEvent
+import io.ogwars.cloud.common.model.DisplayConfig
+import io.ogwars.cloud.common.model.PermissionGroupDocument
+import io.ogwars.cloud.common.model.RedisPlayerSession
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 

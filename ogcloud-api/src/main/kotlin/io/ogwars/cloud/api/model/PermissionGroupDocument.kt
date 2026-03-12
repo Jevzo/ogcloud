@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.model
 
+import io.ogwars.cloud.common.model.DisplayConfig
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 

@@ -1,8 +1,8 @@
 package io.ogwars.cloud.api.dto
 
-import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.api.model.PlayerDocument
-import io.ogwars.cloud.api.model.RedisPlayerSession
+import io.ogwars.cloud.common.model.PermissionConfig
+import io.ogwars.cloud.common.model.RedisPlayerSession
 import jakarta.validation.constraints.NotBlank
 
 data class PermissionConfigResponse(

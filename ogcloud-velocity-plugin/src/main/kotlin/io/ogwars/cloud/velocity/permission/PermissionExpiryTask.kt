@@ -1,6 +1,7 @@
 package io.ogwars.cloud.velocity.permission
-import io.ogwars.cloud.api.event.PermissionExpiryEvent
-import io.ogwars.cloud.api.kafka.KafkaTopics
+
+import io.ogwars.cloud.common.event.PermissionExpiryEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.network.NetworkState
 import com.google.gson.Gson

@@ -1,7 +1,7 @@
 package io.ogwars.cloud.server.api
 
-import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.*
+import io.ogwars.cloud.common.event.ServerReadyEvent
+import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.server.api.OgCloudServerAPI.Companion.get
 import java.util.*
 import java.util.concurrent.CompletableFuture

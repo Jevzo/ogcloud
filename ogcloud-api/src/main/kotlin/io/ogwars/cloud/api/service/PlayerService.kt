@@ -6,13 +6,13 @@ import io.ogwars.cloud.api.exception.PlayerNotFoundException
 import io.ogwars.cloud.api.exception.PlayerNotOnlineException
 import io.ogwars.cloud.api.kafka.PermissionUpdateProducer
 import io.ogwars.cloud.api.kafka.PlayerTransferProducer
-import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.api.model.PlayerDocument
 import io.ogwars.cloud.api.redis.PlayerRedisRepository
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import io.ogwars.cloud.api.repository.PermissionGroupRepository
 import io.ogwars.cloud.api.repository.PlayerRepository
-import io.ogwars.cloud.api.util.TimeUtils
+import io.ogwars.cloud.common.model.PermissionConfig
+import io.ogwars.cloud.common.util.TimeUtils
 import org.springframework.stereotype.Service
 
 @Service

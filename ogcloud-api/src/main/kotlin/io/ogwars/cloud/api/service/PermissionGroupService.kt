@@ -6,12 +6,12 @@ import io.ogwars.cloud.api.exception.PermissionGroupNotFoundException
 import io.ogwars.cloud.api.kafka.DefaultPermissionGroupChangedProducer
 import io.ogwars.cloud.api.kafka.PermissionGroupUpdatedProducer
 import io.ogwars.cloud.api.kafka.PermissionUpdateProducer
-import io.ogwars.cloud.api.model.DisplayConfig
-import io.ogwars.cloud.api.model.PermissionConfig
 import io.ogwars.cloud.api.model.PermissionGroupDocument
 import io.ogwars.cloud.api.redis.PlayerRedisRepository
 import io.ogwars.cloud.api.repository.PermissionGroupRepository
 import io.ogwars.cloud.api.repository.PlayerRepository
+import io.ogwars.cloud.common.model.DisplayConfig
+import io.ogwars.cloud.common.model.PermissionConfig
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate

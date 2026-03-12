@@ -1,6 +1,6 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.model.GroupType
+import io.ogwars.cloud.common.model.GroupType
 import io.ogwars.cloud.controller.config.KubernetesProperties
 import io.ogwars.cloud.controller.config.PodRuntimeProperties
 import io.ogwars.cloud.controller.model.GroupDocument

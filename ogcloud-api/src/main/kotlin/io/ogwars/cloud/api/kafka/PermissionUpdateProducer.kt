@@ -1,7 +1,8 @@
 package io.ogwars.cloud.api.kafka
 
-import io.ogwars.cloud.api.event.PermissionUpdateEvent
 import io.ogwars.cloud.api.model.PermissionGroupDocument
+import io.ogwars.cloud.common.event.PermissionUpdateEvent
+import io.ogwars.cloud.common.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component

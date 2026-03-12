@@ -1,7 +1,7 @@
 package io.ogwars.cloud.velocity.api
 
-import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.*
+import io.ogwars.cloud.common.event.ServerReadyEvent
+import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.velocity.permission.CachedPlayer
 import io.ogwars.cloud.velocity.permission.PermissionCache

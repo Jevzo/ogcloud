@@ -1,6 +1,6 @@
 package io.ogwars.cloud.controller.service
 
-import io.ogwars.cloud.api.model.NetworkSettingsDocument
+import io.ogwars.cloud.common.model.NetworkSettingsDocument
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
 import org.springframework.stereotype.Service

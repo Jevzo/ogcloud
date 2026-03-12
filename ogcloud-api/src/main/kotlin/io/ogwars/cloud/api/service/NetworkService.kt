@@ -6,11 +6,11 @@ import io.ogwars.cloud.api.dto.UpdateNetworkRequest
 import io.ogwars.cloud.api.dto.toResponse
 import io.ogwars.cloud.api.exception.PermissionReenableSyncInProgressException
 import io.ogwars.cloud.api.kafka.NetworkUpdateProducer
-import io.ogwars.cloud.api.model.GeneralSettings
-import io.ogwars.cloud.api.model.GroupType
-import io.ogwars.cloud.api.model.NetworkSettingsDocument
-import io.ogwars.cloud.api.redis.RedisKeys
 import io.ogwars.cloud.api.redis.ServerRedisRepository
+import io.ogwars.cloud.common.model.GeneralSettings
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.NetworkSettingsDocument
+import io.ogwars.cloud.common.redis.RedisKeys
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findById
 import org.springframework.data.redis.core.StringRedisTemplate

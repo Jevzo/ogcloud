@@ -1,6 +1,6 @@
 package io.ogwars.cloud.velocity.config
 
-import io.ogwars.cloud.api.kafka.KafkaConsumerRecoverySettings
+import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
 import java.util.*
 
 data class VelocityPluginSettings(

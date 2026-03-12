@@ -10,9 +10,9 @@ import io.ogwars.cloud.api.kafka.ServerStopProducer
 import io.ogwars.cloud.api.model.GroupDocument
 import io.ogwars.cloud.api.model.ScalingConfig
 import io.ogwars.cloud.api.model.ServerDocument
-import io.ogwars.cloud.api.model.ServerState
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import io.ogwars.cloud.api.repository.GroupRepository
+import io.ogwars.cloud.common.model.ServerState
 import org.slf4j.LoggerFactory
 import org.springframework.core.task.TaskExecutor
 import org.springframework.dao.DuplicateKeyException

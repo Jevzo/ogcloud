@@ -1,11 +1,11 @@
 package io.ogwars.cloud.api.dto
 
 import io.ogwars.cloud.api.model.GroupDocument
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.PlayerDocument
-import io.ogwars.cloud.api.model.RedisPlayerSession
 import io.ogwars.cloud.api.model.ServerDocument
-import io.ogwars.cloud.api.model.ServerState
+import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.RedisPlayerSession
+import io.ogwars.cloud.common.model.ServerState
 
 data class SearchGroupResult(
     val id: String,

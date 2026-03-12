@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.util
 
-import io.ogwars.cloud.api.model.GroupType
 import io.ogwars.cloud.api.model.ServerDocument
+import io.ogwars.cloud.common.model.GroupType
 
 object ServerPresentationSupport {
     private const val NO_TPS = -1.0

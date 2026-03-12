@@ -1,10 +1,10 @@
 package io.ogwars.cloud.proxy.api
 
-import io.ogwars.cloud.api.event.ServerReadyEvent
-import io.ogwars.cloud.api.model.PermissionGroup
-import io.ogwars.cloud.api.model.PlayerInfo
-import io.ogwars.cloud.api.model.RunningServer
-import io.ogwars.cloud.api.model.ServerInfo
+import io.ogwars.cloud.common.event.ServerReadyEvent
+import io.ogwars.cloud.common.model.PermissionGroup
+import io.ogwars.cloud.common.model.PlayerInfo
+import io.ogwars.cloud.common.model.RunningServer
+import io.ogwars.cloud.common.model.ServerInfo
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI.Companion.get
 import java.util.*
 import java.util.concurrent.CompletableFuture
