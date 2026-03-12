@@ -1,5 +1,6 @@
 package io.ogwars.cloud.velocity.server
 
+import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.proxy.server.RegisteredServer
 import com.velocitypowered.api.proxy.server.ServerInfo
@@ -88,10 +89,10 @@ class ServerRegistry(
             .mapNotNull { registeredServers[it.key] }
     }
 
-    fun getPlayersOnServer(serverId: String): Collection<com.velocitypowered.api.proxy.Player> =
+    fun getPlayersOnServer(serverId: String): Collection<Player> =
         registeredServers[serverId]?.playersConnected ?: emptyList()
 
-    fun getPlayersInGroup(group: String): Collection<com.velocitypowered.api.proxy.Player> =
+    fun getPlayersInGroup(group: String): Collection<Player> =
         serverGroups.entries
             .filter { it.value == group }
             .mapNotNull { registeredServers[it.key] }

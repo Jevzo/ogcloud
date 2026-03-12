@@ -3,12 +3,8 @@ package io.ogwars.cloud.api.security
 import io.ogwars.cloud.api.config.AuthProperties
 import io.ogwars.cloud.api.exception.InvalidCredentialsException
 import io.ogwars.cloud.api.model.WebUserDocument
-import org.springframework.security.oauth2.jwt.JwsHeader
-import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.security.oauth2.jwt.JwtClaimsSet
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtEncoder
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm
+import org.springframework.security.oauth2.jwt.*
 import org.springframework.stereotype.Service
 import java.time.Clock
 import java.time.Instant
@@ -38,7 +34,7 @@ class JwtTokenService(
         val token =
             jwtEncoder.encode(
                 JwtEncoderParameters.from(
-                    JwsHeader.with(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build(),
+                    JwsHeader.with(MacAlgorithm.HS256).build(),
                     claims,
                 ),
             )
