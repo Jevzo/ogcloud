@@ -218,24 +218,94 @@ class RuntimeBundleService(
     private fun resolveArtifactDefinitions(scope: RuntimeBundleScope): List<RuntimeArtifactDefinition> =
         when (scope) {
             RuntimeBundleScope.PAPER_1_21_11 ->
-                listOf(
-                    resolvePaperArtifact(
-                        scope = scope,
-                        version = runtimeProperties.modernPaperVersion,
-                        buildId = null,
-                    ),
-                )
+                buildList {
+                    add(
+                        resolvePaperArtifact(
+                            scope = scope,
+                            version = runtimeProperties.modernPaperVersion,
+                            buildId = null,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
+                            sourceUrl = runtimeProperties.modernPaperPluginUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, BUNGEE_GUARD_FILE_NAME),
+                            sourceUrl = runtimeProperties.bungeeGuardUrl,
+                        ),
+                    )
+                }
 
             RuntimeBundleScope.PAPER_1_8_8 ->
-                listOf(
-                    resolvePaperArtifact(
-                        scope = scope,
-                        version = runtimeProperties.legacyPaperVersion,
-                        buildId = runtimeProperties.legacyPaperBuild,
-                    ),
-                )
+                buildList {
+                    add(
+                        resolvePaperArtifact(
+                            scope = scope,
+                            version = runtimeProperties.legacyPaperVersion,
+                            buildId = runtimeProperties.legacyPaperBuild,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
+                            sourceUrl = runtimeProperties.legacyPaperPluginUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, BUNGEE_GUARD_FILE_NAME),
+                            sourceUrl = runtimeProperties.bungeeGuardUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, PROTOCOL_LIB_FILE_NAME),
+                            sourceUrl = runtimeProperties.protocolLibUrl,
+                        ),
+                    )
+                }
 
-            RuntimeBundleScope.VELOCITY -> listOf(resolveVelocityArtifact(scope))
+            RuntimeBundleScope.VELOCITY ->
+                buildList {
+                    add(resolveVelocityArtifact(scope))
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, OGCLOUD_VELOCITY_PLUGIN_FILE_NAME),
+                            sourceUrl = runtimeProperties.velocityPluginUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, VIA_VERSION_FILE_NAME),
+                            sourceUrl = runtimeProperties.viaVersionUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, VIA_BACKWARDS_FILE_NAME),
+                            sourceUrl = runtimeProperties.viaBackwardsUrl,
+                        ),
+                    )
+                    add(
+                        managedArtifact(
+                            scope = scope,
+                            objectKey = pluginObjectKey(scope, VIA_REWIND_FILE_NAME),
+                            sourceUrl = runtimeProperties.viaRewindUrl,
+                        ),
+                    )
+                }
         }
 
     private fun resolvePaperArtifact(
@@ -276,6 +346,18 @@ class RuntimeBundleService(
             upstreamBuild = download.buildId,
         )
     }
+
+    private fun managedArtifact(
+        scope: RuntimeBundleScope,
+        objectKey: String,
+        sourceUrl: String,
+    ): RuntimeArtifactDefinition =
+        RuntimeArtifactDefinition(
+            objectKey = objectKey,
+            sourceUrl = sourceUrl,
+            upstreamVersion = MANAGED_ASSET_VERSION,
+            upstreamBuild = MANAGED_ASSET_BUILD,
+        )
 
     private fun resolveStableBuildDownload(
         project: String,
@@ -460,6 +542,11 @@ class RuntimeBundleService(
 
     private fun proxyJarObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/proxy.jar"
 
+    private fun pluginObjectKey(
+        scope: RuntimeBundleScope,
+        fileName: String,
+    ): String = "${scope.minioPrefix}/plugins/$fileName"
+
     private fun runtimeArtifactId(
         scope: RuntimeBundleScope,
         objectKey: String,
@@ -511,6 +598,15 @@ class RuntimeBundleService(
     )
 
     companion object {
+        private const val OGCLOUD_PAPER_PLUGIN_FILE_NAME = "ogcloud-paper-plugin.jar"
+        private const val OGCLOUD_VELOCITY_PLUGIN_FILE_NAME = "ogcloud-velocity-plugin.jar"
+        private const val VIA_VERSION_FILE_NAME = "ViaVersion.jar"
+        private const val VIA_BACKWARDS_FILE_NAME = "ViaBackwards.jar"
+        private const val VIA_REWIND_FILE_NAME = "ViaRewind.jar"
+        private const val BUNGEE_GUARD_FILE_NAME = "BungeeGuard.jar"
+        private const val PROTOCOL_LIB_FILE_NAME = "ProtocolLib.jar"
+        private const val MANAGED_ASSET_VERSION = "managed"
+        private const val MANAGED_ASSET_BUILD = 0
         private const val PAPER_DOWNLOAD_KEY = "server:default"
         private const val STABLE_CHANNEL = "STABLE"
         private const val DEFAULT_DOWNLOAD_SUFFIX = ":default"
