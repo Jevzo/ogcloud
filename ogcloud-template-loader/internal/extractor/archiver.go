@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var templateIncludes = []string{
@@ -24,6 +25,11 @@ var templateIncludes = []string{
 var runtimeExcludes = map[string]bool{
 	"session.lock": true,
 	"uid.dat":      true,
+}
+
+var runtimeManagedPluginFiles = map[string]bool{
+	"BungeeGuard.jar": true,
+	"ProtocolLib.jar": true,
 }
 
 func CreateTarGz(sourceDir, destPath string) error {
@@ -70,7 +76,14 @@ func addDir(tw *tar.Writer, baseDir, dir string) error {
 			return err
 		}
 
-		if runtimeExcludes[info.Name()] {
+		skip, err := shouldSkipRuntimePath(baseDir, path, info)
+		if err != nil {
+			return err
+		}
+		if skip {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -117,4 +130,45 @@ func writeEntry(tw *tar.Writer, fullPath, relPath string, info os.FileInfo) erro
 	}
 
 	return nil
+}
+
+func shouldSkipRuntimePath(
+	baseDir string,
+	path string,
+	info os.FileInfo,
+) (bool, error) {
+	if runtimeExcludes[info.Name()] {
+		return true, nil
+	}
+
+	relPath, err := filepath.Rel(baseDir, path)
+	if err != nil {
+		return false, fmt.Errorf("compute relative path: %w", err)
+	}
+
+	normalizedPath := filepath.ToSlash(relPath)
+	switch {
+	case normalizedPath == "plugins/.paper-remapped":
+		return true, nil
+	case strings.HasPrefix(normalizedPath, "plugins/.paper-remapped/"):
+		return true, nil
+	case normalizedPath == "plugins/BungeeGuard":
+		return true, nil
+	case strings.HasPrefix(normalizedPath, "plugins/BungeeGuard/"):
+		return true, nil
+	}
+
+	if !strings.HasPrefix(normalizedPath, "plugins/") {
+		return false, nil
+	}
+
+	if runtimeManagedPluginFiles[info.Name()] {
+		return true, nil
+	}
+
+	if strings.HasPrefix(info.Name(), "ogcloud-paper-plugin") && strings.HasSuffix(info.Name(), ".jar") {
+		return true, nil
+	}
+
+	return false, nil
 }

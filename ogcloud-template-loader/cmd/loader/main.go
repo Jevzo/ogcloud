@@ -15,6 +15,7 @@ import (
 
 	"github.com/ogwars/ogcloud-template-loader/internal/extractor"
 	minioclient "github.com/ogwars/ogcloud-template-loader/internal/minio"
+	"github.com/ogwars/ogcloud-template-loader/internal/runtimeconfig"
 )
 
 const (
@@ -82,8 +83,12 @@ func runPullMode(logger *zap.Logger) {
 	}
 
 	if runtimeBucket != "" && runtimeManifestPath != "" {
-		if err := loadRuntimeAssets(ctx, logger, client, runtimeBucket, runtimeManifestPath, dataDir); err != nil {
+		scopePrefix, err := loadRuntimeAssets(ctx, logger, client, runtimeBucket, runtimeManifestPath, dataDir)
+		if err != nil {
 			logger.Fatal("failed to load runtime assets", zap.Error(err))
+		}
+		if err := runtimeconfig.Apply(scopePrefix, dataDir, requireEnv("FORWARDING_SECRET", logger)); err != nil {
+			logger.Fatal("failed to apply managed runtime config", zap.Error(err))
 		}
 	}
 
@@ -194,21 +199,21 @@ func loadRuntimeAssets(
 	bucket string,
 	manifestPath string,
 	dataDir string,
-) error {
+) (string, error) {
 	manifestArchive, err := client.DownloadObject(ctx, bucket, manifestPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer os.Remove(manifestArchive)
 
 	manifestBytes, err := os.ReadFile(manifestArchive)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var manifest runtimeManifest
 	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
-		return err
+		return "", err
 	}
 
 	scopePrefix := strings.TrimSuffix(manifestPath, "/manifest.json")
@@ -216,18 +221,18 @@ func loadRuntimeAssets(
 	for _, artifact := range manifest.Artifacts {
 		relativePath := strings.TrimPrefix(artifact.ObjectKey, scopePrefix+"/")
 		if relativePath == artifact.ObjectKey || relativePath == "" {
-			return fmt.Errorf("runtime object is outside manifest scope: objectKey=%s scopePrefix=%s", artifact.ObjectKey, scopePrefix)
+			return "", fmt.Errorf("runtime object is outside manifest scope: objectKey=%s scopePrefix=%s", artifact.ObjectKey, scopePrefix)
 		}
 
 		tmpFile, err := client.DownloadObject(ctx, bucket, artifact.ObjectKey)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		targetPath := filepath.Join(dataDir, filepath.FromSlash(relativePath))
 		if err := writeRuntimeAsset(tmpFile, targetPath); err != nil {
 			os.Remove(tmpFile)
-			return err
+			return "", err
 		}
 
 		if err := os.Remove(tmpFile); err != nil {
@@ -242,7 +247,7 @@ func loadRuntimeAssets(
 		zap.Int("artifactCount", len(manifest.Artifacts)),
 	)
 
-	return nil
+	return scopePrefix, nil
 }
 
 func writeRuntimeAsset(
