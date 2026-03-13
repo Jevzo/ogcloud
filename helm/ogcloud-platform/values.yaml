@@ -12,6 +12,10 @@ connections:
   minioEndpoint: http://minio.ogcloud.svc.cluster.local:9000
   apiUrl: http://api.ogcloud.svc.cluster.local:8080
 
+networkPolicy:
+  backendIngress:
+    enabled: true
+
 api:
   enabled: true
   replicaCount: 1
