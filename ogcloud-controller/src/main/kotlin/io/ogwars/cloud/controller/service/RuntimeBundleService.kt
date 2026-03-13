@@ -28,9 +28,20 @@ import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.Instant
+
+private fun runtimeTempFileSuffix(objectKey: String): String {
+    val fileName = objectKey.substringAfterLast('/')
+    val extension = fileName.substringAfterLast('.', "")
+    return if (extension.isBlank()) {
+        ".tmp"
+    } else {
+        ".$extension"
+    }
+}
 
 @Service
 class RuntimeBundleService(
@@ -47,15 +58,29 @@ class RuntimeBundleService(
     private val httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
 
     fun bootstrapAll() {
-        RuntimeBundleScope.entries.forEach { scope ->
-            val result = synchronizeScope(scope, requestedBy = "controller-startup", restartAffectedGroups = false)
-            log.info(
-                "Runtime scope synchronized on startup: scope={}, updatedArtifacts={}, removedArtifacts={}, restartRequired={}",
-                scope,
-                result.updatedArtifacts,
-                result.removedArtifacts,
-                result.restartRequired,
-            )
+        val reusableArtifactCache = mutableMapOf<String, CachedArtifact>()
+
+        try {
+            RuntimeBundleScope.entries.forEach { scope ->
+                val result =
+                    synchronizeScope(
+                        scope = scope,
+                        requestedBy = "controller-startup",
+                        restartAffectedGroups = false,
+                        reusableArtifactCache = reusableArtifactCache,
+                    )
+                log.info(
+                    "Runtime scope synchronized on startup: scope={}, updatedArtifacts={}, removedArtifacts={}, restartRequired={}",
+                    scope,
+                    result.updatedArtifacts,
+                    result.removedArtifacts,
+                    result.restartRequired,
+                )
+            }
+        } finally {
+            reusableArtifactCache.values.forEach { cachedArtifact ->
+                Files.deleteIfExists(cachedArtifact.localPath)
+            }
         }
     }
 
@@ -79,6 +104,7 @@ class RuntimeBundleService(
         scope: RuntimeBundleScope,
         requestedBy: String?,
         restartAffectedGroups: Boolean,
+        reusableArtifactCache: MutableMap<String, CachedArtifact>? = null,
     ): SyncResult {
         ensureRuntimeBucketExists()
 
@@ -96,7 +122,7 @@ class RuntimeBundleService(
         val manifestArtifacts = mutableListOf<RuntimeManifestArtifact>()
 
         definitions.forEach { definition ->
-            val downloaded = materializeArtifact(definition)
+            val downloaded = materializeArtifact(definition, reusableArtifactCache)
             try {
                 val existing = existingByObjectKey[definition.objectKey]
                 val objectExists = objectExists(definition.objectKey)
@@ -240,7 +266,8 @@ class RuntimeBundleService(
                         managedArtifact(
                             scope = scope,
                             objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
-                            sourceUrl = runtimeProperties.modernPaperPluginUrl,
+                            sourceUrl = runtimeProperties.paperPluginUrl,
+                            reusableAcrossScopes = true,
                         ),
                     )
                     add(
@@ -273,7 +300,8 @@ class RuntimeBundleService(
                         managedArtifact(
                             scope = scope,
                             objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
-                            sourceUrl = runtimeProperties.legacyPaperPluginUrl,
+                            sourceUrl = runtimeProperties.paperPluginUrl,
+                            reusableAcrossScopes = true,
                         ),
                     )
                     add(
@@ -387,6 +415,7 @@ class RuntimeBundleService(
         scope: RuntimeBundleScope,
         objectKey: String,
         sourceUrl: String,
+        reusableAcrossScopes: Boolean = false,
     ): RuntimeArtifactDefinition =
         RuntimeArtifactDefinition(
             objectKey = objectKey,
@@ -394,6 +423,7 @@ class RuntimeBundleService(
             upstreamVersion = MANAGED_ASSET_VERSION,
             upstreamBuild = MANAGED_ASSET_BUILD,
             contentType = contentTypeForObjectKey(objectKey),
+            reusableAcrossScopes = reusableAcrossScopes,
         )
 
     private fun generatedArtifact(
@@ -489,17 +519,38 @@ class RuntimeBundleService(
         return root
     }
 
-    private fun materializeArtifact(definition: RuntimeArtifactDefinition): DownloadedArtifact =
+    private fun materializeArtifact(
+        definition: RuntimeArtifactDefinition,
+        reusableArtifactCache: MutableMap<String, CachedArtifact>? = null,
+    ): DownloadedArtifact =
         definition.inlineContent?.let { inlineContent ->
             materializeInlineArtifact(definition, inlineContent)
-        } ?: downloadArtifact(definition)
+        } ?: materializeDownloadedArtifact(definition, reusableArtifactCache)
+
+    private fun materializeDownloadedArtifact(
+        definition: RuntimeArtifactDefinition,
+        reusableArtifactCache: MutableMap<String, CachedArtifact>? = null,
+    ): DownloadedArtifact {
+        val cacheKey = definition.cacheKey()
+        if (definition.reusableAcrossScopes && reusableArtifactCache != null) {
+            reusableArtifactCache[cacheKey]?.let { cachedArtifact ->
+                return cachedArtifact.materialize(definition.objectKey)
+            }
+        }
+
+        val downloaded = downloadArtifact(definition)
+        if (definition.reusableAcrossScopes && reusableArtifactCache != null) {
+            reusableArtifactCache[cacheKey] = CachedArtifact.from(downloaded)
+        }
+        return downloaded
+    }
 
     private fun materializeInlineArtifact(
         definition: RuntimeArtifactDefinition,
         inlineContent: ByteArray,
     ): DownloadedArtifact {
         val digest = MessageDigest.getInstance(SHA_256)
-        val localPath = Files.createTempFile("ogcloud-runtime-", tempFileSuffix(definition.objectKey))
+        val localPath = Files.createTempFile("ogcloud-runtime-", runtimeTempFileSuffix(definition.objectKey))
         Files.write(localPath, inlineContent)
 
         return DownloadedArtifact(
@@ -645,16 +696,6 @@ class RuntimeBundleService(
             else -> TEXT_CONTENT_TYPE
         }
 
-    private fun tempFileSuffix(objectKey: String): String {
-        val fileName = objectKey.substringAfterLast('/')
-        val extension = fileName.substringAfterLast('.', "")
-        return if (extension.isBlank()) {
-            ".tmp"
-        } else {
-            ".$extension"
-        }
-    }
-
     private fun velocityToml(): String =
         """
         config-version = "2.7"
@@ -720,6 +761,7 @@ class RuntimeBundleService(
         val upstreamBuild: Int,
         val contentType: String,
         val inlineContent: ByteArray? = null,
+        val reusableAcrossScopes: Boolean = false,
     )
 
     private data class DownloadedArtifact(
@@ -732,6 +774,53 @@ class RuntimeBundleService(
         val sizeBytes: Long,
         val contentType: String,
     )
+
+    private data class CachedArtifact(
+        val sourceUrl: String,
+        val upstreamVersion: String,
+        val upstreamBuild: Int,
+        val localPath: Path,
+        val sha256: String,
+        val sizeBytes: Long,
+        val contentType: String,
+    ) {
+        fun materialize(objectKey: String): DownloadedArtifact {
+            val localCopy = Files.createTempFile("ogcloud-runtime-", runtimeTempFileSuffix(objectKey))
+            Files.copy(localPath, localCopy, StandardCopyOption.REPLACE_EXISTING)
+
+            return DownloadedArtifact(
+                objectKey = objectKey,
+                sourceUrl = sourceUrl,
+                upstreamVersion = upstreamVersion,
+                upstreamBuild = upstreamBuild,
+                localPath = localCopy,
+                sha256 = sha256,
+                sizeBytes = sizeBytes,
+                contentType = contentType,
+            )
+        }
+
+        companion object {
+            fun from(downloadedArtifact: DownloadedArtifact): CachedArtifact {
+                val cachedPath =
+                    Files.createTempFile(
+                        "ogcloud-runtime-cache-",
+                        runtimeTempFileSuffix(downloadedArtifact.objectKey),
+                    )
+                Files.copy(downloadedArtifact.localPath, cachedPath, StandardCopyOption.REPLACE_EXISTING)
+
+                return CachedArtifact(
+                    sourceUrl = downloadedArtifact.sourceUrl,
+                    upstreamVersion = downloadedArtifact.upstreamVersion,
+                    upstreamBuild = downloadedArtifact.upstreamBuild,
+                    localPath = cachedPath,
+                    sha256 = downloadedArtifact.sha256,
+                    sizeBytes = downloadedArtifact.sizeBytes,
+                    contentType = downloadedArtifact.contentType,
+                )
+            }
+        }
+    }
 
     private data class ResolvedDownload(
         val version: String,
@@ -781,5 +870,7 @@ class RuntimeBundleService(
         private const val TEXT_CONTENT_TYPE = "text/plain; charset=utf-8"
         private const val DEFAULT_PROXY_PORT = 25577
         private val SUCCESS_STATUS_RANGE = 200..299
+
+        private fun RuntimeArtifactDefinition.cacheKey(): String = sourceUrl
     }
 }
