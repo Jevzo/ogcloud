@@ -37,7 +37,8 @@ Content-Type: application/json
   },
   "jvmFlags": "-Xms512M -Xmx512M",
   "drainTimeoutSeconds": 30,
-  "serverImage": "ogwarsdev/paper:latest"
+  "serverImage": "ogwarsdev/paper:1.21.11",
+  "runtimeProfile": "MODERN_1_21_11"
 }
 
 ### Create a survival group
@@ -67,7 +68,8 @@ Content-Type: application/json
   },
   "jvmFlags": "-Xms256M -Xmx256M",
   "drainTimeoutSeconds": 60,
-  "serverImage": "ogwarsdev/paper:latest",
+  "serverImage": "ogwarsdev/paper:1.21.11",
+  "runtimeProfile": "MODERN_1_21_11",
   "storageSize": "5Gi"
 }
 

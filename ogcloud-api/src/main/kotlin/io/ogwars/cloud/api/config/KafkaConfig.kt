@@ -56,6 +56,9 @@ class KafkaConfig {
     @Bean
     fun webAccountLinkOtpDltTopic(): NewTopic = buildDltTopic(KafkaTopics.WEB_ACCOUNT_LINK_OTP)
 
+    @Bean
+    fun runtimeRefreshRequestedTopic(): NewTopic = buildTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
+
     private fun buildTopic(
         name: String,
         partitions: Int = DEFAULT_TOPIC_PARTITIONS,
