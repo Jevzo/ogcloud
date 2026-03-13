@@ -5,6 +5,7 @@ import io.ogwars.cloud.controller.config.KubernetesProperties
 import io.ogwars.cloud.controller.config.PodRuntimeProperties
 import io.ogwars.cloud.controller.model.GroupDocument
 import io.ogwars.cloud.controller.model.ServerDocument
+import io.ogwars.cloud.controller.model.resolvedRuntimeProfile
 import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.slf4j.LoggerFactory
@@ -210,7 +211,7 @@ class KubernetesService(
         listOf(
             envVar("EULA", "TRUE"),
             envVar("TYPE", "PAPER"),
-            envVar("VERSION", MINECRAFT_VERSION),
+            envVar("VERSION", requireNotNull(group.resolvedRuntimeProfile()).minecraftVersion),
             envVar("OGCLOUD_SERVER_ID", server.id),
             envVar("OGCLOUD_GROUP", server.group),
             envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
@@ -400,6 +401,5 @@ class KubernetesService(
         private const val PUSH_MODE = "push"
         private const val ENABLED_VALUE = "true"
         private const val DISABLED_VALUE = "false"
-        private const val MINECRAFT_VERSION = "1.21.11"
     }
 }
