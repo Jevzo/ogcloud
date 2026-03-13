@@ -1,10 +1,10 @@
 package io.ogwars.cloud.paper.tablist
 
+import io.ogwars.cloud.paper.compat.BukkitCompatibility
+import io.ogwars.cloud.paper.compat.LegacyTextSupport
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
-import net.kyori.adventure.text.format.NamedTextColor
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.scoreboard.Scoreboard
@@ -14,8 +14,6 @@ class TablistTeamManager(
     private val permissionManager: PermissionManager,
     private val networkFeatureState: NetworkFeatureState,
 ) {
-    private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
-
     fun setTablistForMe(player: Player) {
         if (!networkFeatureState.tablistEnabled) {
             return
@@ -100,7 +98,7 @@ class TablistTeamManager(
         entryName: String,
         cached: CachedPermission,
     ) {
-        getOrCreateTeam(scoreboard, cached).addEntry(entryName)
+        BukkitCompatibility.addTeamEntry(getOrCreateTeam(scoreboard, cached), entryName)
     }
 
     private fun getOrCreateTeam(
@@ -110,8 +108,7 @@ class TablistTeamManager(
         val teamName = buildTeamName(cached)
         val team = scoreboard.getTeam(teamName) ?: scoreboard.registerNewTeam(teamName)
 
-        team.prefix(deserializeLegacy(cached.tabPrefix))
-        team.color(parseNameColor(cached.nameColor))
+        BukkitCompatibility.setTeamPrefix(team, LegacyTextSupport.buildTeamPrefix(cached.tabPrefix, cached.nameColor))
 
         return team
     }
@@ -124,41 +121,13 @@ class TablistTeamManager(
         entry: String,
     ) {
         for (team in scoreboard.teams) {
-            if (team.hasEntry(entry)) {
-                team.removeEntry(entry)
+            if (BukkitCompatibility.teamHasEntry(team, entry)) {
+                BukkitCompatibility.removeTeamEntry(team, entry)
             }
         }
     }
 
-    private fun deserializeLegacy(text: String) = legacySerializer.deserialize(text.replace('\u00A7', '&'))
-
-    private fun parseNameColor(nameColor: String): NamedTextColor {
-        val code = nameColor.lastOrNull { it != '&' } ?: DEFAULT_COLOR_CODE
-        return COLOR_MAP[code.lowercaseChar()] ?: NamedTextColor.GRAY
-    }
-
     companion object {
-        private const val DEFAULT_COLOR_CODE = '7'
         private const val MAX_TEAM_NAME_LENGTH = 16
-
-        private val COLOR_MAP =
-            mapOf(
-                '0' to NamedTextColor.BLACK,
-                '1' to NamedTextColor.DARK_BLUE,
-                '2' to NamedTextColor.DARK_GREEN,
-                '3' to NamedTextColor.DARK_AQUA,
-                '4' to NamedTextColor.DARK_RED,
-                '5' to NamedTextColor.DARK_PURPLE,
-                '6' to NamedTextColor.GOLD,
-                '7' to NamedTextColor.GRAY,
-                '8' to NamedTextColor.DARK_GRAY,
-                '9' to NamedTextColor.BLUE,
-                'a' to NamedTextColor.GREEN,
-                'b' to NamedTextColor.AQUA,
-                'c' to NamedTextColor.RED,
-                'd' to NamedTextColor.LIGHT_PURPLE,
-                'e' to NamedTextColor.YELLOW,
-                'f' to NamedTextColor.WHITE,
-            )
     }
 }

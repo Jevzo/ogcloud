@@ -57,7 +57,8 @@ class KafkaConfig {
     fun webAccountLinkOtpDltTopic(): NewTopic = buildDltTopic(KafkaTopics.WEB_ACCOUNT_LINK_OTP)
 
     @Bean
-    fun runtimeRefreshRequestedTopic(): NewTopic = buildTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
+    fun runtimeRefreshRequestedTopic(): NewTopic =
+        buildTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
 
     private fun buildTopic(
         name: String,

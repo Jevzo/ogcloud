@@ -1,13 +1,5 @@
 package io.ogwars.cloud.controller.service
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.minio.BucketExistsArgs
-import io.minio.MakeBucketArgs
-import io.minio.MinioClient
-import io.minio.PutObjectArgs
-import io.minio.RemoveObjectArgs
-import io.minio.StatObjectArgs
 import io.ogwars.cloud.common.model.GroupType
 import io.ogwars.cloud.common.model.RuntimeBundleScope
 import io.ogwars.cloud.common.model.ServerState
@@ -18,6 +10,14 @@ import io.ogwars.cloud.controller.model.resolvedRuntimeProfile
 import io.ogwars.cloud.controller.redis.ServerRedisRepository
 import io.ogwars.cloud.controller.repository.GroupRepository
 import io.ogwars.cloud.controller.repository.RuntimeArtifactHashRepository
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import io.minio.BucketExistsArgs
+import io.minio.MakeBucketArgs
+import io.minio.MinioClient
+import io.minio.PutObjectArgs
+import io.minio.RemoveObjectArgs
+import io.minio.StatObjectArgs
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
@@ -83,7 +83,11 @@ class RuntimeBundleService(
         ensureRuntimeBucketExists()
 
         val definitions = resolveArtifactDefinitions(scope)
-        val existingByObjectKey = runtimeArtifactHashRepository.findByScope(scope).associateBy(RuntimeArtifactHashDocument::objectKey)
+        val existingByObjectKey =
+            runtimeArtifactHashRepository
+                .findByScope(
+                    scope,
+                ).associateBy(RuntimeArtifactHashDocument::objectKey)
         val activeObjectKeys = definitions.map(RuntimeArtifactDefinition::objectKey).toSet()
 
         var updatedArtifacts = 0
@@ -106,7 +110,12 @@ class RuntimeBundleService(
                         existing.sha256 != downloaded.sha256
 
                 if (existing == null || contentChanged || !objectExists) {
-                    uploadObject(definition.objectKey, downloaded.localPath, downloaded.sizeBytes, downloaded.contentType)
+                    uploadObject(
+                        definition.objectKey,
+                        downloaded.localPath,
+                        downloaded.sizeBytes,
+                        downloaded.contentType,
+                    )
                     updatedArtifacts++
                 }
 
@@ -414,7 +423,9 @@ class RuntimeBundleService(
                 .asSequence()
                 .filter { node -> node.path("channel").asText() == STABLE_CHANNEL }
                 .firstOrNull { node -> buildId == null || node.path("id").asInt() == buildId }
-                ?: throw IllegalStateException("No stable build found for project=$project version=$version buildId=$buildId")
+                ?: throw IllegalStateException(
+                    "No stable build found for project=$project version=$version buildId=$buildId",
+                )
 
         val downloadNode = selectDownloadNode(build.path("downloads"), preferredDownloadKey)
 
@@ -439,7 +450,11 @@ class RuntimeBundleService(
             .firstOrNull { entry -> entry.key.endsWith(DEFAULT_DOWNLOAD_SUFFIX) }
             ?.let { return it.value }
 
-        return downloadsNode.fields().asSequence().firstOrNull()?.value
+        return downloadsNode
+            .fields()
+            .asSequence()
+            .firstOrNull()
+            ?.value
             ?: throw IllegalStateException("No downloadable artifact exposed by upstream response")
     }
 
@@ -466,7 +481,9 @@ class RuntimeBundleService(
         }
 
         if (root.isObject && root.path("ok").isBoolean && !root.path("ok").asBoolean()) {
-            throw IllegalStateException("Upstream request failed: url=$url message=${root.path("message").asText("unknown")}")
+            throw IllegalStateException(
+                "Upstream request failed: url=$url message=${root.path("message").asText("unknown")}",
+            )
         }
 
         return root

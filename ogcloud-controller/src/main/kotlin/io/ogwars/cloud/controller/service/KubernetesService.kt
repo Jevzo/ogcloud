@@ -63,8 +63,7 @@ class KubernetesService(
                         runtimeManifestPath = runtimeManifestPath(group),
                         forwardingSecret = podRuntimeProperties.forwardingSecret,
                     ),
-                )
-                .addNewVolumeMount()
+                ).addNewVolumeMount()
                 .withName(SERVER_DATA_VOLUME_NAME)
                 .withMountPath(DATA_DIR)
                 .endVolumeMount()

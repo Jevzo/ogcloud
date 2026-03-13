@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     kotlin("jvm")
     id("com.gradleup.shadow")
@@ -23,6 +25,31 @@ tasks.shadowJar {
     archiveClassifier.set("")
 }
 
+val runtimeClasspath = configurations.runtimeClasspath.get()
+val mainOutput = sourceSets.main.get().output
+
+val shadowModernJar by tasks.registering(ShadowJar::class) {
+    archiveBaseName.set("ogcloud-paper-plugin-1.21.11")
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set("")
+    from(mainOutput)
+    configurations = listOf(runtimeClasspath)
+}
+
+val shadowLegacyJar by tasks.registering(ShadowJar::class) {
+    archiveBaseName.set("ogcloud-paper-plugin-1.8.8")
+    archiveVersion.set(project.version.toString())
+    archiveClassifier.set("")
+    from(mainOutput)
+    configurations = listOf(runtimeClasspath)
+}
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand("version" to project.version)
+    }
+}
+
 tasks.build {
-    dependsOn(tasks.shadowJar)
+    dependsOn(tasks.shadowJar, shadowModernJar, shadowLegacyJar)
 }
