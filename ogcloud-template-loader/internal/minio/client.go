@@ -37,6 +37,10 @@ func (c *Client) UploadTemplate(ctx context.Context, bucket, objectPath, localPa
 }
 
 func (c *Client) DownloadTemplate(ctx context.Context, bucket, objectPath string) (string, error) {
+	return c.DownloadObject(ctx, bucket, objectPath)
+}
+
+func (c *Client) DownloadObject(ctx context.Context, bucket, objectPath string) (string, error) {
 	obj, err := c.inner.GetObject(ctx, bucket, objectPath, minio.GetObjectOptions{})
 	if err != nil {
 		return "", fmt.Errorf("get object %s/%s: %w", bucket, objectPath, err)
@@ -51,7 +55,7 @@ func (c *Client) DownloadTemplate(ctx context.Context, bucket, objectPath string
 
 	if _, err := io.Copy(tmpFile, obj); err != nil {
 		os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("download template: %w", err)
+		return "", fmt.Errorf("download object %s/%s: %w", bucket, objectPath, err)
 	}
 
 	return tmpFile.Name(), nil

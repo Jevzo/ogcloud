@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.model
 
+import io.ogwars.cloud.common.model.BackendRuntimeProfile
 import io.ogwars.cloud.common.model.GroupType
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
@@ -17,6 +18,7 @@ data class GroupDocument(
     val jvmFlags: String,
     val drainTimeoutSeconds: Int,
     val serverImage: String,
+    val runtimeProfile: BackendRuntimeProfile? = null,
     val storageSize: String = "5Gi",
     val maintenance: Boolean = false,
     val createdAt: Instant = Instant.now(),

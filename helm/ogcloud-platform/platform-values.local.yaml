@@ -25,6 +25,7 @@ controller:
     apiPassword: TestPassword123@
     minioAccessKey: minioadmin
     minioSecretKey: minioadmin123
+    podForwardingSecret: TestForwardingSecret123@
     podMinioAccessKey: minioadmin
     podMinioSecretKey: minioadmin123
 

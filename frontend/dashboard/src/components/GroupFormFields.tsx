@@ -1,11 +1,15 @@
 import AppNumberInput from "@/components/AppNumberInput";
 import AppSelect from "@/components/AppSelect";
 import FieldHintLabel from "@/components/FieldHintLabel";
-import type { GroupFormValues } from "@/types/group";
+import {
+    BACKEND_RUNTIME_PROFILE_OPTIONS,
+    getRuntimeProfileLabel,
+    getServerImageOptions,
+    supportsRuntimeProfile,
+} from "@/lib/group-runtime";
+import { GROUP_TYPE_VALUES, type GroupFormValues } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
-const SERVER_IMAGE_OPTIONS = ["ogwarsdev/paper:latest", "ogwarsdev/velocity:latest"] as const;
-const GROUP_TYPE_OPTIONS = ["DYNAMIC", "STATIC", "PROXY"] as const;
 const SECTION_CLASS_NAME = "rounded-xl border border-slate-800 bg-slate-800/30 p-5";
 
 const getTemplateOptionValue = (template: TemplateRecord) =>
@@ -48,13 +52,17 @@ const GroupFormFields = ({
     disableIdentityFields = false,
 }: GroupFormFieldsProps) => {
     const isStaticGroup = values.type.toUpperCase() === "STATIC";
+    const isProxyGroup = !supportsRuntimeProfile(values.type);
     const selectedTemplate = templates.find(
         (template) =>
             template.group === values.templatePath && template.version === values.templateVersion,
     );
-    const selectedServerImageExists = SERVER_IMAGE_OPTIONS.includes(
-        values.serverImage as (typeof SERVER_IMAGE_OPTIONS)[number],
+    const serverImageOptions = getServerImageOptions(
+        values.type,
+        values.runtimeProfile,
+        values.serverImage,
     );
+    const selectedServerImageExists = serverImageOptions.includes(values.serverImage);
 
     return (
         <div className="space-y-6">
@@ -83,7 +91,7 @@ const GroupFormFields = ({
                             onChangeValue={(value) => onFieldChange("type", value)}
                             disabled={disableIdentityFields}
                         >
-                            {GROUP_TYPE_OPTIONS.map((option) => (
+                            {GROUP_TYPE_VALUES.map((option) => (
                                 <option key={option} value={option}>
                                     {option}
                                 </option>
@@ -150,8 +158,34 @@ const GroupFormFields = ({
                     </div>
                     <div className="app-field-stack">
                         <FieldLabel
+                            label={isProxyGroup ? "Proxy Runtime" : "Backend Runtime"}
+                            hint={
+                                isProxyGroup
+                                    ? "Proxy groups always use the managed velocity runtime."
+                                    : "Select the managed runtime profile required for backend deployments."
+                            }
+                        />
+                        {isProxyGroup ? (
+                            <div className="rounded-lg border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-300">
+                                {getRuntimeProfileLabel(null)}
+                            </div>
+                        ) : (
+                            <AppSelect
+                                value={values.runtimeProfile}
+                                onChangeValue={(value) => onFieldChange("runtimeProfile", value)}
+                            >
+                                {BACKEND_RUNTIME_PROFILE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </AppSelect>
+                        )}
+                    </div>
+                    <div className="app-field-stack">
+                        <FieldLabel
                             label="Server Image"
-                            hint="Container image used to run each server pod for this group."
+                            hint="Container image paired with the selected runtime profile and group type."
                         />
                         <AppSelect
                             value={
@@ -170,7 +204,7 @@ const GroupFormFields = ({
                                     {values.serverImage || "Select a server image"}
                                 </option>
                             )}
-                            {SERVER_IMAGE_OPTIONS.map((option) => (
+                            {serverImageOptions.map((option) => (
                                 <option key={option} value={option}>
                                     {option}
                                 </option>
@@ -206,6 +240,15 @@ const GroupFormFields = ({
                         </div>
                     )}
                 </div>
+                {!isProxyGroup && values.runtimeProfile ? (
+                    <p className="mt-4 text-xs text-slate-500">
+                        {
+                            BACKEND_RUNTIME_PROFILE_OPTIONS.find(
+                                (option) => option.value === values.runtimeProfile,
+                            )?.description
+                        }
+                    </p>
+                ) : null}
                 <div className="app-field-stack mt-4">
                     <FieldLabel
                         label="JVM Flags"

@@ -38,7 +38,7 @@ func (h *Handler) Handle(clientConn net.Conn) {
 
 	switch hs.NextState {
 	case protocol.StatusNextState:
-		h.handleStatus(clientConn)
+		h.handleStatus(clientConn, hs.ProtocolVersion)
 	case protocol.LoginNextState:
 		h.handleLogin(clientConn, rawHandshake)
 	default:
@@ -46,12 +46,14 @@ func (h *Handler) Handle(clientConn net.Conn) {
 	}
 }
 
-func (h *Handler) handleStatus(clientConn net.Conn) {
+func (h *Handler) handleStatus(
+	clientConn net.Conn,
+	clientProtocolVersion int32,
+) {
 	motd := h.network.GetMOTD()
 	maxPlayers := h.network.GetMaxPlayers()
 	onlinePlayers := h.network.GetOnlinePlayers()
-	protocolVersion := h.network.GetProtocolVersion()
-	versionName := h.network.GetVersionName()
+	versionName, protocolVersion := h.network.ResolveStatusVersion(clientProtocolVersion)
 
 	if err := protocol.HandleStatusRequest(clientConn, versionName, motd, maxPlayers, onlinePlayers, protocolVersion); err != nil {
 		h.logger.Debug("status request failed", zap.Error(err))

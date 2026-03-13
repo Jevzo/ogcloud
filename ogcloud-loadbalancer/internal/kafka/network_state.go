@@ -101,13 +101,16 @@ func (ns *NetworkState) GetMaxPlayers() int {
 	return ns.maxPlayers
 }
 
-func (ns *NetworkState) GetProtocolVersion() int {
+func (ns *NetworkState) ResolveStatusVersion(clientProtocolVersion int32) (string, int) {
 	ns.mu.RLock()
 	defer ns.mu.RUnlock()
 	if ns.maintenance {
-		return -1
+		return ns.versionNameMaintenance, -1
 	}
-	return ProtocolVersion1_21_11
+	if clientProtocolVersion >= supportedProtocolVersionMin && clientProtocolVersion <= supportedProtocolVersionMax {
+		return ns.versionName, int(clientProtocolVersion)
+	}
+	return supportedVersionName, -1
 }
 
 func (ns *NetworkState) GetOnlinePlayers() int {

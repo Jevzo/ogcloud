@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.dto
 import io.ogwars.cloud.api.model.GroupDocument
 import io.ogwars.cloud.api.model.ResourceConfig
 import io.ogwars.cloud.api.model.ScalingConfig
+import io.ogwars.cloud.common.model.BackendRuntimeProfile
 import io.ogwars.cloud.common.model.GroupType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
@@ -20,6 +21,7 @@ data class CreateGroupRequest(
     @field:NotBlank val jvmFlags: String,
     @field:Min(1) val drainTimeoutSeconds: Int,
     @field:NotBlank val serverImage: String,
+    val runtimeProfile: BackendRuntimeProfile? = null,
     val storageSize: String = "5Gi",
 )
 
@@ -48,6 +50,7 @@ data class UpdateGroupRequest(
     val jvmFlags: String? = null,
     @field:Min(1) val drainTimeoutSeconds: Int? = null,
     val serverImage: String? = null,
+    val runtimeProfile: BackendRuntimeProfile? = null,
     val storageSize: String? = null,
 )
 
@@ -62,6 +65,7 @@ data class GroupResponse(
     val jvmFlags: String,
     val drainTimeoutSeconds: Int,
     val serverImage: String,
+    val runtimeProfile: BackendRuntimeProfile?,
     val storageSize: String,
     val maintenance: Boolean,
     val createdAt: String,
@@ -80,6 +84,7 @@ fun GroupDocument.toResponse(): GroupResponse =
         jvmFlags = jvmFlags,
         drainTimeoutSeconds = drainTimeoutSeconds,
         serverImage = serverImage,
+        runtimeProfile = resolvedRuntimeProfile(),
         storageSize = storageSize,
         maintenance = maintenance,
         createdAt = createdAt.toString(),
@@ -98,10 +103,17 @@ fun CreateGroupRequest.toDocument(now: Instant = Instant.now()): GroupDocument =
         jvmFlags = jvmFlags,
         drainTimeoutSeconds = drainTimeoutSeconds,
         serverImage = serverImage,
+        runtimeProfile = runtimeProfile,
         storageSize = storageSize,
         createdAt = now,
         updatedAt = now,
     )
+
+fun GroupDocument.resolvedRuntimeProfile(): BackendRuntimeProfile? =
+    when (type) {
+        GroupType.PROXY -> null
+        else -> runtimeProfile ?: BackendRuntimeProfile.MODERN_1_21_11
+    }
 
 fun ScalingConfigDto.toModel(): ScalingConfig =
     ScalingConfig(

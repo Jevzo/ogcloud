@@ -54,10 +54,27 @@ ogcloud:
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+  runtime:
+    bucket: ${OGCLOUD_RUNTIME_BUCKET:ogcloud-runtime}
+    fill-base-url: ${OGCLOUD_RUNTIME_FILL_BASE_URL:https://fill.papermc.io/v3}
+    user-agent: ${OGCLOUD_RUNTIME_USER_AGENT:ogcloud-controller/1.0 (https://github.com/Jevzo/ogcloud)}
+    paper-project: ${OGCLOUD_RUNTIME_PAPER_PROJECT:paper}
+    modern-paper-version: ${OGCLOUD_RUNTIME_MODERN_PAPER_VERSION:1.21.11}
+    legacy-paper-version: ${OGCLOUD_RUNTIME_LEGACY_PAPER_VERSION:1.8.8}
+    legacy-paper-build: ${OGCLOUD_RUNTIME_LEGACY_PAPER_BUILD:445}
+    velocity-project: ${OGCLOUD_RUNTIME_VELOCITY_PROJECT:velocity}
+    paper-plugin-url: ${OGCLOUD_RUNTIME_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar}
+    velocity-plugin-url: ${OGCLOUD_RUNTIME_VELOCITY_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-velocity-plugin-1.2.3.jar}
+    via-version-url: ${OGCLOUD_RUNTIME_VIA_VERSION_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.7.2/PAPER/ViaVersion-5.7.2.jar}
+    via-backwards-url: ${OGCLOUD_RUNTIME_VIA_BACKWARDS_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaBackwards/versions/5.7.2/PAPER/ViaBackwards-5.7.2.jar}
+    via-rewind-url: ${OGCLOUD_RUNTIME_VIA_REWIND_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaRewind/versions/4.0.15/PAPER/ViaRewind-4.0.15.jar}
+    bungee-guard-url: ${OGCLOUD_RUNTIME_BUNGEE_GUARD_URL:https://ci.lucko.me/job/BungeeGuard/lastStableBuild/artifact/bungeeguard-universal/target/BungeeGuard.jar}
+    protocol-lib-url: ${OGCLOUD_RUNTIME_PROTOCOL_LIB_URL:https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar}
   pod:
     minio-endpoint: ${POD_MINIO_ENDPOINT:minio.ogcloud.svc.cluster.local:9000}
     minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}
     minio-secret-key: ${POD_MINIO_SECRET_KEY:minioadmin123}
+    forwarding-secret: ${POD_FORWARDING_SECRET:}
     kafka-brokers: ${POD_KAFKA_BROKERS:kafka.ogcloud.svc.cluster.local:9092}
     kafka-consumer-restart-initial-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS:1000}
     kafka-consumer-restart-max-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS:30000}

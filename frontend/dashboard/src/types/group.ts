@@ -1,3 +1,9 @@
+import type { BackendRuntimeProfile } from "@/types/runtime";
+
+export const GROUP_TYPE_VALUES = ["DYNAMIC", "STATIC", "PROXY"] as const;
+
+export type GroupType = (typeof GROUP_TYPE_VALUES)[number];
+
 interface GroupScalingConfig {
     minOnline: number;
     maxInstances: number;
@@ -25,7 +31,7 @@ interface GroupFormScalingValues {
 
 export interface GroupRecord {
     id: string;
-    type: string;
+    type: GroupType;
     templateBucket: string;
     templatePath: string;
     templateVersion: string;
@@ -34,6 +40,7 @@ export interface GroupRecord {
     jvmFlags: string;
     drainTimeoutSeconds: number;
     serverImage: string;
+    runtimeProfile: BackendRuntimeProfile | null;
     storageSize: string;
     maintenance: boolean;
     createdAt: string;
@@ -42,7 +49,7 @@ export interface GroupRecord {
 
 export interface CreateGroupPayload {
     id: string;
-    type: string;
+    type: GroupType;
     templateBucket: string;
     templatePath: string;
     templateVersion: string;
@@ -51,6 +58,7 @@ export interface CreateGroupPayload {
     jvmFlags: string;
     drainTimeoutSeconds: number;
     serverImage: string;
+    runtimeProfile?: BackendRuntimeProfile;
     storageSize?: string;
 }
 
@@ -63,18 +71,20 @@ export interface UpdateGroupPayload {
     jvmFlags?: string;
     drainTimeoutSeconds?: number;
     serverImage?: string;
+    runtimeProfile?: BackendRuntimeProfile;
     storageSize?: string;
 }
 
 export interface GroupFormValues {
     id: string;
-    type: string;
+    type: GroupType;
     templateBucket: string;
     templatePath: string;
     templateVersion: string;
     jvmFlags: string;
     drainTimeoutSeconds: string;
     serverImage: string;
+    runtimeProfile: BackendRuntimeProfile | "";
     storageSize: string;
     scaling: GroupFormScalingValues;
     resources: GroupResourceConfig;

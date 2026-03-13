@@ -20,7 +20,14 @@ dependencies {
 }
 
 tasks.shadowJar {
+    archiveBaseName.set("ogcloud-paper-plugin")
     archiveClassifier.set("")
+}
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand("version" to project.version)
+    }
 }
 
 tasks.build {

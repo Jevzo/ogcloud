@@ -5,6 +5,7 @@ import {
     FiAlertTriangle,
     FiGlobe,
     FiInfo,
+    FiRefreshCw,
     FiSave,
     FiServer,
     FiShield,
@@ -17,10 +18,13 @@ import AppSelect from "@/components/AppSelect";
 import FieldHintLabel from "@/components/FieldHintLabel";
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import AppToasts from "@/components/AppToasts";
+import { RUNTIME_REFRESH_OPTIONS } from "@/lib/group-runtime";
+import { hasAdminAccess } from "@/lib/roles";
 import {
     getNetworkSettings,
     getNetworkStatus,
     listGroups,
+    requestRuntimeRefresh,
     toggleNetworkMaintenance,
     updateNetworkSettings,
 } from "@/lib/api";
@@ -32,6 +36,7 @@ import type {
     NetworkStatusRecord,
     ProxyRoutingStrategy,
 } from "@/types/network";
+import type { RuntimeBundleScope } from "@/types/runtime";
 
 interface NetworkFormValues {
     maxPlayers: string;
@@ -75,6 +80,7 @@ const areFormValuesEqual = (left: NetworkFormValues | null, right: NetworkFormVa
 
 const NetworkPage = () => {
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
+    const userRole = useAuthStore((state) => state.session?.user.role);
     const setGeneralSettings = useNetworkSettingsStore((state) => state.setGeneral);
 
     const [settings, setSettings] = useState<NetworkSettingsRecord | null>(null);
@@ -87,8 +93,10 @@ const NetworkPage = () => {
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [refreshingScope, setRefreshingScope] = useState<RuntimeBundleScope | null>(null);
     const settingsRef = useRef<NetworkSettingsRecord | null>(null);
     const formValuesRef = useRef<NetworkFormValues | null>(null);
+    const isAdmin = hasAdminAccess(userRole);
 
     useEffect(() => {
         settingsRef.current = settings;
@@ -352,6 +360,24 @@ const NetworkPage = () => {
             );
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleRuntimeRefresh = async (scope: RuntimeBundleScope) => {
+        setRefreshingScope(scope);
+        setErrorMessage(null);
+
+        try {
+            const accessToken = await getValidAccessToken();
+            await requestRuntimeRefresh(accessToken, scope);
+            const runtimeOption = RUNTIME_REFRESH_OPTIONS.find((option) => option.scope === scope);
+            setSuccessMessage(`${runtimeOption?.label ?? scope} refresh requested.`);
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Unable to request runtime refresh.",
+            );
+        } finally {
+            setRefreshingScope(null);
         }
     };
 
@@ -653,6 +679,60 @@ const NetworkPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {isAdmin ? (
+                        <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+                            <div className="rounded-t-xl border-b border-slate-800 bg-slate-800/50 px-6 py-4">
+                                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                                    Managed Runtime
+                                </h3>
+                            </div>
+                            <div className="space-y-4 p-6">
+                                <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-4 text-sm text-slate-300">
+                                    Refresh managed runtime bundles after updating backend runtime assets
+                                    or runtime configuration. This is a network-wide admin action.
+                                </div>
+                                <div className="space-y-3">
+                                    {RUNTIME_REFRESH_OPTIONS.map((option) => {
+                                        const isRefreshing = refreshingScope === option.scope;
+
+                                        return (
+                                            <div
+                                                key={option.scope}
+                                                className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-4"
+                                            >
+                                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold text-white">
+                                                            {option.label}
+                                                        </h4>
+                                                        <p className="mt-1 text-sm text-slate-400">
+                                                            {option.description}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        disabled={refreshingScope !== null}
+                                                        onClick={() =>
+                                                            void handleRuntimeRefresh(option.scope)
+                                                        }
+                                                        className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        <FiRefreshCw
+                                                            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                                                        />
+                                                        {isRefreshing
+                                                            ? "Requesting..."
+                                                            : "Refresh Runtime"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm self-start">

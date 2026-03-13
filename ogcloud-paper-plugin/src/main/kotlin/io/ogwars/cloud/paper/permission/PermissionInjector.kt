@@ -7,8 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Logger
 
 object PermissionInjector {
-    // Paper 1.21.x with Mojang mappings uses "perm" on CraftHumanEntity.
-    private const val FIELD_NAME = "perm"
+    private val candidateFieldNames = listOf("perm", "permissibleBase", "permissible")
     private val fieldCache = ConcurrentHashMap<Class<*>, Field>()
 
     fun inject(
@@ -51,13 +50,28 @@ object PermissionInjector {
         var currentClass: Class<*>? = playerClass
 
         while (currentClass != null) {
-            try {
-                return currentClass.getDeclaredField(FIELD_NAME).apply { isAccessible = true }
-            } catch (_: NoSuchFieldException) {
-                currentClass = currentClass.superclass
+            val declaredFields = currentClass.declaredFields
+
+            for (fieldName in candidateFieldNames) {
+                declaredFields
+                    .firstOrNull { field ->
+                        field.name == fieldName && PermissibleBase::class.java.isAssignableFrom(field.type)
+                    }?.let { field ->
+                        field.isAccessible = true
+                        return field
+                    }
             }
+
+            declaredFields
+                .firstOrNull { field -> PermissibleBase::class.java.isAssignableFrom(field.type) }
+                ?.let { field ->
+                    field.isAccessible = true
+                    return field
+                }
+
+            currentClass = currentClass.superclass
         }
 
-        throw NoSuchFieldException("Could not resolve $FIELD_NAME on ${playerClass.name}")
+        throw NoSuchFieldException("Could not resolve a permissible field on ${playerClass.name}")
     }
 }

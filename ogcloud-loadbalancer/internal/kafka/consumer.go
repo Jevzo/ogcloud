@@ -15,8 +15,10 @@ const (
 	TopicProxyHeartbeat  = "ogcloud.proxy.heartbeat"
 	TopicServerLifecycle = "ogcloud.server.lifecycle"
 
-	ProtocolVersion1_21_11 = 774
-	proxyServerType        = "PROXY"
+	supportedProtocolVersionMin = 47
+	supportedProtocolVersionMax = 774
+	supportedVersionName        = "1.8 - 1.21.11"
+	proxyServerType             = "PROXY"
 
 	initialBackoff = 1 * time.Second
 	maxBackoff     = 30 * time.Second

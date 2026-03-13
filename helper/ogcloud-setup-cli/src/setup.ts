@@ -85,6 +85,7 @@ type NetworkConfig = {
     imageTags: ImageTags;
     apiEmail: string;
     apiPassword: string;
+    podForwardingSecret: string;
     jwtSecret: string;
     corsAllowedOrigin: string;
     minioAccessKey: string;
@@ -955,6 +956,23 @@ function defaultConnections(namespace: string): NetworkConnections {
     };
 }
 
+function defaultPodMinioEndpoint(namespace: string): string {
+    return `minio.${namespace}.svc.cluster.local:9000`;
+}
+
+function resolvePodMinioEndpoint(minioEndpoint: string): string {
+    const trimmed = minioEndpoint.trim();
+    if (!trimmed.includes("://")) {
+        return trimmed.replace(/\/+$/, "");
+    }
+
+    try {
+        return new URL(trimmed).host;
+    } catch {
+        return trimmed.replace(/^[a-z]+:\/\//i, "").replace(/\/.*$/, "");
+    }
+}
+
 async function generateConfig(
     networkArg: string | null | undefined,
     state: StateFile,
@@ -1028,6 +1046,9 @@ async function generateConfig(
     });
     const apiPassword = await askInput("Service API password", {
         defaultValue: existing?.apiPassword || randomSecret(),
+    });
+    const podForwardingSecret = await askInput("Proxy forwarding secret", {
+        defaultValue: existing?.podForwardingSecret || randomSecret(),
     });
     const jwtSecret = await askInput("JWT secret", {
         defaultValue: existing?.jwtSecret || randomSecret(),
@@ -1135,8 +1156,18 @@ async function generateConfig(
                 apiPassword,
                 minioAccessKey,
                 minioSecretKey,
+                podForwardingSecret,
+                podMinioEndpoint:
+                    backingMode === "external"
+                        ? resolvePodMinioEndpoint(connections.minioEndpoint)
+                        : defaultPodMinioEndpoint(namespace),
                 podMinioAccessKey: minioAccessKey,
                 podMinioSecretKey: minioSecretKey,
+                podKafkaBrokers: connections.kafkaBrokers,
+                podRedisHost: connections.redisHost,
+                podRedisPort: connections.redisPort,
+                podMongodbUri: connections.mongodbUri,
+                podApiUrl: connections.apiUrl,
                 podApiEmail: apiEmail,
                 podApiPassword: apiPassword,
             },
@@ -1202,6 +1233,7 @@ async function generateConfig(
         },
         apiEmail,
         apiPassword,
+        podForwardingSecret,
         jwtSecret,
         corsAllowedOrigin,
         minioAccessKey,

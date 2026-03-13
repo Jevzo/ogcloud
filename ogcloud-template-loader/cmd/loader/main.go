@@ -2,7 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,6 +15,7 @@ import (
 
 	"github.com/ogwars/ogcloud-template-loader/internal/extractor"
 	minioclient "github.com/ogwars/ogcloud-template-loader/internal/minio"
+	"github.com/ogwars/ogcloud-template-loader/internal/runtimeconfig"
 )
 
 const (
@@ -42,6 +48,8 @@ func runPullMode(logger *zap.Logger) {
 	secretKey := requireEnv("MINIO_SECRET_KEY", logger)
 	bucket := requireEnv("MINIO_BUCKET", logger)
 	templatePath := requireEnv("TEMPLATE_PATH", logger)
+	runtimeBucket := getEnvOrDefault("RUNTIME_BUCKET", "")
+	runtimeManifestPath := getEnvOrDefault("RUNTIME_MANIFEST_PATH", "")
 	dataDir := getEnvOrDefault("DATA_DIR", defaultDataDir)
 
 	ctx, cancel := signalContext(context.Background())
@@ -72,6 +80,16 @@ func runPullMode(logger *zap.Logger) {
 
 	if err := os.Remove(archivePath); err != nil {
 		logger.Warn("failed to remove downloaded archive", zap.String("path", archivePath), zap.Error(err))
+	}
+
+	if runtimeBucket != "" && runtimeManifestPath != "" {
+		scopePrefix, err := loadRuntimeAssets(ctx, logger, client, runtimeBucket, runtimeManifestPath, dataDir)
+		if err != nil {
+			logger.Fatal("failed to load runtime assets", zap.Error(err))
+		}
+		if err := runtimeconfig.Apply(scopePrefix, dataDir, requireEnv("FORWARDING_SECRET", logger)); err != nil {
+			logger.Fatal("failed to apply managed runtime config", zap.Error(err))
+		}
 	}
 
 	logger.Info("template loaded successfully", zap.String("dataDir", dataDir))
@@ -164,4 +182,97 @@ func getEnvOrDefault(key, defaultVal string) string {
 		return val
 	}
 	return defaultVal
+}
+
+type runtimeManifest struct {
+	Artifacts []runtimeManifestArtifact `json:"artifacts"`
+}
+
+type runtimeManifestArtifact struct {
+	ObjectKey string `json:"objectKey"`
+}
+
+func loadRuntimeAssets(
+	ctx context.Context,
+	logger *zap.Logger,
+	client *minioclient.Client,
+	bucket string,
+	manifestPath string,
+	dataDir string,
+) (string, error) {
+	manifestArchive, err := client.DownloadObject(ctx, bucket, manifestPath)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(manifestArchive)
+
+	manifestBytes, err := os.ReadFile(manifestArchive)
+	if err != nil {
+		return "", err
+	}
+
+	var manifest runtimeManifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return "", err
+	}
+
+	scopePrefix := strings.TrimSuffix(manifestPath, "/manifest.json")
+
+	for _, artifact := range manifest.Artifacts {
+		relativePath := strings.TrimPrefix(artifact.ObjectKey, scopePrefix+"/")
+		if relativePath == artifact.ObjectKey || relativePath == "" {
+			return "", fmt.Errorf("runtime object is outside manifest scope: objectKey=%s scopePrefix=%s", artifact.ObjectKey, scopePrefix)
+		}
+
+		tmpFile, err := client.DownloadObject(ctx, bucket, artifact.ObjectKey)
+		if err != nil {
+			return "", err
+		}
+
+		targetPath := filepath.Join(dataDir, filepath.FromSlash(relativePath))
+		if err := writeRuntimeAsset(tmpFile, targetPath); err != nil {
+			os.Remove(tmpFile)
+			return "", err
+		}
+
+		if err := os.Remove(tmpFile); err != nil {
+			logger.Warn("failed to remove runtime temp file", zap.String("path", tmpFile), zap.Error(err))
+		}
+	}
+
+	logger.Info(
+		"runtime assets loaded successfully",
+		zap.String("bucket", bucket),
+		zap.String("manifestPath", manifestPath),
+		zap.Int("artifactCount", len(manifest.Artifacts)),
+	)
+
+	return scopePrefix, nil
+}
+
+func writeRuntimeAsset(
+	sourcePath string,
+	targetPath string,
+) error {
+	sourceFile, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		return err
+	}
+
+	targetFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(targetFile, sourceFile); err != nil {
+		targetFile.Close()
+		return err
+	}
+
+	return targetFile.Close()
 }
