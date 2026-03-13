@@ -960,6 +960,19 @@ function defaultPodMinioEndpoint(namespace: string): string {
     return `minio.${namespace}.svc.cluster.local:9000`;
 }
 
+function resolvePodMinioEndpoint(minioEndpoint: string): string {
+    const trimmed = minioEndpoint.trim();
+    if (!trimmed.includes("://")) {
+        return trimmed.replace(/\/+$/, "");
+    }
+
+    try {
+        return new URL(trimmed).host;
+    } catch {
+        return trimmed.replace(/^[a-z]+:\/\//i, "").replace(/\/.*$/, "");
+    }
+}
+
 async function generateConfig(
     networkArg: string | null | undefined,
     state: StateFile,
@@ -1052,13 +1065,35 @@ async function generateConfig(
         defaultValue: existing?.minioSecretKey || "minioadmin123",
     });
 
-    const connections = defaultConnections(namespace);
-
-    if (backingMode === "external") {
-        warn(
-            "Managed backing services are disabled. Generated platform values keep the simple in-cluster defaults; adapt values.platform.yaml yourself for external services.",
-        );
-    }
+    const connections =
+        backingMode === "external"
+            ? {
+                  mongodbUri: await askInput("MongoDB URI", {
+                      defaultValue:
+                          existing?.connections?.mongodbUri ||
+                          `mongodb://mongodb.${namespace}.svc.cluster.local:27017/ogcloud`,
+                  }),
+                  redisHost: await askInput("Redis host", {
+                      defaultValue:
+                          existing?.connections?.redisHost ||
+                          `redis.${namespace}.svc.cluster.local`,
+                  }),
+                  redisPort: await askInput("Redis port", {
+                      defaultValue: existing?.connections?.redisPort || "6379",
+                  }),
+                  kafkaBrokers: await askInput("Kafka brokers", {
+                      defaultValue:
+                          existing?.connections?.kafkaBrokers ||
+                          `kafka.${namespace}.svc.cluster.local:9092`,
+                  }),
+                  minioEndpoint: await askInput("MinIO endpoint", {
+                      defaultValue:
+                          existing?.connections?.minioEndpoint ||
+                          `http://minio.${namespace}.svc.cluster.local:9000`,
+                  }),
+                  apiUrl: `http://api.${namespace}.svc.cluster.local:8080`,
+              }
+            : defaultConnections(namespace);
 
     const defaultApiBaseUrl =
         existing?.apiBaseUrl ||
@@ -1122,7 +1157,10 @@ async function generateConfig(
                 minioAccessKey,
                 minioSecretKey,
                 podForwardingSecret,
-                podMinioEndpoint: defaultPodMinioEndpoint(namespace),
+                podMinioEndpoint:
+                    backingMode === "external"
+                        ? resolvePodMinioEndpoint(connections.minioEndpoint)
+                        : defaultPodMinioEndpoint(namespace),
                 podMinioAccessKey: minioAccessKey,
                 podMinioSecretKey: minioSecretKey,
                 podKafkaBrokers: connections.kafkaBrokers,
