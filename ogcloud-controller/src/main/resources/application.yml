@@ -54,6 +54,15 @@ ogcloud:
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+  runtime:
+    bucket: ${OGCLOUD_RUNTIME_BUCKET:ogcloud-runtime}
+    fill-base-url: ${OGCLOUD_RUNTIME_FILL_BASE_URL:https://fill.papermc.io/v3}
+    user-agent: ${OGCLOUD_RUNTIME_USER_AGENT:ogcloud-controller/1.0 (https://github.com/Jevzo/ogcloud)}
+    paper-project: ${OGCLOUD_RUNTIME_PAPER_PROJECT:paper}
+    modern-paper-version: ${OGCLOUD_RUNTIME_MODERN_PAPER_VERSION:1.21.11}
+    legacy-paper-version: ${OGCLOUD_RUNTIME_LEGACY_PAPER_VERSION:1.8.8}
+    legacy-paper-build: ${OGCLOUD_RUNTIME_LEGACY_PAPER_BUILD:445}
+    velocity-project: ${OGCLOUD_RUNTIME_VELOCITY_PROJECT:velocity}
   pod:
     minio-endpoint: ${POD_MINIO_ENDPOINT:minio.ogcloud.svc.cluster.local:9000}
     minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}

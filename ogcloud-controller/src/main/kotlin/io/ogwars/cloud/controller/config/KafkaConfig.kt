@@ -131,6 +131,17 @@ class KafkaConfig {
     @Bean
     fun serverKillDltTopic(): NewTopic = buildDltTopic(KafkaTopics.SERVER_KILL)
 
+    @Bean
+    fun runtimeRefreshRequestedTopic(): NewTopic = buildTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
+
+    @Bean
+    fun runtimeRefreshRequestedRetryTopic(): NewTopic =
+        buildRetryTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
+
+    @Bean
+    fun runtimeRefreshRequestedDltTopic(): NewTopic =
+        buildDltTopic(KafkaTopics.RUNTIME_REFRESH_REQUESTED, SINGLE_TOPIC_PARTITION)
+
     private fun buildTopic(
         name: String,
         partitions: Int = LIGHT_TOPIC_PARTITIONS,
