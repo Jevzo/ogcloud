@@ -75,6 +75,7 @@ ogcloud:
     minio-endpoint: ${POD_MINIO_ENDPOINT:minio.ogcloud.svc.cluster.local:9000}
     minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}
     minio-secret-key: ${POD_MINIO_SECRET_KEY:minioadmin123}
+    forwarding-secret: ${POD_FORWARDING_SECRET:}
     kafka-brokers: ${POD_KAFKA_BROKERS:kafka.ogcloud.svc.cluster.local:9092}
     kafka-consumer-restart-initial-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS:1000}
     kafka-consumer-restart-max-backoff-ms: ${POD_OGCLOUD_KAFKA_CONSUMER_RESTART_MAX_BACKOFF_MS:30000}

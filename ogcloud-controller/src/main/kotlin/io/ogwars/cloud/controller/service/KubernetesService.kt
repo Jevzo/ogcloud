@@ -61,6 +61,7 @@ class KubernetesService(
                         templatePath = podSpec.templatePath,
                         runtimeBucket = runtimeProperties.bucket,
                         runtimeManifestPath = runtimeManifestPath(group),
+                        forwardingSecret = podRuntimeProperties.forwardingSecret,
                     ),
                 )
                 .addNewVolumeMount()
@@ -295,6 +296,7 @@ class KubernetesService(
         templatePath: String,
         runtimeBucket: String,
         runtimeManifestPath: String,
+        forwardingSecret: String,
     ): List<EnvVar> =
         listOf(
             envVar("MINIO_ENDPOINT", podRuntimeProperties.minioEndpoint),
@@ -304,6 +306,7 @@ class KubernetesService(
             envVar("TEMPLATE_PATH", templatePath),
             envVar("RUNTIME_BUCKET", runtimeBucket),
             envVar("RUNTIME_MANIFEST_PATH", runtimeManifestPath),
+            envVar("FORWARDING_SECRET", forwardingSecret),
             envVar("DATA_DIR", DATA_DIR),
         )
 
@@ -319,6 +322,7 @@ class KubernetesService(
                 templatePath = templatePath,
                 runtimeBucket = runtimeProperties.bucket,
                 runtimeManifestPath = "",
+                forwardingSecret = "",
             ).toTypedArray(),
             envVar("PUSH_ON_SHUTDOWN", if (pushOnShutdown) ENABLED_VALUE else DISABLED_VALUE),
         )

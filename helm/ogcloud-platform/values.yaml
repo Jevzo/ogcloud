@@ -66,6 +66,7 @@ controller:
     apiPassword: replace-with-a-long-random-service-password
     minioAccessKey: minioadmin
     minioSecretKey: minioadmin123
+    podForwardingSecret: replace-with-a-long-random-forwarding-secret
     podMinioEndpoint: minio.ogcloud.svc.cluster.local:9000
     podMinioAccessKey: minioadmin
     podMinioSecretKey: minioadmin123

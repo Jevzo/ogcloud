@@ -25,6 +25,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.DigestInputStream
@@ -91,7 +92,7 @@ class RuntimeBundleService(
         val manifestArtifacts = mutableListOf<RuntimeManifestArtifact>()
 
         definitions.forEach { definition ->
-            val downloaded = downloadArtifact(definition)
+            val downloaded = materializeArtifact(definition)
             try {
                 val existing = existingByObjectKey[definition.objectKey]
                 val objectExists = objectExists(definition.objectKey)
@@ -105,7 +106,7 @@ class RuntimeBundleService(
                         existing.sha256 != downloaded.sha256
 
                 if (existing == null || contentChanged || !objectExists) {
-                    uploadObject(definition.objectKey, downloaded.localPath, downloaded.sizeBytes, JAR_CONTENT_TYPE)
+                    uploadObject(definition.objectKey, downloaded.localPath, downloaded.sizeBytes, downloaded.contentType)
                     updatedArtifacts++
                 }
 
@@ -240,6 +241,14 @@ class RuntimeBundleService(
                             sourceUrl = runtimeProperties.bungeeGuardUrl,
                         ),
                     )
+                    add(
+                        generatedArtifact(
+                            scope = scope,
+                            objectKey = bungeeGuardConfigObjectKey(scope),
+                            sourceId = "bungeeguard-config",
+                            content = bungeeGuardConfigSkeleton(),
+                        ),
+                    )
                 }
 
             RuntimeBundleScope.PAPER_1_8_8 ->
@@ -266,6 +275,14 @@ class RuntimeBundleService(
                         ),
                     )
                     add(
+                        generatedArtifact(
+                            scope = scope,
+                            objectKey = bungeeGuardConfigObjectKey(scope),
+                            sourceId = "bungeeguard-config",
+                            content = bungeeGuardConfigSkeleton(),
+                        ),
+                    )
+                    add(
                         managedArtifact(
                             scope = scope,
                             objectKey = pluginObjectKey(scope, PROTOCOL_LIB_FILE_NAME),
@@ -277,6 +294,14 @@ class RuntimeBundleService(
             RuntimeBundleScope.VELOCITY ->
                 buildList {
                     add(resolveVelocityArtifact(scope))
+                    add(
+                        generatedArtifact(
+                            scope = scope,
+                            objectKey = velocityConfigObjectKey(scope),
+                            sourceId = "velocity-toml",
+                            content = velocityToml(),
+                        ),
+                    )
                     add(
                         managedArtifact(
                             scope = scope,
@@ -326,6 +351,7 @@ class RuntimeBundleService(
             sourceUrl = download.url,
             upstreamVersion = download.version,
             upstreamBuild = download.buildId,
+            contentType = JAR_CONTENT_TYPE,
         )
     }
 
@@ -344,6 +370,7 @@ class RuntimeBundleService(
             sourceUrl = download.url,
             upstreamVersion = download.version,
             upstreamBuild = download.buildId,
+            contentType = JAR_CONTENT_TYPE,
         )
     }
 
@@ -357,6 +384,22 @@ class RuntimeBundleService(
             sourceUrl = sourceUrl,
             upstreamVersion = MANAGED_ASSET_VERSION,
             upstreamBuild = MANAGED_ASSET_BUILD,
+            contentType = contentTypeForObjectKey(objectKey),
+        )
+
+    private fun generatedArtifact(
+        scope: RuntimeBundleScope,
+        objectKey: String,
+        sourceId: String,
+        content: String,
+    ): RuntimeArtifactDefinition =
+        RuntimeArtifactDefinition(
+            objectKey = objectKey,
+            sourceUrl = "generated://${scope.name.lowercase()}/$sourceId",
+            upstreamVersion = MANAGED_ASSET_VERSION,
+            upstreamBuild = MANAGED_ASSET_BUILD,
+            contentType = contentTypeForObjectKey(objectKey),
+            inlineContent = content.toByteArray(StandardCharsets.UTF_8),
         )
 
     private fun resolveStableBuildDownload(
@@ -429,6 +472,31 @@ class RuntimeBundleService(
         return root
     }
 
+    private fun materializeArtifact(definition: RuntimeArtifactDefinition): DownloadedArtifact =
+        definition.inlineContent?.let { inlineContent ->
+            materializeInlineArtifact(definition, inlineContent)
+        } ?: downloadArtifact(definition)
+
+    private fun materializeInlineArtifact(
+        definition: RuntimeArtifactDefinition,
+        inlineContent: ByteArray,
+    ): DownloadedArtifact {
+        val digest = MessageDigest.getInstance(SHA_256)
+        val localPath = Files.createTempFile("ogcloud-runtime-", tempFileSuffix(definition.objectKey))
+        Files.write(localPath, inlineContent)
+
+        return DownloadedArtifact(
+            objectKey = definition.objectKey,
+            sourceUrl = definition.sourceUrl,
+            upstreamVersion = definition.upstreamVersion,
+            upstreamBuild = definition.upstreamBuild,
+            localPath = localPath,
+            sha256 = digest.digest(inlineContent).joinToString(separator = "") { byte -> "%02x".format(byte) },
+            sizeBytes = inlineContent.size.toLong(),
+            contentType = definition.contentType,
+        )
+    }
+
     private fun downloadArtifact(definition: RuntimeArtifactDefinition): DownloadedArtifact {
         val response = sendRequest(definition.sourceUrl, HttpResponse.BodyHandlers.ofInputStream())
         if (response.statusCode() !in SUCCESS_STATUS_RANGE) {
@@ -457,6 +525,7 @@ class RuntimeBundleService(
             localPath = localPath,
             sha256 = digest.digest().joinToString(separator = "") { byte -> "%02x".format(byte) },
             sizeBytes = Files.size(localPath),
+            contentType = definition.contentType,
         )
     }
 
@@ -542,10 +611,85 @@ class RuntimeBundleService(
 
     private fun proxyJarObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/proxy.jar"
 
+    private fun velocityConfigObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/velocity.toml"
+
     private fun pluginObjectKey(
         scope: RuntimeBundleScope,
         fileName: String,
     ): String = "${scope.minioPrefix}/plugins/$fileName"
+
+    private fun bungeeGuardConfigObjectKey(scope: RuntimeBundleScope): String =
+        "${scope.minioPrefix}/plugins/BungeeGuard/config.yml"
+
+    private fun contentTypeForObjectKey(objectKey: String): String =
+        when {
+            objectKey.endsWith(".jar") -> JAR_CONTENT_TYPE
+            objectKey.endsWith(".json") -> JSON_CONTENT_TYPE
+            else -> TEXT_CONTENT_TYPE
+        }
+
+    private fun tempFileSuffix(objectKey: String): String {
+        val fileName = objectKey.substringAfterLast('/')
+        val extension = fileName.substringAfterLast('.', "")
+        return if (extension.isBlank()) {
+            ".tmp"
+        } else {
+            ".$extension"
+        }
+    }
+
+    private fun velocityToml(): String =
+        """
+        config-version = "2.7"
+        bind = "0.0.0.0:$DEFAULT_PROXY_PORT"
+        motd = "<#09add3>OgCloud Network"
+        show-max-players = 500
+        online-mode = true
+        force-key-authentication = true
+        prevent-client-proxy-connections = false
+        player-info-forwarding-mode = "bungeeguard"
+        forwarding-secret-file = "forwarding.secret"
+        announce-forge = false
+        kick-existing-players = false
+        ping-passthrough = "DISABLED"
+        sample-players-in-ping = false
+        enable-player-address-logging = true
+        
+        [servers]
+        try = []
+        
+        [forced-hosts]
+        
+        [advanced]
+        compression-threshold = 256
+        compression-level = -1
+        login-ratelimit = 3000
+        connection-timeout = 5000
+        read-timeout = 30000
+        haproxy-protocol = true
+        tcp-fast-open = false
+        bungee-plugin-message-channel = true
+        show-ping-requests = false
+        failover-on-unexpected-server-disconnect = true
+        announce-proxy-commands = true
+        log-command-executions = false
+        log-player-connections = true
+        accepts-transfers = false
+        enable-reuse-port = false
+        command-rate-limit = 50
+        forward-commands-if-rate-limited = true
+        kick-after-rate-limited-commands = 0
+        tab-complete-rate-limit = 10
+        kick-after-rate-limited-tab-completes = 0
+        
+        [query]
+        enabled = false
+        port = $DEFAULT_PROXY_PORT
+        map = "Velocity"
+        show-plugins = false
+        """.trimIndent() + "\n"
+
+    private fun bungeeGuardConfigSkeleton(): String = "allowed-tokens: []\n"
 
     private fun runtimeArtifactId(
         scope: RuntimeBundleScope,
@@ -557,6 +701,8 @@ class RuntimeBundleService(
         val sourceUrl: String,
         val upstreamVersion: String,
         val upstreamBuild: Int,
+        val contentType: String,
+        val inlineContent: ByteArray? = null,
     )
 
     private data class DownloadedArtifact(
@@ -567,6 +713,7 @@ class RuntimeBundleService(
         val localPath: Path,
         val sha256: String,
         val sizeBytes: Long,
+        val contentType: String,
     )
 
     private data class ResolvedDownload(
@@ -614,6 +761,8 @@ class RuntimeBundleService(
         private const val SHA_256 = "SHA-256"
         private const val JAR_CONTENT_TYPE = "application/java-archive"
         private const val JSON_CONTENT_TYPE = "application/json"
+        private const val TEXT_CONTENT_TYPE = "text/plain; charset=utf-8"
+        private const val DEFAULT_PROXY_PORT = 25577
         private val SUCCESS_STATUS_RANGE = 200..299
     }
 }
