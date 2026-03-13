@@ -85,6 +85,7 @@ type NetworkConfig = {
     imageTags: ImageTags;
     apiEmail: string;
     apiPassword: string;
+    podForwardingSecret: string;
     jwtSecret: string;
     corsAllowedOrigin: string;
     minioAccessKey: string;
@@ -955,6 +956,10 @@ function defaultConnections(namespace: string): NetworkConnections {
     };
 }
 
+function defaultPodMinioEndpoint(namespace: string): string {
+    return `minio.${namespace}.svc.cluster.local:9000`;
+}
+
 async function generateConfig(
     networkArg: string | null | undefined,
     state: StateFile,
@@ -1029,6 +1034,9 @@ async function generateConfig(
     const apiPassword = await askInput("Service API password", {
         defaultValue: existing?.apiPassword || randomSecret(),
     });
+    const podForwardingSecret = await askInput("Proxy forwarding secret", {
+        defaultValue: existing?.podForwardingSecret || randomSecret(),
+    });
     const jwtSecret = await askInput("JWT secret", {
         defaultValue: existing?.jwtSecret || randomSecret(),
     });
@@ -1044,35 +1052,13 @@ async function generateConfig(
         defaultValue: existing?.minioSecretKey || "minioadmin123",
     });
 
-    const connections =
-        backingMode === "external"
-            ? {
-                  mongodbUri: await askInput("MongoDB URI", {
-                      defaultValue:
-                          existing?.connections?.mongodbUri ||
-                          `mongodb://mongodb.${namespace}.svc.cluster.local:27017/ogcloud`,
-                  }),
-                  redisHost: await askInput("Redis host", {
-                      defaultValue:
-                          existing?.connections?.redisHost ||
-                          `redis.${namespace}.svc.cluster.local`,
-                  }),
-                  redisPort: await askInput("Redis port", {
-                      defaultValue: existing?.connections?.redisPort || "6379",
-                  }),
-                  kafkaBrokers: await askInput("Kafka brokers", {
-                      defaultValue:
-                          existing?.connections?.kafkaBrokers ||
-                          `kafka.${namespace}.svc.cluster.local:9092`,
-                  }),
-                  minioEndpoint: await askInput("MinIO endpoint", {
-                      defaultValue:
-                          existing?.connections?.minioEndpoint ||
-                          `http://minio.${namespace}.svc.cluster.local:9000`,
-                  }),
-                  apiUrl: `http://api.${namespace}.svc.cluster.local:8080`,
-              }
-            : defaultConnections(namespace);
+    const connections = defaultConnections(namespace);
+
+    if (backingMode === "external") {
+        warn(
+            "Managed backing services are disabled. Generated platform values keep the simple in-cluster defaults; adapt values.platform.yaml yourself for external services.",
+        );
+    }
 
     const defaultApiBaseUrl =
         existing?.apiBaseUrl ||
@@ -1135,8 +1121,15 @@ async function generateConfig(
                 apiPassword,
                 minioAccessKey,
                 minioSecretKey,
+                podForwardingSecret,
+                podMinioEndpoint: defaultPodMinioEndpoint(namespace),
                 podMinioAccessKey: minioAccessKey,
                 podMinioSecretKey: minioSecretKey,
+                podKafkaBrokers: connections.kafkaBrokers,
+                podRedisHost: connections.redisHost,
+                podRedisPort: connections.redisPort,
+                podMongodbUri: connections.mongodbUri,
+                podApiUrl: connections.apiUrl,
                 podApiEmail: apiEmail,
                 podApiPassword: apiPassword,
             },
@@ -1202,6 +1195,7 @@ async function generateConfig(
         },
         apiEmail,
         apiPassword,
+        podForwardingSecret,
         jwtSecret,
         corsAllowedOrigin,
         minioAccessKey,

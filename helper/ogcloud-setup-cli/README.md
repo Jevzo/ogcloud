@@ -60,6 +60,7 @@ Cached Helm chart source:
 ## Notes
 
 - On local clusters (for example Minikube), `LoadBalancer` services may require `minikube tunnel` for external IP assignment.
+- `--without-backing` keeps the generated in-cluster service defaults. If you run external MongoDB/Redis/MinIO/Kafka, edit `values.platform.yaml` yourself after generation.
 
 ## Development
 
