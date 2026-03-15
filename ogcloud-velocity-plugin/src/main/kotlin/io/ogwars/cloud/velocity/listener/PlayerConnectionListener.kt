@@ -4,6 +4,7 @@ import io.ogwars.cloud.common.event.PlayerConnectEvent
 import io.ogwars.cloud.common.event.PlayerDisconnectEvent
 import io.ogwars.cloud.common.event.PlayerSwitchEvent
 import io.ogwars.cloud.common.kafka.KafkaTopics
+import io.ogwars.cloud.common.model.RedisPlayerSession
 import io.ogwars.cloud.velocity.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.velocity.message.VelocityMessages
 import io.ogwars.cloud.velocity.network.NetworkState
@@ -45,49 +46,46 @@ class PlayerConnectionListener(
         val uuid = player.uniqueId
 
         return EventTask.async {
+            if (proxyServer.playerCount >= proxyMaxPlayers) {
+                denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.PROXY_FULL)
+                return@async
+            }
+
+            val connectPublished = publishConnectWithRetry(uuid.toString(), player.username)
+            if (!connectPublished) {
+                logger.error(
+                    "Failed to publish player connect after retries: uuid={}, attempts={}, windowMs={}",
+                    uuid,
+                    CONNECT_RETRY_MAX_ATTEMPTS,
+                    CONNECT_RETRY_WINDOW_MILLIS,
+                )
+                publishDisconnectOnCurrentThread(uuid)
+                runCatching {
+                    player.disconnect(
+                        legacySerializer.deserialize(
+                            VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE,
+                        ),
+                    )
+                }.onFailure {
+                    logger.warn("Failed to disconnect player after connect publish failure: uuid={}", uuid, it)
+                }
+                denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE)
+                return@async
+            }
+
             loadPermissions(uuid)
 
             val hasMaintenanceBypass = hasMaintenanceBypass(uuid)
 
             when {
                 networkState.maintenance && !hasMaintenanceBypass -> {
+                    publishDisconnectOnCurrentThread(uuid)
                     denyLogin(event, uuid, networkState.maintenanceKickMessage)
                 }
 
                 serverRegistry.isGroupInMaintenance(proxyGroup) && !hasMaintenanceBypass -> {
+                    publishDisconnectOnCurrentThread(uuid)
                     denyLogin(event, uuid, networkState.maintenanceKickMessage)
-                }
-
-                proxyServer.playerCount >= proxyMaxPlayers -> {
-                    denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.PROXY_FULL)
-                }
-
-                else -> {
-                    val connectPublished = publishConnectWithRetry(uuid.toString(), player.username)
-                    if (!connectPublished) {
-                        logger.error(
-                            "Failed to publish player connect after retries: uuid={}, attempts={}, windowMs={}",
-                            uuid,
-                            CONNECT_RETRY_MAX_ATTEMPTS,
-                            CONNECT_RETRY_WINDOW_MILLIS,
-                        )
-                        publishOnCurrentThread(
-                            topic = KafkaTopics.PLAYER_DISCONNECT,
-                            key = uuid.toString(),
-                            payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
-                            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
-                        )
-                        runCatching {
-                            player.disconnect(
-                                legacySerializer.deserialize(
-                                    VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE,
-                                ),
-                            )
-                        }.onFailure {
-                            logger.warn("Failed to disconnect player after connect publish failure: uuid={}", uuid, it)
-                        }
-                        denyLogin(event, uuid, VelocityMessages.Listener.PlayerConnection.CONNECT_FAILURE)
-                    }
                 }
             }
         }
@@ -137,17 +135,41 @@ class PlayerConnectionListener(
         permissionCache.removePlayer(uuid)
 
         try {
-            val session = redisManager.getPlayerData(uuid.toString())
+            val session = awaitPermissionSession(uuid)
             if (session != null) {
                 permissionCache.cachePlayerFromRedis(uuid, session)
                 return
             }
 
             cacheDefaultPermissions(uuid)
-            logger.warn("No Redis permission session for player: uuid={}, using default group fallback", uuid)
+            logger.warn(
+                "No Redis permission session after connect bootstrap: uuid={}, waitedMs={}, using default group fallback",
+                uuid,
+                PERMISSION_SESSION_WAIT_MILLIS,
+            )
         } catch (exception: Exception) {
             logger.error("Failed to load permission session from Redis for player: uuid={}", uuid, exception)
             cacheDefaultPermissions(uuid)
+        }
+    }
+
+    private fun awaitPermissionSession(uuid: UUID): RedisPlayerSession? {
+        val deadline = System.currentTimeMillis() + PERMISSION_SESSION_WAIT_MILLIS
+
+        while (true) {
+            redisManager.getPlayerData(uuid.toString())?.let { return it }
+
+            val remainingMillis = deadline - System.currentTimeMillis()
+            if (remainingMillis <= 0) {
+                return null
+            }
+
+            try {
+                Thread.sleep(minOf(PERMISSION_SESSION_POLL_MILLIS, remainingMillis))
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return null
+            }
         }
     }
 
@@ -164,6 +186,15 @@ class PlayerConnectionListener(
     ) {
         permissionCache.removePlayer(uuid)
         event.result = ResultedEvent.ComponentResult.denied(legacySerializer.deserialize(message))
+    }
+
+    private fun publishDisconnectOnCurrentThread(uuid: UUID) {
+        publishOnCurrentThread(
+            topic = KafkaTopics.PLAYER_DISCONNECT,
+            key = uuid.toString(),
+            payload = PlayerDisconnectEvent(uuid.toString(), proxyId),
+            messageType = KafkaSendDispatcher.MessageType.PLAYER_DISCONNECT,
+        )
     }
 
     private fun publishAsync(
@@ -289,5 +320,7 @@ class PlayerConnectionListener(
         private const val CONNECT_RETRY_MAX_ATTEMPTS = 5
         private const val CONNECT_RETRY_WINDOW_MILLIS = 30_000L
         private const val CONNECT_RETRY_BACKOFF_MILLIS = 1_000L
+        private const val PERMISSION_SESSION_WAIT_MILLIS = 5_000L
+        private const val PERMISSION_SESSION_POLL_MILLIS = 100L
     }
 }

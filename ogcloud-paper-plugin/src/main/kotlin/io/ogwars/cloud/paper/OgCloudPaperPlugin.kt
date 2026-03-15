@@ -2,7 +2,6 @@ package io.ogwars.cloud.paper
 
 import io.ogwars.cloud.paper.api.ApiClient
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
-import io.ogwars.cloud.paper.compat.BukkitCompatibility
 import io.ogwars.cloud.paper.config.PaperPluginSettings
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.heartbeat.HeartbeatTask
@@ -113,12 +112,8 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     private fun applyConfiguredMaxPlayers() {
-        if (BukkitCompatibility.applyConfiguredMaxPlayers(server, configuredMaxPlayers)) {
-            logger.info("Applied max players for server $serverId: $configuredMaxPlayers")
-            return
-        }
-
-        logger.warning("Failed to apply max players for server $serverId: $configuredMaxPlayers")
+        server.maxPlayers = configuredMaxPlayers
+        logger.info("Applied max players for server $serverId: $configuredMaxPlayers")
     }
 
     private fun registerListeners() {

@@ -24,8 +24,12 @@ object ServerCommands {
                                 apiClient,
                                 ctx.getArgument("group", String::class.java),
                             )
+                            return@executes 1
                         },
-                    ).executes { ctx -> listServers(ctx, apiClient, null) },
+                    ).executes { ctx ->
+                        listServers(ctx, apiClient, null)
+                        return@executes 1
+                    },
             ).then(
                 LiteralArgumentBuilder
                     .literal<CommandSource>("info")
@@ -35,11 +39,17 @@ object ServerCommands {
                             .suggests { _, builder ->
                                 serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
                                 builder.buildFuture()
-                            }.executes { ctx -> serverInfo(ctx, apiClient, serverRegistry) },
+                            }.executes { ctx ->
+                                serverInfo(ctx, apiClient, serverRegistry)
+                                return@executes 1
+                            },
                     ),
             ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("request").then(
-                    OgCloudCommand.wordArg("group").executes { ctx -> requestServer(ctx, apiClient) },
+                    OgCloudCommand.wordArg("group").executes { ctx ->
+                        requestServer(ctx, apiClient)
+                        return@executes 1
+                    },
                 ),
             ).then(
                 LiteralArgumentBuilder
@@ -50,7 +60,10 @@ object ServerCommands {
                             .suggests { _, builder ->
                                 serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
                                 builder.buildFuture()
-                            }.executes { ctx -> stopServer(ctx, apiClient, serverRegistry) },
+                            }.executes { ctx ->
+                                stopServer(ctx, apiClient, serverRegistry)
+                                return@executes 1
+                            },
                     ),
             ).then(
                 LiteralArgumentBuilder
@@ -61,7 +74,10 @@ object ServerCommands {
                             .suggests { _, builder ->
                                 serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
                                 builder.buildFuture()
-                            }.executes { ctx -> killServer(ctx, apiClient, serverRegistry) },
+                            }.executes { ctx ->
+                                killServer(ctx, apiClient, serverRegistry)
+                                return@executes 1
+                            },
                     ),
             ).then(
                 LiteralArgumentBuilder
@@ -72,7 +88,10 @@ object ServerCommands {
                             .suggests { _, builder ->
                                 serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
                                 builder.buildFuture()
-                            }.executes { ctx -> templatePush(ctx, apiClient, serverRegistry) },
+                            }.executes { ctx ->
+                                templatePush(ctx, apiClient, serverRegistry)
+                                return@executes 1
+                            },
                     ),
             )
 
@@ -80,7 +99,7 @@ object ServerCommands {
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         group: String?,
-    ): Int {
+    ) {
         val source = ctx.source
 
         OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Server.LIST_FETCHING)
@@ -114,8 +133,6 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun resolveServerId(
@@ -140,10 +157,10 @@ object ServerCommands {
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-    ): Int {
+    ) {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
-        val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
+        val serverId = resolveServerId(source, input, serverRegistry) ?: return
 
         apiClient
             .getServer(serverId)
@@ -202,14 +219,12 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun requestServer(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val group = ctx.getArgument("group", String::class.java)
 
@@ -227,18 +242,16 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun stopServer(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-    ): Int {
+    ) {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
-        val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
+        val serverId = resolveServerId(source, input, serverRegistry) ?: return
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
         OgCloudCommand.sendPrefixedTemplate(
@@ -255,18 +268,16 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun killServer(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-    ): Int {
+    ) {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
-        val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
+        val serverId = resolveServerId(source, input, serverRegistry) ?: return
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
         OgCloudCommand.sendPrefixedTemplate(
@@ -283,18 +294,16 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun templatePush(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-    ): Int {
+    ) {
         val source = ctx.source
         val input = ctx.getArgument("server", String::class.java)
-        val serverId = resolveServerId(source, input, serverRegistry) ?: return 1
+        val serverId = resolveServerId(source, input, serverRegistry) ?: return
         val displayName = serverRegistry.getDisplayName(serverId) ?: input
 
         OgCloudCommand.sendPrefixedTemplate(
@@ -311,7 +320,5 @@ object ServerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 }

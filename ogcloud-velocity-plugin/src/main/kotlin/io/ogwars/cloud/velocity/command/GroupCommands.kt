@@ -12,17 +12,31 @@ object GroupCommands {
     fun create(apiClient: ApiClient): LiteralArgumentBuilder<CommandSource> =
         LiteralArgumentBuilder
             .literal<CommandSource>("group")
-            .then(LiteralArgumentBuilder.literal<CommandSource>("list").executes { ctx -> listGroups(ctx, apiClient) })
             .then(
                 LiteralArgumentBuilder
+                    .literal<CommandSource>("list")
+                    .executes { ctx ->
+                        listGroups(ctx, apiClient)
+                        return@executes 1
+                    },
+            ).then(
+                LiteralArgumentBuilder
                     .literal<CommandSource>("info")
-                    .then(OgCloudCommand.wordArg("id").executes { ctx -> groupInfo(ctx, apiClient) }),
+                    .then(
+                        OgCloudCommand.wordArg("id").executes { ctx ->
+                            groupInfo(ctx, apiClient)
+                            return@executes 1
+                        },
+                    ),
             ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("maintenance").then(
                     OgCloudCommand.wordArg("id").then(
                         RequiredArgumentBuilder
                             .argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
-                            .executes { ctx -> setMaintenance(ctx, apiClient) },
+                            .executes { ctx ->
+                                setMaintenance(ctx, apiClient)
+                                return@executes 1
+                            },
                     ),
                 ),
             )
@@ -30,7 +44,7 @@ object GroupCommands {
     private fun listGroups(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
 
         OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Group.LIST_FETCHING)
@@ -73,14 +87,12 @@ object GroupCommands {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 
     private fun groupInfo(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val groupId = ctx.getArgument("id", String::class.java)
 
@@ -130,14 +142,12 @@ object GroupCommands {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 
     private fun setMaintenance(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val groupId = ctx.getArgument("id", String::class.java)
         val enabled = ctx.getArgument("enabled", Boolean::class.java)
@@ -157,7 +167,5 @@ object GroupCommands {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 }

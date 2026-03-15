@@ -216,6 +216,7 @@ class OgCloudVelocityPlugin
                     kafkaManager = kafkaManager,
                     permissionCache = permissionCache,
                     networkState = networkState,
+                    proxyServer = server,
                     logger = logger,
                     consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,

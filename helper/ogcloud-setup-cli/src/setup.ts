@@ -123,7 +123,7 @@ const COMMAND_DOCS: Record<RequiredCommand, string> = {
 
 const REPO_OWNER = "Jevzo";
 const REPO_NAME = "ogcloud";
-const REPO_REF = "main";
+const REPO_REF = "feature-implement-multi-version"; // FIXME: Revert before merge
 const REMOTE_HELM_PATH = "helm";
 const HELM_REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/${REPO_REF}/helm`;
 
@@ -157,7 +157,7 @@ const STATE_FILE = path.join(STATE_ROOT, "state.json");
 const BACKING_SERVICES = ["mongodb", "redis", "minio", "kafka"];
 const COMPONENTS: ComponentName[] = ["dashboard", "api", "loadbalancer", "controller"];
 const NETWORK_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
-const DEFAULT_IMAGE_VERSION = "1.2.2";
+const DEFAULT_IMAGE_VERSION = "1.2.3"; // FIXME: Update before merge
 const DEFAULT_INGRESS_CLASS_NAME = "nginx";
 const FIXED_IMAGE_REPOSITORIES = {
     api: "ogwarsdev/api",

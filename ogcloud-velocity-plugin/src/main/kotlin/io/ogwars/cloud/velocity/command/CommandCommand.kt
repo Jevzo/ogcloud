@@ -26,7 +26,10 @@ object CommandCommand {
                         .argument<CommandSource, String>(
                             "cmd",
                             StringArgumentType.greedyString(),
-                        ).executes { ctx -> executeCommand(ctx, apiClient, serverRegistry) },
+                        ).executes { ctx ->
+                            executeCommand(ctx, apiClient, serverRegistry)
+                            return@executes 1
+                        },
                 ),
         )
 
@@ -34,7 +37,7 @@ object CommandCommand {
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
-    ): Int {
+    ) {
         val source = ctx.source
         val input = ctx.getArgument("target", String::class.java)
         val command = ctx.getArgument("cmd", String::class.java)
@@ -56,8 +59,6 @@ object CommandCommand {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 
     private fun resolveTarget(

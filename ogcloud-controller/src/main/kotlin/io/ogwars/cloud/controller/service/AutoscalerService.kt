@@ -59,7 +59,7 @@ class AutoscalerService(
         val totalActive = runningCount + pendingCount + drainingProxies.size
 
         val availableCount = runningCount + pendingCount
-        if (availableCount < group.scaling.minOnline &&
+        if (availableCount < group.scaling.minOnline) {
             enforceProxyMinOnline(
                 group,
                 runningCount,
@@ -68,7 +68,6 @@ class AutoscalerService(
                 totalActive,
                 availableCount,
             )
-        ) {
             return
         }
 
@@ -189,7 +188,7 @@ class AutoscalerService(
         drainingProxies: List<ServerDocument>,
         totalActive: Int,
         availableCount: Int,
-    ): Boolean {
+    ) {
         val deficit = group.scaling.minOnline - availableCount
         val toUndrain = drainingProxies.take(deficit)
 
@@ -224,8 +223,6 @@ class AutoscalerService(
         }
 
         recordScaleAction(group.id)
-
-        return true
     }
 
     private fun handleProxyScaleUp(

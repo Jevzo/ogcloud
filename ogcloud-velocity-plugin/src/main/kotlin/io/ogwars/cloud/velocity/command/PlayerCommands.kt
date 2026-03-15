@@ -26,7 +26,10 @@ object PlayerCommands {
                             .suggests { _, builder ->
                                 proxyServer.allPlayers.forEach { builder.suggest(it.username) }
                                 builder.buildFuture()
-                            }.executes { ctx -> findPlayer(ctx, apiClient) },
+                            }.executes { ctx ->
+                                findPlayer(ctx, apiClient)
+                                return@executes 1
+                            },
                     ),
             ).then(
                 LiteralArgumentBuilder
@@ -44,8 +47,12 @@ object PlayerCommands {
                                     serverRegistry,
                                     ctx.getArgument("server", String::class.java),
                                 )
+                                return@executes 1
                             },
-                    ).executes { ctx -> listPlayers(ctx, apiClient, serverRegistry, null) },
+                    ).executes { ctx ->
+                        listPlayers(ctx, apiClient, serverRegistry, null)
+                        return@executes 1
+                    },
             ).then(
                 LiteralArgumentBuilder
                     .literal<CommandSource>("transfer")
@@ -61,7 +68,10 @@ object PlayerCommands {
                                     .suggests { _, builder ->
                                         serverRegistry.getAllDisplayNames().values.forEach { builder.suggest(it) }
                                         builder.buildFuture()
-                                    }.executes { ctx -> transferPlayer(ctx, apiClient) },
+                                    }.executes { ctx ->
+                                        transferPlayer(ctx, apiClient)
+                                        return@executes 1
+                                    },
                             ),
                     ),
             )
@@ -69,7 +79,7 @@ object PlayerCommands {
     private fun findPlayer(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val name = ctx.getArgument("name", String::class.java)
 
@@ -110,8 +120,6 @@ object PlayerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun listPlayers(
@@ -119,25 +127,22 @@ object PlayerCommands {
         apiClient: ApiClient,
         serverRegistry: ServerRegistry,
         serverInput: String?,
-    ): Int {
+    ) {
         val source = ctx.source
 
         val serverId =
-            if (serverInput != null) {
-                val resolved = serverRegistry.findServerIdByDisplayName(serverInput)
+            serverInput?.let { input ->
+                val resolved = serverRegistry.findServerIdByDisplayName(input)
 
                 if (resolved == null) {
                     OgCloudCommand.sendErrorTemplate(
                         source,
                         VelocityMessages.Command.Player.LIST_SERVER_NOT_FOUND,
-                        "server" to serverInput,
+                        "server" to input,
                     )
-                    return 1
                 }
 
                 resolved
-            } else {
-                null
             }
 
         OgCloudCommand.sendPrefixed(source, VelocityMessages.Command.Player.LIST_FETCHING)
@@ -171,14 +176,12 @@ object PlayerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 
     private fun transferPlayer(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val name = ctx.getArgument("name", String::class.java)
         val target = ctx.getArgument("target", String::class.java)
@@ -211,7 +214,5 @@ object PlayerCommands {
                 OgCloudCommand.sendFailure(source, e)
                 null
             }
-
-        return 1
     }
 }

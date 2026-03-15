@@ -10,14 +10,8 @@ import io.ogwars.cloud.controller.model.resolvedRuntimeProfile
 import io.ogwars.cloud.controller.redis.ServerRedisRepository
 import io.ogwars.cloud.controller.repository.GroupRepository
 import io.ogwars.cloud.controller.repository.RuntimeArtifactHashRepository
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.minio.BucketExistsArgs
-import io.minio.MakeBucketArgs
-import io.minio.MinioClient
-import io.minio.PutObjectArgs
-import io.minio.RemoveObjectArgs
-import io.minio.StatObjectArgs
+import io.minio.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
@@ -122,10 +116,23 @@ class RuntimeBundleService(
         val manifestArtifacts = mutableListOf<RuntimeManifestArtifact>()
 
         definitions.forEach { definition ->
+            val existing = existingByObjectKey[definition.objectKey]
+            val objectExists = objectExists(definition.objectKey)
+
+            if (shouldReuseExistingArtifactOnStartup(definition, existing, objectExists, restartAffectedGroups)) {
+                existing?.let { existingArtifact ->
+                    manifestArtifacts += existingArtifact.toManifestArtifact()
+                    log.info(
+                        "Reusing existing runtime artifact on startup without redownload: scope={}, objectKey={}",
+                        scope,
+                        definition.objectKey,
+                    )
+                }
+                return@forEach
+            }
+
             val downloaded = materializeArtifact(definition, reusableArtifactCache)
             try {
-                val existing = existingByObjectKey[definition.objectKey]
-                val objectExists = objectExists(definition.objectKey)
                 val contentChanged = existing != null && existing.sha256 != downloaded.sha256
                 val metadataChanged =
                     existing == null ||
@@ -202,6 +209,13 @@ class RuntimeBundleService(
         )
     }
 
+    private fun shouldReuseExistingArtifactOnStartup(
+        definition: RuntimeArtifactDefinition,
+        existing: RuntimeArtifactHashDocument?,
+        objectExists: Boolean,
+        restartAffectedGroups: Boolean,
+    ): Boolean = !restartAffectedGroups && definition.inlineContent == null && existing != null && objectExists
+
     private fun restartGroupsForScope(scope: RuntimeBundleScope) {
         val groups = groupRepository.findAll().filter { it.matchesRuntimeScope(scope) }
 
@@ -256,23 +270,13 @@ class RuntimeBundleService(
             RuntimeBundleScope.PAPER_1_21_11 ->
                 buildList {
                     add(
-                        resolvePaperArtifact(
-                            scope = scope,
-                            version = runtimeProperties.modernPaperVersion,
-                            buildId = null,
-                        ),
-                    )
-                    add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
-                            sourceUrl = runtimeProperties.paperPluginUrl,
-                            reusableAcrossScopes = true,
+                            sourceUrl = runtimeProperties.modernPaperPluginUrl,
                         ),
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, BUNGEE_GUARD_FILE_NAME),
                             sourceUrl = runtimeProperties.bungeeGuardUrl,
                         ),
@@ -290,23 +294,13 @@ class RuntimeBundleService(
             RuntimeBundleScope.PAPER_1_8_8 ->
                 buildList {
                     add(
-                        resolvePaperArtifact(
-                            scope = scope,
-                            version = runtimeProperties.legacyPaperVersion,
-                            buildId = runtimeProperties.legacyPaperBuild,
-                        ),
-                    )
-                    add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, OGCLOUD_PAPER_PLUGIN_FILE_NAME),
-                            sourceUrl = runtimeProperties.paperPluginUrl,
-                            reusableAcrossScopes = true,
+                            sourceUrl = runtimeProperties.legacyPaperPluginUrl,
                         ),
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, BUNGEE_GUARD_FILE_NAME),
                             sourceUrl = runtimeProperties.bungeeGuardUrl,
                         ),
@@ -321,7 +315,6 @@ class RuntimeBundleService(
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, PROTOCOL_LIB_FILE_NAME),
                             sourceUrl = runtimeProperties.protocolLibUrl,
                         ),
@@ -330,7 +323,6 @@ class RuntimeBundleService(
 
             RuntimeBundleScope.VELOCITY ->
                 buildList {
-                    add(resolveVelocityArtifact(scope))
                     add(
                         generatedArtifact(
                             scope = scope,
@@ -340,29 +332,33 @@ class RuntimeBundleService(
                         ),
                     )
                     add(
-                        managedArtifact(
+                        generatedArtifact(
                             scope = scope,
+                            objectKey = viaVersionConfigObjectKey(scope),
+                            sourceId = "viaversion-config-v1",
+                            content = viaVersionConfig(),
+                        ),
+                    )
+                    add(
+                        managedArtifact(
                             objectKey = pluginObjectKey(scope, OGCLOUD_VELOCITY_PLUGIN_FILE_NAME),
                             sourceUrl = runtimeProperties.velocityPluginUrl,
                         ),
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, VIA_VERSION_FILE_NAME),
                             sourceUrl = runtimeProperties.viaVersionUrl,
                         ),
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, VIA_BACKWARDS_FILE_NAME),
                             sourceUrl = runtimeProperties.viaBackwardsUrl,
                         ),
                     )
                     add(
                         managedArtifact(
-                            scope = scope,
                             objectKey = pluginObjectKey(scope, VIA_REWIND_FILE_NAME),
                             sourceUrl = runtimeProperties.viaRewindUrl,
                         ),
@@ -370,49 +366,7 @@ class RuntimeBundleService(
                 }
         }
 
-    private fun resolvePaperArtifact(
-        scope: RuntimeBundleScope,
-        version: String,
-        buildId: Int?,
-    ): RuntimeArtifactDefinition {
-        val download =
-            resolveStableBuildDownload(
-                project = runtimeProperties.paperProject,
-                version = version,
-                buildId = buildId,
-                preferredDownloadKey = PAPER_DOWNLOAD_KEY,
-            )
-
-        return RuntimeArtifactDefinition(
-            objectKey = serverJarObjectKey(scope),
-            sourceUrl = download.url,
-            upstreamVersion = download.version,
-            upstreamBuild = download.buildId,
-            contentType = JAR_CONTENT_TYPE,
-        )
-    }
-
-    private fun resolveVelocityArtifact(scope: RuntimeBundleScope): RuntimeArtifactDefinition {
-        val version = latestProjectVersion(runtimeProperties.velocityProject)
-        val download =
-            resolveStableBuildDownload(
-                project = runtimeProperties.velocityProject,
-                version = version,
-                buildId = null,
-                preferredDownloadKey = null,
-            )
-
-        return RuntimeArtifactDefinition(
-            objectKey = proxyJarObjectKey(scope),
-            sourceUrl = download.url,
-            upstreamVersion = download.version,
-            upstreamBuild = download.buildId,
-            contentType = JAR_CONTENT_TYPE,
-        )
-    }
-
     private fun managedArtifact(
-        scope: RuntimeBundleScope,
         objectKey: String,
         sourceUrl: String,
         reusableAcrossScopes: Boolean = false,
@@ -438,86 +392,8 @@ class RuntimeBundleService(
             upstreamVersion = MANAGED_ASSET_VERSION,
             upstreamBuild = MANAGED_ASSET_BUILD,
             contentType = contentTypeForObjectKey(objectKey),
-            inlineContent = content.toByteArray(StandardCharsets.UTF_8),
+            inlineContent = content,
         )
-
-    private fun resolveStableBuildDownload(
-        project: String,
-        version: String,
-        buildId: Int?,
-        preferredDownloadKey: String?,
-    ): ResolvedDownload {
-        val buildsResponse = getJson("${runtimeProperties.fillBaseUrl}/projects/$project/versions/$version/builds")
-        val build =
-            buildsResponse
-                .asSequence()
-                .filter { node -> node.path("channel").asText() == STABLE_CHANNEL }
-                .firstOrNull { node -> buildId == null || node.path("id").asInt() == buildId }
-                ?: throw IllegalStateException(
-                    "No stable build found for project=$project version=$version buildId=$buildId",
-                )
-
-        val downloadNode = selectDownloadNode(build.path("downloads"), preferredDownloadKey)
-
-        return ResolvedDownload(
-            version = version,
-            buildId = build.path("id").asInt(),
-            url = downloadNode.path("url").asText(),
-        )
-    }
-
-    private fun selectDownloadNode(
-        downloadsNode: JsonNode,
-        preferredDownloadKey: String?,
-    ): JsonNode {
-        if (preferredDownloadKey != null && downloadsNode.has(preferredDownloadKey)) {
-            return downloadsNode.path(preferredDownloadKey)
-        }
-
-        downloadsNode
-            .fields()
-            .asSequence()
-            .firstOrNull { entry -> entry.key.endsWith(DEFAULT_DOWNLOAD_SUFFIX) }
-            ?.let { return it.value }
-
-        return downloadsNode
-            .fields()
-            .asSequence()
-            .firstOrNull()
-            ?.value
-            ?: throw IllegalStateException("No downloadable artifact exposed by upstream response")
-    }
-
-    private fun latestProjectVersion(project: String): String {
-        val projectResponse = getJson("${runtimeProperties.fillBaseUrl}/projects/$project")
-
-        return projectResponse
-            .path("versions")
-            .fields()
-            .asSequence()
-            .flatMap { entry -> entry.value.asSequence() }
-            .map(JsonNode::asText)
-            .firstOrNull()
-            ?: throw IllegalStateException("No versions returned for upstream project=$project")
-    }
-
-    private fun getJson(url: String): JsonNode {
-        val response = sendRequest(url, HttpResponse.BodyHandlers.ofString())
-        val body = response.body()
-        val root = objectMapper.readTree(body)
-
-        if (response.statusCode() !in SUCCESS_STATUS_RANGE) {
-            throw IllegalStateException("Upstream request failed: url=$url status=${response.statusCode()} body=$body")
-        }
-
-        if (root.isObject && root.path("ok").isBoolean && !root.path("ok").asBoolean()) {
-            throw IllegalStateException(
-                "Upstream request failed: url=$url message=${root.path("message").asText("unknown")}",
-            )
-        }
-
-        return root
-    }
 
     private fun materializeArtifact(
         definition: RuntimeArtifactDefinition,
@@ -547,11 +423,12 @@ class RuntimeBundleService(
 
     private fun materializeInlineArtifact(
         definition: RuntimeArtifactDefinition,
-        inlineContent: ByteArray,
+        inlineContent: String,
     ): DownloadedArtifact {
         val digest = MessageDigest.getInstance(SHA_256)
         val localPath = Files.createTempFile("ogcloud-runtime-", runtimeTempFileSuffix(definition.objectKey))
-        Files.write(localPath, inlineContent)
+        val inlineContentBytes = inlineContent.toByteArray(StandardCharsets.UTF_8)
+        Files.write(localPath, inlineContentBytes)
 
         return DownloadedArtifact(
             objectKey = definition.objectKey,
@@ -559,8 +436,8 @@ class RuntimeBundleService(
             upstreamVersion = definition.upstreamVersion,
             upstreamBuild = definition.upstreamBuild,
             localPath = localPath,
-            sha256 = digest.digest(inlineContent).joinToString(separator = "") { byte -> "%02x".format(byte) },
-            sizeBytes = inlineContent.size.toLong(),
+            sha256 = digest.digest(inlineContentBytes).joinToString(separator = "") { byte -> "%02x".format(byte) },
+            sizeBytes = inlineContentBytes.size.toLong(),
             contentType = definition.contentType,
         )
     }
@@ -675,11 +552,10 @@ class RuntimeBundleService(
 
     private fun manifestObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/manifest.json"
 
-    private fun serverJarObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/server.jar"
-
-    private fun proxyJarObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/proxy.jar"
-
     private fun velocityConfigObjectKey(scope: RuntimeBundleScope): String = "${scope.minioPrefix}/velocity.toml"
+
+    private fun viaVersionConfigObjectKey(scope: RuntimeBundleScope): String =
+        "${scope.minioPrefix}/plugins/viaversion/config.yml"
 
     private fun pluginObjectKey(
         scope: RuntimeBundleScope,
@@ -749,6 +625,20 @@ class RuntimeBundleService(
 
     private fun bungeeGuardConfigSkeleton(): String = "allowed-tokens: []\n"
 
+    private fun viaVersionConfig(): String =
+        """
+        check-for-updates: true
+        config-version: 1
+        init-config-version: 1
+        migrate-default-config-changes: true
+        send-player-details: true
+        send-server-details: true
+        velocity-ping-interval: 60
+        velocity-ping-save: true
+        velocity-servers:
+          default: ${runtimeProperties.viaVersionDefaultServerProtocol}
+        """.trimIndent() + "\n"
+
     private fun runtimeArtifactId(
         scope: RuntimeBundleScope,
         objectKey: String,
@@ -760,7 +650,7 @@ class RuntimeBundleService(
         val upstreamVersion: String,
         val upstreamBuild: Int,
         val contentType: String,
-        val inlineContent: ByteArray? = null,
+        val inlineContent: String? = null,
         val reusableAcrossScopes: Boolean = false,
     )
 
@@ -822,12 +712,6 @@ class RuntimeBundleService(
         }
     }
 
-    private data class ResolvedDownload(
-        val version: String,
-        val buildId: Int,
-        val url: String,
-    )
-
     private data class SyncResult(
         val updatedArtifacts: Int,
         val removedArtifacts: Int,
@@ -860,9 +744,6 @@ class RuntimeBundleService(
         private const val PROTOCOL_LIB_FILE_NAME = "ProtocolLib.jar"
         private const val MANAGED_ASSET_VERSION = "managed"
         private const val MANAGED_ASSET_BUILD = 0
-        private const val PAPER_DOWNLOAD_KEY = "server:default"
-        private const val STABLE_CHANNEL = "STABLE"
-        private const val DEFAULT_DOWNLOAD_SUFFIX = ":default"
         private const val USER_AGENT_HEADER = "User-Agent"
         private const val SHA_256 = "SHA-256"
         private const val JAR_CONTENT_TYPE = "application/java-archive"
@@ -872,5 +753,15 @@ class RuntimeBundleService(
         private val SUCCESS_STATUS_RANGE = 200..299
 
         private fun RuntimeArtifactDefinition.cacheKey(): String = sourceUrl
+
+        private fun RuntimeArtifactHashDocument.toManifestArtifact(): RuntimeManifestArtifact =
+            RuntimeManifestArtifact(
+                objectKey = objectKey,
+                sourceUrl = sourceUrl,
+                upstreamVersion = upstreamVersion,
+                upstreamBuild = upstreamBuild,
+                sha256 = sha256,
+                sizeBytes = sizeBytes,
+            )
     }
 }

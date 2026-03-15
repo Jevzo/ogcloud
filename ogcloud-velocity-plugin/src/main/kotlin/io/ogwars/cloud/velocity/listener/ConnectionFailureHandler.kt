@@ -6,7 +6,6 @@ import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.velocitypowered.api.event.Subscribe
 import com.velocitypowered.api.event.player.KickedFromServerEvent
-import com.velocitypowered.api.proxy.server.RegisteredServer
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.slf4j.Logger
 import java.util.*
@@ -25,7 +24,11 @@ class ConnectionFailureHandler(
             return
         }
 
-        unregisterDeadServer(event.server)
+        logger.warn(
+            "Backend connection failed without kick reason; leaving server registered: server={}, player={}",
+            event.server.serverInfo.name,
+            event.player.username,
+        )
 
         if (event.player.currentServer.isEmpty) {
             redirectOrDisconnect(event)
@@ -36,14 +39,6 @@ class ConnectionFailureHandler(
             KickedFromServerEvent.Notify.create(
                 legacySerializer.deserialize(VelocityMessages.Listener.ConnectionFailure.CONNECTION_LOST),
             )
-    }
-
-    private fun unregisterDeadServer(deadServer: RegisteredServer) {
-        val serverId = serverRegistry.findServerIdByRegistered(deadServer) ?: return
-
-        serverRegistry.unregisterServer(serverId)
-
-        logger.warn("Unregistered dead server after connection failure: {}", deadServer.serverInfo.name)
     }
 
     private fun redirectOrDisconnect(event: KickedFromServerEvent) {
