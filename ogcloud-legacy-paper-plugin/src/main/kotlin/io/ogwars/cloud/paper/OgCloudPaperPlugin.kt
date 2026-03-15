@@ -13,6 +13,7 @@ import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
+import io.ogwars.cloud.paper.util.ReflectionUtil
 import io.ogwars.cloud.server.api.OgCloudServerAPI
 import org.bukkit.Bukkit
 import org.bukkit.plugin.ServicePriority
@@ -112,10 +113,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     private fun applyConfiguredMaxPlayers() {
-        val handle = server.javaClass.getMethod("getHandle").invoke(server)
-        val maxPlayersField = handle.javaClass.getDeclaredField("maxPlayers").apply { isAccessible = true }
-
-        maxPlayersField.setInt(handle, configuredMaxPlayers)
+        ReflectionUtil.setMaxPlayers(server, configuredMaxPlayers)
 
         logger.info("Applied max players for server $serverId: $configuredMaxPlayers")
     }

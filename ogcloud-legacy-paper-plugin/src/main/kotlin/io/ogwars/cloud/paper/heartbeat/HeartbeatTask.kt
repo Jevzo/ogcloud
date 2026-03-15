@@ -4,6 +4,7 @@ import io.ogwars.cloud.common.event.ServerHeartbeatEvent
 import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.paper.OgCloudPaperPlugin
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
+import io.ogwars.cloud.paper.util.ReflectionUtil
 import com.google.gson.Gson
 
 class HeartbeatTask(
@@ -57,21 +58,10 @@ class HeartbeatTask(
             group = plugin.groupName,
             playerCount = plugin.server.onlinePlayers.size,
             maxPlayers = plugin.server.maxPlayers,
-            tps = getTps(),
+            tps = ReflectionUtil.getTps(MAX_TPS),
             memoryUsedMb = (runtime.totalMemory() - runtime.freeMemory()) / BYTES_PER_MB,
             gameState = plugin.gameStateManager.currentState.name,
         )
-    }
-
-    private fun getTps(): Double {
-        val handle =
-            plugin.server.javaClass
-                .getMethod("getHandle")
-                .invoke(plugin.server)
-        val recentTpsField = handle.javaClass.getField("recentTps")
-
-        val tps = recentTpsField.get(handle) as DoubleArray
-        return tps[0].coerceAtMost(MAX_TPS)
     }
 
     companion object {

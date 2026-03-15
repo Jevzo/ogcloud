@@ -5,7 +5,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
@@ -22,6 +22,11 @@ dependencies {
 tasks.shadowJar {
     archiveBaseName.set("ogcloud-paper-plugin")
     archiveClassifier.set("")
+
+    relocate("org.apache.kafka", "io.ogwars.cloud.paper.lib.kafka")
+    relocate("io.lettuce", "io.ogwars.cloud.paper.lib.lettuce")
+    relocate("io.netty", "io.ogwars.cloud.paper.lib.netty")
+    relocate("com.google.gson", "io.ogwars.cloud.paper.lib.gson")
 }
 
 tasks.processResources {
