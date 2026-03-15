@@ -1,0 +1,4 @@
+name: OgCloud
+version: "${version}"
+main: io.ogwars.cloud.paper.OgCloudPaperPlugin
+description: OgCloud Paper Plugin - Server lifecycle and heartbeat reporting
