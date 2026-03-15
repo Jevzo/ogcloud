@@ -5,7 +5,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(8))
     }
 }
 
@@ -14,7 +14,7 @@ dependencies {
 
     compileOnly("org.github.paperspigot:paperspigot-api:1.8.8-R0.1-SNAPSHOT")
 
-    implementation("org.apache.kafka:kafka-clients:4.2.0")
+    implementation("org.apache.kafka:kafka-clients:3.9.2")
     implementation("io.lettuce:lettuce-core:7.5.0.RELEASE")
     implementation("com.google.code.gson:gson:2.13.2")
 }

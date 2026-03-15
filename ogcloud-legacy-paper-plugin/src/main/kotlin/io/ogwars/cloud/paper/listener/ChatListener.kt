@@ -18,8 +18,7 @@ class ChatListener(
             return
         }
 
-        event.format = "%s"
-        event.message = escapePercents(buildFormattedMessage(event))
+        event.format = escapePercents(buildFormattedMessage(event))
     }
 
     private fun buildFormattedMessage(event: AsyncPlayerChatEvent): String {
