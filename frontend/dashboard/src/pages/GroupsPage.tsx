@@ -5,6 +5,13 @@ import { Link } from "react-router";
 
 import AppToasts from "@/components/AppToasts";
 import GroupFormFields from "@/components/GroupFormFields";
+import {
+    applyGroupTypeToFormValues,
+    applyRuntimeProfileToFormValues,
+    buildCreateGroupPayload,
+    createEmptyGroupValues,
+} from "@/lib/group-form";
+import { getRuntimeProfileLabel } from "@/lib/group-runtime";
 import { createServerGroup, listAllServerGroups, listAllTemplates } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import type { CreateGroupPayload, GroupFormValues, GroupRecord } from "@/types/group";
@@ -39,46 +46,6 @@ const applyFirstTemplateDefaults = (values: GroupFormValues, templates: Template
         templateVersion: firstTemplate.version,
     };
 };
-
-const getPlayersPerServerByGroupType = (groupType: string) => {
-    const normalizedType = groupType.toUpperCase();
-
-    if (normalizedType === "STATIC") {
-        return "100";
-    }
-
-    if (normalizedType === "PROXY") {
-        return "512";
-    }
-
-    return "50";
-};
-
-const createEmptyGroupValues = (): GroupFormValues => ({
-    id: "",
-    type: "DYNAMIC",
-    templateBucket: "ogcloud-templates",
-    templatePath: "ogcloud-templates",
-    templateVersion: "",
-    jvmFlags: "-Xms512M -Xmx512M",
-    drainTimeoutSeconds: "30",
-    serverImage: "ogwarsdev/paper:latest",
-    storageSize: "5Gi",
-    scaling: {
-        minOnline: "0",
-        maxInstances: "1",
-        playersPerServer: getPlayersPerServerByGroupType("DYNAMIC"),
-        scaleUpThreshold: "0.8",
-        scaleDownThreshold: "0.35",
-        cooldownSeconds: "30",
-    },
-    resources: {
-        memoryRequest: "512Mi",
-        memoryLimit: "1Gi",
-        cpuRequest: "250m",
-        cpuLimit: "1000m",
-    },
-});
 
 const GroupsPage = () => {
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
@@ -220,14 +187,14 @@ const GroupsPage = () => {
     ) => {
         setCreateValues((currentValue) => {
             if (field === "type") {
-                return {
-                    ...currentValue,
-                    type: value,
-                    scaling: {
-                        ...currentValue.scaling,
-                        playersPerServer: getPlayersPerServerByGroupType(value),
-                    },
-                };
+                return applyGroupTypeToFormValues(currentValue, value as GroupFormValues["type"]);
+            }
+
+            if (field === "runtimeProfile") {
+                return applyRuntimeProfileToFormValues(
+                    currentValue,
+                    value as GroupFormValues["runtimeProfile"],
+                );
             }
 
             return {
@@ -274,73 +241,6 @@ const GroupsPage = () => {
         }));
     };
 
-    const buildCreatePayload = (values: GroupFormValues): CreateGroupPayload => {
-        const requiredFields = [
-            ["Group name", values.id],
-            ["Template bucket", values.templateBucket],
-            ["Template", values.templatePath],
-            ["Server image", values.serverImage],
-            ["Memory request", values.resources.memoryRequest],
-            ["Memory limit", values.resources.memoryLimit],
-            ["CPU request", values.resources.cpuRequest],
-            ["CPU limit", values.resources.cpuLimit],
-        ] as const;
-
-        for (const [label, fieldValue] of requiredFields) {
-            if (!fieldValue.trim()) {
-                throw new Error(`${label} is required.`);
-            }
-        }
-
-        if (values.type.toUpperCase() === "STATIC" && !values.storageSize.trim()) {
-            throw new Error("Storage size is required for STATIC groups.");
-        }
-
-        const numericFields = {
-            drainTimeoutSeconds: Number.parseInt(values.drainTimeoutSeconds, 10),
-            minOnline: Number.parseInt(values.scaling.minOnline, 10),
-            maxInstances: Number.parseInt(values.scaling.maxInstances, 10),
-            playersPerServer: Number.parseInt(values.scaling.playersPerServer, 10),
-            scaleUpThreshold: Number.parseFloat(values.scaling.scaleUpThreshold),
-            scaleDownThreshold: Number.parseFloat(values.scaling.scaleDownThreshold),
-            cooldownSeconds: Number.parseInt(values.scaling.cooldownSeconds, 10),
-        };
-
-        for (const [key, numericValue] of Object.entries(numericFields)) {
-            if (!Number.isFinite(numericValue)) {
-                throw new Error(`Invalid value for ${key}.`);
-            }
-        }
-
-        return {
-            id: values.id.trim(),
-            type: values.type,
-            templateBucket: values.templateBucket.trim(),
-            templatePath: values.templatePath.trim(),
-            templateVersion: values.templateVersion.trim(),
-            jvmFlags: values.jvmFlags.trim(),
-            drainTimeoutSeconds: numericFields.drainTimeoutSeconds,
-            serverImage: values.serverImage.trim(),
-            scaling: {
-                minOnline: numericFields.minOnline,
-                maxInstances: numericFields.maxInstances,
-                playersPerServer: numericFields.playersPerServer,
-                scaleUpThreshold: numericFields.scaleUpThreshold,
-                scaleDownThreshold: numericFields.scaleDownThreshold,
-                cooldownSeconds: numericFields.cooldownSeconds,
-            },
-            resources: {
-                memoryRequest: values.resources.memoryRequest.trim(),
-                memoryLimit: values.resources.memoryLimit.trim(),
-                cpuRequest: values.resources.cpuRequest.trim(),
-                cpuLimit: values.resources.cpuLimit.trim(),
-            },
-            ...(values.type.toUpperCase() === "STATIC"
-                ? { storageSize: values.storageSize.trim() }
-                : {}),
-        };
-    };
-
     const closeCreateModal = () => {
         setIsCreateModalOpen(false);
         setCreateValues(applyFirstTemplateDefaults(createEmptyGroupValues(), templates));
@@ -351,7 +251,7 @@ const GroupsPage = () => {
         setIsCreating(true);
 
         try {
-            const payload = buildCreatePayload(createValues);
+            const payload: CreateGroupPayload = buildCreateGroupPayload(createValues);
             const accessToken = await getValidAccessToken();
             const createdGroup = await createServerGroup(accessToken, payload);
             setSuccessMessage(`Created server group ${createdGroup.id}.`);
@@ -487,6 +387,12 @@ const GroupsPage = () => {
                                             <p className="text-slate-500">Players/Server</p>
                                             <p className="mt-1 font-semibold text-slate-200">
                                                 {group.scaling.playersPerServer}
+                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-slate-500">Runtime</p>
+                                            <p className="mt-1 truncate font-semibold text-slate-200">
+                                                {getRuntimeProfileLabel(group.runtimeProfile)}
                                             </p>
                                         </div>
                                     </div>

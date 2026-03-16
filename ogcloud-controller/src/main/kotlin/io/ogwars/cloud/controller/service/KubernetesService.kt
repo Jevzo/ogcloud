@@ -3,8 +3,10 @@ package io.ogwars.cloud.controller.service
 import io.ogwars.cloud.common.model.GroupType
 import io.ogwars.cloud.controller.config.KubernetesProperties
 import io.ogwars.cloud.controller.config.PodRuntimeProperties
+import io.ogwars.cloud.controller.config.RuntimeProperties
 import io.ogwars.cloud.controller.model.GroupDocument
 import io.ogwars.cloud.controller.model.ServerDocument
+import io.ogwars.cloud.controller.model.resolvedRuntimeProfile
 import io.fabric8.kubernetes.api.model.*
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.slf4j.LoggerFactory
@@ -17,6 +19,7 @@ class KubernetesService(
     private val networkSettingsService: NetworkSettingsService,
     private val kubernetesProperties: KubernetesProperties,
     private val podRuntimeProperties: PodRuntimeProperties,
+    private val runtimeProperties: RuntimeProperties,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -52,8 +55,15 @@ class KubernetesService(
                 .addNewInitContainer()
                 .withName(TEMPLATE_LOADER_NAME)
                 .withImage(TEMPLATE_LOADER_IMAGE)
-                .addAllToEnv(buildTemplateLoaderEnvVars(group.templateBucket, podSpec.templatePath))
-                .addNewVolumeMount()
+                .addAllToEnv(
+                    buildTemplateLoaderEnvVars(
+                        templateBucket = group.templateBucket,
+                        templatePath = podSpec.templatePath,
+                        runtimeBucket = runtimeProperties.bucket,
+                        runtimeManifestPath = runtimeManifestPath(group),
+                        forwardingSecret = podRuntimeProperties.forwardingSecret,
+                    ),
+                ).addNewVolumeMount()
                 .withName(SERVER_DATA_VOLUME_NAME)
                 .withMountPath(DATA_DIR)
                 .endVolumeMount()
@@ -210,7 +220,7 @@ class KubernetesService(
         listOf(
             envVar("EULA", "TRUE"),
             envVar("TYPE", "PAPER"),
-            envVar("VERSION", MINECRAFT_VERSION),
+            envVar("VERSION", requireNotNull(group.resolvedRuntimeProfile()).minecraftVersion),
             envVar("OGCLOUD_SERVER_ID", server.id),
             envVar("OGCLOUD_GROUP", server.group),
             envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
@@ -281,15 +291,21 @@ class KubernetesService(
     }
 
     private fun buildTemplateLoaderEnvVars(
-        bucket: String,
+        templateBucket: String,
         templatePath: String,
+        runtimeBucket: String,
+        runtimeManifestPath: String,
+        forwardingSecret: String,
     ): List<EnvVar> =
         listOf(
             envVar("MINIO_ENDPOINT", podRuntimeProperties.minioEndpoint),
             envVar("MINIO_ACCESS_KEY", podRuntimeProperties.minioAccessKey),
             envVar("MINIO_SECRET_KEY", podRuntimeProperties.minioSecretKey),
-            envVar("MINIO_BUCKET", bucket),
+            envVar("MINIO_BUCKET", templateBucket),
             envVar("TEMPLATE_PATH", templatePath),
+            envVar("RUNTIME_BUCKET", runtimeBucket),
+            envVar("RUNTIME_MANIFEST_PATH", runtimeManifestPath),
+            envVar("FORWARDING_SECRET", forwardingSecret),
             envVar("DATA_DIR", DATA_DIR),
         )
 
@@ -300,7 +316,13 @@ class KubernetesService(
     ): List<EnvVar> =
         listOf(
             envVar("MODE", PUSH_MODE),
-            *buildTemplateLoaderEnvVars(bucket, templatePath).toTypedArray(),
+            *buildTemplateLoaderEnvVars(
+                templateBucket = bucket,
+                templatePath = templatePath,
+                runtimeBucket = runtimeProperties.bucket,
+                runtimeManifestPath = "",
+                forwardingSecret = "",
+            ).toTypedArray(),
             envVar("PUSH_ON_SHUTDOWN", if (pushOnShutdown) ENABLED_VALUE else DISABLED_VALUE),
         )
 
@@ -322,6 +344,17 @@ class KubernetesService(
         }
 
     private fun staticStorageClaimName(groupId: String): String = STATIC_STORAGE_CLAIM_PREFIX + groupId
+
+    private fun runtimeManifestPath(group: GroupDocument): String {
+        val scope =
+            if (group.type == GroupType.PROXY) {
+                io.ogwars.cloud.common.model.RuntimeBundleScope.VELOCITY
+            } else {
+                requireNotNull(group.resolvedRuntimeProfile()).runtimeScope
+            }
+
+        return "${scope.minioPrefix}/manifest.json"
+    }
 
     private fun envVar(
         name: String,
@@ -400,6 +433,5 @@ class KubernetesService(
         private const val PUSH_MODE = "push"
         private const val ENABLED_VALUE = "true"
         private const val DISABLED_VALUE = "false"
-        private const val MINECRAFT_VERSION = "1.21.11"
     }
 }

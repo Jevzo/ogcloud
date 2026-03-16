@@ -6,7 +6,6 @@ import io.ogwars.cloud.velocity.server.ServerRegistry
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
-import com.mojang.brigadier.context.CommandContext
 import com.velocitypowered.api.command.BrigadierCommand
 import com.velocitypowered.api.command.CommandSource
 import com.velocitypowered.api.proxy.ProxyServer
@@ -23,8 +22,10 @@ object OgCloudCommand {
         val node =
             LiteralArgumentBuilder
                 .literal<CommandSource>("ogcloud")
-                .executes(::sendOgCloudInfoMessage)
-                .then(
+                .executes {
+                    sendPrefixed(it.source, VelocityMessages.Command.OGCLOUD_INFO)
+                    return@executes 1
+                }.then(
                     ServerCommands
                         .create(apiClient, serverRegistry)
                         .requires { it.hasPermission("ogcloud.admin.server") },
@@ -49,11 +50,6 @@ object OgCloudCommand {
                 .build(),
             command,
         )
-    }
-
-    fun sendOgCloudInfoMessage(ctx: CommandContext<CommandSource>): Int {
-        sendPrefixed(ctx.source, VelocityMessages.Command.OGCLOUD_INFO)
-        return 1
     }
 
     fun sendMessage(

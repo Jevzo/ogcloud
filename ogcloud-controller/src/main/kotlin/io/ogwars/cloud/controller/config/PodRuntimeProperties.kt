@@ -7,6 +7,7 @@ data class PodRuntimeProperties(
     val minioEndpoint: String,
     val minioAccessKey: String,
     val minioSecretKey: String,
+    val forwardingSecret: String,
     val kafkaBrokers: String,
     val kafkaConsumerRestartInitialBackoffMs: String,
     val kafkaConsumerRestartMaxBackoffMs: String,

@@ -85,6 +85,7 @@ type NetworkConfig = {
     imageTags: ImageTags;
     apiEmail: string;
     apiPassword: string;
+    podForwardingSecret: string;
     jwtSecret: string;
     corsAllowedOrigin: string;
     minioAccessKey: string;
@@ -122,7 +123,7 @@ const COMMAND_DOCS: Record<RequiredCommand, string> = {
 
 const REPO_OWNER = "Jevzo";
 const REPO_NAME = "ogcloud";
-const REPO_REF = "main";
+const REPO_REF = "feature-implement-multi-version"; // FIXME: Revert before merge
 const REMOTE_HELM_PATH = "helm";
 const HELM_REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/${REPO_REF}/helm`;
 
@@ -156,7 +157,7 @@ const STATE_FILE = path.join(STATE_ROOT, "state.json");
 const BACKING_SERVICES = ["mongodb", "redis", "minio", "kafka"];
 const COMPONENTS: ComponentName[] = ["dashboard", "api", "loadbalancer", "controller"];
 const NETWORK_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
-const DEFAULT_IMAGE_VERSION = "1.2.2";
+const DEFAULT_IMAGE_VERSION = "1.2.3"; // FIXME: Update before merge
 const DEFAULT_INGRESS_CLASS_NAME = "nginx";
 const FIXED_IMAGE_REPOSITORIES = {
     api: "ogwarsdev/api",
@@ -955,6 +956,23 @@ function defaultConnections(namespace: string): NetworkConnections {
     };
 }
 
+function defaultPodMinioEndpoint(namespace: string): string {
+    return `minio.${namespace}.svc.cluster.local:9000`;
+}
+
+function resolvePodMinioEndpoint(minioEndpoint: string): string {
+    const trimmed = minioEndpoint.trim();
+    if (!trimmed.includes("://")) {
+        return trimmed.replace(/\/+$/, "");
+    }
+
+    try {
+        return new URL(trimmed).host;
+    } catch {
+        return trimmed.replace(/^[a-z]+:\/\//i, "").replace(/\/.*$/, "");
+    }
+}
+
 async function generateConfig(
     networkArg: string | null | undefined,
     state: StateFile,
@@ -1028,6 +1046,9 @@ async function generateConfig(
     });
     const apiPassword = await askInput("Service API password", {
         defaultValue: existing?.apiPassword || randomSecret(),
+    });
+    const podForwardingSecret = await askInput("Proxy forwarding secret", {
+        defaultValue: existing?.podForwardingSecret || randomSecret(),
     });
     const jwtSecret = await askInput("JWT secret", {
         defaultValue: existing?.jwtSecret || randomSecret(),
@@ -1135,8 +1156,18 @@ async function generateConfig(
                 apiPassword,
                 minioAccessKey,
                 minioSecretKey,
+                podForwardingSecret,
+                podMinioEndpoint:
+                    backingMode === "external"
+                        ? resolvePodMinioEndpoint(connections.minioEndpoint)
+                        : defaultPodMinioEndpoint(namespace),
                 podMinioAccessKey: minioAccessKey,
                 podMinioSecretKey: minioSecretKey,
+                podKafkaBrokers: connections.kafkaBrokers,
+                podRedisHost: connections.redisHost,
+                podRedisPort: connections.redisPort,
+                podMongodbUri: connections.mongodbUri,
+                podApiUrl: connections.apiUrl,
                 podApiEmail: apiEmail,
                 podApiPassword: apiPassword,
             },
@@ -1202,6 +1233,7 @@ async function generateConfig(
         },
         apiEmail,
         apiPassword,
+        podForwardingSecret,
         jwtSecret,
         corsAllowedOrigin,
         minioAccessKey,

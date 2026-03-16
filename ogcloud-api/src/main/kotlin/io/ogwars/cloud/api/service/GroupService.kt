@@ -12,6 +12,8 @@ import io.ogwars.cloud.api.model.ScalingConfig
 import io.ogwars.cloud.api.model.ServerDocument
 import io.ogwars.cloud.api.redis.ServerRedisRepository
 import io.ogwars.cloud.api.repository.GroupRepository
+import io.ogwars.cloud.common.model.BackendRuntimeProfile
+import io.ogwars.cloud.common.model.GroupType
 import io.ogwars.cloud.common.model.ServerState
 import org.slf4j.LoggerFactory
 import org.springframework.core.task.TaskExecutor
@@ -53,6 +55,7 @@ class GroupService(
                 "templatePath",
                 "templateVersion",
                 "serverImage",
+                "runtimeProfile",
             )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<GroupDocument>(queryObject)
@@ -72,6 +75,12 @@ class GroupService(
     fun create(request: CreateGroupRequest): GroupResponse {
         val document = request.toDocument()
         validateScaling(document.scaling)
+        validateRuntimeSettings(
+            type = document.type,
+            runtimeProfile = document.runtimeProfile,
+            serverImage = document.serverImage,
+            requireExplicitRuntimeProfile = true,
+        )
 
         val saved =
             try {
@@ -85,7 +94,11 @@ class GroupService(
             targetType = "GROUP",
             targetId = saved.id,
             summary = "Created group ${saved.id}",
-            metadata = mapOf("type" to saved.type.name),
+            metadata =
+                buildMap {
+                    put("type", saved.type.name)
+                    saved.resolvedRuntimeProfile()?.let { put("runtimeProfile", it.name) }
+                },
         )
 
         return saved.toResponse()
@@ -97,7 +110,15 @@ class GroupService(
     ): GroupResponse {
         val existing = requireGroup(name)
         val updatedScaling = request.scaling?.toModel() ?: existing.scaling
+        val updatedRuntimeProfile = request.runtimeProfile ?: existing.runtimeProfile
+        val updatedServerImage = request.serverImage ?: existing.serverImage
         validateScaling(updatedScaling)
+        validateRuntimeSettings(
+            type = existing.type,
+            runtimeProfile = updatedRuntimeProfile,
+            serverImage = updatedServerImage,
+            requireExplicitRuntimeProfile = false,
+        )
 
         val saved =
             groupRepository.save(
@@ -109,7 +130,8 @@ class GroupService(
                     resources = request.resources?.toModel() ?: existing.resources,
                     jvmFlags = request.jvmFlags ?: existing.jvmFlags,
                     drainTimeoutSeconds = request.drainTimeoutSeconds ?: existing.drainTimeoutSeconds,
-                    serverImage = request.serverImage ?: existing.serverImage,
+                    serverImage = updatedServerImage,
+                    runtimeProfile = updatedRuntimeProfile,
                     storageSize = request.storageSize ?: existing.storageSize,
                     updatedAt = Instant.now(),
                 ),
@@ -282,6 +304,85 @@ class GroupService(
         }
     }
 
+    private fun validateRuntimeSettings(
+        type: GroupType,
+        runtimeProfile: BackendRuntimeProfile?,
+        serverImage: String,
+        requireExplicitRuntimeProfile: Boolean,
+    ) {
+        if (type == GroupType.PROXY) {
+            if (runtimeProfile != null) {
+                throw IllegalArgumentException("runtimeProfile must be omitted for proxy groups")
+            }
+            if (!isVelocityImage(serverImage)) {
+                throw IllegalArgumentException("Proxy groups must use a velocity image")
+            }
+            return
+        }
+
+        if (!isPaperImage(serverImage)) {
+            throw IllegalArgumentException("Backend groups must use a paper image")
+        }
+
+        val effectiveRuntimeProfile =
+            runtimeProfile
+                ?: if (requireExplicitRuntimeProfile) {
+                    throw IllegalArgumentException("runtimeProfile is required for backend groups")
+                } else {
+                    BackendRuntimeProfile.MODERN_1_21_11
+                }
+
+        when (effectiveRuntimeProfile) {
+            BackendRuntimeProfile.LEGACY_1_8_8 -> {
+                if (serverImage != LEGACY_SERVER_IMAGE) {
+                    throw IllegalArgumentException(
+                        "LEGACY_1_8_8 groups must use serverImage=$LEGACY_SERVER_IMAGE",
+                    )
+                }
+            }
+
+            BackendRuntimeProfile.MODERN_1_21_11 -> {
+                if (imageTag(serverImage) != effectiveRuntimeProfile.minecraftVersion) {
+                    throw IllegalArgumentException(
+                        "MODERN_1_21_11 groups must use a paper image tagged ${effectiveRuntimeProfile.minecraftVersion}",
+                    )
+                }
+            }
+        }
+    }
+
+    private fun isVelocityImage(serverImage: String): Boolean {
+        val name = imageName(serverImage)
+        return name == "velocity" || name.endsWith("/velocity")
+    }
+
+    private fun isPaperImage(serverImage: String): Boolean {
+        val name = imageName(serverImage)
+        return name == "paper" || name.endsWith("/paper")
+    }
+
+    private fun imageName(serverImage: String): String {
+        val normalized = serverImage.substringBefore('@')
+        val lastColon = normalized.lastIndexOf(':')
+        val lastSlash = normalized.lastIndexOf('/')
+        return if (lastColon > lastSlash) {
+            normalized.substring(0, lastColon).lowercase()
+        } else {
+            normalized.lowercase()
+        }
+    }
+
+    private fun imageTag(serverImage: String): String {
+        val normalized = serverImage.substringBefore('@')
+        val lastColon = normalized.lastIndexOf(':')
+        val lastSlash = normalized.lastIndexOf('/')
+        return if (lastColon > lastSlash) {
+            normalized.substring(lastColon + 1)
+        } else {
+            ""
+        }
+    }
+
     private fun requireGroup(name: String): GroupDocument =
         groupRepository
             .findById(name)
@@ -305,5 +406,6 @@ class GroupService(
         private const val DELETE_POLL_INTERVAL_MS = 1_000L
         private const val DELETE_TIMEOUT_BUFFER_SECONDS = 45L
         private const val MIN_DELETE_WAIT_SECONDS = 30L
+        private const val LEGACY_SERVER_IMAGE = "ogwarsdev/paper:1.8.8"
     }
 }

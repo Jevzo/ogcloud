@@ -8,6 +8,7 @@ import io.ogwars.cloud.velocity.kafka.KafkaManager
 import io.ogwars.cloud.velocity.network.NetworkState
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import com.google.gson.Gson
+import com.velocitypowered.api.proxy.ProxyServer
 import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -16,6 +17,7 @@ class PermissionUpdateConsumer(
     private val kafkaManager: KafkaManager,
     private val permissionCache: PermissionCache,
     private val networkState: NetworkState,
+    private val proxyServer: ProxyServer,
     private val logger: Logger,
     private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
     proxyId: String,
@@ -51,11 +53,20 @@ class PermissionUpdateConsumer(
         }
 
         val uuid = parseUuid(event.uuid) ?: return
+        val isCached = permissionCache.getPlayer(uuid) != null
+        val isOnline = proxyServer.getPlayer(uuid).isPresent
+        if (!isCached && !isOnline) {
+            return
+        }
 
-        permissionCache.getPlayer(uuid) ?: return
         permissionCache.cachePlayerFromEvent(uuid, event)
 
-        logger.info("Permission cache refreshed: uuid={}, groupId={}", event.uuid, event.groupId)
+        logger.info(
+            "Permission cache {}: uuid={}, groupId={}",
+            if (isCached) "refreshed" else "hydrated",
+            event.uuid,
+            event.groupId,
+        )
     }
 
     private fun parseUuid(rawUuid: String): UUID? =

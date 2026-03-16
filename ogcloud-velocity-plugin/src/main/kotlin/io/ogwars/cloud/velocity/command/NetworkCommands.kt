@@ -16,18 +16,23 @@ object NetworkCommands {
                 LiteralArgumentBuilder.literal<CommandSource>("maintenance").then(
                     RequiredArgumentBuilder
                         .argument<CommandSource, Boolean>("enabled", BoolArgumentType.bool())
-                        .executes { ctx -> setMaintenance(ctx, apiClient) },
+                        .executes { ctx ->
+                            setMaintenance(ctx, apiClient)
+                            return@executes 1
+                        },
                 ),
             ).then(
                 LiteralArgumentBuilder.literal<CommandSource>("info").executes { ctx ->
+
                     networkInfo(ctx, apiClient)
+                    return@executes 1
                 },
             )
 
     private fun setMaintenance(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
         val enabled = ctx.getArgument("enabled", Boolean::class.java)
 
@@ -45,14 +50,12 @@ object NetworkCommands {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 
     private fun networkInfo(
         ctx: CommandContext<CommandSource>,
         apiClient: ApiClient,
-    ): Int {
+    ) {
         val source = ctx.source
 
         apiClient
@@ -95,7 +98,5 @@ object NetworkCommands {
                 OgCloudCommand.sendFailure(source, error)
                 null
             }
-
-        return 1
     }
 }

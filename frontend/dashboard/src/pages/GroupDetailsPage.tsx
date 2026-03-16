@@ -6,6 +6,12 @@ import { Link, useNavigate, useParams } from "react-router";
 import AppToasts from "@/components/AppToasts";
 import GroupFormFields from "@/components/GroupFormFields";
 import {
+    applyRuntimeProfileToFormValues,
+    buildUpdateGroupPayload,
+    toGroupFormValues,
+} from "@/lib/group-form";
+import { getRuntimeProfileLabel } from "@/lib/group-runtime";
+import {
     deleteServerGroup,
     getGroupByName,
     listAllTemplates,
@@ -18,32 +24,6 @@ import { formatDateTime } from "@/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import type { GroupFormValues, GroupRecord, UpdateGroupPayload } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
-
-const toGroupFormValues = (group: GroupRecord): GroupFormValues => ({
-    id: group.id,
-    type: group.type,
-    templateBucket: group.templateBucket,
-    templatePath: group.templatePath,
-    templateVersion: group.templateVersion,
-    jvmFlags: group.jvmFlags,
-    drainTimeoutSeconds: `${group.drainTimeoutSeconds}`,
-    serverImage: group.serverImage,
-    storageSize: group.storageSize,
-    scaling: {
-        minOnline: `${group.scaling.minOnline}`,
-        maxInstances: `${group.scaling.maxInstances}`,
-        playersPerServer: `${group.scaling.playersPerServer}`,
-        scaleUpThreshold: `${group.scaling.scaleUpThreshold}`,
-        scaleDownThreshold: `${group.scaling.scaleDownThreshold}`,
-        cooldownSeconds: `${group.scaling.cooldownSeconds}`,
-    },
-    resources: {
-        memoryRequest: group.resources.memoryRequest,
-        memoryLimit: group.resources.memoryLimit,
-        cpuRequest: group.resources.cpuRequest,
-        cpuLimit: group.resources.cpuLimit,
-    },
-});
 
 const GroupDetailsPage = () => {
     const params = useParams();
@@ -162,10 +142,15 @@ const GroupDetailsPage = () => {
     ) => {
         setFormValues((currentValue) =>
             currentValue
-                ? {
-                      ...currentValue,
-                      [field]: value,
-                  }
+                ? field === "runtimeProfile"
+                    ? applyRuntimeProfileToFormValues(
+                          currentValue,
+                          value as GroupFormValues["runtimeProfile"],
+                      )
+                    : {
+                          ...currentValue,
+                          [field]: value,
+                      }
                 : currentValue,
         );
     };
@@ -219,70 +204,6 @@ const GroupDetailsPage = () => {
         );
     };
 
-    const buildUpdatePayload = (values: GroupFormValues): UpdateGroupPayload => {
-        const requiredFields = [
-            ["Template bucket", values.templateBucket],
-            ["Template", values.templatePath],
-            ["Server image", values.serverImage],
-            ["Memory request", values.resources.memoryRequest],
-            ["Memory limit", values.resources.memoryLimit],
-            ["CPU request", values.resources.cpuRequest],
-            ["CPU limit", values.resources.cpuLimit],
-        ] as const;
-
-        for (const [label, fieldValue] of requiredFields) {
-            if (!fieldValue.trim()) {
-                throw new Error(`${label} is required.`);
-            }
-        }
-
-        if (values.type.toUpperCase() === "STATIC" && !values.storageSize.trim()) {
-            throw new Error("Storage size is required for STATIC groups.");
-        }
-
-        const numericFields = {
-            drainTimeoutSeconds: Number.parseInt(values.drainTimeoutSeconds, 10),
-            minOnline: Number.parseInt(values.scaling.minOnline, 10),
-            maxInstances: Number.parseInt(values.scaling.maxInstances, 10),
-            playersPerServer: Number.parseInt(values.scaling.playersPerServer, 10),
-            scaleUpThreshold: Number.parseFloat(values.scaling.scaleUpThreshold),
-            scaleDownThreshold: Number.parseFloat(values.scaling.scaleDownThreshold),
-            cooldownSeconds: Number.parseInt(values.scaling.cooldownSeconds, 10),
-        };
-
-        for (const [key, numericValue] of Object.entries(numericFields)) {
-            if (!Number.isFinite(numericValue)) {
-                throw new Error(`Invalid value for ${key}.`);
-            }
-        }
-
-        return {
-            templateBucket: values.templateBucket.trim(),
-            templatePath: values.templatePath.trim(),
-            templateVersion: values.templateVersion.trim(),
-            jvmFlags: values.jvmFlags.trim(),
-            drainTimeoutSeconds: numericFields.drainTimeoutSeconds,
-            serverImage: values.serverImage.trim(),
-            scaling: {
-                minOnline: numericFields.minOnline,
-                maxInstances: numericFields.maxInstances,
-                playersPerServer: numericFields.playersPerServer,
-                scaleUpThreshold: numericFields.scaleUpThreshold,
-                scaleDownThreshold: numericFields.scaleDownThreshold,
-                cooldownSeconds: numericFields.cooldownSeconds,
-            },
-            resources: {
-                memoryRequest: values.resources.memoryRequest.trim(),
-                memoryLimit: values.resources.memoryLimit.trim(),
-                cpuRequest: values.resources.cpuRequest.trim(),
-                cpuLimit: values.resources.cpuLimit.trim(),
-            },
-            ...(values.type.toUpperCase() === "STATIC"
-                ? { storageSize: values.storageSize.trim() }
-                : {}),
-        };
-    };
-
     const handleSaveGroup = async () => {
         if (!formValues || !group) {
             return;
@@ -292,7 +213,7 @@ const GroupDetailsPage = () => {
         setErrorMessage(null);
 
         try {
-            const payload = buildUpdatePayload(formValues);
+            const payload: UpdateGroupPayload = buildUpdateGroupPayload(formValues);
             const accessToken = await getValidAccessToken();
             const updatedGroup = await updateServerGroup(accessToken, group.id, payload);
             setGroup(updatedGroup);
@@ -578,6 +499,14 @@ const GroupDetailsPage = () => {
                                     }`}
                                 >
                                     {group ? (group.maintenance ? "Enabled" : "Disabled") : "--"}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                    Runtime
+                                </p>
+                                <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                                    {group ? getRuntimeProfileLabel(group.runtimeProfile) : "--"}
                                 </p>
                             </div>
                             <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
