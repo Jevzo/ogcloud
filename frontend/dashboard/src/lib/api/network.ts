@@ -91,3 +91,13 @@ export const toggleNetworkMaintenance = async (accessToken: string, maintenance:
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
 };
+
+export const requestNetworkRestart = async (accessToken: string) => {
+    try {
+        await apiClient.post("/api/v1/network/restart", undefined, {
+            headers: getAuthHeaders(accessToken),
+        });
+    } catch (error) {
+        throw toApiError(error, SESSION_EXPIRED_MESSAGE);
+    }
+};

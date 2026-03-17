@@ -6,6 +6,7 @@ import io.ogwars.cloud.api.exception.GroupDeletionTimeoutException
 import io.ogwars.cloud.api.exception.GroupNotFoundException
 import io.ogwars.cloud.api.exception.GroupRestartTimeoutException
 import io.ogwars.cloud.api.kafka.GroupUpdateProducer
+import io.ogwars.cloud.api.kafka.ServerRequestProducer
 import io.ogwars.cloud.api.kafka.ServerStopProducer
 import io.ogwars.cloud.api.model.GroupDocument
 import io.ogwars.cloud.api.model.ScalingConfig
@@ -32,6 +33,7 @@ class GroupService(
     private val mongoTemplate: MongoTemplate,
     private val groupUpdateProducer: GroupUpdateProducer,
     private val serverRedisRepository: ServerRedisRepository,
+    private val serverRequestProducer: ServerRequestProducer,
     private val serverStopProducer: ServerStopProducer,
     private val auditLogService: AuditLogService,
     private val groupOperationTaskExecutor: TaskExecutor,
@@ -237,9 +239,18 @@ class GroupService(
             return
         }
 
-        val saved = groupRepository.save(currentGroup.copy(maintenance = false, updatedAt = Instant.now()))
+        requestRestartServers(currentGroup)
+    }
 
-        groupUpdateProducer.publishGroupUpdate(saved)
+    private fun requestRestartServers(group: GroupDocument) {
+        repeat(group.scaling.minOnline) {
+            val serverId = serverRequestProducer.requestServer(group.id)
+            log.info(
+                "Requested replacement server for group restart: group={}, serverId={}",
+                group.id,
+                serverId,
+            )
+        }
     }
 
     private fun stopServersInGroup(

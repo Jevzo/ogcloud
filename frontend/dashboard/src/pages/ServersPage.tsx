@@ -9,7 +9,8 @@ import DeployServerModal from "@/components/DeployServerModal";
 import ExecuteCommandModal from "@/components/ExecuteCommandModal";
 import ServerActionButtons from "@/components/ServerActionButtons";
 import TableRefreshButton from "@/components/TableRefreshButton";
-import { listGroups, listServers } from "@/lib/api";
+import { listAllServerGroups, listServers } from "@/lib/api";
+import { getRuntimeProfileLabel } from "@/lib/group-runtime";
 import { hasAdminAccess } from "@/lib/roles";
 import { getServerActionSuccessMessage, runServerAction } from "@/lib/server-actions";
 import {
@@ -19,9 +20,10 @@ import {
     getServerStateTone,
 } from "@/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
-import type { GroupListItem, PaginatedResponse } from "@/types/dashboard";
+import type { PaginatedResponse } from "@/types/dashboard";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { CommandTargetType } from "@/types/command";
+import type { GroupRecord } from "@/types/group";
 import type { ServerActionKind, ServerRecord } from "@/types/server";
 
 const SERVER_PAGE_SIZE = 10;
@@ -42,7 +44,7 @@ const ServersPage = () => {
 
     const [serverPage, setServerPage] =
         useState<PaginatedResponse<ServerRecord>>(EMPTY_SERVER_PAGE);
-    const [groups, setGroups] = useState<GroupListItem[]>([]);
+    const [groups, setGroups] = useState<GroupRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingGroups, setIsLoadingGroups] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -94,7 +96,7 @@ const ServersPage = () => {
         const loadGroupsForFilter = async () => {
             try {
                 const accessToken = await getValidAccessToken();
-                const nextGroups = await listGroups(accessToken);
+                const nextGroups = await listAllServerGroups(accessToken);
 
                 if (!active) {
                     return;
@@ -187,6 +189,7 @@ const ServersPage = () => {
     const totalPages = getPaginatedTotalPages(serverPage);
     const hasServers = serverPage.items.length > 0;
     const hasGroupFilter = groupFilter.trim().length > 0;
+    const groupMetadataById = new Map(groups.map((group) => [group.id, group] as const));
     const commandTarget = hasGroupFilter ? groupFilter : "all";
     const commandTargetType: CommandTargetType = hasGroupFilter ? "group" : "all";
     const commandButtonLabel = hasGroupFilter ? `Command ${groupFilter}` : "Command All Servers";
@@ -195,6 +198,15 @@ const ServersPage = () => {
         ? `Send a console command to every running server in ${groupFilter}.`
         : "Send a console command to every running server across the network.";
     const commandSubmitLabel = hasGroupFilter ? "Send To Group" : "Send To All Servers";
+    const getServerRuntimeLabel = (server: ServerRecord) => {
+        const group = groupMetadataById.get(server.group);
+
+        if (group) {
+            return getRuntimeProfileLabel(group.runtimeProfile);
+        }
+
+        return server.type.toUpperCase() === "PROXY" ? getRuntimeProfileLabel(null) : "--";
+    };
 
     return (
         <div className="space-y-8">
@@ -318,13 +330,13 @@ const ServersPage = () => {
                         <thead>
                             <tr className="border-b border-slate-800 bg-slate-800/30">
                                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Instance ID
-                                </th>
-                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
-                                    Name
+                                    Server
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
                                     Group
+                                </th>
+                                <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
+                                    Backend Runtime
                                 </th>
                                 <th className="px-6 py-4 text-xs font-semibold uppercase text-slate-500">
                                     State
@@ -375,22 +387,28 @@ const ServersPage = () => {
                                         className="cursor-pointer transition-colors hover:bg-slate-800/30"
                                     >
                                         <td className="px-6 py-4">
-                                            <span className="font-mono text-sm text-slate-200">
-                                                {server.id}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
                                             <div>
                                                 <p className="text-sm font-semibold text-white">
                                                     {server.displayName}
                                                 </p>
                                                 <p className="text-xs text-slate-500">
-                                                    {server.type}
+                                                    {groupMetadataById.get(server.group)?.type ??
+                                                        server.type}
                                                 </p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-300">
                                             {server.group}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-200">
+                                                    {getServerRuntimeLabel(server)}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {server.templateVersion}
+                                                </p>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span

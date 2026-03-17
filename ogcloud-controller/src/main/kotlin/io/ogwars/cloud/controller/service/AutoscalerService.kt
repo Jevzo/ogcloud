@@ -20,18 +20,29 @@ class AutoscalerService(
     private val serverRedisRepository: ServerRedisRepository,
     private val serverLifecycleService: ServerLifecycleService,
     private val scalingLogService: ScalingLogService,
+    private val networkSettingsService: NetworkSettingsService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val lastScaleAction = ConcurrentHashMap<String, Instant>()
 
     @Scheduled(fixedRate = EVALUATION_INTERVAL_MS)
     fun evaluate() {
+        val networkMaintenance = networkSettingsService.findGlobal().maintenance
+        if (networkMaintenance) {
+            return
+        }
+
         serverLifecycleService.checkDrainTimeouts()
 
-        groupRepository.findAll().forEach(::evaluateGroupSafely)
+        groupRepository.findAll().forEach { group -> evaluateGroupSafely(group) }
     }
 
     fun evaluateGroupNow(groupId: String) {
+        val networkMaintenance = networkSettingsService.findGlobal().maintenance
+        if (networkMaintenance) {
+            return
+        }
+
         val group = groupRepository.findById(groupId).orElse(null) ?: return
         evaluateGroupSafely(group, onDemand = true)
     }

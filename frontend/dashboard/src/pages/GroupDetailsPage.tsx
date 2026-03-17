@@ -25,6 +25,9 @@ import { useAuthStore } from "@/store/auth-store";
 import type { GroupFormValues, GroupRecord, UpdateGroupPayload } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
+const createRestartConfirmationCode = () =>
+    `${Math.floor(100000 + Math.random() * 900000)}`;
+
 const GroupDetailsPage = () => {
     const params = useParams();
     const navigate = useNavigate();
@@ -40,6 +43,9 @@ const GroupDetailsPage = () => {
     const [isRestartingGroup, setIsRestartingGroup] = useState(false);
     const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+    const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+    const [restartConfirmationCode, setRestartConfirmationCode] = useState("");
+    const [restartConfirmationInput, setRestartConfirmationInput] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -135,6 +141,27 @@ const GroupDetailsPage = () => {
             window.clearTimeout(timeoutId);
         };
     }, [successMessage]);
+
+    const resetRestartModal = () => {
+        setIsRestartModalOpen(false);
+        setRestartConfirmationCode("");
+        setRestartConfirmationInput("");
+    };
+
+    const closeRestartModal = () => {
+        if (isRestartingGroup) {
+            return;
+        }
+
+        resetRestartModal();
+    };
+
+    const openRestartModal = () => {
+        setRestartConfirmationCode(createRestartConfirmationCode());
+        setRestartConfirmationInput("");
+        setErrorMessage(null);
+        setIsRestartModalOpen(true);
+    };
 
     const setTopLevelField = (
         field: Exclude<keyof GroupFormValues, "scaling" | "resources">,
@@ -259,6 +286,16 @@ const GroupDetailsPage = () => {
             return;
         }
 
+        if (!group.maintenance) {
+            setErrorMessage("Enable group maintenance before requesting a restart.");
+            return;
+        }
+
+        if (restartConfirmationInput.trim() !== restartConfirmationCode) {
+            setErrorMessage("Enter the generated 6-digit code to confirm the restart.");
+            return;
+        }
+
         setIsRestartingGroup(true);
         setErrorMessage(null);
 
@@ -266,6 +303,7 @@ const GroupDetailsPage = () => {
             const accessToken = await getValidAccessToken();
             await restartServerGroup(accessToken, group.id);
             setSuccessMessage(`${group.id} restart requested.`);
+            resetRestartModal();
             await loadGroup(false);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : "Unable to restart group.");
@@ -316,6 +354,10 @@ const GroupDetailsPage = () => {
             setIsDeleteModalOpen(false);
         }
     };
+
+    const isRestartConfirmationValid =
+        restartConfirmationCode.length === 6 &&
+        restartConfirmationInput.trim() === restartConfirmationCode;
 
     return (
         <div className="space-y-8">
@@ -369,14 +411,21 @@ const GroupDetailsPage = () => {
                 <div className="flex flex-wrap gap-2">
                     <button
                         type="button"
-                        disabled={isRestartingGroup || !group}
-                        onClick={() => void handleRestartGroup()}
-                        className="app-button-field button-hover-lift button-shadow-primary inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={!group || !group.maintenance || isRestartingGroup}
+                        onClick={openRestartModal}
+                        title={
+                            !group
+                                ? "Group is still loading."
+                                : !group.maintenance
+                                  ? "Enable group maintenance before requesting a restart."
+                                  : "Request a full group restart."
+                        }
+                        className="app-button-field button-hover-lift inline-flex items-center gap-2 rounded-lg border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <FiRefreshCw
                             className={`h-4 w-4 ${isRestartingGroup ? "animate-spin" : ""}`}
                         />
-                        {isRestartingGroup ? "Restarting..." : "Restart Group"}
+                        {isRestartingGroup ? "Requesting..." : "Restart Group"}
                     </button>
                     <button
                         type="button"
@@ -406,6 +455,103 @@ const GroupDetailsPage = () => {
                     </button>
                 </div>
             </motion.section>
+
+            {isRestartModalOpen && group && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-white">
+                                    Restart Group
+                                </h3>
+                                <p className="text-sm text-slate-400">
+                                    This requests a phased restart for {group.id}.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeRestartModal}
+                                className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
+                                aria-label="Close"
+                            >
+                                <FiX className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 px-6 py-5">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
+                                <div className="flex items-start gap-3">
+                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                                    <p>
+                                        The backend will restart the servers in this group. Type
+                                        the code below to confirm this destructive action.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    Confirmation Code
+                                </p>
+                                <p className="mt-2 font-mono text-2xl font-semibold tracking-[0.35em] text-white">
+                                    {restartConfirmationCode}
+                                </p>
+                            </div>
+
+                            <div className="app-field-stack">
+                                <label
+                                    htmlFor="group-restart-confirmation"
+                                    className="text-sm font-medium text-slate-200"
+                                >
+                                    Type the 6-digit code
+                                </label>
+                                <p className="-mt-1 text-xs text-slate-500">
+                                    This is a frontend confirmation step to reduce accidental
+                                    restart requests.
+                                </p>
+                                <input
+                                    id="group-restart-confirmation"
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={restartConfirmationInput}
+                                    onChange={(event) =>
+                                        setRestartConfirmationInput(
+                                            event.target.value.replace(/\D/g, "").slice(0, 6),
+                                        )
+                                    }
+                                    maxLength={6}
+                                    autoFocus
+                                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm font-mono tracking-[0.28em] text-slate-100 outline-none transition focus:border-red-400/50 focus:ring-2 focus:ring-red-400/10"
+                                    placeholder="000000"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 border-t border-slate-800 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={closeRestartModal}
+                                className="app-button-field button-hover-lift button-shadow-neutral rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!isRestartConfirmationValid || isRestartingGroup}
+                                onClick={() => void handleRestartGroup()}
+                                className="app-button-field button-hover-lift rounded-lg bg-red-500/12 px-4 py-2.5 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isRestartingGroup ? "Requesting..." : "Request Restart"}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             {isMaintenanceModalOpen && group && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">

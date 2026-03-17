@@ -75,7 +75,7 @@ export const updatePlayerPermissionGroup = async (
     duration = "-1",
 ) => {
     try {
-        const response = await apiClient.put<PersistedPlayerRecord>(
+        const response = await apiClient.put<PlayerRecord>(
             `/api/v1/players/${encodeURIComponent(playerUuid)}/group`,
             { group, duration },
             {

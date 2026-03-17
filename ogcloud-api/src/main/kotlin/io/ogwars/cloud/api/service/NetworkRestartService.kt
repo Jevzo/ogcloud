@@ -1,6 +1,5 @@
 package io.ogwars.cloud.api.service
 
-import io.ogwars.cloud.api.kafka.GroupUpdateProducer
 import io.ogwars.cloud.api.kafka.ServerRequestProducer
 import io.ogwars.cloud.api.kafka.ServerStopProducer
 import io.ogwars.cloud.api.model.GroupDocument
@@ -22,7 +21,6 @@ class NetworkRestartService(
     private val mongoTemplate: MongoTemplate,
     private val groupRepository: GroupRepository,
     private val serverRedisRepository: ServerRedisRepository,
-    private val groupUpdateProducer: GroupUpdateProducer,
     private val serverRequestProducer: ServerRequestProducer,
     private val serverStopProducer: ServerStopProducer,
     private val auditLogService: AuditLogService,
@@ -70,11 +68,11 @@ class NetworkRestartService(
             targets =
                 groups
                     .filter { it.type == GroupType.PROXY }
-                    .mapNotNull { createRestartTarget(it, isDefault = false) },
+                    .mapNotNull(::createRestartTarget),
         )
 
         if (defaultGroup.type != GroupType.PROXY) {
-            createRestartTarget(defaultGroup, isDefault = true)?.let { target ->
+            createRestartTarget(defaultGroup)?.let { target ->
                 restartPhase(phase = "default-group", targets = listOf(target))
             }
         }
@@ -84,7 +82,7 @@ class NetworkRestartService(
             targets =
                 groups
                     .filter { it.type == GroupType.DYNAMIC && it.id != defaultGroupId }
-                    .mapNotNull { createRestartTarget(it, isDefault = false) },
+                    .mapNotNull(::createRestartTarget),
         )
 
         restartInBatches(
@@ -92,7 +90,7 @@ class NetworkRestartService(
             targets =
                 groups
                     .filter { it.type == GroupType.STATIC && it.id != defaultGroupId }
-                    .mapNotNull { createRestartTarget(it, isDefault = false) },
+                    .mapNotNull(::createRestartTarget),
         )
     }
 
@@ -122,19 +120,12 @@ class NetworkRestartService(
             targets.map(RestartTarget::groupId),
         )
 
-        targets.forEach { target -> setGroupMaintenance(target.groupId, true) }
-
         stopTargets(phase, targets)
 
         val restartRequestedAt = Instant.now()
-        targets.forEach { target -> setGroupMaintenance(target.groupId, false) }
         targets.forEach(::requestReplacementServers)
 
         waitForHealthyTargets(phase, targets, restartRequestedAt)
-
-        targets
-            .filter(RestartTarget::originalMaintenance)
-            .forEach { target -> setGroupMaintenance(target.groupId, true) }
 
         log.info(
             "Completed network restart phase: phase={}, groups={}",
@@ -143,13 +134,10 @@ class NetworkRestartService(
         )
     }
 
-    private fun createRestartTarget(
-        group: GroupDocument,
-        isDefault: Boolean,
-    ): RestartTarget? {
+    private fun createRestartTarget(group: GroupDocument): RestartTarget? {
         val servers = serverRedisRepository.findByGroup(group.id)
         val activeServers = servers.filterNot(::isStoppedOrStopping)
-        val healthyTargetCount = calculateHealthyTargetCount(group, activeServers.isNotEmpty(), isDefault)
+        val healthyTargetCount = calculateHealthyTargetCount(group)
 
         if (activeServers.isEmpty() && healthyTargetCount == 0) {
             return null
@@ -157,7 +145,6 @@ class NetworkRestartService(
 
         return RestartTarget(
             groupId = group.id,
-            originalMaintenance = group.maintenance,
             healthyTargetCount = healthyTargetCount,
             stopTimeoutSeconds = calculateStopTimeoutSeconds(group),
         )
@@ -299,34 +286,7 @@ class NetworkRestartService(
                     server.lastHeartbeat?.let { !it.isBefore(restartRequestedAt) } == true
             }
 
-    private fun calculateHealthyTargetCount(
-        group: GroupDocument,
-        hadActiveServers: Boolean,
-        isDefault: Boolean,
-    ): Int =
-        when (group.type) {
-            GroupType.PROXY -> maxOf(group.scaling.minOnline, if (hadActiveServers) 1 else 0)
-            GroupType.DYNAMIC -> maxOf(group.scaling.minOnline, if (hadActiveServers || isDefault) 1 else 0)
-            GroupType.STATIC -> if (hadActiveServers || group.scaling.minOnline >= 1 || isDefault) 1 else 0
-        }
-
-    private fun setGroupMaintenance(
-        groupId: String,
-        enabled: Boolean,
-    ) {
-        val group = groupRepository.findById(groupId).orElse(null)
-        if (group == null) {
-            log.warn("Skipping maintenance update for missing group during network restart: group={}", groupId)
-            return
-        }
-
-        if (group.maintenance == enabled) {
-            return
-        }
-
-        val saved = groupRepository.save(group.copy(maintenance = enabled, updatedAt = Instant.now()))
-        groupUpdateProducer.publishGroupUpdate(saved)
-    }
+    private fun calculateHealthyTargetCount(group: GroupDocument): Int = group.scaling.minOnline
 
     private fun calculateStopTimeoutSeconds(group: GroupDocument): Long {
         val requestedDrainSeconds = group.drainTimeoutSeconds.toLong() + DELETE_TIMEOUT_BUFFER_SECONDS
@@ -351,7 +311,6 @@ class NetworkRestartService(
 
     private data class RestartTarget(
         val groupId: String,
-        val originalMaintenance: Boolean,
         val healthyTargetCount: Int,
         val stopTimeoutSeconds: Long,
     )

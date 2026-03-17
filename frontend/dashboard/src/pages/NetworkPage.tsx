@@ -24,6 +24,7 @@ import {
     getNetworkSettings,
     getNetworkStatus,
     listGroups,
+    requestNetworkRestart,
     requestRuntimeRefresh,
     toggleNetworkMaintenance,
     updateNetworkSettings,
@@ -59,6 +60,8 @@ const DEFAULT_STATUS: NetworkStatusRecord = {
     proxyCount: 0,
 };
 const REFRESH_INTERVAL_MS = 10_000;
+const createRestartConfirmationCode = () =>
+    `${Math.floor(100000 + Math.random() * 900000)}`;
 
 const createFormValues = (settings: NetworkSettingsRecord): NetworkFormValues => ({
     maxPlayers: String(settings.maxPlayers),
@@ -91,6 +94,10 @@ const NetworkPage = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+    const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+    const [restartConfirmationCode, setRestartConfirmationCode] = useState("");
+    const [restartConfirmationInput, setRestartConfirmationInput] = useState("");
+    const [isRestartingNetwork, setIsRestartingNetwork] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [refreshingScope, setRefreshingScope] = useState<RuntimeBundleScope | null>(null);
@@ -208,6 +215,27 @@ const NetworkPage = () => {
         };
     }, [successMessage]);
 
+    const resetRestartModal = () => {
+        setIsRestartModalOpen(false);
+        setRestartConfirmationCode("");
+        setRestartConfirmationInput("");
+    };
+
+    const closeRestartModal = () => {
+        if (isRestartingNetwork) {
+            return;
+        }
+
+        resetRestartModal();
+    };
+
+    const openRestartModal = () => {
+        setRestartConfirmationCode(createRestartConfirmationCode());
+        setRestartConfirmationInput("");
+        setErrorMessage(null);
+        setIsRestartModalOpen(true);
+    };
+
     const setField = (field: keyof NetworkFormValues, value: string) => {
         setFormValues((currentValue) =>
             currentValue
@@ -297,6 +325,34 @@ const NetworkPage = () => {
             );
         } finally {
             setIsTogglingMaintenance(false);
+        }
+    };
+
+    const handleRequestNetworkRestart = async () => {
+        if (!settings?.maintenance) {
+            setErrorMessage("Enable network maintenance before requesting a full restart.");
+            return;
+        }
+
+        if (restartConfirmationInput.trim() !== restartConfirmationCode) {
+            setErrorMessage("Enter the generated 6-digit code to confirm the restart.");
+            return;
+        }
+
+        setIsRestartingNetwork(true);
+        setErrorMessage(null);
+
+        try {
+            const accessToken = await getValidAccessToken();
+            await requestNetworkRestart(accessToken);
+            setSuccessMessage("Full network restart requested.");
+            resetRestartModal();
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Unable to request a network restart.",
+            );
+        } finally {
+            setIsRestartingNetwork(false);
         }
     };
 
@@ -420,6 +476,9 @@ const NetworkPage = () => {
         formValues && eligibleDefaultGroups.some((group) => group.id === formValues.defaultGroup)
             ? formValues.defaultGroup
             : "";
+    const isRestartConfirmationValid =
+        restartConfirmationCode.length === 6 &&
+        restartConfirmationInput.trim() === restartConfirmationCode;
     const tablistEnabled = formValues?.tablistEnabled ?? true;
     const permissionSystemEnabled = formValues?.permissionSystemEnabled ?? true;
     const proxyRoutingStrategy = formValues?.proxyRoutingStrategy ?? "LOAD_BASED";
@@ -484,6 +543,24 @@ const NetworkPage = () => {
                             : settings?.maintenance
                               ? "Disable Maintenance"
                               : "Enable Maintenance"}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={openRestartModal}
+                        disabled={!isAdmin || !settings?.maintenance || isRestartingNetwork}
+                        title={
+                            !isAdmin
+                                ? "Only admin and service accounts can restart the network."
+                                : !settings?.maintenance
+                                  ? "Enable network maintenance before requesting a restart."
+                                  : "Request a full network restart."
+                        }
+                        className="app-button-field button-hover-lift inline-flex items-center gap-2 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <FiRefreshCw
+                            className={`h-4 w-4 ${isRestartingNetwork ? "animate-spin" : ""}`}
+                        />
+                        {isRestartingNetwork ? "Requesting..." : "Restart Network"}
                     </button>
                 </div>
             </motion.section>
@@ -1119,6 +1196,97 @@ const NetworkPage = () => {
                                 className="app-button-field button-hover-lift button-shadow-warning rounded-lg bg-amber-500/12 px-4 py-2.5 text-sm font-semibold text-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isTogglingMaintenance ? "Enabling..." : "Enable Maintenance"}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {isRestartModalOpen && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ y: 12, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-white">
+                                    Restart Network
+                                </h3>
+                                <p className="text-sm text-slate-400">
+                                    This requests a full phased network restart.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeRestartModal}
+                                className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
+                                aria-label="Close"
+                            >
+                                <FiX className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 px-6 py-5">
+                            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-sm text-red-100">
+                                <div className="flex items-start gap-3">
+                                    <FiAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                                    <p>
+                                        The backend will restart proxies, the default group, and
+                                        the remaining groups in phases. Type the code below to
+                                        confirm this destructive action.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    Confirmation Code
+                                </p>
+                                <p className="mt-2 font-mono text-2xl font-semibold tracking-[0.35em] text-white">
+                                    {restartConfirmationCode}
+                                </p>
+                            </div>
+
+                            <div className="app-field-stack">
+                                <FieldHintLabel
+                                    label="Type the 6-digit code"
+                                    hint="This is a frontend confirmation step to reduce accidental restart requests."
+                                />
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={restartConfirmationInput}
+                                    onChange={(event) =>
+                                        setRestartConfirmationInput(
+                                            event.target.value.replace(/\D/g, "").slice(0, 6),
+                                        )
+                                    }
+                                    maxLength={6}
+                                    autoFocus
+                                    className="app-input-field w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 text-sm font-mono tracking-[0.28em] text-slate-100 outline-none transition focus:border-red-400/50 focus:ring-2 focus:ring-red-400/10"
+                                    placeholder="000000"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 border-t border-slate-800 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={closeRestartModal}
+                                className="app-button-field button-hover-lift button-shadow-neutral rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!isRestartConfirmationValid || isRestartingNetwork}
+                                onClick={() => void handleRequestNetworkRestart()}
+                                className="app-button-field button-hover-lift rounded-lg bg-red-500/12 px-4 py-2.5 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isRestartingNetwork ? "Requesting..." : "Request Restart"}
                             </button>
                         </div>
                     </motion.div>
