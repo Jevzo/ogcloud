@@ -1,4 +1,4 @@
-import { SearchIcon, UsersIcon, LoaderCircleIcon, PencilLineIcon } from "lucide-react";
+import { SearchIcon, UsersIcon, PencilLineIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 
 import PlayerManagementModal from "@/components/PlayerManagementModal";
@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -151,9 +150,6 @@ const PlayersPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -237,18 +233,6 @@ const PlayersPage = () => {
                                 for live routing and permission changes.
                             </CardDescription>
                         </div>
-                        <CardAction>
-                            <Button
-                                variant="outline"
-                                onClick={() => void refresh()}
-                                disabled={isRefreshing}
-                            >
-                                {isRefreshing ? (
-                                    <LoaderCircleIcon className="size-4 animate-spin" />
-                                ) : null}
-                                Refresh
-                            </Button>
-                        </CardAction>
                     </div>
 
                     <InputGroup>

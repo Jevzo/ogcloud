@@ -9,7 +9,6 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     ChartContainer,
@@ -69,7 +68,7 @@ const OverviewStatCard = ({
 );
 
 const NetworkOverviewPage = () => {
-    const { groups, isLoading, reloadData, settings, status } = useNetworkPageContext();
+    const { groups, isLoading, settings, status } = useNetworkPageContext();
     const isUnavailable = !settings && !isLoading;
 
     if (isUnavailable) {
@@ -82,11 +81,6 @@ const NetworkOverviewPage = () => {
                         overview surface.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button type="button" variant="outline" onClick={() => void reloadData()}>
-                        Retry loading overview
-                    </Button>
-                </CardContent>
             </Card>
         );
     }

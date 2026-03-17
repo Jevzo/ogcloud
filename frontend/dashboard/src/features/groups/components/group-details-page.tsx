@@ -5,7 +5,6 @@ import {
     ArrowLeftIcon,
     Layers3Icon,
     LoaderCircleIcon,
-    RefreshCwIcon,
     RotateCcwIcon,
     ShieldAlertIcon,
     ShieldCheckIcon,
@@ -169,7 +168,6 @@ const GroupDetailsPage = () => {
         errorMessage,
         group,
         isLoading,
-        isRefreshing,
         lastUpdatedAt,
         refresh,
     } = useGroupDetailsQuery(groupName);
@@ -386,7 +384,6 @@ const GroupDetailsPage = () => {
                             Back to groups
                         </Link>
                     </Button>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
                 </CardFooter>
             </Card>
         );
@@ -456,16 +453,6 @@ const GroupDetailsPage = () => {
 
                         <CardAction className="col-auto row-auto">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh(false)}
-                                    disabled={isRefreshing}
-                                >
-                                    <RefreshCwIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
-                                </Button>
                                 <Button
                                     variant="outline"
                                     onClick={openRestartDialog}

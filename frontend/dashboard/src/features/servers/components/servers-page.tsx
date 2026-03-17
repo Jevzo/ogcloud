@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from "react";
 import { useNavigate } from "react-router";
 import {
+    Clock3Icon,
     FilterIcon,
     LoaderCircleIcon,
     SearchIcon,
@@ -9,13 +10,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import DeployServerDialog from "@/features/servers/components/deploy-server-dialog";
-import ExecuteCommandDialog from "@/features/servers/components/execute-command-dialog";
-import ServerActionsMenu from "@/features/servers/components/server-actions-menu";
-import ServerStatusBadge from "@/features/servers/components/server-status-badge";
-import { useServerGroupsQuery } from "@/features/servers/hooks/use-server-groups-query";
-import { useServersQuery } from "@/features/servers/hooks/use-servers-query";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -41,6 +35,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import DeployServerDialog from "@/features/servers/components/deploy-server-dialog";
+import ExecuteCommandDialog from "@/features/servers/components/execute-command-dialog";
+import ServerActionsMenu from "@/features/servers/components/server-actions-menu";
+import ServerStatusBadge from "@/features/servers/components/server-status-badge";
+import { useServerGroupsQuery } from "@/features/servers/hooks/use-server-groups-query";
+import { useServersQuery } from "@/features/servers/hooks/use-servers-query";
 import { useAccessToken } from "@/hooks/use-access-token";
 import { getRuntimeProfileLabel } from "@/lib/group-runtime";
 import { hasAdminAccess } from "@/lib/roles";
@@ -60,15 +60,15 @@ interface CommandDialogState {
 }
 
 const SummaryCard = ({
+    helper,
     label,
     value,
-    helper,
 }: {
     helper: string;
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -79,8 +79,29 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
 const ServersTableSkeleton = () => (
-    <div className="space-y-2 px-4 pb-4">
+    <div className="space-y-2 px-5 pb-5">
         {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={`servers-table-skeleton-${index}`} className="h-12 w-full" />
         ))}
@@ -124,7 +145,6 @@ const ServersPage = () => {
         isRefreshing,
         lastUpdatedAt,
         refresh,
-        refreshIntervalMs,
     } = useServersQuery({
         currentPage,
         groupFilter: normalizedGroupFilter,
@@ -214,11 +234,9 @@ const ServersPage = () => {
                         <Skeleton className="h-4 w-64" />
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto_auto]">
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-full" />
+                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
                         </div>
                     </CardContent>
                     <ServersTableSkeleton />
@@ -241,9 +259,6 @@ const ServersPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -251,30 +266,25 @@ const ServersPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Runtime management
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Servers
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Inspect live instances, filter by group, and execute runtime actions
-                            from one operational table.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Runtime inventory
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Inspect live instances, filter by group, and execute runtime actions from
+                        one operational table.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <Button
+                        onClick={() => setIsDeployDialogOpen(true)}
+                        disabled={isLoadingGroups && groups.length === 0}
+                    >
+                        <ServerIcon className="size-4" />
+                        Deploy new
+                    </Button>
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -344,36 +354,17 @@ const ServersPage = () => {
                                 for direct lifecycle control.
                             </CardDescription>
                         </div>
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh()}
-                                    disabled={isRefreshing}
-                                >
-                                    <LoaderCircleIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
+                        {canExecuteCommands ? (
+                            <CardAction className="col-auto row-auto">
+                                <Button variant="outline" onClick={openToolbarCommandDialog}>
+                                    <TerminalIcon className="size-4" />
+                                    {normalizedGroupFilter ? "Command group" : "Command all"}
                                 </Button>
-                                {canExecuteCommands ? (
-                                    <Button variant="outline" onClick={openToolbarCommandDialog}>
-                                        <TerminalIcon className="size-4" />
-                                        {normalizedGroupFilter ? "Command group" : "Command all"}
-                                    </Button>
-                                ) : null}
-                                <Button
-                                    onClick={() => setIsDeployDialogOpen(true)}
-                                    disabled={isLoadingGroups && groups.length === 0}
-                                >
-                                    <ServerIcon className="size-4" />
-                                    Deploy new
-                                </Button>
-                            </div>
-                        </CardAction>
+                            </CardAction>
+                        ) : null}
                     </div>
 
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
                         <InputGroup>
                             <InputGroupAddon>
                                 <SearchIcon className="size-4" />
@@ -384,7 +375,7 @@ const ServersPage = () => {
                                     setSearchInput(event.target.value);
                                     setCurrentPage(0);
                                 }}
-                                placeholder="Search server, group, state, pod, or display name"
+                                placeholder="Search servers, groups, or pod"
                             />
                         </InputGroup>
 
@@ -416,15 +407,15 @@ const ServersPage = () => {
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="px-4">Server</TableHead>
-                                <TableHead className="px-4">Group / Template</TableHead>
-                                <TableHead className="px-4">Runtime</TableHead>
-                                <TableHead className="px-4">State</TableHead>
-                                <TableHead className="px-4">TPS</TableHead>
-                                <TableHead className="px-4">Players</TableHead>
-                                <TableHead className="px-4">Memory</TableHead>
-                                <TableHead className="px-4">Heartbeat</TableHead>
-                                <TableHead className="px-4 text-right">Actions</TableHead>
+                                <TableHead>Server</TableHead>
+                                <TableHead>Group / Template</TableHead>
+                                <TableHead>Runtime</TableHead>
+                                <TableHead>State</TableHead>
+                                <TableHead>TPS</TableHead>
+                                <TableHead>Players</TableHead>
+                                <TableHead>Memory</TableHead>
+                                <TableHead>Heartbeat</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -432,7 +423,7 @@ const ServersPage = () => {
                                 <TableRow>
                                     <TableCell
                                         colSpan={9}
-                                        className="px-4 py-12 text-center text-sm text-muted-foreground"
+                                        className="py-12 text-center text-sm text-muted-foreground"
                                     >
                                         No servers matched the current filter set.
                                     </TableCell>
@@ -446,7 +437,7 @@ const ServersPage = () => {
                                             navigate(`/servers/${encodeURIComponent(server.id)}`)
                                         }
                                     >
-                                        <TableCell className="px-4 py-3 align-top">
+                                        <TableCell className="align-top">
                                             <div className="space-y-1">
                                                 <div className="font-medium text-foreground">
                                                     {server.displayName}
@@ -456,7 +447,7 @@ const ServersPage = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
+                                        <TableCell className="align-top">
                                             <div className="space-y-1">
                                                 <div className="font-medium text-foreground">
                                                     {server.group}
@@ -466,7 +457,7 @@ const ServersPage = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
+                                        <TableCell className="align-top">
                                             <div className="space-y-1">
                                                 <div className="font-medium text-foreground">
                                                     {getRuntimeLabel(server, runtimeProfileByGroupId)}
@@ -476,10 +467,10 @@ const ServersPage = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
+                                        <TableCell className="align-top">
                                             <ServerStatusBadge state={server.state} />
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
+                                        <TableCell className="align-top">
                                             <span
                                                 className={
                                                     server.tps >= 18
@@ -490,17 +481,17 @@ const ServersPage = () => {
                                                 {formatTps(server.tps)}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top text-muted-foreground">
+                                        <TableCell className="align-top text-muted-foreground">
                                             {server.playerCount} / {server.maxPlayers}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top text-muted-foreground">
+                                        <TableCell className="align-top text-muted-foreground">
                                             {formatMemoryMb(server.memoryUsedMb)}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top text-muted-foreground">
+                                        <TableCell className="align-top text-muted-foreground">
                                             {formatDateTime(server.lastHeartbeat)}
                                         </TableCell>
                                         <TableCell
-                                            className="px-4 py-3 text-right align-top"
+                                            className="text-right align-top"
                                             onClick={(event) => event.stopPropagation()}
                                         >
                                             <ServerActionsMenu

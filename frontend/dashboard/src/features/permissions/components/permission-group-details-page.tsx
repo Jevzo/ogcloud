@@ -4,7 +4,6 @@ import {
     ArrowLeftIcon,
     LoaderCircleIcon,
     PlusIcon,
-    RefreshCwIcon,
     ShieldAlertIcon,
     ShieldIcon,
     StarIcon,
@@ -341,7 +340,6 @@ const PermissionGroupDetailsPage = () => {
                             Back to groups
                         </Link>
                     </Button>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
                 </CardFooter>
             </Card>
         );
@@ -398,16 +396,6 @@ const PermissionGroupDetailsPage = () => {
 
                         <CardAction className="col-auto row-auto">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh(false)}
-                                    disabled={isRefreshing}
-                                >
-                                    <RefreshCwIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
-                                </Button>
                                 <Button
                                     variant="destructive"
                                     onClick={() => setIsDeleteAlertOpen(true)}

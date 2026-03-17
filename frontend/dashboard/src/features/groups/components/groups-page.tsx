@@ -18,7 +18,6 @@ import {
     CardAction,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -151,7 +150,6 @@ const GroupsPage = () => {
         data: groups,
         errorMessage,
         isLoading,
-        isRefreshing,
         lastUpdatedAt,
         refresh,
         refreshIntervalMs,
@@ -244,9 +242,6 @@ const GroupsPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -351,16 +346,6 @@ const GroupsPage = () => {
                         </div>
                         <CardAction className="col-auto row-auto">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh()}
-                                    disabled={isRefreshing}
-                                >
-                                    <LoaderCircleIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
-                                </Button>
                                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                                     <PlusIcon className="size-4" />
                                     Create group

@@ -7,7 +7,6 @@ import type {
     NetworkStatusRecord,
     UpdateNetworkPayload,
 } from "@/types/network";
-import type { RuntimeBundleScope } from "@/types/runtime";
 
 export interface NetworkPageContextValue {
     settings: NetworkSettingsRecord | null;
@@ -19,15 +18,12 @@ export interface NetworkPageContextValue {
     isAdmin: boolean;
     isRestartingNetwork: boolean;
     isTogglingMaintenance: boolean;
-    refreshingScope: RuntimeBundleScope | null;
-    reloadData: () => Promise<void>;
     saveSettings: (
         payload: UpdateNetworkPayload,
         successMessage: string,
     ) => Promise<NetworkSettingsRecord>;
     setMaintenance: (enabled: boolean) => Promise<NetworkSettingsRecord>;
     requestNetworkRestart: () => Promise<void>;
-    requestRuntimeRefresh: (scope: RuntimeBundleScope) => Promise<void>;
 }
 
 export const useNetworkPageContext = () => useOutletContext<NetworkPageContextValue>();

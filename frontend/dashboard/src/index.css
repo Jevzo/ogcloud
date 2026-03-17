@@ -6,21 +6,21 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-    --color-primary: hsl(221 83% 53%);
-    --color-primary-dark: hsl(221 83% 41%);
-    --color-secondary: hsl(217 91% 60%);
-    --color-accent: hsl(216 34% 17%);
+    --color-primary: hsl(221 76% 47%);
+    --color-primary-dark: hsl(221 78% 39%);
+    --color-secondary: hsl(217 68% 56%);
+    --color-accent: hsl(222 18% 14%);
     --color-success: hsl(142 71% 45%);
-    --color-background-dark: hsl(222 47% 8%);
-    --color-background: hsl(222 43% 10%);
-    --color-surface-dark: hsl(222 39% 11%);
-    --color-surface: rgba(15, 23, 42, 0.82);
-    --color-panel: hsl(222 36% 14%);
-    --color-border-dark: rgba(148, 163, 184, 0.16);
-    --color-border-strong: rgba(29, 78, 216, 0.34);
+    --color-background-dark: hsl(222 45% 5%);
+    --color-background: hsl(222 34% 7%);
+    --color-surface-dark: hsl(222 24% 10%);
+    --color-surface: rgba(16, 20, 31, 0.88);
+    --color-panel: hsl(222 22% 12%);
+    --color-border-dark: rgba(71, 85, 105, 0.18);
+    --color-border-strong: rgba(29, 78, 216, 0.26);
     --color-text-main: hsl(210 40% 98%);
-    --color-text-soft: hsl(214 32% 91%);
-    --color-text-muted: hsl(215 20% 65%);
+    --color-text-soft: hsl(214 26% 92%);
+    --color-text-muted: hsl(215 16% 66%);
     --font-family-display: "Geist Variable", sans-serif;
     --font-family-body: "Geist Variable", sans-serif;
 }
@@ -28,38 +28,38 @@
 :root,
 .dark {
     color-scheme: dark;
-    --background: hsl(222 47% 8%);
+    --background: hsl(222 45% 5%);
     --foreground: hsl(210 40% 98%);
-    --card: hsl(222 39% 11%);
+    --card: hsl(222 24% 10%);
     --card-foreground: hsl(210 40% 98%);
-    --popover: hsl(222 35% 10%);
+    --popover: hsl(222 22% 11%);
     --popover-foreground: hsl(210 40% 98%);
-    --primary: hsl(221 83% 53%);
+    --primary: hsl(221 76% 47%);
     --primary-foreground: hsl(210 40% 98%);
-    --secondary: hsl(217 33% 17%);
+    --secondary: hsl(222 18% 14%);
     --secondary-foreground: hsl(210 40% 96%);
-    --muted: hsl(217 28% 18%);
-    --muted-foreground: hsl(215 20% 65%);
-    --accent: hsl(217 28% 18%);
+    --muted: hsl(222 18% 14%);
+    --muted-foreground: hsl(215 16% 66%);
+    --accent: hsl(222 18% 14%);
     --accent-foreground: hsl(210 40% 98%);
     --destructive: hsl(0 72% 51%);
-    --border: hsl(217 26% 22%);
-    --input: hsl(217 26% 22%);
-    --ring: hsl(221 83% 60%);
-    --chart-1: hsl(221 83% 53%);
+    --border: hsl(222 15% 18%);
+    --input: hsl(222 15% 18%);
+    --ring: hsl(221 76% 52%);
+    --chart-1: hsl(221 76% 47%);
     --chart-2: hsl(199 89% 48%);
     --chart-3: hsl(160 84% 39%);
     --chart-4: hsl(43 96% 56%);
     --chart-5: hsl(0 72% 51%);
-    --radius: 0.9rem;
-    --sidebar: hsl(222 43% 10%);
-    --sidebar-foreground: hsl(214 32% 91%);
-    --sidebar-primary: hsl(221 83% 53%);
+    --radius: 0.72rem;
+    --sidebar: hsl(222 34% 7%);
+    --sidebar-foreground: hsl(214 26% 92%);
+    --sidebar-primary: hsl(221 76% 47%);
     --sidebar-primary-foreground: hsl(210 40% 98%);
-    --sidebar-accent: hsl(217 28% 18%);
+    --sidebar-accent: hsl(222 18% 14%);
     --sidebar-accent-foreground: hsl(210 40% 98%);
-    --sidebar-border: hsl(217 26% 22%);
-    --sidebar-ring: hsl(221 83% 60%);
+    --sidebar-border: hsl(222 15% 18%);
+    --sidebar-ring: hsl(221 76% 52%);
 }
 
 @theme inline {
@@ -128,9 +128,9 @@ body {
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--background);
     background-image:
-        radial-gradient(circle at top left, rgba(30, 64, 175, 0.22), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 24%),
-        linear-gradient(180deg, rgba(6, 11, 22, 0.98), rgba(8, 15, 28, 1));
+        radial-gradient(circle at top left, rgba(29, 78, 216, 0.18), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(30, 64, 175, 0.08), transparent 22%),
+        linear-gradient(180deg, rgba(4, 7, 14, 0.98), rgba(6, 9, 16, 1));
     color: var(--foreground);
 }
 
@@ -193,7 +193,7 @@ body {
 .app-field-label {
     display: block;
     min-height: 1.25rem;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1.25rem;
     font-weight: 500;
     color: hsl(214 32% 86%);
@@ -202,13 +202,13 @@ body {
 .app-input-field,
 .app-button-field,
 .app-select-field {
-    min-height: 3rem;
+    min-height: 2.5rem;
 }
 
 input.app-input-field,
 .app-button-field,
 .app-select-field {
-    height: 3rem;
+    height: 2.5rem;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -223,11 +223,11 @@ input[type="number"] {
 
 .app-input-field,
 .app-select-field {
-    border: 1px solid rgba(71, 85, 105, 0.92);
+    border: 1px solid rgba(71, 85, 105, 0.78);
     border-radius: var(--radius-md);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(10, 16, 30, 0.98));
+    background: linear-gradient(180deg, rgba(14, 18, 29, 0.96), rgba(9, 12, 21, 0.98));
     color: var(--color-text-main);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1.25rem;
     outline: none;
     transition:
@@ -253,21 +253,21 @@ input[type="number"] {
 .app-input-field:disabled,
 .app-select-field:disabled {
     cursor: not-allowed;
-    border-color: rgba(71, 85, 105, 0.78);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(11, 18, 32, 1));
+    border-color: rgba(71, 85, 105, 0.7);
+    background: linear-gradient(180deg, rgba(12, 16, 26, 0.98), rgba(8, 11, 19, 1));
     color: rgba(148, 163, 184, 0.72);
     opacity: 1;
 }
 
 .app-button-field.border-slate-700 {
-    border-color: rgba(71, 85, 105, 0.92);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(10, 16, 30, 0.98));
+    border-color: rgba(71, 85, 105, 0.78);
+    background: linear-gradient(180deg, rgba(14, 18, 29, 0.96), rgba(9, 12, 21, 0.98));
     color: var(--color-text-soft);
 }
 
 .app-button-field.border-slate-700:disabled {
-    border-color: rgba(71, 85, 105, 0.78);
-    background: linear-gradient(180deg, rgba(10, 16, 30, 0.98), rgba(8, 12, 24, 1));
+    border-color: rgba(71, 85, 105, 0.7);
+    background: linear-gradient(180deg, rgba(10, 13, 22, 0.98), rgba(7, 10, 18, 1));
     color: rgba(148, 163, 184, 0.78);
     opacity: 1;
 }

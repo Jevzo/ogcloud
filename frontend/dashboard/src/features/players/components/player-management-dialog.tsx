@@ -142,7 +142,6 @@ const PlayerManagementDialog = ({
         errorMessage: optionsErrorMessage,
         isLoading: isLoadingOptions,
         permissionGroups,
-        refresh: refreshOptions,
         transferTargets,
     } = usePlayerManagementOptionsQuery({
         canManagePermissionGroups,
@@ -405,18 +404,6 @@ const PlayerManagementDialog = ({
                                         {optionsErrorMessage}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => void refreshOptions()}
-                                        disabled={isLoadingOptions}
-                                    >
-                                        {isLoadingOptions ? (
-                                            <LoaderCircleIcon className="size-4 animate-spin" />
-                                        ) : null}
-                                        Retry
-                                    </Button>
-                                </CardContent>
                             </Card>
                         ) : null}
 

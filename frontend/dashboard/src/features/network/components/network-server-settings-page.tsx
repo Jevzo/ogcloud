@@ -5,7 +5,6 @@ import {
     Clock3Icon,
     LoaderCircleIcon,
     LockIcon,
-    RefreshCwIcon,
     RotateCcwIcon,
     ServerCogIcon,
     ShieldAlertIcon,
@@ -26,7 +25,6 @@ import {
     type NetworkRestartConfirmationValues,
     type NetworkServerSettingsFormValues,
 } from "@/features/network/schemas";
-import { RUNTIME_REFRESH_OPTIONS } from "@/lib/group-runtime";
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -79,10 +77,7 @@ const NetworkServerSettingsPage = () => {
         isRefreshing,
         isTogglingMaintenance,
         locks,
-        refreshingScope,
-        reloadData,
         requestNetworkRestart,
-        requestRuntimeRefresh,
         saveSettings,
         setMaintenance,
         settings,
@@ -249,15 +244,10 @@ const NetworkServerSettingsPage = () => {
                 <CardHeader>
                     <CardTitle>Server settings unavailable</CardTitle>
                     <CardDescription>
-                        The dashboard could not load capacity, maintenance, and lock data for the
-                        network settings view.
-                    </CardDescription>
+                    The dashboard could not load capacity, maintenance, and lock data for the
+                    network settings view.
+                </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button type="button" variant="outline" onClick={() => void reloadData()}>
-                        Retry loading server settings
-                    </Button>
-                </CardContent>
             </Card>
         );
     }
@@ -463,54 +453,23 @@ const NetworkServerSettingsPage = () => {
                     <CardHeader>
                         <CardTitle>Managed runtime bundles</CardTitle>
                         <CardDescription>
-                            Refresh runtime bundle metadata after backend asset changes or runtime
-                            configuration updates.
+                            Runtime bundle metadata refresh is no longer manually triggered from the
+                            dashboard surface.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3 lg:grid-cols-3">
-                        {RUNTIME_REFRESH_OPTIONS.map((option) => {
-                            const isRefreshingScope = refreshingScope === option.scope;
-
-                            return (
-                                <div
-                                    key={option.scope}
-                                    className="rounded-xl border border-border/70 bg-background/55 p-4"
-                                >
-                                    <div className="flex h-full flex-col gap-4">
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <ServerCogIcon className="size-4 text-primary" />
-                                                <div className="text-sm font-semibold text-foreground">
-                                                    {option.label}
-                                                </div>
-                                            </div>
-                                            <div className="text-sm leading-6 text-muted-foreground">
-                                                {option.description}
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="mt-auto"
-                                            disabled={refreshingScope !== null}
-                                            onClick={() => void requestRuntimeRefresh(option.scope)}
-                                        >
-                                            {isRefreshingScope ? (
-                                                <>
-                                                    <LoaderCircleIcon className="size-4 animate-spin" />
-                                                    Requesting
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <RefreshCwIcon className="size-4" />
-                                                    Refresh runtime
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
+                        <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+                            <div className="flex items-center gap-2">
+                                <ServerCogIcon className="size-4 text-primary" />
+                                <div className="text-sm font-semibold text-foreground">
+                                    Runtime metadata
                                 </div>
-                            );
-                        })}
+                            </div>
+                            <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                                Use automatic refresh flows or deployment workflows for runtime
+                                bundle changes. Manual refresh actions are not exposed here anymore.
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             ) : null}

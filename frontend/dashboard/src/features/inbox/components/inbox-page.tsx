@@ -1,4 +1,4 @@
-import { LoaderCircleIcon, SearchIcon, ShieldAlertIcon } from "lucide-react";
+import { SearchIcon, ShieldAlertIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -160,7 +160,6 @@ const InboxPage = () => {
         isLoading,
         isRefreshing,
         lastUpdatedAt,
-        refresh,
     } = useAuditLogQuery({
         currentPage,
         enabled: canReviewAuditLogs,
@@ -231,9 +230,6 @@ const InboxPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -270,16 +266,6 @@ const InboxPage = () => {
                             Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
                         </Badge>
                     ) : null}
-                    <Button
-                        variant="outline"
-                        onClick={() => void refresh()}
-                        disabled={isRefreshing}
-                    >
-                        {isRefreshing ? (
-                            <LoaderCircleIcon className="size-4 animate-spin" />
-                        ) : null}
-                        Refresh
-                    </Button>
                 </div>
             </div>
 

@@ -1,10 +1,8 @@
 import { Link } from "react-router";
 import {
-    ActivityIcon,
     AlertTriangleIcon,
     ArrowRightIcon,
     Clock3Icon,
-    LoaderCircleIcon,
     ServerIcon,
     ShieldAlertIcon,
     ShieldCheckIcon,
@@ -71,9 +69,10 @@ const getScalingActionBadgeClassName = (action: string) => {
 interface MetricCardProps {
     description: string;
     icon: typeof UsersIcon;
+    iconToneClassName: string;
     isLoading: boolean;
     meta: string;
-    toneClassName: string;
+    metaToneClassName: string;
     title: string;
     value: string;
 }
@@ -81,9 +80,10 @@ interface MetricCardProps {
 const MetricCard = ({
     description,
     icon: Icon,
+    iconToneClassName,
     isLoading,
     meta,
-    toneClassName,
+    metaToneClassName,
     title,
     value,
 }: MetricCardProps) => (
@@ -95,11 +95,11 @@ const MetricCard = ({
             <CardAction>
                 <div
                     className={cn(
-                        "flex size-9 items-center justify-center rounded-xl border",
-                        toneClassName,
+                        "flex size-10 items-center justify-center rounded-lg border",
+                        iconToneClassName,
                     )}
                 >
-                    <Icon className="size-4" />
+                    <Icon className="size-[18px]" />
                 </div>
             </CardAction>
             <CardTitle className="text-2xl tracking-tight">
@@ -114,7 +114,7 @@ const MetricCard = ({
                 </>
             ) : (
                 <>
-                    <p className={cn("text-sm font-medium", toneClassName)}>{meta}</p>
+                    <p className={cn("text-sm font-medium", metaToneClassName)}>{meta}</p>
                     <p className="text-sm text-muted-foreground">{description}</p>
                 </>
             )}
@@ -124,17 +124,17 @@ const MetricCard = ({
 
 const GroupCard = ({ group }: { group: DashboardOverviewGroup }) => {
     const playersPerInstance =
-        group.activeInstances > 0 ? (group.players / group.activeInstances).toFixed(1) : "--";
+        group.activeInstances > 0 ? `${Math.round(group.players / group.activeInstances)}` : "--";
 
     return (
         <Link
             to={`/groups/${encodeURIComponent(group.name)}`}
-            className="block rounded-xl outline-none ring-offset-2 transition-transform focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="block rounded-lg outline-none ring-offset-2 transition-transform focus-visible:ring-2 focus-visible:ring-ring/60"
         >
             <Card className="h-full border border-border/70 bg-background/55 shadow-none transition-colors hover:border-primary/30 hover:bg-background/70">
                 <CardHeader className="pb-3">
                     <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                        Group Runtime
+                        Network group
                     </CardDescription>
                     <CardAction>
                         <Badge
@@ -144,14 +144,14 @@ const GroupCard = ({ group }: { group: DashboardOverviewGroup }) => {
                             {group.mode}
                         </Badge>
                     </CardAction>
-                    <CardTitle className="flex items-center justify-between gap-3 text-base">
+                    <CardTitle className="flex min-w-0 items-center gap-2 text-base">
                         <span className="truncate">{group.name}</span>
-                        <ArrowRightIcon className="size-4 text-muted-foreground" />
+                        <ArrowRightIcon className="mt-px size-4 shrink-0 text-muted-foreground" />
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                        <div className="rounded-lg border border-border/70 bg-muted/25 px-4 py-3">
                             <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                 Players
                             </div>
@@ -159,7 +159,7 @@ const GroupCard = ({ group }: { group: DashboardOverviewGroup }) => {
                                 {group.players}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                        <div className="rounded-lg border border-border/70 bg-muted/25 px-4 py-3">
                             <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                 Instances
                             </div>
@@ -189,13 +189,27 @@ const GroupCard = ({ group }: { group: DashboardOverviewGroup }) => {
     );
 };
 
-const ScalingActionsTable = ({
+const LastSyncSurface = ({
     isRefreshing,
-    onRefresh,
-    scalingActions,
+    lastUpdatedAt,
 }: {
     isRefreshing: boolean;
-    onRefresh: () => void;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        <Clock3Icon className="size-4 text-primary" />
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+        {isRefreshing ? <span className="text-primary">Syncing...</span> : null}
+    </div>
+);
+
+const ScalingActionsTable = ({
+    scalingActions,
+}: {
     scalingActions: DashboardOverviewScalingAction[];
 }) => (
     <Card className="border border-border/70 bg-card/85 shadow-none">
@@ -203,20 +217,6 @@ const ScalingActionsTable = ({
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 Recent Scaling
             </CardDescription>
-            <CardAction>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onRefresh}
-                    disabled={isRefreshing}
-                    className="rounded-xl"
-                >
-                    <LoaderCircleIcon
-                        className={cn("size-4", isRefreshing ? "animate-spin" : "")}
-                    />
-                    Refresh
-                </Button>
-            </CardAction>
             <CardTitle className="text-base">Latest autoscaling actions</CardTitle>
             <CardDescription>
                 Most recent controller decisions across the visible network groups.
@@ -226,11 +226,11 @@ const ScalingActionsTable = ({
             <Table>
                 <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                        <TableHead className="px-4">Group</TableHead>
-                        <TableHead className="px-4">Action</TableHead>
-                        <TableHead className="px-4">Reason</TableHead>
-                        <TableHead className="px-4">Server</TableHead>
-                        <TableHead className="px-4">Timestamp</TableHead>
+                        <TableHead>Group</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Server</TableHead>
+                        <TableHead>Timestamp</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -238,7 +238,7 @@ const ScalingActionsTable = ({
                         <TableRow>
                             <TableCell
                                 colSpan={5}
-                                className="px-4 py-10 text-center text-sm text-muted-foreground"
+                                className="py-10 text-center text-sm text-muted-foreground"
                             >
                                 No scaling actions have been recorded yet.
                             </TableCell>
@@ -251,7 +251,7 @@ const ScalingActionsTable = ({
                                     `${action.groupId}:${action.action}:${action.timestamp}`
                                 }
                             >
-                                <TableCell className="px-4 align-top">
+                                <TableCell className="align-top">
                                     <Link
                                         to={`/groups/${encodeURIComponent(action.groupId)}`}
                                         className="font-medium text-foreground hover:text-primary"
@@ -259,7 +259,7 @@ const ScalingActionsTable = ({
                                         {action.groupId}
                                     </Link>
                                 </TableCell>
-                                <TableCell className="px-4 align-top">
+                                <TableCell className="align-top">
                                     <Badge
                                         variant="outline"
                                         className={getScalingActionBadgeClassName(action.action)}
@@ -267,8 +267,8 @@ const ScalingActionsTable = ({
                                         {action.action}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="px-4 align-top">
-                                    <div className="max-w-md space-y-1">
+                                <TableCell className="align-top">
+                                    <div className="max-w-md space-y-1 whitespace-normal">
                                         <div className="font-medium text-foreground">
                                             {action.reason}
                                         </div>
@@ -279,19 +279,10 @@ const ScalingActionsTable = ({
                                         ) : null}
                                     </div>
                                 </TableCell>
-                                <TableCell className="px-4 align-top text-muted-foreground">
-                                    {action.serverId ? (
-                                        <Link
-                                            to={`/servers/${encodeURIComponent(action.serverId)}`}
-                                            className="hover:text-primary"
-                                        >
-                                            {action.serverId}
-                                        </Link>
-                                    ) : (
-                                        "--"
-                                    )}
+                                <TableCell className="align-top text-muted-foreground">
+                                    {action.serverId ?? "--"}
                                 </TableCell>
-                                <TableCell className="px-4 align-top text-muted-foreground">
+                                <TableCell className="align-top text-muted-foreground">
                                     {formatDateTime(action.timestamp)}
                                 </TableCell>
                             </TableRow>
@@ -320,40 +311,25 @@ const DashboardHomeSkeleton = () => (
             ))}
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-7 w-44" />
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                        <div
-                            key={`group-skeleton-${index}`}
-                            className="space-y-3 rounded-xl border border-border/70 bg-background/40 p-4"
-                        >
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-6 w-32" />
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-2.5 w-full" />
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-7 w-40" />
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    <Skeleton className="h-3.5 w-24" />
-                    <Skeleton className="h-2.5 w-full" />
-                    <Skeleton className="h-18 w-full" />
-                    <Skeleton className="h-18 w-full" />
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="border border-border/70 bg-card/85">
+            <CardHeader>
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-7 w-44" />
+            </CardHeader>
+            <CardContent className="grid gap-4 xl:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                        key={`group-skeleton-${index}`}
+                        className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-5"
+                    >
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-2.5 w-full" />
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
 
         <Card className="border border-border/70 bg-card/85">
             <CardHeader>
@@ -378,25 +354,11 @@ const DashboardHomePage = () => {
         isLoading,
         isRefreshing,
         lastUpdatedAt,
-        refresh,
-        refreshIntervalMs,
     } = useDashboardOverviewQuery();
 
     const playerLoadPercent =
         data.stats.maxPlayers > 0
             ? Math.min(100, Math.round((data.stats.totalPlayers / data.stats.maxPlayers) * 100))
-            : 0;
-    const highestPressureGroup = [...data.groups].sort(
-        (left, right) => right.capacityPercent - left.capacityPercent,
-    )[0];
-    const busiestGroup = [...data.groups].sort((left, right) => right.players - left.players)[0];
-    const latestScalingAction = data.scalingActions[0];
-    const averagePlayersPerGroup =
-        data.groups.length > 0
-            ? Math.round(
-                  data.groups.reduce((total, group) => total + group.players, 0) /
-                      data.groups.length,
-              )
             : 0;
     const hasFreshData = lastUpdatedAt !== null;
 
@@ -409,7 +371,8 @@ const DashboardHomePage = () => {
                     : `${data.stats.totalPlayers}`,
             meta: `${playerLoadPercent}% of player capacity`,
             description: "Current network load across connected sessions and available slots.",
-            toneClassName: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+            iconToneClassName: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+            metaToneClassName: "text-emerald-300",
             icon: UsersIcon,
         },
         {
@@ -417,7 +380,8 @@ const DashboardHomePage = () => {
             value: `${data.stats.activeServers}`,
             meta: "Visible running instances",
             description: "Runtime instances currently registered and considered active.",
-            toneClassName: "border-primary/20 bg-primary/10 text-primary",
+            iconToneClassName: "border-primary/20 bg-primary/10 text-primary",
+            metaToneClassName: "text-primary",
             icon: ServerIcon,
         },
         {
@@ -425,7 +389,8 @@ const DashboardHomePage = () => {
             value: averageLatencyMs !== null ? `${averageLatencyMs} ms` : "--",
             meta: `${Math.round(averageLatencyWindowMs / 60000)} minute rolling average`,
             description: "Observed dashboard edge latency from authenticated API requests.",
-            toneClassName: "border-sky-500/20 bg-sky-500/10 text-sky-300",
+            iconToneClassName: "border-sky-500/20 bg-sky-500/10 text-sky-300",
+            metaToneClassName: "text-sky-300",
             icon: Clock3Icon,
         },
         {
@@ -435,9 +400,12 @@ const DashboardHomePage = () => {
                 ? "Player joins are currently restricted"
                 : "New joins are being accepted",
             description: "Network-wide entry control sourced from the active settings document.",
-            toneClassName: data.stats.maintenanceEnabled
+            iconToneClassName: data.stats.maintenanceEnabled
                 ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
                 : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+            metaToneClassName: data.stats.maintenanceEnabled
+                ? "text-amber-300"
+                : "text-emerald-300",
             icon: data.stats.maintenanceEnabled ? ShieldAlertIcon : ShieldCheckIcon,
         },
     ] as const;
@@ -462,9 +430,9 @@ const DashboardHomePage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={() => void refresh(true)} className="rounded-xl">
-                        Retry overview
-                    </Button>
+                    <div className="text-sm text-muted-foreground">
+                        The dashboard will keep retrying automatically.
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -473,37 +441,17 @@ const DashboardHomePage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
-                        Dashboard home
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Operational snapshot
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Live network capacity, group pressure, and recent autoscaling decisions
-                            in one surface.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Operational snapshot
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Live network capacity, group pressure, and recent autoscaling decisions in
+                        one surface.
+                    </p>
                 </div>
 
-                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    <Button
-                        variant="outline"
-                        onClick={() => void refresh()}
-                        disabled={isRefreshing}
-                        className="rounded-xl"
-                    >
-                        <LoaderCircleIcon
-                            className={cn("size-4", isRefreshing ? "animate-spin" : "")}
-                        />
-                        Refresh now
-                    </Button>
-                </div>
+                <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
             </div>
 
             {errorMessage && hasFreshData ? (
@@ -526,133 +474,41 @@ const DashboardHomePage = () => {
                 ))}
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-                <Card className="border border-border/70 bg-card/85 shadow-none">
-                    <CardHeader className="pb-4">
-                        <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                            Group Pressure
-                        </CardDescription>
-                        <CardAction>
-                            <Button variant="ghost" size="sm" asChild className="rounded-xl">
-                                <Link to="/groups">
-                                    View groups
-                                    <ArrowRightIcon className="size-4" />
-                                </Link>
-                            </Button>
-                        </CardAction>
-                        <CardTitle className="text-base">Most active network groups</CardTitle>
-                        <CardDescription>
-                            Dense runtime cards prioritized by current player activity and visible
-                            instance pressure.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {data.groups.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-border/80 bg-background/35 px-4 py-10 text-center text-sm text-muted-foreground">
-                                No visible groups are active right now.
-                            </div>
-                        ) : (
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                                {data.groups.map((group) => (
-                                    <GroupCard key={group.name} group={group} />
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="border border-border/70 bg-card/85 shadow-none">
-                    <CardHeader className="pb-4">
-                        <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                            Runtime Posture
-                        </CardDescription>
-                        <CardTitle className="text-base">Capacity and control signals</CardTitle>
-                        <CardDescription>
-                            Quick operational readout derived from the current overview snapshot.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-5">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                                <span>Network player load</span>
-                                <span className="font-medium text-foreground">
-                                    {playerLoadPercent}%
-                                </span>
-                            </div>
-                            <Progress value={playerLoadPercent} className="h-2.5" />
+            <Card className="border border-border/70 bg-card/85 shadow-none">
+                <CardHeader className="pb-4">
+                    <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                        Group Pressure
+                    </CardDescription>
+                    <CardAction>
+                        <Button variant="ghost" size="sm" asChild>
+                            <Link to="/groups">
+                                View groups
+                                <ArrowRightIcon className="size-4" />
+                            </Link>
+                        </Button>
+                    </CardAction>
+                    <CardTitle className="text-base">Most active network groups</CardTitle>
+                    <CardDescription>
+                        Dense runtime cards prioritized by current player activity and visible
+                        instance pressure.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {data.groups.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-border/80 bg-background/35 px-4 py-10 text-center text-sm text-muted-foreground">
+                            No visible groups are active right now.
                         </div>
-
-                        <div className="grid gap-3">
-                            <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Highest pressure
-                                </div>
-                                <div className="mt-1 text-sm font-semibold text-foreground">
-                                    {highestPressureGroup?.name ?? "--"}
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    {highestPressureGroup
-                                        ? `${formatPercent(highestPressureGroup.capacityPercent)} capacity in use`
-                                        : "No capacity signal available"}
-                                </div>
-                            </div>
-
-                            <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Busiest group
-                                </div>
-                                <div className="mt-1 text-sm font-semibold text-foreground">
-                                    {busiestGroup?.name ?? "--"}
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    {busiestGroup
-                                        ? `${busiestGroup.players} players across ${busiestGroup.activeInstances} instances`
-                                        : "No player activity recorded"}
-                                </div>
-                            </div>
-
-                            <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Latest scaling action
-                                </div>
-                                <div className="mt-1 text-sm font-semibold text-foreground">
-                                    {latestScalingAction?.action ?? "--"}
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                    {latestScalingAction
-                                        ? `${latestScalingAction.groupId} / ${formatDateTime(latestScalingAction.timestamp)}`
-                                        : "No scaling activity yet"}
-                                </div>
-                            </div>
+                    ) : (
+                        <div className="grid gap-4 xl:grid-cols-3">
+                            {data.groups.map((group) => (
+                                <GroupCard key={group.name} group={group} />
+                            ))}
                         </div>
+                    )}
+                </CardContent>
+            </Card>
 
-                        <div className="rounded-xl border border-border/70 bg-muted/35 px-3 py-3">
-                            <div className="flex items-start gap-3">
-                                <ActivityIcon className="mt-0.5 size-4 text-primary" />
-                                <div className="space-y-1">
-                                    <div className="text-sm font-medium text-foreground">
-                                        Average {averagePlayersPerGroup} players per visible group
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        Last successful sync{" "}
-                                        {lastUpdatedAt
-                                            ? formatDateTime(new Date(lastUpdatedAt).toISOString())
-                                            : "--"}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <ScalingActionsTable
-                isRefreshing={isRefreshing}
-                onRefresh={() => {
-                    void refresh();
-                }}
-                scalingActions={data.scalingActions}
-            />
+            <ScalingActionsTable scalingActions={data.scalingActions} />
         </div>
     );
 };

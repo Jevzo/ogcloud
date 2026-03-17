@@ -205,7 +205,7 @@ const UploadTemplateDialog = ({
                                 <UploadIcon className="size-4" />
                                 Choose file
                             </Button>
-                            <div className="min-h-12 flex-1 rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+                            <div className="flex min-h-10 flex-1 items-center rounded-lg border border-border/70 bg-background/40 px-4 text-sm text-muted-foreground">
                                 {selectedFile
                                     ? `${selectedFile.name} (${Math.max(
                                           1,

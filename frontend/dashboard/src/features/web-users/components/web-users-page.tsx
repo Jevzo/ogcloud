@@ -363,9 +363,6 @@ const WebUsersPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -451,16 +448,6 @@ const WebUsersPage = () => {
                         </div>
                         <CardAction>
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh()}
-                                    disabled={isRefreshing}
-                                >
-                                    {isRefreshing ? (
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
-                                    ) : null}
-                                    Refresh
-                                </Button>
                                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                                     <UserPlusIcon className="size-4" />
                                     Create user

@@ -19,7 +19,6 @@ import {
     CardAction,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -134,7 +133,6 @@ const PermissionsPage = () => {
         data: groups,
         errorMessage,
         isLoading,
-        isRefreshing,
         lastUpdatedAt,
         refresh,
         refreshIntervalMs,
@@ -211,9 +209,6 @@ const PermissionsPage = () => {
                         {errorMessage}
                     </CardDescription>
                 </CardHeader>
-                <CardFooter>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
-                </CardFooter>
             </Card>
         );
     }
@@ -318,16 +313,6 @@ const PermissionsPage = () => {
                         </div>
                         <CardAction className="col-auto row-auto">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh()}
-                                    disabled={isRefreshing}
-                                >
-                                    <LoaderCircleIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
-                                </Button>
                                 <Button
                                     onClick={() => setIsCreateDialogOpen(true)}
                                     disabled={!permissionSystemEnabled}

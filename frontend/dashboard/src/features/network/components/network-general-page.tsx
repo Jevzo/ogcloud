@@ -62,7 +62,7 @@ const ToggleSettingCard = ({
 );
 
 const NetworkGeneralPage = () => {
-    const { isLoading, locks, reloadData, saveSettings, settings } = useNetworkPageContext();
+    const { isLoading, locks, saveSettings, settings } = useNetworkPageContext();
     const form = useForm<NetworkGeneralFormValues>({
         resolver: zodResolver(networkGeneralFormSchema),
         defaultValues: {
@@ -133,11 +133,6 @@ const NetworkGeneralPage = () => {
                         The dashboard could not load proxy routing and plugin control state.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button type="button" variant="outline" onClick={() => void reloadData()}>
-                        Retry loading general settings
-                    </Button>
-                </CardContent>
             </Card>
         );
     }

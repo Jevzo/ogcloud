@@ -3,23 +3,16 @@ import { Link, useParams } from "react-router";
 import {
     ArrowLeftIcon,
     ExternalLinkIcon,
-    LoaderCircleIcon,
-    RefreshCwIcon,
     ServerIcon,
     TerminalIcon,
     UsersIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import ExecuteCommandDialog from "@/features/servers/components/execute-command-dialog";
-import ServerActionsMenu from "@/features/servers/components/server-actions-menu";
-import ServerStatusBadge from "@/features/servers/components/server-status-badge";
-import { useServerDetailsQuery } from "@/features/servers/hooks/use-server-details-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -36,6 +29,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ExecuteCommandDialog from "@/features/servers/components/execute-command-dialog";
+import ServerActionsMenu from "@/features/servers/components/server-actions-menu";
+import ServerStatusBadge from "@/features/servers/components/server-status-badge";
+import { useServerDetailsQuery } from "@/features/servers/hooks/use-server-details-query";
 import { useAccessToken } from "@/hooks/use-access-token";
 import { getRuntimeProfileLabel } from "@/lib/group-runtime";
 import { hasAdminAccess } from "@/lib/roles";
@@ -46,15 +43,15 @@ import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { ServerActionKind } from "@/types/server";
 
 const StatCard = ({
+    helper,
     label,
     value,
-    helper,
 }: {
     helper: string;
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -72,7 +69,7 @@ const DetailRow = ({
     label: string;
     value: string;
 }) => (
-    <div className="flex flex-col gap-1 rounded-xl border border-border/70 bg-background/45 px-4 py-3">
+    <div className="flex flex-col gap-1 rounded-lg border border-border/70 bg-background/45 px-4 py-3">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
         <div className="break-all text-sm font-medium text-foreground">{value}</div>
     </div>
@@ -87,9 +84,9 @@ const ServerDetailsSkeleton = () => (
                 <Skeleton className="h-4 w-80" />
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-28" />
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-36" />
+                <Skeleton className="h-10 w-28" />
             </CardContent>
         </Card>
 
@@ -143,6 +140,8 @@ const ServerDetailsPage = () => {
 
     const statsServer = runtimeSnapshot ?? server;
     const totalPlayerPages = getPaginatedTotalPages(playerPage);
+    const isProxySurface = server?.type === "PROXY";
+    const playerContextColumnLabel = isProxySurface ? "Server" : "Proxy";
 
     const handleServerAction = async (nextServerId: string, action: ServerActionKind) => {
         const actionKey = `${nextServerId}:${action}`;
@@ -187,7 +186,6 @@ const ServerDetailsPage = () => {
                             Back to servers
                         </Link>
                     </Button>
-                    <Button onClick={() => void refresh(true)}>Retry</Button>
                 </CardFooter>
             </Card>
         );
@@ -195,86 +193,66 @@ const ServerDetailsPage = () => {
 
     return (
         <div className="space-y-4">
-            <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="space-y-3">
-                            <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
-                                <Link to="/servers">
-                                    <ArrowLeftIcon className="size-4" />
-                                    Back to servers
+            <div className="space-y-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
+                        <Link to="/servers">
+                            <ArrowLeftIcon className="size-4" />
+                            Back to servers
+                        </Link>
+                    </Button>
+
+                    <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                        {server && group ? (
+                            <Button variant="outline" asChild>
+                                <Link to={`/groups/${encodeURIComponent(group.id)}`}>
+                                    <ExternalLinkIcon className="size-4" />
+                                    Open group config
                                 </Link>
                             </Button>
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
-                                        Server details
-                                    </Badge>
-                                    {server ? <ServerStatusBadge state={server.state} /> : null}
-                                    {server ? (
-                                        <Badge variant="outline" className="border-border/80">
-                                            {server.type}
-                                        </Badge>
-                                    ) : null}
-                                    <Badge variant="outline" className="border-border/80">
-                                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
-                                        <ServerIcon className="size-5 text-primary" />
-                                        {server?.displayName ?? serverId}
-                                    </CardTitle>
-                                    <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
-                                        Runtime telemetry, lifecycle actions, and player sessions for
-                                        the selected server instance.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </div>
-
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh()}
-                                    disabled={isRefreshing}
-                                >
-                                    <RefreshCwIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh
-                                </Button>
-                                {server && group ? (
-                                    <Button variant="outline" asChild>
-                                        <Link to={`/groups/${encodeURIComponent(group.id)}`}>
-                                            <ExternalLinkIcon className="size-4" />
-                                            Open group config
-                                        </Link>
-                                    </Button>
-                                ) : null}
-                                {server && canExecuteCommands ? (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setIsCommandDialogOpen(true)}
-                                    >
-                                        <TerminalIcon className="size-4" />
-                                        Execute command
-                                    </Button>
-                                ) : null}
-                                {server ? (
-                                    <ServerActionsMenu
-                                        activeActionKey={activeActionKey}
-                                        canExecuteCommands={false}
-                                        onAction={handleServerAction}
-                                        server={server}
-                                    />
-                                ) : null}
-                            </div>
-                        </CardAction>
+                        ) : null}
+                        {server && canExecuteCommands ? (
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsCommandDialogOpen(true)}
+                            >
+                                <TerminalIcon className="size-4" />
+                                Execute command
+                            </Button>
+                        ) : null}
+                        {server ? (
+                            <ServerActionsMenu
+                                activeActionKey={activeActionKey}
+                                canExecuteCommands={false}
+                                onAction={handleServerAction}
+                                server={server}
+                            />
+                        ) : null}
                     </div>
-                </CardHeader>
-            </Card>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {server ? <ServerStatusBadge state={server.state} /> : null}
+                        {server ? (
+                            <Badge variant="outline" className="border-border/80">
+                                {server.type}
+                            </Badge>
+                        ) : null}
+                    </div>
+
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
+                            <ServerIcon className="size-5 text-primary" />
+                            {server?.displayName ?? serverId}
+                        </CardTitle>
+                        <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
+                            Runtime telemetry, lifecycle actions, and player sessions for the
+                            selected server instance.
+                        </CardDescription>
+                    </div>
+                </div>
+            </div>
 
             {errorMessage && server ? (
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
@@ -293,7 +271,11 @@ const ServerDetailsPage = () => {
                 <StatCard
                     label="Group"
                     value={server?.group ?? "--"}
-                    helper={group ? getRuntimeProfileLabel(group.runtimeProfile) : "Runtime group"}
+                    helper={
+                        group
+                            ? `Backend runtime: ${getRuntimeProfileLabel(group.runtimeProfile)}`
+                            : "Backend runtime unavailable"
+                    }
                 />
                 <StatCard
                     label="Players"
@@ -349,13 +331,8 @@ const ServerDetailsPage = () => {
                             <CardContent className="grid gap-3 md:grid-cols-2">
                                 <DetailRow label="Server ID" value={server?.id ?? "--"} />
                                 <DetailRow label="Display name" value={server?.displayName ?? "--"} />
-                                <DetailRow label="Group" value={server?.group ?? "--"} />
                                 <DetailRow label="Type" value={server?.type ?? "--"} />
                                 <DetailRow label="Game state" value={server?.gameState ?? "--"} />
-                                <DetailRow
-                                    label="Backend runtime"
-                                    value={group ? getRuntimeProfileLabel(group.runtimeProfile) : "--"}
-                                />
                             </CardContent>
                         </Card>
 
@@ -367,7 +344,6 @@ const ServerDetailsPage = () => {
                                 <CardTitle className="text-base">Pod, template, and network context</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 md:grid-cols-2">
-                                <DetailRow label="Pod name" value={server?.podName ?? "--"} />
                                 <DetailRow label="Pod IP" value={server?.podIp ?? "--"} />
                                 <DetailRow label="Port" value={server ? `${server.port}` : "--"} />
                                 <DetailRow
@@ -378,10 +354,6 @@ const ServerDetailsPage = () => {
                                     label="Started at"
                                     value={server ? formatDateTime(server.startedAt) : "--"}
                                 />
-                                <DetailRow
-                                    label="Last heartbeat"
-                                    value={statsServer ? formatDateTime(statsServer.lastHeartbeat) : "--"}
-                                />
                             </CardContent>
                         </Card>
                     </div>
@@ -390,7 +362,7 @@ const ServerDetailsPage = () => {
                 <TabsContent value="players">
                     <Card className="border border-border/70 bg-card/85 shadow-none">
                         <CardHeader className="border-b border-border/70 pb-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <CardDescription className="text-xs uppercase tracking-[0.24em]">
                                         Connected players
@@ -403,27 +375,17 @@ const ServerDetailsPage = () => {
                                         Live sessions currently attached to this server or proxy.
                                     </CardDescription>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => void refresh(false)}
-                                    disabled={isRefreshing}
-                                >
-                                    <LoaderCircleIcon
-                                        className={isRefreshing ? "size-4 animate-spin" : "size-4"}
-                                    />
-                                    Refresh players
-                                </Button>
                             </div>
                         </CardHeader>
                         <CardContent className="px-0">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className="px-4">Player</TableHead>
-                                        <TableHead className="px-4">Permission group</TableHead>
-                                        <TableHead className="px-4">Proxy</TableHead>
-                                        <TableHead className="px-4">Connected</TableHead>
-                                        <TableHead className="px-4">UUID</TableHead>
+                                        <TableHead>Player</TableHead>
+                                        <TableHead>Permission group</TableHead>
+                                        <TableHead>{playerContextColumnLabel}</TableHead>
+                                        <TableHead>Connected</TableHead>
+                                        <TableHead>UUID</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -431,37 +393,33 @@ const ServerDetailsPage = () => {
                                         <TableRow>
                                             <TableCell
                                                 colSpan={5}
-                                                className="px-4 py-12 text-center text-sm text-muted-foreground"
+                                                className="py-12 text-center text-sm text-muted-foreground"
                                             >
-                                                No players are currently connected to this server.
+                                                No players are currently connected to this instance.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         playerPage.items.map((player) => (
                                             <TableRow key={player.uuid}>
-                                                <TableCell className="px-4 py-3 align-top">
-                                                    <div className="space-y-1">
-                                                        <div className="font-medium text-foreground">
-                                                            {player.name}
-                                                        </div>
-                                                        <div className="text-xs text-muted-foreground">
-                                                            {player.serverDisplayName ||
-                                                                player.serverId ||
-                                                                server?.displayName ||
-                                                                "--"}
-                                                        </div>
-                                                    </div>
+                                                <TableCell className="align-top font-medium text-foreground">
+                                                    {player.name}
                                                 </TableCell>
-                                                <TableCell className="px-4 py-3 align-top text-muted-foreground">
+                                                <TableCell className="align-top text-muted-foreground">
                                                     {player.groupId ?? "--"}
                                                 </TableCell>
-                                                <TableCell className="px-4 py-3 align-top text-muted-foreground">
-                                                    {player.proxyDisplayName || player.proxyId || "--"}
+                                                <TableCell className="align-top text-muted-foreground">
+                                                    {isProxySurface
+                                                        ? player.serverDisplayName ||
+                                                          player.serverId ||
+                                                          "--"
+                                                        : player.proxyDisplayName ||
+                                                          player.proxyId ||
+                                                          "--"}
                                                 </TableCell>
-                                                <TableCell className="px-4 py-3 align-top text-muted-foreground">
+                                                <TableCell className="align-top text-muted-foreground">
                                                     {formatDateTime(player.connectedAt)}
                                                 </TableCell>
-                                                <TableCell className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
+                                                <TableCell className="align-top font-mono text-xs text-muted-foreground">
                                                     {player.uuid}
                                                 </TableCell>
                                             </TableRow>

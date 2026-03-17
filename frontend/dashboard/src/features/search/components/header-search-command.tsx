@@ -36,6 +36,9 @@ const getGroupStatusBadgeClassName = (maintenance: boolean) =>
         ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
         : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
 
+const RESULT_GROUP_CLASS_NAME =
+    "px-1 pb-1 pt-0 **:[[cmdk-group-heading]]:pb-1 **:[[cmdk-group-heading]]:pt-0.5";
+
 const HeaderSearchCommand = () => {
     const navigate = useNavigate();
     const getAccessToken = useAccessToken();
@@ -134,7 +137,7 @@ const HeaderSearchCommand = () => {
                     loop
                     className="overflow-visible border-0 bg-transparent p-0"
                 >
-                    <InputGroup className="h-10 rounded-2xl border-border/70 bg-background/75 shadow-none backdrop-blur-sm">
+                    <InputGroup className="rounded-lg border-border/70 bg-card/70 shadow-none backdrop-blur-sm">
                         <InputGroupAddon className="text-muted-foreground">
                             {isSearching ? (
                                 <LoaderCircleIcon className="size-4 animate-spin" />
@@ -147,12 +150,12 @@ const HeaderSearchCommand = () => {
                             value={query}
                             onValueChange={setQuery}
                             onFocus={() => setIsOpen(true)}
-                            placeholder="Search instances, groups, or players..."
-                            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            placeholder="Search network..."
+                            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                         />
                         <InputGroupAddon
                             align="inline-end"
-                            className="gap-1 text-[11px] text-muted-foreground/80"
+                            className="hidden gap-1 text-[11px] text-muted-foreground/80 sm:flex"
                         >
                             <kbd className="rounded-md border border-border/80 bg-muted/40 px-1.5 py-0.5 font-sans text-[11px]">
                                 Ctrl
@@ -164,7 +167,7 @@ const HeaderSearchCommand = () => {
                     </InputGroup>
 
                     {shouldShowPanel ? (
-                        <Card className="absolute inset-x-0 top-[calc(100%+0.75rem)] z-40 border border-border/70 bg-card/96 p-0 shadow-2xl shadow-black/25 backdrop-blur-xl">
+                        <Card className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-40 border border-border/70 bg-card/96 p-0 shadow-2xl shadow-black/25 backdrop-blur-xl">
                             <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
                                 <div>
                                     <div className="text-sm font-medium text-foreground">
@@ -183,7 +186,7 @@ const HeaderSearchCommand = () => {
                                 </Badge>
                             </div>
 
-                            <CommandList className="max-h-[26rem] p-2">
+                            <CommandList className="max-h-[26rem] px-2 pb-2 pt-0">
                                 {!trimmedQuery ? (
                                     <div className="grid gap-3 p-2 sm:grid-cols-3">
                                         <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
@@ -235,7 +238,10 @@ const HeaderSearchCommand = () => {
                                 ) : (
                                     <>
                                         {shouldShowServerSection ? (
-                                            <CommandGroup heading="Instances">
+                                            <CommandGroup
+                                                heading="Instances"
+                                                className={RESULT_GROUP_CLASS_NAME}
+                                            >
                                                 {results.servers.map((server) => (
                                                     <CommandItem
                                                         key={server.id}
@@ -273,7 +279,10 @@ const HeaderSearchCommand = () => {
                                         ) : null}
 
                                         {shouldShowGroupSection ? (
-                                            <CommandGroup heading="Groups">
+                                            <CommandGroup
+                                                heading="Groups"
+                                                className={RESULT_GROUP_CLASS_NAME}
+                                            >
                                                 {results.groups.map((group) => (
                                                     <CommandItem
                                                         key={group.id}
@@ -316,7 +325,10 @@ const HeaderSearchCommand = () => {
                                         ) : null}
 
                                         {shouldShowPlayerSection ? (
-                                            <CommandGroup heading="Players">
+                                            <CommandGroup
+                                                heading="Players"
+                                                className={RESULT_GROUP_CLASS_NAME}
+                                            >
                                                 {results.players.map((player) => (
                                                     <CommandItem
                                                         key={player.uuid}

@@ -5,7 +5,6 @@ import {
     GlobeIcon,
     LayoutGridIcon,
     MessageSquareTextIcon,
-    RefreshCwIcon,
     Settings2Icon,
     ShieldCheckIcon,
     UsersIcon,
@@ -19,11 +18,9 @@ import {
     getNetworkStatus,
     listGroups,
     requestNetworkRestart,
-    requestRuntimeRefresh,
     toggleNetworkMaintenance,
     updateNetworkSettings,
 } from "@/lib/api";
-import { RUNTIME_REFRESH_OPTIONS } from "@/lib/group-runtime";
 import { hasAdminAccess } from "@/lib/roles";
 import type { NetworkPageContextValue } from "@/pages/network/context";
 import { useAuthStore } from "@/store/auth-store";
@@ -35,9 +32,7 @@ import type {
     NetworkStatusRecord,
     UpdateNetworkPayload,
 } from "@/types/network";
-import type { RuntimeBundleScope } from "@/types/runtime";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -100,7 +95,6 @@ const NetworkPage = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
     const [isRestartingNetwork, setIsRestartingNetwork] = useState(false);
-    const [refreshingScope, setRefreshingScope] = useState<RuntimeBundleScope | null>(null);
     const [pageErrorMessage, setPageErrorMessage] = useState<string | null>(null);
     const isAdmin = hasAdminAccess(userRole);
 
@@ -189,10 +183,6 @@ const NetworkPage = () => {
         };
     }, [loadAllNetworkData, refreshNetworkTelemetry]);
 
-    const handleReload = useCallback(async () => {
-        await loadAllNetworkData(false);
-    }, [loadAllNetworkData]);
-
     const saveSettings = useCallback(
         async (payload: UpdateNetworkPayload, successMessage: string) => {
             try {
@@ -270,32 +260,6 @@ const NetworkPage = () => {
         }
     }, [getAccessToken, refreshNetworkTelemetry]);
 
-    const requestRuntimeRefreshAction = useCallback(
-        async (scope: RuntimeBundleScope) => {
-            setRefreshingScope(scope);
-
-            try {
-                const accessToken = await getAccessToken();
-
-                await requestRuntimeRefresh(accessToken, scope);
-                const label =
-                    RUNTIME_REFRESH_OPTIONS.find((option) => option.scope === scope)?.label ?? scope;
-                toast.success(`${label} refresh requested.`);
-            } catch (error) {
-                const nextError =
-                    error instanceof Error
-                        ? error
-                        : new Error("Unable to request runtime refresh.");
-
-                toast.error(nextError.message);
-                throw nextError;
-            } finally {
-                setRefreshingScope(null);
-            }
-        },
-        [getAccessToken],
-    );
-
     const contextValue: NetworkPageContextValue = {
         settings,
         status,
@@ -306,12 +270,9 @@ const NetworkPage = () => {
         isRefreshing,
         isRestartingNetwork,
         isTogglingMaintenance,
-        refreshingScope,
-        reloadData: handleReload,
         saveSettings,
         setMaintenance,
         requestNetworkRestart: requestNetworkRestartAction,
-        requestRuntimeRefresh: requestRuntimeRefreshAction,
     };
 
     return (
@@ -348,17 +309,6 @@ const NetworkPage = () => {
                             </div>
                         </div>
 
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => void handleReload()}
-                            disabled={isLoading || isRefreshing}
-                        >
-                            <RefreshCwIcon
-                                className={`size-4 ${isRefreshing ? "animate-spin" : ""}`}
-                            />
-                            {isRefreshing ? "Refreshing" : "Refresh network"}
-                        </Button>
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -407,15 +357,6 @@ const NetworkPage = () => {
                                     <div className="font-medium">Network data is degraded</div>
                                     <div className="mt-1 text-destructive/85">{pageErrorMessage}</div>
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => void handleReload()}
-                                    disabled={isLoading || isRefreshing}
-                                >
-                                    Retry
-                                </Button>
                             </div>
                         </div>
                     ) : null}

@@ -41,7 +41,7 @@ const PreviewCard = ({
 );
 
 const NetworkMessagingPage = () => {
-    const { isLoading, reloadData, saveSettings, settings } = useNetworkPageContext();
+    const { isLoading, saveSettings, settings } = useNetworkPageContext();
     const form = useForm<NetworkMessagingFormValues>({
         resolver: zodResolver(networkMessagingFormSchema),
         defaultValues: {
@@ -114,11 +114,6 @@ const NetworkMessagingPage = () => {
                         this network view.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button type="button" variant="outline" onClick={() => void reloadData()}>
-                        Retry loading messaging
-                    </Button>
-                </CardContent>
             </Card>
         );
     }
