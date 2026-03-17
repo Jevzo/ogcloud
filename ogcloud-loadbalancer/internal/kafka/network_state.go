@@ -107,7 +107,7 @@ func (ns *NetworkState) ResolveStatusVersion(clientProtocolVersion int32) (strin
 	if ns.maintenance {
 		return ns.versionNameMaintenance, -1
 	}
-	if clientProtocolVersion >= supportedProtocolVersionMin && clientProtocolVersion <= supportedProtocolVersionMax {
+	if IsSupportedClientProtocolVersion(clientProtocolVersion) {
 		return ns.versionName, int(clientProtocolVersion)
 	}
 	return supportedVersionName, -1

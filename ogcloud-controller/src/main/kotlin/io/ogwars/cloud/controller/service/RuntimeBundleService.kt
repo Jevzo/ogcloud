@@ -633,6 +633,9 @@ class RuntimeBundleService(
         migrate-default-config-changes: true
         send-player-details: true
         send-server-details: true
+        block-versions:
+          - "<1.8"
+        block-disconnect-msg: "&cUnsupported Minecraft version. Minimum supported version is 1.8.8."
         velocity-ping-interval: 60
         velocity-ping-save: true
         velocity-servers:

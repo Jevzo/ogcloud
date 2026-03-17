@@ -25,6 +25,10 @@ const (
 	backoffFactor  = 2
 )
 
+func IsSupportedClientProtocolVersion(protocolVersion int32) bool {
+	return protocolVersion >= supportedProtocolVersionMin && protocolVersion <= supportedProtocolVersionMax
+}
+
 var removableProxyStates = map[string]struct{}{
 	"DRAINING": {},
 	"STOPPING": {},

@@ -30,6 +30,8 @@ ogcloud:
     min-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MIN_BATCH_SIZE:100}
     max-batch-size: ${OGCLOUD_PERMISSION_REENABLE_SYNC_MAX_BATCH_SIZE:2000}
     lock-ttl: ${OGCLOUD_PERMISSION_REENABLE_SYNC_LOCK_TTL:PT5M}
+  server-cleanup:
+    startup-grace-period: ${OGCLOUD_SERVER_CLEANUP_STARTUP_GRACE_PERIOD:PT45S}
   kafka:
     consumer:
       busy:

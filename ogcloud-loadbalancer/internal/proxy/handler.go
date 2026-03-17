@@ -40,7 +40,7 @@ func (h *Handler) Handle(clientConn net.Conn) {
 	case protocol.StatusNextState:
 		h.handleStatus(clientConn, hs.ProtocolVersion)
 	case protocol.LoginNextState:
-		h.handleLogin(clientConn, rawHandshake)
+		h.handleLogin(clientConn, hs.ProtocolVersion, rawHandshake)
 	default:
 		h.logger.Debug("unknown next state", zap.Int32("nextState", hs.NextState))
 	}
@@ -60,7 +60,18 @@ func (h *Handler) handleStatus(
 	}
 }
 
-func (h *Handler) handleLogin(clientConn net.Conn, rawHandshake []byte) {
+func (h *Handler) handleLogin(
+	clientConn net.Conn,
+	clientProtocolVersion int32,
+	rawHandshake []byte,
+) {
+	if !kafka.IsSupportedClientProtocolVersion(clientProtocolVersion) {
+		if err := protocol.HandleLoginDisconnect(clientConn, unsupportedProtocolDisconnectMessage); err != nil {
+			h.logger.Debug("failed to write unsupported protocol disconnect", zap.Int32("protocolVersion", clientProtocolVersion), zap.Error(err))
+		} // FIXME: Help
+		return
+	}
+
 	backend, err := h.pool.SelectBackend(h.network.GetProxyRoutingStrategy())
 	if err != nil {
 		h.logger.Warn("no backend available for login", zap.Error(err))
@@ -104,3 +115,5 @@ func (h *Handler) handleLogin(clientConn net.Conn, rawHandshake []byte) {
 
 	<-done
 }
+
+const unsupportedProtocolDisconnectMessage = "Unsupported Minecraft version. Supported versions are 1.8 through 1.21.11."

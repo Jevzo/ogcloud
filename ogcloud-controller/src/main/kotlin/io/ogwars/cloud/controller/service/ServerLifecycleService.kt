@@ -501,7 +501,7 @@ class ServerLifecycleService(
             maxPlayers = event.maxPlayers,
             tps = event.tps,
             memoryUsedMb = event.memoryUsedMb,
-            lastHeartbeat = Instant.now(),
+            lastHeartbeat = latestHeartbeat(Instant.ofEpochMilli(event.timestamp)),
         )
 
     private fun ServerDocument.withProxyHeartbeat(event: ProxyHeartbeatEvent): ServerDocument =
@@ -512,8 +512,11 @@ class ServerLifecycleService(
             maxPlayers = event.maxPlayers,
             tps = NO_TPS,
             memoryUsedMb = event.memoryUsedMb,
-            lastHeartbeat = Instant.now(),
+            lastHeartbeat = latestHeartbeat(Instant.ofEpochMilli(event.timestamp)),
         )
+
+    private fun ServerDocument.latestHeartbeat(candidate: Instant): Instant =
+        lastHeartbeat?.takeIf { it.isAfter(candidate) } ?: candidate
 
     companion object {
         private const val DISPLAY_NAME_ID_LENGTH = 6
