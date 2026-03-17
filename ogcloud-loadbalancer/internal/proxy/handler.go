@@ -68,7 +68,7 @@ func (h *Handler) handleLogin(
 	if !kafka.IsSupportedClientProtocolVersion(clientProtocolVersion) {
 		if err := protocol.HandleLoginDisconnect(clientConn, unsupportedProtocolDisconnectMessage); err != nil {
 			h.logger.Debug("failed to write unsupported protocol disconnect", zap.Int32("protocolVersion", clientProtocolVersion), zap.Error(err))
-		} // FIXME: Help
+		} // FIXME: handle all disconnects gracefully
 		return
 	}
 

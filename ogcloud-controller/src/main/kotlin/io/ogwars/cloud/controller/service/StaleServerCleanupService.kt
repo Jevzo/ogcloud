@@ -18,6 +18,7 @@ class StaleServerCleanupService(
     private val serverLifecycleService: ServerLifecycleService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
     @Volatile
     private var cleanupEnabledAt: Instant? = null
 

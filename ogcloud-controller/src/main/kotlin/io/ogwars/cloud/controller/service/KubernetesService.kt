@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.service
 
 import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.common.model.RuntimeBundleScope
 import io.ogwars.cloud.controller.config.KubernetesProperties
 import io.ogwars.cloud.controller.config.PodRuntimeProperties
 import io.ogwars.cloud.controller.config.RuntimeProperties
@@ -348,7 +349,7 @@ class KubernetesService(
     private fun runtimeManifestPath(group: GroupDocument): String {
         val scope =
             if (group.type == GroupType.PROXY) {
-                io.ogwars.cloud.common.model.RuntimeBundleScope.VELOCITY
+                RuntimeBundleScope.VELOCITY
             } else {
                 requireNotNull(group.resolvedRuntimeProfile()).runtimeScope
             }

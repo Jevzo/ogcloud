@@ -123,7 +123,7 @@ const COMMAND_DOCS: Record<RequiredCommand, string> = {
 
 const REPO_OWNER = "Jevzo";
 const REPO_NAME = "ogcloud";
-const REPO_REF = "feature-implement-multi-version"; // FIXME: Revert before merge
+const REPO_REF = "dev";
 const REMOTE_HELM_PATH = "helm";
 const HELM_REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/${REPO_REF}/helm`;
 

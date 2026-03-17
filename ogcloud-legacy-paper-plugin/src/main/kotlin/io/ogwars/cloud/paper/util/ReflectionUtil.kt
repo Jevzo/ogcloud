@@ -4,12 +4,15 @@ import org.bukkit.Server
 import java.lang.reflect.Field
 
 object ReflectionUtil {
-
-    fun setMaxPlayers(server: Server, maxPlayers: Int) {
+    fun setMaxPlayers(
+        server: Server,
+        maxPlayers: Int,
+    ) {
         val playerList = server.javaClass.getMethod("getHandle").invoke(server)
-        val field = findField(playerList.javaClass, "maxPlayers").apply {
-            isAccessible = true
-        }
+        val field =
+            findField(playerList.javaClass, "maxPlayers").apply {
+                isAccessible = true
+            }
 
         field.setInt(playerList, maxPlayers)
     }
@@ -18,15 +21,19 @@ object ReflectionUtil {
         val minecraftServerClass = Class.forName("net.minecraft.server.v1_8_R3.MinecraftServer")
         val minecraftServer = minecraftServerClass.getMethod("getServer").invoke(null)
 
-        val field = findField(minecraftServer.javaClass, "recentTps").apply {
-            isAccessible = true
-        }
+        val field =
+            findField(minecraftServer.javaClass, "recentTps").apply {
+                isAccessible = true
+            }
 
         val recentTps = field.get(minecraftServer) as DoubleArray
         return recentTps.firstOrNull()?.coerceAtMost(maxTps) ?: maxTps
     }
 
-    private fun findField(type: Class<*>, name: String): Field {
+    private fun findField(
+        type: Class<*>,
+        name: String,
+    ): Field {
         var current: Class<*>? = type
 
         while (current != null) {

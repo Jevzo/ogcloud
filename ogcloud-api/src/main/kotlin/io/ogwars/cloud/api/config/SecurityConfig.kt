@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jose.jwk.OctetSequenceKey
 import com.nimbusds.jose.jwk.source.JWKSource
 import com.nimbusds.jose.proc.SecurityContext
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -120,7 +121,7 @@ class SecurityConfig {
 
     private fun writeError(
         objectMapper: ObjectMapper,
-        response: jakarta.servlet.http.HttpServletResponse,
+        response: HttpServletResponse,
         status: Int,
         message: String,
     ) {

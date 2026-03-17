@@ -62,14 +62,12 @@ class ApiClient(
             ApiServerRequestResponse::class.java,
         )
 
-    fun forceTemplatePush(id: String): CompletableFuture<Void> =
-        post("/api/v1/servers/$id/template/push", null)
+    fun forceTemplatePush(id: String): CompletableFuture<Void> = post("/api/v1/servers/$id/template/push", null)
 
     fun transferPlayer(
         uuid: String,
         target: String,
-    ): CompletableFuture<Void> =
-        post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
+    ): CompletableFuture<Void> = post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
 
     fun getNetworkSettingsSync(): ApiNetworkSettingsResponse {
         val response = sendGetRequest("/api/v1/network", ensureAccessToken())
@@ -79,8 +77,7 @@ class ApiClient(
     private fun post(
         path: String,
         body: Any?,
-    ): CompletableFuture<Void> =
-        sendAuthorizedPost(path, body).thenApply { null }
+    ): CompletableFuture<Void> = sendAuthorizedPost(path, body).thenApply { null }
 
     private fun <T> postWithResponse(
         path: String,
@@ -222,8 +219,7 @@ class ApiClient(
     private fun readFully(stream: InputStream): String =
         BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { it.readText() }
 
-    private fun serializeBody(body: Any?): String =
-        gson.toJson(body ?: emptyMap<String, Any>())
+    private fun serializeBody(body: Any?): String = gson.toJson(body ?: emptyMap<String, Any>())
 
     private fun ApiHttpResponse.validated(): ApiHttpResponse {
         if (statusCode !in 200..299) {

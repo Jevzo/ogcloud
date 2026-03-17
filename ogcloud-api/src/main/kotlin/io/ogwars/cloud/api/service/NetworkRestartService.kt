@@ -37,7 +37,9 @@ class NetworkRestartService(
         }
 
         if (!groupRepository.existsById(networkSettings.defaultGroup)) {
-            throw IllegalArgumentException("Default group not found for network restart: ${networkSettings.defaultGroup}")
+            throw IllegalArgumentException(
+                "Default group not found for network restart: ${networkSettings.defaultGroup}",
+            )
         }
 
         groupOperationTaskExecutor.execute {
@@ -59,8 +61,9 @@ class NetworkRestartService(
 
     private fun restartNetwork(defaultGroupId: String) {
         val groups = groupRepository.findAll().sortedBy(GroupDocument::id)
-        val defaultGroup = groups.firstOrNull { it.id == defaultGroupId }
-            ?: throw IllegalStateException("Default group disappeared before network restart: $defaultGroupId")
+        val defaultGroup =
+            groups.firstOrNull { it.id == defaultGroupId }
+                ?: throw IllegalStateException("Default group disappeared before network restart: $defaultGroupId")
 
         restartPhase(
             phase = "proxy",
@@ -264,7 +267,10 @@ class NetworkRestartService(
                                     "${server.id}:${server.state}:startedAt=${server.startedAt}:lastHeartbeat=${server.lastHeartbeat}"
                                 }
 
-                        "${target.groupId}[expected=${target.healthyTargetCount}, actual=${healthyServerCount(target, restartRequestedAt)}, servers=$states]"
+                        "${target.groupId}[expected=${target.healthyTargetCount}, actual=${healthyServerCount(
+                            target,
+                            restartRequestedAt,
+                        )}, servers=$states]"
                     }
 
                 throw IllegalStateException(
