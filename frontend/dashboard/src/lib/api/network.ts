@@ -1,5 +1,7 @@
 import type {
     NetworkGeneralSettings,
+    NetworkLockRecord,
+    NetworkLocksResponse,
     NetworkSettingsRecord,
     NetworkStatusRecord,
     ProxyRoutingStrategy,
@@ -40,6 +42,61 @@ const normalizeNetworkSettings = (payload: NetworkSettingsApiRecord): NetworkSet
     },
 });
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
+const readNullableString = (value: unknown) => {
+    if (typeof value === "string") {
+        return value;
+    }
+
+    return value === null || typeof value === "undefined" ? null : undefined;
+};
+
+const readNullableNumber = (value: unknown) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+
+    return value === null || typeof value === "undefined" ? null : undefined;
+};
+
+const normalizeNetworkLock = (payload: unknown): NetworkLockRecord => {
+    if (!isRecord(payload) || typeof payload.key !== "string" || typeof payload.type !== "string") {
+        throw new Error("Invalid network locks response.");
+    }
+
+    const targetId = readNullableString(payload.targetId);
+    const token = readNullableString(payload.token);
+    const ttlSeconds = readNullableNumber(payload.ttlSeconds);
+
+    if (
+        typeof targetId === "undefined" ||
+        typeof token === "undefined" ||
+        typeof ttlSeconds === "undefined"
+    ) {
+        throw new Error("Invalid network locks response.");
+    }
+
+    return {
+        key: payload.key,
+        type: payload.type,
+        targetId,
+        token,
+        ttlSeconds,
+    };
+};
+
+const normalizeNetworkLocks = (payload: unknown): NetworkLocksResponse => {
+    if (!isRecord(payload) || !Array.isArray(payload.locks)) {
+        throw new Error("Invalid network locks response.");
+    }
+
+    return {
+        locks: payload.locks.map(normalizeNetworkLock),
+    };
+};
+
 export const getNetworkSettings = async (accessToken: string) => {
     try {
         const response = await apiClient.get<NetworkSettingsApiRecord>("/api/v1/network", {
@@ -59,6 +116,18 @@ export const getNetworkStatus = async (accessToken: string) => {
         });
 
         return response.data;
+    } catch (error) {
+        throw toApiError(error, SESSION_EXPIRED_MESSAGE);
+    }
+};
+
+export const getNetworkLocks = async (accessToken: string) => {
+    try {
+        const response = await apiClient.get<unknown>("/api/v1/network/locks", {
+            headers: getAuthHeaders(accessToken),
+        });
+
+        return normalizeNetworkLocks(response.data).locks;
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

@@ -397,18 +397,20 @@ const ServersPage = () => {
                                                 </p>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-slate-300">
-                                            {server.group}
-                                        </td>
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="text-sm font-medium text-slate-200">
-                                                    {getServerRuntimeLabel(server)}
+                                                    {server.group}
                                                 </p>
                                                 <p className="text-xs text-slate-500">
                                                     {server.templateVersion}
                                                 </p>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm font-medium text-slate-200">
+                                                {getServerRuntimeLabel(server)}
+                                            </p>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span

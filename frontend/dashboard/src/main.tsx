@@ -1,6 +1,6 @@
 import { type ReactElement, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, type RouteObject, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, type RouteObject, RouterProvider } from "react-router";
 
 import "@/index.css";
 
@@ -24,6 +24,10 @@ import ServersPage from "@/pages/ServersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import TemplatesPage from "@/pages/TemplatesPage";
 import WebUsersPage from "@/pages/WebUsersPage";
+import NetworkGeneralPage from "@/pages/network/NetworkGeneralPage";
+import NetworkMessagingPage from "@/pages/network/NetworkMessagingPage";
+import NetworkOverviewPage from "@/pages/network/NetworkOverviewPage";
+import NetworkServerSettingsPage from "@/pages/network/NetworkServerSettingsPage";
 
 const withAdminAccess = (element: ReactElement) => (
     <RequireAdminAccess>{element}</RequireAdminAccess>
@@ -37,7 +41,17 @@ const dashboardRoutes: RouteObject[] = [
     { path: "groups/:groupName", element: <GroupDetailsPage /> },
     { path: "players", element: <PlayersPage /> },
     { path: "inbox", element: withAdminAccess(<InboxPage />) },
-    { path: "network", element: <NetworkPage /> },
+    {
+        path: "network",
+        element: <NetworkPage />,
+        children: [
+            { index: true, element: <Navigate to="overview" replace /> },
+            { path: "overview", element: <NetworkOverviewPage /> },
+            { path: "server-settings", element: <NetworkServerSettingsPage /> },
+            { path: "general", element: <NetworkGeneralPage /> },
+            { path: "messaging", element: <NetworkMessagingPage /> },
+        ],
+    },
     { path: "permissions", element: withAdminAccess(<PermissionsPage />) },
     {
         path: "permissions/:groupName",

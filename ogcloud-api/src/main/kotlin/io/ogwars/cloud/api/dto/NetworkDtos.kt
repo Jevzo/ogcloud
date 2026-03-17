@@ -62,6 +62,18 @@ data class NetworkStatusResponse(
     val proxyCount: Int,
 )
 
+data class NetworkLocksResponse(
+    val locks: List<NetworkLockResponse>,
+)
+
+data class NetworkLockResponse(
+    val key: String,
+    val type: String,
+    val targetId: String? = null,
+    val token: String? = null,
+    val ttlSeconds: Long? = null,
+)
+
 fun NetworkSettingsDocument.toResponse(): NetworkSettingsResponse =
     NetworkSettingsResponse(
         motd = motd,

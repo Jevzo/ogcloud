@@ -6,6 +6,10 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/api/v1/network/status
 Authorization: Bearer {{accessToken}}
 
+### Get active network locks
+GET {{baseUrl}}/api/v1/network/locks
+Authorization: Bearer {{accessToken}}
+
 ### Update network settings
 PUT {{baseUrl}}/api/v1/network
 Authorization: Bearer {{accessToken}}

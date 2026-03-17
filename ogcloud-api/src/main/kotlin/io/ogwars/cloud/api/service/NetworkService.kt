@@ -1,5 +1,7 @@
 package io.ogwars.cloud.api.service
 
+import io.ogwars.cloud.api.dto.NetworkLockResponse
+import io.ogwars.cloud.api.dto.NetworkLocksResponse
 import io.ogwars.cloud.api.dto.NetworkSettingsResponse
 import io.ogwars.cloud.api.dto.NetworkStatusResponse
 import io.ogwars.cloud.api.dto.UpdateNetworkRequest
@@ -31,6 +33,18 @@ class NetworkService(
     fun getGeneralSettings(): GeneralSettings = findOrDefault().general
 
     fun isPermissionSystemEnabled(): Boolean = getGeneralSettings().permissionSystemEnabled
+
+    fun getActiveLocks(): NetworkLocksResponse =
+        NetworkLocksResponse(
+            locks =
+                buildList {
+                    findActiveLock(
+                        key = RedisKeys.PERMISSION_REENABLE_SYNC_LOCK_KEY,
+                        type = PERMISSION_REENABLE_LOCK_TYPE,
+                    )?.let(::add)
+                    addAll(restartSyncLockService.listActiveRestartLocks())
+                }.sortedBy(NetworkLockResponse::key),
+        )
 
     fun updateSettings(request: UpdateNetworkRequest): NetworkSettingsResponse {
         val current = findOrDefault()
@@ -173,7 +187,26 @@ class NetworkService(
     private fun isPermissionReenableSyncLockActive(): Boolean =
         redisTemplate.hasKey(RedisKeys.PERMISSION_REENABLE_SYNC_LOCK_KEY)
 
+    private fun findActiveLock(
+        key: String,
+        type: String,
+        targetId: String? = null,
+    ): NetworkLockResponse? {
+        if (!redisTemplate.hasKey(key)) {
+            return null
+        }
+
+        return NetworkLockResponse(
+            key = key,
+            type = type,
+            targetId = targetId,
+            token = redisTemplate.opsForValue().get(key),
+            ttlSeconds = redisTemplate.getExpire(key).takeIf { it >= 0 },
+        )
+    }
+
     companion object {
         private const val COLLECTION = "network_settings"
+        private const val PERMISSION_REENABLE_LOCK_TYPE = "PERMISSION_REENABLE"
     }
 }

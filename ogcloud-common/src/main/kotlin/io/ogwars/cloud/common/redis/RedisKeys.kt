@@ -7,4 +7,9 @@ object RedisKeys {
     const val GROUP_RESTART_SYNC_LOCK_KEY_PATTERN = "${GROUP_RESTART_SYNC_LOCK_KEY_PREFIX}*"
 
     fun groupRestartSyncLockKey(groupId: String): String = "$GROUP_RESTART_SYNC_LOCK_KEY_PREFIX$groupId"
+
+    fun groupIdFromGroupRestartSyncLockKey(key: String): String? =
+        key
+            .takeIf { it.startsWith(GROUP_RESTART_SYNC_LOCK_KEY_PREFIX) }
+            ?.removePrefix(GROUP_RESTART_SYNC_LOCK_KEY_PREFIX)
 }

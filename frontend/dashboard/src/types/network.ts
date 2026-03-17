@@ -33,6 +33,18 @@ export interface NetworkStatusRecord {
     proxyCount: number;
 }
 
+export interface NetworkLockRecord {
+    key: string;
+    type: string;
+    targetId: string | null;
+    token: string | null;
+    ttlSeconds: number | null;
+}
+
+export interface NetworkLocksResponse {
+    locks: NetworkLockRecord[];
+}
+
 export interface UpdateNetworkPayload {
     motd?: Partial<NetworkTextPair>;
     versionName?: Partial<NetworkTextPair>;

@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.controller
 
 import io.ogwars.cloud.api.dto.MaintenanceToggleRequest
+import io.ogwars.cloud.api.dto.NetworkLocksResponse
 import io.ogwars.cloud.api.dto.NetworkSettingsResponse
 import io.ogwars.cloud.api.dto.NetworkStatusResponse
 import io.ogwars.cloud.api.dto.UpdateNetworkRequest
@@ -34,6 +35,10 @@ class NetworkController(
     @GetMapping("/status")
     @Operation(summary = "Get live network status")
     fun getStatus(): NetworkStatusResponse = networkService.getStatus()
+
+    @GetMapping("/locks")
+    @Operation(summary = "List active network synchronization locks")
+    fun getActiveLocks(): NetworkLocksResponse = networkService.getActiveLocks()
 
     @PutMapping
     @Operation(summary = "Update network settings")

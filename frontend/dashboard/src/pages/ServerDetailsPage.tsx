@@ -15,7 +15,8 @@ import AppToasts from "@/components/AppToasts";
 import ExecuteCommandModal from "@/components/ExecuteCommandModal";
 import ServerActionButtons from "@/components/ServerActionButtons";
 import TableRefreshButton from "@/components/TableRefreshButton";
-import { getServerById, listOnlinePlayers } from "@/lib/api";
+import { getGroupByName, getServerById, listOnlinePlayers } from "@/lib/api";
+import { getRuntimeProfileLabel } from "@/lib/group-runtime";
 import { hasAdminAccess } from "@/lib/roles";
 import { getServerActionSuccessMessage, runServerAction } from "@/lib/server-actions";
 import {
@@ -46,6 +47,7 @@ const ServerDetailsPage = () => {
     const canExecuteCommands = hasAdminAccess(session?.user.role);
 
     const [server, setServer] = useState<ServerRecord | null>(null);
+    const [backendRuntimeLabel, setBackendRuntimeLabel] = useState<string>("--");
     const [runtimeSnapshot, setRuntimeSnapshot] = useState<ServerRecord | null>(null);
     const [playerPage, setPlayerPage] =
         useState<PaginatedResponse<OnlinePlayerRecord>>(EMPTY_PLAYER_PAGE);
@@ -85,14 +87,18 @@ const ServerDetailsPage = () => {
             try {
                 const accessToken = await getValidAccessToken();
                 const nextServer = await getServerById(accessToken, serverId);
-                const nextPlayerPage = await listOnlinePlayers(accessToken, {
-                    page: playerPageIndex,
-                    proxyId: nextServer.type.toUpperCase() === "PROXY" ? serverId : undefined,
-                    serverId: nextServer.type.toUpperCase() === "PROXY" ? undefined : serverId,
-                    size: PLAYER_PAGE_SIZE,
-                });
+                const [nextPlayerPage, nextGroup] = await Promise.all([
+                    listOnlinePlayers(accessToken, {
+                        page: playerPageIndex,
+                        proxyId: nextServer.type.toUpperCase() === "PROXY" ? serverId : undefined,
+                        serverId: nextServer.type.toUpperCase() === "PROXY" ? undefined : serverId,
+                        size: PLAYER_PAGE_SIZE,
+                    }),
+                    getGroupByName(accessToken, nextServer.group),
+                ]);
 
                 setServer(nextServer);
+                setBackendRuntimeLabel(getRuntimeProfileLabel(nextGroup.runtimeProfile));
                 setRuntimeSnapshot(nextServer);
                 setPlayerPage(nextPlayerPage);
                 setErrorMessage(null);
@@ -114,6 +120,7 @@ const ServerDetailsPage = () => {
 
     useEffect(() => {
         setPlayerPageIndex(0);
+        setBackendRuntimeLabel("--");
         setRuntimeSnapshot(null);
     }, [serverId]);
 
@@ -193,7 +200,7 @@ const ServerDetailsPage = () => {
               ["Type", server.type],
               ["State", server.state],
               ["Game State", server.gameState || "--"],
-              ["Pod Name", server.podName],
+              ["Backend Runtime", backendRuntimeLabel],
               ["Pod IP", server.podIp || "--"],
               ["Port", `${server.port}`],
               ["Template", server.templateVersion],
@@ -302,7 +309,7 @@ const ServerDetailsPage = () => {
                                         ) : (
                                             <p
                                                 className={`mt-1.5 font-medium text-slate-200 ${
-                                                    label === "Server ID" || label === "Pod Name"
+                                                    label === "Server ID"
                                                         ? "break-all font-mono text-xs"
                                                         : "break-all text-sm"
                                                 }`}

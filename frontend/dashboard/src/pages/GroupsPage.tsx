@@ -389,19 +389,13 @@ const GroupsPage = () => {
                                                 {group.scaling.playersPerServer}
                                             </p>
                                         </div>
-                                        <div className="col-span-2">
-                                            <p className="text-slate-500">Runtime</p>
-                                            <p className="mt-1 truncate font-semibold text-slate-200">
-                                                {getRuntimeProfileLabel(group.runtimeProfile)}
-                                            </p>
-                                        </div>
                                     </div>
                                     <div className="rounded-lg border border-slate-800 bg-slate-950/35 px-4 py-3">
                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                            Running Image
+                                            Backend Runtime
                                         </p>
                                         <p className="mt-1.5 truncate text-sm font-semibold text-slate-100">
-                                            {group.serverImage}
+                                            {getRuntimeProfileLabel(group.runtimeProfile)}
                                         </p>
                                     </div>
                                 </div>
