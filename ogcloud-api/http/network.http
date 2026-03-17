@@ -2,30 +2,30 @@
 GET {{baseUrl}}/api/v1/network
 Authorization: Bearer {{accessToken}}
 
-### Get network status (online players, server count, proxy count)
+### Get network status
 GET {{baseUrl}}/api/v1/network/status
 Authorization: Bearer {{accessToken}}
 
-### Update network settings (full example)
+### Update network settings
 PUT {{baseUrl}}/api/v1/network
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
   "motd": {
-    "global": "&e&lOgCloud &7| &7All in one k8s cloud system! &8* &e1.21.11&r\n&8> &7Try our system today, &c&lfor free&7!",
-    "maintenance": "&e&lOgCloud &7| &7All in one k8s cloud system! &8* &e&k1.21.11&r\n&8> &cWe are currently undergoing maintenance!"
+    "global": "&e&lOgCloud &7| &7Production network&r\n&8> &7Welcome to the cluster",
+    "maintenance": "&cNetwork maintenance in progress"
   },
   "versionName": {
     "global": "1.21.11",
-    "maintenance": "Offline"
+    "maintenance": "Maintenance"
   },
   "maxPlayers": 500,
   "defaultGroup": "lobby",
   "maintenance": false,
-  "maintenanceKickMessage": "&cServer is currently in maintenance mode.",
+  "maintenanceKickMessage": "&cThe network is currently under maintenance.",
   "tablist": {
-    "header": "\n&e&lOgCloud &7| &7All in one k8s cloud system!\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n",
+    "header": "\n&e&lOgCloud\n&7Online: &a%onlinePlayers%&7/&a%maxPlayers%\n",
     "footer": "\n&7Proxy: &a%proxy% &8| &7Group: &a%group%\n&7Ping: &a%ping%ms\n"
   },
   "general": {
@@ -35,52 +35,7 @@ Content-Type: application/json
   }
 }
 
-### Update only MOTD
-PUT {{baseUrl}}/api/v1/network
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "motd": {
-    "global": "&bHello from the HTTP client"
-  }
-}
-
-### Update only tablist
-PUT {{baseUrl}}/api/v1/network
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "tablist": {
-    "header": "\n&e&lOgWars Network\n&7Players: &a%onlinePlayers%\n&7Group: &a%permissionGroup%\n",
-    "footer": "\n&7%server% &8| &7%group%\n&7Ping: &a%ping%ms &8| &7play.ogwars.io\n"
-  }
-}
-
-### Update general settings only
-PUT {{baseUrl}}/api/v1/network
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "general": {
-    "permissionSystemEnabled": true,
-    "tablistEnabled": true,
-    "proxyRoutingStrategy": "ROUND_ROBIN"
-  }
-}
-
-### Update maintenance kick message
-PUT {{baseUrl}}/api/v1/network
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "maintenanceKickMessage": "&cThe server is under maintenance. Please try again later."
-}
-
-### Enable network maintenance
+### Toggle network maintenance
 PUT {{baseUrl}}/api/v1/network/maintenance
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
@@ -89,15 +44,6 @@ Content-Type: application/json
   "maintenance": true
 }
 
-### Disable network maintenance
-PUT {{baseUrl}}/api/v1/network/maintenance
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "maintenance": false
-}
-
-### Restart the network (requires network maintenance to already be enabled)
+### Restart the network
 POST {{baseUrl}}/api/v1/network/restart
 Authorization: Bearer {{accessToken}}

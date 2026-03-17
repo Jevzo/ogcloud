@@ -4,6 +4,9 @@ import io.ogwars.cloud.api.dto.ApiAuditLogResponse
 import io.ogwars.cloud.api.dto.PaginatedResponse
 import io.ogwars.cloud.api.dto.ScalingLogResponse
 import io.ogwars.cloud.api.service.AuditLogService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.security.access.prepost.PreAuthorize
@@ -16,11 +19,14 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/audit")
 @Validated
+@Tag(name = "Audit Logs")
+@SecurityRequirement(name = "bearerAuth")
 class AuditLogController(
     private val auditLogService: AuditLogService,
 ) {
     @GetMapping("/api")
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
+    @Operation(summary = "List API audit log entries")
     fun listApiLogs(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
@@ -33,6 +39,7 @@ class AuditLogController(
     ): PaginatedResponse<ApiAuditLogResponse> = auditLogService.listApiLogs(query, page, size)
 
     @GetMapping("/scaling")
+    @Operation(summary = "List scaling audit log entries")
     fun listScalingLogs(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,

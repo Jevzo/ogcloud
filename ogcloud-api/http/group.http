@@ -1,26 +1,25 @@
-### List all groups
-GET {{baseUrl}}/api/v1/groups
-Authorization: Bearer {{accessToken}}
+@existingGroupName = lobby
+@managedGroupName = example-lobby
 
-### List groups with pagination and query filtering
+### List groups
 GET {{baseUrl}}/api/v1/groups?page=0&size=50&query=lobby
 Authorization: Bearer {{accessToken}}
 
-### Get group by name
-GET {{baseUrl}}/api/v1/groups/proxy
+### Get a group by name
+GET {{baseUrl}}/api/v1/groups/{{existingGroupName}}
 Authorization: Bearer {{accessToken}}
 
-### Create a lobby group
+### Create a group
 POST {{baseUrl}}/api/v1/groups
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "id": "lobby",
+  "id": "{{managedGroupName}}",
   "type": "DYNAMIC",
   "templateBucket": "ogcloud-templates",
   "templatePath": "lobby",
-  "templateVersion": "1.0.0",
+  "templateVersion": "1.0.1",
   "scaling": {
     "minOnline": 1,
     "maxInstances": 2,
@@ -35,92 +34,45 @@ Content-Type: application/json
     "cpuRequest": "250m",
     "cpuLimit": "1000m"
   },
-  "jvmFlags": "-Xms512M -Xmx512M",
+  "jvmFlags": "-Xms512M -Xmx1024M",
   "drainTimeoutSeconds": 30,
-  "serverImage": "ogwarsdev/paper:1.21.11",
-  "runtimeProfile": "MODERN_1_21_11"
-}
-
-### Create a survival group
-POST {{baseUrl}}/api/v1/groups
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "id": "survival",
-  "type": "STATIC",
-  "templateBucket": "ogcloud-templates",
-  "templatePath": "survival",
-  "templateVersion": "1.0.0",
-  "scaling": {
-    "minOnline": 0,
-    "maxInstances": 10,
-    "playersPerServer": 16,
-    "scaleUpThreshold": 0.75,
-    "scaleDownThreshold": 0.1,
-    "cooldownSeconds": 120
-  },
-  "resources": {
-    "memoryRequest": "256Mi",
-    "memoryLimit": "512Mi",
-    "cpuRequest": "100m",
-    "cpuLimit": "500m"
-  },
-  "jvmFlags": "-Xms256M -Xmx256M",
-  "drainTimeoutSeconds": 60,
   "serverImage": "ogwarsdev/paper:1.21.11",
   "runtimeProfile": "MODERN_1_21_11",
   "storageSize": "5Gi"
 }
 
-### Create a proxy group
-POST {{baseUrl}}/api/v1/groups
+### Update a group
+PUT {{baseUrl}}/api/v1/groups/{{managedGroupName}}
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "id": "proxy",
-  "type": "PROXY",
   "templateBucket": "ogcloud-templates",
-  "templatePath": "proxy",
-  "templateVersion": "1.0.0",
+  "templatePath": "lobby",
+  "templateVersion": "1.0.2",
   "scaling": {
     "minOnline": 1,
     "maxInstances": 3,
-    "playersPerServer": 500,
-    "scaleUpThreshold": 0.8,
-    "scaleDownThreshold": 0.2,
-    "cooldownSeconds": 120
+    "playersPerServer": 30,
+    "scaleUpThreshold": 0.85,
+    "scaleDownThreshold": 0.15,
+    "cooldownSeconds": 90
   },
   "resources": {
-    "memoryRequest": "512Mi",
-    "memoryLimit": "1Gi",
-    "cpuRequest": "250m",
-    "cpuLimit": "1000m"
+    "memoryRequest": "768Mi",
+    "memoryLimit": "1536Mi",
+    "cpuRequest": "300m",
+    "cpuLimit": "1200m"
   },
-  "jvmFlags": "-Xms512M -Xmx512M",
-  "drainTimeoutSeconds": 60,
-  "serverImage": "ogwarsdev/velocity:latest"
+  "jvmFlags": "-Xms768M -Xmx1024M",
+  "drainTimeoutSeconds": 45,
+  "serverImage": "ogwarsdev/paper:1.21.11",
+  "runtimeProfile": "MODERN_1_21_11",
+  "storageSize": "10Gi"
 }
 
-### Update a group
-PUT {{baseUrl}}/api/v1/groups/lobby
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "scaling": {
-    "minOnline": 1,
-    "maxInstances": 3,
-    "playersPerServer": 500,
-    "scaleUpThreshold": 0.8,
-    "scaleDownThreshold": 0.2,
-    "cooldownSeconds": 120
-  }
-}
-
-### Enable group maintenance
-PUT {{baseUrl}}/api/v1/groups/lobby/maintenance
+### Toggle group maintenance
+PUT {{baseUrl}}/api/v1/groups/{{managedGroupName}}/maintenance
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
@@ -128,19 +80,10 @@ Content-Type: application/json
   "maintenance": true
 }
 
-### Disable group maintenance
-PUT {{baseUrl}}/api/v1/groups/lobby/maintenance
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "maintenance": false
-}
-
-### Restart a whole group (requires group maintenance to already be enabled)
-POST {{baseUrl}}/api/v1/groups/lobby/restart
+### Restart a group
+POST {{baseUrl}}/api/v1/groups/{{managedGroupName}}/restart
 Authorization: Bearer {{accessToken}}
 
 ### Delete a group
-DELETE {{baseUrl}}/api/v1/groups/proxy
+DELETE {{baseUrl}}/api/v1/groups/{{managedGroupName}}
 Authorization: Bearer {{accessToken}}

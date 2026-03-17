@@ -5,6 +5,9 @@ import io.ogwars.cloud.api.dto.PaginatedResponse
 import io.ogwars.cloud.api.dto.UpdateWebUserRequest
 import io.ogwars.cloud.api.dto.WebUserResponse
 import io.ogwars.cloud.api.service.WebUserService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -17,10 +20,13 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/web/users")
 @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
 @Validated
+@Tag(name = "Web Users")
+@SecurityRequirement(name = "bearerAuth")
 class WebUserController(
     private val webUserService: WebUserService,
 ) {
     @GetMapping
+    @Operation(summary = "List web users")
     fun listUsers(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
@@ -34,11 +40,13 @@ class WebUserController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create a web user")
     fun createUser(
         @RequestBody @Valid request: CreateWebUserRequest,
     ) = webUserService.createUser(request)
 
     @PutMapping("/{email}")
+    @Operation(summary = "Update a web user")
     fun updateUser(
         @PathVariable email: String,
         @RequestBody @Valid request: UpdateWebUserRequest,
@@ -46,11 +54,13 @@ class WebUserController(
 
     @DeleteMapping("/{email}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a web user")
     fun deleteUser(
         @PathVariable email: String,
     ) = webUserService.deleteUser(email)
 
     @DeleteMapping("/{email}/link")
+    @Operation(summary = "Unlink a web user's Minecraft account")
     fun unlinkUserAccount(
         @PathVariable email: String,
     ) = webUserService.unlinkUserAccount(email)

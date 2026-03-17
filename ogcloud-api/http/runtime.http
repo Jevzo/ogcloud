@@ -1,26 +1,8 @@
-### Request a velocity runtime refresh
-POST {{baseUrl}}/api/v1/runtime/refresh
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "scope": "VELOCITY"
-}
-
-### Request a modern paper runtime refresh
+### Refresh a runtime bundle
 POST {{baseUrl}}/api/v1/runtime/refresh
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
   "scope": "PAPER_1_21_11"
-}
-
-### Request a legacy paper runtime refresh
-POST {{baseUrl}}/api/v1/runtime/refresh
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "scope": "PAPER_1_8_8"
 }

@@ -46,3 +46,7 @@ server:
   tomcat:
     max-http-form-post-size: 20GB
     max-swallow-size: 20GB
+
+springdoc:
+  api-docs:
+    enabled: false

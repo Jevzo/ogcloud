@@ -1,76 +1,29 @@
+@playerUuid = b903c5a8-7627-4f10-bf59-37a4f1170d9a
+
 ### List online players
-GET {{baseUrl}}/api/v1/players
-Authorization: Bearer {{accessToken}}
-
-### List online players with pagination and query filtering
-GET {{baseUrl}}/api/v1/players?page=0&size=50&query=notch
-Authorization: Bearer {{accessToken}}
-
-### List online players filtered by name
-GET {{baseUrl}}/api/v1/players?name=Notch
-Authorization: Bearer {{accessToken}}
-
-### List online players filtered by server
-GET {{baseUrl}}/api/v1/players?serverId=a69bbfcb7f30495da74b74d3137257bc
-Authorization: Bearer {{accessToken}}
-
-### List online players filtered by proxy
-GET {{baseUrl}}/api/v1/players?proxyId=c467d325bcbe42b5bc337ab583535371
+GET {{baseUrl}}/api/v1/players?page=0&size=50&query=jevzo
 Authorization: Bearer {{accessToken}}
 
 ### List persisted players
-GET {{baseUrl}}/api/v1/players/all
+GET {{baseUrl}}/api/v1/players/all?page=0&size=50&query=jevzo
 Authorization: Bearer {{accessToken}}
 
-### List persisted players with pagination and query filtering
-GET {{baseUrl}}/api/v1/players/all?page=0&size=50&query=admin
+### Get a player by UUID
+GET {{baseUrl}}/api/v1/players/{{playerUuid}}
 Authorization: Bearer {{accessToken}}
 
-### Get player by UUID
-GET {{baseUrl}}/api/v1/players/b903c5a8-7627-4f10-bf59-37a4f1170d9a
-Authorization: Bearer {{accessToken}}
-
-### Set player permission group (permanent)
-PUT {{baseUrl}}/api/v1/players/b903c5a8-7627-4f10-bf59-37a4f1170d9a/group
+### Set a player's permission group
+PUT {{baseUrl}}/api/v1/players/{{playerUuid}}/group
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
   "group": "admin",
-  "duration": "-1"
-}
-
-### Set player permission group (30 days)
-PUT {{baseUrl}}/api/v1/players/069a79f4-44e9-4726-a5be-fca90e38aaf5/group
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "group": "vip",
   "duration": "30d"
 }
 
-### Set player permission group (1 hour 30 minutes)
-PUT {{baseUrl}}/api/v1/players/069a79f4-44e9-4726-a5be-fca90e38aaf5/group
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "group": "mod",
-  "duration": "1h 30m"
-}
-
-### Transfer player to a specific server
-POST {{baseUrl}}/api/v1/players/b903c5a8-7627-4f10-bf59-37a4f1170d9a/transfer
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "target": "d8821d937aad4f5399f72c47fc8e3cf5"
-}
-
-### Transfer player to a group (picks available server)
-POST {{baseUrl}}/api/v1/players/069a79f4-44e9-4726-a5be-fca90e38aaf5/transfer
+### Transfer a player
+POST {{baseUrl}}/api/v1/players/{{playerUuid}}/transfer
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 

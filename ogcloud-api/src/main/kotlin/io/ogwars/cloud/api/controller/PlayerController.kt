@@ -7,6 +7,9 @@ import io.ogwars.cloud.api.dto.PlayerResponse
 import io.ogwars.cloud.api.dto.SetPlayerGroupRequest
 import io.ogwars.cloud.api.dto.TransferPlayerRequest
 import io.ogwars.cloud.api.service.PlayerService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -26,10 +29,13 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/players")
 @Validated
+@Tag(name = "Players")
+@SecurityRequirement(name = "bearerAuth")
 class PlayerController(
     private val playerService: PlayerService,
 ) {
     @GetMapping
+    @Operation(summary = "List online players")
     fun listOnlinePlayers(
         @RequestParam(required = false) name: String?,
         @RequestParam(required = false) serverId: String?,
@@ -46,6 +52,7 @@ class PlayerController(
         playerService.listOnlinePlayers(name, serverId, proxyId, query, page, size)
 
     @GetMapping("/all")
+    @Operation(summary = "List persisted player records")
     fun listPersistedPlayers(
         @RequestParam(required = false) query: String?,
         @RequestParam(defaultValue = "0") @Min(0, message = "page must be greater than or equal to 0") page: Int,
@@ -58,12 +65,14 @@ class PlayerController(
     ): PaginatedResponse<PersistedPlayerResponse> = playerService.listPersistedPlayers(query, page, size)
 
     @GetMapping("/{uuid}")
+    @Operation(summary = "Get player details")
     fun getPlayer(
         @PathVariable uuid: String,
     ): PlayerResponse = playerService.getPlayer(uuid)
 
     @PutMapping("/{uuid}/group")
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
+    @Operation(summary = "Set a player's permission group")
     fun setPlayerGroup(
         @PathVariable uuid: String,
         @RequestBody @Valid request: SetPlayerGroupRequest,
@@ -71,6 +80,7 @@ class PlayerController(
 
     @PostMapping("/{uuid}/transfer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Transfer a player to another target")
     fun transferPlayer(
         @PathVariable uuid: String,
         @RequestBody @Valid request: TransferPlayerRequest,

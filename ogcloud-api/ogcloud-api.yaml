@@ -1,0 +1,4155 @@
+openapi: 3.1.0
+info:
+  title: OgCloud API
+  description: "HTTP API for managing the OgCloud network, runtime assets, and web\
+    \ users."
+  version: v1
+servers:
+- url: http://127.0.0.1:18080
+  description: Generated server url
+paths:
+  /api/v1/web/users/{email}:
+    put:
+      tags:
+      - Web Users
+      summary: Update a web user
+      operationId: updateUser
+      parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWebUserRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WebUserResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Web Users
+      summary: Delete a web user
+      operationId: deleteUser
+      parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/players/{uuid}/group:
+    put:
+      tags:
+      - Players
+      summary: Set a player's permission group
+      operationId: setPlayerGroup
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPlayerGroupRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/permissions/groups/{name}:
+    get:
+      tags:
+      - Permission Groups
+      summary: Get a permission group by name
+      operationId: getGroup
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupResponse"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Permission Groups
+      summary: Update a permission group
+      operationId: updateGroup
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePermissionGroupRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Permission Groups
+      summary: Delete a permission group
+      operationId: deleteGroup
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/network:
+    get:
+      tags:
+      - Network
+      summary: Get network settings
+      operationId: getSettings
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsResponse"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Network
+      summary: Update network settings
+      operationId: updateSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNetworkRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/network/maintenance:
+    put:
+      tags:
+      - Network
+      summary: Toggle network maintenance mode
+      operationId: toggleMaintenance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaintenanceToggleRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/groups/{name}:
+    get:
+      tags:
+      - Groups
+      summary: Get a group by name
+      operationId: getGroup_1
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Groups
+      summary: Update a group
+      operationId: updateGroup_1
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Groups
+      summary: Delete a group
+      operationId: deleteGroup_1
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/groups/{name}/maintenance:
+    put:
+      tags:
+      - Groups
+      summary: Toggle maintenance mode for a group
+      operationId: toggleMaintenance_1
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaintenanceToggleRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/auth/me:
+    put:
+      tags:
+      - Authentication
+      summary: Update the authenticated user's profile
+      operationId: updateOwnProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelfUpdateRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WebUserResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/web/users:
+    get:
+      tags:
+      - Web Users
+      summary: List web users
+      operationId: listUsers
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseWebUserResponse"
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Web Users
+      summary: Create a web user
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebUserRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WebUserResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/templates/{group}/upload:
+    post:
+      tags:
+      - Templates
+      summary: Upload a template archive
+      operationId: uploadTemplate
+      parameters:
+      - name: group
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: query
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+      security:
+      - bearerAuth: []
+  /api/v1/servers/{id}/template/push:
+    post:
+      tags:
+      - Servers
+      summary: Force a template push for a server
+      operationId: forceTemplatePush
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/servers/{id}/stop:
+    post:
+      tags:
+      - Servers
+      summary: Request a graceful server stop
+      operationId: stopServer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/servers/{id}/kill:
+    post:
+      tags:
+      - Servers
+      summary: Force kill a server
+      operationId: killServer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/servers/request:
+    post:
+      tags:
+      - Servers
+      summary: Request a new server instance
+      operationId: requestServer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServerRequestBody"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ServerRequestResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/runtime/refresh:
+    post:
+      tags:
+      - Runtime
+      summary: Request a runtime bundle refresh
+      operationId: refreshRuntime
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuntimeRefreshRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/players/{uuid}/transfer:
+    post:
+      tags:
+      - Players
+      summary: Transfer a player to another target
+      operationId: transferPlayer
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferPlayerRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/permissions/groups:
+    get:
+      tags:
+      - Permission Groups
+      summary: List permission groups
+      operationId: listGroups
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponsePermissionGroupResponse"
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Permission Groups
+      summary: Create a permission group
+      operationId: createGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermissionGroupRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/permissions/groups/{name}/permissions/{perm}:
+    post:
+      tags:
+      - Permission Groups
+      summary: Add a permission to a permission group
+      operationId: addPermission
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: perm
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Permission Groups
+      summary: Remove a permission from a permission group
+      operationId: removePermission
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: perm
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/network/restart:
+    post:
+      tags:
+      - Network
+      summary: Request a full network restart
+      operationId: restartNetwork
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/groups:
+    get:
+      tags:
+      - Groups
+      summary: List groups
+      operationId: listGroups_1
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseGroupResponse"
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Groups
+      summary: Create a group
+      operationId: createGroup_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/groups/{name}/restart:
+    post:
+      tags:
+      - Groups
+      summary: Restart all servers in a group
+      operationId: restartGroup
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/command:
+    post:
+      tags:
+      - Commands
+      summary: "Execute a command against a server, group, or the whole network"
+      operationId: executeCommand
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommandExecuteRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: Accepted
+      security:
+      - bearerAuth: []
+  /api/v1/auth/revoke:
+    post:
+      tags:
+      - Authentication
+      summary: Revoke a refresh token
+      operationId: revokeRefreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/auth/revoke-all:
+    post:
+      tags:
+      - Authentication
+      summary: Revoke all refresh tokens for the current user
+      operationId: revokeAllRefreshTokens
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RevokeAllTokensResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - Authentication
+      summary: Refresh an access token
+      operationId: refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthTokenResponse"
+  /api/v1/auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Authenticate a web user
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AuthTokenResponse"
+  /api/v1/auth/link/request:
+    post:
+      tags:
+      - Authentication
+      summary: Request an OTP to link a Minecraft account
+      operationId: requestLinkOtp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestLinkOtpRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+  /api/v1/auth/link/confirm:
+    post:
+      tags:
+      - Authentication
+      summary: Confirm a Minecraft account link with an OTP
+      operationId: confirmLinkOtp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmLinkOtpRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WebUserResponse"
+      security:
+      - bearerAuth: []
+  /health:
+    get:
+      tags:
+      - Health
+      summary: Check API health
+      operationId: health
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+  /api/v1/templates:
+    get:
+      tags:
+      - Templates
+      summary: List template archives
+      operationId: listTemplates
+      parameters:
+      - name: group
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseTemplateInfo"
+      security:
+      - bearerAuth: []
+  /api/v1/templates/{group}/{version}/download:
+    get:
+      tags:
+      - Templates
+      summary: Download a template archive
+      operationId: downloadTemplate
+      parameters:
+      - name: group
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Template archive
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+      security:
+      - bearerAuth: []
+  /api/v1/servers:
+    get:
+      tags:
+      - Servers
+      summary: List servers
+      operationId: listServers
+      parameters:
+      - name: group
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseServerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/servers/{id}:
+    get:
+      tags:
+      - Servers
+      summary: Get a server by ID
+      operationId: getServer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ServerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/search/{query}:
+    get:
+      tags:
+      - Search
+      summary: Search across supported network resources
+      operationId: search
+      parameters:
+      - name: query
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 50
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/players:
+    get:
+      tags:
+      - Players
+      summary: List online players
+      operationId: listOnlinePlayers
+      parameters:
+      - name: name
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: serverId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: proxyId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseOnlinePlayerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/players/{uuid}:
+    get:
+      tags:
+      - Players
+      summary: Get player details
+      operationId: getPlayer
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/players/all:
+    get:
+      tags:
+      - Players
+      summary: List persisted player records
+      operationId: listPersistedPlayers
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponsePersistedPlayerResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/network/status:
+    get:
+      tags:
+      - Network
+      summary: Get live network status
+      operationId: getStatus
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkStatusResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/dashboard/overview:
+    get:
+      tags:
+      - Dashboard
+      summary: Get dashboard overview
+      operationId: getOverview
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DashboardOverviewResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/audit/scaling:
+    get:
+      tags:
+      - Audit Logs
+      summary: List scaling audit log entries
+      operationId: listScalingLogs
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseScalingLogResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/audit/api:
+    get:
+      tags:
+      - Audit Logs
+      summary: List API audit log entries
+      operationId: listApiLogs
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 200
+          minimum: 1
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PaginatedResponseApiAuditLogResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/web/users/{email}/link:
+    delete:
+      tags:
+      - Web Users
+      summary: Unlink a web user's Minecraft account
+      operationId: unlinkUserAccount
+      parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WebUserResponse"
+      security:
+      - bearerAuth: []
+  /api/v1/templates/{group}/{version}:
+    delete:
+      tags:
+      - Templates
+      summary: Delete a template archive
+      operationId: deleteTemplate
+      parameters:
+      - name: group
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: No Content
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+      required:
+      - details
+      - message
+      - status
+    UpdateWebUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          pattern: .*\S.*
+        username:
+          type: string
+          pattern: .*\S.*
+        role:
+          type: string
+    WebUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum:
+          - SERVICE
+          - ADMIN
+          - DEVELOPER
+        linkedPlayerUuid:
+          type: string
+      required:
+      - email
+      - id
+      - role
+      - username
+    SetPlayerGroupRequest:
+      type: object
+      properties:
+        group:
+          type: string
+          minLength: 1
+        duration:
+          type: string
+          minLength: 1
+      required:
+      - duration
+      - group
+    PermissionConfigResponse:
+      type: object
+      properties:
+        group:
+          type: string
+        length:
+          type: integer
+          format: int64
+        endMillis:
+          type: integer
+          format: int64
+      required:
+      - endMillis
+      - group
+      - length
+    PlayerResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+        name:
+          type: string
+        permission:
+          $ref: "#/components/schemas/PermissionConfigResponse"
+        firstJoin:
+          type: string
+        online:
+          type: boolean
+        proxyId:
+          type: string
+        proxyDisplayName:
+          type: string
+        serverId:
+          type: string
+        serverDisplayName:
+          type: string
+        connectedAt:
+          type: string
+      required:
+      - firstJoin
+      - name
+      - online
+      - permission
+      - uuid
+    DisplayConfigRequest:
+      type: object
+      properties:
+        chatPrefix:
+          type: string
+        chatSuffix:
+          type: string
+        nameColor:
+          type: string
+        tabPrefix:
+          type: string
+      required:
+      - chatPrefix
+      - chatSuffix
+      - nameColor
+      - tabPrefix
+    UpdatePermissionGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        display:
+          $ref: "#/components/schemas/DisplayConfigRequest"
+        weight:
+          type: integer
+          format: int32
+        default:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+    DisplayConfigResponse:
+      type: object
+      properties:
+        chatPrefix:
+          type: string
+        chatSuffix:
+          type: string
+        nameColor:
+          type: string
+        tabPrefix:
+          type: string
+      required:
+      - chatPrefix
+      - chatSuffix
+      - nameColor
+      - tabPrefix
+    PermissionGroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        display:
+          $ref: "#/components/schemas/DisplayConfigResponse"
+        weight:
+          type: integer
+          format: int32
+        default:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+      - default
+      - display
+      - id
+      - name
+      - permissions
+      - weight
+    UpdateGeneralSettingsRequest:
+      type: object
+      properties:
+        permissionSystemEnabled:
+          type: boolean
+        tablistEnabled:
+          type: boolean
+        proxyRoutingStrategy:
+          type: string
+          enum:
+          - ROUND_ROBIN
+          - LOAD_BASED
+    UpdateMotdRequest:
+      type: object
+      properties:
+        global:
+          type: string
+        maintenance:
+          type: string
+    UpdateNetworkRequest:
+      type: object
+      properties:
+        motd:
+          $ref: "#/components/schemas/UpdateMotdRequest"
+        versionName:
+          $ref: "#/components/schemas/UpdateVersionNameRequest"
+        maxPlayers:
+          type: integer
+          format: int32
+          minimum: 1
+        defaultGroup:
+          type: string
+        maintenance:
+          type: boolean
+        maintenanceKickMessage:
+          type: string
+        tablist:
+          $ref: "#/components/schemas/UpdateTablistRequest"
+        general:
+          $ref: "#/components/schemas/UpdateGeneralSettingsRequest"
+    UpdateTablistRequest:
+      type: object
+      properties:
+        header:
+          type: string
+        footer:
+          type: string
+    UpdateVersionNameRequest:
+      type: object
+      properties:
+        global:
+          type: string
+        maintenance:
+          type: string
+    GeneralSettings:
+      type: object
+      properties:
+        permissionSystemEnabled:
+          type: boolean
+        tablistEnabled:
+          type: boolean
+        proxyRoutingStrategy:
+          type: string
+          enum:
+          - ROUND_ROBIN
+          - LOAD_BASED
+      required:
+      - permissionSystemEnabled
+      - proxyRoutingStrategy
+      - tablistEnabled
+    MotdSettings:
+      type: object
+      properties:
+        global:
+          type: string
+        maintenance:
+          type: string
+      required:
+      - global
+      - maintenance
+    NetworkSettingsResponse:
+      type: object
+      properties:
+        motd:
+          $ref: "#/components/schemas/MotdSettings"
+        versionName:
+          $ref: "#/components/schemas/VersionNameSettings"
+        maxPlayers:
+          type: integer
+          format: int32
+        defaultGroup:
+          type: string
+        maintenance:
+          type: boolean
+        maintenanceKickMessage:
+          type: string
+        tablist:
+          $ref: "#/components/schemas/TablistSettings"
+        general:
+          $ref: "#/components/schemas/GeneralSettings"
+      required:
+      - defaultGroup
+      - general
+      - maintenance
+      - maintenanceKickMessage
+      - maxPlayers
+      - motd
+      - tablist
+      - versionName
+    TablistSettings:
+      type: object
+      properties:
+        header:
+          type: string
+        footer:
+          type: string
+      required:
+      - footer
+      - header
+    VersionNameSettings:
+      type: object
+      properties:
+        global:
+          type: string
+        maintenance:
+          type: string
+      required:
+      - global
+      - maintenance
+    MaintenanceToggleRequest:
+      type: object
+      properties:
+        maintenance:
+          type: boolean
+      required:
+      - maintenance
+    ResourceConfigDto:
+      type: object
+      properties:
+        memoryRequest:
+          type: string
+          minLength: 1
+        memoryLimit:
+          type: string
+          minLength: 1
+        cpuRequest:
+          type: string
+          minLength: 1
+        cpuLimit:
+          type: string
+          minLength: 1
+      required:
+      - cpuLimit
+      - cpuRequest
+      - memoryLimit
+      - memoryRequest
+    ScalingConfigDto:
+      type: object
+      properties:
+        minOnline:
+          type: integer
+          format: int32
+          minimum: 0
+        maxInstances:
+          type: integer
+          format: int32
+          minimum: 1
+        playersPerServer:
+          type: integer
+          format: int32
+          minimum: 1
+        scaleUpThreshold:
+          type: number
+          format: double
+        scaleDownThreshold:
+          type: number
+          format: double
+        cooldownSeconds:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+      - cooldownSeconds
+      - maxInstances
+      - minOnline
+      - playersPerServer
+      - scaleDownThreshold
+      - scaleUpThreshold
+    UpdateGroupRequest:
+      type: object
+      properties:
+        templateBucket:
+          type: string
+        templatePath:
+          type: string
+        templateVersion:
+          type: string
+        scaling:
+          $ref: "#/components/schemas/ScalingConfigDto"
+        resources:
+          $ref: "#/components/schemas/ResourceConfigDto"
+        jvmFlags:
+          type: string
+        drainTimeoutSeconds:
+          type: integer
+          format: int32
+          minimum: 1
+        serverImage:
+          type: string
+        runtimeProfile:
+          type: string
+          enum:
+          - LEGACY_1_8_8
+          - MODERN_1_21_11
+        storageSize:
+          type: string
+    GroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        templateBucket:
+          type: string
+        templatePath:
+          type: string
+        templateVersion:
+          type: string
+        scaling:
+          $ref: "#/components/schemas/ScalingConfig"
+        resources:
+          $ref: "#/components/schemas/ResourceConfig"
+        jvmFlags:
+          type: string
+        drainTimeoutSeconds:
+          type: integer
+          format: int32
+        serverImage:
+          type: string
+        runtimeProfile:
+          type: string
+          enum:
+          - LEGACY_1_8_8
+          - MODERN_1_21_11
+        storageSize:
+          type: string
+        maintenance:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+      - createdAt
+      - drainTimeoutSeconds
+      - id
+      - jvmFlags
+      - maintenance
+      - resources
+      - scaling
+      - serverImage
+      - storageSize
+      - templateBucket
+      - templatePath
+      - templateVersion
+      - type
+      - updatedAt
+    ResourceConfig:
+      type: object
+      properties:
+        memoryRequest:
+          type: string
+        memoryLimit:
+          type: string
+        cpuRequest:
+          type: string
+        cpuLimit:
+          type: string
+      required:
+      - cpuLimit
+      - cpuRequest
+      - memoryLimit
+      - memoryRequest
+    ScalingConfig:
+      type: object
+      properties:
+        minOnline:
+          type: integer
+          format: int32
+        maxInstances:
+          type: integer
+          format: int32
+        playersPerServer:
+          type: integer
+          format: int32
+        scaleUpThreshold:
+          type: number
+          format: double
+        scaleDownThreshold:
+          type: number
+          format: double
+        cooldownSeconds:
+          type: integer
+          format: int32
+      required:
+      - cooldownSeconds
+      - maxInstances
+      - minOnline
+      - playersPerServer
+      - scaleDownThreshold
+      - scaleUpThreshold
+    SelfUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          pattern: .*\S.*
+    CreateWebUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - password
+      - role
+    ServerRequestBody:
+      type: object
+      properties:
+        group:
+          type: string
+          minLength: 1
+      required:
+      - group
+    ServerRequestResponse:
+      type: object
+      properties:
+        serverId:
+          type: string
+        group:
+          type: string
+      required:
+      - group
+      - serverId
+    RuntimeRefreshRequest:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+          - VELOCITY
+          - PAPER_1_21_11
+          - PAPER_1_8_8
+      required:
+      - scope
+    TransferPlayerRequest:
+      type: object
+      properties:
+        target:
+          type: string
+          minLength: 1
+      required:
+      - target
+    CreatePermissionGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        display:
+          $ref: "#/components/schemas/DisplayConfigRequest"
+        weight:
+          type: integer
+          format: int32
+        default:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+      - default
+      - display
+      - id
+      - name
+      - permissions
+      - weight
+    CreateGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        templateBucket:
+          type: string
+          minLength: 1
+        templatePath:
+          type: string
+          minLength: 1
+        templateVersion:
+          type: string
+          minLength: 1
+        scaling:
+          $ref: "#/components/schemas/ScalingConfigDto"
+        resources:
+          $ref: "#/components/schemas/ResourceConfigDto"
+        jvmFlags:
+          type: string
+          minLength: 1
+        drainTimeoutSeconds:
+          type: integer
+          format: int32
+          minimum: 1
+        serverImage:
+          type: string
+          minLength: 1
+        runtimeProfile:
+          type: string
+          enum:
+          - LEGACY_1_8_8
+          - MODERN_1_21_11
+        storageSize:
+          type: string
+      required:
+      - drainTimeoutSeconds
+      - id
+      - jvmFlags
+      - resources
+      - scaling
+      - serverImage
+      - storageSize
+      - templateBucket
+      - templatePath
+      - templateVersion
+      - type
+    CommandExecuteRequest:
+      type: object
+      properties:
+        target:
+          type: string
+          minLength: 1
+        targetType:
+          type: string
+          minLength: 1
+        command:
+          type: string
+          minLength: 1
+      required:
+      - command
+      - target
+      - targetType
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+      required:
+      - refreshToken
+    RevokeAllTokensResponse:
+      type: object
+      properties:
+        revokedTokens:
+          type: integer
+          format: int32
+      required:
+      - revokedTokens
+    AuthTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/WebUserResponse"
+      required:
+      - accessToken
+      - accessTokenExpiresAt
+      - refreshToken
+      - refreshTokenExpiresAt
+      - user
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - password
+    RequestLinkOtpRequest:
+      type: object
+      properties:
+        minecraftUsername:
+          type: string
+          maxLength: 16
+          minLength: 3
+      required:
+      - minecraftUsername
+    ConfirmLinkOtpRequest:
+      type: object
+      properties:
+        otp:
+          type: string
+          pattern: "^[0-9]{6}$"
+      required:
+      - otp
+    PaginatedResponseWebUserResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebUserResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    PaginatedResponseTemplateInfo:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateInfo"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    TemplateInfo:
+      type: object
+      properties:
+        group:
+          type: string
+        version:
+          type: string
+        path:
+          type: string
+      required:
+      - group
+      - path
+      - version
+    PaginatedResponseServerResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServerResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    ServerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        group:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        displayName:
+          type: string
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+        gameState:
+          type: string
+        podName:
+          type: string
+        podIp:
+          type: string
+        port:
+          type: integer
+          format: int32
+        templateVersion:
+          type: string
+        playerCount:
+          type: integer
+          format: int32
+        maxPlayers:
+          type: integer
+          format: int32
+        tps:
+          type: number
+          format: double
+        memoryUsedMb:
+          type: integer
+          format: int64
+        startedAt:
+          type: string
+        lastHeartbeat:
+          type: string
+      required:
+      - displayName
+      - group
+      - id
+      - maxPlayers
+      - memoryUsedMb
+      - playerCount
+      - podName
+      - port
+      - state
+      - templateVersion
+      - tps
+      - type
+    SearchGroupResult:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        maintenance:
+          type: boolean
+      required:
+      - id
+      - maintenance
+      - type
+    SearchPlayerResult:
+      type: object
+      properties:
+        uuid:
+          type: string
+        name:
+          type: string
+        permissionGroup:
+          type: string
+        firstJoin:
+          type: string
+        online:
+          type: boolean
+        proxyId:
+          type: string
+        serverId:
+          type: string
+        connectedAt:
+          type: string
+      required:
+      - firstJoin
+      - name
+      - online
+      - permissionGroup
+      - uuid
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        limit:
+          type: integer
+          format: int32
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchGroupResult"
+        servers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchServerResult"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchPlayerResult"
+      required:
+      - groups
+      - limit
+      - players
+      - query
+      - servers
+    SearchServerResult:
+      type: object
+      properties:
+        id:
+          type: string
+        group:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        displayName:
+          type: string
+        podName:
+          type: string
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+      required:
+      - displayName
+      - group
+      - id
+      - podName
+      - state
+      - type
+    OnlinePlayerResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+        name:
+          type: string
+        proxyId:
+          type: string
+        proxyDisplayName:
+          type: string
+        serverId:
+          type: string
+        serverDisplayName:
+          type: string
+        groupId:
+          type: string
+        connectedAt:
+          type: string
+      required:
+      - name
+      - uuid
+    PaginatedResponseOnlinePlayerResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnlinePlayerResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    PaginatedResponsePersistedPlayerResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersistedPlayerResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    PersistedPlayerResponse:
+      type: object
+      properties:
+        uuid:
+          type: string
+        name:
+          type: string
+        permission:
+          $ref: "#/components/schemas/PermissionConfigResponse"
+        firstJoin:
+          type: string
+        online:
+          type: boolean
+        proxyId:
+          type: string
+        serverId:
+          type: string
+        connectedAt:
+          type: string
+      required:
+      - firstJoin
+      - name
+      - online
+      - permission
+      - uuid
+    PaginatedResponsePermissionGroupResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionGroupResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    NetworkStatusResponse:
+      type: object
+      properties:
+        onlinePlayers:
+          type: integer
+          format: int32
+        serverCount:
+          type: integer
+          format: int32
+        proxyCount:
+          type: integer
+          format: int32
+      required:
+      - onlinePlayers
+      - proxyCount
+      - serverCount
+    PaginatedResponseGroupResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    DashboardOverviewGroupResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        mode:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        activeInstances:
+          type: integer
+          format: int32
+        players:
+          type: integer
+          format: int32
+        capacityPercent:
+          type: number
+          format: double
+      required:
+      - activeInstances
+      - capacityPercent
+      - mode
+      - name
+      - players
+    DashboardOverviewResponse:
+      type: object
+      properties:
+        stats:
+          $ref: "#/components/schemas/DashboardOverviewStatsResponse"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardOverviewGroupResponse"
+        scalingActions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardOverviewScalingActionResponse"
+      required:
+      - groups
+      - scalingActions
+      - stats
+    DashboardOverviewScalingActionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        action:
+          type: string
+        reason:
+          type: string
+        serverId:
+          type: string
+        details:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action
+      - groupId
+      - reason
+      - timestamp
+    DashboardOverviewStatsResponse:
+      type: object
+      properties:
+        totalPlayers:
+          type: integer
+          format: int32
+        maxPlayers:
+          type: integer
+          format: int32
+        activeServers:
+          type: integer
+          format: int32
+        maintenanceEnabled:
+          type: boolean
+      required:
+      - activeServers
+      - maintenanceEnabled
+      - maxPlayers
+      - totalPlayers
+    PaginatedResponseScalingLogResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalingLogResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+    ScalingLogResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        action:
+          type: string
+        reason:
+          type: string
+        serverId:
+          type: string
+        details:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action
+      - groupId
+      - reason
+      - timestamp
+    ApiAuditLogResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        actorUserId:
+          type: string
+        actorEmail:
+          type: string
+        summary:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action
+      - metadata
+      - summary
+      - targetId
+      - targetType
+      - timestamp
+    PaginatedResponseApiAuditLogResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiAuditLogResponse"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+      required:
+      - items
+      - page
+      - size
+      - totalItems
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

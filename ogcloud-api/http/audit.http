@@ -1,15 +1,7 @@
-### List API audit log entries
-GET {{baseUrl}}/api/v1/audit/api?page=0&size=50
-Authorization: Bearer {{accessToken}}
-
-### List API audit log entries with query filter
+### List API audit logs
 GET {{baseUrl}}/api/v1/audit/api?page=0&size=50&query=GROUP_UPDATED
 Authorization: Bearer {{accessToken}}
 
-### List scaling log entries
-GET {{baseUrl}}/api/v1/audit/scaling?page=0&size=50
-Authorization: Bearer {{accessToken}}
-
-### List scaling log entries with query filter
-GET {{baseUrl}}/api/v1/audit/scaling?page=0&size=50&query=autoscaler
+### List scaling audit logs
+GET {{baseUrl}}/api/v1/audit/scaling?page=0&size=50&query=lobby
 Authorization: Bearer {{accessToken}}

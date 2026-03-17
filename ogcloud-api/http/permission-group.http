@@ -1,118 +1,65 @@
-### List all permission groups
-GET {{baseUrl}}/api/v1/permissions/groups
-Authorization: Bearer {{accessToken}}
+@existingPermissionGroup = admin
+@managedPermissionGroup = example-moderator
+@managedPermission = ogcloud.command.execute
 
-### List permission groups with pagination and query filtering
+### List permission groups
 GET {{baseUrl}}/api/v1/permissions/groups?page=0&size=50&query=admin
 Authorization: Bearer {{accessToken}}
 
-### Get permission group by name
-GET {{baseUrl}}/api/v1/permissions/groups/admin
+### Get a permission group by name
+GET {{baseUrl}}/api/v1/permissions/groups/{{existingPermissionGroup}}
 Authorization: Bearer {{accessToken}}
 
-### Create default player group
+### Create a permission group
 POST {{baseUrl}}/api/v1/permissions/groups
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "id": "player",
-  "name": "Player",
+  "id": "{{managedPermissionGroup}}",
+  "name": "Example Moderator",
   "display": {
-    "chatPrefix": "",
+    "chatPrefix": "&8[&3Mod&8] ",
     "chatSuffix": "&7: &f",
-    "nameColor": "&7",
-    "tabPrefix": ""
+    "nameColor": "&3",
+    "tabPrefix": "&3Mod &8> "
   },
-  "weight": 100,
-  "default": true,
-  "permissions": []
-}
-
-### Create admin group
-POST {{baseUrl}}/api/v1/permissions/groups
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "id": "admin",
-  "name": "Admin",
-  "display": {
-    "chatPrefix": "",
-    "chatSuffix": "&7: &f",
-    "nameColor": "&4",
-    "tabPrefix": "&4Admin &7>> "
-  },
-  "weight": 1,
+  "weight": 20,
   "default": false,
   "permissions": [
-    "*"
+    "{{managedPermission}}"
   ]
 }
 
-### Create developer group
-POST {{baseUrl}}/api/v1/permissions/groups
+### Update a permission group
+PUT {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "id": "dev",
-  "name": "Developer",
+  "name": "Example Senior Moderator",
   "display": {
-    "chatPrefix": "",
+    "chatPrefix": "&8[&bSrMod&8] ",
     "chatSuffix": "&7: &f",
-    "nameColor": "&c",
-    "tabPrefix": "&cDev &7>> "
+    "nameColor": "&b",
+    "tabPrefix": "&bSrMod &8> "
   },
-  "weight": 10,
+  "weight": 15,
   "default": false,
   "permissions": [
-    "*"
+    "{{managedPermission}}",
+    "ogcloud.server.view"
   ]
 }
 
-### Create premium group
-POST {{baseUrl}}/api/v1/permissions/groups
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "id": "premium",
-  "name": "Premium",
-  "display": {
-    "chatPrefix": "",
-    "chatSuffix": "&7: &f",
-    "nameColor": "&6",
-    "tabPrefix": ""
-  },
-  "weight": 50,
-  "default": false,
-  "permissions": []
-}
-
-### Update a permission group (partial)
-PUT {{baseUrl}}/api/v1/permissions/groups/dev
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "display": {
-    "chatPrefix": "",
-    "chatSuffix": "&7: &f",
-    "nameColor": "&c",
-    "tabPrefix": "&cDev &7>> "
-  },
-  "weight": 5
-}
-
-### Add permission to a group
-POST {{baseUrl}}/api/v1/permissions/groups/dev/permissions/ogcloud.command.execute
+### Add a permission to a group
+POST {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions/{{managedPermission}}
 Authorization: Bearer {{accessToken}}
 
-### Remove permission from a group
-DELETE {{baseUrl}}/api/v1/permissions/groups/dev/permissions/ogcloud.command.execute
+### Remove a permission from a group
+DELETE {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions/{{managedPermission}}
 Authorization: Bearer {{accessToken}}
 
-### Delete a permission group (moves players to default)
-DELETE {{baseUrl}}/api/v1/permissions/groups/vip
+### Delete a permission group
+DELETE {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}
 Authorization: Bearer {{accessToken}}

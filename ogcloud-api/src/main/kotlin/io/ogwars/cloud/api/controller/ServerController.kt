@@ -5,6 +5,9 @@ import io.ogwars.cloud.api.dto.ServerRequestBody
 import io.ogwars.cloud.api.dto.ServerRequestResponse
 import io.ogwars.cloud.api.dto.ServerResponse
 import io.ogwars.cloud.api.service.ServerService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -22,10 +25,13 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/servers")
 @Validated
+@Tag(name = "Servers")
+@SecurityRequirement(name = "bearerAuth")
 class ServerController(
     private val serverService: ServerService,
 ) {
     @GetMapping
+    @Operation(summary = "List servers")
     fun listServers(
         @RequestParam(required = false) group: String?,
         @RequestParam(required = false) query: String?,
@@ -39,12 +45,14 @@ class ServerController(
     ): PaginatedResponse<ServerResponse> = serverService.listAll(group, query, page, size)
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get a server by ID")
     fun getServer(
         @PathVariable id: String,
     ): ServerResponse = serverService.getById(id)
 
     @PostMapping("/request")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Request a new server instance")
     fun requestServer(
         @RequestBody @Valid body: ServerRequestBody,
     ): ServerRequestResponse {
@@ -54,18 +62,21 @@ class ServerController(
 
     @PostMapping("/{id}/stop")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Request a graceful server stop")
     fun stopServer(
         @PathVariable id: String,
     ) = serverService.stopServer(id)
 
     @PostMapping("/{id}/kill")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Force kill a server")
     fun killServer(
         @PathVariable id: String,
     ) = serverService.killServer(id)
 
     @PostMapping("/{id}/template/push")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Force a template push for a server")
     fun forceTemplatePush(
         @PathVariable id: String,
     ) = serverService.forceTemplatePush(id)

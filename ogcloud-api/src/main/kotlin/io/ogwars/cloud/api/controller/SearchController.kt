@@ -2,6 +2,9 @@ package io.ogwars.cloud.api.controller
 
 import io.ogwars.cloud.api.dto.SearchResponse
 import io.ogwars.cloud.api.service.SearchService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
@@ -15,10 +18,13 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/search")
 @Validated
+@Tag(name = "Search")
+@SecurityRequirement(name = "bearerAuth")
 class SearchController(
     private val searchService: SearchService,
 ) {
     @GetMapping("/{query}")
+    @Operation(summary = "Search across supported network resources")
     fun search(
         @PathVariable @NotBlank(message = "query must not be blank") query: String,
         @RequestParam(

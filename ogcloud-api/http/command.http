@@ -1,32 +1,12 @@
-### Execute command on a specific server
+@commandTarget = lobby
+
+### Execute a command
 POST {{baseUrl}}/api/v1/command
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "target": "d8821d937aad4f5399f72c47fc8e3cf5",
-  "targetType": "server",
-  "command": "say Hello from the API!"
-}
-
-### Execute command on all servers in a group
-POST {{baseUrl}}/api/v1/command
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "target": "lobby",
+  "target": "{{commandTarget}}",
   "targetType": "group",
-  "command": "say Maintenance starting in 5 minutes!"
-}
-
-### Execute command on all servers and proxies
-POST {{baseUrl}}/api/v1/command
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "target": "all",
-  "targetType": "all",
-  "command": "say Global announcement!"
+  "command": "say Scheduled restart in 5 minutes."
 }

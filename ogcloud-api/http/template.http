@@ -1,13 +1,12 @@
-### List all templates
-GET {{baseUrl}}/api/v1/templates
+@templateGroup = lobby
+@templateVersion = 1.0.1
+
+### List templates
+GET {{baseUrl}}/api/v1/templates?page=0&size=50&group={{templateGroup}}&query=1.0
 Authorization: Bearer {{accessToken}}
 
-### List templates with pagination and filtering
-GET {{baseUrl}}/api/v1/templates?page=0&size=50&group=lobby&query=1.0
-Authorization: Bearer {{accessToken}}
-
-### Upload a template for a group
-POST {{baseUrl}}/api/v1/templates/lobby/upload?version=1.0.1
+### Upload a template
+POST {{baseUrl}}/api/v1/templates/{{templateGroup}}/upload?version={{templateVersion}}
 Authorization: Bearer {{accessToken}}
 Content-Type: multipart/form-data; boundary=boundary
 
@@ -18,10 +17,10 @@ Content-Type: application/gzip
 < ./template.tar.gz
 --boundary--
 
-### Download a template archive
-GET {{baseUrl}}/api/v1/templates/lobby/1.0.1/download
+### Download a template
+GET {{baseUrl}}/api/v1/templates/{{templateGroup}}/{{templateVersion}}/download
 Authorization: Bearer {{accessToken}}
 
-### Delete a template archive
-DELETE {{baseUrl}}/api/v1/templates/lobby/1.0.1
+### Delete a template
+DELETE {{baseUrl}}/api/v1/templates/{{templateGroup}}/{{templateVersion}}
 Authorization: Bearer {{accessToken}}

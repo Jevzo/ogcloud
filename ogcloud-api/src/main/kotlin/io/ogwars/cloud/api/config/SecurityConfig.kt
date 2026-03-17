@@ -49,7 +49,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
-                it.requestMatchers("/health").permitAll()
+                it.requestMatchers("/health", "/v3/api-docs", "/v3/api-docs.yaml", "/v3/api-docs/**").permitAll()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                 it.anyRequest().authenticated()
