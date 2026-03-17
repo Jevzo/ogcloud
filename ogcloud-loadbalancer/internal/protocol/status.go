@@ -53,7 +53,7 @@ func HandleStatusRequest(conn io.ReadWriter, versionName, motd string, maxPlayer
 			Online: onlinePlayers,
 		},
 		Description: StatusDescription{
-			Text: convertMOTD(motd),
+			Text: convertColors(motd),
 		},
 	}
 
@@ -111,6 +111,6 @@ func writeRawPacket(w io.Writer, payload []byte) error {
 	return err
 }
 
-func convertMOTD(motd string) string {
+func convertColors(motd string) string {
 	return strings.ReplaceAll(motd, "&", "\u00a7")
 }

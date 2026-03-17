@@ -66,21 +66,32 @@ func (h *Handler) handleLogin(
 	rawHandshake []byte,
 ) {
 	if !kafka.IsSupportedClientProtocolVersion(clientProtocolVersion) {
-		if err := protocol.HandleLoginDisconnect(clientConn, unsupportedProtocolDisconnectMessage); err != nil {
-			h.logger.Debug("failed to write unsupported protocol disconnect", zap.Int32("protocolVersion", clientProtocolVersion), zap.Error(err))
-		} // FIXME: handle all disconnects gracefully
+		h.writeLoginDisconnect(
+			clientConn,
+			unsupportedProtocolDisconnectMessage,
+			"failed to write unsupported protocol disconnect",
+			zap.Int32("protocolVersion", clientProtocolVersion),
+		)
 		return
 	}
 
 	backend, err := h.pool.SelectBackend(h.network.GetProxyRoutingStrategy())
 	if err != nil {
 		h.logger.Warn("no backend available for login", zap.Error(err))
+		h.writeLoginDisconnect(clientConn, noBackendAvailableDisconnectMessage, "failed to write no backend available disconnect", zap.Error(err))
 		return
 	}
 
 	backendConn, err := h.pool.Dial(backend)
 	if err != nil {
 		h.logger.Error("failed to dial backend", zap.String("proxyId", backend.ProxyID), zap.Error(err))
+		h.writeLoginDisconnect(
+			clientConn,
+			backendConnectionDisconnectMessage,
+			"failed to write backend dial disconnect",
+			zap.String("proxyId", backend.ProxyID),
+			zap.Error(err),
+		)
 		return
 	}
 	defer func() {
@@ -92,12 +103,26 @@ func (h *Handler) handleLogin(
 		header := proxyproto.HeaderProxyFromAddrs(2, clientConn.RemoteAddr(), backendConn.LocalAddr())
 		if _, err := header.WriteTo(backendConn); err != nil {
 			h.logger.Error("failed to write proxy protocol header", zap.Error(err))
+			h.writeLoginDisconnect(
+				clientConn,
+				backendConnectionDisconnectMessage,
+				"failed to write proxy protocol disconnect",
+				zap.String("proxyId", backend.ProxyID),
+				zap.Error(err),
+			)
 			return
 		}
 	}
 
 	if _, err := backendConn.Write(rawHandshake); err != nil {
 		h.logger.Error("failed to forward handshake", zap.Error(err))
+		h.writeLoginDisconnect(
+			clientConn,
+			backendConnectionDisconnectMessage,
+			"failed to write handshake forward disconnect",
+			zap.String("proxyId", backend.ProxyID),
+			zap.Error(err),
+		)
 		return
 	}
 
@@ -116,4 +141,20 @@ func (h *Handler) handleLogin(
 	<-done
 }
 
-const unsupportedProtocolDisconnectMessage = "Unsupported Minecraft version. Supported versions are 1.8 through 1.21.11."
+func (h *Handler) writeLoginDisconnect(
+	clientConn net.Conn,
+	message string,
+	logMessage string,
+	fields ...zap.Field,
+) {
+	if err := protocol.HandleLoginDisconnect(clientConn, message); err != nil {
+		fields = append(fields, zap.String("disconnectMessage", message), zap.Error(err))
+		h.logger.Debug(logMessage, fields...)
+	}
+}
+
+const (
+	unsupportedProtocolDisconnectMessage = "Unsupported Minecraft version. Supported versions are 1.8 through 1.21.11."
+	noBackendAvailableDisconnectMessage  = "No proxy backend is currently available. Please try again in a moment."
+	backendConnectionDisconnectMessage   = "Failed to connect to a proxy backend. Please try again in a moment."
+)

@@ -11,7 +11,7 @@ const (
 )
 
 func HandleLoginDisconnect(conn io.Writer, reason string) error {
-	payload, err := json.Marshal(StatusDescription{Text: reason})
+	payload, err := json.Marshal(StatusDescription{Text: convertColors(reason)})
 	if err != nil {
 		return fmt.Errorf("marshal login disconnect: %w", err)
 	}
