@@ -18,9 +18,10 @@ const (
 )
 
 var (
-	onlineModePattern   = regexp.MustCompile(`(?m)^online-mode=.*$`)
-	bungeecordPattern   = regexp.MustCompile(`(?m)^([ \t]*)bungeecord:\s*.*$`)
-	settingsRootPattern = regexp.MustCompile(`(?m)^settings:\s*$`)
+	onlineModePattern           = regexp.MustCompile(`(?m)^online-mode=.*$`)
+	enforceSecureProfilePattern = regexp.MustCompile(`(?m)^enforce-secure-profile=.*$`)
+	bungeecordPattern           = regexp.MustCompile(`(?m)^([ \t]*)bungeecord:\s*.*$`)
+	settingsRootPattern         = regexp.MustCompile(`(?m)^settings:\s*$`)
 )
 
 func Apply(scopePrefix, dataDir, forwardingSecret string) error {
@@ -45,7 +46,7 @@ func Apply(scopePrefix, dataDir, forwardingSecret string) error {
 }
 
 func applyPaperRuntime(dataDir, secret string, modern bool) error {
-	if err := patchServerProperties(filepath.Join(dataDir, "server.properties")); err != nil {
+	if err := patchServerProperties(filepath.Join(dataDir, "server.properties"), modern); err != nil {
 		return err
 	}
 	if err := patchSpigotConfig(filepath.Join(dataDir, "spigot.yml")); err != nil {
@@ -62,20 +63,22 @@ func applyPaperRuntime(dataDir, secret string, modern bool) error {
 	)
 }
 
-func patchServerProperties(path string) error {
+func patchServerProperties(path string, modern bool) error {
 	content, newline, err := readTextFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return writeManagedFile(path, "online-mode=false\n")
+			managed := "online-mode=false\n"
+			if modern {
+				managed += "enforce-secure-profile=false\n"
+			}
+			return writeManagedFile(path, managed)
 		}
 		return err
 	}
 
-	updated := string(content)
-	if onlineModePattern.Match(content) {
-		updated = onlineModePattern.ReplaceAllString(updated, "online-mode=false")
-	} else {
-		updated = appendLine(updated, newline, "online-mode=false")
+	updated := ensurePropertyLine(string(content), newline, onlineModePattern, "online-mode=false")
+	if modern {
+		updated = ensurePropertyLine(updated, newline, enforceSecureProfilePattern, "enforce-secure-profile=false")
 	}
 
 	return writeManagedFile(path, updated)
@@ -167,6 +170,13 @@ func appendLine(content, newline, line string) string {
 		content += newline
 	}
 	return content + line + newline
+}
+
+func ensurePropertyLine(content, newline string, pattern *regexp.Regexp, line string) string {
+	if pattern.MatchString(content) {
+		return pattern.ReplaceAllString(content, line)
+	}
+	return appendLine(content, newline, line)
 }
 
 func writeManagedFile(path, content string) error {
