@@ -1,5 +1,7 @@
 package io.ogwars.cloud.api.service
 
+import io.ogwars.cloud.api.exception.GroupRestartSyncInProgressException
+import io.ogwars.cloud.api.exception.NetworkRestartSyncInProgressException
 import io.ogwars.cloud.api.kafka.ServerRequestProducer
 import io.ogwars.cloud.api.kafka.ServerStopProducer
 import io.ogwars.cloud.api.model.GroupDocument
@@ -23,6 +25,7 @@ class NetworkRestartService(
     private val serverRedisRepository: ServerRedisRepository,
     private val serverRequestProducer: ServerRequestProducer,
     private val serverStopProducer: ServerStopProducer,
+    private val restartSyncLockService: RestartSyncLockService,
     private val auditLogService: AuditLogService,
     private val groupOperationTaskExecutor: TaskExecutor,
 ) {
@@ -40,12 +43,30 @@ class NetworkRestartService(
             )
         }
 
-        groupOperationTaskExecutor.execute {
-            try {
-                restartNetwork(networkSettings.defaultGroup)
-            } catch (ex: Exception) {
-                log.error("Async network restart failed: defaultGroup={}", networkSettings.defaultGroup, ex)
+        val lockToken =
+            restartSyncLockService.acquireNetworkRestartLock()
+                ?: throw NetworkRestartSyncInProgressException("Network restart is already in progress")
+
+        if (restartSyncLockService.hasAnyGroupRestartLockActive()) {
+            restartSyncLockService.releaseNetworkRestartLock(lockToken)
+            throw GroupRestartSyncInProgressException(
+                "Network restart is blocked while a group restart is in progress",
+            )
+        }
+
+        try {
+            groupOperationTaskExecutor.execute {
+                try {
+                    restartNetwork(networkSettings.defaultGroup)
+                } catch (ex: Exception) {
+                    log.error("Async network restart failed: defaultGroup={}", networkSettings.defaultGroup, ex)
+                } finally {
+                    restartSyncLockService.releaseNetworkRestartLock(lockToken)
+                }
             }
+        } catch (ex: Exception) {
+            restartSyncLockService.releaseNetworkRestartLock(lockToken)
+            throw ex
         }
 
         auditLogService.logApiAction(

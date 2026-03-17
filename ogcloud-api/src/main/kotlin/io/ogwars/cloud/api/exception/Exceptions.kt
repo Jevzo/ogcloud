@@ -71,3 +71,11 @@ class PlayerLinkUnavailableException(
 
 class PermissionReenableSyncInProgressException :
     RuntimeException("Permission system enable/disable is blocked while re-enable sync is in progress")
+
+class GroupRestartSyncInProgressException(
+    message: String,
+) : RuntimeException(message)
+
+class NetworkRestartSyncInProgressException(
+    message: String,
+) : RuntimeException(message)

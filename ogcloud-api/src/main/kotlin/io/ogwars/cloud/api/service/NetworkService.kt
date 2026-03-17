@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.dto.NetworkSettingsResponse
 import io.ogwars.cloud.api.dto.NetworkStatusResponse
 import io.ogwars.cloud.api.dto.UpdateNetworkRequest
 import io.ogwars.cloud.api.dto.toResponse
+import io.ogwars.cloud.api.exception.NetworkRestartSyncInProgressException
 import io.ogwars.cloud.api.exception.PermissionReenableSyncInProgressException
 import io.ogwars.cloud.api.kafka.NetworkUpdateProducer
 import io.ogwars.cloud.api.redis.ServerRedisRepository
@@ -22,6 +23,7 @@ class NetworkService(
     private val networkUpdateProducer: NetworkUpdateProducer,
     private val serverRedisRepository: ServerRedisRepository,
     private val redisTemplate: StringRedisTemplate,
+    private val restartSyncLockService: RestartSyncLockService,
     private val auditLogService: AuditLogService,
 ) {
     fun getSettings(): NetworkSettingsResponse = findOrDefault().toResponse()
@@ -34,6 +36,13 @@ class NetworkService(
         val current = findOrDefault()
         if (isPermissionSystemToggleRequested(request, current) && isPermissionReenableSyncLockActive()) {
             throw PermissionReenableSyncInProgressException()
+        }
+        if (isNetworkMaintenanceDisableRequested(request, current) &&
+            restartSyncLockService.isNetworkRestartLockActive()
+        ) {
+            throw NetworkRestartSyncInProgressException(
+                "Cannot disable network maintenance while a network restart is in progress",
+            )
         }
 
         val updatedMotd =
@@ -106,6 +115,12 @@ class NetworkService(
     }
 
     fun setMaintenance(enabled: Boolean): NetworkSettingsResponse {
+        if (!enabled && restartSyncLockService.isNetworkRestartLockActive()) {
+            throw NetworkRestartSyncInProgressException(
+                "Cannot disable network maintenance while a network restart is in progress",
+            )
+        }
+
         val updated = findOrDefault().copy(maintenance = enabled)
         mongoTemplate.save(updated, COLLECTION)
 
@@ -145,6 +160,14 @@ class NetworkService(
     ): Boolean {
         val requestedPermissionState = request.general?.permissionSystemEnabled ?: return false
         return requestedPermissionState != current.general.permissionSystemEnabled
+    }
+
+    private fun isNetworkMaintenanceDisableRequested(
+        request: UpdateNetworkRequest,
+        current: NetworkSettingsDocument,
+    ): Boolean {
+        val requestedMaintenance = request.maintenance ?: return false
+        return !requestedMaintenance && current.maintenance
     }
 
     private fun isPermissionReenableSyncLockActive(): Boolean =

@@ -4,7 +4,9 @@ import io.ogwars.cloud.api.dto.*
 import io.ogwars.cloud.api.exception.GroupAlreadyExistsException
 import io.ogwars.cloud.api.exception.GroupDeletionTimeoutException
 import io.ogwars.cloud.api.exception.GroupNotFoundException
+import io.ogwars.cloud.api.exception.GroupRestartSyncInProgressException
 import io.ogwars.cloud.api.exception.GroupRestartTimeoutException
+import io.ogwars.cloud.api.exception.NetworkRestartSyncInProgressException
 import io.ogwars.cloud.api.kafka.GroupUpdateProducer
 import io.ogwars.cloud.api.kafka.ServerRequestProducer
 import io.ogwars.cloud.api.kafka.ServerStopProducer
@@ -35,6 +37,7 @@ class GroupService(
     private val serverRedisRepository: ServerRedisRepository,
     private val serverRequestProducer: ServerRequestProducer,
     private val serverStopProducer: ServerStopProducer,
+    private val restartSyncLockService: RestartSyncLockService,
     private val auditLogService: AuditLogService,
     private val groupOperationTaskExecutor: TaskExecutor,
 ) {
@@ -156,6 +159,12 @@ class GroupService(
         enabled: Boolean,
     ): GroupResponse {
         val existing = requireGroup(name)
+        if (!enabled && restartSyncLockService.isGroupRestartLockActive(existing.id)) {
+            throw GroupRestartSyncInProgressException(
+                "Cannot disable maintenance while group restart is in progress for group '${existing.id}'",
+            )
+        }
+
         val saved = groupRepository.save(existing.copy(maintenance = enabled, updatedAt = Instant.now()))
 
         groupUpdateProducer.publishGroupUpdate(saved)
@@ -199,12 +208,38 @@ class GroupService(
             throw IllegalArgumentException("Group must be in maintenance before restart: $name")
         }
 
-        groupOperationTaskExecutor.execute {
-            try {
-                restart(existing)
-            } catch (ex: Exception) {
-                log.error("Async group restart failed: id={}", name, ex)
+        if (restartSyncLockService.isNetworkRestartLockActive()) {
+            throw NetworkRestartSyncInProgressException(
+                "Group restart is blocked while a network restart is in progress",
+            )
+        }
+
+        val lockToken =
+            restartSyncLockService.acquireGroupRestartLock(existing.id)
+                ?: throw GroupRestartSyncInProgressException(
+                    "Group restart is already in progress for group '${existing.id}'",
+                )
+
+        if (restartSyncLockService.isNetworkRestartLockActive()) {
+            restartSyncLockService.releaseGroupRestartLock(existing.id, lockToken)
+            throw NetworkRestartSyncInProgressException(
+                "Group restart is blocked while a network restart is in progress",
+            )
+        }
+
+        try {
+            groupOperationTaskExecutor.execute {
+                try {
+                    restart(existing)
+                } catch (ex: Exception) {
+                    log.error("Async group restart failed: id={}", name, ex)
+                } finally {
+                    restartSyncLockService.releaseGroupRestartLock(existing.id, lockToken)
+                }
             }
+        } catch (ex: Exception) {
+            restartSyncLockService.releaseGroupRestartLock(existing.id, lockToken)
+            throw ex
         }
 
         auditLogService.logApiAction(
