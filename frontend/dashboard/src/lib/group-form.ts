@@ -1,6 +1,6 @@
+import { groupFormSchema } from "@/features/groups/schemas";
 import {
     coerceRuntimeSelection,
-    isServerImageCompatible,
     supportsRuntimeProfile,
 } from "@/lib/group-runtime";
 import type {
@@ -131,53 +131,27 @@ interface GroupConfigPayloadFields {
     storageSize?: string;
 }
 
+const validateGroupFormValues = (values: GroupFormValues) => {
+    const result = groupFormSchema.safeParse(values);
+
+    if (!result.success) {
+        throw new Error(result.error.issues[0]?.message ?? "Invalid group configuration.");
+    }
+
+    return result.data;
+};
+
 const buildGroupConfigPayloadFields = (values: GroupFormValues): GroupConfigPayloadFields => {
-    const requiredFields = [
-        ["Template bucket", values.templateBucket],
-        ["Template", values.templatePath],
-        ["Template version", values.templateVersion],
-        ["JVM flags", values.jvmFlags],
-        ["Server image", values.serverImage],
-        ["Memory request", values.resources.memoryRequest],
-        ["Memory limit", values.resources.memoryLimit],
-        ["CPU request", values.resources.cpuRequest],
-        ["CPU limit", values.resources.cpuLimit],
-    ] as const;
-
-    for (const [label, fieldValue] of requiredFields) {
-        if (!fieldValue.trim()) {
-            throw new Error(`${label} is required.`);
-        }
-    }
-
-    if (values.type.toUpperCase() === "STATIC" && !values.storageSize.trim()) {
-        throw new Error("Storage size is required for STATIC groups.");
-    }
-
-    if (supportsRuntimeProfile(values.type) && !values.runtimeProfile) {
-        throw new Error("Runtime profile is required for backend groups.");
-    }
-
-    if (!isServerImageCompatible(values.type, values.runtimeProfile, values.serverImage.trim())) {
-        if (values.type.toUpperCase() === "PROXY") {
-            throw new Error("Proxy groups must use a velocity image.");
-        }
-
-        if (values.runtimeProfile === "LEGACY_1_8_8") {
-            throw new Error("Legacy 1.8.8 groups must use ogwarsdev/paper:1.8.8.");
-        }
-
-        throw new Error("Modern backend groups must use a paper image tagged 1.21.11.");
-    }
+    const validatedValues = validateGroupFormValues(values);
 
     const numericFields = {
-        drainTimeoutSeconds: Number.parseInt(values.drainTimeoutSeconds, 10),
-        minOnline: Number.parseInt(values.scaling.minOnline, 10),
-        maxInstances: Number.parseInt(values.scaling.maxInstances, 10),
-        playersPerServer: Number.parseInt(values.scaling.playersPerServer, 10),
-        scaleUpThreshold: Number.parseFloat(values.scaling.scaleUpThreshold),
-        scaleDownThreshold: Number.parseFloat(values.scaling.scaleDownThreshold),
-        cooldownSeconds: Number.parseInt(values.scaling.cooldownSeconds, 10),
+        drainTimeoutSeconds: Number.parseInt(validatedValues.drainTimeoutSeconds, 10),
+        minOnline: Number.parseInt(validatedValues.scaling.minOnline, 10),
+        maxInstances: Number.parseInt(validatedValues.scaling.maxInstances, 10),
+        playersPerServer: Number.parseInt(validatedValues.scaling.playersPerServer, 10),
+        scaleUpThreshold: Number.parseFloat(validatedValues.scaling.scaleUpThreshold),
+        scaleDownThreshold: Number.parseFloat(validatedValues.scaling.scaleDownThreshold),
+        cooldownSeconds: Number.parseInt(validatedValues.scaling.cooldownSeconds, 10),
     };
 
     for (const [key, numericValue] of Object.entries(numericFields)) {
@@ -190,17 +164,19 @@ const buildGroupConfigPayloadFields = (values: GroupFormValues): GroupConfigPayl
         throw new Error("Min online cannot exceed max instances.");
     }
 
-    const runtimeProfile: BackendRuntimeProfile | undefined = supportsRuntimeProfile(values.type)
-        ? values.runtimeProfile || undefined
+    const runtimeProfile: BackendRuntimeProfile | undefined = supportsRuntimeProfile(
+        validatedValues.type,
+    )
+        ? validatedValues.runtimeProfile || undefined
         : undefined;
 
     return {
-        templateBucket: values.templateBucket.trim(),
-        templatePath: values.templatePath.trim(),
-        templateVersion: values.templateVersion.trim(),
-        jvmFlags: values.jvmFlags.trim(),
+        templateBucket: validatedValues.templateBucket,
+        templatePath: validatedValues.templatePath,
+        templateVersion: validatedValues.templateVersion,
+        jvmFlags: validatedValues.jvmFlags,
         drainTimeoutSeconds: numericFields.drainTimeoutSeconds,
-        serverImage: values.serverImage.trim(),
+        serverImage: validatedValues.serverImage,
         scaling: {
             minOnline: numericFields.minOnline,
             maxInstances: numericFields.maxInstances,
@@ -210,14 +186,14 @@ const buildGroupConfigPayloadFields = (values: GroupFormValues): GroupConfigPayl
             cooldownSeconds: numericFields.cooldownSeconds,
         },
         resources: {
-            memoryRequest: values.resources.memoryRequest.trim(),
-            memoryLimit: values.resources.memoryLimit.trim(),
-            cpuRequest: values.resources.cpuRequest.trim(),
-            cpuLimit: values.resources.cpuLimit.trim(),
+            memoryRequest: validatedValues.resources.memoryRequest,
+            memoryLimit: validatedValues.resources.memoryLimit,
+            cpuRequest: validatedValues.resources.cpuRequest,
+            cpuLimit: validatedValues.resources.cpuLimit,
         },
         ...(runtimeProfile ? { runtimeProfile } : {}),
-        ...(values.type.toUpperCase() === "STATIC"
-            ? { storageSize: values.storageSize.trim() }
+        ...(validatedValues.type.toUpperCase() === "STATIC"
+            ? { storageSize: validatedValues.storageSize }
             : {}),
     };
 };

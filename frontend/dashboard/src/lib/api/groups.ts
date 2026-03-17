@@ -1,3 +1,4 @@
+import { groupListItemSchema, groupRecordSchema } from "@/features/groups/schemas";
 import type { GroupListItem } from "@/types/dashboard";
 import type { CreateGroupPayload, GroupRecord, UpdateGroupPayload } from "@/types/group";
 
@@ -5,13 +6,20 @@ import {
     apiClient,
     fetchAllPagedItems,
     getAuthHeaders,
+    parseWithSchema,
     SESSION_EXPIRED_MESSAGE,
     toApiError,
 } from "./shared";
 
 export const listGroups = async (accessToken: string) => {
     try {
-        return await fetchAllPagedItems<GroupListItem>("/api/v1/groups", accessToken);
+        return await fetchAllPagedItems<GroupListItem>(
+            "/api/v1/groups",
+            accessToken,
+            undefined,
+            groupListItemSchema,
+            "Received an invalid group list response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -19,9 +27,15 @@ export const listGroups = async (accessToken: string) => {
 
 export const listAllServerGroups = async (accessToken: string, query?: string) => {
     try {
-        return await fetchAllPagedItems<GroupRecord>("/api/v1/groups", accessToken, {
-            query,
-        });
+        return await fetchAllPagedItems<GroupRecord>(
+            "/api/v1/groups",
+            accessToken,
+            {
+                query,
+            },
+            groupRecordSchema,
+            "Received an invalid group response while loading groups.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -36,7 +50,11 @@ export const getGroupByName = async (accessToken: string, groupName: string) => 
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            groupRecordSchema,
+            response.data,
+            "Received an invalid group details response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -58,7 +76,11 @@ export const createServerGroup = async (accessToken: string, payload: CreateGrou
             headers: getAuthHeaders(accessToken),
         });
 
-        return response.data;
+        return parseWithSchema(
+            groupRecordSchema,
+            response.data,
+            "Received an invalid group response after creation.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -78,7 +100,11 @@ export const updateServerGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            groupRecordSchema,
+            response.data,
+            "Received an invalid group response after update.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -98,7 +124,11 @@ export const toggleServerGroupMaintenance = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            groupRecordSchema,
+            response.data,
+            "Received an invalid group response after toggling maintenance.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

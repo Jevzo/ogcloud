@@ -1,7 +1,15 @@
+import { webUserRecordSchema } from "@/features/web-users/schemas";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { CreateWebUserPayload, UpdateWebUserPayload, WebUserRecord } from "@/types/web-user";
 
-import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
+import {
+    apiClient,
+    createPaginatedResponseSchema,
+    getAuthHeaders,
+    parseWithSchema,
+    SESSION_EXPIRED_MESSAGE,
+    toApiError,
+} from "./shared";
 
 export const listWebUsers = async (
     accessToken: string,
@@ -20,7 +28,11 @@ export const listWebUsers = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            createPaginatedResponseSchema(webUserRecordSchema),
+            response.data,
+            "Received an invalid web user list response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -32,7 +44,11 @@ export const createWebUser = async (accessToken: string, payload: CreateWebUserP
             headers: getAuthHeaders(accessToken),
         });
 
-        return response.data;
+        return parseWithSchema(
+            webUserRecordSchema,
+            response.data,
+            "Received an invalid web user response after creation.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -52,7 +68,11 @@ export const updateWebUser = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            webUserRecordSchema,
+            response.data,
+            "Received an invalid web user response after update.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -77,7 +97,11 @@ export const unlinkWebUserAccount = async (accessToken: string, targetEmail: str
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            webUserRecordSchema,
+            response.data,
+            "Received an invalid web user response after unlinking the player account.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

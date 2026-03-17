@@ -1,20 +1,27 @@
-import type { SearchResponse } from "@/types/search";
+import { searchResponseSchema } from "@/features/search/schemas";
 
-import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
+import {
+    apiClient,
+    getAuthHeaders,
+    parseWithSchema,
+    SESSION_EXPIRED_MESSAGE,
+    toApiError,
+} from "./shared";
 
 export const searchEverything = async (accessToken: string, query: string, limit?: number) => {
     try {
-        const response = await apiClient.get<SearchResponse>(
-            `/api/v1/search/${encodeURIComponent(query)}`,
-            {
-                headers: getAuthHeaders(accessToken),
-                params: {
-                    limit,
-                },
+        const response = await apiClient.get(`/api/v1/search/${encodeURIComponent(query)}`, {
+            headers: getAuthHeaders(accessToken),
+            params: {
+                limit,
             },
-        );
+        });
 
-        return response.data;
+        return parseWithSchema(
+            searchResponseSchema,
+            response.data,
+            "Received an invalid search response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

@@ -1,12 +1,15 @@
 import type {
     NetworkGeneralSettings,
-    NetworkLockRecord,
-    NetworkLocksResponse,
     NetworkSettingsRecord,
-    NetworkStatusRecord,
     ProxyRoutingStrategy,
     UpdateNetworkPayload,
 } from "@/types/network";
+import {
+    networkLocksResponseSchema,
+    networkSettingsApiSchema,
+    networkStatusSchema,
+    type NetworkSettingsApiSchema,
+} from "@/features/network/schemas";
 
 import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
 
@@ -14,10 +17,6 @@ const DEFAULT_NETWORK_GENERAL_SETTINGS: NetworkGeneralSettings = {
     permissionSystemEnabled: true,
     tablistEnabled: true,
     proxyRoutingStrategy: "LOAD_BASED",
-};
-
-type NetworkSettingsApiRecord = Omit<NetworkSettingsRecord, "general"> & {
-    general?: Partial<NetworkGeneralSettings> | null;
 };
 
 const normalizeProxyRoutingStrategy = (
@@ -30,7 +29,7 @@ const normalizeProxyRoutingStrategy = (
     return DEFAULT_NETWORK_GENERAL_SETTINGS.proxyRoutingStrategy;
 };
 
-const normalizeNetworkSettings = (payload: NetworkSettingsApiRecord): NetworkSettingsRecord => ({
+const normalizeNetworkSettings = (payload: NetworkSettingsApiSchema): NetworkSettingsRecord => ({
     ...payload,
     general: {
         permissionSystemEnabled:
@@ -42,68 +41,13 @@ const normalizeNetworkSettings = (payload: NetworkSettingsApiRecord): NetworkSet
     },
 });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === "object" && value !== null && !Array.isArray(value);
-
-const readNullableString = (value: unknown) => {
-    if (typeof value === "string") {
-        return value;
-    }
-
-    return value === null || typeof value === "undefined" ? null : undefined;
-};
-
-const readNullableNumber = (value: unknown) => {
-    if (typeof value === "number" && Number.isFinite(value)) {
-        return value;
-    }
-
-    return value === null || typeof value === "undefined" ? null : undefined;
-};
-
-const normalizeNetworkLock = (payload: unknown): NetworkLockRecord => {
-    if (!isRecord(payload) || typeof payload.key !== "string" || typeof payload.type !== "string") {
-        throw new Error("Invalid network locks response.");
-    }
-
-    const targetId = readNullableString(payload.targetId);
-    const token = readNullableString(payload.token);
-    const ttlSeconds = readNullableNumber(payload.ttlSeconds);
-
-    if (
-        typeof targetId === "undefined" ||
-        typeof token === "undefined" ||
-        typeof ttlSeconds === "undefined"
-    ) {
-        throw new Error("Invalid network locks response.");
-    }
-
-    return {
-        key: payload.key,
-        type: payload.type,
-        targetId,
-        token,
-        ttlSeconds,
-    };
-};
-
-const normalizeNetworkLocks = (payload: unknown): NetworkLocksResponse => {
-    if (!isRecord(payload) || !Array.isArray(payload.locks)) {
-        throw new Error("Invalid network locks response.");
-    }
-
-    return {
-        locks: payload.locks.map(normalizeNetworkLock),
-    };
-};
-
 export const getNetworkSettings = async (accessToken: string) => {
     try {
-        const response = await apiClient.get<NetworkSettingsApiRecord>("/api/v1/network", {
+        const response = await apiClient.get<NetworkSettingsApiSchema>("/api/v1/network", {
             headers: getAuthHeaders(accessToken),
         });
 
-        return normalizeNetworkSettings(response.data);
+        return normalizeNetworkSettings(networkSettingsApiSchema.parse(response.data));
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -111,11 +55,11 @@ export const getNetworkSettings = async (accessToken: string) => {
 
 export const getNetworkStatus = async (accessToken: string) => {
     try {
-        const response = await apiClient.get<NetworkStatusRecord>("/api/v1/network/status", {
+        const response = await apiClient.get("/api/v1/network/status", {
             headers: getAuthHeaders(accessToken),
         });
 
-        return response.data;
+        return networkStatusSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -127,7 +71,7 @@ export const getNetworkLocks = async (accessToken: string) => {
             headers: getAuthHeaders(accessToken),
         });
 
-        return normalizeNetworkLocks(response.data).locks;
+        return networkLocksResponseSchema.parse(response.data).locks;
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -135,11 +79,15 @@ export const getNetworkLocks = async (accessToken: string) => {
 
 export const updateNetworkSettings = async (accessToken: string, payload: UpdateNetworkPayload) => {
     try {
-        const response = await apiClient.put<NetworkSettingsApiRecord>("/api/v1/network", payload, {
-            headers: getAuthHeaders(accessToken),
-        });
+        const response = await apiClient.put<NetworkSettingsApiSchema>(
+            "/api/v1/network",
+            payload,
+            {
+                headers: getAuthHeaders(accessToken),
+            },
+        );
 
-        return normalizeNetworkSettings(response.data);
+        return normalizeNetworkSettings(networkSettingsApiSchema.parse(response.data));
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -147,7 +95,7 @@ export const updateNetworkSettings = async (accessToken: string, payload: Update
 
 export const toggleNetworkMaintenance = async (accessToken: string, maintenance: boolean) => {
     try {
-        const response = await apiClient.put<NetworkSettingsApiRecord>(
+        const response = await apiClient.put<NetworkSettingsApiSchema>(
             "/api/v1/network/maintenance",
             { maintenance },
             {
@@ -155,7 +103,7 @@ export const toggleNetworkMaintenance = async (accessToken: string, maintenance:
             },
         );
 
-        return normalizeNetworkSettings(response.data);
+        return normalizeNetworkSettings(networkSettingsApiSchema.parse(response.data));
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

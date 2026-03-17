@@ -1,30 +1,107 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
-    --color-primary: #00e5ff;
-    --color-primary-dark: #007bff;
-    --color-secondary: #00a7ff;
-    --color-accent: #00ffd1;
-    --color-success: #2bd47a;
-    --color-background-dark: #030712;
-    --color-background: #071028;
-    --color-surface-dark: #0b1220;
-    --color-surface: rgba(7, 23, 42, 0.8);
-    --color-panel: #0a1321;
-    --color-border-dark: rgba(185, 215, 255, 0.08);
-    --color-border-strong: rgba(0, 229, 255, 0.22);
-    --color-text-main: #f8fbff;
-    --color-text-soft: #dcecff;
-    --color-text-muted: #8ba3b5;
-    --font-family-display: "Inter", sans-serif;
-    --font-family-body: "Inter", sans-serif;
-    --radius-sm: 0.25rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
+    --color-primary: hsl(221 83% 53%);
+    --color-primary-dark: hsl(221 83% 41%);
+    --color-secondary: hsl(217 91% 60%);
+    --color-accent: hsl(216 34% 17%);
+    --color-success: hsl(142 71% 45%);
+    --color-background-dark: hsl(222 47% 8%);
+    --color-background: hsl(222 43% 10%);
+    --color-surface-dark: hsl(222 39% 11%);
+    --color-surface: rgba(15, 23, 42, 0.82);
+    --color-panel: hsl(222 36% 14%);
+    --color-border-dark: rgba(148, 163, 184, 0.16);
+    --color-border-strong: rgba(29, 78, 216, 0.34);
+    --color-text-main: hsl(210 40% 98%);
+    --color-text-soft: hsl(214 32% 91%);
+    --color-text-muted: hsl(215 20% 65%);
+    --font-family-display: "Geist Variable", sans-serif;
+    --font-family-body: "Geist Variable", sans-serif;
 }
 
-:root {
+:root,
+.dark {
     color-scheme: dark;
+    --background: hsl(222 47% 8%);
+    --foreground: hsl(210 40% 98%);
+    --card: hsl(222 39% 11%);
+    --card-foreground: hsl(210 40% 98%);
+    --popover: hsl(222 35% 10%);
+    --popover-foreground: hsl(210 40% 98%);
+    --primary: hsl(221 83% 53%);
+    --primary-foreground: hsl(210 40% 98%);
+    --secondary: hsl(217 33% 17%);
+    --secondary-foreground: hsl(210 40% 96%);
+    --muted: hsl(217 28% 18%);
+    --muted-foreground: hsl(215 20% 65%);
+    --accent: hsl(217 28% 18%);
+    --accent-foreground: hsl(210 40% 98%);
+    --destructive: hsl(0 72% 51%);
+    --border: hsl(217 26% 22%);
+    --input: hsl(217 26% 22%);
+    --ring: hsl(221 83% 60%);
+    --chart-1: hsl(221 83% 53%);
+    --chart-2: hsl(199 89% 48%);
+    --chart-3: hsl(160 84% 39%);
+    --chart-4: hsl(43 96% 56%);
+    --chart-5: hsl(0 72% 51%);
+    --radius: 0.9rem;
+    --sidebar: hsl(222 43% 10%);
+    --sidebar-foreground: hsl(214 32% 91%);
+    --sidebar-primary: hsl(221 83% 53%);
+    --sidebar-primary-foreground: hsl(210 40% 98%);
+    --sidebar-accent: hsl(217 28% 18%);
+    --sidebar-accent-foreground: hsl(210 40% 98%);
+    --sidebar-border: hsl(217 26% 22%);
+    --sidebar-ring: hsl(221 83% 60%);
+}
+
+@theme inline {
+    --font-sans: "Geist Variable", sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.82);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.35);
+    --radius-2xl: calc(var(--radius) * 1.75);
+    --radius-3xl: calc(var(--radius) * 2.15);
+    --radius-4xl: calc(var(--radius) * 2.55);
 }
 
 *,
@@ -33,27 +110,15 @@
     box-sizing: border-box;
 }
 
-@keyframes gradient {
-    0% {
-        background-position: 0 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0 50%;
-    }
-}
-
 html,
 body,
 #root {
-    height: 100%;
-    scroll-behavior: smooth;
+    min-height: 100%;
 }
 
 html {
-    scrollbar-color: rgba(51, 65, 85, 0.9) transparent;
+    scroll-behavior: smooth;
+    scrollbar-color: rgba(71, 85, 105, 0.9) transparent;
     scrollbar-width: thin;
 }
 
@@ -61,12 +126,30 @@ body {
     font-family: var(--font-family-body), sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--color-background-dark);
-    color: var(--color-text-main);
+    background-color: var(--background);
+    background-image:
+        radial-gradient(circle at top left, rgba(30, 64, 175, 0.22), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 24%),
+        linear-gradient(180deg, rgba(6, 11, 22, 0.98), rgba(8, 15, 28, 1));
+    color: var(--foreground);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    html {
+        @apply font-sans;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
 }
 
 .button-hover-lift {
-    --button-shadow-color: rgba(15, 23, 42, 0.16);
+    --button-shadow-color: rgba(15, 23, 42, 0.24);
     transition:
         translate 180ms ease,
         box-shadow 180ms ease,
@@ -78,7 +161,7 @@ body {
 
 .button-hover-lift:hover:not(:disabled) {
     translate: 0 -1px;
-    box-shadow: 0 3px 10px var(--button-shadow-color);
+    box-shadow: 0 10px 28px var(--button-shadow-color);
 }
 
 .button-hover-lift:active:not(:disabled) {
@@ -86,19 +169,19 @@ body {
 }
 
 .button-shadow-primary {
-    --button-shadow-color: rgba(56, 189, 248, 0.18);
+    --button-shadow-color: rgba(37, 99, 235, 0.28);
 }
 
 .button-shadow-warning {
-    --button-shadow-color: rgba(251, 191, 36, 0.15);
+    --button-shadow-color: rgba(245, 158, 11, 0.22);
 }
 
 .button-shadow-danger {
-    --button-shadow-color: rgba(248, 113, 113, 0.15);
+    --button-shadow-color: rgba(239, 68, 68, 0.22);
 }
 
 .button-shadow-neutral {
-    --button-shadow-color: rgba(71, 85, 105, 0.14);
+    --button-shadow-color: rgba(71, 85, 105, 0.22);
 }
 
 .app-field-stack {
@@ -113,7 +196,7 @@ body {
     font-size: 0.875rem;
     line-height: 1.25rem;
     font-weight: 500;
-    color: #cbd5e1;
+    color: hsl(214 32% 86%);
 }
 
 .app-input-field,
@@ -140,9 +223,9 @@ input[type="number"] {
 
 .app-input-field,
 .app-select-field {
-    border: 1px solid rgba(51, 65, 85, 0.95);
-    border-radius: 0.5rem;
-    background: linear-gradient(180deg, rgba(8, 15, 29, 0.92), rgba(4, 10, 20, 0.96));
+    border: 1px solid rgba(71, 85, 105, 0.92);
+    border-radius: var(--radius-md);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(10, 16, 30, 0.98));
     color: var(--color-text-main);
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -163,31 +246,28 @@ input[type="number"] {
 .app-input-field:focus-visible,
 .app-select-field:focus,
 .app-select-field:focus-visible {
-    border-color: rgba(0, 229, 255, 0.65);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
+    border-color: rgba(37, 99, 235, 0.7);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
 }
 
 .app-input-field:disabled,
 .app-select-field:disabled {
     cursor: not-allowed;
-    border-color: rgba(71, 85, 105, 0.95);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(11, 18, 32, 0.98));
-    box-shadow:
-        inset 0 0 0 1px rgba(71, 85, 105, 0.18),
-        inset 0 1px 0 rgba(148, 163, 184, 0.04);
+    border-color: rgba(71, 85, 105, 0.78);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(11, 18, 32, 1));
     color: rgba(148, 163, 184, 0.72);
     opacity: 1;
 }
 
 .app-button-field.border-slate-700 {
-    border-color: rgba(51, 65, 85, 0.95);
-    background: linear-gradient(180deg, rgba(8, 15, 29, 0.92), rgba(4, 10, 20, 0.96));
+    border-color: rgba(71, 85, 105, 0.92);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(10, 16, 30, 0.98));
     color: var(--color-text-soft);
 }
 
 .app-button-field.border-slate-700:disabled {
-    border-color: rgba(51, 65, 85, 0.88);
-    background: linear-gradient(180deg, rgba(6, 12, 24, 0.95), rgba(3, 8, 16, 0.98));
+    border-color: rgba(71, 85, 105, 0.78);
+    background: linear-gradient(180deg, rgba(10, 16, 30, 0.98), rgba(8, 12, 24, 1));
     color: rgba(148, 163, 184, 0.78);
     opacity: 1;
 }
@@ -196,6 +276,10 @@ input[type="number"] {
     width: 100%;
     appearance: none;
     padding: 0.625rem 2.5rem 0.625rem 0.875rem;
+}
+
+.cn-toast {
+    box-shadow: 0 18px 48px rgba(2, 8, 23, 0.42);
 }
 
 *::-webkit-scrollbar {
@@ -208,27 +292,25 @@ input[type="number"] {
 }
 
 *::-webkit-scrollbar-thumb {
-    background: rgba(51, 65, 85, 0.9);
+    background: rgba(71, 85, 105, 0.9);
     border: 2px solid transparent;
     border-radius: 9999px;
     background-clip: padding-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 229, 255, 0.45);
+    background: rgba(37, 99, 235, 0.48);
     border: 2px solid transparent;
     background-clip: padding-box;
 }
 
 ::selection {
-    background-color: var(--color-primary);
-    color: #03111d;
+    background-color: rgba(37, 99, 235, 0.4);
+    color: var(--color-text-main);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html,
-    body,
-    #root {
+    html {
         scroll-behavior: auto;
     }
 

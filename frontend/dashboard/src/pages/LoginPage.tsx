@@ -1,30 +1,63 @@
-import { startTransition, type SubmitEventHandler, useState } from "react";
-import { motion } from "motion/react";
+import { startTransition, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { EyeIcon, EyeOffIcon, Loader2Icon, LockKeyholeIcon, MailIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import AppToasts from "@/components/AppToasts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
 import { useAuthStore } from "@/store/auth-store";
+
+const loginSchema = z.object({
+    email: z.string().email("Enter a valid email address."),
+    password: z.string().min(1, "Password is required."),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
     const status = useAuthStore((state) => state.status);
-
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
-        event.preventDefault();
-        setErrorMessage(null);
+    const form = useForm<LoginFormValues>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+    });
 
+    const emailField = form.register("email", {
+        onChange: () => form.clearErrors("root"),
+    });
+    const passwordField = form.register("password", {
+        onChange: () => form.clearErrors("root"),
+    });
+
+    const handleSubmit = form.handleSubmit(async (values) => {
         try {
             await login({
-                email: email.trim(),
-                password,
+                email: values.email.trim(),
+                password: values.password,
             });
 
             const nextState = location.state as { from?: string } | null;
@@ -34,148 +67,201 @@ const LoginPage = () => {
                 navigate(nextPath, { replace: true });
             });
         } catch (error) {
-            const nextMessage =
+            const message =
                 error instanceof Error ? error.message : "Unable to sign in. Please try again.";
 
-            setErrorMessage(nextMessage);
+            form.setError("root", { message });
+            toast.error(message);
         }
-    };
+    });
 
-    const isSubmitting = status === "authenticating";
+    const isSubmitting = form.formState.isSubmitting || status === "authenticating";
 
     return (
-        <div className="relative flex min-h-screen flex-col items-center justify-center bg-background-dark p-4 text-slate-100">
-            <AppToasts
-                items={
-                    errorMessage
-                        ? [
-                              {
-                                  id: "login-error",
-                                  message: errorMessage,
-                                  onDismiss: () => setErrorMessage(null),
-                                  tone: "error" as const,
-                              },
-                          ]
-                        : []
-                }
-            />
-
+        <div className="relative flex min-h-screen overflow-hidden">
             <div
-                className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+                className="pointer-events-none absolute inset-0"
                 aria-hidden="true"
             >
-                <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px]" />
-                <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-primary/10 blur-[120px]" />
+                <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.28),transparent_58%)]" />
+                <div className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+                <div className="absolute -right-16 bottom-12 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
             </div>
 
-            <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="flex w-full max-w-120 flex-col items-center"
-            >
-                <div className="mb-8 flex flex-col items-center">
-                    <div className="mb-6 flex items-center gap-3">
-                        <img src="/static/logo.webp" alt="OgCloud" className="h-10 w-auto" />
-                        <h2 className="text-2xl font-bold tracking-tight text-white">OgCloud</h2>
-                    </div>
-                    <h1 className="mb-2 text-center text-3xl font-bold leading-tight text-white">
-                        Welcome Back
-                    </h1>
-                    <p className="text-center text-sm font-normal text-slate-400">
-                        Enter your credentials to access the dashboard
-                    </p>
-                </div>
-
-                <div className="w-full rounded-xl border border-slate-800 bg-slate-900/50 p-8 shadow-xl backdrop-blur-sm">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="app-field-stack">
-                            <label className="app-field-label">Email Address</label>
-                            <div className="group relative">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
-                                    <FiMail className="h-5 w-5" />
-                                </div>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(event) => {
-                                        setEmail(event.target.value);
-                                        if (errorMessage) {
-                                            setErrorMessage(null);
-                                        }
-                                    }}
-                                    placeholder="name@company.com"
-                                    autoComplete="email"
-                                    required
-                                    className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-800 py-3 pl-10 pr-4 text-slate-100 transition-all placeholder:text-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                                />
+            <div className="relative grid w-full gap-6 px-4 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10 lg:py-10">
+                <section className="hidden rounded-[2rem] border border-border/70 bg-card/55 p-8 shadow-2xl shadow-black/10 backdrop-blur lg:flex lg:flex-col lg:justify-between">
+                    <div>
+                        <div className="flex items-center gap-4">
+                            <img src="/static/logo.webp" alt="OgCloud" className="h-12 w-12 rounded-2xl" />
+                            <div>
+                                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
+                                    OgCloud
+                                </p>
+                                <h1 className="mt-2 max-w-lg text-4xl leading-tight font-semibold text-foreground">
+                                    Operate servers, groups, players, and network policy from one shell.
+                                </h1>
                             </div>
                         </div>
-
-                        <div className="app-field-stack">
-                            <div className="flex items-center justify-between">
-                                <label className="app-field-label">Password</label>
-                            </div>
-                            <div className="group relative">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 transition-colors group-focus-within:text-primary">
-                                    <FiLock className="h-5 w-5" />
-                                </div>
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(event) => {
-                                        setPassword(event.target.value);
-                                        if (errorMessage) {
-                                            setErrorMessage(null);
-                                        }
-                                    }}
-                                    placeholder="Password"
-                                    autoComplete="current-password"
-                                    required
-                                    className="app-input-field block w-full rounded-lg border border-slate-700 bg-slate-800 py-3 pl-10 pr-12 text-slate-100 transition-all placeholder:text-slate-500 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword((currentValue) => !currentValue)}
-                                    className="button-hover-lift absolute inset-y-0 right-0 flex items-center rounded-r-lg pr-3 text-slate-400 transition-colors hover:text-slate-200"
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
-                                >
-                                    {showPassword ? (
-                                        <FiEyeOff className="h-5 w-5" />
-                                    ) : (
-                                        <FiEye className="h-5 w-5" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="app-button-field button-hover-lift button-shadow-primary flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-bold text-slate-950 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                            <span>{isSubmitting ? "Signing In" : "Sign In"}</span>
-                            <FiArrowRight className="h-4 w-4" />
-                        </button>
-                    </form>
-
-                    <div className="mt-8 border-t border-slate-800 pt-6">
-                        <p className="text-center text-xs uppercase tracking-widest text-slate-500">
-                            OAuth Providers coming soon!
+                        <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground">
+                            The dashboard is optimized for dense, operational workflows: runtime state,
+                            scaling controls, permission management, and network-wide actions stay one
+                            click away.
                         </p>
                     </div>
-                </div>
 
-                <div className="mt-10 text-center">
-                    <div className="mt-8 flex items-center justify-center gap-6 text-xs font-semibold uppercase tracking-widest text-slate-500">
-                        <span className="transition-colors hover:text-primary">Website</span>
-                        <span className="size-1 rounded-full bg-slate-700" />
-                        <span className="transition-colors hover:text-primary">Discord</span>
-                        <span className="size-1 rounded-full bg-slate-700" />
-                        <span className="transition-colors hover:text-primary">Support</span>
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        <div className="rounded-3xl border border-border/70 bg-background/60 p-5">
+                            <Badge variant="outline" className="border-primary/30 text-primary">
+                                Shell
+                            </Badge>
+                            <p className="mt-3 text-lg font-semibold text-foreground">
+                                Collapsible sidebar with route-aware breadcrumbs and health context.
+                            </p>
+                        </div>
+                        <div className="rounded-3xl border border-border/70 bg-background/60 p-5">
+                            <Badge variant="outline" className="border-primary/30 text-primary">
+                                Control
+                            </Badge>
+                            <p className="mt-3 text-lg font-semibold text-foreground">
+                                Dense cards and status surfaces tuned for live network operations.
+                            </p>
+                        </div>
+                        <div className="rounded-3xl border border-border/70 bg-background/60 p-5">
+                            <Badge variant="outline" className="border-primary/30 text-primary">
+                                Validation
+                            </Badge>
+                            <p className="mt-3 text-lg font-semibold text-foreground">
+                                API responses and rewritten forms are now landing on typed, validated paths.
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </motion.div>
+                </section>
+
+                <section className="relative flex items-center justify-center">
+                    <div className="w-full max-w-md">
+                        <div className="mb-6 flex items-center gap-3 lg:hidden">
+                            <img src="/static/logo.webp" alt="OgCloud" className="h-11 w-11 rounded-2xl" />
+                            <div>
+                                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
+                                    OgCloud
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Kubernetes-native dashboard
+                                </p>
+                            </div>
+                        </div>
+
+                        <Card className="border-border/70 bg-card/82 shadow-2xl shadow-black/15 backdrop-blur">
+                            <CardHeader className="space-y-3">
+                                <Badge variant="outline" className="w-fit border-primary/30 text-primary">
+                                    Admin Access
+                                </Badge>
+                                <CardTitle className="text-3xl tracking-tight text-foreground">
+                                    Sign in to the dashboard
+                                </CardTitle>
+                                <CardDescription className="text-sm leading-6">
+                                    Use your OgCloud account to access server operations, network
+                                    controls, and player management.
+                                </CardDescription>
+                            </CardHeader>
+
+                            <CardContent>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <FieldGroup>
+                                        <Field>
+                                            <FieldLabel htmlFor="email">Email address</FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupAddon>
+                                                    <MailIcon className="size-4" />
+                                                </InputGroupAddon>
+                                                <InputGroupInput
+                                                    id="email"
+                                                    type="email"
+                                                    autoComplete="email"
+                                                    placeholder="name@company.com"
+                                                    aria-invalid={
+                                                        form.formState.errors.email ? "true" : "false"
+                                                    }
+                                                    {...emailField}
+                                                />
+                                            </InputGroup>
+                                            <FieldError errors={[form.formState.errors.email]} />
+                                        </Field>
+
+                                        <Field>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <FieldLabel htmlFor="password">Password</FieldLabel>
+                                                <FieldDescription className="text-xs">
+                                                    Case-sensitive
+                                                </FieldDescription>
+                                            </div>
+                                            <InputGroup>
+                                                <InputGroupAddon>
+                                                    <LockKeyholeIcon className="size-4" />
+                                                </InputGroupAddon>
+                                                <InputGroupInput
+                                                    id="password"
+                                                    type={showPassword ? "text" : "password"}
+                                                    autoComplete="current-password"
+                                                    placeholder="Enter your password"
+                                                    aria-invalid={
+                                                        form.formState.errors.password ? "true" : "false"
+                                                    }
+                                                    {...passwordField}
+                                                />
+                                                <InputGroupAddon align="inline-end">
+                                                    <InputGroupButton
+                                                        type="button"
+                                                        size="icon-xs"
+                                                        onClick={() =>
+                                                            setShowPassword((currentValue) => !currentValue)
+                                                        }
+                                                        aria-label={
+                                                            showPassword
+                                                                ? "Hide password"
+                                                                : "Show password"
+                                                        }
+                                                    >
+                                                        {showPassword ? (
+                                                            <EyeOffIcon className="size-4" />
+                                                        ) : (
+                                                            <EyeIcon className="size-4" />
+                                                        )}
+                                                    </InputGroupButton>
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            <FieldError errors={[form.formState.errors.password]} />
+                                        </Field>
+                                    </FieldGroup>
+
+                                    <FieldError>{form.formState.errors.root?.message}</FieldError>
+
+                                    <Button
+                                        type="submit"
+                                        size="lg"
+                                        className="w-full"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2Icon className="size-4 animate-spin" />
+                                                Signing in
+                                            </>
+                                        ) : (
+                                            "Sign in"
+                                        )}
+                                    </Button>
+                                </form>
+
+                                <div className="mt-6 rounded-2xl border border-border/70 bg-background/55 px-4 py-3 text-sm text-muted-foreground">
+                                    OAuth providers are not wired into this dashboard yet. Use your
+                                    email/password credentials for now.
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 };

@@ -1,9 +1,16 @@
+import {
+    serverRecordSchema,
+    serverRequestResponseSchema,
+    serversPageSchema,
+    type ServerRequestResponseSchema,
+} from "@/features/servers/schemas";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { ServerRecord } from "@/types/server";
 
 import {
     apiClient,
     fetchAllPagedItems,
+    parseWithSchema,
     getAuthHeaders,
     SESSION_EXPIRED_MESSAGE,
     toApiError,
@@ -24,7 +31,11 @@ export const listServers = async (
             params,
         });
 
-        return response.data;
+        return parseWithSchema(
+            serversPageSchema,
+            response.data,
+            "Received an invalid server list response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -38,7 +49,13 @@ export const listAllServers = async (
     },
 ) => {
     try {
-        return await fetchAllPagedItems<ServerRecord>("/api/v1/servers", accessToken, params);
+        return await fetchAllPagedItems<ServerRecord>(
+            "/api/v1/servers",
+            accessToken,
+            params,
+            serverRecordSchema,
+            "Received an invalid server response while loading all servers.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -53,7 +70,11 @@ export const getServerById = async (accessToken: string, serverId: string) => {
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            serverRecordSchema,
+            response.data,
+            "Received an invalid server details response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -61,15 +82,26 @@ export const getServerById = async (accessToken: string, serverId: string) => {
 
 export const requestServerForGroup = async (accessToken: string, group: string, count = 1) => {
     const normalizedCount = Math.max(1, Math.trunc(count));
+    const responses: ServerRequestResponseSchema[] = [];
 
     try {
         for (let index = 0; index < normalizedCount; index += 1) {
-            await apiClient.post(
+            const response = await apiClient.post(
                 "/api/v1/servers/request",
                 { group },
                 { headers: getAuthHeaders(accessToken) },
             );
+
+            responses.push(
+                parseWithSchema(
+                    serverRequestResponseSchema,
+                    response.data,
+                    "Received an invalid server request response.",
+                ),
+            );
         }
+
+        return responses;
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

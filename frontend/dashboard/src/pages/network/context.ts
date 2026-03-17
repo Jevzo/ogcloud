@@ -15,11 +15,12 @@ export interface NetworkPageContextValue {
     groups: GroupListItem[];
     locks: NetworkLockRecord[];
     isLoading: boolean;
+    isRefreshing: boolean;
     isAdmin: boolean;
     isRestartingNetwork: boolean;
     isTogglingMaintenance: boolean;
     refreshingScope: RuntimeBundleScope | null;
-    showErrorMessage: (message: string) => void;
+    reloadData: () => Promise<void>;
     saveSettings: (
         payload: UpdateNetworkPayload,
         successMessage: string,

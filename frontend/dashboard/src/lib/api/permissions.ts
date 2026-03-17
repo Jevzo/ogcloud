@@ -1,3 +1,4 @@
+import { permissionGroupRecordSchema } from "@/features/permissions/schemas";
 import type {
     CreatePermissionGroupPayload,
     PermissionGroupRecord,
@@ -8,6 +9,7 @@ import {
     apiClient,
     fetchAllPagedItems,
     getAuthHeaders,
+    parseWithSchema,
     SESSION_EXPIRED_MESSAGE,
     toApiError,
 } from "./shared";
@@ -18,6 +20,8 @@ export const listAllPermissionGroups = async (accessToken: string, query?: strin
             "/api/v1/permissions/groups",
             accessToken,
             { query },
+            permissionGroupRecordSchema,
+            "Received an invalid permission group list response.",
         );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
@@ -33,7 +37,11 @@ export const getPermissionGroupByName = async (accessToken: string, groupName: s
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            permissionGroupRecordSchema,
+            response.data,
+            "Received an invalid permission group details response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -52,7 +60,11 @@ export const createPermissionGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            permissionGroupRecordSchema,
+            response.data,
+            "Received an invalid permission group response after creation.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -72,7 +84,11 @@ export const updatePermissionGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            permissionGroupRecordSchema,
+            response.data,
+            "Received an invalid permission group response after update.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -102,7 +118,11 @@ export const addPermissionToGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            permissionGroupRecordSchema,
+            response.data,
+            "Received an invalid permission group response after adding a permission.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -121,7 +141,11 @@ export const removePermissionFromGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            permissionGroupRecordSchema,
+            response.data,
+            "Received an invalid permission group response after removing a permission.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

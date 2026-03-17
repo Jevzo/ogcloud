@@ -1,10 +1,13 @@
+import { templateRecordSchema } from "@/features/templates/schemas";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { TemplateRecord } from "@/types/template";
 
 import {
     apiClient,
+    createPaginatedResponseSchema,
     fetchAllPagedItems,
     getAuthHeaders,
+    parseWithSchema,
     SESSION_EXPIRED_MESSAGE,
     toApiError,
 } from "./shared";
@@ -17,7 +20,13 @@ export const listAllTemplates = async (
     },
 ) => {
     try {
-        return await fetchAllPagedItems<TemplateRecord>("/api/v1/templates", accessToken, params);
+        return await fetchAllPagedItems<TemplateRecord>(
+            "/api/v1/templates",
+            accessToken,
+            params,
+            templateRecordSchema,
+            "Received an invalid template list response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -41,7 +50,11 @@ export const listTemplates = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            createPaginatedResponseSchema(templateRecordSchema),
+            response.data,
+            "Received an invalid paginated template response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

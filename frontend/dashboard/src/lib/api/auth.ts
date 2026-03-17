@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser, LoginCredentials } from "@/types/auth";
+import { authSessionSchema, authUserSchema } from "@/features/auth/schemas";
 
 import {
     apiClient,
@@ -11,7 +12,7 @@ import {
 export const loginWithEmailPassword = async (credentials: LoginCredentials) => {
     try {
         const response = await apiClient.post<AuthSession>("/api/v1/auth/login", credentials);
-        return response.data;
+        return authSessionSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, DEFAULT_LOGIN_UNAUTHORIZED_MESSAGE);
     }
@@ -22,7 +23,7 @@ export const refreshSessionToken = async (refreshToken: string) => {
         const response = await apiClient.post<AuthSession>("/api/v1/auth/refresh", {
             refreshToken,
         });
-        return response.data;
+        return authSessionSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -36,7 +37,7 @@ export const updateOwnProfile = async (
         const response = await apiClient.put<AuthUser>("/api/v1/auth/me", updates, {
             headers: getAuthHeaders(accessToken),
         });
-        return response.data;
+        return authUserSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -61,7 +62,7 @@ export const confirmMinecraftLinkOtp = async (accessToken: string, otp: string) 
             { otp },
             { headers: getAuthHeaders(accessToken) },
         );
-        return response.data;
+        return authUserSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

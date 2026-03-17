@@ -1,8 +1,17 @@
+import { onlinePlayersPageSchema } from "@/features/servers/schemas";
+import { persistedPlayerRecordSchema, playerRecordSchema } from "@/features/players/schemas";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { PersistedPlayerRecord, PlayerRecord } from "@/types/player";
 import type { OnlinePlayerRecord } from "@/types/server";
 
-import { apiClient, getAuthHeaders, SESSION_EXPIRED_MESSAGE, toApiError } from "./shared";
+import {
+    apiClient,
+    createPaginatedResponseSchema,
+    parseWithSchema,
+    getAuthHeaders,
+    SESSION_EXPIRED_MESSAGE,
+    toApiError,
+} from "./shared";
 
 export const listPersistedPlayers = async (
     accessToken: string,
@@ -21,7 +30,11 @@ export const listPersistedPlayers = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            createPaginatedResponseSchema(persistedPlayerRecordSchema),
+            response.data,
+            "Received an invalid persisted players response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -36,7 +49,11 @@ export const getPlayerByUuid = async (accessToken: string, playerUuid: string) =
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            playerRecordSchema,
+            response.data,
+            "Received an invalid player response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -62,7 +79,11 @@ export const listOnlinePlayers = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            onlinePlayersPageSchema,
+            response.data,
+            "Received an invalid online players response.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }
@@ -83,7 +104,11 @@ export const updatePlayerPermissionGroup = async (
             },
         );
 
-        return response.data;
+        return parseWithSchema(
+            playerRecordSchema,
+            response.data,
+            "Received an invalid player response after updating the permission group.",
+        );
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

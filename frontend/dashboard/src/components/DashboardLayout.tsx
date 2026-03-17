@@ -1,58 +1,161 @@
-import { startTransition, useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router";
-import { motion } from "motion/react";
+import { Fragment, startTransition, useEffect, useMemo, useState } from "react";
 import {
-    FiActivity,
-    FiBell,
-    FiFileText,
-    FiGrid,
-    FiLayers,
-    FiLogOut,
-    FiSettings,
-    FiShield,
-    FiUserPlus,
-    FiUsers,
-} from "react-icons/fi";
+    Link,
+    NavLink,
+    Outlet,
+    matchPath,
+    useLocation,
+    useNavigate,
+} from "react-router";
+import {
+    BellIcon,
+    ChevronRightIcon,
+    LogOutIcon,
+    Settings2Icon,
+    ShieldAlertIcon,
+} from "lucide-react";
 
 import HeaderSearch from "@/components/HeaderSearch";
 import RequireMinecraftLinkModal from "@/components/RequireMinecraftLinkModal";
+import {
+    dashboardNavSections,
+    dashboardRouteDefinitions,
+    type DashboardNavItem,
+} from "@/components/dashboard-nav";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarInset,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarProvider,
+    SidebarRail,
+    SidebarSeparator,
+    SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { getNetworkSettings, getNetworkStatus } from "@/lib/api";
-import { hasAdminAccess, normalizeRole } from "@/lib/roles";
+import { hasAdminAccess } from "@/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
+import type { NetworkStatusRecord } from "@/types/network";
 import buildVersionRaw from "../../VERSION?raw";
 
-interface NavItem {
-    label: string;
-    to: string;
-    icon: typeof FiGrid;
-    requiredRole?: string;
+interface BreadcrumbEntry {
+    href: string;
+    title: string;
 }
 
-const NAV_ITEMS = [
-    { label: "Dashboard", to: "/", icon: FiGrid },
-    { label: "Servers", to: "/servers", icon: FiActivity },
-    { label: "Groups", to: "/groups", icon: FiLayers },
-    { label: "Players", to: "/players", icon: FiUsers },
-    { label: "Network", to: "/network", icon: FiActivity },
-    {
-        label: "Permissions",
-        to: "/permissions",
-        icon: FiShield,
-        requiredRole: "ADMIN",
-    },
-    { label: "Templates", to: "/templates", icon: FiFileText },
-    {
-        label: "Web Users",
-        to: "/web-users",
-        icon: FiUserPlus,
-        requiredRole: "ADMIN",
-    },
-] satisfies readonly NavItem[];
+type ClusterHealthState = "checking" | "healthy" | "warning" | "critical";
 
 const BUILD_VERSION = buildVersionRaw.trim() || "0.0.0";
 
+const findRouteTitle = (pathname: string) =>
+    dashboardRouteDefinitions.find((route) =>
+        Boolean(matchPath({ path: route.pattern, end: true }, pathname)),
+    )?.title;
+
+const resolveBreadcrumbs = (pathname: string): BreadcrumbEntry[] => {
+    if (pathname === "/") {
+        return [{ href: "/", title: "Dashboard" }];
+    }
+
+    const segments = pathname.split("/").filter(Boolean);
+    const breadcrumbs: BreadcrumbEntry[] = [];
+
+    for (let index = 0; index < segments.length; index += 1) {
+        const href = `/${segments.slice(0, index + 1).join("/")}`;
+        const title = findRouteTitle(href);
+
+        if (title) {
+            breadcrumbs.push({ href, title });
+        }
+    }
+
+    return breadcrumbs.length > 0 ? breadcrumbs : [{ href: pathname, title: "Dashboard" }];
+};
+
+const isNavItemActive = (item: DashboardNavItem, pathname: string) =>
+    item.matchPatterns.some((pattern) =>
+        Boolean(matchPath({ path: pattern, end: pattern === item.href }, pathname)),
+    );
+
+const getClusterHealthPresentation = (
+    healthState: ClusterHealthState,
+    status: NetworkStatusRecord | null,
+    message: string,
+) => {
+    if (healthState === "healthy") {
+        return {
+            badgeClassName:
+                "border-emerald-500/30 bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/12",
+            dotClassName: "bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]",
+            label: "Healthy",
+            message,
+            metrics: status,
+        };
+    }
+
+    if (healthState === "warning") {
+        return {
+            badgeClassName:
+                "border-amber-500/30 bg-amber-500/12 text-amber-300 hover:bg-amber-500/12",
+            dotClassName: "bg-amber-400 shadow-[0_0_0_4px_rgba(245,158,11,0.14)]",
+            label: "Warning",
+            message,
+            metrics: status,
+        };
+    }
+
+    if (healthState === "critical") {
+        return {
+            badgeClassName:
+                "border-red-500/30 bg-red-500/12 text-red-300 hover:bg-red-500/12",
+            dotClassName: "bg-red-400 shadow-[0_0_0_4px_rgba(239,68,68,0.14)]",
+            label: "Critical",
+            message,
+            metrics: status,
+        };
+    }
+
+    return {
+        badgeClassName:
+            "border-border bg-muted/60 text-muted-foreground hover:bg-muted/60",
+        dotClassName: "bg-slate-400 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]",
+        label: "Checking",
+        message,
+        metrics: status,
+    };
+};
+
 const DashboardLayout = () => {
+    const location = useLocation();
     const navigate = useNavigate();
     const logout = useAuthStore((state) => state.logout);
     const refreshIfNeeded = useAuthStore((state) => state.refreshIfNeeded);
@@ -61,33 +164,54 @@ const DashboardLayout = () => {
         (state) => state.general.permissionSystemEnabled,
     );
     const setGeneralSettings = useNetworkSettingsStore((state) => state.setGeneral);
+
+    const [clusterHealthState, setClusterHealthState] = useState<ClusterHealthState>("checking");
+    const [clusterHealthMessage, setClusterHealthMessage] = useState(
+        "Polling network health and shell context.",
+    );
+    const [clusterStatus, setClusterStatus] = useState<NetworkStatusRecord | null>(null);
+
+    const breadcrumbs = useMemo(
+        () => resolveBreadcrumbs(location.pathname),
+        [location.pathname],
+    );
+    const currentPageTitle = breadcrumbs[breadcrumbs.length - 1]?.title ?? "Dashboard";
     const userInitial = user?.username?.charAt(0).toUpperCase() ?? "U";
     const linkedPlayerHeadUrl = user?.linkedPlayerUuid
         ? `https://mc-heads.net/avatar/${user.linkedPlayerUuid}`
         : null;
-    const normalizedUserRole = normalizeRole(user?.role);
-    const [clusterHealthState, setClusterHealthState] = useState<
-        "loading" | "healthy" | "warning" | "error"
-    >("loading");
-    const [clusterHealthMessage, setClusterHealthMessage] = useState("Checking cluster status...");
-    const visibleNavItems = NAV_ITEMS.filter((item) => {
-        if (!item.requiredRole) {
-            return true;
-        }
 
-        const normalizedRequiredRole = item.requiredRole.trim().toLowerCase();
+    const visibleNavSections = useMemo(
+        () =>
+            dashboardNavSections
+                .map((section) => ({
+                    ...section,
+                    items: section.items.filter((item) => {
+                        if (item.requiredRole === "admin") {
+                            return hasAdminAccess(user?.role);
+                        }
 
-        if (normalizedRequiredRole === "admin") {
-            return hasAdminAccess(user?.role);
-        }
+                        return true;
+                    }),
+                }))
+                .filter((section) => section.items.length > 0),
+        [user?.role],
+    );
 
-        return normalizedUserRole === normalizedRequiredRole;
-    });
+    const clusterPresentation = useMemo(
+        () =>
+            getClusterHealthPresentation(
+                clusterHealthState,
+                clusterStatus,
+                clusterHealthMessage,
+            ),
+        [clusterHealthMessage, clusterHealthState, clusterStatus],
+    );
 
     useEffect(() => {
         let cancelled = false;
 
-        const loadClusterHealth = async () => {
+        const loadShellContext = async () => {
             try {
                 const nextSession = await refreshIfNeeded();
 
@@ -104,12 +228,13 @@ const DashboardLayout = () => {
                     return;
                 }
 
+                setClusterStatus(status);
                 setGeneralSettings(networkSettings.general);
 
-                if (status.serverCount === 0 && status.proxyCount === 0) {
-                    setClusterHealthState("error");
+                if (status.proxyCount === 0) {
+                    setClusterHealthState("critical");
                     setClusterHealthMessage(
-                        "The cloud has not registered any running servers or proxies. Players cannot join the network!",
+                        "No running proxies are registered. Players cannot reach the network.",
                     );
                     return;
                 }
@@ -117,40 +242,32 @@ const DashboardLayout = () => {
                 if (status.serverCount === 0) {
                     setClusterHealthState("warning");
                     setClusterHealthMessage(
-                        "The cloud has not registered any running servers. Players can join, but no game sessions can be created.",
-                    );
-                    return;
-                }
-
-                if (status.proxyCount === 0) {
-                    setClusterHealthState("error");
-                    setClusterHealthMessage(
-                        "The cloud has not registered any running proxies. Players cannot join the network!",
+                        "No game servers are currently registered. Players can connect but no sessions can start.",
                     );
                     return;
                 }
 
                 setClusterHealthState("healthy");
                 setClusterHealthMessage(
-                    "All green. Automated systems found no issues with the cloud. Happy gaming!",
+                    "Proxy, server, and player telemetry look healthy from the dashboard edge.",
                 );
             } catch {
                 if (cancelled) {
                     return;
                 }
 
-                setClusterHealthState("error");
+                setClusterHealthState("critical");
                 setClusterHealthMessage(
-                    "API is not reachable, contact the network administrator. This is a severe issue in a underlying system.",
+                    "The dashboard could not reach the API for shell health checks.",
                 );
             }
         };
 
-        void loadClusterHealth();
+        void loadShellContext();
 
         const intervalId = window.setInterval(() => {
-            void loadClusterHealth();
-        }, 10000);
+            void loadShellContext();
+        }, 10_000);
 
         return () => {
             cancelled = true;
@@ -158,40 +275,9 @@ const DashboardLayout = () => {
         };
     }, [refreshIfNeeded, setGeneralSettings]);
 
-    const clusterHealthAccentClass =
-        clusterHealthState === "healthy"
-            ? "border-primary/10 bg-primary/5"
-            : clusterHealthState === "warning"
-              ? "border-amber-500/20 bg-amber-500/5"
-              : clusterHealthState === "error"
-                ? "border-red-500/20 bg-red-500/5"
-                : "border-slate-700 bg-slate-800/40";
-    const clusterHealthTitleClass =
-        clusterHealthState === "healthy"
-            ? "text-primary"
-            : clusterHealthState === "warning"
-              ? "text-amber-300"
-              : clusterHealthState === "error"
-                ? "text-red-300"
-                : "text-slate-300";
-    const clusterHealthDotClass =
-        clusterHealthState === "healthy"
-            ? "animate-pulse bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-            : clusterHealthState === "warning"
-              ? "animate-pulse bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.75)]"
-              : clusterHealthState === "error"
-                ? "animate-pulse bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.75)]"
-                : "bg-slate-500 shadow-[0_0_10px_rgba(100,116,139,0.45)]";
-
-    const handleOpenSettings = () => {
+    const navigateTo = (href: string) => {
         startTransition(() => {
-            navigate("/settings");
-        });
-    };
-
-    const handleOpenInbox = () => {
-        startTransition(() => {
-            navigate("/inbox");
+            navigate(href);
         });
     };
 
@@ -203,159 +289,342 @@ const DashboardLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-background-dark text-slate-100 lg:h-screen">
-            <div className="flex min-h-screen flex-col overflow-hidden lg:h-screen lg:flex-row">
-                <motion.aside
-                    initial={{ x: -24, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.45, ease: "easeOut" }}
-                    className="flex w-full shrink-0 flex-col border-b border-slate-800 bg-slate-900/50 lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r"
-                >
-                    <div className="flex h-full flex-col">
-                        <div className="flex items-center gap-3 p-6">
-                            <img src="/static/logo.webp" alt="OgCloud" className="h-10 w-auto" />
-                            <div>
-                                <h1 className="text-lg leading-none font-bold text-white">
+        <SidebarProvider
+            defaultOpen
+            className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.12),transparent_24%),linear-gradient(180deg,rgba(4,9,19,0.96),rgba(7,13,24,1))]"
+        >
+            <Sidebar
+                collapsible="icon"
+                variant="inset"
+                className="border-sidebar-border/80 bg-transparent"
+            >
+                <SidebarHeader className="gap-3 p-3">
+                    <div className="flex items-center gap-3 rounded-2xl border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-3">
+                        <img
+                            src="/static/logo.webp"
+                            alt="OgCloud"
+                            className="h-10 w-10 rounded-xl object-cover shadow-sm"
+                        />
+                        <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+                            <div className="flex items-center gap-2">
+                                <h1 className="truncate text-sm font-semibold text-sidebar-foreground">
                                     OgCloud
                                 </h1>
-                                <p className="mt-1 text-xs text-slate-400">no hustle, no stress</p>
+                                <Badge variant="outline" className="border-primary/30 text-primary">
+                                    Build {BUILD_VERSION}
+                                </Badge>
+                            </div>
+                            <p className="mt-1 text-xs text-sidebar-foreground/70">
+                                Kubernetes-native network operations for Minecraft infrastructure.
+                            </p>
+                        </div>
+                    </div>
+                </SidebarHeader>
+
+                <SidebarSeparator />
+
+                <SidebarContent className="gap-2 px-2 pb-2">
+                    {visibleNavSections.map((section) => (
+                        <SidebarGroup key={section.title}>
+                            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+                            <SidebarGroupContent>
+                                <SidebarMenu>
+                                    {section.items.map((item) => {
+                                        const Icon = item.icon;
+                                        const isActive = isNavItemActive(item, location.pathname);
+                                        const isDisabled =
+                                            item.disabledWhenPermissionSystemDisabled &&
+                                            !permissionSystemEnabled;
+
+                                        return (
+                                            <SidebarMenuItem key={item.href}>
+                                                {isDisabled ? (
+                                                    <SidebarMenuButton
+                                                        disabled
+                                                        tooltip={`${item.title} is unavailable while the permission system is disabled.`}
+                                                        className="cursor-not-allowed opacity-45"
+                                                    >
+                                                        <Icon />
+                                                        <span>{item.title}</span>
+                                                    </SidebarMenuButton>
+                                                ) : (
+                                                    <SidebarMenuButton
+                                                        asChild
+                                                        isActive={isActive}
+                                                        tooltip={item.title}
+                                                    >
+                                                        <NavLink
+                                                            to={item.href}
+                                                            end={item.href === "/"}
+                                                        >
+                                                            <Icon />
+                                                            <span>{item.title}</span>
+                                                        </NavLink>
+                                                    </SidebarMenuButton>
+                                                )}
+                                            </SidebarMenuItem>
+                                        );
+                                    })}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    ))}
+                </SidebarContent>
+
+                <SidebarFooter className="gap-3 p-3">
+                    <Card className="border-sidebar-border/80 bg-sidebar-accent/40 shadow-none">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className={`size-2.5 rounded-full ${clusterPresentation.dotClassName}`}
+                                        aria-hidden="true"
+                                    />
+                                    <CardTitle className="text-sm text-sidebar-foreground">
+                                        Cluster Health
+                                    </CardTitle>
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className={clusterPresentation.badgeClassName}
+                                >
+                                    {clusterPresentation.label}
+                                </Badge>
+                            </div>
+                            <CardDescription className="text-xs leading-relaxed text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+                                {clusterPresentation.message}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-3 gap-2 pt-0 group-data-[collapsible=icon]:hidden">
+                            <div className="rounded-xl border border-sidebar-border/70 bg-background/50 px-3 py-2">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
+                                    Servers
+                                </div>
+                                <div className="mt-1 text-sm font-semibold text-sidebar-foreground">
+                                    {clusterPresentation.metrics?.serverCount ?? "--"}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border border-sidebar-border/70 bg-background/50 px-3 py-2">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
+                                    Proxies
+                                </div>
+                                <div className="mt-1 text-sm font-semibold text-sidebar-foreground">
+                                    {clusterPresentation.metrics?.proxyCount ?? "--"}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border border-sidebar-border/70 bg-background/50 px-3 py-2">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/55">
+                                    Players
+                                </div>
+                                <div className="mt-1 text-sm font-semibold text-sidebar-foreground">
+                                    {clusterPresentation.metrics?.onlinePlayers ?? "--"}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </SidebarFooter>
+
+                <SidebarRail />
+            </Sidebar>
+
+            <SidebarInset className="min-h-screen border border-border/70 bg-background/92 shadow-2xl shadow-black/20 backdrop-blur">
+                <header className="sticky top-0 z-20 border-b border-border/70 bg-background/88 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-3">
+                                    <SidebarTrigger className="-ml-1" />
+                                    <Separator
+                                        orientation="vertical"
+                                        className="hidden h-5 sm:block"
+                                    />
+                                    <div className="min-w-0">
+                                        <Breadcrumb>
+                                            <BreadcrumbList>
+                                                {breadcrumbs.map((breadcrumb, index) => (
+                                                    <Fragment key={breadcrumb.href}>
+                                                        <BreadcrumbItem>
+                                                            {index === breadcrumbs.length - 1 ? (
+                                                                <BreadcrumbPage>
+                                                                    {breadcrumb.title}
+                                                                </BreadcrumbPage>
+                                                            ) : (
+                                                                <BreadcrumbLink asChild>
+                                                                    <Link to={breadcrumb.href}>
+                                                                        {breadcrumb.title}
+                                                                    </Link>
+                                                                </BreadcrumbLink>
+                                                            )}
+                                                        </BreadcrumbItem>
+                                                        {index < breadcrumbs.length - 1 ? (
+                                                            <BreadcrumbSeparator>
+                                                                <ChevronRightIcon />
+                                                            </BreadcrumbSeparator>
+                                                        ) : null}
+                                                    </Fragment>
+                                                ))}
+                                            </BreadcrumbList>
+                                        </Breadcrumb>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                                                {currentPageTitle}
+                                            </h2>
+                                            <Badge variant="outline" className="border-border/80">
+                                                v{BUILD_VERSION}
+                                            </Badge>
+                                            {!permissionSystemEnabled ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                                >
+                                                    Permission system disabled
+                                                </Badge>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="hidden items-center gap-2 lg:flex">
+                                {hasAdminAccess(user?.role) ? (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => navigateTo("/inbox")}
+                                        aria-label="Open inbox"
+                                    >
+                                        <BellIcon />
+                                    </Button>
+                                ) : null}
+
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => navigateTo("/settings")}
+                                    aria-label="Open settings"
+                                >
+                                    <Settings2Icon />
+                                </Button>
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="h-auto rounded-2xl px-2 py-1.5"
+                                        >
+                                            <Avatar size="lg">
+                                                {linkedPlayerHeadUrl ? (
+                                                    <AvatarImage
+                                                        src={linkedPlayerHeadUrl}
+                                                        alt={`${user?.username ?? "User"} Minecraft avatar`}
+                                                        referrerPolicy="no-referrer"
+                                                    />
+                                                ) : null}
+                                                <AvatarFallback>{userInitial}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0 text-left">
+                                                <div className="truncate text-sm font-medium text-foreground">
+                                                    {user?.username ?? "Unknown user"}
+                                                </div>
+                                                <div className="truncate text-xs text-muted-foreground">
+                                                    {user?.email ?? "No email"}
+                                                </div>
+                                            </div>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-64 min-w-64"
+                                        sideOffset={10}
+                                    >
+                                        <DropdownMenuLabel className="space-y-1">
+                                            <div className="font-medium text-foreground">
+                                                {user?.username ?? "Unknown user"}
+                                            </div>
+                                            <div className="truncate text-xs text-muted-foreground">
+                                                {user?.email ?? "No email"}
+                                            </div>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onSelect={() => navigateTo("/settings")}>
+                                            <Settings2Icon />
+                                            Settings
+                                        </DropdownMenuItem>
+                                        {hasAdminAccess(user?.role) ? (
+                                            <DropdownMenuItem onSelect={() => navigateTo("/inbox")}>
+                                                <BellIcon />
+                                                Inbox
+                                            </DropdownMenuItem>
+                                        ) : null}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onSelect={handleSignOut}>
+                                            <LogOutIcon />
+                                            Sign out
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
 
-                        <nav className="flex-1 space-y-1 overflow-y-auto px-4">
-                            {visibleNavItems.map(({ label, to, icon: Icon }) =>
-                                label === "Permissions" && !permissionSystemEnabled ? (
-                                    <div
-                                        key={label}
-                                        title="Disabled"
-                                        className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600"
-                                    >
-                                        <Icon className="h-5 w-5 shrink-0" />
-                                        <span className="leading-none">{label}</span>
-                                    </div>
-                                ) : (
-                                    <NavLink
-                                        key={label}
-                                        to={to}
-                                        end={to === "/"}
-                                        className={({ isActive }) =>
-                                            `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                                                isActive
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "text-slate-400 hover:bg-slate-800 hover:text-primary"
-                                            }`
-                                        }
-                                    >
-                                        <Icon className="h-5 w-5 shrink-0" />
-                                        <span className="leading-none">{label}</span>
-                                    </NavLink>
-                                ),
-                            )}
-                        </nav>
-
-                        <div className="mt-auto p-4">
-                            <div className={`rounded-xl border p-4 ${clusterHealthAccentClass}`}>
-                                <div className="mb-2 flex items-center justify-between">
-                                    <span
-                                        className={`text-xs font-semibold uppercase tracking-wider ${clusterHealthTitleClass}`}
-                                    >
-                                        Cluster Health
-                                    </span>
-                                    <span
-                                        className={`h-2 w-2 rounded-full ${clusterHealthDotClass}`}
-                                    />
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="w-full lg:max-w-xl">
+                                <HeaderSearch />
+                            </div>
+                            <div className="flex items-center justify-between gap-3 lg:hidden">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <ShieldAlertIcon className="size-4 text-primary" />
+                                    <span>{clusterPresentation.label}</span>
                                 </div>
-                                <p className="text-[10px] leading-relaxed text-slate-400">
-                                    {clusterHealthMessage}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    {hasAdminAccess(user?.role) ? (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            onClick={() => navigateTo("/inbox")}
+                                            aria-label="Open inbox"
+                                        >
+                                            <BellIcon />
+                                        </Button>
+                                    ) : null}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => navigateTo("/settings")}
+                                        aria-label="Open settings"
+                                    >
+                                        <Settings2Icon />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleSignOut}
+                                        className="rounded-xl"
+                                    >
+                                        <LogOutIcon />
+                                        Sign out
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </motion.aside>
+                </header>
 
-                <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-                    <motion.header
-                        initial={{ y: -20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.45, ease: "easeOut", delay: 0.08 }}
-                        className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-background-dark/80 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8"
-                    >
-                        <div className="flex flex-1 items-center gap-4">
-                            <HeaderSearch />
-                        </div>
+                <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                    <div className="mx-auto flex h-full w-full max-w-7xl flex-col">
+                        <Outlet />
+                    </div>
+                </main>
 
-                        <div className="flex items-center gap-4 sm:gap-6">
-                            {hasAdminAccess(user?.role) ? (
-                                <button
-                                    type="button"
-                                    onClick={handleOpenInbox}
-                                    className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
-                                    aria-label="Inbox"
-                                >
-                                    <FiBell className="h-5 w-5" />
-                                </button>
-                            ) : null}
-                            <button
-                                type="button"
-                                onClick={handleOpenSettings}
-                                className="rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-primary"
-                                aria-label="Settings"
-                            >
-                                <FiSettings className="h-5 w-5" />
-                            </button>
-                            <div className="flex items-center gap-3 border-l border-slate-800 pl-4 sm:pl-6">
-                                <div className="hidden text-right sm:block">
-                                    <p className="text-sm font-semibold text-white">
-                                        {user?.username ?? "none"}
-                                    </p>
-                                    <p className="flex items-center justify-end gap-1 text-xs text-emerald-500">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                        {user?.role ?? "none"}
-                                    </p>
-                                </div>
-                                {linkedPlayerHeadUrl ? (
-                                    <img
-                                        src={linkedPlayerHeadUrl}
-                                        alt={`${user?.username ?? "User"} Minecraft avatar`}
-                                        className="h-10 w-10 rounded-full bg-slate-700 object-cover"
-                                        referrerPolicy="no-referrer"
-                                    />
-                                ) : (
-                                    <div
-                                        className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-white"
-                                        aria-label="User avatar"
-                                    >
-                                        {userInitial}
-                                    </div>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={handleSignOut}
-                                    className="button-hover-lift rounded-lg bg-primary/10 p-2 text-primary transition-colors hover:bg-primary hover:text-slate-950"
-                                    aria-label="Sign out"
-                                >
-                                    <FiLogOut className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </motion.header>
+                <footer className="border-t border-border/70 px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span>Authenticated as {user?.email ?? "unknown user"}</span>
+                        <span>OgCloud dashboard build v{BUILD_VERSION}</span>
+                    </div>
+                </footer>
+            </SidebarInset>
 
-                    <main className="flex-1 bg-background-dark px-4 py-6 sm:px-6 lg:px-8">
-                        <div className="mx-auto flex h-full w-full max-w-7xl flex-col">
-                            <Outlet />
-                        </div>
-                    </main>
-
-                    <footer className="mt-auto flex flex-col gap-2 border-t border-slate-800 px-4 py-5 text-xs text-slate-500 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-                        <div className="flex flex-col gap-1 sm:flex-row sm:gap-4">
-                            <span>Authenticated as {user?.email ?? "unknown user"}</span>
-                        </div>
-                        <div>OgCloud Build v{BUILD_VERSION}</div>
-                    </footer>
-                </div>
-            </div>
             <RequireMinecraftLinkModal />
-        </div>
+        </SidebarProvider>
     );
 };
 

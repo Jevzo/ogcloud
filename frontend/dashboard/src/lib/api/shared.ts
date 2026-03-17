@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { z, type ZodType } from "zod";
 
 import { recordApiLatencySample } from "@/lib/api-latency";
 import type { ApiErrorResponse } from "@/types/auth";
@@ -122,10 +123,34 @@ export const getAuthHeaders = (accessToken: string) => ({
     Authorization: `Bearer ${accessToken}`,
 });
 
+export const parseWithSchema = <T>(
+    schema: ZodType<T>,
+    payload: unknown,
+    invalidMessage: string,
+) => {
+    const result = schema.safeParse(payload);
+
+    if (!result.success) {
+        throw new Error(invalidMessage);
+    }
+
+    return result.data;
+};
+
+export const createPaginatedResponseSchema = <T>(itemSchema: ZodType<T>) =>
+    z.object({
+        items: z.array(itemSchema),
+        page: z.number().int().nonnegative(),
+        size: z.number().int().positive(),
+        totalItems: z.number().int().nonnegative(),
+    });
+
 export const fetchAllPagedItems = async <T>(
     path: string,
     accessToken: string,
     params?: Record<string, number | string | undefined>,
+    itemSchema?: ZodType<T>,
+    invalidMessage?: string,
 ) => {
     const items: T[] = [];
     let page = 0;
@@ -140,9 +165,17 @@ export const fetchAllPagedItems = async <T>(
             },
         });
 
-        items.push(...response.data.items);
+        const paginatedResponse = itemSchema
+            ? parseWithSchema(
+                  createPaginatedResponseSchema(itemSchema),
+                  response.data,
+                  invalidMessage ?? `Received an invalid paginated response for ${path}.`,
+              )
+            : response.data;
 
-        if (!getPaginatedHasNext(response.data)) {
+        items.push(...paginatedResponse.items);
+
+        if (!getPaginatedHasNext(paginatedResponse)) {
             return items;
         }
 
