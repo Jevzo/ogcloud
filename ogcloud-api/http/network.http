@@ -97,3 +97,7 @@ Content-Type: application/json
 {
   "maintenance": false
 }
+
+### Restart the network (requires network maintenance to already be enabled)
+POST {{baseUrl}}/api/v1/network/restart
+Authorization: Bearer {{accessToken}}
