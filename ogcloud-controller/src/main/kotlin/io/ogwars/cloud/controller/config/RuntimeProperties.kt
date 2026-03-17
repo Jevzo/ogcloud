@@ -12,6 +12,7 @@ data class RuntimeProperties(
     val legacyPaperVersion: String = "1.8.8",
     val legacyPaperBuild: Int = 445,
     val velocityProject: String = "velocity",
+    val templateLoaderVersion: String = "latest",
     val modernPaperPluginUrl: String =
         "https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar",
     val legacyPaperPluginUrl: String =

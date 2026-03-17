@@ -71,6 +71,7 @@ controller:
     minioAccessKey: minioadmin
     minioSecretKey: minioadmin123
     podForwardingSecret: replace-with-a-long-random-forwarding-secret
+    templateLoaderVersion: latest
     podMinioEndpoint: minio.ogcloud.svc.cluster.local:9000
     podMinioAccessKey: minioadmin
     podMinioSecretKey: minioadmin123

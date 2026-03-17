@@ -65,6 +65,7 @@ ogcloud:
     legacy-paper-version: ${OGCLOUD_RUNTIME_LEGACY_PAPER_VERSION:1.8.8}
     legacy-paper-build: ${OGCLOUD_RUNTIME_LEGACY_PAPER_BUILD:445}
     velocity-project: ${OGCLOUD_RUNTIME_VELOCITY_PROJECT:velocity}
+    template-loader-version: ${OGCLOUD_RUNTIME_TEMPLATE_LOADER_VERSION:latest}
     modern-paper-plugin-url: ${OGCLOUD_RUNTIME_MODERN_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar}
     legacy-paper-plugin-url: ${OGCLOUD_RUNTIME_LEGACY_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar}
     velocity-plugin-url: ${OGCLOUD_RUNTIME_VELOCITY_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-velocity-plugin-1.2.3.jar}

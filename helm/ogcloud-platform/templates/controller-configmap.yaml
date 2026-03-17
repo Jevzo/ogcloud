@@ -15,6 +15,7 @@ data:
   MINIO_ENDPOINT: {{ .Values.connections.minioEndpoint | quote }}
   OGCLOUD_API_EMAIL: {{ .Values.controller.env.apiEmail | quote }}
   OGCLOUD_NAMESPACE: {{ include "ogcloud-platform.namespace" . | quote }}
+  OGCLOUD_RUNTIME_TEMPLATE_LOADER_VERSION: {{ .Values.controller.env.templateLoaderVersion | quote }}
   POD_MINIO_ENDPOINT: {{ .Values.controller.env.podMinioEndpoint | quote }}
   POD_KAFKA_BROKERS: {{ .Values.controller.env.podKafkaBrokers | quote }}
   POD_OGCLOUD_KAFKA_CONSUMER_RESTART_INITIAL_BACKOFF_MS: {{ .Values.controller.env.podKafkaConsumerRestartInitialBackoffMs | quote }}

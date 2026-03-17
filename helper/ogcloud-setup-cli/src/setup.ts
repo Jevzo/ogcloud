@@ -678,6 +678,17 @@ function setDeepValue(target: JsonMap, pathParts: string[], value: unknown): voi
     current[pathParts[pathParts.length - 1]] = value;
 }
 
+function getDeepValue(target: unknown, pathParts: string[]): unknown {
+    let current = target;
+    for (const key of pathParts) {
+        if (!isObject(current)) {
+            return undefined;
+        }
+        current = current[key];
+    }
+    return current;
+}
+
 function encodeRepoPath(repoPath: string): string {
     return repoPath
         .split("/")
@@ -931,6 +942,23 @@ function resolveStoredImageTag(existingTag: string | undefined): string {
     return normalizedTag || DEFAULT_IMAGE_VERSION;
 }
 
+function resolveStoredTemplateLoaderVersion(
+    existing: ExistingNetworkConfig | null,
+    fallbackVersion: string,
+): string {
+    const storedValue = getDeepValue(existing?.values?.platform, [
+        "controller",
+        "env",
+        "templateLoaderVersion",
+    ]);
+    if (typeof storedValue !== "string") {
+        return fallbackVersion;
+    }
+
+    const normalizedVersion = storedValue.trim();
+    return normalizedVersion || fallbackVersion;
+}
+
 function resolveDeployBackingServices(existing: ExistingNetworkConfig | null): boolean {
     if (typeof existing?.deployBackingServices === "boolean") {
         return existing.deployBackingServices;
@@ -1040,6 +1068,7 @@ async function generateConfig(
     const controllerImageTag = resolveStoredImageTag(existing?.imageTags?.controller);
     const loadbalancerImageTag = resolveStoredImageTag(existing?.imageTags?.loadbalancer);
     const dashboardImageTag = resolveStoredImageTag(existing?.imageTags?.dashboard);
+    const templateLoaderVersion = resolveStoredTemplateLoaderVersion(existing, controllerImageTag);
 
     const apiEmail = await askInput("Service API email", {
         defaultValue: existing?.apiEmail || "service@ogcloud.local",
@@ -1157,6 +1186,7 @@ async function generateConfig(
                 minioAccessKey,
                 minioSecretKey,
                 podForwardingSecret,
+                templateLoaderVersion,
                 podMinioEndpoint:
                     backingMode === "external"
                         ? resolvePodMinioEndpoint(connections.minioEndpoint)
@@ -1477,7 +1507,7 @@ async function update(
     const mapping = {
         dashboard: {
             valuesRoot: "dashboard",
-            tagPath: ["dashboard", "image", "tag"],
+            valuePaths: [["dashboard", "image", "tag"]],
             imageTagKey: "dashboard",
             chart: "ogcloud-dashboard",
             release: RELEASES.dashboard,
@@ -1485,7 +1515,7 @@ async function update(
         },
         api: {
             valuesRoot: "platform",
-            tagPath: ["api", "image", "tag"],
+            valuePaths: [["api", "image", "tag"]],
             imageTagKey: "api",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
@@ -1493,7 +1523,7 @@ async function update(
         },
         loadbalancer: {
             valuesRoot: "platform",
-            tagPath: ["loadbalancer", "image", "tag"],
+            valuePaths: [["loadbalancer", "image", "tag"]],
             imageTagKey: "loadbalancer",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
@@ -1501,7 +1531,10 @@ async function update(
         },
         controller: {
             valuesRoot: "platform",
-            tagPath: ["controller", "image", "tag"],
+            valuePaths: [
+                ["controller", "image", "tag"],
+                ["controller", "env", "templateLoaderVersion"],
+            ],
             imageTagKey: "controller",
             chart: "ogcloud-platform",
             release: RELEASES.platform,
@@ -1511,7 +1544,7 @@ async function update(
         ComponentName,
         {
             valuesRoot: ValuesFileKey;
-            tagPath: string[];
+            valuePaths: string[][];
             imageTagKey: keyof ImageTags;
             chart: "ogcloud-dashboard" | "ogcloud-platform";
             release: string;
@@ -1520,7 +1553,9 @@ async function update(
     >;
 
     const target = mapping[component];
-    setDeepValue(config.values[target.valuesRoot], target.tagPath, imageVersion);
+    for (const valuePath of target.valuePaths) {
+        setDeepValue(config.values[target.valuesRoot], valuePath, imageVersion);
+    }
 
     const paths = valuesPaths(network);
     await fs.writeFile(paths[target.valuesRoot], toYaml(config.values[target.valuesRoot]), "utf8");

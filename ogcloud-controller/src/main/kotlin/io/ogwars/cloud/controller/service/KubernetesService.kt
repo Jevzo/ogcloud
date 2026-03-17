@@ -55,7 +55,7 @@ class KubernetesService(
                 .endSecurityContext()
                 .addNewInitContainer()
                 .withName(TEMPLATE_LOADER_NAME)
-                .withImage(TEMPLATE_LOADER_IMAGE)
+                .withImage(templateLoaderImage())
                 .addAllToEnv(
                     buildTemplateLoaderEnvVars(
                         templateBucket = group.templateBucket,
@@ -98,7 +98,7 @@ class KubernetesService(
                     if (!podSpec.isProxy) {
                         addNewContainer()
                             .withName("template-pusher")
-                            .withImage(TEMPLATE_LOADER_IMAGE)
+                            .withImage(templateLoaderImage())
                             .addAllToEnv(
                                 buildTemplatePusherEnvVars(
                                     group.templateBucket,
@@ -417,6 +417,11 @@ class KubernetesService(
         )
     }
 
+    private fun templateLoaderImage(): String {
+        val version = runtimeProperties.templateLoaderVersion.trim().ifBlank { DEFAULT_TEMPLATE_LOADER_VERSION }
+        return "$TEMPLATE_LOADER_IMAGE_REPOSITORY:$version"
+    }
+
     companion object {
         private const val PAPER_PORT = 25565
         private const val PROXY_PORT = 25577
@@ -425,7 +430,8 @@ class KubernetesService(
         private const val DATA_DIR = "/opt/minecraft/server"
         private const val SERVER_DATA_VOLUME_NAME = "server-data"
         private const val TEMPLATE_LOADER_NAME = "template-loader"
-        private const val TEMPLATE_LOADER_IMAGE = "ogwarsdev/template-loader:latest"
+        private const val TEMPLATE_LOADER_IMAGE_REPOSITORY = "ogwarsdev/template-loader"
+        private const val DEFAULT_TEMPLATE_LOADER_VERSION = "latest"
         private const val STATIC_STORAGE_CLAIM_PREFIX = "ogcloud-static-"
         private const val PROXY_COMPONENT = "proxy"
         private const val SERVER_COMPONENT = "server"

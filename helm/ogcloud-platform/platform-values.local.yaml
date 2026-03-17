@@ -26,6 +26,7 @@ controller:
     minioAccessKey: minioadmin
     minioSecretKey: minioadmin123
     podForwardingSecret: TestForwardingSecret123@
+    templateLoaderVersion: latest
     podMinioAccessKey: minioadmin
     podMinioSecretKey: minioadmin123
 
