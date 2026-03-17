@@ -17,7 +17,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    vendor: ["react", "react-dom", "react-router", "motion"],
+                    vendor: ["react", "react-dom", "react-router"],
                 },
             },
         },

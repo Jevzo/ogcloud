@@ -1,3 +1,4 @@
+import { apiAuditLogPageSchema } from "@/features/inbox/schemas";
 import type { ApiAuditLogRecord } from "@/types/audit";
 import type { PaginatedResponse } from "@/types/dashboard";
 
@@ -20,7 +21,7 @@ export const listApiAuditLogs = async (
             },
         );
 
-        return response.data;
+        return apiAuditLogPageSchema.parse(response.data);
     } catch (error) {
         throw toApiError(error, SESSION_EXPIRED_MESSAGE);
     }

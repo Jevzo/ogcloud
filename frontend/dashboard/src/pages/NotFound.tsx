@@ -1,61 +1,62 @@
-import { NavLink } from "react-router";
-import { motion } from "motion/react";
-import { MdArrowBack } from "react-icons/md";
+import { Link, isRouteErrorResponse, useNavigate, useRouteError } from "react-router";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/store/auth-store";
 
 const NotFound = () => {
+    const navigate = useNavigate();
+    const routeError = useRouteError();
+    const session = useAuthStore((state) => state.session);
+
+    const status = isRouteErrorResponse(routeError) ? routeError.status : 404;
+    const title = status === 404 ? "Page not found" : "Route unavailable";
+    const description = isRouteErrorResponse(routeError)
+        ? routeError.statusText || "The requested route could not be resolved."
+        : routeError instanceof Error
+          ? routeError.message
+          : "The requested route could not be resolved.";
+    const primaryHref = session ? "/" : "/login";
+    const primaryLabel = session ? "Back to dashboard" : "Back to sign in";
+
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background-dark px-4">
-            <div className="text-center max-w-md">
-                <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                    className="relative mb-8"
-                >
-                    <span className="text-[10rem] md:text-[12rem] font-extrabold leading-none bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary select-none">
-                        404
-                    </span>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: [0, 0.6, 0.6] }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
-                        className="absolute inset-0 bg-linear-to-r from-primary/20 to-secondary/20 blur-3xl"
-                        aria-hidden="true"
-                    />
-                </motion.div>
-
-                <motion.h1
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="text-2xl md:text-3xl font-bold text-text-main mb-4"
-                >
-                    Page not found
-                </motion.h1>
-
-                <motion.p
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
-                    className="text-text-muted mb-8 leading-relaxed"
-                >
-                    The page you're looking for doesn't exist or has been moved.
-                </motion.p>
-
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                    <NavLink
-                        to="/"
-                        className="group inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-lg shadow-lg shadow-primary/25 transition-all"
-                    >
-                        <MdArrowBack className="text-lg transition-transform duration-200 group-hover:-translate-x-1" />
-                        <span>Back to home</span>
-                    </NavLink>
-                </motion.div>
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.22),transparent_58%)]" />
+                <div className="absolute -left-20 top-12 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+                <div className="absolute -right-20 bottom-6 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
             </div>
+
+            <Card className="relative w-full max-w-xl border-border/70 bg-card/82 shadow-2xl shadow-black/15 backdrop-blur">
+                <CardHeader className="space-y-3">
+                    <Badge variant="outline" className="w-fit border-primary/30 text-primary">
+                        Error {status}
+                    </Badge>
+                    <CardTitle className="text-3xl tracking-tight">{title}</CardTitle>
+                    <CardDescription className="text-sm leading-6">
+                        {description}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
+                    <div className="rounded-2xl border border-border/70 bg-background/55 px-4 py-3">
+                        The destination may have moved, the link may be stale, or the route may no
+                        longer exist in the current dashboard build.
+                    </div>
+                </CardContent>
+                <CardFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+                    <Button asChild>
+                        <Link to={primaryHref}>{primaryLabel}</Link>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigate(-1)}
+                    >
+                        Go back
+                    </Button>
+                </CardFooter>
+            </Card>
         </div>
     );
 };

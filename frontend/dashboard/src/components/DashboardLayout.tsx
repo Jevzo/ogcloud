@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import HeaderSearch from "@/components/HeaderSearch";
-import RequireMinecraftLinkModal from "@/components/RequireMinecraftLinkModal";
 import {
     dashboardNavSections,
     dashboardRouteDefinitions,
@@ -60,6 +59,7 @@ import {
     SidebarSeparator,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
+import RequireMinecraftLinkDialog from "@/features/auth/components/require-minecraft-link-dialog";
 import { getNetworkSettings, getNetworkStatus } from "@/lib/api";
 import { hasAdminAccess } from "@/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
@@ -623,7 +623,7 @@ const DashboardLayout = () => {
                 </footer>
             </SidebarInset>
 
-            <RequireMinecraftLinkModal />
+            <RequireMinecraftLinkDialog />
         </SidebarProvider>
     );
 };
