@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { EMPTY_DASHBOARD_OVERVIEW, type DashboardOverview } from "@/features/dashboard/schemas";
-import { API_LATENCY_WINDOW_MS, getAverageApiLatency } from "@/lib/api-latency";
-import { getDashboardOverview } from "@/lib/api";
-import { useAccessToken } from "@/hooks/use-access-token";
+import { API_LATENCY_WINDOW_MS, getAverageApiLatency } from "@/api/latency";
+import { getDashboardOverview } from "@/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
 
 const REFRESH_INTERVAL_MS = 10_000;
 

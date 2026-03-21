@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createPaginatedResponseSchema } from "@/lib/api/shared";
+import { createPaginatedResponseSchema } from "@/api/shared";
 import { GROUP_TYPE_VALUES } from "@/types/group";
 
 export const serverRecordSchema = z.object({

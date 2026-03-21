@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getGroupByName, getServerById, listOnlinePlayers } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { getGroupByName, getServerById, listOnlinePlayers } from "@/api";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { GroupRecord } from "@/types/group";
 import type { OnlinePlayerRecord, ServerRecord } from "@/types/server";
@@ -130,7 +130,6 @@ export const useServerDetailsQuery = ({
 
             setRuntimeSnapshot(nextServer);
         } catch {
-            // Keep the last successful runtime snapshot visible when the background refresh fails.
         }
     }, [getAccessToken, serverId]);
 

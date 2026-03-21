@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getGroupByName, listServers } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { getGroupByName, listServers } from "@/api";
 import type { GroupRecord } from "@/types/group";
 
 interface GroupDetailsQueryResult {

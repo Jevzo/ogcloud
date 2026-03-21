@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { NETWORK_MOTD_MAX_LINES, countTextLines } from "@/features/network/lib/utils";
+
 export const proxyRoutingStrategySchema = z.enum(["ROUND_ROBIN", "LOAD_BASED"]);
 
 export const networkGeneralSettingsSchema = z.object({
@@ -85,12 +87,16 @@ export const networkGeneralFormSchema = z.object({
     proxyRoutingStrategy: proxyRoutingStrategySchema,
 });
 
+const motdSchema = z.string().refine((value) => countTextLines(value) <= NETWORK_MOTD_MAX_LINES, {
+    message: `MOTD is limited to ${NETWORK_MOTD_MAX_LINES} lines.`,
+});
+
 export const networkMessagingFormSchema = z.object({
     versionNameGlobal: z.string(),
     versionNameMaintenance: z.string(),
     maintenanceKickMessage: z.string(),
-    motdGlobal: z.string(),
-    motdMaintenance: z.string(),
+    motdGlobal: motdSchema,
+    motdMaintenance: motdSchema,
     tablistHeader: z.string(),
     tablistFooter: z.string(),
 });

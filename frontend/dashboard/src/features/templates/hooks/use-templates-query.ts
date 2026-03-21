@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listTemplates } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listTemplates } from "@/api";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { TemplateRecord } from "@/types/template";
 

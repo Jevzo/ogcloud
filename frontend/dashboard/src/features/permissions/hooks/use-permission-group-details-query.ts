@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getPermissionGroupByName } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { getPermissionGroupByName } from "@/api";
 import type { PermissionGroupRecord } from "@/types/permission";
 
 interface PermissionGroupDetailsQueryResult {

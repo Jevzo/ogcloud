@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+    Clock3Icon,
     LoaderCircleIcon,
     PlusIcon,
     SearchIcon,
@@ -9,16 +10,16 @@ import {
     StarIcon,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -31,11 +32,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -45,18 +42,23 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import PermissionGroupActionsMenu from "@/features/permissions/components/permission-group-actions-menu";
+import PermissionGroupDeleteDialog from "@/features/permissions/components/permission-group-delete-dialog";
 import PermissionGroupForm from "@/features/permissions/components/permission-group-form";
 import { usePermissionGroupsQuery } from "@/features/permissions/hooks/use-permission-groups-query";
 import { permissionGroupFormSchema } from "@/features/permissions/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { createPermissionGroup } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { createPermissionGroup } from "@/api";
 import {
     buildCreatePermissionGroupPayload,
     createEmptyPermissionGroupValues,
-} from "@/lib/permission-form";
+} from "@/features/permissions/lib/permission-form";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
-import { formatDateTime } from "@/lib/server-display";
-import type { PermissionGroupFormValues } from "@/types/permission";
+import { formatDateTime } from "@/features/servers/lib/server-display";
+import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
+import type { PermissionGroupFormValues, PermissionGroupRecord } from "@/types/permission";
+
+const PERMISSIONS_PAGE_SIZE = 10;
 
 const SummaryCard = ({
     helper,
@@ -67,7 +69,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -78,11 +80,51 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
+const PermissionsTableSkeleton = () => (
+    <div className="space-y-2 px-5 pb-5">
+        {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={`permissions-table-skeleton-${index}`} className="h-12 w-full" />
+        ))}
+    </div>
+);
+
 const PermissionsPageSkeleton = () => (
     <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+                <Skeleton className="h-9 w-44" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-10 w-48" />
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={`permission-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`permission-summary-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-8 w-24" />
@@ -95,20 +137,26 @@ const PermissionsPageSkeleton = () => (
         </div>
 
         <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-8 w-44" />
-                <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-32" />
+            <CardHeader className="gap-3 border-b border-border/70 pb-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-6 w-44" />
+                        <Skeleton className="h-4 w-72" />
+                    </div>
+                    <div className="w-full space-y-2 xl:max-w-[420px]">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-32 xl:ml-auto" />
+                    </div>
                 </div>
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <Skeleton key={`permissions-table-skeleton-${index}`} className="h-12 w-full" />
-                ))}
+            </CardHeader>
+            <CardContent className="px-0">
+                <PermissionsTableSkeleton />
             </CardContent>
+            <CardFooter className="justify-between gap-3">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-32" />
+            </CardFooter>
         </Card>
     </div>
 );
@@ -125,17 +173,21 @@ const PermissionsPage = () => {
         (state) => state.general.permissionSystemEnabled,
     );
 
+    const [currentPage, setCurrentPage] = useState(0);
     const [searchInput, setSearchInput] = useState("");
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [groupPendingDeletion, setGroupPendingDeletion] = useState<PermissionGroupRecord | null>(
+        null,
+    );
 
     const deferredQuery = useDeferredValue(searchInput.trim());
     const {
         data: groups,
         errorMessage,
         isLoading,
+        isRefreshing,
         lastUpdatedAt,
         refresh,
-        refreshIntervalMs,
     } = usePermissionGroupsQuery({
         query: deferredQuery,
     });
@@ -175,6 +227,7 @@ const PermissionsPage = () => {
             toast.success(`Created permission group ${createdGroup.name}.`);
             handleCreateDialogChange(false);
             await refresh(false);
+            setCurrentPage(0);
         } catch (error) {
             const message =
                 error instanceof Error ? error.message : "Unable to create permission group.";
@@ -184,10 +237,26 @@ const PermissionsPage = () => {
         }
     });
 
+    const handleDeleteGroup = async () => {
+        await refresh(false);
+    };
+
     const defaultCount = groups.filter((group) => group.default).length;
     const explicitPermissionCount = groups.reduce(
         (total, group) => total + group.permissions.length,
         0,
+    );
+    const totalPages = getPaginatedTotalPages({
+        items: groups,
+        page: currentPage,
+        size: PERMISSIONS_PAGE_SIZE,
+        totalItems: groups.length,
+    });
+    const maxPage = Math.max(0, totalPages - 1);
+    const visiblePage = Math.min(currentPage, maxPage);
+    const visibleGroups = groups.slice(
+        visiblePage * PERMISSIONS_PAGE_SIZE,
+        (visiblePage + 1) * PERMISSIONS_PAGE_SIZE,
     );
     const hasFreshData = lastUpdatedAt !== null;
 
@@ -216,30 +285,25 @@ const PermissionsPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Permission groups
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Permissions
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Manage role precedence, fallback handling, and explicit permission
-                            grants for dashboard-controlled ranks.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Permissions
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Manage role precedence, fallback handling, and explicit permission grants
+                        for dashboard-controlled ranks from one operational table.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <Button
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        disabled={!permissionSystemEnabled}
+                    >
+                        <PlusIcon className="size-4" />
+                        Create group
+                    </Button>
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -299,41 +363,37 @@ const PermissionsPage = () => {
             </div>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4 border-b border-border/70 pb-4">
+                <CardHeader className="gap-3 border-b border-border/70 pb-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                         <div>
                             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                                 Role inventory
                             </CardDescription>
-                            <CardTitle className="text-base">Permission groups and precedence</CardTitle>
+                            <CardTitle className="text-base">
+                                Permission groups and precedence
+                            </CardTitle>
                             <CardDescription>
                                 Search the current rank set, inspect direct grants, and open the
                                 full group editor for formatting or node changes.
                             </CardDescription>
                         </div>
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    onClick={() => setIsCreateDialogOpen(true)}
-                                    disabled={!permissionSystemEnabled}
-                                >
-                                    <PlusIcon className="size-4" />
-                                    Create group
-                                </Button>
-                            </div>
-                        </CardAction>
-                    </div>
 
-                    <InputGroup>
-                        <InputGroupAddon>
-                            <SearchIcon className="size-4" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchInput}
-                            onChange={(event) => setSearchInput(event.target.value)}
-                            placeholder="Search group ID, display name, or permission node"
-                        />
-                    </InputGroup>
+                        <div className="w-full xl:max-w-[320px]">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <SearchIcon className="size-4" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    value={searchInput}
+                                    onChange={(event) => {
+                                        setSearchInput(event.target.value);
+                                        setCurrentPage(0);
+                                    }}
+                                    placeholder="Search group, name, or node"
+                                />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="px-0">
@@ -344,22 +404,21 @@ const PermissionsPage = () => {
                                 <TableHead className="px-4">Weight</TableHead>
                                 <TableHead className="px-4">Default</TableHead>
                                 <TableHead className="px-4">Explicit grants</TableHead>
-                                <TableHead className="px-4">Formatting</TableHead>
-                                <TableHead className="px-4 text-right">Open</TableHead>
+                                <TableHead className="px-4 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {groups.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={6}
+                                        colSpan={5}
                                         className="px-4 py-12 text-center text-sm text-muted-foreground"
                                     >
                                         No permission groups matched the current filters.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                groups.map((group) => (
+                                visibleGroups.map((group) => (
                                     <TableRow
                                         key={group.id}
                                         className="cursor-pointer"
@@ -369,10 +428,9 @@ const PermissionsPage = () => {
                                     >
                                         <TableCell className="px-4 py-3 align-top">
                                             <div className="space-y-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="font-medium text-foreground">
-                                                        {group.name}
-                                                    </span>
+                                                <div className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+                                                    <ShieldIcon className="size-4 text-primary" />
+                                                    {group.name}
                                                     {group.default ? (
                                                         <Badge
                                                             variant="outline"
@@ -396,7 +454,9 @@ const PermissionsPage = () => {
                                                 variant="outline"
                                                 className={getDefaultBadgeClassName(group.default)}
                                             >
-                                                {group.default ? "Fallback rank" : "Explicit assignment"}
+                                                {group.default
+                                                    ? "Fallback rank"
+                                                    : "Explicit assignment"}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 align-top">
@@ -409,25 +469,19 @@ const PermissionsPage = () => {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
-                                            <div className="space-y-1 text-sm">
-                                                <div className="font-medium text-foreground">
-                                                    {group.display.nameColor || "--"}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    Tab {group.display.tabPrefix || "--"}
-                                                </div>
-                                            </div>
-                                        </TableCell>
                                         <TableCell
                                             className="px-4 py-3 text-right align-top"
                                             onClick={(event) => event.stopPropagation()}
                                         >
-                                            <Button variant="ghost" size="sm" asChild>
-                                                <Link to={`/permissions/${encodeURIComponent(group.id)}`}>
-                                                    Open
-                                                </Link>
-                                            </Button>
+                                            <PermissionGroupActionsMenu
+                                                group={group}
+                                                onDeleteGroup={setGroupPendingDeletion}
+                                                onOpenGroup={(nextGroup) =>
+                                                    navigate(
+                                                        `/permissions/${encodeURIComponent(nextGroup.id)}`,
+                                                    )
+                                                }
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -435,6 +489,35 @@ const PermissionsPage = () => {
                         </TableBody>
                     </Table>
                 </CardContent>
+
+                <CardFooter className="justify-between gap-3">
+                    <div className="text-sm text-muted-foreground">
+                        Page {Math.min(visiblePage + 1, totalPages)} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(Math.max(0, visiblePage - 1))}
+                            disabled={visiblePage === 0 || isRefreshing}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage(visiblePage + 1)}
+                            disabled={
+                                !getPaginatedHasNext({
+                                    items: groups,
+                                    page: visiblePage,
+                                    size: PERMISSIONS_PAGE_SIZE,
+                                    totalItems: groups.length,
+                                }) || isRefreshing
+                            }
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogChange}>
@@ -484,6 +567,20 @@ const PermissionsPage = () => {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <PermissionGroupDeleteDialog
+                groupId={groupPendingDeletion?.id}
+                groupName={groupPendingDeletion?.name ?? ""}
+                onDeleted={handleDeleteGroup}
+                onOpenChange={(open) => {
+                    if (open) {
+                        return;
+                    }
+
+                    setGroupPendingDeletion(null);
+                }}
+                open={groupPendingDeletion !== null}
+            />
         </div>
     );
 };

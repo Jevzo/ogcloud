@@ -34,7 +34,7 @@ import type {
     DashboardOverviewGroup,
     DashboardOverviewScalingAction,
 } from "@/features/dashboard/schemas";
-import { formatDateTime } from "@/lib/server-display";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import { cn } from "@/lib/utils";
 
 const formatPercent = (value: number) => `${Math.round(Math.min(100, value))}%`;
@@ -137,10 +137,7 @@ const GroupCard = ({ group }: { group: DashboardOverviewGroup }) => {
                         Network group
                     </CardDescription>
                     <CardAction>
-                        <Badge
-                            variant="outline"
-                            className={getGroupModeBadgeClassName(group.mode)}
-                        >
+                        <Badge variant="outline" className={getGroupModeBadgeClassName(group.mode)}>
                             {group.mode}
                         </Badge>
                     </CardAction>
@@ -298,7 +295,10 @@ const DashboardHomeSkeleton = () => (
     <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={`metric-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`metric-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-8 w-32" />

@@ -12,23 +12,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldLabel,
-} from "@/components/ui/field";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
     executeCommandFormSchema,
     type ExecuteCommandFormValues,
 } from "@/features/servers/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { executeCommand } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { executeCommand } from "@/api";
 import type { CommandTargetType } from "@/types/command";
 
 interface ExecuteCommandDialogProps {

@@ -29,7 +29,10 @@ interface ServerStatusBadgeProps {
 }
 
 const ServerStatusBadge = ({ className, state }: ServerStatusBadgeProps) => (
-    <Badge variant="outline" className={cn("gap-1.5 rounded-full", getServerStateBadgeClassName(state), className)}>
+    <Badge
+        variant="outline"
+        className={cn("gap-1.5 rounded-full", getServerStateBadgeClassName(state), className)}
+    >
         <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
         {state}
     </Badge>

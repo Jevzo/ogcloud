@@ -11,14 +11,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     updateWebUserFormSchema,
     type UpdateWebUserFormValues,
@@ -119,9 +120,7 @@ const EditWebUserDialog = ({
                     </Field>
 
                     <Field>
-                        <FieldLabel htmlFor="edit-web-user-password">
-                            New password
-                        </FieldLabel>
+                        <FieldLabel htmlFor="edit-web-user-password">New password</FieldLabel>
                         <Input
                             id="edit-web-user-password"
                             type="password"

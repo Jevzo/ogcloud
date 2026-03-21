@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.model
 
 import io.ogwars.cloud.common.model.DisplayConfig
+import io.ogwars.cloud.common.model.PermissionGroupPermission
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -11,5 +12,5 @@ data class PermissionGroupDocument(
     val display: DisplayConfig = DisplayConfig(),
     val weight: Int,
     val default: Boolean,
-    val permissions: List<String>,
+    val permissions: List<PermissionGroupPermission>,
 )

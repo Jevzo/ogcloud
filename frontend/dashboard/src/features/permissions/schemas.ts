@@ -7,13 +7,18 @@ export const permissionGroupDisplaySchema = z.object({
     tabPrefix: z.string(),
 });
 
+export const permissionGroupPermissionRecordSchema = z.object({
+    perm: z.string().min(1),
+    description: z.string(),
+});
+
 export const permissionGroupRecordSchema = z.object({
     id: z.string().min(1),
     name: z.string().min(1),
     display: permissionGroupDisplaySchema,
     weight: z.number().int(),
     default: z.boolean(),
-    permissions: z.array(z.string().min(1)),
+    permissions: z.array(permissionGroupPermissionRecordSchema),
 });
 
 export const permissionGroupFormSchema = z
@@ -42,6 +47,11 @@ export const permissionNodeFormSchema = z.object({
         .trim()
         .min(1, "Enter a permission node first.")
         .max(200, "Keep permission nodes under 200 characters."),
+    description: z
+        .string()
+        .trim()
+        .min(1, "Enter a description first.")
+        .max(200, "Keep descriptions under 200 characters."),
 });
 
 export type PermissionGroupRecordSchema = z.infer<typeof permissionGroupRecordSchema>;

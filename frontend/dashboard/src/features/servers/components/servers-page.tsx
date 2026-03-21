@@ -13,19 +13,20 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -41,11 +42,14 @@ import ServerActionsMenu from "@/features/servers/components/server-actions-menu
 import ServerStatusBadge from "@/features/servers/components/server-status-badge";
 import { useServerGroupsQuery } from "@/features/servers/hooks/use-server-groups-query";
 import { useServersQuery } from "@/features/servers/hooks/use-servers-query";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getRuntimeProfileLabel } from "@/lib/group-runtime";
-import { hasAdminAccess } from "@/lib/roles";
-import { getServerActionSuccessMessage, runServerAction } from "@/lib/server-actions";
-import { formatDateTime, formatMemoryMb, formatTps } from "@/lib/server-display";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { getRuntimeProfileLabel } from "@/features/groups/lib/group-runtime";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
+import {
+    getServerActionSuccessMessage,
+    runServerAction,
+} from "@/features/servers/lib/server-actions";
+import { formatDateTime, formatMemoryMb, formatTps } from "@/features/servers/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { CommandTargetType } from "@/types/command";
@@ -155,7 +159,9 @@ const ServersPage = () => {
         groups.map((group) => [group.id, getRuntimeProfileLabel(group.runtimeProfile)] as const),
     );
     const totalPages = getPaginatedTotalPages(serverPage);
-    const runningCount = serverPage.items.filter((server) => server.state.toUpperCase() === "RUNNING").length;
+    const runningCount = serverPage.items.filter(
+        (server) => server.state.toUpperCase() === "RUNNING",
+    ).length;
     const onlinePlayers = serverPage.items.reduce((total, server) => total + server.playerCount, 0);
     const visibleGroups = new Set(serverPage.items.map((server) => server.group)).size;
     const hasFreshData = lastUpdatedAt !== null;
@@ -216,7 +222,10 @@ const ServersPage = () => {
             <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, index) => (
-                        <Card key={`servers-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                        <Card
+                            key={`servers-summary-skeleton-${index}`}
+                            className="border border-border/70 bg-card/85"
+                        >
                             <CardHeader>
                                 <Skeleton className="h-4 w-24" />
                                 <Skeleton className="h-8 w-20" />
@@ -234,9 +243,12 @@ const ServersPage = () => {
                         <Skeleton className="h-4 w-64" />
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                            {canExecuteCommands ? (
+                                <Skeleton className="h-10 w-full lg:w-36" />
+                            ) : null}
+                            <Skeleton className="h-10 w-full lg:w-44" />
+                            <Skeleton className="h-10 w-full lg:w-72" />
                         </div>
                     </CardContent>
                     <ServersTableSkeleton />
@@ -354,52 +366,62 @@ const ServersPage = () => {
                                 for direct lifecycle control.
                             </CardDescription>
                         </div>
-                        {canExecuteCommands ? (
-                            <CardAction className="col-auto row-auto">
-                                <Button variant="outline" onClick={openToolbarCommandDialog}>
-                                    <TerminalIcon className="size-4" />
-                                    {normalizedGroupFilter ? "Command group" : "Command all"}
-                                </Button>
-                            </CardAction>
-                        ) : null}
-                    </div>
 
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <SearchIcon className="size-4" />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                value={searchInput}
-                                onChange={(event) => {
-                                    setSearchInput(event.target.value);
-                                    setCurrentPage(0);
-                                }}
-                                placeholder="Search servers, groups, or pod"
-                            />
-                        </InputGroup>
+                        <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+                            {canExecuteCommands ? (
+                                <div className="w-full xl:w-auto">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full xl:w-auto"
+                                        onClick={openToolbarCommandDialog}
+                                    >
+                                        <TerminalIcon className="size-4" />
+                                        {normalizedGroupFilter ? "Command group" : "Command all"}
+                                    </Button>
+                                </div>
+                            ) : null}
 
-                        <Select
-                            value={groupFilter}
-                            onValueChange={(value) => {
-                                setGroupFilter(value);
-                                setCurrentPage(0);
-                            }}
-                            disabled={isLoadingGroups}
-                        >
-                            <SelectTrigger className="w-full">
-                                <FilterIcon className="size-4 text-muted-foreground" />
-                                <SelectValue placeholder="Filter by group" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All groups</SelectItem>
-                                {groups.map((group) => (
-                                    <SelectItem key={group.id} value={group.id}>
-                                        {group.id}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <div className="w-full xl:w-[184px]">
+                                <Select
+                                    value={groupFilter}
+                                    onValueChange={(value) => {
+                                        setGroupFilter(value);
+                                        setCurrentPage(0);
+                                    }}
+                                    disabled={isLoadingGroups}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <FilterIcon className="size-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by group" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All groups</SelectItem>
+                                        {groups.map((group) => (
+                                            <SelectItem key={group.id} value={group.id}>
+                                                {group.id}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="w-full xl:w-[300px]">
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <SearchIcon className="size-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        className="text-[13px] placeholder:text-[13px]"
+                                        value={searchInput}
+                                        onChange={(event) => {
+                                            setSearchInput(event.target.value);
+                                            setCurrentPage(0);
+                                        }}
+                                        placeholder="Search server, group, or pod"
+                                    />
+                                </InputGroup>
+                            </div>
+                        </div>
                     </div>
                 </CardHeader>
 
@@ -460,7 +482,10 @@ const ServersPage = () => {
                                         <TableCell className="align-top">
                                             <div className="space-y-1">
                                                 <div className="font-medium text-foreground">
-                                                    {getRuntimeLabel(server, runtimeProfileByGroupId)}
+                                                    {getRuntimeLabel(
+                                                        server,
+                                                        runtimeProfileByGroupId,
+                                                    )}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
                                                     {server.type}

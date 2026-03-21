@@ -69,7 +69,6 @@ class AccessTokenAuthenticationFilter(
             )
 
         if (role == WebUserRole.SERVICE) {
-            // SERVICE is admin-equivalent and must pass ADMIN role checks.
             authorities += SimpleGrantedAuthority("ROLE_${WebUserRole.ADMIN.name}")
         }
 

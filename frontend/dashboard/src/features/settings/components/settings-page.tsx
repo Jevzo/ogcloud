@@ -25,9 +25,9 @@ import {
     type SettingsEmailFormValues,
     type SettingsPasswordFormValues,
 } from "@/features/settings/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { loginWithEmailPassword, updateOwnProfile } from "@/lib/api";
-import { normalizeRole } from "@/lib/roles";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { loginWithEmailPassword, updateOwnProfile } from "@/api";
+import { normalizeRole } from "@/features/auth/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
 
 const getRoleBadgeClassName = (role: string) => {
@@ -165,8 +165,7 @@ const SettingsPage = () => {
             });
             toast.success("Password updated and session refreshed.");
         } catch (error) {
-            const message =
-                error instanceof Error ? error.message : "Unable to update password.";
+            const message = error instanceof Error ? error.message : "Unable to update password.";
             passwordForm.setError("root", { message });
             toast.error(message);
         }
@@ -203,10 +202,7 @@ const SettingsPage = () => {
                     </div>
                 </div>
 
-                <Badge
-                    variant="outline"
-                    className={getRoleBadgeClassName(currentUser.role)}
-                >
+                <Badge variant="outline" className={getRoleBadgeClassName(currentUser.role)}>
                     {formatRoleLabel(currentUser.role)}
                 </Badge>
             </div>
@@ -327,10 +323,15 @@ const SettingsPage = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={(event) => void handleEmailSubmit(event)}>
+                            <form
+                                className="space-y-4"
+                                onSubmit={(event) => void handleEmailSubmit(event)}
+                            >
                                 <FieldGroup>
                                     <Field>
-                                        <FieldLabel htmlFor="settings-email">Email address</FieldLabel>
+                                        <FieldLabel htmlFor="settings-email">
+                                            Email address
+                                        </FieldLabel>
                                         <Input
                                             id="settings-email"
                                             type="email"
@@ -350,7 +351,10 @@ const SettingsPage = () => {
                                 <FieldError>{emailForm.formState.errors.root?.message}</FieldError>
 
                                 <div className="flex justify-end">
-                                    <Button type="submit" disabled={emailForm.formState.isSubmitting}>
+                                    <Button
+                                        type="submit"
+                                        disabled={emailForm.formState.isSubmitting}
+                                    >
                                         {emailForm.formState.isSubmitting ? (
                                             <>
                                                 <LoaderCircleIcon className="size-4 animate-spin" />
@@ -377,22 +381,29 @@ const SettingsPage = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form className="space-y-4" onSubmit={(event) => void handlePasswordSubmit(event)}>
+                            <form
+                                className="space-y-4"
+                                onSubmit={(event) => void handlePasswordSubmit(event)}
+                            >
                                 <FieldGroup>
                                     <Field>
-                                        <FieldLabel htmlFor="settings-password">New password</FieldLabel>
+                                        <FieldLabel htmlFor="settings-password">
+                                            New password
+                                        </FieldLabel>
                                         <Input
                                             id="settings-password"
                                             type="password"
                                             autoComplete="new-password"
                                             aria-invalid={
-                                                passwordForm.formState.errors.password ? "true" : "false"
+                                                passwordForm.formState.errors.password
+                                                    ? "true"
+                                                    : "false"
                                             }
                                             {...passwordField}
                                         />
                                         <FieldDescription>
-                                            The dashboard will re-authenticate the current session after
-                                            the password changes.
+                                            The dashboard will re-authenticate the current session
+                                            after the password changes.
                                         </FieldDescription>
                                         <FieldError
                                             errors={[passwordForm.formState.errors.password]}

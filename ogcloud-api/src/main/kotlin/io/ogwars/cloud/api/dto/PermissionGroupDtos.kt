@@ -2,6 +2,7 @@ package io.ogwars.cloud.api.dto
 
 import io.ogwars.cloud.api.model.PermissionGroupDocument
 import io.ogwars.cloud.common.model.DisplayConfig
+import io.ogwars.cloud.common.model.PermissionGroupPermission
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 
@@ -19,13 +20,28 @@ data class DisplayConfigResponse(
     val tabPrefix: String,
 )
 
+data class PermissionGroupPermissionRequest(
+    @field:NotBlank val perm: String,
+    val description: String = "",
+)
+
+data class AddPermissionToGroupRequest(
+    @field:NotBlank val perm: String,
+    val description: String = "",
+)
+
+data class PermissionGroupPermissionResponse(
+    val perm: String,
+    val description: String,
+)
+
 data class CreatePermissionGroupRequest(
     @field:NotBlank val id: String,
     @field:NotBlank val name: String,
     val display: DisplayConfigRequest = DisplayConfigRequest(),
     val weight: Int = 100,
     val default: Boolean = false,
-    val permissions: List<String> = emptyList(),
+    val permissions: List<@Valid PermissionGroupPermissionRequest> = emptyList(),
 )
 
 data class UpdatePermissionGroupRequest(
@@ -33,7 +49,7 @@ data class UpdatePermissionGroupRequest(
     @field:Valid val display: DisplayConfigRequest? = null,
     val weight: Int? = null,
     val default: Boolean? = null,
-    val permissions: List<String>? = null,
+    val permissions: List<@Valid PermissionGroupPermissionRequest>? = null,
 )
 
 data class PermissionGroupResponse(
@@ -42,7 +58,7 @@ data class PermissionGroupResponse(
     val display: DisplayConfigResponse,
     val weight: Int,
     val default: Boolean,
-    val permissions: List<String>,
+    val permissions: List<PermissionGroupPermissionResponse>,
 )
 
 fun DisplayConfig.toResponse(): DisplayConfigResponse =
@@ -53,6 +69,24 @@ fun DisplayConfig.toResponse(): DisplayConfigResponse =
         tabPrefix = tabPrefix,
     )
 
+fun PermissionGroupPermissionRequest.toPermission(): PermissionGroupPermission =
+    PermissionGroupPermission(
+        perm = perm,
+        description = description,
+    )
+
+fun AddPermissionToGroupRequest.toPermission(): PermissionGroupPermission =
+    PermissionGroupPermission(
+        perm = perm,
+        description = description,
+    )
+
+fun PermissionGroupPermission.toResponse(): PermissionGroupPermissionResponse =
+    PermissionGroupPermissionResponse(
+        perm = perm,
+        description = description,
+    )
+
 fun PermissionGroupDocument.toResponse(): PermissionGroupResponse =
     PermissionGroupResponse(
         id = id,
@@ -60,5 +94,5 @@ fun PermissionGroupDocument.toResponse(): PermissionGroupResponse =
         display = display.toResponse(),
         weight = weight,
         default = default,
-        permissions = permissions,
+        permissions = permissions.map { it.toResponse() },
     )

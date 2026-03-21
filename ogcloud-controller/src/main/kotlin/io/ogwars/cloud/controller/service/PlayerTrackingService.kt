@@ -3,6 +3,7 @@ package io.ogwars.cloud.controller.service
 import io.ogwars.cloud.common.event.*
 import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.common.model.PermissionConfig
+import io.ogwars.cloud.common.model.PermissionGroupPermission
 import io.ogwars.cloud.common.redis.RedisKeys
 import io.ogwars.cloud.controller.config.PermissionReenableSyncProperties
 import io.ogwars.cloud.controller.model.PermissionGroupDocument
@@ -358,7 +359,6 @@ class PlayerTrackingService(
         try {
             CompletableFuture.allOf(*futures.toTypedArray()).join()
         } catch (_: Exception) {
-            // Failures are tracked per-player via send completion callbacks.
         }
     }
 
@@ -538,7 +538,7 @@ class PlayerTrackingService(
                 uuid = uuid,
                 groupId = group.id,
                 groupName = group.name,
-                permissions = group.permissions,
+                permissions = group.permissionValues,
                 display = group.display,
                 weight = group.weight,
                 permissionEndMillis = permissionEndMillis,
@@ -572,7 +572,7 @@ class PlayerTrackingService(
             display = display,
             weight = weight,
             default = default,
-            permissions = permissions,
+            permissions = permissions.map { PermissionGroupPermission(perm = it) },
         )
 
     private data class ResolvedPermissionAssignment(

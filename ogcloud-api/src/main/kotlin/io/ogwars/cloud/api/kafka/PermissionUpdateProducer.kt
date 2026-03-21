@@ -29,7 +29,7 @@ class PermissionUpdateProducer(
                 uuid = uuid,
                 groupId = group.id,
                 groupName = group.name,
-                permissions = group.permissions,
+                permissions = group.permissions.map { it.perm },
                 display = group.display,
                 weight = group.weight,
                 permissionEndMillis = permissionEndMillis,

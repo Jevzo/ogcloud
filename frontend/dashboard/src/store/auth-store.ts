@@ -1,8 +1,12 @@
 import { create } from "zustand";
 
-import { clearAuthSession, loadAuthSession, saveAuthSession } from "@/lib/auth-storage";
-import { endApiLatencySession, startApiLatencySession } from "@/lib/api-latency";
-import { loginWithEmailPassword, refreshSessionToken } from "@/lib/api";
+import {
+    clearAuthSession,
+    loadAuthSession,
+    saveAuthSession,
+} from "@/features/auth/lib/auth-storage";
+import { endApiLatencySession, startApiLatencySession } from "@/api/latency";
+import { loginWithEmailPassword, refreshSessionToken } from "@/api";
 import type { AuthSession, AuthUser, LoginCredentials } from "@/types/auth";
 
 type AuthStatus = "anonymous" | "authenticating" | "authenticated" | "refreshing";

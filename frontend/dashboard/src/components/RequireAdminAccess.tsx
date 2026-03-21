@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router";
 
-import { hasAdminAccess } from "@/lib/roles";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
 
 interface RequireAdminAccessProps {

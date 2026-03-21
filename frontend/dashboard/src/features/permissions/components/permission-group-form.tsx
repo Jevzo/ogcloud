@@ -2,29 +2,21 @@ import { type ReactNode } from "react";
 import { Controller, useWatch, type UseFormReturn } from "react-hook-form";
 
 import MinecraftTextPreview from "@/components/MinecraftTextPreview";
-import { Badge } from "@/components/ui/badge";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useAuthStore } from "@/store/auth-store";
 import type { PermissionGroupFormValues } from "@/types/permission";
 
 const SECTION_CLASS_NAME = "space-y-4 rounded-xl border border-border/70 bg-muted/25 p-4";
 
-const Section = ({
-    children,
-    description,
-    title,
-}: {
+interface SectionProps {
     children: ReactNode;
     description: string;
     title: string;
-}) => (
+}
+
+const Section = ({ children, description, title }: SectionProps) => (
     <section className={SECTION_CLASS_NAME}>
         <div className="space-y-1">
             <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -34,15 +26,25 @@ const Section = ({
     </section>
 );
 
+interface PreviewCardProps {
+    title: string;
+    value?: string | null;
+}
+
+const PreviewCard = ({ title, value }: PreviewCardProps) => (
+    <div className="rounded-xl border border-border/70 bg-background/55 p-4">
+        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{title}</div>
+        <MinecraftTextPreview value={value} className="mt-2 font-mono" />
+    </div>
+);
+
 interface PermissionGroupFormProps {
     disableIdentityFields?: boolean;
     form: UseFormReturn<PermissionGroupFormValues>;
 }
 
-const PermissionGroupForm = ({
-    disableIdentityFields = false,
-    form,
-}: PermissionGroupFormProps) => {
+const PermissionGroupForm = ({ disableIdentityFields = false, form }: PermissionGroupFormProps) => {
+    const sessionUsername = useAuthStore((state) => state.session?.user.username?.trim() ?? "");
     const id = useWatch({ control: form.control, name: "id" }) ?? form.getValues("id");
     const name = useWatch({ control: form.control, name: "name" }) ?? form.getValues("name");
     const chatPrefix =
@@ -57,16 +59,16 @@ const PermissionGroupForm = ({
     const tabPrefix =
         useWatch({ control: form.control, name: "display.tabPrefix" }) ??
         form.getValues("display.tabPrefix");
-    const previewGroupName = name.trim() || id.trim() || "Group";
-    const previewNameColor = nameColor.trim() || "&7";
-    const previewChatPrefix = chatPrefix.trim() || "&7[Group] ";
-    const previewChatSuffix = chatSuffix.trim() || "&7: &f";
-    const previewTabPrefix = tabPrefix.trim() || "&7";
-    const displayPreviewFallbacks = {
-        chatPrefix: `${previewChatPrefix}${previewNameColor}${previewGroupName}`,
-        chatSuffix: `${previewNameColor}${previewGroupName}${previewChatSuffix}Hello`,
-        nameColor: `${previewNameColor}${previewGroupName}`,
-        tabPrefix: `${previewTabPrefix}${previewNameColor}${previewGroupName}`,
+    const previewPlayerName = sessionUsername || name.trim() || id.trim() || "Player";
+    const previewNameColor = nameColor.trim() ? nameColor : "&7";
+    const previewChatPrefix = chatPrefix.trim() ? chatPrefix : "&7[Group] ";
+    const previewChatSuffix = chatSuffix.trim() ? chatSuffix : "&7: &f";
+    const previewTabPrefix = tabPrefix.trim() ? tabPrefix : "&7";
+    const displayPreviewValues = {
+        chatPrefix: `${previewChatPrefix}${previewNameColor}${previewPlayerName}`,
+        chatSuffix: `${previewNameColor}${previewPlayerName}${previewChatSuffix}Hello`,
+        nameColor: `${previewNameColor}${previewPlayerName}`,
+        tabPrefix: `${previewTabPrefix}${previewNameColor}${previewPlayerName}`,
     } as const;
 
     return (
@@ -124,24 +126,30 @@ const PermissionGroupForm = ({
                             control={form.control}
                             name="default"
                             render={({ field }) => (
-                                <div className="flex h-8 items-center justify-between rounded-lg border border-border bg-background px-2.5">
-                                    <div className="flex items-center gap-2 text-sm text-foreground">
-                                        <span>{field.value ? "Enabled" : "Disabled"}</span>
-                                        {field.value ? (
-                                            <Badge
-                                                variant="outline"
-                                                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                            >
-                                                Fallback rank
-                                            </Badge>
-                                        ) : null}
-                                    </div>
-                                    <Switch
-                                        id="permission-group-default"
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </div>
+                                <ToggleGroup
+                                    type="single"
+                                    variant="outline"
+                                    value={field.value ? "enabled" : "disabled"}
+                                    onValueChange={(value) => {
+                                        if (value === "enabled" || value === "disabled") {
+                                            field.onChange(value === "enabled");
+                                        }
+                                    }}
+                                    className="w-full"
+                                >
+                                    <ToggleGroupItem
+                                        value="disabled"
+                                        className="h-10 flex-1 rounded-l-lg rounded-r-none"
+                                    >
+                                        Disabled
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem
+                                        value="enabled"
+                                        className="h-10 flex-1 rounded-l-none rounded-r-lg"
+                                    >
+                                        Enabled
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
                             )}
                         />
                         <FieldDescription>
@@ -156,114 +164,87 @@ const PermissionGroupForm = ({
                 title="Display formatting"
                 description="Minecraft formatting values applied to chat, tab list, and identity rendering."
             >
-                <FieldGroup className="grid gap-4 md:grid-cols-2">
+                <FieldGroup className="space-y-4">
                     <Field>
                         <FieldLabel htmlFor="permission-group-chat-prefix">Chat prefix</FieldLabel>
-                        <Input
-                            id="permission-group-chat-prefix"
-                            {...form.register("display.chatPrefix")}
-                        />
-                        <FieldDescription>
-                            Text shown before player names in chat.
-                        </FieldDescription>
-                        <FieldError errors={[form.formState.errors.display?.chatPrefix]} />
+                        <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+                            <div className="space-y-2">
+                                <Input
+                                    id="permission-group-chat-prefix"
+                                    {...form.register("display.chatPrefix")}
+                                />
+                                <FieldDescription>
+                                    Text shown before player names in chat.
+                                </FieldDescription>
+                                <FieldError errors={[form.formState.errors.display?.chatPrefix]} />
+                            </div>
+                            <PreviewCard
+                                title="Chat prefix preview"
+                                value={displayPreviewValues.chatPrefix}
+                            />
+                        </div>
                     </Field>
 
                     <Field>
                         <FieldLabel htmlFor="permission-group-chat-suffix">Chat suffix</FieldLabel>
-                        <Input
-                            id="permission-group-chat-suffix"
-                            {...form.register("display.chatSuffix")}
-                        />
-                        <FieldDescription>
-                            Text appended after player names in chat.
-                        </FieldDescription>
-                        <FieldError errors={[form.formState.errors.display?.chatSuffix]} />
+                        <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+                            <div className="space-y-2">
+                                <Input
+                                    id="permission-group-chat-suffix"
+                                    {...form.register("display.chatSuffix")}
+                                />
+                                <FieldDescription>
+                                    Text appended after player names in chat.
+                                </FieldDescription>
+                                <FieldError errors={[form.formState.errors.display?.chatSuffix]} />
+                            </div>
+                            <PreviewCard
+                                title="Chat suffix preview"
+                                value={displayPreviewValues.chatSuffix}
+                            />
+                        </div>
                     </Field>
 
                     <Field>
                         <FieldLabel htmlFor="permission-group-name-color">Name color</FieldLabel>
-                        <Input
-                            id="permission-group-name-color"
-                            {...form.register("display.nameColor")}
-                        />
-                        <FieldDescription>
-                            Color code applied to player names.
-                        </FieldDescription>
-                        <FieldError errors={[form.formState.errors.display?.nameColor]} />
+                        <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+                            <div className="space-y-2">
+                                <Input
+                                    id="permission-group-name-color"
+                                    {...form.register("display.nameColor")}
+                                />
+                                <FieldDescription>
+                                    Color code applied to player names.
+                                </FieldDescription>
+                                <FieldError errors={[form.formState.errors.display?.nameColor]} />
+                            </div>
+                            <PreviewCard
+                                title="Name color preview"
+                                value={displayPreviewValues.nameColor}
+                            />
+                        </div>
                     </Field>
 
                     <Field>
                         <FieldLabel htmlFor="permission-group-tab-prefix">Tab prefix</FieldLabel>
-                        <Input
-                            id="permission-group-tab-prefix"
-                            {...form.register("display.tabPrefix")}
-                        />
-                        <FieldDescription>
-                            Prefix displayed in the tab list.
-                        </FieldDescription>
-                        <FieldError errors={[form.formState.errors.display?.tabPrefix]} />
+                        <div className="mt-2 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+                            <div className="space-y-2">
+                                <Input
+                                    id="permission-group-tab-prefix"
+                                    {...form.register("display.tabPrefix")}
+                                />
+                                <FieldDescription>
+                                    Prefix displayed in the tab list.
+                                </FieldDescription>
+                                <FieldError errors={[form.formState.errors.display?.tabPrefix]} />
+                            </div>
+                            <PreviewCard
+                                title="Tab prefix preview"
+                                value={displayPreviewValues.tabPrefix}
+                            />
+                        </div>
                     </Field>
                 </FieldGroup>
-            </Section>
-
-            <Section
-                title="Preview"
-                description="Live Minecraft-format previews based on the values currently in the form."
-            >
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2 rounded-xl border border-border/70 bg-background/45 p-4">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                            Chat prefix
-                        </div>
-                        <MinecraftTextPreview
-                            value={chatPrefix}
-                            fallback={displayPreviewFallbacks.chatPrefix}
-                            emptyFallback="Not set"
-                            useFallbackForFormatOnly
-                            className="font-mono"
-                        />
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-border/70 bg-background/45 p-4">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                            Chat suffix
-                        </div>
-                        <MinecraftTextPreview
-                            value={chatSuffix}
-                            fallback={displayPreviewFallbacks.chatSuffix}
-                            emptyFallback="Not set"
-                            useFallbackForFormatOnly
-                            className="font-mono"
-                        />
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-border/70 bg-background/45 p-4">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                            Name color
-                        </div>
-                        <MinecraftTextPreview
-                            value={nameColor}
-                            fallback={displayPreviewFallbacks.nameColor}
-                            emptyFallback="Not set"
-                            useFallbackForFormatOnly
-                            className="font-mono"
-                        />
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-border/70 bg-background/45 p-4">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                            Tab prefix
-                        </div>
-                        <MinecraftTextPreview
-                            value={tabPrefix}
-                            fallback={displayPreviewFallbacks.tabPrefix}
-                            emptyFallback="Not set"
-                            useFallbackForFormatOnly
-                            className="font-mono"
-                        />
-                    </div>
-                </div>
             </Section>
         </div>
     );

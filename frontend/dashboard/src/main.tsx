@@ -9,25 +9,22 @@ import DashboardLayout from "@/components/DashboardLayout";
 import GuestOnlyRoute from "@/components/GuestOnlyRoute";
 import RequireAdminAccess from "@/components/RequireAdminAccess";
 import RequireAuth from "@/components/RequireAuth";
-import DashboardHome from "@/pages/DashboardHome";
-import GroupDetailsPage from "@/pages/GroupDetailsPage";
-import GroupsPage from "@/pages/GroupsPage";
-import InboxPage from "@/pages/InboxPage";
-import LoginPage from "@/pages/LoginPage";
-import NetworkPage from "@/pages/NetworkPage";
-import NotFound from "@/pages/NotFound";
-import PermissionGroupDetailsPage from "@/pages/PermissionGroupDetailsPage";
-import PermissionsPage from "@/pages/PermissionsPage";
-import PlayersPage from "@/pages/PlayersPage";
-import ServerDetailsPage from "@/pages/ServerDetailsPage";
-import ServersPage from "@/pages/ServersPage";
-import SettingsPage from "@/pages/SettingsPage";
-import TemplatesPage from "@/pages/TemplatesPage";
-import WebUsersPage from "@/pages/WebUsersPage";
-import NetworkGeneralPage from "@/pages/network/NetworkGeneralPage";
-import NetworkMessagingPage from "@/pages/network/NetworkMessagingPage";
-import NetworkOverviewPage from "@/pages/network/NetworkOverviewPage";
-import NetworkServerSettingsPage from "@/pages/network/NetworkServerSettingsPage";
+import LoginPage from "@/features/auth/components/login-page";
+import DashboardHome from "@/features/dashboard/components/dashboard-home-page";
+import GroupDetailsPage from "@/features/groups/components/group-details-page";
+import GroupsPage from "@/features/groups/components/groups-page";
+import InboxPage from "@/features/inbox/components/inbox-page";
+import NetworkPage from "@/features/network/components/network-page";
+import PermissionGroupDetailsPage from "@/features/permissions/components/permission-group-details-page";
+import PermissionsPage from "@/features/permissions/components/permissions-page";
+import PlayerDetailsPage from "@/features/players/components/player-details-page";
+import PlayersPage from "@/features/players/components/players-page";
+import ServerDetailsPage from "@/features/servers/components/server-details-page";
+import ServersPage from "@/features/servers/components/servers-page";
+import SettingsPage from "@/features/settings/components/settings-page";
+import TemplatesPage from "@/features/templates/components/templates-page";
+import WebUsersPage from "@/features/web-users/components/web-users-page";
+import NotFound from "@/features/error/components/not-found-page";
 
 const withAdminAccess = (element: ReactElement) => (
     <RequireAdminAccess>{element}</RequireAdminAccess>
@@ -40,18 +37,10 @@ const dashboardRoutes: RouteObject[] = [
     { path: "groups", element: <GroupsPage /> },
     { path: "groups/:groupName", element: <GroupDetailsPage /> },
     { path: "players", element: <PlayersPage /> },
+    { path: "players/:playerUuid", element: <PlayerDetailsPage /> },
     { path: "inbox", element: withAdminAccess(<InboxPage />) },
-    {
-        path: "network",
-        element: <NetworkPage />,
-        children: [
-            { index: true, element: <Navigate to="overview" replace /> },
-            { path: "overview", element: <NetworkOverviewPage /> },
-            { path: "server-settings", element: <NetworkServerSettingsPage /> },
-            { path: "general", element: <NetworkGeneralPage /> },
-            { path: "messaging", element: <NetworkMessagingPage /> },
-        ],
-    },
+    { path: "network", element: <NetworkPage /> },
+    { path: "network/:section", element: <Navigate to="/network" replace /> },
     { path: "permissions", element: withAdminAccess(<PermissionsPage />) },
     {
         path: "permissions/:groupName",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listWebUsers } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listWebUsers } from "@/api";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { WebUserRecord } from "@/types/web-user";
 

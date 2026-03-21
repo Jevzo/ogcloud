@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listAllPermissionGroups, listAllServers } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listAllPermissionGroups, listAllServers } from "@/api";
 import type { PermissionGroupRecord } from "@/types/permission";
 import type { ServerRecord } from "@/types/server";
 
 interface UsePlayerManagementOptionsQueryOptions {
-    canManagePermissionGroups: boolean;
     enabled: boolean;
     permissionSystemEnabled: boolean;
 }
@@ -20,7 +19,6 @@ interface PlayerManagementOptionsQueryResult {
 }
 
 export const usePlayerManagementOptionsQuery = ({
-    canManagePermissionGroups,
     enabled,
     permissionSystemEnabled,
 }: UsePlayerManagementOptionsQueryOptions): PlayerManagementOptionsQueryResult => {
@@ -48,7 +46,7 @@ export const usePlayerManagementOptionsQuery = ({
         try {
             const accessToken = await getAccessToken();
             const [nextPermissionGroups, nextServers] = await Promise.all([
-                canManagePermissionGroups && permissionSystemEnabled
+                permissionSystemEnabled
                     ? listAllPermissionGroups(accessToken)
                     : Promise.resolve<PermissionGroupRecord[]>([]),
                 listAllServers(accessToken),
@@ -94,7 +92,7 @@ export const usePlayerManagementOptionsQuery = ({
                 setIsLoading(false);
             }
         }
-    }, [canManagePermissionGroups, enabled, getAccessToken, permissionSystemEnabled]);
+    }, [enabled, getAccessToken, permissionSystemEnabled]);
 
     useEffect(() => {
         if (!enabled) {

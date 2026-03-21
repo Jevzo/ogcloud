@@ -79,7 +79,7 @@ class PlayerRedisRepository(
             groupId = group.id,
             display = group.display,
             weight = group.weight,
-            permissions = group.permissions,
+            permissions = group.permissionValues,
             permissionEndMillis = permissionEndMillis,
             permissionVersion = permissionVersion,
         )
@@ -249,7 +249,7 @@ class PlayerRedisRepository(
             permission = toSessionPermission(permissionEndMillis, permissionVersion),
             display = display,
             weight = weight,
-            permissions = permissions,
+            permissions = permissionValues,
         )
 
     private fun PermissionGroupDocument.toSessionPermission(

@@ -29,7 +29,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -47,38 +46,30 @@ import {
 import { FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GroupConfigurationForm from "@/features/groups/components/group-configuration-form";
 import { useGroupDetailsQuery } from "@/features/groups/hooks/use-group-details-query";
 import { useGroupFormOptionsQuery } from "@/features/groups/hooks/use-group-form-options-query";
 import { groupFormSchema } from "@/features/groups/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
 import {
     deleteServerGroup,
     restartServerGroup,
     toggleServerGroupMaintenance,
     updateServerGroup,
-} from "@/lib/api";
+} from "@/api";
 import {
     buildUpdateGroupPayload,
     createEmptyGroupValues,
     toGroupFormValues,
-} from "@/lib/group-form";
-import { getRuntimeProfileLabel } from "@/lib/group-runtime";
-import { formatDateTime } from "@/lib/server-display";
+} from "@/features/groups/lib/group-form";
+import { getRuntimeProfileLabel } from "@/features/groups/lib/group-runtime";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import type { GroupFormValues } from "@/types/group";
 
-const createRestartConfirmationCode = () =>
-    `${Math.floor(100000 + Math.random() * 900000)}`;
+const createRestartConfirmationCode = () => `${Math.floor(100000 + Math.random() * 900000)}`;
 
-const StatCard = ({
-    helper,
-    label,
-    value,
-}: {
-    helper: string;
-    label: string;
-    value: string;
-}) => (
+const StatCard = ({ helper, label, value }: { helper: string; label: string; value: string }) => (
     <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
@@ -90,13 +81,7 @@ const StatCard = ({
     </Card>
 );
 
-const DetailRow = ({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) => (
+const DetailRow = ({ label, value }: { label: string; value: string }) => (
     <div className="flex flex-col gap-1 rounded-xl border border-border/70 bg-background/45 px-4 py-3">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
         <div className="break-all text-sm font-medium text-foreground">{value}</div>
@@ -120,7 +105,10 @@ const GroupDetailsSkeleton = () => (
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={`group-detail-stat-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`group-detail-stat-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-8 w-24" />
@@ -163,18 +151,9 @@ const GroupDetailsPage = () => {
     const navigate = useNavigate();
     const getAccessToken = useAccessToken();
     const groupName = decodeURIComponent(params.groupName ?? "");
-    const {
-        currentOnlineCount,
-        errorMessage,
-        group,
-        isLoading,
-        lastUpdatedAt,
-        refresh,
-    } = useGroupDetailsQuery(groupName);
-    const {
-        data: templates,
-        errorMessage: templatesErrorMessage,
-    } = useGroupFormOptionsQuery();
+    const { currentOnlineCount, errorMessage, group, isLoading, refresh } =
+        useGroupDetailsQuery(groupName);
+    const { data: templates, errorMessage: templatesErrorMessage } = useGroupFormOptionsQuery();
     const form = useForm<GroupFormValues>({
         resolver: zodResolver(groupFormSchema),
         defaultValues: createEmptyGroupValues(),
@@ -391,105 +370,93 @@ const GroupDetailsPage = () => {
 
     return (
         <div className="space-y-4">
-            <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="space-y-3">
-                            <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
-                                <Link to="/groups">
-                                    <ArrowLeftIcon className="size-4" />
-                                    Back to groups
-                                </Link>
-                            </Button>
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
-                                        Group details
-                                    </Badge>
-                                    {group ? (
-                                        <Badge
-                                            variant="outline"
-                                            className={
-                                                group.type === "STATIC"
-                                                    ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                                    : group.type === "PROXY"
-                                                      ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
-                                                      : "border-primary/30 bg-primary/10 text-primary"
-                                            }
-                                        >
-                                            {group.type}
-                                        </Badge>
-                                    ) : null}
-                                    {group ? (
-                                        <Badge
-                                            variant="outline"
-                                            className={
-                                                group.maintenance
-                                                    ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                            }
-                                        >
-                                            {group.maintenance ? "Maintenance enabled" : "Traffic open"}
-                                        </Badge>
-                                    ) : null}
-                                    {lastUpdatedAt ? (
-                                        <Badge variant="outline" className="border-border/80">
-                                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                                        </Badge>
-                                    ) : null}
-                                </div>
-                                <div>
-                                    <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
-                                        <Layers3Icon className="size-5 text-primary" />
-                                        {group?.id ?? groupName}
-                                    </CardTitle>
-                                    <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
-                                        Update template settings, autoscaling thresholds, resources,
-                                        and lifecycle controls for this runtime group.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </div>
+            <div className="space-y-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
+                        <Link to="/groups">
+                            <ArrowLeftIcon className="size-4" />
+                            Back to groups
+                        </Link>
+                    </Button>
 
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={openRestartDialog}
-                                    disabled={!group || !group.maintenance || isRestartingGroup}
-                                >
-                                    <RotateCcwIcon className="size-4" />
-                                    Restart group
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                        group?.maintenance
-                                            ? void handleDisableMaintenance()
-                                            : setIsMaintenanceAlertOpen(true)
-                                    }
-                                    disabled={!group || isTogglingMaintenance}
-                                >
-                                    {group?.maintenance ? (
-                                        <ShieldCheckIcon className="size-4" />
-                                    ) : (
-                                        <ShieldAlertIcon className="size-4" />
-                                    )}
-                                    {group?.maintenance ? "Disable maintenance" : "Enable maintenance"}
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => setIsDeleteAlertOpen(true)}
-                                    disabled={!group}
-                                >
-                                    <Trash2Icon className="size-4" />
-                                    Delete group
-                                </Button>
-                            </div>
-                        </CardAction>
+                    <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                        <Button
+                            variant="outline"
+                            onClick={openRestartDialog}
+                            disabled={!group || !group.maintenance || isRestartingGroup}
+                        >
+                            <RotateCcwIcon className="size-4" />
+                            Restart group
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                group?.maintenance
+                                    ? void handleDisableMaintenance()
+                                    : setIsMaintenanceAlertOpen(true)
+                            }
+                            disabled={!group || isTogglingMaintenance}
+                        >
+                            {group?.maintenance ? (
+                                <ShieldCheckIcon className="size-4" />
+                            ) : (
+                                <ShieldAlertIcon className="size-4" />
+                            )}
+                            {group?.maintenance ? "Disable maintenance" : "Enable maintenance"}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => setIsDeleteAlertOpen(true)}
+                            disabled={!group}
+                        >
+                            <Trash2Icon className="size-4" />
+                            Delete group
+                        </Button>
                     </div>
-                </CardHeader>
-            </Card>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        {group ? (
+                            <Badge
+                                variant="outline"
+                                className={
+                                    group.type === "STATIC"
+                                        ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                        : group.type === "PROXY"
+                                          ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                                          : "border-primary/30 bg-primary/10 text-primary"
+                                }
+                            >
+                                {group.type}
+                            </Badge>
+                        ) : null}
+                        {group ? (
+                            <Badge
+                                variant="outline"
+                                className={
+                                    group.maintenance
+                                        ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                }
+                            >
+                                {group.maintenance ? "Maintenance enabled" : "Traffic open"}
+                            </Badge>
+                        ) : null}
+                    </div>
+
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
+                            <Layers3Icon className="size-5 text-primary" />
+                            {group?.id ?? groupName}
+                        </CardTitle>
+                        <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
+                            Template settings, autoscaling thresholds, resources, and lifecycle
+                            controls for the selected runtime group.
+                        </CardDescription>
+                    </div>
+                </div>
+            </div>
 
             {errorMessage && group ? (
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
@@ -541,134 +508,158 @@ const GroupDetailsPage = () => {
                 />
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-                <div className="space-y-4">
-                    <Card className="border border-border/70 bg-card/85 shadow-none">
-                        <CardHeader className="pb-4">
-                            <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                Overview
-                            </CardDescription>
-                            <CardTitle className="text-base">Template and runtime posture</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-2">
-                            {overviewDetails.map(([label, value]) => (
-                                <DetailRow key={label} label={label} value={value} />
-                            ))}
-                        </CardContent>
-                    </Card>
+            <Tabs defaultValue="overview" className="gap-4">
+                <TabsList variant="line">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="configuration">Runtime configuration</TabsTrigger>
+                </TabsList>
 
-                    <Card className="border border-border/70 bg-card/85 shadow-none">
-                        <CardHeader className="pb-4">
-                            <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                Scaling
-                            </CardDescription>
-                            <CardTitle className="text-base">Autoscaling snapshot</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-2">
-                            {scalingDetails.map(([label, value]) => (
-                                <DetailRow key={label} label={label} value={value} />
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-border/70 bg-card/85 shadow-none">
-                        <CardHeader className="pb-4">
-                            <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                Resources
-                            </CardDescription>
-                            <CardTitle className="text-base">Kubernetes envelope</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-2">
-                            <DetailRow
-                                label="Memory request"
-                                value={group?.resources.memoryRequest ?? "--"}
-                            />
-                            <DetailRow
-                                label="Memory limit"
-                                value={group?.resources.memoryLimit ?? "--"}
-                            />
-                            <DetailRow
-                                label="CPU request"
-                                value={group?.resources.cpuRequest ?? "--"}
-                            />
-                            <DetailRow
-                                label="CPU limit"
-                                value={group?.resources.cpuLimit ?? "--"}
-                            />
-                            <DetailRow
-                                label="Storage size"
-                                value={group?.storageSize || "Not applicable"}
-                            />
-                            <DetailRow
-                                label="Maintenance"
-                                value={group?.maintenance ? "Enabled" : "Disabled"}
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card className="self-start border border-border/70 bg-card/85 shadow-none">
-                    <CardHeader className="border-b border-border/70 pb-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
+                <TabsContent value="overview" className="space-y-4">
+                    <div className="space-y-4">
+                        <Card className="border border-border/70 bg-card/85 shadow-none">
+                            <CardHeader className="pb-4">
                                 <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                    Editable configuration
+                                    Overview
                                 </CardDescription>
                                 <CardTitle className="text-base">
-                                    Runtime, scaling, and resources
+                                    Template and runtime posture
                                 </CardTitle>
-                                <CardDescription>
-                                    Identity fields stay locked here so deployment semantics remain
-                                    stable while editing the rest of the group.
-                                </CardDescription>
-                            </div>
-                            {form.formState.isDirty ? (
-                                <Badge
-                                    variant="outline"
-                                    className="w-fit border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                >
-                                    Unsaved changes
-                                </Badge>
-                            ) : null}
+                            </CardHeader>
+                            <CardContent className="grid gap-3 md:grid-cols-2">
+                                {overviewDetails.map(([label, value]) => (
+                                    <DetailRow key={label} label={label} value={value} />
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        <div className="grid gap-4 xl:grid-cols-2">
+                            <Card className="border border-border/70 bg-card/85 shadow-none">
+                                <CardHeader className="pb-4">
+                                    <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                                        Scaling
+                                    </CardDescription>
+                                    <CardTitle className="text-base">
+                                        Autoscaling snapshot
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid gap-3 md:grid-cols-2">
+                                    {scalingDetails.map(([label, value]) => (
+                                        <DetailRow key={label} label={label} value={value} />
+                                    ))}
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border border-border/70 bg-card/85 shadow-none">
+                                <CardHeader className="pb-4">
+                                    <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                                        Resources
+                                    </CardDescription>
+                                    <CardTitle className="text-base">Kubernetes envelope</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid gap-3 md:grid-cols-2">
+                                    <DetailRow
+                                        label="Memory request"
+                                        value={group?.resources.memoryRequest ?? "--"}
+                                    />
+                                    <DetailRow
+                                        label="Memory limit"
+                                        value={group?.resources.memoryLimit ?? "--"}
+                                    />
+                                    <DetailRow
+                                        label="CPU request"
+                                        value={group?.resources.cpuRequest ?? "--"}
+                                    />
+                                    <DetailRow
+                                        label="CPU limit"
+                                        value={group?.resources.cpuLimit ?? "--"}
+                                    />
+                                    <DetailRow
+                                        label="Storage size"
+                                        value={group?.storageSize || "Not applicable"}
+                                    />
+                                    <DetailRow
+                                        label="Maintenance"
+                                        value={group?.maintenance ? "Enabled" : "Disabled"}
+                                    />
+                                </CardContent>
+                            </Card>
                         </div>
-                    </CardHeader>
+                    </div>
+                </TabsContent>
 
-                    <form onSubmit={handleSaveGroup}>
-                        <CardContent className="space-y-6 pt-4">
-                            <GroupConfigurationForm
-                                disableIdentityFields
-                                form={form}
-                                templates={templates}
-                            />
+                <TabsContent value="configuration">
+                    <Card className="border border-border/70 bg-card/85 shadow-none">
+                        <CardHeader className="border-b border-border/70 pb-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                                        Editable configuration
+                                    </CardDescription>
+                                    <CardTitle className="text-base">
+                                        Runtime, scaling, and resources
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Identity fields stay locked here so deployment semantics
+                                        remain stable while editing the rest of the group.
+                                    </CardDescription>
+                                </div>
+                                {form.formState.isDirty ? (
+                                    <Badge
+                                        variant="outline"
+                                        className="w-fit border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                    >
+                                        Unsaved changes
+                                    </Badge>
+                                ) : null}
+                            </div>
+                        </CardHeader>
 
-                            <FieldError>{form.formState.errors.root?.message}</FieldError>
-                        </CardContent>
-                        <CardFooter className="justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => group && form.reset(toGroupFormValues(group))}
-                                disabled={!group || form.formState.isSubmitting || !form.formState.isDirty}
-                            >
-                                Reset
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={!group || form.formState.isSubmitting || !form.formState.isDirty}
-                            >
-                                {form.formState.isSubmitting ? (
-                                    <>
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
-                                        Saving
-                                    </>
-                                ) : (
-                                    "Save changes"
-                                )}
-                            </Button>
-                        </CardFooter>
-                    </form>
-                </Card>
-            </div>
+                        <form onSubmit={handleSaveGroup}>
+                            <CardContent className="space-y-6 pt-4">
+                                <GroupConfigurationForm
+                                    disableIdentityFields
+                                    form={form}
+                                    lockTemplateFieldsToKnownSelection
+                                    templates={templates}
+                                />
+
+                                <FieldError>{form.formState.errors.root?.message}</FieldError>
+                            </CardContent>
+                            <CardFooter className="justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => group && form.reset(toGroupFormValues(group))}
+                                    disabled={
+                                        !group ||
+                                        form.formState.isSubmitting ||
+                                        !form.formState.isDirty
+                                    }
+                                >
+                                    Reset
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        !group ||
+                                        form.formState.isSubmitting ||
+                                        !form.formState.isDirty
+                                    }
+                                >
+                                    {form.formState.isSubmitting ? (
+                                        <>
+                                            <LoaderCircleIcon className="size-4 animate-spin" />
+                                            Saving
+                                        </>
+                                    ) : (
+                                        "Save changes"
+                                    )}
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             <Dialog
                 open={isRestartDialogOpen}
@@ -741,7 +732,9 @@ const GroupDetailsPage = () => {
                             type="button"
                             variant="destructive"
                             onClick={() => void handleRestartGroup()}
-                            disabled={isRestartingGroup || restartConfirmationInput.trim().length !== 6}
+                            disabled={
+                                isRestartingGroup || restartConfirmationInput.trim().length !== 6
+                            }
                         >
                             {isRestartingGroup ? (
                                 <>
@@ -771,7 +764,9 @@ const GroupDetailsPage = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isTogglingMaintenance}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isTogglingMaintenance}>
+                            Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             variant="outline"
                             disabled={isTogglingMaintenance}

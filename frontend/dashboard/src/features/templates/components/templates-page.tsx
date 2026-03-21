@@ -1,4 +1,4 @@
-import { EllipsisIcon, FileArchiveIcon, LoaderCircleIcon, SearchIcon, UploadIcon } from "lucide-react";
+import { Clock3Icon, FilterIcon, LoaderCircleIcon, SearchIcon, UploadIcon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -6,19 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -29,13 +22,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Table,
     TableBody,
@@ -44,12 +39,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import TemplateActionsMenu from "@/features/templates/components/template-actions-menu";
 import UploadTemplateDialog from "@/features/templates/components/upload-template-dialog";
 import { useTemplateMetadataQuery } from "@/features/templates/hooks/use-template-metadata-query";
 import { useTemplatesQuery } from "@/features/templates/hooks/use-templates-query";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { deleteTemplate, downloadTemplate, uploadTemplate } from "@/lib/api";
-import { formatDateTime } from "@/lib/server-display";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { deleteTemplate, downloadTemplate, uploadTemplate } from "@/api";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { TemplateRecord } from "@/types/template";
 
@@ -62,7 +58,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -73,11 +69,87 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
 const TemplatesTableSkeleton = () => (
-    <div className="space-y-2 px-4 pb-4">
+    <div className="space-y-2 px-5 pb-5">
         {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={`templates-table-skeleton-${index}`} className="h-12 w-full" />
         ))}
+    </div>
+);
+
+const TemplatesPageSkeleton = () => (
+    <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+                <Skeleton className="h-9 w-36" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Skeleton className="h-10 w-36" />
+                <Skeleton className="h-10 w-48" />
+            </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+                <Card
+                    key={`templates-summary-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
+                    <CardHeader>
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-8 w-20" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-40" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+
+        <Card className="border border-border/70 bg-card/85">
+            <CardHeader className="gap-3 border-b border-border/70 pb-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-6 w-52" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
+                    <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+                        <Skeleton className="h-10 w-full xl:w-[184px]" />
+                        <Skeleton className="h-10 w-full xl:w-[300px]" />
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="px-0">
+                <TemplatesTableSkeleton />
+            </CardContent>
+            <CardFooter className="justify-between gap-3">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-32" />
+            </CardFooter>
+        </Card>
     </div>
 );
 
@@ -100,16 +172,13 @@ const TemplatesPage = () => {
         isRefreshing,
         lastUpdatedAt,
         refresh,
-        refreshIntervalMs,
     } = useTemplatesQuery({
         currentPage,
         groupFilter: normalizedGroupFilter,
         query: deferredQuery,
     });
-    const {
-        data: templateMetadata,
-        errorMessage: metadataErrorMessage,
-    } = useTemplateMetadataQuery();
+    const { data: templateMetadata, errorMessage: metadataErrorMessage } =
+        useTemplateMetadataQuery();
 
     const templateUsageCountByKey = useMemo(() => {
         const usageCounts = new Map<string, number>();
@@ -204,38 +273,7 @@ const TemplatesPage = () => {
     };
 
     if (isLoading && !hasFreshData) {
-        return (
-            <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Card key={`templates-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
-                            <CardHeader>
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-8 w-20" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-4 w-40" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                <Card className="border border-border/70 bg-card/85">
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-40" />
-                        <Skeleton className="h-4 w-64" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-full" />
-                        </div>
-                    </CardContent>
-                    <TemplatesTableSkeleton />
-                </Card>
-            </div>
-        );
+        return <TemplatesPageSkeleton />;
     }
 
     if (errorMessage && !hasFreshData) {
@@ -259,30 +297,22 @@ const TemplatesPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Template catalog
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Templates
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Review stored template archives, publish new versions, and keep the
-                            group-to-template mapping visible from one operational catalog.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Templates
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Review stored template archives, publish new versions, and keep the
+                        group-to-template mapping visible from one operational catalog.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <Button onClick={() => setIsUploadDialogOpen(true)}>
+                        <UploadIcon className="size-4" />
+                        Upload template
+                    </Button>
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -348,50 +378,47 @@ const TemplatesPage = () => {
                                 template versions from the action menu.
                             </CardDescription>
                         </div>
-                        <CardAction>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button onClick={() => setIsUploadDialogOpen(true)}>
-                                    <UploadIcon className="size-4" />
-                                    Upload template
-                                </Button>
+                        <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+                            <div className="w-full xl:w-[184px]">
+                                <Select
+                                    value={groupFilter}
+                                    onValueChange={(value) => {
+                                        setGroupFilter(value);
+                                        setCurrentPage(0);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <FilterIcon className="size-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by group" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All groups</SelectItem>
+                                        {templateMetadata.groups.map((group) => (
+                                            <SelectItem key={group.id} value={group.id}>
+                                                {group.id}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
-                        </CardAction>
-                    </div>
 
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-                        <InputGroup>
-                            <InputGroupAddon>
-                                <SearchIcon className="size-4" />
-                            </InputGroupAddon>
-                            <InputGroupInput
-                                value={searchInput}
-                                onChange={(event) => {
-                                    setSearchInput(event.target.value);
-                                    setCurrentPage(0);
-                                }}
-                                placeholder="Search group, version, or template path"
-                            />
-                        </InputGroup>
-
-                        <Select
-                            value={groupFilter}
-                            onValueChange={(value) => {
-                                setGroupFilter(value);
-                                setCurrentPage(0);
-                            }}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Filter by group" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All groups</SelectItem>
-                                {templateMetadata.groups.map((group) => (
-                                    <SelectItem key={group.id} value={group.id}>
-                                        {group.id}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <div className="w-full xl:w-[300px]">
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <SearchIcon className="size-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        className="text-[13px] placeholder:text-[13px]"
+                                        value={searchInput}
+                                        onChange={(event) => {
+                                            setSearchInput(event.target.value);
+                                            setCurrentPage(0);
+                                        }}
+                                        placeholder="Search group, version, or path"
+                                    />
+                                </InputGroup>
+                            </div>
+                        </div>
                     </div>
                 </CardHeader>
 
@@ -422,10 +449,11 @@ const TemplatesPage = () => {
                                         templateUsageCountByKey.get(
                                             `${template.group}::${template.version}`,
                                         ) ?? 0;
-                                    const isBusy = activeActionKey !== null;
 
                                     return (
-                                        <TableRow key={`${template.group}:${template.version}:${template.path}`}>
+                                        <TableRow
+                                            key={`${template.group}:${template.version}:${template.path}`}
+                                        >
                                             <TableCell className="px-4 py-3 align-top">
                                                 <Badge
                                                     variant="outline"
@@ -446,53 +474,27 @@ const TemplatesPage = () => {
                                                         variant="outline"
                                                         className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                                                     >
-                                                        {usageCount} group{usageCount === 1 ? "" : "s"}
+                                                        {usageCount} group
+                                                        {usageCount === 1 ? "" : "s"}
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="border-border/80">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-border/80"
+                                                    >
                                                         Unused
                                                     </Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-right align-top">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon-sm"
-                                                            disabled={isBusy}
-                                                            aria-label={`Open actions for ${template.group} ${template.version}`}
-                                                        >
-                                                            {activeActionKey?.startsWith(
-                                                                `${template.group}:${template.version}`,
-                                                            ) ? (
-                                                                <LoaderCircleIcon className="size-4 animate-spin" />
-                                                            ) : (
-                                                                <EllipsisIcon className="size-4" />
-                                                            )}
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="min-w-44">
-                                                        <DropdownMenuItem
-                                                            onSelect={(event) => {
-                                                                event.preventDefault();
-                                                                void handleDownload(template);
-                                                            }}
-                                                        >
-                                                            <FileArchiveIcon className="size-4" />
-                                                            Download archive
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            variant="destructive"
-                                                            onSelect={(event) => {
-                                                                event.preventDefault();
-                                                                setDeleteTarget(template);
-                                                            }}
-                                                        >
-                                                            Delete template
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <TemplateActionsMenu
+                                                    activeActionKey={activeActionKey}
+                                                    onDeleteTemplate={setDeleteTarget}
+                                                    onDownloadTemplate={(nextTemplate) => {
+                                                        void handleDownload(nextTemplate);
+                                                    }}
+                                                    template={template}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -525,13 +527,15 @@ const TemplatesPage = () => {
                 </CardFooter>
             </Card>
 
-            <UploadTemplateDialog
-                groupSuggestions={templateMetadata.groups.map((group) => group.id)}
-                isSubmitting={isUploading}
-                open={isUploadDialogOpen}
-                onOpenChange={setIsUploadDialogOpen}
-                onSubmit={handleUpload}
-            />
+            {isUploadDialogOpen ? (
+                <UploadTemplateDialog
+                    groupSuggestions={templateMetadata.groups.map((group) => group.id)}
+                    isSubmitting={isUploading}
+                    open={isUploadDialogOpen}
+                    onOpenChange={setIsUploadDialogOpen}
+                    onSubmit={handleUpload}
+                />
+            ) : null}
 
             <AlertDialog
                 open={deleteTarget !== null}

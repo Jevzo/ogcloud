@@ -1,16 +1,13 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import {
-    LoaderCircleIcon,
-    LockIcon,
-    RouteIcon,
-    ShieldCheckIcon,
-    Table2Icon,
-} from "lucide-react";
+import { LoaderCircleIcon, LockIcon } from "lucide-react";
 
-import { useNetworkPageContext } from "@/pages/network/context";
-import { formatNetworkLockDuration, formatProxyRoutingStrategy } from "@/pages/network/utils";
+import { useNetworkPageContext } from "@/features/network/lib/context";
+import {
+    formatNetworkLockDuration,
+    formatProxyRoutingStrategy,
+} from "@/features/network/lib/utils";
 import {
     networkGeneralFormSchema,
     type NetworkGeneralFormValues,
@@ -18,13 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
     Select,
     SelectContent,
@@ -156,8 +147,8 @@ const NetworkGeneralPage = () => {
                         </div>
                         <CardTitle>Current behavior</CardTitle>
                         <CardDescription>
-                            Snapshot of the general network controls that affect routing,
-                            permission synchronization, and player list updates.
+                            Snapshot of the general network controls that affect routing, permission
+                            synchronization, and player list updates.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3">
@@ -197,8 +188,8 @@ const NetworkGeneralPage = () => {
                                     Permission synchronization lock active
                                 </div>
                                 <div className="mt-1 text-amber-100/85">
-                                    Wait {formatNetworkLockDuration(permissionLock.ttlSeconds)} before
-                                    toggling the permission system again.
+                                    Wait {formatNetworkLockDuration(permissionLock.ttlSeconds)}{" "}
+                                    before toggling the permission system again.
                                 </div>
                             </div>
                         </div>
@@ -261,7 +252,9 @@ const NetworkGeneralPage = () => {
                             />
 
                             <Field>
-                                <FieldLabel htmlFor="network-proxy-routing">Proxy routing</FieldLabel>
+                                <FieldLabel htmlFor="network-proxy-routing">
+                                    Proxy routing
+                                </FieldLabel>
                                 <Controller
                                     control={form.control}
                                     name="proxyRoutingStrategy"
@@ -291,42 +284,12 @@ const NetworkGeneralPage = () => {
                                     )}
                                 />
                                 <FieldDescription>
-                                    Choose between the least-loaded proxy and a rotating round-robin edge.
+                                    Choose between the least-loaded proxy and a rotating round-robin
+                                    edge.
                                 </FieldDescription>
                                 <FieldError errors={[form.formState.errors.proxyRoutingStrategy]} />
                             </Field>
                         </FieldGroup>
-
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                    <ShieldCheckIcon className="size-4 text-primary" />
-                                    Permission sync
-                                </div>
-                                <div className="mt-2 text-sm text-muted-foreground">
-                                    {permissionSystemEnabled ? "Injecting" : "Disabled"}
-                                </div>
-                            </div>
-                            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                    <Table2Icon className="size-4 text-primary" />
-                                    Tablist
-                                </div>
-                                <div className="mt-2 text-sm text-muted-foreground">
-                                    {tablistEnabled ? "Publishing updates" : "Muted"}
-                                </div>
-                            </div>
-                            <div className="rounded-xl border border-border/70 bg-background/55 p-4">
-                                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                                    <RouteIcon className="size-4 text-primary" />
-                                    Routing mode
-                                </div>
-                                <div className="mt-2 text-sm text-muted-foreground">
-                                    {formatProxyRoutingStrategy(proxyRoutingStrategy ?? "LOAD_BASED")}
-                                </div>
-                            </div>
-                        </div>
-
                         <FieldError>{form.formState.errors.root?.message}</FieldError>
 
                         <div className="flex justify-end">

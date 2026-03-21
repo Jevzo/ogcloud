@@ -48,7 +48,8 @@ class PermissionGroupService(
                 "display.chatSuffix",
                 "display.nameColor",
                 "display.tabPrefix",
-                "permissions",
+                "permissions.perm",
+                "permissions.description",
             )?.let(queryObject::addCriteria)
 
         val totalItems = mongoTemplate.count<PermissionGroupDocument>(queryObject)
@@ -93,7 +94,7 @@ class PermissionGroupService(
                     ),
                 weight = request.weight,
                 default = request.default,
-                permissions = request.permissions,
+                permissions = request.permissions.map { it.toPermission() },
             )
 
         val saved =
@@ -137,7 +138,7 @@ class PermissionGroupService(
                     display = updatedDisplay,
                     weight = request.weight ?: existing.weight,
                     default = request.default ?: existing.default,
-                    permissions = request.permissions ?: existing.permissions,
+                    permissions = request.permissions?.map { it.toPermission() } ?: existing.permissions,
                 ),
             )
 
@@ -194,7 +195,7 @@ class PermissionGroupService(
 
     fun addPermission(
         name: String,
-        permission: String,
+        request: AddPermissionToGroupRequest,
     ): PermissionGroupResponse {
         ensurePermissionSystemEnabled()
 
@@ -203,11 +204,16 @@ class PermissionGroupService(
                 .findById(name)
                 .orElseThrow { PermissionGroupNotFoundException(name) }
 
-        if (existing.permissions.contains(permission)) {
+        if (existing.permissions.any { it.perm == request.perm }) {
             return existing.toResponse()
         }
 
-        val saved = permissionGroupRepository.save(existing.copy(permissions = existing.permissions + permission))
+        val saved =
+            permissionGroupRepository.save(
+                existing.copy(
+                    permissions = existing.permissions + request.toPermission(),
+                ),
+            )
 
         publishUpdateForGroupPlayers(name)
         permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)
@@ -226,7 +232,12 @@ class PermissionGroupService(
                 .findById(name)
                 .orElseThrow { PermissionGroupNotFoundException(name) }
 
-        val saved = permissionGroupRepository.save(existing.copy(permissions = existing.permissions - permission))
+        val saved =
+            permissionGroupRepository.save(
+                existing.copy(
+                    permissions = existing.permissions.filterNot { it.perm == permission },
+                ),
+            )
 
         publishUpdateForGroupPlayers(name)
         permissionGroupUpdatedProducer.publishPermissionGroupUpserted(saved)

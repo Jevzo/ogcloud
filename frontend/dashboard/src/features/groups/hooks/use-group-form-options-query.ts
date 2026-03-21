@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listAllTemplates } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listAllTemplates } from "@/api";
 import type { TemplateRecord } from "@/types/template";
 
 const EMPTY_TEMPLATES: TemplateRecord[] = [];

@@ -1,6 +1,5 @@
 import {
-    EllipsisIcon,
-    Link2OffIcon,
+    Clock3Icon,
     LoaderCircleIcon,
     SearchIcon,
     ShieldAlertIcon,
@@ -9,23 +8,6 @@ import {
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,11 +18,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -50,22 +38,18 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { createWebUser, deleteWebUser, unlinkWebUserAccount, updateWebUser } from "@/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { hasAdminAccess, normalizeRole } from "@/features/auth/lib/roles";
 import CreateWebUserDialog from "@/features/web-users/components/create-web-user-dialog";
 import EditWebUserDialog from "@/features/web-users/components/edit-web-user-dialog";
+import WebUserActionsMenu from "@/features/web-users/components/web-user-actions-menu";
 import { useWebUsersQuery } from "@/features/web-users/hooks/use-web-users-query";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import type {
     CreateWebUserFormValues,
     UpdateWebUserFormValues,
 } from "@/features/web-users/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import {
-    createWebUser,
-    deleteWebUser,
-    unlinkWebUserAccount,
-    updateWebUser,
-} from "@/lib/api";
-import { hasAdminAccess, normalizeRole } from "@/lib/roles";
-import { formatDateTime } from "@/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { UpdateWebUserPayload, WebUserRecord } from "@/types/web-user";
@@ -93,7 +77,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -104,11 +88,86 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
 const WebUsersTableSkeleton = () => (
-    <div className="space-y-2 px-4 pb-4">
+    <div className="space-y-2 px-5 pb-5">
         {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={`web-users-table-skeleton-${index}`} className="h-12 w-full" />
         ))}
+    </div>
+);
+
+const WebUsersPageSkeleton = () => (
+    <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+                <Skeleton className="h-9 w-44" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Skeleton className="h-10 w-36" />
+                <Skeleton className="h-10 w-48" />
+            </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+                <Card
+                    key={`web-users-summary-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
+                    <CardHeader>
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-8 w-20" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-40" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+
+        <Card className="border border-border/70 bg-card/85">
+            <CardHeader className="gap-4 border-b border-border/70 pb-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-4 w-72" />
+                    </div>
+                    <div className="w-full xl:max-w-[320px]">
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="px-0">
+                <WebUsersTableSkeleton />
+            </CardContent>
+            <CardFooter className="justify-between gap-3">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-32" />
+            </CardFooter>
+        </Card>
     </div>
 );
 
@@ -138,7 +197,6 @@ const WebUsersPage = () => {
         isRefreshing,
         lastUpdatedAt,
         refresh,
-        refreshIntervalMs,
     } = useWebUsersQuery({
         currentPage,
         enabled: canManageWebUsers,
@@ -148,9 +206,7 @@ const WebUsersPage = () => {
     const totalPages = getPaginatedTotalPages(webUserPage);
     const hasFreshData = lastUpdatedAt !== null;
     const linkedAccounts = webUserPage.items.filter((user) => user.linkedPlayerUuid).length;
-    const privilegedAccounts = webUserPage.items.filter((user) =>
-        hasAdminAccess(user.role),
-    ).length;
+    const privilegedAccounts = webUserPage.items.filter((user) => hasAdminAccess(user.role)).length;
     const visibleRoles = new Set(webUserPage.items.map((user) => user.role)).size;
 
     const handleCreate = async (values: CreateWebUserFormValues) => {
@@ -285,19 +341,14 @@ const WebUsersPage = () => {
     if (!canManageWebUsers) {
         return (
             <div className="space-y-4">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Account administration
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Web users
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Provision dashboard accounts, assign access roles, and manage Minecraft
-                            account links.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Web users
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Provision dashboard accounts, assign access roles, and manage Minecraft
+                        account links from one operational table.
+                    </p>
                 </div>
 
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
@@ -316,37 +367,7 @@ const WebUsersPage = () => {
     }
 
     if (isLoading && !hasFreshData) {
-        return (
-            <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Card key={`web-users-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
-                            <CardHeader>
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-8 w-20" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-4 w-40" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                <Card className="border border-border/70 bg-card/85">
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-40" />
-                        <Skeleton className="h-4 w-64" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                            <Skeleton className="h-8 w-full" />
-                            <Skeleton className="h-8 w-36" />
-                        </div>
-                    </CardContent>
-                    <WebUsersTableSkeleton />
-                </Card>
-            </div>
-        );
+        return <WebUsersPageSkeleton />;
     }
 
     if (errorMessage && !hasFreshData) {
@@ -370,30 +391,22 @@ const WebUsersPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Account administration
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Web users
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Provision dashboard accounts, assign access roles, and manage Minecraft
-                            account links from one operator-focused table.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Web users
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Provision dashboard accounts, assign access roles, and manage Minecraft
+                        account links from one operator-focused table.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                        <UserPlusIcon className="size-4" />
+                        Create user
+                    </Button>
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -412,24 +425,24 @@ const WebUsersPage = () => {
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
-                    label="Visible accounts"
+                    label="Total accounts"
                     value={`${webUserPage.totalItems}`}
-                    helper="Total dashboard accounts visible to the current query."
+                    helper="Backend paginated dashboard accounts visible to the current query."
                 />
                 <SummaryCard
-                    label="Linked players"
+                    label="Linked on page"
                     value={`${linkedAccounts}`}
-                    helper="Accounts with an active Minecraft account link on this page."
+                    helper="Accounts on the current page with an active Minecraft account link."
                 />
                 <SummaryCard
-                    label="Privileged roles"
+                    label="Privileged on page"
                     value={`${privilegedAccounts}`}
-                    helper="Admin and service accounts visible in the rendered rows."
+                    helper="Admin and service accounts represented in the rendered rows."
                 />
                 <SummaryCard
-                    label="Visible roles"
+                    label="Roles on page"
                     value={`${visibleRoles}`}
-                    helper="Distinct account roles represented on this page."
+                    helper="Distinct dashboard roles represented on the current page."
                 />
             </div>
 
@@ -442,33 +455,28 @@ const WebUsersPage = () => {
                             </CardDescription>
                             <CardTitle className="text-base">Dashboard users</CardTitle>
                             <CardDescription>
-                                Search by email, username, or role, then manage the selected
-                                account from the row action menu.
+                                Search by email, username, or role, then manage the selected account
+                                from the row action menu.
                             </CardDescription>
                         </div>
-                        <CardAction>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                                    <UserPlusIcon className="size-4" />
-                                    Create user
-                                </Button>
-                            </div>
-                        </CardAction>
-                    </div>
 
-                    <InputGroup>
-                        <InputGroupAddon>
-                            <SearchIcon className="size-4" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchInput}
-                            onChange={(event) => {
-                                setSearchInput(event.target.value);
-                                setCurrentPage(0);
-                            }}
-                            placeholder="Search email, username, or role"
-                        />
-                    </InputGroup>
+                        <div className="w-full xl:max-w-[320px]">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <SearchIcon className="size-4" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    className="text-[13px] placeholder:text-[13px]"
+                                    value={searchInput}
+                                    onChange={(event) => {
+                                        setSearchInput(event.target.value);
+                                        setCurrentPage(0);
+                                    }}
+                                    placeholder="Search email, username, or role"
+                                />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="px-0">
@@ -489,14 +497,15 @@ const WebUsersPage = () => {
                                         colSpan={5}
                                         className="px-4 py-12 text-center text-sm text-muted-foreground"
                                     >
-                                        No web users matched the current filter set.
+                                        No web users matched the current query.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 webUserPage.items.map((user) => {
                                     const normalizedTargetEmail = user.email.trim().toLowerCase();
                                     const isUnlinking = activeUnlinkEmail === normalizedTargetEmail;
-                                    const isBusy = isUpdating || isDeleting || activeUnlinkEmail !== null;
+                                    const isBusy =
+                                        isUpdating || isDeleting || activeUnlinkEmail !== null;
 
                                     return (
                                         <TableRow key={user.id}>
@@ -505,7 +514,8 @@ const WebUsersPage = () => {
                                                     <div className="font-medium text-foreground">
                                                         {user.email}
                                                     </div>
-                                                    {normalizedTargetEmail === normalizedCurrentUserEmail ? (
+                                                    {normalizedTargetEmail ===
+                                                    normalizedCurrentUserEmail ? (
                                                         <div className="text-xs text-muted-foreground">
                                                             Current session account
                                                         </div>
@@ -537,57 +547,25 @@ const WebUsersPage = () => {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <Badge variant="outline" className="border-border/80">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-border/80"
+                                                    >
                                                         Unlinked
                                                     </Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell className="px-4 py-3 text-right align-top">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="icon-sm"
-                                                            disabled={isBusy}
-                                                            aria-label={`Open actions for ${user.email}`}
-                                                        >
-                                                            {isUnlinking ? (
-                                                                <LoaderCircleIcon className="size-4 animate-spin" />
-                                                            ) : (
-                                                                <EllipsisIcon className="size-4" />
-                                                            )}
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="min-w-44">
-                                                        <DropdownMenuItem
-                                                            disabled={!user.linkedPlayerUuid}
-                                                            onSelect={(event) => {
-                                                                event.preventDefault();
-                                                                void handleUnlink(user);
-                                                            }}
-                                                        >
-                                                            <Link2OffIcon className="size-4" />
-                                                            Unlink Minecraft account
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onSelect={(event) => {
-                                                                event.preventDefault();
-                                                                setEditTarget(user);
-                                                            }}
-                                                        >
-                                                            Edit user
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            variant="destructive"
-                                                            onSelect={(event) => {
-                                                                event.preventDefault();
-                                                                setDeleteTarget(user);
-                                                            }}
-                                                        >
-                                                            Delete user
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <WebUserActionsMenu
+                                                    disabled={isBusy}
+                                                    isUnlinking={isUnlinking}
+                                                    onDelete={setDeleteTarget}
+                                                    onEdit={setEditTarget}
+                                                    onUnlink={(nextUser) => {
+                                                        void handleUnlink(nextUser);
+                                                    }}
+                                                    user={user}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     );

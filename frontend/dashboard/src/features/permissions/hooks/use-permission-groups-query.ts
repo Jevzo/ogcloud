@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listAllPermissionGroups } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listAllPermissionGroups } from "@/api";
 import type { PermissionGroupRecord } from "@/types/permission";
 
 const REFRESH_INTERVAL_MS = 10_000;
@@ -66,9 +66,7 @@ export const usePermissionGroupsQuery = ({
                 }
 
                 setErrorMessage(
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to load permission groups.",
+                    error instanceof Error ? error.message : "Unable to load permission groups.",
                 );
             } finally {
                 if (requestIdRef.current === requestId) {

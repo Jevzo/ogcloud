@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+    Clock3Icon,
     Layers3Icon,
     LoaderCircleIcon,
     PlusIcon,
@@ -8,16 +9,14 @@ import {
     ShieldAlertIcon,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -30,11 +29,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -44,17 +39,20 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { createServerGroup, restartServerGroup, toggleServerGroupMaintenance } from "@/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import GroupActionsMenu from "@/features/groups/components/group-actions-menu";
 import GroupConfigurationForm from "@/features/groups/components/group-configuration-form";
 import { useGroupFormOptionsQuery } from "@/features/groups/hooks/use-group-form-options-query";
 import { useGroupsQuery } from "@/features/groups/hooks/use-groups-query";
+import { buildCreateGroupPayload, createEmptyGroupValues } from "@/features/groups/lib/group-form";
+import { getRuntimeProfileLabel } from "@/features/groups/lib/group-runtime";
 import { groupFormSchema } from "@/features/groups/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { createServerGroup } from "@/lib/api";
-import { buildCreateGroupPayload, createEmptyGroupValues } from "@/lib/group-form";
-import { getRuntimeProfileLabel } from "@/lib/group-runtime";
-import { formatDateTime } from "@/lib/server-display";
+import { formatDateTime } from "@/features/servers/lib/server-display";
+import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { GroupFormValues, GroupRecord } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
+import { useNavigate } from "react-router";
 
 const buildInitialGroupValues = (templates: TemplateRecord[]): GroupFormValues => {
     const initialValues = createEmptyGroupValues();
@@ -80,7 +78,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -91,11 +89,43 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
+const GroupsTableSkeleton = () => (
+    <div className="space-y-2 px-5 pb-5">
+        {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={`groups-table-skeleton-${index}`} className="h-12 w-full" />
+        ))}
+    </div>
+);
+
 const GroupsPageSkeleton = () => (
     <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={`group-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`group-summary-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-8 w-24" />
@@ -113,15 +143,10 @@ const GroupsPageSkeleton = () => (
                 <Skeleton className="h-8 w-44" />
                 <Skeleton className="h-4 w-72" />
             </CardHeader>
-            <CardContent className="space-y-3">
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-32" />
-                </div>
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <Skeleton key={`groups-table-skeleton-${index}`} className="h-12 w-full" />
-                ))}
+            <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
             </CardContent>
+            <GroupsTableSkeleton />
         </Card>
     </div>
 );
@@ -142,24 +167,24 @@ const GroupsPage = () => {
     const navigate = useNavigate();
     const getAccessToken = useAccessToken();
 
+    const [currentPage, setCurrentPage] = useState(0);
     const [searchInput, setSearchInput] = useState("");
+    const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     const deferredQuery = useDeferredValue(searchInput.trim());
     const {
-        data: groups,
+        data: groupPage,
         errorMessage,
         isLoading,
+        isRefreshing,
         lastUpdatedAt,
         refresh,
-        refreshIntervalMs,
     } = useGroupsQuery({
+        currentPage,
         query: deferredQuery,
     });
-    const {
-        data: templates,
-        errorMessage: templatesErrorMessage,
-    } = useGroupFormOptionsQuery();
+    const { data: templates, errorMessage: templatesErrorMessage } = useGroupFormOptionsQuery();
     const form = useForm<GroupFormValues>({
         resolver: zodResolver(groupFormSchema),
         defaultValues: buildInitialGroupValues(templates),
@@ -204,11 +229,18 @@ const GroupsPage = () => {
     const handleCreateGroup = form.handleSubmit(async (values) => {
         try {
             const accessToken = await getAccessToken();
-            const createdGroup = await createServerGroup(accessToken, buildCreateGroupPayload(values));
+            const createdGroup = await createServerGroup(
+                accessToken,
+                buildCreateGroupPayload(values),
+            );
 
             toast.success(`Created server group ${createdGroup.id}.`);
             handleCreateDialogChange(false);
-            await refresh(false);
+            if (currentPage === 0) {
+                await refresh(false);
+            } else {
+                setCurrentPage(0);
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Unable to create group.";
 
@@ -219,9 +251,57 @@ const GroupsPage = () => {
         }
     });
 
-    const maintenanceCount = groups.filter((group) => group.maintenance).length;
-    const staticCount = groups.filter((group) => group.type === "STATIC").length;
-    const proxyCount = groups.filter((group) => group.type === "PROXY").length;
+    const handleToggleMaintenance = async (groupId: string, maintenance: boolean) => {
+        const actionKey = `${groupId}:maintenance:${maintenance ? "on" : "off"}`;
+        setActiveActionKey(actionKey);
+
+        try {
+            const accessToken = await getAccessToken();
+            const updatedGroup = await toggleServerGroupMaintenance(
+                accessToken,
+                groupId,
+                maintenance,
+            );
+
+            toast.success(
+                `${updatedGroup.id} maintenance ${maintenance ? "enabled" : "disabled"}.`,
+            );
+            await refresh(false);
+        } catch (error) {
+            const nextError =
+                error instanceof Error ? error : new Error("Unable to update maintenance mode.");
+
+            toast.error(nextError.message);
+            throw nextError;
+        } finally {
+            setActiveActionKey(null);
+        }
+    };
+
+    const handleRestartGroup = async (groupId: string) => {
+        const actionKey = `${groupId}:restart`;
+        setActiveActionKey(actionKey);
+
+        try {
+            const accessToken = await getAccessToken();
+            await restartServerGroup(accessToken, groupId);
+            toast.success(`${groupId} restart requested.`);
+            await refresh(false);
+        } catch (error) {
+            const nextError =
+                error instanceof Error ? error : new Error("Unable to restart group.");
+
+            toast.error(nextError.message);
+            throw nextError;
+        } finally {
+            setActiveActionKey(null);
+        }
+    };
+
+    const maintenanceCount = groupPage.items.filter((group) => group.maintenance).length;
+    const staticCount = groupPage.items.filter((group) => group.type === "STATIC").length;
+    const proxyCount = groupPage.items.filter((group) => group.type === "PROXY").length;
+    const totalPages = getPaginatedTotalPages(groupPage);
     const hasFreshData = lastUpdatedAt !== null;
 
     if (isLoading && !hasFreshData) {
@@ -249,30 +329,22 @@ const GroupsPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Runtime groups
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Server groups
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Manage runtime templates, autoscaling posture, and resource envelopes
-                            for every deployable group.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Server groups
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Manage runtime templates, autoscaling posture, and resource envelopes for
+                        every deployable group.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                        <PlusIcon className="size-4" />
+                        Create group
+                    </Button>
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -307,32 +379,32 @@ const GroupsPage = () => {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Total groups"
-                    value={`${groups.length}`}
+                    value={`${groupPage.totalItems}`}
                     helper={
                         deferredQuery
                             ? "Groups matching the active search query."
-                            : "All deployable groups currently visible to the dashboard."
+                            : "Paginated deployable groups currently visible to the dashboard."
                     }
                 />
                 <SummaryCard
-                    label="Maintenance"
+                    label="Maintenance on page"
                     value={`${maintenanceCount}`}
-                    helper="Groups currently held out of normal player traffic."
+                    helper="Groups on the current page that are held out of normal player traffic."
                 />
                 <SummaryCard
-                    label="Static storage"
+                    label="Static on page"
                     value={`${staticCount}`}
-                    helper="Persistent groups retaining attached storage volumes."
+                    helper="Persistent groups on the current page retaining attached storage."
                 />
                 <SummaryCard
-                    label="Proxy entrypoints"
+                    label="Proxy on page"
                     value={`${proxyCount}`}
-                    helper="Velocity-facing groups handling ingress or routing."
+                    helper="Velocity-facing groups represented on the current page."
                 />
             </div>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4 border-b border-border/70 pb-4">
+                <CardHeader className="gap-3 border-b border-border/70 pb-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                         <div>
                             <CardDescription className="text-xs uppercase tracking-[0.24em]">
@@ -340,30 +412,27 @@ const GroupsPage = () => {
                             </CardDescription>
                             <CardTitle className="text-base">Deployable runtime groups</CardTitle>
                             <CardDescription>
-                                Search across group IDs, inspect runtime posture, and open the
-                                full configuration workflow for changes.
+                                Search across group IDs and runtime posture, then use row actions
+                                for maintenance control or restart requests.
                             </CardDescription>
                         </div>
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                                    <PlusIcon className="size-4" />
-                                    Create group
-                                </Button>
-                            </div>
-                        </CardAction>
-                    </div>
 
-                    <InputGroup>
-                        <InputGroupAddon>
-                            <SearchIcon className="size-4" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchInput}
-                            onChange={(event) => setSearchInput(event.target.value)}
-                            placeholder="Search group ID, type, runtime, template, or image"
-                        />
-                    </InputGroup>
+                        <div className="w-full xl:max-w-[320px]">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <SearchIcon className="size-4" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    value={searchInput}
+                                    onChange={(event) => {
+                                        setSearchInput(event.target.value);
+                                        setCurrentPage(0);
+                                    }}
+                                    placeholder="Search groups, runtime, or image"
+                                />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="px-0">
@@ -377,11 +446,11 @@ const GroupsPage = () => {
                                 <TableHead className="px-4">Resources</TableHead>
                                 <TableHead className="px-4">Maintenance</TableHead>
                                 <TableHead className="px-4">Updated</TableHead>
-                                <TableHead className="px-4 text-right">Open</TableHead>
+                                <TableHead className="px-4 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {groups.length === 0 ? (
+                            {groupPage.items.length === 0 ? (
                                 <TableRow>
                                     <TableCell
                                         colSpan={8}
@@ -391,7 +460,7 @@ const GroupsPage = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                groups.map((group) => (
+                                groupPage.items.map((group) => (
                                     <TableRow
                                         key={group.id}
                                         className="cursor-pointer"
@@ -405,12 +474,13 @@ const GroupsPage = () => {
                                                     <span className="font-medium text-foreground">
                                                         {group.id}
                                                     </span>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={getTypeBadgeClassName(group.type)}
-                                                    >
-                                                        {group.type}
-                                                    </Badge>
+                                                    <span>
+                                                        <span
+                                                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${getTypeBadgeClassName(group.type)}`}
+                                                        >
+                                                            {group.type}
+                                                        </span>
+                                                    </span>
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
                                                     {group.serverImage}
@@ -462,16 +532,15 @@ const GroupsPage = () => {
                                             </div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 align-top">
-                                            <Badge
-                                                variant="outline"
-                                                className={
+                                            <span
+                                                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${
                                                     group.maintenance
                                                         ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
                                                         : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                                }
+                                                }`}
                                             >
                                                 {group.maintenance ? "Enabled" : "Disabled"}
-                                            </Badge>
+                                            </span>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 align-top text-muted-foreground">
                                             {formatDateTime(group.updatedAt)}
@@ -480,11 +549,17 @@ const GroupsPage = () => {
                                             className="px-4 py-3 text-right align-top"
                                             onClick={(event) => event.stopPropagation()}
                                         >
-                                            <Button variant="ghost" size="sm" asChild>
-                                                <Link to={`/groups/${encodeURIComponent(group.id)}`}>
-                                                    Open
-                                                </Link>
-                                            </Button>
+                                            <GroupActionsMenu
+                                                activeActionKey={activeActionKey}
+                                                group={group}
+                                                onOpenGroup={(nextGroup) =>
+                                                    navigate(
+                                                        `/groups/${encodeURIComponent(nextGroup.id)}`,
+                                                    )
+                                                }
+                                                onRestartGroup={handleRestartGroup}
+                                                onToggleMaintenance={handleToggleMaintenance}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -492,6 +567,28 @@ const GroupsPage = () => {
                         </TableBody>
                     </Table>
                 </CardContent>
+
+                <CardFooter className="justify-between gap-3">
+                    <div className="text-sm text-muted-foreground">
+                        Page {groupPage.page + 1} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage((value) => Math.max(0, value - 1))}
+                            disabled={currentPage === 0 || isRefreshing}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCurrentPage((value) => value + 1)}
+                            disabled={!getPaginatedHasNext(groupPage) || isRefreshing}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </CardFooter>
             </Card>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={handleCreateDialogChange}>
@@ -508,7 +605,11 @@ const GroupsPage = () => {
                     </DialogHeader>
 
                     <form onSubmit={handleCreateGroup} className="space-y-6">
-                        <GroupConfigurationForm form={form} templates={templates} />
+                        <GroupConfigurationForm
+                            form={form}
+                            lockTemplateFieldsToKnownSelection
+                            templates={templates}
+                        />
 
                         <FieldError>{form.formState.errors.root?.message}</FieldError>
 

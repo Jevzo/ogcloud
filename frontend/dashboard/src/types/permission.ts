@@ -5,13 +5,23 @@ interface PermissionGroupDisplayConfig {
     tabPrefix: string;
 }
 
+export interface PermissionGroupPermissionRecord {
+    perm: string;
+    description: string;
+}
+
+export interface PermissionGroupPermissionPayload {
+    perm: string;
+    description: string;
+}
+
 export interface PermissionGroupRecord {
     id: string;
     name: string;
     display: PermissionGroupDisplayConfig;
     weight: number;
     default: boolean;
-    permissions: string[];
+    permissions: PermissionGroupPermissionRecord[];
 }
 
 export interface CreatePermissionGroupPayload {
@@ -20,7 +30,7 @@ export interface CreatePermissionGroupPayload {
     display: PermissionGroupDisplayConfig;
     weight: number;
     default: boolean;
-    permissions: string[];
+    permissions: PermissionGroupPermissionPayload[];
 }
 
 export interface UpdatePermissionGroupPayload {
@@ -28,7 +38,7 @@ export interface UpdatePermissionGroupPayload {
     display?: PermissionGroupDisplayConfig;
     weight?: number;
     default?: boolean;
-    permissions?: string[];
+    permissions?: PermissionGroupPermissionPayload[];
 }
 
 export interface PermissionGroupFormValues {

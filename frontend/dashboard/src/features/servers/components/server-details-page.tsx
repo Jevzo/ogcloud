@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
     ArrowLeftIcon,
+    CopyIcon,
     ExternalLinkIcon,
     ServerIcon,
     TerminalIcon,
@@ -33,24 +34,19 @@ import ExecuteCommandDialog from "@/features/servers/components/execute-command-
 import ServerActionsMenu from "@/features/servers/components/server-actions-menu";
 import ServerStatusBadge from "@/features/servers/components/server-status-badge";
 import { useServerDetailsQuery } from "@/features/servers/hooks/use-server-details-query";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getRuntimeProfileLabel } from "@/lib/group-runtime";
-import { hasAdminAccess } from "@/lib/roles";
-import { getServerActionSuccessMessage, runServerAction } from "@/lib/server-actions";
-import { formatDateTime, formatMemoryMb, formatTps } from "@/lib/server-display";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { getRuntimeProfileLabel } from "@/features/groups/lib/group-runtime";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
+import {
+    getServerActionSuccessMessage,
+    runServerAction,
+} from "@/features/servers/lib/server-actions";
+import { formatDateTime, formatMemoryMb, formatTps } from "@/features/servers/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 import type { ServerActionKind } from "@/types/server";
 
-const StatCard = ({
-    helper,
-    label,
-    value,
-}: {
-    helper: string;
-    label: string;
-    value: string;
-}) => (
+const StatCard = ({ helper, label, value }: { helper: string; label: string; value: string }) => (
     <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
@@ -65,13 +61,22 @@ const StatCard = ({
 const DetailRow = ({
     label,
     value,
+    action,
+    valueClassName,
 }: {
+    action?: React.ReactNode;
     label: string;
     value: string;
+    valueClassName?: string;
 }) => (
     <div className="flex flex-col gap-1 rounded-lg border border-border/70 bg-background/45 px-4 py-3">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-        <div className="break-all text-sm font-medium text-foreground">{value}</div>
+        <div className="flex items-center gap-2">
+            <div className={`min-w-0 text-sm font-medium text-foreground ${valueClassName ?? ""}`}>
+                {value}
+            </div>
+            {action}
+        </div>
     </div>
 );
 
@@ -92,7 +97,10 @@ const ServerDetailsSkeleton = () => (
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {Array.from({ length: 5 }).map((_, index) => (
-                <Card key={`server-detail-stat-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`server-detail-stat-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-8 w-24" />
@@ -128,11 +136,20 @@ const ServerDetailsPage = () => {
     const [playerPageIndex, setPlayerPageIndex] = useState(0);
     const [isCommandDialogOpen, setIsCommandDialogOpen] = useState(false);
 
-    const { errorMessage, group, isLoading, isRefreshing, playerPage, refresh, refreshIntervalMs, runtimeSnapshot, server } =
-        useServerDetailsQuery({
-            playerPageIndex,
-            serverId,
-        });
+    const {
+        errorMessage,
+        group,
+        isLoading,
+        isRefreshing,
+        playerPage,
+        refresh,
+        refreshIntervalMs,
+        runtimeSnapshot,
+        server,
+    } = useServerDetailsQuery({
+        playerPageIndex,
+        serverId,
+    });
 
     useEffect(() => {
         setPlayerPageIndex(0);
@@ -160,6 +177,15 @@ const ServerDetailsPage = () => {
             );
         } finally {
             setActiveActionKey(null);
+        }
+    };
+
+    const handleCopyServerId = async (value: string) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            toast.success("Server ID copied.");
+        } catch {
+            toast.error("Unable to copy the server ID.");
         }
     };
 
@@ -212,10 +238,7 @@ const ServerDetailsPage = () => {
                             </Button>
                         ) : null}
                         {server && canExecuteCommands ? (
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsCommandDialogOpen(true)}
-                            >
+                            <Button variant="outline" onClick={() => setIsCommandDialogOpen(true)}>
                                 <TerminalIcon className="size-4" />
                                 Execute command
                             </Button>
@@ -329,8 +352,30 @@ const ServerDetailsPage = () => {
                                 <CardTitle className="text-base">Server metadata</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 md:grid-cols-2">
-                                <DetailRow label="Server ID" value={server?.id ?? "--"} />
-                                <DetailRow label="Display name" value={server?.displayName ?? "--"} />
+                                <DetailRow
+                                    label="Server ID"
+                                    value={server?.id ?? "--"}
+                                    valueClassName="truncate whitespace-nowrap"
+                                    action={
+                                        server?.id ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-xs"
+                                                className="shrink-0"
+                                                onClick={() => void handleCopyServerId(server.id)}
+                                                aria-label="Copy server ID"
+                                                title="Copy server ID"
+                                            >
+                                                <CopyIcon className="size-4" />
+                                            </Button>
+                                        ) : null
+                                    }
+                                />
+                                <DetailRow
+                                    label="Display name"
+                                    value={server?.displayName ?? "--"}
+                                />
                                 <DetailRow label="Type" value={server?.type ?? "--"} />
                                 <DetailRow label="Game state" value={server?.gameState ?? "--"} />
                             </CardContent>
@@ -341,7 +386,9 @@ const ServerDetailsPage = () => {
                                 <CardDescription className="text-xs uppercase tracking-[0.24em]">
                                     Runtime
                                 </CardDescription>
-                                <CardTitle className="text-base">Pod, template, and network context</CardTitle>
+                                <CardTitle className="text-base">
+                                    Pod, template, and network context
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 md:grid-cols-2">
                                 <DetailRow label="Pod IP" value={server?.podIp ?? "--"} />

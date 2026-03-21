@@ -6,7 +6,7 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
     server: {
-        host: true
+        host: true,
     },
     plugins: [react(), tailwindcss()],
     resolve: {

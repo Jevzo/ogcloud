@@ -1,7 +1,7 @@
-import { SearchIcon, UsersIcon, PencilLineIcon } from "lucide-react";
+import { Clock3Icon, LoaderCircleIcon, SearchIcon, UsersIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
+import { useNavigate } from "react-router";
 
-import PlayerManagementModal from "@/components/PlayerManagementModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,11 +12,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -26,27 +22,14 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import PlayerActionsMenu from "@/features/players/components/player-actions-menu";
 import { usePersistedPlayersQuery } from "@/features/players/hooks/use-persisted-players-query";
-import { formatDateTime } from "@/lib/server-display";
+import {
+    formatPermissionExpiry,
+    getPlayerStatusBadgeClassName,
+} from "@/features/players/lib/player-display";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
-import type { PersistedPlayerRecord } from "@/types/player";
-
-const getPlayerStatusBadgeClassName = (online: boolean) =>
-    online
-        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-        : "border-border/80 text-muted-foreground";
-
-const formatPermissionExpiry = (endMillis: number) => {
-    if (endMillis === -1) {
-        return "Permanent";
-    }
-
-    if (!Number.isFinite(endMillis) || endMillis <= 0) {
-        return "--";
-    }
-
-    return formatDateTime(String(endMillis));
-};
 
 const SummaryCard = ({
     helper,
@@ -57,7 +40,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -68,8 +51,29 @@ const SummaryCard = ({
     </Card>
 );
 
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
 const PlayersTableSkeleton = () => (
-    <div className="space-y-2 px-4 pb-4">
+    <div className="space-y-2 px-5 pb-5">
         {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={`players-table-skeleton-${index}`} className="h-12 w-full" />
         ))}
@@ -77,9 +81,9 @@ const PlayersTableSkeleton = () => (
 );
 
 const PlayersPage = () => {
+    const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(0);
     const [searchInput, setSearchInput] = useState("");
-    const [selectedPlayer, setSelectedPlayer] = useState<PersistedPlayerRecord | null>(null);
 
     const deferredQuery = useDeferredValue(searchInput.trim());
     const {
@@ -88,8 +92,6 @@ const PlayersPage = () => {
         isLoading,
         isRefreshing,
         lastUpdatedAt,
-        refresh,
-        refreshIntervalMs,
     } = usePersistedPlayersQuery({
         currentPage,
         query: deferredQuery,
@@ -110,7 +112,10 @@ const PlayersPage = () => {
             <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, index) => (
-                        <Card key={`players-summary-skeleton-${index}`} className="border border-border/70 bg-card/85">
+                        <Card
+                            key={`players-summary-skeleton-${index}`}
+                            className="border border-border/70 bg-card/85"
+                        >
                             <CardHeader>
                                 <Skeleton className="h-4 w-24" />
                                 <Skeleton className="h-8 w-20" />
@@ -157,31 +162,17 @@ const PlayersPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge variant="outline" className="w-fit border-primary/25 bg-primary/10 text-primary">
-                        Player management
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Players
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Review persisted player records, inspect current routing state, and
-                            launch permission or transfer actions without leaving the table.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Players
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Review persisted player records, inspect routing state, and open a dedicated
+                        player workspace from one operational table.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-border/80">
-                        Refreshes every {Math.round(refreshIntervalMs / 1000)}s
-                    </Badge>
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
-                </div>
+                <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
             </div>
 
             {errorMessage && hasFreshData ? (
@@ -221,7 +212,7 @@ const PlayersPage = () => {
             </div>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4 border-b border-border/70 pb-4">
+                <CardHeader className="gap-3 border-b border-border/70 pb-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                         <div>
                             <CardDescription className="text-xs uppercase tracking-[0.24em]">
@@ -229,25 +220,27 @@ const PlayersPage = () => {
                             </CardDescription>
                             <CardTitle className="text-base">Persisted player records</CardTitle>
                             <CardDescription>
-                                Search by player name or UUID, then launch the management surface
-                                for live routing and permission changes.
+                                Search by player name or UUID, then open the detail workspace for
+                                routing and operational context.
                             </CardDescription>
                         </div>
-                    </div>
 
-                    <InputGroup>
-                        <InputGroupAddon>
-                            <SearchIcon className="size-4" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchInput}
-                            onChange={(event) => {
-                                setSearchInput(event.target.value);
-                                setCurrentPage(0);
-                            }}
-                            placeholder="Search player name or UUID"
-                        />
-                    </InputGroup>
+                        <div className="w-full xl:max-w-[320px]">
+                            <InputGroup>
+                                <InputGroupAddon>
+                                    <SearchIcon className="size-4" />
+                                </InputGroupAddon>
+                                <InputGroupInput
+                                    value={searchInput}
+                                    onChange={(event) => {
+                                        setSearchInput(event.target.value);
+                                        setCurrentPage(0);
+                                    }}
+                                    placeholder="Search player or UUID"
+                                />
+                            </InputGroup>
+                        </div>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="px-0">
@@ -259,7 +252,6 @@ const PlayersPage = () => {
                                 <TableHead className="px-4">Status</TableHead>
                                 <TableHead className="px-4">First join</TableHead>
                                 <TableHead className="px-4">Connected</TableHead>
-                                <TableHead className="px-4">Route</TableHead>
                                 <TableHead className="px-4">UUID</TableHead>
                                 <TableHead className="px-4 text-right">Actions</TableHead>
                             </TableRow>
@@ -268,7 +260,7 @@ const PlayersPage = () => {
                             {playerPage.items.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={8}
+                                        colSpan={7}
                                         className="px-4 py-12 text-center text-sm text-muted-foreground"
                                     >
                                         No persisted players matched the current filter set.
@@ -276,7 +268,13 @@ const PlayersPage = () => {
                                 </TableRow>
                             ) : (
                                 playerPage.items.map((player) => (
-                                    <TableRow key={player.uuid}>
+                                    <TableRow
+                                        key={player.uuid}
+                                        className="cursor-pointer"
+                                        onClick={() =>
+                                            navigate(`/players/${encodeURIComponent(player.uuid)}`)
+                                        }
+                                    >
                                         <TableCell className="px-4 py-3 align-top">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2 font-medium text-foreground">
@@ -296,14 +294,18 @@ const PlayersPage = () => {
                                                     {player.permission.group}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {formatPermissionExpiry(player.permission.endMillis)}
+                                                    {formatPermissionExpiry(
+                                                        player.permission.endMillis,
+                                                    )}
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="px-4 py-3 align-top">
                                             <Badge
                                                 variant="outline"
-                                                className={getPlayerStatusBadgeClassName(player.online)}
+                                                className={getPlayerStatusBadgeClassName(
+                                                    player.online,
+                                                )}
                                             >
                                                 {player.online ? "Online" : "Offline"}
                                             </Badge>
@@ -314,24 +316,21 @@ const PlayersPage = () => {
                                         <TableCell className="px-4 py-3 align-top text-muted-foreground">
                                             {formatDateTime(player.connectedAt)}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 align-top">
-                                            <div className="space-y-1 text-xs text-muted-foreground">
-                                                <div>Proxy: {player.proxyId ?? "--"}</div>
-                                                <div>Server: {player.serverId ?? "--"}</div>
-                                            </div>
-                                        </TableCell>
                                         <TableCell className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
                                             {player.uuid}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-right align-top">
-                                            <Button
-                                                variant="outline"
-                                                size="icon-sm"
-                                                onClick={() => setSelectedPlayer(player)}
-                                                aria-label={`Manage ${player.name}`}
-                                            >
-                                                <PencilLineIcon className="size-4" />
-                                            </Button>
+                                        <TableCell
+                                            className="px-4 py-3 text-right align-top"
+                                            onClick={(event) => event.stopPropagation()}
+                                        >
+                                            <PlayerActionsMenu
+                                                onOpenPlayer={(nextPlayer) =>
+                                                    navigate(
+                                                        `/players/${encodeURIComponent(nextPlayer.uuid)}`,
+                                                    )
+                                                }
+                                                player={player}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -362,15 +361,6 @@ const PlayersPage = () => {
                     </div>
                 </CardFooter>
             </Card>
-
-            <PlayerManagementModal
-                player={selectedPlayer}
-                onClose={() => setSelectedPlayer(null)}
-                onPlayerUpdated={() => {
-                    void refresh(false);
-                }}
-                onTransferComplete={() => refresh(false)}
-            />
         </div>
     );
 };

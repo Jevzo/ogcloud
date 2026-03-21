@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.controller
 
+import io.ogwars.cloud.api.dto.AddPermissionToGroupRequest
 import io.ogwars.cloud.api.dto.CreatePermissionGroupRequest
 import io.ogwars.cloud.api.dto.PaginatedResponse
 import io.ogwars.cloud.api.dto.PermissionGroupResponse
@@ -74,12 +75,12 @@ class PermissionGroupController(
         @PathVariable name: String,
     ) = permissionGroupService.delete(name)
 
-    @PostMapping("/{name}/permissions/{perm}")
+    @PostMapping("/{name}/permissions")
     @Operation(summary = "Add a permission to a permission group")
     fun addPermission(
         @PathVariable name: String,
-        @PathVariable perm: String,
-    ): PermissionGroupResponse = permissionGroupService.addPermission(name, perm)
+        @RequestBody @Valid request: AddPermissionToGroupRequest,
+    ): PermissionGroupResponse = permissionGroupService.addPermission(name, request)
 
     @DeleteMapping("/{name}/permissions/{perm}")
     @Operation(summary = "Remove a permission from a permission group")

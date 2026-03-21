@@ -1,14 +1,7 @@
 import { type ReactNode } from "react";
 import { Controller, useWatch, type UseFormReturn } from "react-hook-form";
 
-import { Badge } from "@/components/ui/badge";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -20,13 +13,13 @@ import {
 import {
     applyGroupTypeToFormValues,
     applyRuntimeProfileToFormValues,
-} from "@/lib/group-form";
+} from "@/features/groups/lib/group-form";
 import {
     BACKEND_RUNTIME_PROFILE_OPTIONS,
     getRuntimeProfileLabel,
     getServerImageOptions,
     supportsRuntimeProfile,
-} from "@/lib/group-runtime";
+} from "@/features/groups/lib/group-runtime";
 import type { GroupFormValues } from "@/types/group";
 import type { TemplateRecord } from "@/types/template";
 
@@ -53,6 +46,7 @@ const Section = ({
 interface GroupConfigurationFormProps {
     disableIdentityFields?: boolean;
     form: UseFormReturn<GroupFormValues>;
+    lockTemplateFieldsToKnownSelection?: boolean;
     showIdentityFields?: boolean;
     templates: TemplateRecord[];
 }
@@ -60,6 +54,7 @@ interface GroupConfigurationFormProps {
 const GroupConfigurationForm = ({
     disableIdentityFields = false,
     form,
+    lockTemplateFieldsToKnownSelection = false,
     showIdentityFields = true,
     templates,
 }: GroupConfigurationFormProps) => {
@@ -68,26 +63,24 @@ const GroupConfigurationForm = ({
         useWatch({ control: form.control, name: "runtimeProfile" }) ??
         form.getValues("runtimeProfile");
     const templatePath =
-        useWatch({ control: form.control, name: "templatePath" }) ??
-        form.getValues("templatePath");
+        useWatch({ control: form.control, name: "templatePath" }) ?? form.getValues("templatePath");
     const templateVersion =
         useWatch({ control: form.control, name: "templateVersion" }) ??
         form.getValues("templateVersion");
     const serverImage =
-        useWatch({ control: form.control, name: "serverImage" }) ??
-        form.getValues("serverImage");
+        useWatch({ control: form.control, name: "serverImage" }) ?? form.getValues("serverImage");
     const isStaticGroup = groupType === "STATIC";
     const isProxyGroup = !supportsRuntimeProfile(groupType);
-    const runtimeDescription = BACKEND_RUNTIME_PROFILE_OPTIONS.find(
-        (option) => option.value === runtimeProfile,
-    )?.description;
     const selectedTemplateValue =
         templatePath && templateVersion ? `${templatePath}::${templateVersion}` : "";
     const selectedTemplateExists = templates.some(
         (template) => `${template.group}::${template.version}` === selectedTemplateValue,
     );
+    const knownTemplateSelection = selectedTemplateExists ? selectedTemplateValue : "custom";
     const serverImageOptions = getServerImageOptions(groupType, runtimeProfile, serverImage);
     const selectedServerImageExists = !serverImage || serverImageOptions.includes(serverImage);
+    const isTemplateSelectionLocked =
+        lockTemplateFieldsToKnownSelection && knownTemplateSelection !== "custom";
 
     const applyTypeSelection = (nextType: GroupFormValues["type"]) => {
         const nextValues = applyGroupTypeToFormValues(form.getValues(), nextType);
@@ -213,9 +206,7 @@ const GroupConfigurationForm = ({
                         <FieldLabel htmlFor="group-template-bucket">Template bucket</FieldLabel>
                         <Input
                             id="group-template-bucket"
-                            aria-invalid={
-                                form.formState.errors.templateBucket ? "true" : "false"
-                            }
+                            aria-invalid={form.formState.errors.templateBucket ? "true" : "false"}
                             {...form.register("templateBucket")}
                         />
                         <FieldDescription>
@@ -227,15 +218,36 @@ const GroupConfigurationForm = ({
                     <Field>
                         <FieldLabel htmlFor="group-template-known">Known template</FieldLabel>
                         <Select
-                            value={selectedTemplateValue || undefined}
+                            value={
+                                lockTemplateFieldsToKnownSelection
+                                    ? knownTemplateSelection
+                                    : selectedTemplateValue || undefined
+                            }
                             onValueChange={(value) => {
+                                if (lockTemplateFieldsToKnownSelection) {
+                                    if (value === "custom") {
+                                        form.setValue("templatePath", "", {
+                                            shouldDirty: true,
+                                            shouldTouch: true,
+                                            shouldValidate: true,
+                                        });
+                                        form.setValue("templateVersion", "", {
+                                            shouldDirty: true,
+                                            shouldTouch: true,
+                                            shouldValidate: true,
+                                        });
+                                        return;
+                                    }
+                                }
+
                                 applyTemplateSelection(value);
                             }}
-                            disabled={templates.length === 0}
+                            disabled={!lockTemplateFieldsToKnownSelection && templates.length === 0}
                         >
                             <SelectTrigger id="group-template-known" className="w-full">
                                 <SelectValue
                                     placeholder={
+                                        !lockTemplateFieldsToKnownSelection &&
                                         templates.length === 0
                                             ? "No template catalog available"
                                             : "Select a known template"
@@ -243,6 +255,9 @@ const GroupConfigurationForm = ({
                                 />
                             </SelectTrigger>
                             <SelectContent>
+                                {lockTemplateFieldsToKnownSelection ? (
+                                    <SelectItem value="custom">Custom</SelectItem>
+                                ) : null}
                                 {!selectedTemplateExists && selectedTemplateValue ? (
                                     <SelectItem value={selectedTemplateValue}>
                                         {templatePath} / {templateVersion}
@@ -259,7 +274,9 @@ const GroupConfigurationForm = ({
                             </SelectContent>
                         </Select>
                         <FieldDescription>
-                            Optional shortcut for filling the template path and version below.
+                            {lockTemplateFieldsToKnownSelection
+                                ? "Select a catalog template to auto-fill path and version. Choose Custom to edit those fields manually."
+                                : "Optional shortcut for filling the template path and version below."}
                         </FieldDescription>
                     </Field>
 
@@ -267,11 +284,14 @@ const GroupConfigurationForm = ({
                         <FieldLabel htmlFor="group-template-path">Template path</FieldLabel>
                         <Input
                             id="group-template-path"
+                            disabled={isTemplateSelectionLocked}
                             aria-invalid={form.formState.errors.templatePath ? "true" : "false"}
                             {...form.register("templatePath")}
                         />
                         <FieldDescription>
-                            Template source used when bootstrapping new instances in this group.
+                            {isTemplateSelectionLocked
+                                ? "Auto-filled from the selected known template. Choose Custom above to edit it manually."
+                                : "Template source used when bootstrapping new instances in this group."}
                         </FieldDescription>
                         <FieldError errors={[form.formState.errors.templatePath]} />
                     </Field>
@@ -280,13 +300,14 @@ const GroupConfigurationForm = ({
                         <FieldLabel htmlFor="group-template-version">Template version</FieldLabel>
                         <Input
                             id="group-template-version"
-                            aria-invalid={
-                                form.formState.errors.templateVersion ? "true" : "false"
-                            }
+                            disabled={isTemplateSelectionLocked}
+                            aria-invalid={form.formState.errors.templateVersion ? "true" : "false"}
                             {...form.register("templateVersion")}
                         />
                         <FieldDescription>
-                            Version or tag of the template archive to deploy.
+                            {isTemplateSelectionLocked
+                                ? "Auto-filled from the selected known template. Choose Custom above to edit it manually."
+                                : "Version or tag of the template archive to deploy."}
                         </FieldDescription>
                         <FieldError errors={[form.formState.errors.templateVersion]} />
                     </Field>
@@ -296,9 +317,11 @@ const GroupConfigurationForm = ({
                             {isProxyGroup ? "Proxy runtime" : "Backend runtime"}
                         </FieldLabel>
                         {isProxyGroup ? (
-                            <div className="flex h-8 items-center rounded-lg border border-border bg-background px-2.5 text-sm text-foreground">
-                                {getRuntimeProfileLabel(null)}
-                            </div>
+                            <Input
+                                id="group-runtime-profile"
+                                value={getRuntimeProfileLabel(null)}
+                                readOnly
+                            />
                         ) : (
                             <Controller
                                 control={form.control}
@@ -391,14 +414,25 @@ const GroupConfigurationForm = ({
                         <FieldError errors={[form.formState.errors.drainTimeoutSeconds]} />
                     </Field>
 
+                    <Field>
+                        <FieldLabel htmlFor="group-jvm-flags">JVM flags</FieldLabel>
+                        <Input
+                            id="group-jvm-flags"
+                            aria-invalid={form.formState.errors.jvmFlags ? "true" : "false"}
+                            {...form.register("jvmFlags")}
+                        />
+                        <FieldDescription>
+                            JVM startup options passed directly to the Minecraft process.
+                        </FieldDescription>
+                        <FieldError errors={[form.formState.errors.jvmFlags]} />
+                    </Field>
+
                     {isStaticGroup ? (
                         <Field>
                             <FieldLabel htmlFor="group-storage-size">Storage size</FieldLabel>
                             <Input
                                 id="group-storage-size"
-                                aria-invalid={
-                                    form.formState.errors.storageSize ? "true" : "false"
-                                }
+                                aria-invalid={form.formState.errors.storageSize ? "true" : "false"}
                                 {...form.register("storageSize")}
                             />
                             <FieldDescription>
@@ -408,28 +442,6 @@ const GroupConfigurationForm = ({
                         </Field>
                     ) : null}
                 </FieldGroup>
-
-                {!isProxyGroup && runtimeDescription ? (
-                    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
-                        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
-                            Managed runtime
-                        </Badge>
-                        {runtimeDescription}
-                    </div>
-                ) : null}
-
-                <Field>
-                    <FieldLabel htmlFor="group-jvm-flags">JVM flags</FieldLabel>
-                    <Input
-                        id="group-jvm-flags"
-                        aria-invalid={form.formState.errors.jvmFlags ? "true" : "false"}
-                        {...form.register("jvmFlags")}
-                    />
-                    <FieldDescription>
-                        JVM startup options passed directly to the Minecraft process.
-                    </FieldDescription>
-                    <FieldError errors={[form.formState.errors.jvmFlags]} />
-                </Field>
             </Section>
 
             <Section
@@ -483,9 +495,7 @@ const GroupConfigurationForm = ({
                             min={1}
                             step={1}
                             aria-invalid={
-                                form.formState.errors.scaling?.playersPerServer
-                                    ? "true"
-                                    : "false"
+                                form.formState.errors.scaling?.playersPerServer ? "true" : "false"
                             }
                             {...form.register("scaling.playersPerServer")}
                         />
@@ -504,9 +514,7 @@ const GroupConfigurationForm = ({
                             type="number"
                             step="0.01"
                             aria-invalid={
-                                form.formState.errors.scaling?.scaleUpThreshold
-                                    ? "true"
-                                    : "false"
+                                form.formState.errors.scaling?.scaleUpThreshold ? "true" : "false"
                             }
                             {...form.register("scaling.scaleUpThreshold")}
                         />
@@ -525,9 +533,7 @@ const GroupConfigurationForm = ({
                             type="number"
                             step="0.01"
                             aria-invalid={
-                                form.formState.errors.scaling?.scaleDownThreshold
-                                    ? "true"
-                                    : "false"
+                                form.formState.errors.scaling?.scaleDownThreshold ? "true" : "false"
                             }
                             {...form.register("scaling.scaleDownThreshold")}
                         />
@@ -545,9 +551,7 @@ const GroupConfigurationForm = ({
                             min={1}
                             step={1}
                             aria-invalid={
-                                form.formState.errors.scaling?.cooldownSeconds
-                                    ? "true"
-                                    : "false"
+                                form.formState.errors.scaling?.cooldownSeconds ? "true" : "false"
                             }
                             {...form.register("scaling.cooldownSeconds")}
                         />

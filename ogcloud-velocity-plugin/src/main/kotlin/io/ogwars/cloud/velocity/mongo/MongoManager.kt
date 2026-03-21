@@ -29,7 +29,9 @@ class MongoManager(
     }
 
     private fun Document.toPermissionGroupDocument(): PermissionGroupDocument {
-        val permissions = getList("permissions", String::class.java) ?: emptyList()
+        val permissions =
+            (getList("permissions", Document::class.java) ?: emptyList())
+                .mapNotNull { it.getString("perm") }
         val displayDocument = get("display", Document::class.java)
 
         return PermissionGroupDocument(

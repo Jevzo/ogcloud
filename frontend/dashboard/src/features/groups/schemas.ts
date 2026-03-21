@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { isServerImageCompatible, supportsRuntimeProfile } from "@/lib/group-runtime";
+import { createPaginatedResponseSchema } from "@/api/shared";
+import {
+    isServerImageCompatible,
+    supportsRuntimeProfile,
+} from "@/features/groups/lib/group-runtime";
 import { GROUP_TYPE_VALUES } from "@/types/group";
 import { BACKEND_RUNTIME_PROFILE_VALUES } from "@/types/runtime";
 
@@ -44,10 +48,9 @@ export const groupListItemSchema = z.object({
     maintenance: z.boolean(),
 });
 
-const runtimeProfileFieldSchema = z.union([
-    z.enum(BACKEND_RUNTIME_PROFILE_VALUES),
-    z.literal(""),
-]);
+export const groupsPageSchema = createPaginatedResponseSchema(groupRecordSchema);
+
+const runtimeProfileFieldSchema = z.union([z.enum(BACKEND_RUNTIME_PROFILE_VALUES), z.literal("")]);
 
 export const groupFormScalingSchema = z.object({
     minOnline: z.string().trim().min(1, "Enter the minimum online instance count."),
@@ -65,11 +68,7 @@ export const groupFormResourceSchema = z.object({
     cpuLimit: z.string().trim().min(1, "CPU limit is required."),
 });
 
-const addCustomIssue = (
-    context: z.RefinementCtx,
-    path: (string | number)[],
-    message: string,
-) => {
+const addCustomIssue = (context: z.RefinementCtx, path: (string | number)[], message: string) => {
     context.addIssue({
         code: z.ZodIssueCode.custom,
         message,
@@ -157,11 +156,7 @@ export const groupFormSchema = z
 
         if (!isServerImageCompatible(values.type, runtimeProfile, values.serverImage)) {
             if (values.type === "PROXY") {
-                addCustomIssue(
-                    context,
-                    ["serverImage"],
-                    "Proxy groups must use a velocity image.",
-                );
+                addCustomIssue(context, ["serverImage"], "Proxy groups must use a velocity image.");
             } else if (runtimeProfile === "LEGACY_1_8_8") {
                 addCustomIssue(
                     context,

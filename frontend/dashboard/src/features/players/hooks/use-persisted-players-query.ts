@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listPersistedPlayers } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listPersistedPlayers } from "@/api";
 import type { PaginatedResponse } from "@/types/dashboard";
 import type { PersistedPlayerRecord } from "@/types/player";
 

@@ -38,9 +38,7 @@ export const dashboardOverviewSchema = dashboardOverviewApiSchema.transform((pay
 
 export type DashboardOverviewStats = z.infer<typeof dashboardOverviewStatsSchema>;
 export type DashboardOverviewGroup = z.infer<typeof dashboardOverviewGroupSchema>;
-export type DashboardOverviewScalingAction = z.infer<
-    typeof dashboardOverviewScalingActionSchema
->;
+export type DashboardOverviewScalingAction = z.infer<typeof dashboardOverviewScalingActionSchema>;
 export type DashboardOverview = z.infer<typeof dashboardOverviewSchema>;
 
 export const EMPTY_DASHBOARD_OVERVIEW: DashboardOverview = {

@@ -13,13 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
     InputGroup,
     InputGroupAddon,
@@ -33,13 +27,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    deployServerFormSchema,
-    type DeployServerFormValues,
-} from "@/features/servers/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { requestServerForGroup } from "@/lib/api";
-import { getRuntimeProfileLabel } from "@/lib/group-runtime";
+import { deployServerFormSchema, type DeployServerFormValues } from "@/features/servers/schemas";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { requestServerForGroup } from "@/api";
+import { getRuntimeProfileLabel } from "@/features/groups/lib/group-runtime";
 import type { GroupRecord } from "@/types/group";
 
 interface DeployServerDialogProps {

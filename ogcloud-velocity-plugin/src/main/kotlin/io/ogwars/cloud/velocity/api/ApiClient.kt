@@ -102,7 +102,12 @@ data class ApiPermissionGroupResponse(
     val display: ApiDisplayConfig,
     val weight: Int,
     val default: Boolean,
-    val permissions: List<String>,
+    val permissions: List<ApiPermissionGroupPermission>,
+)
+
+data class ApiPermissionGroupPermission(
+    val perm: String,
+    val description: String,
 )
 
 data class ApiDisplayConfig(

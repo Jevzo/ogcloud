@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listApiAuditLogs } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listApiAuditLogs } from "@/api";
 import type { ApiAuditLogRecord } from "@/types/audit";
 import type { PaginatedResponse } from "@/types/dashboard";
 

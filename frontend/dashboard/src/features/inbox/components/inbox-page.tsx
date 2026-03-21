@@ -1,22 +1,30 @@
-import { SearchIcon, ShieldAlertIcon } from "lucide-react";
-import { useState } from "react";
+import {
+    Clock3Icon,
+    FilterIcon,
+    LoaderCircleIcon,
+    SearchIcon,
+    ShieldAlertIcon,
+} from "lucide-react";
+import { useDeferredValue, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -26,34 +34,38 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
 import { useAuditLogQuery } from "@/features/inbox/hooks/use-audit-log-query";
-import { hasAdminAccess } from "@/lib/roles";
-import { formatDateTime } from "@/lib/server-display";
+import {
+    formatAuditActionLabel,
+    getActionBadgeClassName,
+    getAvailableAuditActions,
+} from "@/features/inbox/lib/audit-display";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import type { ApiAuditLogRecord } from "@/types/audit";
 import { getPaginatedHasNext, getPaginatedTotalPages } from "@/types/dashboard";
 
-const getActionBadgeClassName = (action: string) => {
-    const normalizedAction = action.trim().toUpperCase();
-
-    if (
-        normalizedAction.includes("DELETE") ||
-        normalizedAction.includes("REMOVE") ||
-        normalizedAction.includes("REVOKE")
-    ) {
-        return "border-red-500/30 bg-red-500/10 text-red-300";
-    }
-
-    if (
-        normalizedAction.includes("CREATE") ||
-        normalizedAction.includes("ADD") ||
-        normalizedAction.includes("LINK")
-    ) {
-        return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
-    }
-
-    return "border-primary/25 bg-primary/10 text-primary";
-};
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
 
 const formatMetadataValue = (value: unknown): string => {
     if (value === null) {
@@ -97,7 +109,7 @@ const SummaryCard = ({
     label: string;
     value: string;
 }) => (
-    <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
+    <Card className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
                 {label}
@@ -127,17 +139,15 @@ const InboxPageSkeleton = () => (
             ))}
         </div>
         <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
+            <CardHeader className="gap-4">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-8 w-56" />
                 <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-24" />
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <Skeleton className="h-10 w-full lg:w-56" />
+                    <Skeleton className="h-10 w-full lg:w-80" />
                 </div>
-            </CardContent>
+            </CardHeader>
             <div className="space-y-2 px-4 pb-4">
                 {Array.from({ length: 8 }).map((_, index) => (
                     <Skeleton key={`audit-table-skeleton-${index}`} className="h-12 w-full" />
@@ -152,7 +162,10 @@ const InboxPage = () => {
     const canReviewAuditLogs = hasAdminAccess(session?.user.role);
 
     const [currentPage, setCurrentPage] = useState(0);
-    const [query, setQuery] = useState("");
+    const [actionFilter, setActionFilter] = useState("all");
+    const [searchInput, setSearchInput] = useState("");
+    const deferredSearchQuery = useDeferredValue(searchInput.trim());
+    const effectiveQuery = actionFilter === "all" ? deferredSearchQuery : actionFilter;
 
     const {
         data: auditPage,
@@ -163,38 +176,27 @@ const InboxPage = () => {
     } = useAuditLogQuery({
         currentPage,
         enabled: canReviewAuditLogs,
-        query: query.trim(),
+        query: effectiveQuery,
     });
 
     const totalPages = getPaginatedTotalPages(auditPage);
     const hasFreshData = lastUpdatedAt !== null;
+    const availableActions = getAvailableAuditActions(auditPage.items.map((entry) => entry.action));
+    const rowsOnPage = auditPage.items.length;
     const visibleActions = new Set(auditPage.items.map((entry) => entry.action)).size;
     const systemEvents = auditPage.items.filter(
         (entry) => !entry.actorEmail && !entry.actorUserId,
-    ).length;
-    const metadataEntries = auditPage.items.filter(
-        (entry) => Object.keys(entry.metadata).length > 0,
     ).length;
 
     if (!canReviewAuditLogs) {
         return (
             <div className="space-y-4">
-                <div className="space-y-2">
-                    <Badge
-                        variant="outline"
-                        className="w-fit border-primary/25 bg-primary/10 text-primary"
-                    >
-                        Audit trail
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Inbox
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Review API-level audit activity and operator actions recorded by the
-                            control plane.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Inbox</h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Review control-plane audit activity, search actor and target context, and
+                        inspect API actions in one operational table.
+                    </p>
                 </div>
 
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
@@ -237,35 +239,16 @@ const InboxPage = () => {
     return (
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge
-                        variant="outline"
-                        className="w-fit border-primary/25 bg-primary/10 text-primary"
-                    >
-                        Audit trail
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Inbox
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Review control-plane API activity, search recent actor and target
-                            combinations, and verify which actions reached the cluster edge.
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Inbox</h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Review control-plane audit activity, search actor and target context, and
+                        inspect API actions in one operational table.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    {query.trim() ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Filtered
-                        </Badge>
-                    ) : null}
-                    {lastUpdatedAt ? (
-                        <Badge variant="outline" className="border-border/80">
-                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                        </Badge>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
+                    <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
                 </div>
             </div>
 
@@ -273,7 +256,7 @@ const InboxPage = () => {
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base text-amber-200">
-                            Showing the latest successful audit snapshot
+                            Showing the latest successful inbox snapshot
                         </CardTitle>
                         <CardDescription className="text-sm text-amber-100/80">
                             {errorMessage}
@@ -284,24 +267,32 @@ const InboxPage = () => {
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
-                    label="Visible entries"
+                    label="Total entries"
                     value={`${auditPage.totalItems}`}
-                    helper="Total audit log entries visible to the current query."
+                    helper={
+                        actionFilter === "all"
+                            ? "Backend total for the current search query."
+                            : `Backend total for ${formatAuditActionLabel(actionFilter)}.`
+                    }
                 />
                 <SummaryCard
-                    label="Actions on page"
-                    value={`${visibleActions}`}
-                    helper="Distinct audit action names represented in the current table view."
+                    label="Rows on page"
+                    value={`${rowsOnPage}`}
+                    helper={
+                        actionFilter === "all"
+                            ? "Rows currently rendered from the loaded page."
+                            : `Rows returned for ${formatAuditActionLabel(actionFilter)} on this page.`
+                    }
                 />
                 <SummaryCard
                     label="System events"
                     value={`${systemEvents}`}
-                    helper="Entries that were emitted without an attributed dashboard actor."
+                    helper="Rendered rows without an attributed dashboard actor."
                 />
                 <SummaryCard
-                    label="Metadata rich"
-                    value={`${metadataEntries}`}
-                    helper="Rows on this page that include metadata for quick operator context."
+                    label="Actions on page"
+                    value={`${visibleActions}`}
+                    helper="Distinct audit action names represented in the rendered rows."
                 />
             </div>
 
@@ -314,40 +305,68 @@ const InboxPage = () => {
                             </CardDescription>
                             <CardTitle className="text-base">Recorded operator activity</CardTitle>
                             <CardDescription>
-                                Search by action, actor, or summary text, then inspect target,
-                                metadata, and timing information in one dense table.
+                                Search by action, actor, summary, or target text. The action filter
+                                uses the backend query parameter directly.
                             </CardDescription>
                         </div>
-                        <CardAction>
-                            <Badge variant="outline" className="border-border/80">
-                                Page {auditPage.page + 1} of {totalPages}
-                            </Badge>
-                        </CardAction>
-                    </div>
 
-                    <InputGroup>
-                        <InputGroupAddon>
-                            <SearchIcon className="size-4" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={query}
-                            onChange={(event) => {
-                                setQuery(event.target.value);
-                                setCurrentPage(0);
-                            }}
-                            placeholder="Search action, actor, summary, or target"
-                        />
-                    </InputGroup>
+                        <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+                            <div className="w-full xl:w-[240px]">
+                                <Select
+                                    value={actionFilter}
+                                    onValueChange={(value) => {
+                                        setActionFilter(value);
+                                        setSearchInput("");
+                                        setCurrentPage(0);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <FilterIcon className="size-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Filter by action" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All actions</SelectItem>
+                                        {availableActions.map((action) => (
+                                            <SelectItem key={action} value={action}>
+                                                {formatAuditActionLabel(action)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="w-full xl:w-[320px]">
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <SearchIcon className="size-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        className="text-[13px] placeholder:text-[13px]"
+                                        disabled={actionFilter !== "all"}
+                                        value={searchInput}
+                                        onChange={(event) => {
+                                            setSearchInput(event.target.value);
+                                            setCurrentPage(0);
+                                        }}
+                                        placeholder={
+                                            actionFilter === "all"
+                                                ? "Search action, actor, summary, or target"
+                                                : "Clear action filter to search other fields"
+                                        }
+                                    />
+                                </InputGroup>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="px-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="px-4">Action</TableHead>
-                                <TableHead className="px-4">Target</TableHead>
-                                <TableHead className="px-4">Summary</TableHead>
-                                <TableHead className="px-4">Actor</TableHead>
+                                <TableHead className="px-4 w-[18%]">Action</TableHead>
+                                <TableHead className="px-4 w-[48%]">Summary</TableHead>
+                                <TableHead className="px-4 w-[24%]">Actor</TableHead>
                                 <TableHead className="px-4">Time</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -355,15 +374,16 @@ const InboxPage = () => {
                             {auditPage.items.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={5}
+                                        colSpan={4}
                                         className="px-4 py-12 text-center text-sm text-muted-foreground"
                                     >
-                                        No API audit log entries matched the current filter set.
+                                        No API audit log entries matched the current query.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 auditPage.items.map((entry) => {
                                     const metadataPreview = formatMetadataPreview(entry);
+                                    const actionLabel = formatAuditActionLabel(entry.action);
 
                                     return (
                                         <TableRow
@@ -375,22 +395,14 @@ const InboxPage = () => {
                                             <TableCell className="px-4 py-3 align-top">
                                                 <Badge
                                                     variant="outline"
-                                                    className={getActionBadgeClassName(entry.action)}
+                                                    className={getActionBadgeClassName(
+                                                        entry.action,
+                                                    )}
                                                 >
-                                                    {entry.action}
+                                                    {actionLabel}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="px-4 py-3 align-top whitespace-normal">
-                                                <div className="space-y-1">
-                                                    <div className="font-medium text-foreground">
-                                                        {entry.targetId}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {entry.targetType}
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="max-w-[26rem] px-4 py-3 align-top whitespace-normal">
+                                            <TableCell className="min-w-[28rem] max-w-[42rem] px-4 py-3 align-top whitespace-normal">
                                                 <div className="space-y-1">
                                                     <div className="text-sm text-foreground">
                                                         {entry.summary}
@@ -402,7 +414,7 @@ const InboxPage = () => {
                                                     ) : null}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="px-4 py-3 align-top whitespace-normal">
+                                            <TableCell className="min-w-[16rem] px-4 py-3 align-top whitespace-normal">
                                                 <div className="space-y-1">
                                                     <div className="font-medium text-foreground">
                                                         {entry.actorEmail ||

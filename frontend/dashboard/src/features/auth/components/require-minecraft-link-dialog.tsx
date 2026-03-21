@@ -29,9 +29,9 @@ import {
     type MinecraftLinkConfirmFormValues,
     type MinecraftLinkRequestFormValues,
 } from "@/features/auth/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { confirmMinecraftLinkOtp, requestMinecraftLinkOtp } from "@/lib/api";
-import { normalizeRole } from "@/lib/roles";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { confirmMinecraftLinkOtp, requestMinecraftLinkOtp } from "@/api";
+import { normalizeRole } from "@/features/auth/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
 import type { AuthSession } from "@/types/auth";
 
@@ -150,7 +150,10 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
             >
                 <DialogHeader className="border-b border-border/70 px-6 py-5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
+                        <Badge
+                            variant="outline"
+                            className="border-primary/25 bg-primary/10 text-primary"
+                        >
                             {stepBadgeLabel}
                         </Badge>
                         <Badge variant="outline" className="border-border/80">
@@ -159,8 +162,8 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
                     </div>
                     <DialogTitle className="text-xl">Connect your Minecraft account</DialogTitle>
                     <DialogDescription className="max-w-2xl">
-                        Player-specific actions stay locked until this dashboard session is linked to
-                        an in-game Minecraft account.
+                        Player-specific actions stay locked until this dashboard session is linked
+                        to an in-game Minecraft account.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -276,7 +279,10 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
                             ) : null}
 
                             {linkStep === "enter-username" ? (
-                                <form className="space-y-4" onSubmit={(event) => void handleRequestOtp(event)}>
+                                <form
+                                    className="space-y-4"
+                                    onSubmit={(event) => void handleRequestOtp(event)}
+                                >
                                     <Field>
                                         <FieldLabel htmlFor="minecraft-username">
                                             Minecraft username
@@ -308,7 +314,9 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
                                         </div>
                                     ) : null}
 
-                                    <FieldError>{requestForm.formState.errors.root?.message}</FieldError>
+                                    <FieldError>
+                                        {requestForm.formState.errors.root?.message}
+                                    </FieldError>
 
                                     <div className="flex flex-col gap-3 sm:flex-row">
                                         <Button
@@ -333,14 +341,19 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
                             ) : null}
 
                             {linkStep === "enter-otp" ? (
-                                <form className="space-y-4" onSubmit={(event) => void handleConfirmOtp(event)}>
+                                <form
+                                    className="space-y-4"
+                                    onSubmit={(event) => void handleConfirmOtp(event)}
+                                >
                                     <div className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-4 text-sm text-primary">
                                         {statusMessage ??
                                             "A verification code was sent to Minecraft chat. Enter it below to complete the link."}
                                     </div>
 
                                     <Field>
-                                        <FieldLabel htmlFor="minecraft-link-otp">6-digit code</FieldLabel>
+                                        <FieldLabel htmlFor="minecraft-link-otp">
+                                            6-digit code
+                                        </FieldLabel>
                                         <Input
                                             id="minecraft-link-otp"
                                             inputMode="numeric"
@@ -356,7 +369,9 @@ const RequireMinecraftLinkDialogContent = ({ session }: { session: AuthSession }
                                         <FieldError errors={[confirmForm.formState.errors.otp]} />
                                     </Field>
 
-                                    <FieldError>{confirmForm.formState.errors.root?.message}</FieldError>
+                                    <FieldError>
+                                        {confirmForm.formState.errors.root?.message}
+                                    </FieldError>
 
                                     <div className="flex flex-col gap-3 sm:flex-row">
                                         <Button

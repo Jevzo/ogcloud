@@ -9,10 +9,7 @@ export const templateRecordSchema = z.object({
 export const templateUploadFormSchema = z.object({
     group: z.string().trim().min(1, "Choose a target group first."),
     version: z.string().trim().min(1, "Enter a template version."),
-    file: z.custom<File>(
-        (value) => value instanceof File,
-        "Choose a template archive first.",
-    ),
+    file: z.custom<File>((value) => value instanceof File, "Choose a template archive first."),
 });
 
 export type TemplateRecordSchema = z.infer<typeof templateRecordSchema>;

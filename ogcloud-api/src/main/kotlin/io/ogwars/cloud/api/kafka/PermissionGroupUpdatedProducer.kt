@@ -51,5 +51,5 @@ private fun PermissionGroupDocument.toCommonPermissionGroupDocument(): CommonPer
         display = display,
         weight = weight,
         default = default,
-        permissions = permissions,
+        permissions = permissions.map { it.perm },
     )

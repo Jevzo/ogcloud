@@ -2,7 +2,7 @@ import { startTransition, useEffect, useMemo } from "react";
 import { NavLink, Outlet, matchPath, useLocation, useNavigate } from "react-router";
 import { BellIcon, LogOutIcon, Settings2Icon } from "lucide-react";
 
-import HeaderSearch from "@/components/HeaderSearch";
+import HeaderSearch from "@/features/search/components/header-search-command";
 import {
     dashboardNavSections,
     dashboardRouteDefinitions,
@@ -33,8 +33,8 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 import RequireMinecraftLinkDialog from "@/features/auth/components/require-minecraft-link-dialog";
-import { getNetworkSettings } from "@/lib/api";
-import { hasAdminAccess } from "@/lib/roles";
+import { getNetworkSettings } from "@/api";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import buildVersionRaw from "../../VERSION?raw";
@@ -107,7 +107,6 @@ const DashboardLayout = () => {
 
                 setGeneralSettings(networkSettings.general);
             } catch {
-                // Keep the last known permission-system value when the shell context cannot refresh.
             }
         };
 
@@ -185,7 +184,10 @@ const DashboardLayout = () => {
                                                         isActive={isActive}
                                                         tooltip={item.title}
                                                     >
-                                                        <NavLink to={item.href} end={item.href === "/"}>
+                                                        <NavLink
+                                                            to={item.href}
+                                                            end={item.href === "/"}
+                                                        >
                                                             <Icon />
                                                             <span>{item.title}</span>
                                                         </NavLink>

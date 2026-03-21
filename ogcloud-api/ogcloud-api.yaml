@@ -1317,7 +1317,7 @@ paths:
                 $ref: "#/components/schemas/PermissionGroupResponse"
       security:
       - bearerAuth: []
-  /api/v1/permissions/groups/{name}/permissions/{perm}:
+  /api/v1/permissions/groups/{name}/permissions:
     post:
       tags:
       - Permission Groups
@@ -1329,11 +1329,12 @@ paths:
         required: true
         schema:
           type: string
-      - name: perm
-        in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPermissionToGroupRequest"
         required: true
-        schema:
-          type: string
       responses:
         "400":
           description: Bad Request
@@ -1373,6 +1374,7 @@ paths:
                 $ref: "#/components/schemas/PermissionGroupResponse"
       security:
       - bearerAuth: []
+  /api/v1/permissions/groups/{name}/permissions/{perm}:
     delete:
       tags:
       - Permission Groups
@@ -2992,7 +2994,27 @@ components:
         permissions:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/PermissionGroupPermissionRequest"
+    AddPermissionToGroupRequest:
+      type: object
+      properties:
+        perm:
+          type: string
+          minLength: 1
+        description:
+          type: string
+      required:
+      - perm
+    PermissionGroupPermissionRequest:
+      type: object
+      properties:
+        perm:
+          type: string
+          minLength: 1
+        description:
+          type: string
+      required:
+      - perm
     DisplayConfigResponse:
       type: object
       properties:
@@ -3026,7 +3048,7 @@ components:
         permissions:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/PermissionGroupPermissionResponse"
       required:
       - default
       - display
@@ -3034,6 +3056,16 @@ components:
       - name
       - permissions
       - weight
+    PermissionGroupPermissionResponse:
+      type: object
+      properties:
+        perm:
+          type: string
+        description:
+          type: string
+      required:
+      - description
+      - perm
     UpdateGeneralSettingsRequest:
       type: object
       properties:
@@ -3432,7 +3464,7 @@ components:
         permissions:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/PermissionGroupPermissionRequest"
       required:
       - default
       - display

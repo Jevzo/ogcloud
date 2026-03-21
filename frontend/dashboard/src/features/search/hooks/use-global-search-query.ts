@@ -1,11 +1,8 @@
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 
-import {
-    createEmptySearchResponse,
-    type SearchResponse,
-} from "@/features/search/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { searchEverything } from "@/lib/api";
+import { createEmptySearchResponse, type SearchResponse } from "@/features/search/schemas";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { searchEverything } from "@/api";
 
 const DEFAULT_DEBOUNCE_MS = 180;
 

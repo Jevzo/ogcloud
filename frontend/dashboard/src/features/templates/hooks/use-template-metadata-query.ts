@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useAccessToken } from "@/hooks/use-access-token";
-import { listAllServerGroups, listGroups } from "@/lib/api";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { listAllServerGroups, listGroups } from "@/api";
 import type { GroupListItem } from "@/types/dashboard";
 import type { GroupRecord } from "@/types/group";
 

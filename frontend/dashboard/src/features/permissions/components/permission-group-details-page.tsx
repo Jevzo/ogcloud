@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     ArrowLeftIcon,
+    Clock3Icon,
     LoaderCircleIcon,
     PlusIcon,
+    SearchIcon,
     ShieldAlertIcon,
     ShieldIcon,
     StarIcon,
@@ -13,22 +15,10 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogMedia,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -36,11 +26,8 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { FieldError } from "@/components/ui/field";
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -50,39 +37,33 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PermissionGroupDeleteDialog from "@/features/permissions/components/permission-group-delete-dialog";
 import PermissionGroupForm from "@/features/permissions/components/permission-group-form";
 import { usePermissionGroupDetailsQuery } from "@/features/permissions/hooks/use-permission-group-details-query";
 import {
     permissionGroupFormSchema,
     permissionNodeFormSchema,
 } from "@/features/permissions/schemas";
-import { useAccessToken } from "@/hooks/use-access-token";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
 import {
     addPermissionToGroup,
-    deletePermissionGroup,
+    listPersistedPlayers,
     removePermissionFromGroup,
     updatePermissionGroup,
-} from "@/lib/api";
+} from "@/api";
 import {
     buildUpdatePermissionGroupPayload,
     createEmptyPermissionGroupValues,
     toPermissionGroupFormValues,
-} from "@/lib/permission-form";
+} from "@/features/permissions/lib/permission-form";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
-import { formatDateTime } from "@/lib/server-display";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import type { PermissionGroupFormValues } from "@/types/permission";
 
 const PERMISSIONS_PAGE_SIZE = 10;
 
-const StatCard = ({
-    helper,
-    label,
-    value,
-}: {
-    helper: string;
-    label: string;
-    value: string;
-}) => (
+const StatCard = ({ helper, label, value }: { helper: string; label: string; value: string }) => (
     <Card size="sm" className="border border-border/70 bg-card/85 shadow-none">
         <CardHeader className="pb-3">
             <CardDescription className="text-xs uppercase tracking-[0.24em]">
@@ -92,6 +73,27 @@ const StatCard = ({
         </CardHeader>
         <CardContent className="pt-0 text-sm text-muted-foreground">{helper}</CardContent>
     </Card>
+);
+
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
 );
 
 const PermissionGroupDetailsSkeleton = () => (
@@ -111,7 +113,10 @@ const PermissionGroupDetailsSkeleton = () => (
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={`permission-detail-stat-${index}`} className="border border-border/70 bg-card/85">
+                <Card
+                    key={`permission-detail-stat-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
                     <CardHeader>
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-8 w-24" />
@@ -123,29 +128,28 @@ const PermissionGroupDetailsSkeleton = () => (
             ))}
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-6 w-40" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Skeleton key={`permission-list-skeleton-${index}`} className="h-12 w-full" />
+        <Card className="border border-border/70 bg-card/85">
+            <CardHeader>
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-6 w-56" />
+                <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="space-y-4">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <Skeleton key={`permission-config-left-${index}`} className="h-12 w-full" />
                     ))}
-                </CardContent>
-            </Card>
-
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                </CardHeader>
-                <CardContent className="space-y-4">
+                </div>
+                <div className="space-y-4">
                     {Array.from({ length: 5 }).map((_, index) => (
-                        <Skeleton key={`permission-form-skeleton-${index}`} className="h-28 w-full" />
+                        <Skeleton
+                            key={`permission-config-right-${index}`}
+                            className="h-28 w-full"
+                        />
                     ))}
-                </CardContent>
-            </Card>
-        </div>
+                </div>
+            </CardContent>
+        </Card>
     </div>
 );
 
@@ -157,28 +161,26 @@ const PermissionGroupDetailsPage = () => {
         (state) => state.general.permissionSystemEnabled,
     );
     const groupName = decodeURIComponent(params.groupName ?? "");
-    const {
-        errorMessage,
-        group,
-        isLoading,
-        isRefreshing,
-        lastUpdatedAt,
-        refresh,
-    } = usePermissionGroupDetailsQuery(groupName);
+    const { errorMessage, group, isLoading, isRefreshing, lastUpdatedAt, refresh } =
+        usePermissionGroupDetailsQuery(groupName);
     const groupForm = useForm<PermissionGroupFormValues>({
         resolver: zodResolver(permissionGroupFormSchema),
         defaultValues: createEmptyPermissionGroupValues(),
     });
-    const permissionNodeForm = useForm<{ permission: string }>({
+    const permissionNodeForm = useForm<{ description: string; permission: string }>({
         resolver: zodResolver(permissionNodeFormSchema),
         defaultValues: {
+            description: "",
             permission: "",
         },
     });
 
     const [permissionPageIndex, setPermissionPageIndex] = useState(0);
+    const [permissionSearchInput, setPermissionSearchInput] = useState("");
+    const [assignedPlayerCount, setAssignedPlayerCount] = useState<number | null>(null);
+    const [isLoadingAssignedPlayerCount, setIsLoadingAssignedPlayerCount] = useState(false);
     const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-    const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+    const deferredPermissionQuery = useDeferredValue(permissionSearchInput.trim().toLowerCase());
 
     useEffect(() => {
         if (!group) {
@@ -191,6 +193,57 @@ const PermissionGroupDetailsPage = () => {
     useEffect(() => {
         setPermissionPageIndex(0);
     }, [groupName]);
+
+    useEffect(() => {
+        setPermissionPageIndex(0);
+    }, [deferredPermissionQuery]);
+
+    useEffect(() => {
+        const permissionGroupId = group?.id.trim();
+
+        if (!permissionGroupId) {
+            setAssignedPlayerCount(null);
+            setIsLoadingAssignedPlayerCount(false);
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadAssignedPlayerCount = async () => {
+            setIsLoadingAssignedPlayerCount(true);
+
+            try {
+                const accessToken = await getAccessToken();
+                const playerPage = await listPersistedPlayers(accessToken, {
+                    page: 0,
+                    query: permissionGroupId,
+                    size: 1,
+                });
+
+                if (cancelled) {
+                    return;
+                }
+
+                setAssignedPlayerCount(playerPage.totalItems);
+            } catch {
+                if (cancelled) {
+                    return;
+                }
+
+                setAssignedPlayerCount(null);
+            } finally {
+                if (!cancelled) {
+                    setIsLoadingAssignedPlayerCount(false);
+                }
+            }
+        };
+
+        void loadAssignedPlayerCount();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [getAccessToken, group?.id, lastUpdatedAt]);
 
     const handleSaveGroup = groupForm.handleSubmit(async (values) => {
         if (!group) {
@@ -239,9 +292,12 @@ const PermissionGroupDetailsPage = () => {
 
         try {
             const accessToken = await getAccessToken();
-            await addPermissionToGroup(accessToken, group.id, values.permission.trim());
+            await addPermissionToGroup(accessToken, group.id, {
+                description: values.description.trim(),
+                perm: values.permission.trim(),
+            });
 
-            permissionNodeForm.reset({ permission: "" });
+            permissionNodeForm.reset({ description: "", permission: "" });
             toast.success(`Added permission to ${group.name}.`);
             await refresh(false);
         } catch (error) {
@@ -280,40 +336,37 @@ const PermissionGroupDetailsPage = () => {
         }
     };
 
-    const handleDeleteGroup = async () => {
-        if (!group) {
-            return;
+    const permissions = (group?.permissions ?? []).filter((permission) => {
+        if (deferredPermissionQuery === "") {
+            return true;
         }
 
-        if (!permissionSystemEnabled) {
-            toast.error("Permission system is disabled in network settings.");
-            return;
-        }
+        const normalizedPermission = permission.perm.toLowerCase();
+        const normalizedDescription = permission.description.toLowerCase();
 
-        setIsDeletingGroup(true);
-
-        try {
-            const accessToken = await getAccessToken();
-
-            await deletePermissionGroup(accessToken, group.id);
-            toast.success(`Deleted permission group ${group.name}.`);
-            navigate("/permissions", { replace: true });
-        } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : "Unable to delete permission group.",
-            );
-        } finally {
-            setIsDeletingGroup(false);
-            setIsDeleteAlertOpen(false);
-        }
-    };
-
-    const permissions = group?.permissions ?? [];
+        return (
+            normalizedPermission.includes(deferredPermissionQuery) ||
+            normalizedDescription.includes(deferredPermissionQuery)
+        );
+    });
     const totalPermissionPages = Math.max(1, Math.ceil(permissions.length / PERMISSIONS_PAGE_SIZE));
     const visiblePermissions = permissions.slice(
         permissionPageIndex * PERMISSIONS_PAGE_SIZE,
         permissionPageIndex * PERMISSIONS_PAGE_SIZE + PERMISSIONS_PAGE_SIZE,
     );
+    const assignedPlayerCountValue = isLoadingAssignedPlayerCount
+        ? "Loading..."
+        : assignedPlayerCount !== null
+          ? `${assignedPlayerCount}`
+          : "--";
+
+    useEffect(() => {
+        if (permissionPageIndex < totalPermissionPages) {
+            return;
+        }
+
+        setPermissionPageIndex(Math.max(0, totalPermissionPages - 1));
+    }, [permissionPageIndex, totalPermissionPages]);
 
     if (isLoading && !group) {
         return <PermissionGroupDetailsSkeleton />;
@@ -347,68 +400,66 @@ const PermissionGroupDetailsPage = () => {
 
     return (
         <div className="space-y-4">
-            <Card className="border border-border/70 bg-card/85 shadow-none">
-                <CardHeader className="gap-4">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                        <div className="space-y-3">
-                            <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
-                                <Link to="/permissions">
-                                    <ArrowLeftIcon className="size-4" />
-                                    Back to permission groups
-                                </Link>
-                            </Button>
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline" className="border-primary/25 bg-primary/10 text-primary">
-                                        Permission details
-                                    </Badge>
-                                    {group?.default ? (
-                                        <Badge
-                                            variant="outline"
-                                            className="border-primary/30 bg-primary/10 text-primary"
-                                        >
-                                            <StarIcon className="size-3" />
-                                            Default group
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="outline" className="border-border/80">
-                                            Explicit assignment
-                                        </Badge>
-                                    )}
-                                    {lastUpdatedAt ? (
-                                        <Badge variant="outline" className="border-border/80">
-                                            Last sync {formatDateTime(new Date(lastUpdatedAt).toISOString())}
-                                        </Badge>
-                                    ) : null}
-                                </div>
-                                <div>
-                                    <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
-                                        <ShieldIcon className="size-5 text-primary" />
-                                        {group?.name ?? groupName}
-                                    </CardTitle>
-                                    <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
-                                        Edit formatting, precedence, and explicit permission nodes
-                                        inherited by members assigned to this group.
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </div>
+            <div className="space-y-4">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
+                        <Link to="/permissions">
+                            <ArrowLeftIcon className="size-4" />
+                            Back to permission groups
+                        </Link>
+                    </Button>
 
-                        <CardAction className="col-auto row-auto">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => setIsDeleteAlertOpen(true)}
-                                    disabled={!group}
-                                >
-                                    <Trash2Icon className="size-4" />
-                                    Delete group
-                                </Button>
-                            </div>
-                        </CardAction>
+                    <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                        <Button
+                            variant="destructive"
+                            onClick={() => setIsDeleteAlertOpen(true)}
+                            disabled={!group}
+                        >
+                            <Trash2Icon className="size-4" />
+                            Delete group
+                        </Button>
+                        <LastSyncSurface
+                            isRefreshing={isRefreshing}
+                            lastUpdatedAt={lastUpdatedAt}
+                        />
                     </div>
-                </CardHeader>
-            </Card>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                            variant="outline"
+                            className="border-primary/25 bg-primary/10 text-primary"
+                        >
+                            {group?.id ?? groupName}
+                        </Badge>
+                        {group?.default ? (
+                            <Badge
+                                variant="outline"
+                                className="border-primary/30 bg-primary/10 text-primary"
+                            >
+                                <StarIcon className="size-3" />
+                                Default group
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="border-border/80">
+                                Explicit assignment
+                            </Badge>
+                        )}
+                    </div>
+
+                    <div>
+                        <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
+                            <ShieldIcon className="size-5 text-primary" />
+                            {group?.name ?? groupName}
+                        </CardTitle>
+                        <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
+                            Formatting, fallback handling, and live permission nodes for the
+                            selected permission group.
+                        </CardDescription>
+                    </div>
+                </div>
+            </div>
 
             {!permissionSystemEnabled ? (
                 <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
@@ -418,8 +469,8 @@ const PermissionGroupDetailsPage = () => {
                             Permission system is disabled
                         </CardTitle>
                         <CardDescription className="text-sm text-amber-100/80">
-                            This page is read-only until the permission system is enabled in
-                            network settings.
+                            This page is read-only until the permission system is enabled in network
+                            settings.
                         </CardDescription>
                     </CardHeader>
                 </Card>
@@ -450,9 +501,9 @@ const PermissionGroupDetailsPage = () => {
                     helper="Current precedence number stored for this rank."
                 />
                 <StatCard
-                    label="Explicit grants"
-                    value={group ? `${group.permissions.length}` : "--"}
-                    helper="Direct permission nodes inherited by assigned members."
+                    label="Players inheriting"
+                    value={assignedPlayerCountValue}
+                    helper="Persisted players currently assigned to this permission group."
                 />
                 <StatCard
                     label="Default status"
@@ -461,223 +512,50 @@ const PermissionGroupDetailsPage = () => {
                 />
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-                <div className="space-y-4">
-                    <Card className="border border-border/70 bg-card/85 shadow-none">
-                        <CardHeader className="pb-4">
-                            <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                Inheritance posture
-                            </CardDescription>
-                            <CardTitle className="text-base">Assignment and propagation</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-wrap gap-2">
-                                <Badge
-                                    variant="outline"
-                                    className={
-                                        group?.default
-                                            ? "border-primary/30 bg-primary/10 text-primary"
-                                            : "border-border/80"
-                                    }
-                                >
-                                    {group?.default ? "Default fallback rank" : "Assigned explicitly"}
-                                </Badge>
-                                <Badge
-                                    variant="outline"
-                                    className="border-sky-500/30 bg-sky-500/10 text-sky-300"
-                                >
-                                    Members inherit direct grants immediately
-                                </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Changes to the permission list apply to online players as soon as
-                                the backend processes the update.
-                            </p>
-                        </CardContent>
-                    </Card>
+            <Tabs defaultValue="configuration" className="gap-4">
+                <TabsList variant="line">
+                    <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                    <TabsTrigger value="permissions">Permissions</TabsTrigger>
+                </TabsList>
 
+                <TabsContent value="configuration">
                     <Card className="border border-border/70 bg-card/85 shadow-none">
-                        <CardHeader className="gap-4 border-b border-border/70 pb-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <CardHeader className="border-b border-border/70 pb-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                        Explicit permissions
+                                        Editable configuration
                                     </CardDescription>
-                                    <CardTitle className="text-base">Direct permission nodes</CardTitle>
+                                    <CardTitle className="text-base">
+                                        Formatting and precedence
+                                    </CardTitle>
                                     <CardDescription>
-                                        Add or remove direct grants from this group without a
-                                        separate save step.
+                                        Identity fields stay locked here so assignments stay stable
+                                        while the rest of the group is edited.
                                     </CardDescription>
                                 </div>
-                            </div>
-
-                            <form onSubmit={handleAddPermission} className="space-y-3">
-                                <InputGroup>
-                                    <InputGroupAddon>
-                                        <PlusIcon className="size-4" />
-                                    </InputGroupAddon>
-                                    <InputGroupInput
-                                        placeholder="ogcloud.command.execute"
-                                        disabled={
-                                            !permissionSystemEnabled ||
-                                            permissionNodeForm.formState.isSubmitting
-                                        }
-                                        {...permissionNodeForm.register("permission")}
-                                    />
-                                </InputGroup>
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <FieldError>
-                                        {permissionNodeForm.formState.errors.root?.message ??
-                                            permissionNodeForm.formState.errors.permission?.message}
-                                    </FieldError>
-                                    <Button
-                                        type="submit"
-                                        disabled={
-                                            !permissionSystemEnabled ||
-                                            permissionNodeForm.formState.isSubmitting
-                                        }
+                                {groupForm.formState.isDirty ? (
+                                    <Badge
+                                        variant="outline"
+                                        className="w-fit border-amber-500/30 bg-amber-500/10 text-amber-300"
                                     >
-                                        {permissionNodeForm.formState.isSubmitting ? (
-                                            <>
-                                                <LoaderCircleIcon className="size-4 animate-spin" />
-                                                Adding
-                                            </>
-                                        ) : (
-                                            <>
-                                                <PlusIcon className="size-4" />
-                                                Add permission
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </form>
+                                        Unsaved changes
+                                    </Badge>
+                                ) : null}
+                            </div>
                         </CardHeader>
 
-                        <CardContent className="px-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="hover:bg-transparent">
-                                        <TableHead className="px-4">Permission</TableHead>
-                                        <TableHead className="px-4">Propagation</TableHead>
-                                        <TableHead className="px-4 text-right">Remove</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {visiblePermissions.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={3}
-                                                className="px-4 py-12 text-center text-sm text-muted-foreground"
-                                            >
-                                                No explicit permissions are currently assigned.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        visiblePermissions.map((permission) => (
-                                            <TableRow key={permission}>
-                                                <TableCell className="px-4 py-3 font-mono text-xs text-foreground">
-                                                    {permission}
-                                                </TableCell>
-                                                <TableCell className="px-4 py-3">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="border-sky-500/30 bg-sky-500/10 text-sky-300"
-                                                    >
-                                                        Inherited by members
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="px-4 py-3 text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            void handleRemovePermission(permission)
-                                                        }
-                                                        disabled={
-                                                            !permissionSystemEnabled || isRefreshing
-                                                        }
-                                                    >
-                                                        <Trash2Icon className="size-4 text-destructive" />
-                                                        Remove
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                        {permissions.length > PERMISSIONS_PAGE_SIZE ? (
-                            <CardFooter className="justify-between gap-3">
-                                <div className="text-sm text-muted-foreground">
-                                    Page {permissionPageIndex + 1} of {totalPermissionPages}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setPermissionPageIndex((value) =>
-                                                Math.max(0, value - 1),
-                                            )
-                                        }
-                                        disabled={permissionPageIndex === 0}
-                                    >
-                                        Previous
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            setPermissionPageIndex((value) =>
-                                                Math.min(totalPermissionPages - 1, value + 1),
-                                            )
-                                        }
-                                        disabled={permissionPageIndex >= totalPermissionPages - 1}
-                                    >
-                                        Next
-                                    </Button>
-                                </div>
-                            </CardFooter>
-                        ) : null}
-                    </Card>
-                </div>
-
-                <Card className="self-start border border-border/70 bg-card/85 shadow-none">
-                    <CardHeader className="border-b border-border/70 pb-4">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <CardDescription className="text-xs uppercase tracking-[0.24em]">
-                                    Editable configuration
-                                </CardDescription>
-                                <CardTitle className="text-base">
-                                    Formatting and precedence
-                                </CardTitle>
-                                <CardDescription>
-                                    Update identity rendering, fallback behavior, and ordering for
-                                    this permission group.
-                                </CardDescription>
-                            </div>
-                            {groupForm.formState.isDirty ? (
-                                <Badge
-                                    variant="outline"
-                                    className="w-fit border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                >
-                                    Unsaved changes
-                                </Badge>
-                            ) : null}
-                        </div>
-                    </CardHeader>
-
-                    <form onSubmit={handleSaveGroup}>
                         <CardContent className="space-y-6 pt-4">
                             <PermissionGroupForm disableIdentityFields form={groupForm} />
-
                             <FieldError>{groupForm.formState.errors.root?.message}</FieldError>
                         </CardContent>
                         <CardFooter className="justify-end gap-2">
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => group && groupForm.reset(toPermissionGroupFormValues(group))}
+                                onClick={() =>
+                                    group && groupForm.reset(toPermissionGroupFormValues(group))
+                                }
                                 disabled={
                                     !group ||
                                     groupForm.formState.isSubmitting ||
@@ -687,7 +565,8 @@ const PermissionGroupDetailsPage = () => {
                                 Reset
                             </Button>
                             <Button
-                                type="submit"
+                                type="button"
+                                onClick={() => void handleSaveGroup()}
                                 disabled={
                                     !group ||
                                     !permissionSystemEnabled ||
@@ -705,34 +584,195 @@ const PermissionGroupDetailsPage = () => {
                                 )}
                             </Button>
                         </CardFooter>
-                    </form>
-                </Card>
-            </div>
+                    </Card>
+                </TabsContent>
 
-            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                            <Trash2Icon />
-                        </AlertDialogMedia>
-                        <AlertDialogTitle>Delete {group?.name ?? groupName}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Players currently assigned to this group will fall back to the default
-                            permission group after deletion.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeletingGroup}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            disabled={isDeletingGroup}
-                            onClick={() => void handleDeleteGroup()}
-                        >
-                            {isDeletingGroup ? "Deleting..." : "Delete group"}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                <TabsContent value="permissions">
+                    <Card className="border border-border/70 bg-card/85 shadow-none">
+                        <CardHeader className="gap-3 border-b border-border/70 pb-4">
+                            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                                <div>
+                                    <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                                        Permission inventory
+                                    </CardDescription>
+                                    <CardTitle className="text-base">
+                                        Direct permission nodes
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Search the current node set, manage descriptions, and page
+                                        through the full permission list returned for this group.
+                                    </CardDescription>
+                                </div>
+
+                                <div className="w-full xl:max-w-[320px]">
+                                    <InputGroup>
+                                        <InputGroupAddon>
+                                            <SearchIcon className="size-4" />
+                                        </InputGroupAddon>
+                                        <InputGroupInput
+                                            value={permissionSearchInput}
+                                            onChange={(event) => {
+                                                setPermissionSearchInput(event.target.value);
+                                                setPermissionPageIndex(0);
+                                            }}
+                                            placeholder="Search permission or description"
+                                        />
+                                    </InputGroup>
+                                </div>
+                            </div>
+
+                            <form
+                                id="permission-node-form"
+                                onSubmit={handleAddPermission}
+                                className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_auto]"
+                            >
+                                <InputGroup>
+                                    <InputGroupAddon>
+                                        <PlusIcon className="size-4" />
+                                    </InputGroupAddon>
+                                    <InputGroupInput
+                                        placeholder="ogcloud.command.execute"
+                                        disabled={
+                                            !permissionSystemEnabled ||
+                                            permissionNodeForm.formState.isSubmitting
+                                        }
+                                        {...permissionNodeForm.register("permission")}
+                                    />
+                                </InputGroup>
+                                <Input
+                                    placeholder="Permission description"
+                                    disabled={
+                                        !permissionSystemEnabled ||
+                                        permissionNodeForm.formState.isSubmitting
+                                    }
+                                    {...permissionNodeForm.register("description")}
+                                />
+                                <Button
+                                    type="submit"
+                                    className="xl:self-start"
+                                    disabled={
+                                        !permissionSystemEnabled ||
+                                        permissionNodeForm.formState.isSubmitting
+                                    }
+                                >
+                                    {permissionNodeForm.formState.isSubmitting ? (
+                                        <>
+                                            <LoaderCircleIcon className="size-4 animate-spin" />
+                                            Add
+                                        </>
+                                    ) : (
+                                        <>
+                                            <PlusIcon className="size-4" />
+                                            Add
+                                        </>
+                                    )}
+                                </Button>
+                            </form>
+
+                            <FieldError>
+                                {permissionNodeForm.formState.errors.root?.message ??
+                                    permissionNodeForm.formState.errors.permission?.message ??
+                                    permissionNodeForm.formState.errors.description?.message}
+                            </FieldError>
+                        </CardHeader>
+
+                        <CardContent className="px-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="w-[34%] px-4">Permission</TableHead>
+                                        <TableHead className="px-4">Description</TableHead>
+                                        <TableHead className="w-16 px-4 text-right">
+                                            Remove
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {permissions.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={3}
+                                                className="px-4 py-12 text-center text-sm text-muted-foreground"
+                                            >
+                                                No permissions matched the current filters.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        visiblePermissions.map((permission) => (
+                                            <TableRow key={permission.perm}>
+                                                <TableCell className="px-4 py-3 font-mono text-xs text-foreground">
+                                                    {permission.perm}
+                                                </TableCell>
+                                                <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                                                    {permission.description}
+                                                </TableCell>
+                                                <TableCell className="px-4 py-3 text-right">
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon-sm"
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        onClick={() =>
+                                                            void handleRemovePermission(
+                                                                permission.perm,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !permissionSystemEnabled || isRefreshing
+                                                        }
+                                                        aria-label={`Remove ${permission.perm}`}
+                                                    >
+                                                        <Trash2Icon className="size-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+
+                        <CardFooter className="justify-between gap-3">
+                            <div className="text-sm text-muted-foreground">
+                                Page {Math.min(permissionPageIndex + 1, totalPermissionPages)} of{" "}
+                                {totalPermissionPages}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setPermissionPageIndex((value) => Math.max(0, value - 1))
+                                    }
+                                    disabled={permissionPageIndex === 0}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setPermissionPageIndex((value) =>
+                                            Math.min(totalPermissionPages - 1, value + 1),
+                                        )
+                                    }
+                                    disabled={permissionPageIndex >= totalPermissionPages - 1}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            <PermissionGroupDeleteDialog
+                groupId={group?.id}
+                groupName={group?.name ?? groupName}
+                onDeleted={() => navigate("/permissions", { replace: true })}
+                onOpenChange={setIsDeleteAlertOpen}
+                open={isDeleteAlertOpen}
+            />
         </div>
     );
 };

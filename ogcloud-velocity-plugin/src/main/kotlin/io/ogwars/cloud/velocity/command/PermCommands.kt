@@ -165,7 +165,7 @@ object PermCommands {
                         source,
                         OgCloudCommand.format(
                             VelocityMessages.Command.Permission.Group.INFO_PERMISSION_ENTRY,
-                            "permission" to permission,
+                            "permission" to permission.perm,
                         ),
                     )
                 }

@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router";
-import {
-    ActivityIcon,
-    GlobeIcon,
-    LayoutGridIcon,
-    MessageSquareTextIcon,
-    Settings2Icon,
-    ShieldCheckIcon,
-    UsersIcon,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Clock3Icon, LoaderCircleIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAccessToken } from "@/hooks/use-access-token";
+import { useAccessToken } from "@/features/auth/hooks/use-access-token";
+import { hasAdminAccess } from "@/features/auth/lib/roles";
+import NetworkGeneralPage from "@/features/network/components/network-general-page";
+import NetworkMessagingPage from "@/features/network/components/network-messaging-page";
+import NetworkServerSettingsPage from "@/features/network/components/network-server-settings-page";
+import {
+    NetworkPageContextProvider,
+    type NetworkPageContextValue,
+} from "@/features/network/lib/context";
 import {
     getNetworkLocks,
     getNetworkSettings,
@@ -20,9 +19,12 @@ import {
     requestNetworkRestart,
     toggleNetworkMaintenance,
     updateNetworkSettings,
-} from "@/lib/api";
-import { hasAdminAccess } from "@/lib/roles";
-import type { NetworkPageContextValue } from "@/pages/network/context";
+} from "@/api";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
 import { useNetworkSettingsStore } from "@/store/network-settings-store";
 import type { GroupListItem } from "@/types/dashboard";
@@ -32,9 +34,6 @@ import type {
     NetworkStatusRecord,
     UpdateNetworkPayload,
 } from "@/types/network";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const DEFAULT_STATUS: NetworkStatusRecord = {
     onlinePlayers: 0,
@@ -46,43 +45,90 @@ const REFRESH_INTERVAL_MS = 10_000;
 
 const NETWORK_SECTION_ITEMS = [
     {
-        value: "overview",
-        label: "Overview",
-        description: "Live status, current values, messaging previews, and network-wide health.",
-        icon: LayoutGridIcon,
+        value: "general",
+        label: "General",
     },
     {
         value: "server-settings",
         label: "Server Settings",
-        description: "Capacity, maintenance flow, runtime refreshes, restart confirmation, and locks.",
-        icon: ActivityIcon,
-    },
-    {
-        value: "general",
-        label: "General",
-        description: "Proxy routing, tablist enablement, permission synchronization, and presets.",
-        icon: Settings2Icon,
     },
     {
         value: "messaging",
         label: "Messaging",
-        description: "Version names, MOTD copy, kick text, and tablist content with live previews.",
-        icon: MessageSquareTextIcon,
     },
 ] as const;
 
-type NetworkSectionValue = (typeof NETWORK_SECTION_ITEMS)[number]["value"];
+const SummaryCard = ({
+    helper,
+    label,
+    value,
+}: {
+    helper: string;
+    label: string;
+    value: string;
+}) => (
+    <Card className="border border-border/70 bg-card/85 shadow-none">
+        <CardHeader className="pb-3">
+            <CardDescription className="text-xs uppercase tracking-[0.24em]">
+                {label}
+            </CardDescription>
+            <CardTitle className="text-xl tracking-tight">{value}</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 text-sm text-muted-foreground">{helper}</CardContent>
+    </Card>
+);
 
-const getActiveSection = (pathname: string): NetworkSectionValue => {
-    const section = pathname.split("/").filter(Boolean)[1];
-    return NETWORK_SECTION_ITEMS.some((item) => item.value === section)
-        ? (section as NetworkSectionValue)
-        : "overview";
-};
+const LastSyncSurface = ({
+    isRefreshing,
+    lastUpdatedAt,
+}: {
+    isRefreshing: boolean;
+    lastUpdatedAt: number | null;
+}) => (
+    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-3 text-sm text-muted-foreground">
+        {isRefreshing ? (
+            <LoaderCircleIcon className="size-4 animate-spin text-primary" />
+        ) : (
+            <Clock3Icon className="size-4 text-primary" />
+        )}
+        <span>
+            {lastUpdatedAt
+                ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
+                : "Waiting for first sync"}
+        </span>
+    </div>
+);
+
+const NetworkPageSkeleton = () => (
+    <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+                <Skeleton className="h-9 w-40" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+                <Card
+                    key={`network-summary-skeleton-${index}`}
+                    className="border border-border/70 bg-card/85"
+                >
+                    <CardHeader>
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-8 w-24" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-40" />
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+        <Skeleton className="h-8 w-80 max-w-full" />
+    </div>
+);
 
 const NetworkPage = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
     const getAccessToken = useAccessToken();
     const userRole = useAuthStore((state) => state.session?.user.role);
     const setGeneralSettings = useNetworkSettingsStore((state) => state.setGeneral);
@@ -96,14 +142,8 @@ const NetworkPage = () => {
     const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
     const [isRestartingNetwork, setIsRestartingNetwork] = useState(false);
     const [pageErrorMessage, setPageErrorMessage] = useState<string | null>(null);
+    const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
     const isAdmin = hasAdminAccess(userRole);
-
-    const activeSection = useMemo(
-        () => getActiveSection(location.pathname),
-        [location.pathname],
-    );
-    const activeSectionItem =
-        NETWORK_SECTION_ITEMS.find((item) => item.value === activeSection) ?? NETWORK_SECTION_ITEMS[0];
 
     const loadAllNetworkData = useCallback(
         async (showLoading: boolean) => {
@@ -128,6 +168,7 @@ const NetworkPage = () => {
                 setLocks(nextLocks);
                 setGeneralSettings(nextSettings.general);
                 setPageErrorMessage(null);
+                setLastUpdatedAt(Date.now());
             } catch (error) {
                 setPageErrorMessage(
                     error instanceof Error ? error.message : "Unable to load network settings.",
@@ -154,6 +195,7 @@ const NetworkPage = () => {
 
                 setStatus(nextStatus);
                 setLocks(nextLocks);
+                setLastUpdatedAt(Date.now());
 
                 if (reportErrors) {
                     setPageErrorMessage(null);
@@ -249,9 +291,7 @@ const NetworkPage = () => {
             toast.success("Full network restart requested.");
         } catch (error) {
             const nextError =
-                error instanceof Error
-                    ? error
-                    : new Error("Unable to request a network restart.");
+                error instanceof Error ? error : new Error("Unable to request a network restart.");
 
             toast.error(nextError.message);
             throw nextError;
@@ -275,129 +315,115 @@ const NetworkPage = () => {
         requestNetworkRestart: requestNetworkRestartAction,
     };
 
-    return (
-        <div className="space-y-6">
-            <Card className="border-border/70 bg-card/80 shadow-sm">
-                <CardHeader className="gap-5 border-b border-border/70">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline" className="border-primary/30 text-primary">
-                                    Network Shell
-                                </Badge>
-                                <Badge
-                                    variant="outline"
-                                    className={
-                                        settings?.maintenance
-                                            ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                    }
-                                >
-                                    {settings?.maintenance ? "Maintenance enabled" : "Network open"}
-                                </Badge>
-                            </div>
-                            <div className="space-y-1.5">
-                                <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
-                                    <GlobeIcon className="size-5 text-primary" />
-                                    Network management
-                                </CardTitle>
-                                <CardDescription className="max-w-3xl text-sm leading-6">
-                                    Preserve the nested network routing model while consolidating
-                                    live status, network-wide forms, restart flow, and player-facing
-                                    messaging into one shadcn-based subtree.
-                                </CardDescription>
-                            </div>
-                        </div>
+    const hasFreshData = lastUpdatedAt !== null;
 
-                    </div>
+    if (isLoading && !hasFreshData) {
+        return <NetworkPageSkeleton />;
+    }
 
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                        <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                Players
-                            </div>
-                            <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <UsersIcon className="size-4 text-primary" />
-                                {status.onlinePlayers.toLocaleString()}
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                Capacity
-                            </div>
-                            <div className="mt-1 text-sm font-semibold text-foreground">
-                                {settings?.maxPlayers?.toLocaleString() ?? "--"} max slots
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                Default group
-                            </div>
-                            <div className="mt-1 text-sm font-semibold text-foreground">
-                                {settings?.defaultGroup ?? "--"}
-                            </div>
-                        </div>
-                        <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                Permissions
-                            </div>
-                            <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-                                <ShieldCheckIcon className="size-4 text-primary" />
-                                {settings?.general.permissionSystemEnabled ? "Enabled" : "Disabled"}
-                            </div>
-                        </div>
-                    </div>
+    if (pageErrorMessage && !hasFreshData) {
+        return (
+            <Card className="border border-destructive/40 bg-destructive/5 shadow-none">
+                <CardHeader>
+                    <CardDescription className="text-xs uppercase tracking-[0.24em] text-destructive">
+                        Network Error
+                    </CardDescription>
+                    <CardTitle className="text-destructive">
+                        Unable to load the network workspace
+                    </CardTitle>
+                    <CardDescription className="text-sm text-destructive/80">
+                        {pageErrorMessage}
+                    </CardDescription>
                 </CardHeader>
-
-                <CardContent className="space-y-5 pt-6">
-                    {pageErrorMessage ? (
-                        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div className="font-medium">Network data is degraded</div>
-                                    <div className="mt-1 text-destructive/85">{pageErrorMessage}</div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : null}
-
-                    <Tabs
-                        value={activeSection}
-                        onValueChange={(nextValue) => navigate(`/network/${nextValue}`)}
-                    >
-                        <TabsList
-                            variant="line"
-                            className="h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-border/70 bg-muted/30 p-1"
-                        >
-                            {NETWORK_SECTION_ITEMS.map(({ icon: Icon, label, value }) => (
-                                <TabsTrigger key={value} value={value} className="px-3 py-2.5">
-                                    <Icon className="size-4" />
-                                    {label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-
-                    <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-4">
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                            <div>
-                                <div className="text-sm font-semibold text-foreground">
-                                    {activeSectionItem.label}
-                                </div>
-                                <div className="mt-1 text-sm leading-6 text-muted-foreground">
-                                    {activeSectionItem.description}
-                                </div>
-                            </div>
-                            <Badge variant="outline" className="w-fit border-border/80">
-                                Section {NETWORK_SECTION_ITEMS.findIndex((item) => item.value === activeSection) + 1}
-                                /{NETWORK_SECTION_ITEMS.length}
-                            </Badge>
-                        </div>
-                    </div>
-                </CardContent>
             </Card>
+        );
+    }
 
-            <Outlet context={contextValue} />
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                            Network
+                        </h1>
+                        <Badge
+                            variant="outline"
+                            className={
+                                settings?.maintenance
+                                    ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            }
+                        >
+                            {settings?.maintenance ? "Maintenance enabled" : "Network open"}
+                        </Badge>
+                    </div>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Monitor live routing, network-wide controls, and player-facing messaging
+                        from one operational workspace.
+                    </p>
+                </div>
+
+                <LastSyncSurface isRefreshing={isRefreshing} lastUpdatedAt={lastUpdatedAt} />
+            </div>
+
+            {pageErrorMessage && hasFreshData ? (
+                <Card className="border border-amber-500/30 bg-amber-500/10 shadow-none">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base text-amber-200">
+                            Showing the latest successful network snapshot
+                        </CardTitle>
+                        <CardDescription className="text-sm text-amber-100/80">
+                            {pageErrorMessage}
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <SummaryCard
+                    label="Online players"
+                    value={status.onlinePlayers.toLocaleString()}
+                    helper="Players currently connected across the full proxy edge."
+                />
+                <SummaryCard
+                    label="Capacity"
+                    value={settings?.maxPlayers?.toLocaleString() ?? "--"}
+                    helper="Configured network slot ceiling used for global occupancy decisions."
+                />
+                <SummaryCard
+                    label="Game servers"
+                    value={status.serverCount.toLocaleString()}
+                    helper="Registered non-proxy runtime instances currently in the cluster."
+                />
+                <SummaryCard
+                    label="Proxies"
+                    value={status.proxyCount.toLocaleString()}
+                    helper="Gateway nodes currently routing traffic into the network."
+                />
+            </div>
+
+            <NetworkPageContextProvider value={contextValue}>
+                <Tabs defaultValue="general" className="gap-4">
+                    <TabsList variant="line" className="flex-wrap justify-start">
+                        {NETWORK_SECTION_ITEMS.map(({ label, value }) => (
+                            <TabsTrigger key={value} value={value}>
+                                {label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+
+                    <TabsContent value="general">
+                        <NetworkGeneralPage />
+                    </TabsContent>
+                    <TabsContent value="server-settings">
+                        <NetworkServerSettingsPage />
+                    </TabsContent>
+                    <TabsContent value="messaging">
+                        <NetworkMessagingPage />
+                    </TabsContent>
+                </Tabs>
+            </NetworkPageContextProvider>
         </div>
     );
 };

@@ -9,9 +9,7 @@ import {
 } from "lucide-react";
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
 
-import PlayerManagementModal from "@/components/PlayerManagementModal";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -24,10 +22,7 @@ import {
 } from "@/components/ui/command";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
 import { useGlobalSearchQuery } from "@/features/search/hooks/use-global-search-query";
-import { useAccessToken } from "@/hooks/use-access-token";
-import { getPlayerByUuid } from "@/lib/api";
-import { formatDateTime } from "@/lib/server-display";
-import type { PersistedPlayerRecord } from "@/types/player";
+import { formatDateTime } from "@/features/servers/lib/server-display";
 
 const SEARCH_RESULT_LIMIT = 6;
 
@@ -41,24 +36,17 @@ const RESULT_GROUP_CLASS_NAME =
 
 const HeaderSearchCommand = () => {
     const navigate = useNavigate();
-    const getAccessToken = useAccessToken();
     const rootRef = useRef<HTMLDivElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const [query, setQuery] = useState("");
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedPlayer, setSelectedPlayer] = useState<PersistedPlayerRecord | null>(null);
-    const [loadingPlayerUuid, setLoadingPlayerUuid] = useState<string | null>(null);
 
     const { errorMessage, isSearching, results, totalResultCount, trimmedQuery } =
         useGlobalSearchQuery({
             limit: SEARCH_RESULT_LIMIT,
             query,
         });
-
-    const closeSearch = useCallback(() => {
-        setIsOpen(false);
-    }, []);
 
     const resetSearchSurface = useCallback(() => {
         setIsOpen(false);
@@ -101,27 +89,6 @@ const HeaderSearchCommand = () => {
             });
         },
         [navigate, resetSearchSurface],
-    );
-
-    const handleOpenPlayer = useCallback(
-        async (playerUuid: string) => {
-            setLoadingPlayerUuid(playerUuid);
-
-            try {
-                const accessToken = await getAccessToken();
-                const player = await getPlayerByUuid(accessToken, playerUuid);
-
-                setSelectedPlayer(player);
-                resetSearchSurface();
-            } catch (error) {
-                toast.error(
-                    error instanceof Error ? error.message : "Unable to load that player.",
-                );
-            } finally {
-                setLoadingPlayerUuid(null);
-            }
-        },
-        [getAccessToken, resetSearchSurface],
     );
 
     const shouldShowPanel = isOpen;
@@ -195,7 +162,8 @@ const HeaderSearchCommand = () => {
                                                 Instances
                                             </div>
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Jump directly to server detail pages and runtime state.
+                                                Jump directly to server detail pages and runtime
+                                                state.
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
@@ -204,7 +172,8 @@ const HeaderSearchCommand = () => {
                                                 Groups
                                             </div>
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Open group configs, scaling settings, and maintenance state.
+                                                Open group configs, scaling settings, and
+                                                maintenance state.
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/70 bg-background/40 px-3 py-3">
@@ -213,7 +182,7 @@ const HeaderSearchCommand = () => {
                                                 Players
                                             </div>
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Launch player management directly from the header.
+                                                Open player detail pages and runtime context.
                                             </p>
                                         </div>
                                     </div>
@@ -333,18 +302,15 @@ const HeaderSearchCommand = () => {
                                                     <CommandItem
                                                         key={player.uuid}
                                                         value={`player-${player.uuid}`}
-                                                        disabled={loadingPlayerUuid === player.uuid}
-                                                        onSelect={() => {
-                                                            void handleOpenPlayer(player.uuid);
-                                                        }}
+                                                        onSelect={() =>
+                                                            handleNavigate(
+                                                                `/players/${encodeURIComponent(player.uuid)}`,
+                                                            )
+                                                        }
                                                         className="rounded-xl px-3 py-3"
                                                     >
                                                         <div className="flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                                                            {loadingPlayerUuid === player.uuid ? (
-                                                                <LoaderCircleIcon className="size-4 animate-spin" />
-                                                            ) : (
-                                                                <UsersIcon className="size-4" />
-                                                            )}
+                                                            <UsersIcon className="size-4" />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
                                                             <div className="truncate font-medium text-foreground">
@@ -358,7 +324,7 @@ const HeaderSearchCommand = () => {
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                            <span>Manage</span>
+                                                            <span>Details</span>
                                                             <ArrowUpRightIcon className="size-3.5" />
                                                         </div>
                                                     </CommandItem>
@@ -372,14 +338,6 @@ const HeaderSearchCommand = () => {
                     ) : null}
                 </Command>
             </div>
-
-            <PlayerManagementModal
-                player={selectedPlayer}
-                onClose={() => {
-                    setSelectedPlayer(null);
-                    closeSearch();
-                }}
-            />
         </>
     );
 };

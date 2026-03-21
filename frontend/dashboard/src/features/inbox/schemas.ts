@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createPaginatedResponseSchema } from "@/lib/api/shared";
+import { createPaginatedResponseSchema } from "@/api/shared";
 
 export const auditMetadataSchema = z.record(z.string(), z.unknown());
 

@@ -6,19 +6,18 @@ import {
     LoaderCircleIcon,
     LockIcon,
     RotateCcwIcon,
-    ServerCogIcon,
     ShieldAlertIcon,
     UsersIcon,
 } from "lucide-react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
-import { useNetworkPageContext } from "@/pages/network/context";
+import { useNetworkPageContext } from "@/features/network/lib/context";
 import {
     createRestartConfirmationCode,
     formatNetworkLockDuration,
     formatNetworkLockType,
     getNetworkLockSummary,
-} from "@/pages/network/utils";
+} from "@/features/network/lib/utils";
 import {
     networkRestartConfirmationSchema,
     networkServerSettingsFormSchema,
@@ -38,13 +37,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
     InputGroup,
     InputGroupAddon,
@@ -133,20 +126,6 @@ const NetworkServerSettingsPage = () => {
         });
     }, [eligibleDefaultGroups, settings, settingsForm]);
 
-    const maxPlayers = useWatch({
-        control: settingsForm.control,
-        name: "maxPlayers",
-    });
-    const defaultGroup = useWatch({
-        control: settingsForm.control,
-        name: "defaultGroup",
-    });
-    const selectedDefaultGroup =
-        eligibleDefaultGroups.find((group) => group.id === defaultGroup) ?? null;
-    const restartCooldownLabel = networkRestartLock
-        ? formatNetworkLockDuration(networkRestartLock.ttlSeconds)
-        : "Ready";
-
     const handleSave = settingsForm.handleSubmit(async (values) => {
         const parsedMaxPlayers = Number.parseInt(values.maxPlayers, 10);
 
@@ -172,10 +151,7 @@ const NetworkServerSettingsPage = () => {
             });
         } catch (error) {
             settingsForm.setError("root", {
-                message:
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to save server settings.",
+                message: error instanceof Error ? error.message : "Unable to save server settings.",
             });
         }
     });
@@ -231,9 +207,7 @@ const NetworkServerSettingsPage = () => {
         } catch (error) {
             restartForm.setError("root", {
                 message:
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to request a network restart.",
+                    error instanceof Error ? error.message : "Unable to request a network restart.",
             });
         }
     });
@@ -244,9 +218,9 @@ const NetworkServerSettingsPage = () => {
                 <CardHeader>
                     <CardTitle>Server settings unavailable</CardTitle>
                     <CardDescription>
-                    The dashboard could not load capacity, maintenance, and lock data for the
-                    network settings view.
-                </CardDescription>
+                        The dashboard could not load capacity, maintenance, and lock data for the
+                        network settings view.
+                    </CardDescription>
                 </CardHeader>
             </Card>
         );
@@ -264,42 +238,6 @@ const NetworkServerSettingsPage = () => {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-5">
-                        <div className="grid gap-3 md:grid-cols-3">
-                            <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Maintenance
-                                </div>
-                                <div className="mt-2">
-                                    <Badge
-                                        variant="outline"
-                                        className={
-                                            settings?.maintenance
-                                                ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                        }
-                                    >
-                                        {settings?.maintenance ? "Enabled" : "Disabled"}
-                                    </Badge>
-                                </div>
-                            </div>
-                            <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Restart cooldown
-                                </div>
-                                <div className="mt-2 text-sm font-semibold text-foreground">
-                                    {restartCooldownLabel}
-                                </div>
-                            </div>
-                            <div className="rounded-xl border border-border/70 bg-background/55 px-4 py-3">
-                                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Max players
-                                </div>
-                                <div className="mt-2 text-sm font-semibold text-foreground">
-                                    {settings?.maxPlayers.toLocaleString() ?? "--"}
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="rounded-xl border border-border/70 bg-background/55 p-4">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="space-y-2">
@@ -315,11 +253,8 @@ const NetworkServerSettingsPage = () => {
                                     </div>
                                     {maintenanceDisableBlocked ? (
                                         <div className="text-sm text-amber-300">
-                                            Wait{" "}
-                                            {formatNetworkLockDuration(
-                                                networkRestartLock?.ttlSeconds ?? null,
-                                            )}{" "}
-                                            before disabling maintenance again.
+                                            Maintenance is currently locked while a network restart
+                                            request is still active.
                                         </div>
                                     ) : null}
                                 </div>
@@ -354,7 +289,7 @@ const NetworkServerSettingsPage = () => {
                                     </div>
                                     {networkRestartLock ? (
                                         <div className="text-sm text-amber-300">
-                                            A restart request is already active for {restartCooldownLabel}.
+                                            A network restart request is already active.
                                         </div>
                                     ) : null}
                                 </div>
@@ -413,7 +348,7 @@ const NetworkServerSettingsPage = () => {
                                 </TableHeader>
                                 <TableBody>
                                     {locks.map((lock) => (
-                                        <TableRow key={lock.key}>
+                                        <TableRow key={lock.key} className="hover:bg-transparent">
                                             <TableCell className="px-4 py-3 align-top">
                                                 <div className="flex items-start gap-3">
                                                     <LockIcon className="mt-0.5 size-4 text-primary" />
@@ -448,32 +383,6 @@ const NetworkServerSettingsPage = () => {
                 </Card>
             </div>
 
-            {isAdmin ? (
-                <Card className="border-border/70 bg-card/80">
-                    <CardHeader>
-                        <CardTitle>Managed runtime bundles</CardTitle>
-                        <CardDescription>
-                            Runtime bundle metadata refresh is no longer manually triggered from the
-                            dashboard surface.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-3 lg:grid-cols-3">
-                        <div className="rounded-xl border border-border/70 bg-background/55 p-4">
-                            <div className="flex items-center gap-2">
-                                <ServerCogIcon className="size-4 text-primary" />
-                                <div className="text-sm font-semibold text-foreground">
-                                    Runtime metadata
-                                </div>
-                            </div>
-                            <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Use automatic refresh flows or deployment workflows for runtime
-                                bundle changes. Manual refresh actions are not exposed here anymore.
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : null}
-
             <Card className="border-border/70 bg-card/80">
                 <CardHeader>
                     <CardTitle>Server capacity</CardTitle>
@@ -498,7 +407,9 @@ const NetworkServerSettingsPage = () => {
                                         step={1}
                                         inputMode="numeric"
                                         aria-invalid={
-                                            settingsForm.formState.errors.maxPlayers ? "true" : "false"
+                                            settingsForm.formState.errors.maxPlayers
+                                                ? "true"
+                                                : "false"
                                         }
                                         {...settingsForm.register("maxPlayers", {
                                             onChange: () => settingsForm.clearErrors("root"),
@@ -515,7 +426,9 @@ const NetworkServerSettingsPage = () => {
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="network-default-group">Default group</FieldLabel>
+                                <FieldLabel htmlFor="network-default-group">
+                                    Default group
+                                </FieldLabel>
                                 <Controller
                                     control={settingsForm.control}
                                     name="defaultGroup"
@@ -555,7 +468,8 @@ const NetworkServerSettingsPage = () => {
                                     )}
                                 />
                                 <FieldDescription>
-                                    Non-proxy group used when routing needs a default gameplay target.
+                                    Non-proxy group used when routing needs a default gameplay
+                                    target.
                                 </FieldDescription>
                                 <FieldError errors={[settingsForm.formState.errors.defaultGroup]} />
                             </Field>
@@ -564,18 +478,20 @@ const NetworkServerSettingsPage = () => {
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="rounded-xl border border-border/70 bg-background/55 p-4">
                                 <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Draft slot cap
+                                    Current slot cap
                                 </div>
                                 <div className="mt-2 text-sm font-semibold text-foreground">
-                                    {maxPlayers?.trim() ? `${maxPlayers.trim()} players` : "--"}
+                                    {settings?.maxPlayers
+                                        ? `${settings.maxPlayers.toLocaleString()} players`
+                                        : "--"}
                                 </div>
                             </div>
                             <div className="rounded-xl border border-border/70 bg-background/55 p-4">
                                 <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                                    Draft default group
+                                    Current default group
                                 </div>
                                 <div className="mt-2 text-sm font-semibold text-foreground">
-                                    {selectedDefaultGroup?.id ?? "--"}
+                                    {settings?.defaultGroup ?? "--"}
                                 </div>
                             </div>
                         </div>
@@ -611,7 +527,9 @@ const NetworkServerSettingsPage = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isTogglingMaintenance}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isTogglingMaintenance}>
+                            Cancel
+                        </AlertDialogCancel>
                         <Button
                             type="button"
                             variant="outline"
@@ -688,11 +606,10 @@ const NetworkServerSettingsPage = () => {
                                 />
                             </InputGroup>
                             <FieldDescription>
-                                This confirmation step reduces accidental network-wide restart requests.
+                                This confirmation step reduces accidental network-wide restart
+                                requests.
                             </FieldDescription>
-                            <FieldError
-                                errors={[restartForm.formState.errors.confirmationCode]}
-                            />
+                            <FieldError errors={[restartForm.formState.errors.confirmationCode]} />
                         </Field>
 
                         <FieldError>{restartForm.formState.errors.root?.message}</FieldError>
