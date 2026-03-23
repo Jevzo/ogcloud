@@ -14,11 +14,11 @@ data class RuntimeProperties(
     val velocityProject: String = "velocity",
     val templateLoaderVersion: String = "latest",
     val modernPaperPluginUrl: String =
-        "https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar",
+        "https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-paper-plugin-1.3.0.jar",
     val legacyPaperPluginUrl: String =
-        "https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-paper-plugin-1.2.3.jar",
+        "https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-legacy-paper-plugin-1.3.0.jar",
     val velocityPluginUrl: String =
-        "https://github.com/Jevzo/ogcloud/releases/download/v1.2.3-pre/ogcloud-velocity-plugin-1.2.3.jar",
+        "https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-velocity-plugin-1.3.0.jar",
     val viaVersionUrl: String =
         "https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.7.2/PAPER/ViaVersion-5.7.2.jar",
     val viaVersionDefaultServerProtocol: Int = 774,

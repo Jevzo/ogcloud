@@ -66,9 +66,9 @@ ogcloud:
     legacy-paper-build: ${OGCLOUD_RUNTIME_LEGACY_PAPER_BUILD:445}
     velocity-project: ${OGCLOUD_RUNTIME_VELOCITY_PROJECT:velocity}
     template-loader-version: ${OGCLOUD_RUNTIME_TEMPLATE_LOADER_VERSION:latest}
-    modern-paper-plugin-url: ${OGCLOUD_RUNTIME_MODERN_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3/ogcloud-paper-plugin-1.2.3.jar}
-    legacy-paper-plugin-url: ${OGCLOUD_RUNTIME_LEGACY_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3/ogcloud-legacy-paper-plugin-1.2.3.jar}
-    velocity-plugin-url: ${OGCLOUD_RUNTIME_VELOCITY_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.2.3/ogcloud-velocity-plugin-1.2.3.jar}
+    modern-paper-plugin-url: ${OGCLOUD_RUNTIME_MODERN_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-paper-plugin-1.3.0.jar}
+    legacy-paper-plugin-url: ${OGCLOUD_RUNTIME_LEGACY_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-legacy-paper-plugin-1.3.0.jar}
+    velocity-plugin-url: ${OGCLOUD_RUNTIME_VELOCITY_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-velocity-plugin-1.3.0.jar}
     via-version-url: ${OGCLOUD_RUNTIME_VIA_VERSION_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.7.2/PAPER/ViaVersion-5.7.2.jar}
     via-version-default-server-protocol: ${OGCLOUD_RUNTIME_VIA_VERSION_DEFAULT_SERVER_PROTOCOL:774}
     via-backwards-url: ${OGCLOUD_RUNTIME_VIA_BACKWARDS_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaBackwards/versions/5.7.2/PAPER/ViaBackwards-5.7.2.jar}
