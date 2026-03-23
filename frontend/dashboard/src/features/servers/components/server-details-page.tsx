@@ -20,6 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { PageReveal } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -218,7 +219,7 @@ const ServerDetailsPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="space-y-4">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
@@ -513,7 +514,7 @@ const ServerDetailsPage = () => {
                     onOpenChange={setIsCommandDialogOpen}
                 />
             ) : null}
-        </div>
+        </PageReveal>
     );
 };
 

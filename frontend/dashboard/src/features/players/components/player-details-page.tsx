@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PageReveal } from "@/components/ui/page-reveal";
 import {
     Select,
     SelectContent,
@@ -307,7 +308,7 @@ const PlayerDetailsPage = () => {
 
     return (
         <TooltipProvider delayDuration={150}>
-            <div className="space-y-4">
+            <PageReveal className="space-y-4">
                 <div className="space-y-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
@@ -832,7 +833,7 @@ const PlayerDetailsPage = () => {
                         </Card>
                     </TabsContent>
                 </Tabs>
-            </div>
+            </PageReveal>
         </TooltipProvider>
     );
 };

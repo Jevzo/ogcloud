@@ -23,6 +23,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { PageReveal } from "@/components/ui/page-reveal";
 import {
     Select,
     SelectContent,
@@ -136,7 +137,7 @@ const NetworkGeneralPage = () => {
     }
 
     return (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <PageReveal className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div className="space-y-6">
                 <Card className="border-border/70 bg-card/80">
                     <CardHeader>
@@ -339,7 +340,7 @@ const NetworkGeneralPage = () => {
                     </Button>
                 </CardFooter>
             </Card>
-        </div>
+        </PageReveal>
     );
 };
 

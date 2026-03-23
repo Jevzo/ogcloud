@@ -19,6 +19,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -293,7 +294,7 @@ const ScalingActionsTable = ({
 
 const DashboardHomeSkeleton = () => (
     <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`metric-skeleton-${index}`}
@@ -309,7 +310,7 @@ const DashboardHomeSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
 
         <Card className="border border-border/70 bg-card/85">
             <CardHeader>
@@ -439,7 +440,7 @@ const DashboardHomePage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -468,11 +469,11 @@ const DashboardHomePage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {metrics.map((metric) => (
                     <MetricCard key={metric.title} {...metric} isLoading={false} />
                 ))}
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="pb-4">
@@ -499,17 +500,17 @@ const DashboardHomePage = () => {
                             No visible groups are active right now.
                         </div>
                     ) : (
-                        <div className="grid gap-4 xl:grid-cols-3">
+                        <RevealGroup className="grid gap-4 xl:grid-cols-3">
                             {data.groups.map((group) => (
                                 <GroupCard key={group.name} group={group} />
                             ))}
-                        </div>
+                        </RevealGroup>
                     )}
                 </CardContent>
             </Card>
 
             <ScalingActionsTable scalingActions={data.scalingActions} />
-        </div>
+        </PageReveal>
     );
 };
 

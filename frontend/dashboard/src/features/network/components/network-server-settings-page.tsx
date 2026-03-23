@@ -51,6 +51,7 @@ import {
     InputGroupInput,
     InputGroupText,
 } from "@/components/ui/input-group";
+import { PageReveal } from "@/components/ui/page-reveal";
 import {
     Select,
     SelectContent,
@@ -234,7 +235,7 @@ const NetworkServerSettingsPage = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <PageReveal className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
                 <Card className="border-border/70 bg-card/80">
                     <CardHeader>
@@ -680,7 +681,7 @@ const NetworkServerSettingsPage = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </PageReveal>
     );
 };
 

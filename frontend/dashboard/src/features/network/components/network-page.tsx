@@ -21,6 +21,7 @@ import {
     updateNetworkSettings,
 } from "@/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime } from "@/features/servers/lib/server-display";
@@ -107,7 +108,7 @@ const NetworkPageSkeleton = () => (
             </div>
             <Skeleton className="h-10 w-48" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`network-summary-skeleton-${index}`}
@@ -122,7 +123,7 @@ const NetworkPageSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
         <Skeleton className="h-8 w-80 max-w-full" />
     </div>
 );
@@ -339,7 +340,7 @@ const NetworkPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -367,7 +368,7 @@ const NetworkPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Online players"
                     value={`${status.onlinePlayers.toLocaleString()} / ${settings?.maxPlayers?.toLocaleString() ?? "--"}`}
@@ -388,7 +389,7 @@ const NetworkPage = () => {
                     value={status.proxyCount.toLocaleString()}
                     helper="Gateway nodes currently routing traffic into the network."
                 />
-            </div>
+            </RevealGroup>
 
             <NetworkPageContextProvider value={contextValue}>
                 <Tabs defaultValue="general" className="gap-4">
@@ -411,7 +412,7 @@ const NetworkPage = () => {
                     </TabsContent>
                 </Tabs>
             </NetworkPageContextProvider>
-        </div>
+        </PageReveal>
     );
 };
 

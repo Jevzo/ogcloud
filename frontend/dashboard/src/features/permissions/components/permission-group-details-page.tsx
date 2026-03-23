@@ -28,6 +28,7 @@ import {
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { PageReveal } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -399,7 +400,7 @@ const PermissionGroupDetailsPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="space-y-4">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                     <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
@@ -773,7 +774,7 @@ const PermissionGroupDetailsPage = () => {
                 onOpenChange={setIsDeleteAlertOpen}
                 open={isDeleteAlertOpen}
             />
-        </div>
+        </PageReveal>
     );
 };
 

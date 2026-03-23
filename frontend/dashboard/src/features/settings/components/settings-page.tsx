@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import {
     settingsEmailFormSchema,
     settingsPasswordFormSchema,
@@ -187,7 +188,7 @@ const SettingsPage = () => {
     });
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div>
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -200,7 +201,7 @@ const SettingsPage = () => {
                 </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <RevealGroup className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
                 <div className="space-y-4">
                     <Card className="border border-border/70 bg-card/85 shadow-none">
                         <CardHeader>
@@ -482,8 +483,8 @@ const SettingsPage = () => {
                         </CardContent>
                     </Card>
                 </div>
-            </div>
-        </div>
+            </RevealGroup>
+        </PageReveal>
     );
 };
 

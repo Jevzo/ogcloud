@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -120,7 +121,7 @@ const GroupsTableSkeleton = () => (
 
 const GroupsPageSkeleton = () => (
     <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`group-summary-skeleton-${index}`}
@@ -135,7 +136,7 @@ const GroupsPageSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
 
         <Card className="border border-border/70 bg-card/85">
             <CardHeader>
@@ -327,7 +328,7 @@ const GroupsPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -376,7 +377,7 @@ const GroupsPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Total groups"
                     value={`${groupPage.totalItems}`}
@@ -401,7 +402,7 @@ const GroupsPage = () => {
                     value={`${proxyCount}`}
                     helper="Velocity-facing groups represented on the current page."
                 />
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="gap-3 border-b border-border/70 pb-4">
@@ -639,7 +640,7 @@ const GroupsPage = () => {
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </PageReveal>
     );
 };
 

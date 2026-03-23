@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { FieldError } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -119,7 +120,7 @@ const PermissionsPageSkeleton = () => (
             <Skeleton className="h-10 w-48" />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`permission-summary-skeleton-${index}`}
@@ -134,7 +135,7 @@ const PermissionsPageSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
 
         <Card className="border border-border/70 bg-card/85">
             <CardHeader className="gap-3 border-b border-border/70 pb-4">
@@ -283,7 +284,7 @@ const PermissionsPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -335,7 +336,7 @@ const PermissionsPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Groups"
                     value={`${groups.length}`}
@@ -360,7 +361,7 @@ const PermissionsPage = () => {
                     value={permissionSystemEnabled ? "Enabled" : "Disabled"}
                     helper="Whether edits can currently be applied through the dashboard."
                 />
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="gap-3 border-b border-border/70 pb-4">
@@ -581,7 +582,7 @@ const PermissionsPage = () => {
                 }}
                 open={groupPendingDeletion !== null}
             />
-        </div>
+        </PageReveal>
     );
 };
 

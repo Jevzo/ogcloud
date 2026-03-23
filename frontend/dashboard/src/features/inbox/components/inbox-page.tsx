@@ -25,6 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -122,7 +123,7 @@ const SummaryCard = ({
 
 const InboxPageSkeleton = () => (
     <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`audit-summary-skeleton-${index}`}
@@ -137,7 +138,7 @@ const InboxPageSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
         <Card className="border border-border/70 bg-card/85">
             <CardHeader className="gap-4">
                 <Skeleton className="h-4 w-24" />
@@ -190,7 +191,7 @@ const InboxPage = () => {
 
     if (!canReviewAuditLogs) {
         return (
-            <div className="space-y-4">
+            <PageReveal className="space-y-4">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                         Audit inbox
@@ -212,7 +213,7 @@ const InboxPage = () => {
                         </CardDescription>
                     </CardHeader>
                 </Card>
-            </div>
+            </PageReveal>
         );
     }
 
@@ -239,7 +240,7 @@ const InboxPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -269,7 +270,7 @@ const InboxPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Total entries"
                     value={`${auditPage.totalItems}`}
@@ -298,7 +299,7 @@ const InboxPage = () => {
                     value={`${visibleActions}`}
                     helper="Distinct audit action names represented in the rendered rows."
                 />
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="gap-4 border-b border-border/70 pb-4">
@@ -465,7 +466,7 @@ const InboxPage = () => {
                     </div>
                 </CardFooter>
             </Card>
-        </div>
+        </PageReveal>
     );
 };
 

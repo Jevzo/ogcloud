@@ -22,6 +22,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import PlayerActionsMenu from "@/features/players/components/player-actions-menu";
 import { usePersistedPlayersQuery } from "@/features/players/hooks/use-persisted-players-query";
 import {
@@ -110,7 +111,7 @@ const PlayersPage = () => {
     if (isLoading && !hasFreshData) {
         return (
             <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {Array.from({ length: 4 }).map((_, index) => (
                         <Card
                             key={`players-summary-skeleton-${index}`}
@@ -125,7 +126,7 @@ const PlayersPage = () => {
                             </CardContent>
                         </Card>
                     ))}
-                </div>
+                </RevealGroup>
                 <Card className="border border-border/70 bg-card/85">
                     <CardHeader>
                         <Skeleton className="h-4 w-20" />
@@ -160,7 +161,7 @@ const PlayersPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -188,7 +189,7 @@ const PlayersPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Persisted records"
                     value={`${playerPage.totalItems}`}
@@ -209,7 +210,7 @@ const PlayersPage = () => {
                     value={`${temporaryGrants}`}
                     helper="Players with a non-permanent permission assignment on this page."
                 />
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="gap-3 border-b border-border/70 pb-4">
@@ -361,7 +362,7 @@ const PlayersPage = () => {
                     </div>
                 </CardFooter>
             </Card>
-        </div>
+        </PageReveal>
     );
 };
 

@@ -29,6 +29,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -130,7 +131,7 @@ const WebUsersPageSkeleton = () => (
             </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
                 <Card
                     key={`web-users-summary-skeleton-${index}`}
@@ -145,7 +146,7 @@ const WebUsersPageSkeleton = () => (
                     </CardContent>
                 </Card>
             ))}
-        </div>
+        </RevealGroup>
 
         <Card className="border border-border/70 bg-card/85">
             <CardHeader className="gap-4 border-b border-border/70 pb-4">
@@ -340,7 +341,7 @@ const WebUsersPage = () => {
 
     if (!canManageWebUsers) {
         return (
-            <div className="space-y-4">
+            <PageReveal className="space-y-4">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                         Dashboard access
@@ -362,7 +363,7 @@ const WebUsersPage = () => {
                         </CardDescription>
                     </CardHeader>
                 </Card>
-            </div>
+            </PageReveal>
         );
     }
 
@@ -389,7 +390,7 @@ const WebUsersPage = () => {
     }
 
     return (
-        <div className="space-y-4">
+        <PageReveal className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
@@ -423,7 +424,7 @@ const WebUsersPage = () => {
                 </Card>
             ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Total accounts"
                     value={`${webUserPage.totalItems}`}
@@ -444,7 +445,7 @@ const WebUsersPage = () => {
                     value={`${visibleRoles}`}
                     helper="Distinct dashboard roles represented on the current page."
                 />
-            </div>
+            </RevealGroup>
 
             <Card className="border border-border/70 bg-card/85 shadow-none">
                 <CardHeader className="gap-4 border-b border-border/70 pb-4">
@@ -652,7 +653,7 @@ const WebUsersPage = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </PageReveal>
     );
 };
 

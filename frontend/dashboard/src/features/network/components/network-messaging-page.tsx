@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PageReveal } from "@/components/ui/page-reveal";
 import { Textarea } from "@/components/ui/textarea";
 
 type MessagingSaveSection = "connection" | "motd" | "tablist";
@@ -203,7 +204,7 @@ const NetworkMessagingPage = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <PageReveal className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-2">
                 <Card className="flex h-full flex-col border-border/70 bg-card/80">
                     <CardHeader>
@@ -509,7 +510,7 @@ const NetworkMessagingPage = () => {
             </Card>
 
             <FieldError>{form.formState.errors.root?.message}</FieldError>
-        </div>
+        </PageReveal>
     );
 };
 
