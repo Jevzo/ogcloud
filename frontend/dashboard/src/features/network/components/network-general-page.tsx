@@ -14,7 +14,14 @@ import {
 } from "@/features/network/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
     Select,
@@ -206,7 +213,7 @@ const NetworkGeneralPage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <form onSubmit={handleSave} className="space-y-6">
+                    <form id="network-general-form" onSubmit={handleSave} className="space-y-6">
                         <FieldGroup>
                             <Controller
                                 control={form.control}
@@ -291,21 +298,46 @@ const NetworkGeneralPage = () => {
                             </Field>
                         </FieldGroup>
                         <FieldError>{form.formState.errors.root?.message}</FieldError>
-
-                        <div className="flex justify-end">
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting ? (
-                                    <>
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
-                                        Saving
-                                    </>
-                                ) : (
-                                    "Save changes"
-                                )}
-                            </Button>
-                        </div>
                     </form>
                 </CardContent>
+                <CardFooter className="justify-end gap-2 border-t border-border/70 pt-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                            !settings || form.formState.isSubmitting || !form.formState.isDirty
+                        }
+                        onClick={() => {
+                            if (!settings) {
+                                return;
+                            }
+
+                            form.reset({
+                                permissionSystemEnabled: settings.general.permissionSystemEnabled,
+                                proxyRoutingStrategy: settings.general.proxyRoutingStrategy,
+                                tablistEnabled: settings.general.tablistEnabled,
+                            });
+                        }}
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="network-general-form"
+                        disabled={
+                            !settings || form.formState.isSubmitting || !form.formState.isDirty
+                        }
+                    >
+                        {form.formState.isSubmitting ? (
+                            <>
+                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                Saving
+                            </>
+                        ) : (
+                            "Save changes"
+                        )}
+                    </Button>
+                </CardFooter>
             </Card>
         </div>
     );

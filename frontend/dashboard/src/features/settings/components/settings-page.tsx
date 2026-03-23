@@ -11,7 +11,7 @@ import {
     type LucideIcon,
 } from "lucide-react";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,20 +29,6 @@ import { useAccessToken } from "@/features/auth/hooks/use-access-token";
 import { loginWithEmailPassword, updateOwnProfile } from "@/api";
 import { normalizeRole } from "@/features/auth/lib/roles";
 import { useAuthStore } from "@/store/auth-store";
-
-const getRoleBadgeClassName = (role: string) => {
-    const normalizedRole = normalizeRole(role);
-
-    if (normalizedRole === "admin") {
-        return "border-red-500/30 bg-red-500/10 text-red-300";
-    }
-
-    if (normalizedRole === "service") {
-        return "border-amber-500/30 bg-amber-500/10 text-amber-300";
-    }
-
-    return "border-primary/25 bg-primary/10 text-primary";
-};
 
 const formatRoleLabel = (role: string) => {
     const normalizedRole = normalizeRole(role);
@@ -90,6 +76,7 @@ const SettingsPage = () => {
     const linkedPlayerHeadUrl = currentUser?.linkedPlayerUuid
         ? `https://mc-heads.net/avatar/${currentUser.linkedPlayerUuid}`
         : null;
+    const normalizedCurrentEmail = currentUser?.email.trim().toLowerCase() ?? "";
 
     const emailForm = useForm<SettingsEmailFormValues>({
         resolver: zodResolver(settingsEmailFormSchema),
@@ -111,6 +98,24 @@ const SettingsPage = () => {
         });
     }, [currentUser?.email, emailForm]);
 
+    const emailValue =
+        useWatch({
+            control: emailForm.control,
+            name: "email",
+        }) ?? "";
+    const passwordValue =
+        useWatch({
+            control: passwordForm.control,
+            name: "password",
+        }) ?? "";
+    const confirmPasswordValue =
+        useWatch({
+            control: passwordForm.control,
+            name: "confirmPassword",
+        }) ?? "";
+    const hasEmailChanges = emailValue.trim().toLowerCase() !== normalizedCurrentEmail;
+    const hasPasswordChanges = passwordValue.length > 0 || confirmPasswordValue.length > 0;
+
     if (!currentUser) {
         return (
             <Card className="border border-destructive/40 bg-destructive/5 shadow-none">
@@ -127,7 +132,7 @@ const SettingsPage = () => {
 
     const handleEmailSubmit = emailForm.handleSubmit(async (values) => {
         const normalizedEmail = values.email.trim().toLowerCase();
-        const currentEmail = currentUser.email.trim().toLowerCase();
+        const currentEmail = normalizedCurrentEmail;
 
         if (normalizedEmail === currentEmail) {
             toast.info("Your email is already up to date.");
@@ -183,28 +188,16 @@ const SettingsPage = () => {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-2">
-                    <Badge
-                        variant="outline"
-                        className="w-fit border-primary/25 bg-primary/10 text-primary"
-                    >
+            <div>
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                         Account settings
-                    </Badge>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Settings
-                        </h1>
-                        <p className="max-w-3xl text-sm text-muted-foreground">
-                            Review your authenticated dashboard profile, rotate credentials, and
-                            confirm the Minecraft account link attached to this operator session.
-                        </p>
-                    </div>
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                        Profile details, password updates, and the Minecraft account linked to your
+                        dashboard session.
+                    </p>
                 </div>
-
-                <Badge variant="outline" className={getRoleBadgeClassName(currentUser.role)}>
-                    {formatRoleLabel(currentUser.role)}
-                </Badge>
             </div>
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -350,10 +343,26 @@ const SettingsPage = () => {
 
                                 <FieldError>{emailForm.formState.errors.root?.message}</FieldError>
 
-                                <div className="flex justify-end">
+                                <div className="flex justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={
+                                            emailForm.formState.isSubmitting || !hasEmailChanges
+                                        }
+                                        onClick={() =>
+                                            emailForm.reset({
+                                                email: currentUser.email,
+                                            })
+                                        }
+                                    >
+                                        Reset
+                                    </Button>
                                     <Button
                                         type="submit"
-                                        disabled={emailForm.formState.isSubmitting}
+                                        disabled={
+                                            emailForm.formState.isSubmitting || !hasEmailChanges
+                                        }
                                     >
                                         {emailForm.formState.isSubmitting ? (
                                             <>
@@ -435,10 +444,29 @@ const SettingsPage = () => {
                                     {passwordForm.formState.errors.root?.message}
                                 </FieldError>
 
-                                <div className="flex justify-end">
+                                <div className="flex justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={
+                                            passwordForm.formState.isSubmitting ||
+                                            !hasPasswordChanges
+                                        }
+                                        onClick={() =>
+                                            passwordForm.reset({
+                                                confirmPassword: "",
+                                                password: "",
+                                            })
+                                        }
+                                    >
+                                        Reset
+                                    </Button>
                                     <Button
                                         type="submit"
-                                        disabled={passwordForm.formState.isSubmitting}
+                                        disabled={
+                                            passwordForm.formState.isSubmitting ||
+                                            !hasPasswordChanges
+                                        }
                                     >
                                         {passwordForm.formState.isSubmitting ? (
                                             <>

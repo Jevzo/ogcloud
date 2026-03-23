@@ -331,11 +331,11 @@ const GroupsPage = () => {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Server groups
+                        Group inventory
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Manage runtime templates, autoscaling posture, and resource envelopes for
-                        every deployable group.
+                        Templates, scaling policy, and capacity limits for every deployable server
+                        group.
                     </p>
                 </div>
 

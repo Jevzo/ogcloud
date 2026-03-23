@@ -107,6 +107,7 @@ const DashboardLayout = () => {
 
                 setGeneralSettings(networkSettings.general);
             } catch {
+                // Ignore shell bootstrap failures and let the dashboard render with cached defaults.
             }
         };
 

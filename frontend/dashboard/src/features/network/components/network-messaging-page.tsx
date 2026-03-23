@@ -77,6 +77,19 @@ const NetworkMessagingPage = () => {
     const tablistEnabled = settings?.general.tablistEnabled ?? true;
     const motdGlobalField = form.register("motdGlobal");
     const motdMaintenanceField = form.register("motdMaintenance");
+    const hasConnectionChanges =
+        settings !== null &&
+        (previewValues.versionNameGlobal !== settings.versionName.global ||
+            previewValues.versionNameMaintenance !== settings.versionName.maintenance ||
+            previewValues.maintenanceKickMessage !== settings.maintenanceKickMessage);
+    const hasMotdChanges =
+        settings !== null &&
+        (previewValues.motdGlobal !== settings.motd.global ||
+            previewValues.motdMaintenance !== settings.motd.maintenance);
+    const hasTablistChanges =
+        settings !== null &&
+        (previewValues.tablistHeader !== settings.tablist.header ||
+            previewValues.tablistFooter !== settings.tablist.footer);
 
     const handleMotdChange =
         (fieldName: MotdFieldName) => (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -95,6 +108,11 @@ const NetworkMessagingPage = () => {
             });
             form.clearErrors("root");
         };
+
+    const resetMessagingSection = (fields: (keyof NetworkMessagingFormValues)[]) => {
+        fields.forEach((field) => form.resetField(field));
+        form.clearErrors("root");
+    };
 
     const saveSection = async (
         section: MessagingSaveSection,
@@ -275,11 +293,25 @@ const NetworkMessagingPage = () => {
                             </Field>
                         </FieldGroup>
                     </CardContent>
-                    <CardFooter className="justify-end border-t border-border/70 pt-4">
+                    <CardFooter className="justify-end gap-2 border-t border-border/70 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                                resetMessagingSection([
+                                    "versionNameGlobal",
+                                    "versionNameMaintenance",
+                                    "maintenanceKickMessage",
+                                ])
+                            }
+                            disabled={activeSaveSection !== null || !hasConnectionChanges}
+                        >
+                            Reset
+                        </Button>
                         <Button
                             type="button"
                             onClick={() => void handleSaveConnectionMessaging()}
-                            disabled={activeSaveSection !== null}
+                            disabled={activeSaveSection !== null || !hasConnectionChanges}
                         >
                             {activeSaveSection === "connection" ? (
                                 <>
@@ -347,11 +379,19 @@ const NetworkMessagingPage = () => {
                             </Field>
                         </FieldGroup>
                     </CardContent>
-                    <CardFooter className="justify-end border-t border-border/70 pt-4">
+                    <CardFooter className="justify-end gap-2 border-t border-border/70 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => resetMessagingSection(["motdGlobal", "motdMaintenance"])}
+                            disabled={activeSaveSection !== null || !hasMotdChanges}
+                        >
+                            Reset
+                        </Button>
                         <Button
                             type="button"
                             onClick={() => void handleSaveMotd()}
-                            disabled={activeSaveSection !== null}
+                            disabled={activeSaveSection !== null || !hasMotdChanges}
                         >
                             {activeSaveSection === "motd" ? (
                                 <>
@@ -438,11 +478,23 @@ const NetworkMessagingPage = () => {
                         </Field>
                     </FieldGroup>
                 </CardContent>
-                <CardFooter className="justify-end border-t border-border/70 pt-4">
+                <CardFooter className="justify-end gap-2 border-t border-border/70 pt-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => resetMessagingSection(["tablistHeader", "tablistFooter"])}
+                        disabled={
+                            activeSaveSection !== null || !tablistEnabled || !hasTablistChanges
+                        }
+                    >
+                        Reset
+                    </Button>
                     <Button
                         type="button"
                         onClick={() => void handleSaveTablist()}
-                        disabled={activeSaveSection !== null || !tablistEnabled}
+                        disabled={
+                            activeSaveSection !== null || !tablistEnabled || !hasTablistChanges
+                        }
                     >
                         {activeSaveSection === "tablist" ? (
                             <>

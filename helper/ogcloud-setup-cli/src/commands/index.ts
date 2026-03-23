@@ -7,6 +7,7 @@ import { helmUpgradeInstall, helmUninstall } from "../infra/helm";
 import {
     deleteNamespace,
     ensureNamespaceDoesNotExist,
+    restartDeployments,
     waitForBackingServices,
     waitForDeployments,
 } from "../infra/kubernetes";
@@ -16,7 +17,7 @@ import {
     resolveDeployDashboard,
 } from "./network-config";
 import { askConfirm, askInput } from "../cli/prompt";
-import { saveJsonFile, setDeepValue, toYaml } from "../shared/serialization";
+import { getDeepValue, saveJsonFile, setDeepValue, toYaml } from "../shared/serialization";
 import {
     forgetNetwork,
     loadNetworkConfig,
@@ -195,6 +196,13 @@ async function executeUpdate({ parsed, state, helmRoot }: CommandExecutionContex
     }
 
     const target = UPDATE_TARGETS[component];
+    const currentValues = target.valuePaths.map((valuePath) =>
+        getDeepValue(config.values[target.valuesRoot], valuePath),
+    );
+    const isSameVersion = currentValues.every(
+        (currentValue) => typeof currentValue === "string" && currentValue.trim() === imageVersion,
+    );
+
     for (const valuePath of target.valuePaths) {
         setDeepValue(config.values[target.valuesRoot] as JsonMap, valuePath, imageVersion);
     }
@@ -213,6 +221,12 @@ async function executeUpdate({ parsed, state, helmRoot }: CommandExecutionContex
         paths[target.valuesRoot],
         false,
     );
+    if (isSameVersion) {
+        info(
+            `Requested ${component} image tag already matches ${imageVersion}. Forcing rollout restart to pick up rebuilt local images.`,
+        );
+        restartDeployments(config.namespace, target.waitFor);
+    }
     waitForDeployments(config.namespace, target.waitFor);
 
     rememberNetwork(state, network, config.namespace, paths.config, config.updatedAt);

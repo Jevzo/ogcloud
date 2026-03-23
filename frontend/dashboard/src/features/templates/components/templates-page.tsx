@@ -299,11 +299,11 @@ const TemplatesPage = () => {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Templates
+                        Template library
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Review stored template archives, publish new versions, and keep the
-                        group-to-template mapping visible from one operational catalog.
+                        Template archives, published versions, and the group assignments that depend
+                        on them.
                     </p>
                 </div>
 

@@ -20,7 +20,6 @@ import {
     toggleNetworkMaintenance,
     updateNetworkSettings,
 } from "@/api";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -343,24 +342,12 @@ const NetworkPage = () => {
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                            Network
-                        </h1>
-                        <Badge
-                            variant="outline"
-                            className={
-                                settings?.maintenance
-                                    ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                            }
-                        >
-                            {settings?.maintenance ? "Maintenance enabled" : "Network open"}
-                        </Badge>
-                    </div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Network control
+                    </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Monitor live routing, network-wide controls, and player-facing messaging
-                        from one operational workspace.
+                        Maintenance mode, default routing, and player-facing messaging for the
+                        entire network.
                     </p>
                 </div>
 
@@ -383,13 +370,13 @@ const NetworkPage = () => {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard
                     label="Online players"
-                    value={status.onlinePlayers.toLocaleString()}
-                    helper="Players currently connected across the full proxy edge."
+                    value={`${status.onlinePlayers.toLocaleString()} / ${settings?.maxPlayers?.toLocaleString() ?? "--"}`}
+                    helper="Current network occupancy against the configured global player cap."
                 />
                 <SummaryCard
-                    label="Capacity"
-                    value={settings?.maxPlayers?.toLocaleString() ?? "--"}
-                    helper="Configured network slot ceiling used for global occupancy decisions."
+                    label="Maintenance"
+                    value={settings?.maintenance ? "Enabled" : "Disabled"}
+                    helper="Current maintenance mode status applied across the network."
                 />
                 <SummaryCard
                     label="Game servers"

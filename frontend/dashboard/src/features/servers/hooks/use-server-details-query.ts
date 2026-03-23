@@ -130,6 +130,7 @@ export const useServerDetailsQuery = ({
 
             setRuntimeSnapshot(nextServer);
         } catch {
+            // Ignore runtime snapshot refresh failures and keep the last known value.
         }
     }, [getAccessToken, serverId]);
 

@@ -164,11 +164,11 @@ const PlayersPage = () => {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Players
+                        Player directory
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Review persisted player records, inspect routing state, and open a dedicated
-                        player workspace from one operational table.
+                        Persisted player profiles, current routing state, and direct access to each
+                        player workspace.
                     </p>
                 </div>
 

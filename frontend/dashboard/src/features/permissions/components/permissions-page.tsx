@@ -287,11 +287,11 @@ const PermissionsPage = () => {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Permissions
+                        Access control
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Manage role precedence, fallback handling, and explicit permission grants
-                        for dashboard-controlled ranks from one operational table.
+                        Rank precedence, fallback groups, and explicit permission grants for
+                        dashboard-managed roles.
                     </p>
                 </div>
 

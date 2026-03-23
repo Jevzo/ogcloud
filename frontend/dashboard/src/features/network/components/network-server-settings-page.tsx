@@ -36,7 +36,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
     InputGroup,
@@ -392,7 +399,11 @@ const NetworkServerSettingsPage = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <form onSubmit={handleSave} className="space-y-6">
+                    <form
+                        id="network-server-settings-form"
+                        onSubmit={handleSave}
+                        className="space-y-6"
+                    >
                         <FieldGroup className="grid gap-4 md:grid-cols-2">
                             <Field>
                                 <FieldLabel htmlFor="network-max-players">Max players</FieldLabel>
@@ -497,21 +508,55 @@ const NetworkServerSettingsPage = () => {
                         </div>
 
                         <FieldError>{settingsForm.formState.errors.root?.message}</FieldError>
-
-                        <div className="flex justify-end">
-                            <Button type="submit" disabled={settingsForm.formState.isSubmitting}>
-                                {settingsForm.formState.isSubmitting ? (
-                                    <>
-                                        <LoaderCircleIcon className="size-4 animate-spin" />
-                                        Saving
-                                    </>
-                                ) : (
-                                    "Save changes"
-                                )}
-                            </Button>
-                        </div>
                     </form>
                 </CardContent>
+                <CardFooter className="justify-end gap-2 border-t border-border/70 pt-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                            !settings ||
+                            settingsForm.formState.isSubmitting ||
+                            !settingsForm.formState.isDirty
+                        }
+                        onClick={() => {
+                            if (!settings) {
+                                return;
+                            }
+
+                            const normalizedDefaultGroup = eligibleDefaultGroups.some(
+                                (group) => group.id === settings.defaultGroup,
+                            )
+                                ? settings.defaultGroup
+                                : "";
+
+                            settingsForm.reset({
+                                defaultGroup: normalizedDefaultGroup,
+                                maxPlayers: String(settings.maxPlayers),
+                            });
+                        }}
+                    >
+                        Reset
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="network-server-settings-form"
+                        disabled={
+                            !settings ||
+                            settingsForm.formState.isSubmitting ||
+                            !settingsForm.formState.isDirty
+                        }
+                    >
+                        {settingsForm.formState.isSubmitting ? (
+                            <>
+                                <LoaderCircleIcon className="size-4 animate-spin" />
+                                Saving
+                            </>
+                        ) : (
+                            "Save changes"
+                        )}
+                    </Button>
+                </CardFooter>
             </Card>
 
             <AlertDialog open={isMaintenanceAlertOpen} onOpenChange={setIsMaintenanceAlertOpen}>

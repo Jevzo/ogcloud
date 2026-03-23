@@ -192,10 +192,12 @@ const InboxPage = () => {
         return (
             <div className="space-y-4">
                 <div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Inbox</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Audit inbox
+                    </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Review control-plane audit activity, search actor and target context, and
-                        inspect API actions in one operational table.
+                        Operator actions, actor context, and control-plane changes captured in the
+                        audit log.
                     </p>
                 </div>
 
@@ -240,10 +242,12 @@ const InboxPage = () => {
         <div className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">Inbox</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                        Audit inbox
+                    </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Review control-plane audit activity, search actor and target context, and
-                        inspect API actions in one operational table.
+                        Operator actions, actor context, and control-plane changes captured in the
+                        audit log.
                     </p>
                 </div>
 

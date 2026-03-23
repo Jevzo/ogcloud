@@ -170,6 +170,22 @@ export function waitForDeployments(namespace: string, names: string[]): void {
     }
 }
 
+export function restartDeployments(namespace: string, names: string[]): void {
+    for (const deployment of names) {
+        const exists = runCommand("kubectl", ["get", "deployment", deployment, "-n", namespace], {
+            allowFailure: true,
+        });
+        if (exists.status !== 0) {
+            warn(`Deployment "${deployment}" not found. Skipping rollout restart.`);
+            continue;
+        }
+        info(`Restarting deployment/${deployment}...`);
+        runCommand("kubectl", ["rollout", "restart", `deployment/${deployment}`, "-n", namespace], {
+            stdio: "inherit",
+        });
+    }
+}
+
 export function deleteNamespace(namespace: string): void {
     info(`Deleting namespace ${namespace}...`);
     runCommand(

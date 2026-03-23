@@ -343,11 +343,11 @@ const WebUsersPage = () => {
             <div className="space-y-4">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Web users
+                        Dashboard access
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Provision dashboard accounts, assign access roles, and manage Minecraft
-                        account links from one operational table.
+                        Dashboard accounts, role assignments, and linked Minecraft identities for
+                        your operators.
                     </p>
                 </div>
 
@@ -393,11 +393,11 @@ const WebUsersPage = () => {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                        Web users
+                        Dashboard access
                     </h1>
                     <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                        Provision dashboard accounts, assign access roles, and manage Minecraft
-                        account links from one operator-focused table.
+                        Dashboard accounts, role assignments, and linked Minecraft identities for
+                        your operators.
                     </p>
                 </div>
 
