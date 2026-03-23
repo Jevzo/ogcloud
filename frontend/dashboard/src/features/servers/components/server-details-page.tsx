@@ -21,7 +21,6 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { PageReveal } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -78,51 +77,6 @@ const DetailRow = ({
             </div>
             {action}
         </div>
-    </div>
-);
-
-const ServerDetailsSkeleton = () => (
-    <div className="space-y-4">
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-9 w-72" />
-                <Skeleton className="h-4 w-80" />
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                <Skeleton className="h-10 w-32" />
-                <Skeleton className="h-10 w-36" />
-                <Skeleton className="h-10 w-28" />
-            </CardContent>
-        </Card>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, index) => (
-                <Card
-                    key={`server-detail-stat-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-32" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-8 w-40" />
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <Skeleton key={`server-detail-row-skeleton-${index}`} className="h-18 w-full" />
-                ))}
-            </CardContent>
-        </Card>
     </div>
 );
 
@@ -191,7 +145,7 @@ const ServerDetailsPage = () => {
     };
 
     if (isLoading && !server) {
-        return <ServerDetailsSkeleton />;
+        return null;
     }
 
     if (errorMessage && !server) {

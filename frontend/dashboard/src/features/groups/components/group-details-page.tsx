@@ -46,7 +46,6 @@ import {
 import { FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PageReveal } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GroupConfigurationForm from "@/features/groups/components/group-configuration-form";
 import { useGroupDetailsQuery } from "@/features/groups/hooks/use-group-details-query";
@@ -86,64 +85,6 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
     <div className="flex flex-col gap-1 rounded-xl border border-border/70 bg-background/45 px-4 py-3">
         <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
         <div className="break-all text-sm font-medium text-foreground">{value}</div>
-    </div>
-);
-
-const GroupDetailsSkeleton = () => (
-    <div className="space-y-4">
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-9 w-72" />
-                <Skeleton className="h-4 w-80" />
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-24" />
-                <Skeleton className="h-8 w-28" />
-                <Skeleton className="h-8 w-32" />
-            </CardContent>
-        </Card>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`group-detail-stat-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-32" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-6 w-40" />
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-2">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                        <Skeleton key={`group-detail-row-${index}`} className="h-18 w-full" />
-                    ))}
-                </CardContent>
-            </Card>
-
-            <Card className="border border-border/70 bg-card/85">
-                <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Skeleton key={`group-form-skeleton-${index}`} className="h-28 w-full" />
-                    ))}
-                </CardContent>
-            </Card>
-        </div>
     </div>
 );
 
@@ -342,7 +283,7 @@ const GroupDetailsPage = () => {
     );
 
     if (isLoading && !group) {
-        return <GroupDetailsSkeleton />;
+        return null;
     }
 
     if (errorMessage && !group) {

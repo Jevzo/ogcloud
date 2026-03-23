@@ -5,24 +5,42 @@ import { cn } from "@/lib/utils";
 
 const ENTER_EASE = [0.22, 1, 0.36, 1] as const;
 
-const itemVariants: Variants = {
+const pageVariants: Variants = {
     hidden: {
-        opacity: 0,
-        y: 18,
-        scale: 0.985,
+        opacity: 0.94,
+        y: 6,
     },
     visible: {
         opacity: 1,
         y: 0,
-        scale: 1,
         transition: {
-            duration: 0.48,
+            duration: 0.24,
             ease: ENTER_EASE,
         },
     },
 };
 
-interface RevealContainerProps {
+const itemVariants: Variants = {
+    hidden: {
+        opacity: 0.9,
+        y: 6,
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.22,
+            ease: ENTER_EASE,
+        },
+    },
+};
+
+interface PageRevealProps {
+    children: ReactNode;
+    className?: string;
+}
+
+interface RevealGroupProps {
     children: ReactNode;
     className?: string;
     delayChildren?: number;
@@ -30,13 +48,28 @@ interface RevealContainerProps {
     staggerChildren?: number;
 }
 
-const RevealContainer = ({
+export const PageReveal = ({ children, className }: PageRevealProps) => {
+    const shouldReduceMotion = useReducedMotion();
+
+    return (
+        <m.div
+            className={className}
+            initial={shouldReduceMotion ? false : "hidden"}
+            animate="visible"
+            variants={pageVariants}
+        >
+            {children}
+        </m.div>
+    );
+};
+
+export const RevealGroup = ({
     children,
     className,
     delayChildren = 0,
     itemClassName,
-    staggerChildren = 0.08,
-}: RevealContainerProps) => {
+    staggerChildren = 0.02,
+}: RevealGroupProps) => {
     const shouldReduceMotion = useReducedMotion();
 
     return (
@@ -70,11 +103,3 @@ const RevealContainer = ({
         </m.div>
     );
 };
-
-export const PageReveal = (props: Omit<RevealContainerProps, "delayChildren">) => (
-    <RevealContainer {...props} delayChildren={0.05} staggerChildren={0.09} />
-);
-
-export const RevealGroup = (props: Omit<RevealContainerProps, "delayChildren">) => (
-    <RevealContainer {...props} delayChildren={0.12} staggerChildren={0.07} />
-);

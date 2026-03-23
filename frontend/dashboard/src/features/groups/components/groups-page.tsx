@@ -31,7 +31,6 @@ import {
 import { FieldError } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -108,47 +107,6 @@ const LastSyncSurface = ({
                 ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
                 : "Waiting for first sync"}
         </span>
-    </div>
-);
-
-const GroupsTableSkeleton = () => (
-    <div className="space-y-2 px-5 pb-5">
-        {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={`groups-table-skeleton-${index}`} className="h-12 w-full" />
-        ))}
-    </div>
-);
-
-const GroupsPageSkeleton = () => (
-    <div className="space-y-4">
-        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`group-summary-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-40" />
-                    </CardContent>
-                </Card>
-            ))}
-        </RevealGroup>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-8 w-44" />
-                <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-            </CardContent>
-            <GroupsTableSkeleton />
-        </Card>
     </div>
 );
 
@@ -306,7 +264,7 @@ const GroupsPage = () => {
     const hasFreshData = lastUpdatedAt !== null;
 
     if (isLoading && !hasFreshData) {
-        return <GroupsPageSkeleton />;
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {

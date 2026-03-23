@@ -13,7 +13,6 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -73,14 +72,6 @@ const LastSyncSurface = ({
     </div>
 );
 
-const PlayersTableSkeleton = () => (
-    <div className="space-y-2 px-5 pb-5">
-        {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={`players-table-skeleton-${index}`} className="h-12 w-full" />
-        ))}
-    </div>
-);
-
 const PlayersPage = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(0);
@@ -109,37 +100,7 @@ const PlayersPage = () => {
     const hasFreshData = lastUpdatedAt !== null;
 
     if (isLoading && !hasFreshData) {
-        return (
-            <div className="space-y-4">
-                <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Card
-                            key={`players-summary-skeleton-${index}`}
-                            className="border border-border/70 bg-card/85"
-                        >
-                            <CardHeader>
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-8 w-20" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-4 w-40" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </RevealGroup>
-                <Card className="border border-border/70 bg-card/85">
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-40" />
-                        <Skeleton className="h-4 w-64" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <Skeleton className="h-8 w-full" />
-                    </CardContent>
-                    <PlayersTableSkeleton />
-                </Card>
-            </div>
-        );
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {

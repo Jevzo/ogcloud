@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/card";
 import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -71,7 +70,6 @@ interface MetricCardProps {
     description: string;
     icon: typeof UsersIcon;
     iconToneClassName: string;
-    isLoading: boolean;
     meta: string;
     metaToneClassName: string;
     title: string;
@@ -82,7 +80,6 @@ const MetricCard = ({
     description,
     icon: Icon,
     iconToneClassName,
-    isLoading,
     meta,
     metaToneClassName,
     title,
@@ -103,22 +100,11 @@ const MetricCard = ({
                     <Icon className="size-[18px]" />
                 </div>
             </CardAction>
-            <CardTitle className="text-2xl tracking-tight">
-                {isLoading ? <Skeleton className="h-8 w-28" /> : value}
-            </CardTitle>
+            <CardTitle className="text-2xl tracking-tight">{value}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-            {isLoading ? (
-                <>
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                </>
-            ) : (
-                <>
-                    <p className={cn("text-sm font-medium", metaToneClassName)}>{meta}</p>
-                    <p className="text-sm text-muted-foreground">{description}</p>
-                </>
-            )}
+            <p className={cn("text-sm font-medium", metaToneClassName)}>{meta}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
         </CardContent>
     </Card>
 );
@@ -292,60 +278,6 @@ const ScalingActionsTable = ({
     </Card>
 );
 
-const DashboardHomeSkeleton = () => (
-    <div className="space-y-4">
-        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`metric-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-8 w-32" />
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-2/3" />
-                    </CardContent>
-                </Card>
-            ))}
-        </RevealGroup>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-7 w-44" />
-            </CardHeader>
-            <CardContent className="grid gap-4 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                        key={`group-skeleton-${index}`}
-                        className="space-y-3 rounded-lg border border-border/70 bg-background/40 p-5"
-                    >
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-6 w-32" />
-                        <Skeleton className="h-20 w-full" />
-                        <Skeleton className="h-2.5 w-full" />
-                    </div>
-                ))}
-            </CardContent>
-        </Card>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-7 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-                {Array.from({ length: 5 }).map((_, index) => (
-                    <Skeleton key={`table-skeleton-${index}`} className="h-11 w-full" />
-                ))}
-            </CardContent>
-        </Card>
-    </div>
-);
-
 const DashboardHomePage = () => {
     const {
         averageLatencyMs,
@@ -412,7 +344,7 @@ const DashboardHomePage = () => {
     ] as const;
 
     if (isLoading && !hasFreshData) {
-        return <DashboardHomeSkeleton />;
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {
@@ -471,7 +403,7 @@ const DashboardHomePage = () => {
 
             <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {metrics.map((metric) => (
-                    <MetricCard key={metric.title} {...metric} isLoading={false} />
+                    <MetricCard key={metric.title} {...metric} />
                 ))}
             </RevealGroup>
 

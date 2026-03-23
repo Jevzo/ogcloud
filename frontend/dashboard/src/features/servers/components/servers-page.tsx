@@ -28,7 +28,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -102,14 +101,6 @@ const LastSyncSurface = ({
                 ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
                 : "Waiting for first sync"}
         </span>
-    </div>
-);
-
-const ServersTableSkeleton = () => (
-    <div className="space-y-2 px-5 pb-5">
-        {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={`servers-table-skeleton-${index}`} className="h-12 w-full" />
-        ))}
     </div>
 );
 
@@ -219,43 +210,7 @@ const ServersPage = () => {
     };
 
     if (isLoading && !hasFreshData) {
-        return (
-            <div className="space-y-4">
-                <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Card
-                            key={`servers-summary-skeleton-${index}`}
-                            className="border border-border/70 bg-card/85"
-                        >
-                            <CardHeader>
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-8 w-20" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-4 w-40" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </RevealGroup>
-                <Card className="border border-border/70 bg-card/85">
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-64" />
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                            {canExecuteCommands ? (
-                                <Skeleton className="h-10 w-full lg:w-36" />
-                            ) : null}
-                            <Skeleton className="h-10 w-full lg:w-44" />
-                            <Skeleton className="h-10 w-full lg:w-72" />
-                        </div>
-                    </CardContent>
-                    <ServersTableSkeleton />
-                </Card>
-            </div>
-        );
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {

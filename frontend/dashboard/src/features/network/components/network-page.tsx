@@ -22,7 +22,6 @@ import {
 } from "@/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime } from "@/features/servers/lib/server-display";
 import { useAuthStore } from "@/store/auth-store";
@@ -96,35 +95,6 @@ const LastSyncSurface = ({
                 ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
                 : "Waiting for first sync"}
         </span>
-    </div>
-);
-
-const NetworkPageSkeleton = () => (
-    <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-                <Skeleton className="h-9 w-40" />
-                <Skeleton className="h-4 w-96" />
-            </div>
-            <Skeleton className="h-10 w-48" />
-        </div>
-        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`network-summary-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-40" />
-                    </CardContent>
-                </Card>
-            ))}
-        </RevealGroup>
-        <Skeleton className="h-8 w-80 max-w-full" />
     </div>
 );
 
@@ -318,7 +288,7 @@ const NetworkPage = () => {
     const hasFreshData = lastUpdatedAt !== null;
 
     if (isLoading && !hasFreshData) {
-        return <NetworkPageSkeleton />;
+        return null;
     }
 
     if (pageErrorMessage && !hasFreshData) {

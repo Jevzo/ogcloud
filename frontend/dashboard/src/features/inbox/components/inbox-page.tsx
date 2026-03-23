@@ -26,7 +26,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -121,43 +120,6 @@ const SummaryCard = ({
     </Card>
 );
 
-const InboxPageSkeleton = () => (
-    <div className="space-y-4">
-        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`audit-summary-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-8 w-20" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-40" />
-                    </CardContent>
-                </Card>
-            ))}
-        </RevealGroup>
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader className="gap-4">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-56" />
-                <Skeleton className="h-4 w-72" />
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <Skeleton className="h-10 w-full lg:w-56" />
-                    <Skeleton className="h-10 w-full lg:w-80" />
-                </div>
-            </CardHeader>
-            <div className="space-y-2 px-4 pb-4">
-                {Array.from({ length: 8 }).map((_, index) => (
-                    <Skeleton key={`audit-table-skeleton-${index}`} className="h-12 w-full" />
-                ))}
-            </div>
-        </Card>
-    </div>
-);
-
 const InboxPage = () => {
     const session = useAuthStore((state) => state.session);
     const canReviewAuditLogs = hasAdminAccess(session?.user.role);
@@ -218,7 +180,7 @@ const InboxPage = () => {
     }
 
     if (isLoading && !hasFreshData) {
-        return <InboxPageSkeleton />;
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {

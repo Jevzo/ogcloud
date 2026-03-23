@@ -28,6 +28,8 @@ import {
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PageReveal } from "@/components/ui/page-reveal";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
     Select,
     SelectContent,
@@ -35,9 +37,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAccessToken } from "@/features/auth/hooks/use-access-token";
 import { hasAdminAccess } from "@/features/auth/lib/roles";
 import { usePlayerDetailsQuery } from "@/features/players/hooks/use-player-details-query";
@@ -111,33 +110,6 @@ const PlaceholderAction = ({ icon: Icon, label }: { icon: typeof LogOutIcon; lab
             {label} is currently in the making.
         </TooltipContent>
     </Tooltip>
-);
-
-const PlayerDetailsSkeleton = () => (
-    <div className="space-y-4">
-        <Skeleton className="h-9 w-32" />
-        <div className="space-y-3">
-            <div className="flex gap-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-28" />
-            </div>
-            <Skeleton className="h-9 w-72" />
-            <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card key={index} className="border border-border/70 bg-card/85">
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-32" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    </div>
 );
 
 const PlayerDetailsPage = () => {
@@ -280,7 +252,7 @@ const PlayerDetailsPage = () => {
         }
     };
 
-    if (isLoading && !player) return <PlayerDetailsSkeleton />;
+    if (isLoading && !player) return null;
 
     if (errorMessage && !player) {
         return (

@@ -29,7 +29,6 @@ import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { PageReveal } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -94,63 +93,6 @@ const LastSyncSurface = ({
                 ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
                 : "Waiting for first sync"}
         </span>
-    </div>
-);
-
-const PermissionGroupDetailsSkeleton = () => (
-    <div className="space-y-4">
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-9 w-72" />
-                <Skeleton className="h-4 w-80" />
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-24" />
-                <Skeleton className="h-8 w-28" />
-                <Skeleton className="h-8 w-32" />
-            </CardContent>
-        </Card>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`permission-detail-stat-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-8 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-32" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader>
-                <Skeleton className="h-4 w-36" />
-                <Skeleton className="h-6 w-56" />
-                <Skeleton className="h-4 w-96" />
-            </CardHeader>
-            <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="space-y-4">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                        <Skeleton key={`permission-config-left-${index}`} className="h-12 w-full" />
-                    ))}
-                </div>
-                <div className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Skeleton
-                            key={`permission-config-right-${index}`}
-                            className="h-28 w-full"
-                        />
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
     </div>
 );
 
@@ -370,7 +312,7 @@ const PermissionGroupDetailsPage = () => {
     }, [permissionPageIndex, totalPermissionPages]);
 
     if (isLoading && !group) {
-        return <PermissionGroupDetailsSkeleton />;
+        return null;
     }
 
     if (errorMessage && !group) {

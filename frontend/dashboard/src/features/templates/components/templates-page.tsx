@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { PageReveal, RevealGroup } from "@/components/ui/page-reveal";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
     Select,
     SelectContent,
@@ -88,69 +87,6 @@ const LastSyncSurface = ({
                 ? `Last sync ${formatDateTime(new Date(lastUpdatedAt).toISOString())}`
                 : "Waiting for first sync"}
         </span>
-    </div>
-);
-
-const TemplatesTableSkeleton = () => (
-    <div className="space-y-2 px-5 pb-5">
-        {Array.from({ length: 8 }).map((_, index) => (
-            <Skeleton key={`templates-table-skeleton-${index}`} className="h-12 w-full" />
-        ))}
-    </div>
-);
-
-const TemplatesPageSkeleton = () => (
-    <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-                <Skeleton className="h-9 w-36" />
-                <Skeleton className="h-4 w-96" />
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Skeleton className="h-10 w-36" />
-                <Skeleton className="h-10 w-48" />
-            </div>
-        </div>
-
-        <RevealGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                    key={`templates-summary-skeleton-${index}`}
-                    className="border border-border/70 bg-card/85"
-                >
-                    <CardHeader>
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-8 w-20" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-40" />
-                    </CardContent>
-                </Card>
-            ))}
-        </RevealGroup>
-
-        <Card className="border border-border/70 bg-card/85">
-            <CardHeader className="gap-3 border-b border-border/70 pb-4">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="space-y-2">
-                        <Skeleton className="h-4 w-28" />
-                        <Skeleton className="h-6 w-52" />
-                        <Skeleton className="h-4 w-80" />
-                    </div>
-                    <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
-                        <Skeleton className="h-10 w-full xl:w-[184px]" />
-                        <Skeleton className="h-10 w-full xl:w-[300px]" />
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="px-0">
-                <TemplatesTableSkeleton />
-            </CardContent>
-            <CardFooter className="justify-between gap-3">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-10 w-32" />
-            </CardFooter>
-        </Card>
     </div>
 );
 
@@ -274,7 +210,7 @@ const TemplatesPage = () => {
     };
 
     if (isLoading && !hasFreshData) {
-        return <TemplatesPageSkeleton />;
+        return null;
     }
 
     if (errorMessage && !hasFreshData) {
