@@ -67,11 +67,16 @@ fun Project.configureGitHubPackagesPublication() {
 
             publications {
                 register<MavenPublication>("gpr") {
-                    from(components["java"])
-
                     groupId = publishedGroup
                     artifactId = publishedArtifact
                     version = publishedVersion
+
+                    if (pluginManager.hasPlugin("com.gradleup.shadow")) {
+                        artifact(tasks.named("shadowJar"))
+                        artifact(tasks.named("sourcesJar"))
+                    } else {
+                        from(components["java"])
+                    }
                 }
             }
         }
@@ -104,6 +109,7 @@ subprojects {
 
 listOf(
     project(":ogcloud-common"),
+    project(":ogcloud-legacy-paper-plugin"),
     project(":ogcloud-paper-plugin"),
     project(":ogcloud-velocity-plugin"),
 ).forEach { project ->

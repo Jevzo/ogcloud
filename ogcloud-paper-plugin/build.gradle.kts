@@ -24,6 +24,10 @@ tasks.shadowJar {
     archiveClassifier.set("")
 }
 
+tasks.jar {
+    archiveClassifier.set("thin")
+}
+
 tasks.processResources {
     filesMatching("plugin.yml") {
         expand("version" to project.version)

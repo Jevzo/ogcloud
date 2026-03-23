@@ -22,6 +22,7 @@ $targets = @{
         ProjectDir = "ogcloud-common"
         BuildTask = ":ogcloud-common:jar"
         CleanTask = ":ogcloud-common:clean"
+        PublishTask = ":ogcloud-common:publishGprPublicationToGitHubPackagesRepository"
     }
     "api" = @{
         Kind = "spring"
@@ -46,12 +47,21 @@ $targets = @{
         ProjectDir = "ogcloud-paper-plugin"
         BuildTask = ":ogcloud-paper-plugin:shadowJar"
         CleanTask = ":ogcloud-paper-plugin:clean"
+        PublishTask = ":ogcloud-paper-plugin:publishGprPublicationToGitHubPackagesRepository"
+    }
+    "legacy-paper-plugin" = @{
+        Kind = "gradle"
+        ProjectDir = "ogcloud-legacy-paper-plugin"
+        BuildTask = ":ogcloud-legacy-paper-plugin:shadowJar"
+        CleanTask = ":ogcloud-legacy-paper-plugin:clean"
+        PublishTask = ":ogcloud-legacy-paper-plugin:publishGprPublicationToGitHubPackagesRepository"
     }
     "velocity-plugin" = @{
         Kind = "gradle"
         ProjectDir = "ogcloud-velocity-plugin"
         BuildTask = ":ogcloud-velocity-plugin:shadowJar"
         CleanTask = ":ogcloud-velocity-plugin:clean"
+        PublishTask = ":ogcloud-velocity-plugin:publishGprPublicationToGitHubPackagesRepository"
     }
     "loadbalancer" = @{
         Kind = "go"
@@ -112,6 +122,7 @@ $localAllTargets = @(
     "dashboard",
     "landing-page"
 )
+$publishAllTargets = @("common", "paper-plugin", "legacy-paper-plugin", "velocity-plugin")
 $dockerAllTargets = @("api", "controller", "loadbalancer", "template-loader", "dashboard", "landing-page")
 
 function Show-Usage {
@@ -120,14 +131,17 @@ function Show-Usage {
     Write-Host "  .\build.ps1 all"
     Write-Host "  .\build.ps1 clean <target>"
     Write-Host "  .\build.ps1 clean all"
+    Write-Host "  .\build.ps1 publish <target>"
+    Write-Host "  .\build.ps1 publish all"
     Write-Host "  .\build.ps1 docker <target> [-p]"
     Write-Host "  .\build.ps1 docker all [-p]"
     Write-Host ""
     Write-Host "Targets:"
-    Write-Host "  common, api, controller, paper-plugin, velocity-plugin, loadbalancer, template-loader, dashboard, landing-page, all"
+    Write-Host "  common, api, controller, paper-plugin, legacy-paper-plugin, velocity-plugin, loadbalancer, template-loader, dashboard, landing-page, all"
     Write-Host ""
     Write-Host "Notes:"
     Write-Host "  - Use -p to push after a docker build."
+    Write-Host "  - Use publish mode for GitHub Packages publishing."
     Write-Host "  - Docker tags are always read from the target project's VERSION file."
     Write-Host "  - Use -WhatIf to dry-run any command without executing it."
 }
@@ -354,6 +368,26 @@ function Invoke-TargetClean {
     }
 }
 
+function Invoke-GitHubPackagesPublish {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetName
+    )
+
+    $config = Get-TargetConfig -TargetName $TargetName
+    $publishTask = $config.PublishTask
+    if (-not $publishTask) {
+        throw "Target '$TargetName' does not support GitHub Packages publishing"
+    }
+
+    Write-Host "Publishing $TargetName to GitHub Packages via Gradle ($publishTask)..."
+    Invoke-CheckedCommand `
+        -FilePath $gradleWrapper `
+        -Arguments @($publishTask, "--no-daemon") `
+        -Action "Publish to GitHub Packages" `
+        -TargetLabel $TargetName
+}
+
 if (-not $ModeOrTarget -or $ModeOrTarget -in @("help", "-h", "--help")) {
     Show-Usage
     exit 0
@@ -361,6 +395,7 @@ if (-not $ModeOrTarget -or $ModeOrTarget -in @("help", "-h", "--help")) {
 
 $isDockerMode = $ModeOrTarget -eq "docker"
 $isCleanMode = $ModeOrTarget -eq "clean"
+$isPublishMode = $ModeOrTarget -eq "publish"
 
 if ($isDockerMode) {
     if (-not $Target) {
@@ -384,6 +419,19 @@ if ($isCleanMode) {
     $targetsToClean = if ($Target -eq "all") { $localAllTargets } else { @($Target) }
     foreach ($item in $targetsToClean) {
         Invoke-TargetClean -TargetName $item
+    }
+    exit 0
+}
+
+if ($isPublishMode) {
+    if (-not $Target) {
+        Show-Usage
+        throw "Publish mode requires a target"
+    }
+
+    $targetsToPublish = if ($Target -eq "all") { $publishAllTargets } else { @($Target) }
+    foreach ($item in $targetsToPublish) {
+        Invoke-GitHubPackagesPublish -TargetName $item
     }
     exit 0
 }

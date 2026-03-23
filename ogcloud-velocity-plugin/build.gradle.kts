@@ -26,6 +26,10 @@ tasks.shadowJar {
     archiveClassifier.set("")
 }
 
+tasks.jar {
+    archiveClassifier.set("thin")
+}
+
 tasks.build {
     dependsOn(tasks.shadowJar)
 }
