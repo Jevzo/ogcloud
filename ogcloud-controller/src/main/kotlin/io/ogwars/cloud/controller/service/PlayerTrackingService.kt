@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.LockSupport
 import kotlin.math.ceil
-
-typealias CommonPermissionGroupDocument = io.ogwars.cloud.common.model.PermissionGroupDocument
+import io.ogwars.cloud.common.model.PermissionGroupDocument as CommonPermissionGroupDocument
 
 @Service
 class PlayerTrackingService(

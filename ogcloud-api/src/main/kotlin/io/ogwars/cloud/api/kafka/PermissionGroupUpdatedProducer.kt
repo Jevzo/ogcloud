@@ -6,8 +6,7 @@ import io.ogwars.cloud.common.kafka.KafkaTopics
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
-
-typealias CommonPermissionGroupDocument = io.ogwars.cloud.common.model.PermissionGroupDocument
+import io.ogwars.cloud.common.model.PermissionGroupDocument as CommonPermissionGroupDocument
 
 @Component
 class PermissionGroupUpdatedProducer(
