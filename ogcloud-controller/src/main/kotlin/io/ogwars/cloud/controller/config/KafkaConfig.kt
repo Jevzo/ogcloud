@@ -9,6 +9,15 @@ import org.springframework.kafka.config.TopicBuilder
 @Configuration
 class KafkaConfig {
     @Bean
+    fun liveChannelTopic(): NewTopic = buildTopic(KafkaTopics.LIVE_CHANNEL, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
+    fun liveChannelRetryTopic(): NewTopic = buildRetryTopic(KafkaTopics.LIVE_CHANNEL, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
+    fun liveChannelDltTopic(): NewTopic = buildDltTopic(KafkaTopics.LIVE_CHANNEL, BUSY_TOPIC_PARTITIONS)
+
+    @Bean
     fun serverLifecycleTopic(): NewTopic = buildTopic(KafkaTopics.SERVER_LIFECYCLE, BUSY_TOPIC_PARTITIONS)
 
     @Bean
