@@ -1,7 +1,9 @@
 package io.ogwars.cloud.paper
 
+import com.github.retrooper.packetevents.PacketEvents
 import io.ogwars.cloud.paper.api.ApiClient
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
+import io.ogwars.cloud.paper.api.toDefinition
 import io.ogwars.cloud.paper.channel.LiveChannelConsumer
 import io.ogwars.cloud.paper.channel.LiveChannelManager
 import io.ogwars.cloud.paper.config.PaperPluginSettings
@@ -11,11 +13,16 @@ import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.paper.listener.*
 import io.ogwars.cloud.paper.network.NetworkFeatureState
+import io.ogwars.cloud.paper.npc.NpcManager
+import io.ogwars.cloud.paper.npc.NpcPlayerListener
+import io.ogwars.cloud.paper.npc.NpcSyncConsumer
+import io.ogwars.cloud.paper.npc.OgCloudNpcCommand
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
 import io.ogwars.cloud.server.api.OgCloudServerAPI
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
 import org.bukkit.Bukkit
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
@@ -43,16 +50,25 @@ class OgCloudPaperPlugin : JavaPlugin() {
     lateinit var networkFeatureState: NetworkFeatureState
         private set
 
+    lateinit var npcManager: NpcManager
+        private set
+
     private lateinit var redisManager: RedisManager
     private lateinit var networkUpdateConsumer: NetworkUpdateConsumer
     private lateinit var permissionUpdateConsumer: PermissionUpdateConsumer
     private lateinit var commandExecuteConsumer: CommandExecuteConsumer
     private lateinit var lifecycleConsumer: LifecycleConsumer
     private lateinit var liveChannelConsumer: LiveChannelConsumer
+    private lateinit var npcSyncConsumer: NpcSyncConsumer
     private lateinit var settings: PaperPluginSettings
     private lateinit var serverApi: OgCloudServerAPIImpl
     private lateinit var apiClient: ApiClient
     private lateinit var liveChannelManager: LiveChannelManager
+
+    override fun onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
+        PacketEvents.getAPI().load()
+    }
 
     val configuredMaxPlayers: Int
         get() = settings.configuredMaxPlayers
@@ -65,18 +81,23 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
     override fun onEnable() {
         settings = PaperPluginSettings.fromEnvironment(server.maxPlayers)
+        PacketEvents.getAPI().init()
 
         initializeInfrastructure()
         applyConfiguredMaxPlayers()
         loadNetworkFeatures()
         registerListeners()
         registerPublicApi()
+        loadManagedNpcs()
+        registerCommands()
         startConsumers()
 
         logger.info("OgCloud Paper Plugin enabled for server $serverId (group: $groupName)")
     }
 
     override fun onDisable() {
+        stopConsumer(::npcSyncConsumer.isInitialized) { npcSyncConsumer.stop() }
+        stopConsumer(::npcManager.isInitialized) { npcManager.shutdown() }
         stopConsumer(::liveChannelConsumer.isInitialized) { liveChannelConsumer.stop() }
         stopConsumer(::lifecycleConsumer.isInitialized) { lifecycleConsumer.stop() }
         stopConsumer(::commandExecuteConsumer.isInitialized) { commandExecuteConsumer.stop() }
@@ -88,6 +109,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
         stopConsumer(::redisManager.isInitialized) { redisManager.close() }
 
         OgCloudServerAPI.clear()
+        PacketEvents.getAPI().terminate()
 
         logger.info("OgCloud Paper Plugin disabled")
     }
@@ -114,6 +136,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
             )
         apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
         liveChannelManager = LiveChannelManager(serverId, kafkaSendDispatcher, logger)
+        npcManager = NpcManager(this, kafkaSendDispatcher, logger).also(NpcManager::start)
         heartbeatTask = HeartbeatTask(this, kafkaSendDispatcher).also(HeartbeatTask::start)
     }
 
@@ -138,6 +161,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
             ChatListener(permissionManager, networkFeatureState),
             this,
         )
+        server.pluginManager.registerEvents(NpcPlayerListener(npcManager), this)
     }
 
     private fun registerPublicApi() {
@@ -151,6 +175,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 gameStateManager = gameStateManager,
                 apiClient = apiClient,
                 liveChannelManager = liveChannelManager,
+                npcManager = npcManager,
                 logger = logger,
             )
 
@@ -160,6 +185,17 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     private fun startConsumers() {
+        npcSyncConsumer =
+            NpcSyncConsumer(
+                plugin = this,
+                kafkaManager = kafkaManager,
+                npcManager = npcManager,
+                logger = logger,
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
+                serverId = serverId,
+                groupName = groupName,
+            ).also(NpcSyncConsumer::start)
+
         permissionUpdateConsumer =
             PermissionUpdateConsumer(
                 plugin = this,
@@ -211,6 +247,24 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 serverId = serverId,
             ).also(LiveChannelConsumer::start)
+    }
+
+    private fun loadManagedNpcs() {
+        runCatching { apiClient.listNpcs(groupName).join() }
+            .onSuccess { npcs ->
+                npcs.forEach { npcManager.upsertManagedNpc(it.toDefinition()) }
+                logger.info("Loaded ${npcs.size} managed NPC(s) for group $groupName")
+            }.onFailure {
+                logger.warning("Failed to load managed NPCs for group $groupName: ${it.message}")
+            }
+    }
+
+    private fun registerCommands() {
+        val ogCloudCommand = OgCloudNpcCommand(this, apiClient, npcManager, groupName)
+        getCommand("ogcloud")?.apply {
+            setExecutor(ogCloudCommand)
+            tabCompleter = ogCloudCommand
+        }
     }
 
     private fun loadNetworkFeatures() {

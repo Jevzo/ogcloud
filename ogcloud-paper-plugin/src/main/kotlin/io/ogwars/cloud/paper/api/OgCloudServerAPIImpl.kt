@@ -6,10 +6,13 @@ import io.ogwars.cloud.common.event.ServerReadyEvent
 import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.paper.channel.LiveChannelManager
 import io.ogwars.cloud.paper.gamestate.GameStateManager
+import io.ogwars.cloud.paper.npc.NpcManager
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.server.api.OgCloudServerAPI
+import io.ogwars.cloud.server.api.OgCloudRuntimeNpcBuilder
+import io.ogwars.cloud.server.api.OgCloudRuntimeNpcHandle
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
@@ -25,6 +28,7 @@ class OgCloudServerAPIImpl(
     private val gameStateManager: GameStateManager,
     private val apiClient: ApiClient,
     private val liveChannelManager: LiveChannelManager,
+    private val npcManager: NpcManager,
     private val logger: Logger,
 ) : OgCloudServerAPI {
     private val serverReadyListeners = CopyOnWriteArrayList<Consumer<ServerReadyEvent>>()
@@ -101,6 +105,10 @@ class OgCloudServerAPIImpl(
     override fun onServerReady(listener: Consumer<ServerReadyEvent>) {
         serverReadyListeners.add(listener)
     }
+
+    override fun runtimeNpc(id: String): OgCloudRuntimeNpcBuilder = npcManager.runtimeNpc(id)
+
+    override fun findRuntimeNpc(id: String): OgCloudRuntimeNpcHandle? = npcManager.findRuntimeNpc(id)
 
     fun fireServerReady(server: RunningServer) {
         val event = ServerReadyEvent(server)

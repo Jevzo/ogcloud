@@ -16,6 +16,7 @@ class KafkaSendDispatcher(
         SERVER_HEARTBEAT,
         GAME_STATE_UPDATE,
         LIVE_CHANNEL,
+        PLAYER_TRANSFER,
     }
 
     data class Message(

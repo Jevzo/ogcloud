@@ -9,10 +9,15 @@ java {
     }
 }
 
+repositories {
+    maven("https://repo.codemc.io/repository/maven-releases/")
+}
+
 dependencies {
     implementation(project(":ogcloud-common"))
 
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    implementation("com.github.retrooper:packetevents-spigot:2.11.2")
 
     implementation("org.apache.kafka:kafka-clients:4.2.0")
     implementation("io.lettuce:lettuce-core:7.5.0.RELEASE")

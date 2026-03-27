@@ -2,3 +2,13 @@ name: OgCloud
 version: "${version}"
 main: io.ogwars.cloud.paper.OgCloudPaperPlugin
 description: OgCloud Paper Plugin - Server lifecycle and heartbeat reporting
+api-version: "1.21"
+commands:
+  ogcloud:
+    description: OgCloud backend command surface
+    aliases: [oc]
+    permission: ogcloud.admin.npc
+permissions:
+  ogcloud.admin.npc:
+    description: Allows managing OgCloud NPCs from the backend server
+    default: op

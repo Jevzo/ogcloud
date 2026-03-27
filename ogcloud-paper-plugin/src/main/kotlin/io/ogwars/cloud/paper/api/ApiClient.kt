@@ -69,6 +69,30 @@ class ApiClient(
         target: String,
     ): CompletableFuture<Void> = post("/api/v1/players/$uuid/transfer", mapOf("target" to target))
 
+    fun listNpcs(group: String? = null): CompletableFuture<List<ApiNpcResponse>> {
+        val path =
+            if (group != null) {
+                "/api/v1/npcs?group=$group"
+            } else {
+                "/api/v1/npcs"
+            }
+
+        return get(path, Array<ApiNpcResponse>::class.java).thenApply { it.toList() }
+    }
+
+    fun getNpc(id: String): CompletableFuture<ApiNpcResponse> =
+        get("/api/v1/npcs/$id", ApiNpcResponse::class.java)
+
+    fun createNpc(request: ApiCreateNpcRequest): CompletableFuture<ApiNpcResponse> =
+        postWithResponse("/api/v1/npcs", request, ApiNpcResponse::class.java)
+
+    fun updateNpc(
+        id: String,
+        request: ApiUpdateNpcRequest,
+    ): CompletableFuture<ApiNpcResponse> = putWithResponse("/api/v1/npcs/$id", request, ApiNpcResponse::class.java)
+
+    fun deleteNpc(id: String): CompletableFuture<Void> = delete("/api/v1/npcs/$id")
+
     fun getNetworkSettingsSync(): ApiNetworkSettingsResponse {
         val response =
             httpClient
@@ -91,6 +115,29 @@ class ApiClient(
         type: Class<T>,
     ): CompletableFuture<T> =
         sendAuthorizedPost(path, body).thenApply { response -> gson.fromJson(response.body(), type) }
+
+    private fun <T> putWithResponse(
+        path: String,
+        body: Any?,
+        type: Class<T>,
+    ): CompletableFuture<T> =
+        sendAuthorized(
+            buildJsonRequest(path, body, HttpMethod.PUT, ensureAccessToken()),
+        ).thenApply { response -> gson.fromJson(response.body(), type) }
+
+    private fun <T> get(
+        path: String,
+        type: Class<T>,
+    ): CompletableFuture<T> =
+        httpClient
+            .sendAsync(
+                buildGetRequest(path, ensureAccessToken()),
+                HttpResponse.BodyHandlers.ofString(),
+            ).thenApply { response -> response.validated() }
+            .thenApply { response -> gson.fromJson(response.body(), type) }
+
+    private fun delete(path: String): CompletableFuture<Void> =
+        sendAuthorized(buildDeleteRequest(path, ensureAccessToken())).thenApply { null }
 
     private fun ensureAccessToken(): String {
         synchronized(authLock) {
@@ -153,15 +200,23 @@ class ApiClient(
         path: String,
         body: Any?,
     ): CompletableFuture<HttpResponse<String>> =
+        sendAuthorized(buildPostRequest(path, body, ensureAccessToken()))
+
+    private fun sendAuthorized(request: HttpRequest): CompletableFuture<HttpResponse<String>> =
         httpClient
-            .sendAsync(
-                buildPostRequest(path, body, ensureAccessToken()),
-                HttpResponse.BodyHandlers.ofString(),
-            ).thenApply { response -> response.validated() }
+            .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            .thenApply { response -> response.validated() }
 
     private fun buildPostRequest(
         path: String,
         body: Any?,
+        bearerToken: String? = null,
+    ): HttpRequest = buildJsonRequest(path, body, HttpMethod.POST, bearerToken)
+
+    private fun buildJsonRequest(
+        path: String,
+        body: Any?,
+        method: HttpMethod,
         bearerToken: String? = null,
     ): HttpRequest =
         HttpRequest
@@ -173,7 +228,7 @@ class ApiClient(
                     header("Authorization", "Bearer $bearerToken")
                 }
             }.header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(serializeBody(body)))
+            .method(method.name, HttpRequest.BodyPublishers.ofString(serializeBody(body)))
             .build()
 
     private fun buildGetRequest(
@@ -189,6 +244,19 @@ class ApiClient(
             .GET()
             .build()
 
+    private fun buildDeleteRequest(
+        path: String,
+        bearerToken: String,
+    ): HttpRequest =
+        HttpRequest
+            .newBuilder()
+            .uri(URI.create("$base$path"))
+            .timeout(REQUEST_TIMEOUT)
+            .header("Authorization", "Bearer $bearerToken")
+            .header("Content-Type", "application/json")
+            .DELETE()
+            .build()
+
     private fun serializeBody(body: Any?): String = gson.toJson(body ?: emptyMap<String, Any>())
 
     private fun HttpResponse<String>.validated(): HttpResponse<String> {
@@ -202,6 +270,11 @@ class ApiClient(
         private val CONNECT_TIMEOUT: Duration = Duration.ofSeconds(5)
         private val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(10)
         private val AUTH_EXPIRY_SKEW: Duration = Duration.ofSeconds(30)
+    }
+
+    private enum class HttpMethod {
+        POST,
+        PUT,
     }
 }
 

@@ -201,6 +201,25 @@ interface OgCloudServerAPI {
      */
     fun onServerReady(listener: Consumer<ServerReadyEvent>)
 
+    /**
+     * Creates a builder for a runtime-only NPC that exists only on this Paper server.
+     *
+     * Runtime NPCs are not persisted in the control plane and are not replicated to other
+     * backend servers. They are intended for local plugin integrations that need NPC rendering
+     * and click callbacks without going through the REST-backed managed NPC path.
+     *
+     * @param id the local runtime NPC identifier, unique on this server
+     */
+    fun runtimeNpc(id: String): OgCloudRuntimeNpcBuilder
+
+    /**
+     * Resolves a previously spawned runtime NPC handle by id.
+     *
+     * @param id the runtime NPC identifier
+     * @return the active runtime NPC handle, or `null` when not found or already despawned
+     */
+    fun findRuntimeNpc(id: String): OgCloudRuntimeNpcHandle?
+
     companion object {
         @Volatile
         private var instance: OgCloudServerAPI? = null
