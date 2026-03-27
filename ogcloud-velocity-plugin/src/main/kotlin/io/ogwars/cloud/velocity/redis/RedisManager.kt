@@ -37,7 +37,13 @@ class RedisManager(
             }
 
             val podIp = data.podIp ?: continue
-            serverRegistry.registerServer(id, data.group, InetSocketAddress(podIp, data.port), data.displayName)
+            serverRegistry.registerServer(
+                serverId = id,
+                group = data.group,
+                address = InetSocketAddress(podIp, data.port),
+                displayName = data.displayName,
+                maxPlayers = data.maxPlayers,
+            )
             count += 1
         }
 

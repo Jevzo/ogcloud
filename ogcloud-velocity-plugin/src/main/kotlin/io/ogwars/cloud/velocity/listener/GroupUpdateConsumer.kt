@@ -60,6 +60,7 @@ class GroupUpdateConsumer(
     }
 
     private fun applyGroupUpdate(event: GroupUpdateEvent) {
+        serverRegistry.setGroupType(event.groupId, event.type)
         val previousMaintenance = serverRegistry.isGroupInMaintenance(event.groupId)
 
         serverRegistry.setGroupMaintenance(event.groupId, event.maintenance)

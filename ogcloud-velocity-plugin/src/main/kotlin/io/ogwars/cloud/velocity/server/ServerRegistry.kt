@@ -1,5 +1,6 @@
 package io.ogwars.cloud.velocity.server
 
+import io.ogwars.cloud.common.model.GroupType
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.proxy.server.RegisteredServer
@@ -15,6 +16,8 @@ class ServerRegistry(
     private val registeredServers = ConcurrentHashMap<String, RegisteredServer>()
     private val serverIdsByRegisteredName = ConcurrentHashMap<String, String>()
     private val serverGroups = ConcurrentHashMap<String, String>()
+    private val serverMaxPlayers = ConcurrentHashMap<String, Int>()
+    private val groupTypes = ConcurrentHashMap<String, GroupType>()
     private val displayNames = ConcurrentHashMap<String, String>()
     private val drainingServers: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val maintenanceGroups: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -24,6 +27,7 @@ class ServerRegistry(
         group: String,
         address: InetSocketAddress,
         displayName: String,
+        maxPlayers: Int = 0,
     ) {
         registeredServers[serverId]?.let(::unregisterRegisteredServer)
 
@@ -34,6 +38,7 @@ class ServerRegistry(
         registeredServers[serverId] = registered
         serverIdsByRegisteredName[serverInfo.name] = serverId
         serverGroups[serverId] = group
+        serverMaxPlayers[serverId] = maxPlayers
         displayNames[serverId] = displayName
 
         logger.info("Registered server: {} at {}", displayName, address)
@@ -42,6 +47,7 @@ class ServerRegistry(
     fun unregisterServer(serverId: String) {
         drainingServers.remove(serverId)
         serverGroups.remove(serverId)
+        serverMaxPlayers.remove(serverId)
 
         val removedDisplayName = displayNames.remove(serverId)
 
@@ -74,6 +80,15 @@ class ServerRegistry(
 
     fun isGroupInMaintenance(group: String): Boolean = maintenanceGroups.contains(group)
 
+    fun setGroupType(
+        group: String,
+        type: GroupType,
+    ) {
+        groupTypes[group] = type
+    }
+
+    fun getGroupType(group: String): GroupType? = groupTypes[group]
+
     fun getServer(serverId: String): RegisteredServer? = registeredServers[serverId]
 
     fun findServerIdByRegistered(registered: RegisteredServer): String? =
@@ -99,6 +114,8 @@ class ServerRegistry(
             .flatMap { it.playersConnected }
 
     fun getDisplayName(serverId: String): String? = displayNames[serverId]
+
+    fun getMaxPlayers(serverId: String): Int? = serverMaxPlayers[serverId]
 
     fun getAllDisplayNames(): Map<String, String> = displayNames.toMap()
 

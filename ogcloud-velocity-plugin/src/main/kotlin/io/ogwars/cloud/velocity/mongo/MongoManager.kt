@@ -89,6 +89,10 @@ class MongoManager(
         GeneralSettings(
             permissionSystemEnabled = getBoolean("permissionSystemEnabled", true),
             tablistEnabled = getBoolean("tablistEnabled", true),
+            proxyRoutingStrategy =
+                getString("proxyRoutingStrategy")
+                    ?.let { raw -> runCatching { ProxyRoutingStrategy.valueOf(raw) }.getOrNull() }
+                    ?: ProxyRoutingStrategy.LOAD_BASED,
         )
 
     companion object {

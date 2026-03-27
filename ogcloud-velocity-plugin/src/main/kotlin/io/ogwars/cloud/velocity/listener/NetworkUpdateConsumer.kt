@@ -66,12 +66,13 @@ class NetworkUpdateConsumer(
         updateNetworkState(event)
 
         logger.info(
-            "Network state updated: maintenance={}, maxPlayers={}, defaultGroup={}, permissionSystemEnabled={}, tablistEnabled={}",
+            "Network state updated: maintenance={}, maxPlayers={}, defaultGroup={}, permissionSystemEnabled={}, tablistEnabled={}, proxyRoutingStrategy={}",
             event.maintenance,
             event.maxPlayers,
             event.defaultGroup,
             general.permissionSystemEnabled,
             general.tablistEnabled,
+            general.proxyRoutingStrategy,
         )
 
         if (event.maintenance != wasMaintenanceEnabled) {
@@ -104,6 +105,7 @@ class NetworkUpdateConsumer(
             defaultGroup = event.defaultGroup,
             permissionSystemEnabled = event.general.permissionSystemEnabled,
             tablistEnabled = event.general.tablistEnabled,
+            proxyRoutingStrategy = event.general.proxyRoutingStrategy,
         )
     }
 
