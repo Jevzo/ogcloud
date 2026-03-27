@@ -1,5 +1,7 @@
 package io.ogwars.cloud.server.api
 
+import io.ogwars.cloud.common.channel.LiveChannelPayload
+import io.ogwars.cloud.common.channel.LiveChannelSubscription
 import io.ogwars.cloud.common.event.ServerReadyEvent
 import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.server.api.OgCloudServerAPI.Companion.get
@@ -156,6 +158,38 @@ interface OgCloudServerAPI {
      * running server should refresh its template assets.
      */
     fun forceTemplatePush(): CompletableFuture<Void>
+
+    /**
+     * Subscribes to a named live channel using the supplied payload type.
+     *
+     * Messages are delivered only while this server is online and only to local listeners that
+     * explicitly subscribed to the same channel. Listener callbacks run on an OgCloud-managed
+     * background thread, so Bukkit work should be handed off to the main thread when needed.
+     *
+     * @param channelName the logical live channel name
+     * @param payloadType the concrete payload class expected on this channel
+     * @param listener callback invoked for matching live payloads
+     * @return a registration handle that can be used to unsubscribe later
+     */
+    fun <T : LiveChannelPayload> subscribe(
+        channelName: String,
+        payloadType: Class<T>,
+        listener: Consumer<T>,
+    ): LiveChannelSubscription
+
+    /**
+     * Publishes a typed payload object onto the supplied live channel.
+     *
+     * The payload is serialized internally by OgCloud and distributed as live-only traffic across
+     * currently running Paper and Velocity nodes.
+     *
+     * @param channelName the logical live channel name
+     * @param payload the concrete payload object to publish
+     */
+    fun <T : LiveChannelPayload> publish(
+        channelName: String,
+        payload: T,
+    )
 
     /**
      * Registers a listener that will be notified when another backend server becomes ready.

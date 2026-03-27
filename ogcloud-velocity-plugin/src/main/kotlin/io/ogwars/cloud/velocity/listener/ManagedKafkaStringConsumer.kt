@@ -26,6 +26,7 @@ internal class ManagedKafkaStringConsumer(
     private val groupId: String,
     private val topic: String,
     private val threadName: String,
+    private val autoOffsetReset: String = "earliest",
     private val logger: Logger,
     private val consumerLabel: String,
     private val consumerRecoverySettings: KafkaConsumerRecoverySettings,
@@ -98,7 +99,12 @@ internal class ManagedKafkaStringConsumer(
     }
 
     private fun runConsumerSession(): ConsumerSessionResult {
-        val activeConsumer = kafkaManager.createConsumer(groupId, clientIdSuffix = threadName)
+        val activeConsumer =
+            kafkaManager.createConsumer(
+                groupId = groupId,
+                clientIdSuffix = threadName,
+                autoOffsetReset = autoOffsetReset,
+            )
         consumer = activeConsumer
         var healthySession = false
 

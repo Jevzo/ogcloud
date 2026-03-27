@@ -19,6 +19,7 @@ class KafkaSendDispatcher(
         PLAYER_SWITCH,
         PROXY_HEARTBEAT,
         PERMISSION_EXPIRY,
+        LIVE_CHANNEL,
     }
 
     data class Message(

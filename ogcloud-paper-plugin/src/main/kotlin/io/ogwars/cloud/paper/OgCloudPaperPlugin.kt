@@ -2,6 +2,8 @@ package io.ogwars.cloud.paper
 
 import io.ogwars.cloud.paper.api.ApiClient
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
+import io.ogwars.cloud.paper.channel.LiveChannelConsumer
+import io.ogwars.cloud.paper.channel.LiveChannelManager
 import io.ogwars.cloud.paper.config.PaperPluginSettings
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.heartbeat.HeartbeatTask
@@ -46,9 +48,11 @@ class OgCloudPaperPlugin : JavaPlugin() {
     private lateinit var permissionUpdateConsumer: PermissionUpdateConsumer
     private lateinit var commandExecuteConsumer: CommandExecuteConsumer
     private lateinit var lifecycleConsumer: LifecycleConsumer
+    private lateinit var liveChannelConsumer: LiveChannelConsumer
     private lateinit var settings: PaperPluginSettings
     private lateinit var serverApi: OgCloudServerAPIImpl
     private lateinit var apiClient: ApiClient
+    private lateinit var liveChannelManager: LiveChannelManager
 
     val configuredMaxPlayers: Int
         get() = settings.configuredMaxPlayers
@@ -73,6 +77,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
     }
 
     override fun onDisable() {
+        stopConsumer(::liveChannelConsumer.isInitialized) { liveChannelConsumer.stop() }
         stopConsumer(::lifecycleConsumer.isInitialized) { lifecycleConsumer.stop() }
         stopConsumer(::commandExecuteConsumer.isInitialized) { commandExecuteConsumer.stop() }
         stopConsumer(::networkUpdateConsumer.isInitialized) { networkUpdateConsumer.stop() }
@@ -108,6 +113,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 logger = logger,
             )
         apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
+        liveChannelManager = LiveChannelManager(serverId, kafkaSendDispatcher, logger)
         heartbeatTask = HeartbeatTask(this, kafkaSendDispatcher).also(HeartbeatTask::start)
     }
 
@@ -144,6 +150,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 permissionManager = permissionManager,
                 gameStateManager = gameStateManager,
                 apiClient = apiClient,
+                liveChannelManager = liveChannelManager,
                 logger = logger,
             )
 
@@ -195,6 +202,15 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                 serverId = serverId,
             ).also(LifecycleConsumer::start)
+
+        liveChannelConsumer =
+            LiveChannelConsumer(
+                kafkaManager = kafkaManager,
+                liveChannelManager = liveChannelManager,
+                logger = logger,
+                consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
+                serverId = serverId,
+            ).also(LiveChannelConsumer::start)
     }
 
     private fun loadNetworkFeatures() {

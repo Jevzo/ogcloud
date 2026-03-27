@@ -1,8 +1,11 @@
 package io.ogwars.cloud.velocity.api
 
+import io.ogwars.cloud.common.channel.LiveChannelPayload
+import io.ogwars.cloud.common.channel.LiveChannelSubscription
 import io.ogwars.cloud.common.event.ServerReadyEvent
 import io.ogwars.cloud.common.model.*
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
+import io.ogwars.cloud.velocity.channel.LiveChannelManager
 import io.ogwars.cloud.velocity.permission.CachedPlayer
 import io.ogwars.cloud.velocity.permission.PermissionCache
 import io.ogwars.cloud.velocity.redis.RedisManager
@@ -16,6 +19,7 @@ class OgCloudProxyAPIImpl(
     private val permissionCache: PermissionCache,
     private val apiClient: ApiClient,
     private val redisManager: RedisManager,
+    private val liveChannelManager: LiveChannelManager,
     private val logger: Logger,
 ) : OgCloudProxyAPI {
     private val serverReadyListeners = CopyOnWriteArrayList<Consumer<ServerReadyEvent>>()
@@ -62,6 +66,19 @@ class OgCloudProxyAPIImpl(
         uuid: UUID,
         group: String,
     ): CompletableFuture<Void> = apiClient.transferPlayer(uuid.toString(), group)
+
+    override fun <T : LiveChannelPayload> subscribe(
+        channelName: String,
+        payloadType: Class<T>,
+        listener: Consumer<T>,
+    ): LiveChannelSubscription = liveChannelManager.subscribe(channelName, payloadType, listener)
+
+    override fun <T : LiveChannelPayload> publish(
+        channelName: String,
+        payload: T,
+    ) {
+        liveChannelManager.publish(channelName, payload)
+    }
 
     override fun onServerReady(listener: Consumer<ServerReadyEvent>) {
         serverReadyListeners.add(listener)

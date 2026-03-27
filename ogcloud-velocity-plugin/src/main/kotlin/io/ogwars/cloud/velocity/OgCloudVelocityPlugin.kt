@@ -3,6 +3,8 @@ package io.ogwars.cloud.velocity
 import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.velocity.api.ApiClient
 import io.ogwars.cloud.velocity.api.OgCloudProxyAPIImpl
+import io.ogwars.cloud.velocity.channel.LiveChannelConsumer
+import io.ogwars.cloud.velocity.channel.LiveChannelManager
 import io.ogwars.cloud.velocity.command.OgCloudCommand
 import io.ogwars.cloud.velocity.config.VelocityPluginSettings
 import io.ogwars.cloud.velocity.heartbeat.ProxyHeartbeatTask
@@ -59,11 +61,13 @@ class OgCloudVelocityPlugin
         private lateinit var networkUpdateConsumer: NetworkUpdateConsumer
         private lateinit var commandExecuteConsumer: CommandExecuteConsumer
         private lateinit var webAccountLinkOtpConsumer: WebAccountLinkOtpConsumer
+        private lateinit var liveChannelConsumer: LiveChannelConsumer
         private lateinit var proxyHeartbeatTask: ProxyHeartbeatTask
         private lateinit var permissionExpiryTask: PermissionExpiryTask
         private lateinit var tablistManager: TablistManager
         private lateinit var settings: VelocityPluginSettings
         private lateinit var proxyApi: OgCloudProxyAPIImpl
+        private lateinit var liveChannelManager: LiveChannelManager
 
         @Subscribe
         fun onProxyInitialize(event: ProxyInitializeEvent) {
@@ -91,6 +95,7 @@ class OgCloudVelocityPlugin
             stopIfInitialized(::proxyHeartbeatTask.isInitialized) { proxyHeartbeatTask.stop() }
             stopIfInitialized(::permissionExpiryTask.isInitialized) { permissionExpiryTask.stop() }
             stopIfInitialized(::tablistManager.isInitialized) { tablistManager.stop() }
+            stopIfInitialized(::liveChannelConsumer.isInitialized) { liveChannelConsumer.stop() }
             stopIfInitialized(::webAccountLinkOtpConsumer.isInitialized) { webAccountLinkOtpConsumer.stop() }
             stopIfInitialized(::commandExecuteConsumer.isInitialized) { commandExecuteConsumer.stop() }
             stopIfInitialized(::networkUpdateConsumer.isInitialized) { networkUpdateConsumer.stop() }
@@ -132,6 +137,7 @@ class OgCloudVelocityPlugin
             permissionCache = PermissionCache()
             adminNotificationManager = AdminNotificationManager(server, permissionCache)
             apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
+            liveChannelManager = LiveChannelManager(settings.proxyId, kafkaSendDispatcher, logger)
         }
 
         private fun loadPersistentState() {
@@ -169,7 +175,7 @@ class OgCloudVelocityPlugin
         }
 
         private fun registerPublicApi() {
-            proxyApi = OgCloudProxyAPIImpl(permissionCache, apiClient, redisManager, logger)
+            proxyApi = OgCloudProxyAPIImpl(permissionCache, apiClient, redisManager, liveChannelManager, logger)
             OgCloudProxyAPI.set(proxyApi)
         }
 
@@ -254,6 +260,15 @@ class OgCloudVelocityPlugin
                     consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
                     proxyId = settings.proxyId,
                 ).also(WebAccountLinkOtpConsumer::start)
+
+            liveChannelConsumer =
+                LiveChannelConsumer(
+                    kafkaManager = kafkaManager,
+                    liveChannelManager = liveChannelManager,
+                    logger = logger,
+                    consumerRecoverySettings = settings.kafkaConsumerRecoverySettings,
+                    proxyId = settings.proxyId,
+                ).also(LiveChannelConsumer::start)
         }
 
         private fun registerListeners() {

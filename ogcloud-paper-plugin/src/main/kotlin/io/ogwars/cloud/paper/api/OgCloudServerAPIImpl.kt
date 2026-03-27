@@ -1,7 +1,10 @@
 package io.ogwars.cloud.paper.api
 
+import io.ogwars.cloud.common.channel.LiveChannelPayload
+import io.ogwars.cloud.common.channel.LiveChannelSubscription
 import io.ogwars.cloud.common.event.ServerReadyEvent
 import io.ogwars.cloud.common.model.*
+import io.ogwars.cloud.paper.channel.LiveChannelManager
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
@@ -21,6 +24,7 @@ class OgCloudServerAPIImpl(
     private val permissionManager: PermissionManager,
     private val gameStateManager: GameStateManager,
     private val apiClient: ApiClient,
+    private val liveChannelManager: LiveChannelManager,
     private val logger: Logger,
 ) : OgCloudServerAPI {
     private val serverReadyListeners = CopyOnWriteArrayList<Consumer<ServerReadyEvent>>()
@@ -80,6 +84,19 @@ class OgCloudServerAPIImpl(
     ): CompletableFuture<Void> = apiClient.transferPlayer(uuid.toString(), group)
 
     override fun forceTemplatePush(): CompletableFuture<Void> = apiClient.forceTemplatePush(serverId)
+
+    override fun <T : LiveChannelPayload> subscribe(
+        channelName: String,
+        payloadType: Class<T>,
+        listener: Consumer<T>,
+    ): LiveChannelSubscription = liveChannelManager.subscribe(channelName, payloadType, listener)
+
+    override fun <T : LiveChannelPayload> publish(
+        channelName: String,
+        payload: T,
+    ) {
+        liveChannelManager.publish(channelName, payload)
+    }
 
     override fun onServerReady(listener: Consumer<ServerReadyEvent>) {
         serverReadyListeners.add(listener)

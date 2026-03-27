@@ -15,6 +15,7 @@ class KafkaSendDispatcher(
     enum class MessageType {
         SERVER_HEARTBEAT,
         GAME_STATE_UPDATE,
+        LIVE_CHANNEL,
     }
 
     data class Message(
