@@ -10,9 +10,9 @@ import io.ogwars.cloud.paper.npc.NpcManager
 import io.ogwars.cloud.paper.permission.CachedPermission
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
-import io.ogwars.cloud.server.api.OgCloudServerAPI
 import io.ogwars.cloud.server.api.OgCloudRuntimeNpcBuilder
 import io.ogwars.cloud.server.api.OgCloudRuntimeNpcHandle
+import io.ogwars.cloud.server.api.OgCloudServerAPI
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList

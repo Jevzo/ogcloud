@@ -1,24 +1,5 @@
 package io.ogwars.cloud.paper.npc
 
-import com.github.retrooper.packetevents.PacketEvents
-import com.github.retrooper.packetevents.protocol.entity.data.EntityData
-import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes
-import com.github.retrooper.packetevents.manager.player.PlayerManager
-import com.github.retrooper.packetevents.protocol.player.GameMode
-import com.github.retrooper.packetevents.protocol.player.SkinSection
-import com.github.retrooper.packetevents.protocol.player.TextureProperty
-import com.github.retrooper.packetevents.protocol.player.UserProfile
-import com.github.retrooper.packetevents.protocol.world.Location as PacketLocation
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityHeadLook
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityRotation
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityTeleport
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPlayer
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTeams
-import com.google.gson.Gson
 import io.ogwars.cloud.common.event.PlayerTransferEvent
 import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.common.model.NpcClickActionType
@@ -28,21 +9,33 @@ import io.ogwars.cloud.common.model.NpcModel
 import io.ogwars.cloud.common.model.NpcSkin
 import io.ogwars.cloud.common.model.NpcTransferStrategy
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
+import io.ogwars.cloud.paper.listener.NpcPacketListener
 import io.ogwars.cloud.server.api.OgCloudNpcClickType
 import io.ogwars.cloud.server.api.OgCloudNpcInteraction
 import io.ogwars.cloud.server.api.OgCloudRuntimeNpcBuilder
 import io.ogwars.cloud.server.api.OgCloudRuntimeNpcHandle
 import io.ogwars.cloud.server.api.OgCloudSubscription
-import net.kyori.adventure.text.Component
+import com.comphenix.protocol.PacketType
+import com.comphenix.protocol.ProtocolLibrary
+import com.comphenix.protocol.ProtocolManager
+import com.comphenix.protocol.events.PacketContainer
+import com.comphenix.protocol.wrappers.EnumWrappers
+import com.comphenix.protocol.wrappers.PlayerInfoData
+import com.comphenix.protocol.wrappers.WrappedDataValue
+import com.comphenix.protocol.wrappers.WrappedDataWatcher
+import com.comphenix.protocol.wrappers.WrappedGameProfile
+import com.google.gson.Gson
 import net.kyori.adventure.text.format.NamedTextColor
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.ArmorStand
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitTask
+import org.bukkit.scoreboard.Team
 import java.nio.charset.StandardCharsets
 import java.util.EnumSet
 import java.util.UUID
@@ -60,7 +53,7 @@ class NpcManager(
 ) {
     private val gson = Gson()
     private val legacySerializer = LegacyComponentSerializer.legacyAmpersand()
-    private val playerManager: PlayerManager = PacketEvents.getAPI().playerManager
+    private val protocolManager: ProtocolManager = ProtocolLibrary.getProtocolManager()
     private val packetListener = NpcPacketListener(plugin, this)
     private val entries = LinkedHashMap<String, NpcEntry>()
     private val entityIds = ConcurrentHashMap<Int, String>()
@@ -68,7 +61,7 @@ class NpcManager(
     private var syncTask: BukkitTask? = null
 
     fun start() {
-        PacketEvents.getAPI().eventManager.registerListener(packetListener)
+        protocolManager.addPacketListener(packetListener)
         syncTask =
             plugin.server.scheduler.runTaskTimer(
                 plugin,
@@ -81,7 +74,7 @@ class NpcManager(
     fun shutdown() {
         syncTask?.cancel()
         syncTask = null
-        PacketEvents.getAPI().eventManager.unregisterListener(packetListener)
+        protocolManager.removePacketListener(packetListener)
 
         entries.values.toList().forEach(::removeEntry)
         entries.clear()
@@ -288,7 +281,7 @@ class NpcManager(
                 val offset = npcCenter.subtract(eyeVector)
                 val along = offset.dot(direction)
 
-                if (along < 0.0 || along > LOOK_TARGET_MAX_DISTANCE) {
+                if (along !in 0.0..LOOK_TARGET_MAX_DISTANCE) {
                     return@mapNotNull null
                 }
 
@@ -396,15 +389,21 @@ class NpcManager(
                 .filter { shouldView(entry, npcLocation, it) }
                 .associateBy(Player::getUniqueId)
 
-        entry.viewers.toList()
+        entry.viewers
+            .toList()
             .filterNot(desiredViewers::containsKey)
             .forEach { viewerUuid ->
-                plugin.server.getPlayer(viewerUuid)?.let { player -> despawnForViewer(entry, player) } ?: entry.viewers.remove(viewerUuid)
+                plugin.server.getPlayer(viewerUuid)?.let { player -> despawnForViewer(entry, player) }
+                    ?: entry.viewers.remove(viewerUuid)
             }
 
         desiredViewers.values
             .filterNot { it.uniqueId in entry.viewers }
             .forEach { player -> spawnForViewer(entry, player) }
+
+        desiredViewers.values
+            .filter { it.uniqueId in entry.viewers }
+            .forEach { player -> ensureHiddenNameTag(entry, player) }
     }
 
     private fun shouldView(
@@ -447,8 +446,10 @@ class NpcManager(
         plugin.server.onlinePlayers
             .asSequence()
             .filter { player -> player.world.name == entry.worldName }
-            .filter { player -> player.location.distanceSquared(npcLocation) <= entry.definition.lookAt.radius * entry.definition.lookAt.radius }
-            .minByOrNull { player -> player.location.distanceSquared(npcLocation) }
+            .filter { player ->
+                player.location.distanceSquared(npcLocation) <=
+                    entry.definition.lookAt.radius * entry.definition.lookAt.radius
+            }.minByOrNull { player -> player.location.distanceSquared(npcLocation) }
 
     private fun refreshArmorStands(entry: NpcEntry) {
         val world = Bukkit.getWorld(entry.worldName)
@@ -485,7 +486,9 @@ class NpcManager(
     private fun requireRuntimeEntry(id: String): NpcEntry {
         val entry = entries[id] ?: throw IllegalArgumentException("NPC not found: $id")
         if (entry.managed) {
-            throw IllegalArgumentException("NPC is managed by OgCloud and cannot be mutated through the runtime handle: $id")
+            throw IllegalArgumentException(
+                "NPC is managed by OgCloud and cannot be mutated through the runtime handle: $id",
+            )
         }
         return entry
     }
@@ -500,36 +503,17 @@ class NpcManager(
         syncViewers(entry)
     }
 
-    private fun resolveViewers(entry: NpcEntry): List<Player> =
-        entry.viewers.mapNotNull(plugin.server::getPlayer)
+    private fun resolveViewers(entry: NpcEntry): List<Player> = entry.viewers.mapNotNull(plugin.server::getPlayer)
 
     private fun spawnForViewer(
         entry: NpcEntry,
         player: Player,
     ) {
         val location = entry.toBukkitLocation() ?: return
-        val playerInfo = createPlayerInfo(entry)
-
-        sendPacket(
-            player,
-            WrapperPlayServerTeams(
-                entry.teamName,
-                WrapperPlayServerTeams.TeamMode.CREATE,
-                TEAM_INFO,
-                listOf(entry.profileName),
-            ),
-        )
-        sendPacket(player, WrapperPlayServerPlayerInfoUpdate(PLAYER_INFO_ACTIONS, playerInfo))
-        sendPacket(
-            player,
-            WrapperPlayServerSpawnPlayer(
-                entry.entityId,
-                entry.profileUuid,
-                location.toPacketLocation(),
-                emptyList(),
-            ),
-        )
-        sendPacket(player, WrapperPlayServerEntityMetadata(entry.entityId, playerMetadata()))
+        ensureHiddenNameTag(entry, player)
+        sendPacket(player, createPlayerInfoAddPacket(entry))
+        sendPacket(player, createSpawnPacket(entry, location))
+        sendPacket(player, createMetadataPacket(entry))
         sendRotationPackets(entry, player, entry.currentRotation)
 
         entry.viewers.add(player.uniqueId)
@@ -538,7 +522,7 @@ class NpcManager(
             plugin,
             Runnable {
                 if (player.isOnline && player.uniqueId in entry.viewers) {
-                    sendPacket(player, WrapperPlayServerPlayerInfoRemove(listOf(entry.profileUuid)))
+                    sendPacket(player, createPlayerInfoRemovePacket(entry))
                 }
             },
             TABLIST_REMOVE_DELAY_TICKS,
@@ -549,17 +533,9 @@ class NpcManager(
         entry: NpcEntry,
         player: Player,
     ) {
-        sendPacket(player, WrapperPlayServerDestroyEntities(entry.entityId))
-        sendPacket(player, WrapperPlayServerPlayerInfoRemove(listOf(entry.profileUuid)))
-        sendPacket(
-            player,
-            WrapperPlayServerTeams(
-                entry.teamName,
-                WrapperPlayServerTeams.TeamMode.REMOVE,
-                null as WrapperPlayServerTeams.ScoreBoardTeamInfo?,
-                emptyList<String>(),
-            ),
-        )
+        sendPacket(player, createDestroyPacket(entry))
+        sendPacket(player, createPlayerInfoRemovePacket(entry))
+        removeHiddenNameTag(entry, player)
         entry.viewers.remove(player.uniqueId)
     }
 
@@ -568,7 +544,7 @@ class NpcManager(
         player: Player,
     ) {
         val location = entry.toBukkitLocation() ?: return
-        sendPacket(player, WrapperPlayServerEntityTeleport(entry.entityId, location.toPacketLocation(), false))
+        sendPacket(player, createTeleportPacket(entry, location))
     }
 
     private fun sendRotationPackets(
@@ -576,16 +552,146 @@ class NpcManager(
         player: Player,
         rotation: Rotation,
     ) {
-        sendPacket(player, WrapperPlayServerEntityRotation(entry.entityId, rotation.yaw, rotation.pitch, false))
-        sendPacket(player, WrapperPlayServerEntityHeadLook(entry.entityId, rotation.yaw))
+        sendPacket(player, createRotationPacket(entry, rotation))
+        sendPacket(player, createHeadRotationPacket(entry, rotation))
     }
 
     private fun sendPacket(
         player: Player,
-        packet: Any,
+        packet: PacketContainer,
     ) {
-        playerManager.sendPacket(player, packet)
+        runCatching { protocolManager.sendServerPacket(player, packet, false) }
+            .onFailure { logger.warning("Failed to send NPC packet to ${player.name}: ${it.message}") }
     }
+
+    private fun createSpawnPacket(
+        entry: NpcEntry,
+        location: Location,
+    ): PacketContainer =
+        PacketContainer(PacketType.Play.Server.SPAWN_ENTITY).apply {
+            integers.write(0, entry.entityId)
+            uuiDs.write(0, entry.profileUuid)
+            entityTypeModifier.write(0, EntityType.PLAYER)
+            doubles
+                .write(0, location.x)
+                .write(1, location.y)
+                .write(2, location.z)
+            bytes
+                .write(0, toProtocolAngle(location.pitch))
+                .write(1, toProtocolAngle(location.yaw))
+                .write(2, toProtocolAngle(location.yaw))
+        }
+
+    private fun createDestroyPacket(entry: NpcEntry): PacketContainer =
+        PacketContainer(PacketType.Play.Server.ENTITY_DESTROY).apply {
+            intLists.write(0, listOf(entry.entityId))
+        }
+
+    private fun createPlayerInfoAddPacket(entry: NpcEntry): PacketContainer =
+        PacketContainer(PacketType.Play.Server.PLAYER_INFO).apply {
+            playerInfoActions.write(0, PLAYER_INFO_ACTIONS)
+            playerInfoDataLists.write(1, listOf(createPlayerInfo(entry)))
+        }
+
+    private fun createPlayerInfoRemovePacket(entry: NpcEntry): PacketContainer =
+        PacketContainer(PacketType.Play.Server.PLAYER_INFO_REMOVE).apply {
+            uuidLists.write(0, listOf(entry.profileUuid))
+        }
+
+    private fun createTeleportPacket(
+        entry: NpcEntry,
+        location: Location,
+    ): PacketContainer =
+        PacketContainer(PacketType.Play.Server.ENTITY_TELEPORT).apply {
+            ProtocolLibEntityTeleportFactory.writeTeleport(
+                packet = this,
+                entityId = entry.entityId,
+                location = location,
+                onGround = false,
+            )
+        }
+
+    private fun createRotationPacket(
+        entry: NpcEntry,
+        rotation: Rotation,
+    ): PacketContainer =
+        PacketContainer(PacketType.Play.Server.ENTITY_LOOK).apply {
+            integers.write(0, entry.entityId)
+            bytes
+                .write(0, toProtocolAngle(rotation.yaw))
+                .write(1, toProtocolAngle(rotation.pitch))
+            booleans.write(0, true)
+        }
+
+    private fun createHeadRotationPacket(
+        entry: NpcEntry,
+        rotation: Rotation,
+    ): PacketContainer =
+        PacketContainer(PacketType.Play.Server.ENTITY_HEAD_ROTATION).apply {
+            integers.write(0, entry.entityId)
+            bytes.write(0, toProtocolAngle(rotation.yaw))
+        }
+
+    private fun createMetadataPacket(entry: NpcEntry): PacketContainer =
+        PacketContainer(PacketType.Play.Server.ENTITY_METADATA).apply {
+            integers.write(0, entry.entityId)
+            dataValueCollectionModifier.write(
+                0,
+                listOf(
+                    WrappedDataValue(
+                        PLAYER_SKIN_PARTS_INDEX,
+                        WrappedDataWatcher.Registry.get(Byte::class.javaObjectType),
+                        PLAYER_SKIN_PARTS_MASK,
+                    ),
+                ),
+            )
+        }
+
+    private fun createPlayerInfo(entry: NpcEntry): PlayerInfoData =
+        PlayerInfoData(
+            entry.profileUuid,
+            TABLIST_LATENCY,
+            false,
+            EnumWrappers.NativeGameMode.CREATIVE,
+            createWrappedProfile(entry),
+            null,
+        )
+
+    private fun createWrappedProfile(entry: NpcEntry): WrappedGameProfile =
+        ProtocolLibGameProfileFactory.createProfile(
+            uuid = entry.profileUuid,
+            name = entry.profileName,
+            skin = entry.definition.skin,
+        )
+
+    private fun ensureHiddenNameTag(
+        entry: NpcEntry,
+        player: Player,
+    ) {
+        val scoreboard = player.scoreboard
+        val team = scoreboard.getTeam(entry.teamName) ?: scoreboard.registerNewTeam(entry.teamName)
+        team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER)
+        team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER)
+        team.color(NamedTextColor.WHITE)
+        if (!team.hasEntry(entry.profileName)) {
+            team.addEntry(entry.profileName)
+        }
+    }
+
+    private fun removeHiddenNameTag(
+        entry: NpcEntry,
+        player: Player,
+    ) {
+        val team = player.scoreboard.getTeam(entry.teamName) ?: return
+        if (team.hasEntry(entry.profileName)) {
+            team.removeEntry(entry.profileName)
+        }
+        if (team.entries.isEmpty()) {
+            team.unregister()
+        }
+    }
+
+    private fun toProtocolAngle(angle: Float): Byte = (angle * 256.0f / 360.0f).toInt().toByte()
 
     private fun publishTransfer(
         player: Player,
@@ -612,27 +718,6 @@ class NpcManager(
             ),
         )
     }
-
-    private fun createPlayerInfo(entry: NpcEntry): WrapperPlayServerPlayerInfoUpdate.PlayerInfo {
-        val textures =
-            entry.definition.skin
-                ?.let { skin -> mutableListOf(TextureProperty(TEXTURE_PROPERTY_NAME, skin.textureValue, skin.textureSignature)) }
-                ?: mutableListOf()
-        val profile = UserProfile(entry.profileUuid, entry.profileName, textures)
-
-        return WrapperPlayServerPlayerInfoUpdate.PlayerInfo(profile).apply {
-            setGameMode(GameMode.SURVIVAL)
-            setLatency(0)
-            setListed(true)
-            setDisplayName(Component.empty())
-            setShowHat(true)
-        }
-    }
-
-    private fun playerMetadata(): List<EntityData<*>> =
-        listOf(
-            EntityData(PLAYER_SKIN_PARTS_INDEX, EntityDataTypes.BYTE, SkinSection.ALL.mask),
-        )
 
     private fun refreshArmorStand(
         current: ArmorStand?,
@@ -664,7 +749,7 @@ class NpcManager(
         stand.isCustomNameVisible = true
         stand.isSilent = true
         stand.setGravity(false)
-        stand.setCollidable(false)
+        stand.isCollidable = false
     }
 
     private fun removeArmorStand(stand: ArmorStand?) {
@@ -701,12 +786,9 @@ class NpcManager(
         return Rotation(yaw, pitch)
     }
 
-    private fun Location.toPacketLocation(): PacketLocation =
-        PacketLocation(x, y, z, yaw, pitch)
-
     private fun createProfileName(id: String): String = "npc${stableSuffix(id).take(13)}"
 
-    private fun createTeamName(id: String): String = "ognpc_${stableSuffix(id)}"
+    private fun createTeamName(id: String): String = "ogn${stableSuffix(id).take(13)}"
 
     private fun stableSuffix(id: String): String =
         UUID
@@ -870,30 +952,21 @@ class NpcManager(
         private const val LOOK_TARGET_MAX_DISTANCE = 8.0
         private const val LOOK_TARGET_RADIUS_SQUARED = 1.75 * 1.75
         private const val NPC_EYE_HEIGHT = 1.62
-        private const val PLAYER_SKIN_PARTS_INDEX = 17
-        private const val TABLIST_REMOVE_DELAY_TICKS = 20L
+        private const val TABLIST_REMOVE_DELAY_TICKS = 30L
         private const val TITLE_Y_OFFSET = 2.35
         private const val SUBTITLE_Y_OFFSET = 2.10
         private const val SINGLE_LINE_Y_OFFSET = 2.20
+        private const val PLAYER_SKIN_PARTS_INDEX = 16
+        private const val TABLIST_LATENCY = 20
         private const val TEXTURE_PROPERTY_NAME = "textures"
-        private val TEAM_INFO =
-            WrapperPlayServerTeams.ScoreBoardTeamInfo(
-                Component.empty(),
-                Component.empty(),
-                Component.empty(),
-                WrapperPlayServerTeams.NameTagVisibility.NEVER,
-                WrapperPlayServerTeams.CollisionRule.NEVER,
-                NamedTextColor.WHITE,
-                WrapperPlayServerTeams.OptionData.NONE,
-            )
+        private val PLAYER_SKIN_PARTS_MASK: Byte = 0xff.toByte()
         private val PLAYER_INFO_ACTIONS =
             EnumSet.of(
-                WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER,
-                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_GAME_MODE,
-                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LISTED,
-                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY,
-                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_DISPLAY_NAME,
-                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_HAT,
+                EnumWrappers.PlayerInfoAction.ADD_PLAYER,
+                EnumWrappers.PlayerInfoAction.UPDATE_LISTED,
+                EnumWrappers.PlayerInfoAction.UPDATE_LATENCY,
+                EnumWrappers.PlayerInfoAction.UPDATE_GAME_MODE,
+                EnumWrappers.PlayerInfoAction.UPDATE_DISPLAY_NAME,
             )
     }
 }

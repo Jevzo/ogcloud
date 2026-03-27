@@ -60,6 +60,9 @@ class OgCloudPaperPlugin : JavaPlugin() {
     val groupName: String
         get() = settings.groupName
 
+    val podIp: String
+        get() = settings.podIp
+
     override fun onEnable() {
         settings = PaperPluginSettings.fromEnvironment(server.maxPlayers)
 

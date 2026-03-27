@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.dto
 import io.ogwars.cloud.api.model.NpcDocument
 import io.ogwars.cloud.common.model.NpcClickAction
 import io.ogwars.cloud.common.model.NpcClickActionType
+import io.ogwars.cloud.common.model.NpcDefaults
 import io.ogwars.cloud.common.model.NpcDefinition
 import io.ogwars.cloud.common.model.NpcLocation
 import io.ogwars.cloud.common.model.NpcLookAtConfig
@@ -70,8 +71,8 @@ data class CreateNpcRequest(
     @field:Valid val location: NpcLocationRequest,
     val title: String? = null,
     val subtitle: String? = null,
-    val model: NpcModel = NpcModel.STEVE,
-    @field:Valid val skin: NpcSkinRequest? = null,
+    val model: NpcModel = NpcDefaults.DEFAULT_MODEL,
+    @field:Valid val skin: NpcSkinRequest? = NpcDefaults.DEFAULT_SKIN.toRequest(),
     @field:Valid val lookAt: NpcLookAtRequest = NpcLookAtRequest(),
     @field:Valid val leftAction: NpcActionRequest = NpcActionRequest(),
     @field:Valid val rightAction: NpcActionRequest = NpcActionRequest(),
@@ -131,6 +132,12 @@ fun NpcLocationRequest.toModel(): NpcLocation =
 
 fun NpcSkinRequest.toModel(): NpcSkin =
     NpcSkin(
+        textureValue = textureValue,
+        textureSignature = textureSignature,
+    )
+
+fun NpcSkin.toRequest(): NpcSkinRequest =
+    NpcSkinRequest(
         textureValue = textureValue,
         textureSignature = textureSignature,
     )

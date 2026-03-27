@@ -55,6 +55,7 @@ class HeartbeatTask(
         return ServerHeartbeatEvent(
             serverId = plugin.serverId,
             group = plugin.groupName,
+            podIp = plugin.podIp,
             playerCount = plugin.server.onlinePlayers.size,
             maxPlayers = plugin.server.maxPlayers,
             tps = plugin.server.tps[0].coerceAtMost(MAX_TPS),

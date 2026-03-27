@@ -1,0 +1,102 @@
+@npcGroup = lobby
+@npcId = zerwas-lobby-1
+@npcTextureValue = ewogICJ0aW1lc3RhbXAiIDogMTYzNTQzMzY5NzQ2OCwKICAicHJvZmlsZUlkIiA6ICIyMWUzNjdkNzI1Y2Y0ZTNiYjI2OTJjNGEzMDBhNGRlYiIsCiAgInByb2ZpbGVOYW1lIiA6ICJHZXlzZXJNQyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9lMmRlMGQ2NmYxMjY4MGZmYmIxODVhZGYwMWQ5ZjdlODJmYmMxNDk0ZGIyZWI2MThkNGYwZGE1NzIwMTUxMGQxIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=
+@npcTextureSignature = HfAgslqoWsfj1diJvOa6x21teGIBqDmoaO3VJpLeDoSEAVLUMJS0qLGlb/bY1LcXS/THQdM419mzyxlb8G6nu1PW3oWmJq27Hv3Riz98L2peSBwHW5MaNNJKcQz/UiFHZIHwCfXDoJTH9uwL2OLeHkYSO4xSfcfjw+BhO4URWY8kNsGnANTxvfOnoNK4GlG8XgkS9jqBvm5Rb5gXmBL8BRBiBMt1FhGQc2xJVFSoj7ebITqoe5RjHgKUuSATBJFuyyTAAtYGVLHjUypNrQUUWHqPwlQsEQhNCBexzVSHSA8MrEJID65we9YZpZC1PtL6jb/k3jIcRvNLR2mRiPyNLbjDXloC5Qf8c3T2l/5aDMzYfQd4N7zC1BLxSgy2Sf1l/GfgBMD6WA+QIUstQW5bSnI/XjQJ+Q5Q97yVm5zTFLoyYooB0dXlrwnml5IgFbQPPGMcmp+9IGi3BdcMr66vw+t3JTUp+egaPUskHCkEGfj0IhEU0ZaNaF4qK+/95MgRvxfX76Dee1pNZm0nPQqe3Fipy4riXJY2DemcwvJLAjz6FOeoU84Bnr2a5JhOc3WSx1gQVgKUS5o/AgBfaKG3ViF2vL6h/ZjJTjsXOVJlTRS9hvDdWKXokjFIbVOzA+c7hXzJpsxeo2tiDkzffyfHv8o+8gl/uM8ZtlrGovEwSgM=
+
+### List managed NPCs
+GET {{baseUrl}}/api/v1/npcs?group={{npcGroup}}
+Authorization: Bearer {{accessToken}}
+
+### Get a managed NPC
+GET {{baseUrl}}/api/v1/npcs/{{npcId}}
+Authorization: Bearer {{accessToken}}
+
+### Create a managed NPC
+POST {{baseUrl}}/api/v1/npcs
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "id": "{{npcId}}",
+  "group": "{{npcGroup}}",
+  "location": {
+    "world": "world",
+    "x": -10.682428801596709,
+    "y": 88.0,
+    "z": -3.2087608868244364,
+    "yaw": -109.9513,
+    "pitch": 0.7500092
+  },
+  "title": "&ePlay",
+  "subtitle": "&7Join the lobby",
+  "model": "ALEX",
+  "skin": {
+    "textureValue": "{{npcTextureValue}}",
+    "textureSignature": "{{npcTextureSignature}}"
+  },
+  "lookAt": {
+    "enabled": true,
+    "radius": 5.0
+  },
+  "leftAction": {
+    "type": "TRANSFER",
+    "transfer": {
+      "group": "{{npcGroup}}",
+      "routingStrategy": "MOST_FILLED"
+    }
+  },
+  "rightAction": {
+    "type": "TRANSFER",
+    "transfer": {
+      "group": "{{npcGroup}}",
+      "routingStrategy": "BALANCED"
+    }
+  }
+}
+
+### Update a managed NPC
+PUT {{baseUrl}}/api/v1/npcs/{{npcId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "title": "&6Updated Lobby NPC",
+  "subtitle": "&7Right click to transfer",
+  "lookAt": {
+    "enabled": true,
+    "radius": 6.0
+  },
+  "rightAction": {
+    "type": "TRANSFER",
+    "transfer": {
+      "group": "{{npcGroup}}",
+      "routingStrategy": "MOST_FILLED"
+    }
+  }
+}
+
+### Update a managed NPC skin
+PUT {{baseUrl}}/api/v1/npcs/{{npcId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "model": "ALEX",
+  "skin": {
+    "textureValue": "{{npcTextureValue}}",
+    "textureSignature": "{{npcTextureSignature}}"
+  }
+}
+
+### Reset a managed NPC skin to the default profile
+PUT {{baseUrl}}/api/v1/npcs/{{npcId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "clearSkin": true
+}
+
+### Delete a managed NPC
+DELETE {{baseUrl}}/api/v1/npcs/{{npcId}}
+Authorization: Bearer {{accessToken}}

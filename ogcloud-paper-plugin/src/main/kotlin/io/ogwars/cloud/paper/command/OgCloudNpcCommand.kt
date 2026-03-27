@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper.npc
+package io.ogwars.cloud.paper.command
 
 import io.ogwars.cloud.common.model.NpcClickActionType
 import io.ogwars.cloud.common.model.NpcDefinition
@@ -13,6 +13,9 @@ import io.ogwars.cloud.paper.api.ApiNpcResponse
 import io.ogwars.cloud.paper.api.ApiNpcTransferActionRequest
 import io.ogwars.cloud.paper.api.ApiUpdateNpcRequest
 import io.ogwars.cloud.paper.api.toDefinition
+import io.ogwars.cloud.paper.npc.NpcManager
+import io.ogwars.cloud.paper.npc.npcLocationFromBukkit
+import io.ogwars.cloud.paper.npc.toBukkit
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -106,45 +109,49 @@ class OgCloudNpcCommand(
                     "rightaction",
                 )
 
-            3 -> when (args[1].lowercase(Locale.ROOT)) {
-                "info",
-                "delete",
-                "movehere",
-                "teleport",
-                "title",
-                "subtitle",
-                "model",
-                "skin",
-                "lookat",
-                "leftaction",
-                "rightaction",
-                -> npcManager.getLocalNpcs().map(NpcDefinition::id).toMutableList()
-                else -> mutableListOf()
-            }
+            3 ->
+                when (args[1].lowercase(Locale.ROOT)) {
+                    "info",
+                    "delete",
+                    "movehere",
+                    "teleport",
+                    "title",
+                    "subtitle",
+                    "model",
+                    "skin",
+                    "lookat",
+                    "leftaction",
+                    "rightaction",
+                    -> npcManager.getLocalNpcs().map(NpcDefinition::id).toMutableList()
+                    else -> mutableListOf()
+                }
 
-            4 -> when (args[1].lowercase(Locale.ROOT)) {
-                "model" -> mutableListOf("steve", "alex")
-                "skin" -> mutableListOf("signed", "unsigned", "clear")
-                "lookat" -> mutableListOf("true", "false")
-                "leftaction",
-                "rightaction",
-                -> mutableListOf("none", "transfer")
-                else -> mutableListOf()
-            }
+            4 ->
+                when (args[1].lowercase(Locale.ROOT)) {
+                    "model" -> mutableListOf("steve", "alex")
+                    "skin" -> mutableListOf("signed", "unsigned", "clear")
+                    "lookat" -> mutableListOf("true", "false")
+                    "leftaction",
+                    "rightaction",
+                    -> mutableListOf("none", "transfer")
+                    else -> mutableListOf()
+                }
 
-            5 -> when (args[1].lowercase(Locale.ROOT)) {
-                "leftaction",
-                "rightaction",
-                -> if (args[3].equals("transfer", ignoreCase = true)) mutableListOf(groupName) else mutableListOf()
-                else -> mutableListOf()
-            }
+            5 ->
+                when (args[1].lowercase(Locale.ROOT)) {
+                    "leftaction",
+                    "rightaction",
+                    -> if (args[3].equals("transfer", ignoreCase = true)) mutableListOf(groupName) else mutableListOf()
+                    else -> mutableListOf()
+                }
 
-            6 -> when (args[1].lowercase(Locale.ROOT)) {
-                "leftaction",
-                "rightaction",
-                -> mutableListOf("most-filled", "least-filled", "balanced")
-                else -> mutableListOf()
-            }
+            6 ->
+                when (args[1].lowercase(Locale.ROOT)) {
+                    "leftaction",
+                    "rightaction",
+                    -> mutableListOf("most-filled", "least-filled", "balanced")
+                    else -> mutableListOf()
+                }
 
             else -> mutableListOf()
         }
@@ -169,7 +176,9 @@ class OgCloudNpcCommand(
                 npcs.sortedWith(compareBy<ApiNpcResponse> { it.group }.thenBy { it.id }).forEach { npc ->
                     sendRaw(
                         sender,
-                        "&8- &f${npc.id} &7group=&f${npc.group} &7world=&f${npc.location.world} &7x=&f${format(npc.location.x)} &7y=&f${format(npc.location.y)} &7z=&f${format(npc.location.z)}",
+                        "&8- &f${npc.id} &7group=&f${npc.group} &7world=&f${npc.location.world} &7x=&f${format(
+                            npc.location.x,
+                        )} &7y=&f${format(npc.location.y)} &7z=&f${format(npc.location.z)}",
                     )
                 }
             },
@@ -336,7 +345,12 @@ class OgCloudNpcCommand(
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
         return when (args.getOrNull(3)?.lowercase(Locale.ROOT)) {
             "clear" -> {
-                updateNpc(sender, id, ApiUpdateNpcRequest(clearSkin = true), "Cleared skin for NPC $id.")
+                updateNpc(
+                    sender,
+                    id,
+                    ApiUpdateNpcRequest(clearSkin = true),
+                    "Reset skin for NPC $id to the default profile.",
+                )
                 true
             }
 
@@ -349,7 +363,12 @@ class OgCloudNpcCommand(
             "signed" -> {
                 val value = args.getOrNull(4) ?: return sendUsageAndStop(sender)
                 val signature = args.getOrNull(5) ?: return sendUsageAndStop(sender)
-                updateNpc(sender, id, ApiUpdateNpcRequest(skin = NpcSkin(value, signature)), "Updated skin for NPC $id.")
+                updateNpc(
+                    sender,
+                    id,
+                    ApiUpdateNpcRequest(skin = NpcSkin(value, signature)),
+                    "Updated skin for NPC $id.",
+                )
                 true
             }
 
@@ -453,7 +472,13 @@ class OgCloudNpcCommand(
         sendRaw(sender, "&8- &7group: &f${npc.group}")
         sendRaw(
             sender,
-            "&8- &7location: &f${npc.location.world} &7(${format(npc.location.x)}, ${format(npc.location.y)}, ${format(npc.location.z)}) &7yaw=&f${format(npc.location.yaw.toDouble())} &7pitch=&f${format(npc.location.pitch.toDouble())}",
+            "&8- &7location: &f${npc.location.world} &7(${format(
+                npc.location.x,
+            )}, ${format(
+                npc.location.y,
+            )}, ${format(
+                npc.location.z,
+            )}) &7yaw=&f${format(npc.location.yaw.toDouble())} &7pitch=&f${format(npc.location.pitch.toDouble())}",
         )
         sendRaw(sender, "&8- &7title: &f${npc.title ?: "off"}")
         sendRaw(sender, "&8- &7subtitle: &f${npc.subtitle ?: "off"}")
@@ -480,7 +505,11 @@ class OgCloudNpcCommand(
             return "none"
         }
 
-        val strategy = action.routingStrategy?.name?.lowercase(Locale.ROOT)?.replace('_', '-') ?: "network-default"
+        val strategy =
+            action.routingStrategy
+                ?.name
+                ?.lowercase(Locale.ROOT)
+                ?.replace('_', '-') ?: "network-default"
         return "transfer ${action.targetGroup} ($strategy)"
     }
 
@@ -553,21 +582,24 @@ class OgCloudNpcCommand(
     }
 
     private fun sendNpcUsage(sender: CommandSender) {
-        sendPrefixed(sender, "Subcommands: list, info, create, delete, movehere, teleport, title, subtitle, model, skin, lookat, leftaction, rightaction")
+        sendPrefixed(
+            sender,
+            "Subcommands: list, info, create, delete, movehere, teleport, title, subtitle, model, skin, lookat, leftaction, rightaction",
+        )
     }
 
     private fun sendPrefixed(
         sender: CommandSender,
         message: String,
     ) {
-        sendRaw(sender, "${PREFIX}&7$message")
+        sendRaw(sender, "$PREFIX&7$message")
     }
 
     private fun sendError(
         sender: CommandSender,
         message: String,
     ) {
-        sendRaw(sender, "${PREFIX}&c$message")
+        sendRaw(sender, "$PREFIX&c$message")
     }
 
     private fun sendRaw(

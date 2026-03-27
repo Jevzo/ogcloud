@@ -224,6 +224,7 @@ class KubernetesService(
             envVar("VERSION", requireNotNull(group.resolvedRuntimeProfile()).minecraftVersion),
             envVar("OGCLOUD_SERVER_ID", server.id),
             envVar("OGCLOUD_GROUP", server.group),
+            podIpEnvVar("OGCLOUD_SERVER_POD_IP"),
             envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
             envVar("OGCLOUD_API_URL", podRuntimeProperties.apiUrl),
             envVar("OGCLOUD_API_EMAIL", podRuntimeProperties.apiEmail),
@@ -258,14 +259,7 @@ class KubernetesService(
             envVar("OGCLOUD_PROXY_DISPLAY_NAME", server.displayName),
             envVar("OGCLOUD_GROUP", server.group),
             envVar("OGCLOUD_MAX_PLAYERS", group.scaling.playersPerServer.toString()),
-            EnvVarBuilder()
-                .withName("OGCLOUD_PROXY_POD_IP")
-                .withNewValueFrom()
-                .withNewFieldRef()
-                .withFieldPath("status.podIP")
-                .endFieldRef()
-                .endValueFrom()
-                .build(),
+            podIpEnvVar("OGCLOUD_PROXY_POD_IP"),
             envVar("OGCLOUD_PROXY_PORT", PROXY_PORT.toString()),
             envVar("OGCLOUD_DEFAULT_GROUP", defaultGroup),
             envVar("KAFKA_BROKERS", podRuntimeProperties.kafkaBrokers),
@@ -362,6 +356,16 @@ class KubernetesService(
         value: String,
     ): EnvVar = EnvVarBuilder().withName(name).withValue(value).build()
 
+    private fun podIpEnvVar(name: String): EnvVar =
+        EnvVarBuilder()
+            .withName(name)
+            .withNewValueFrom()
+            .withNewFieldRef()
+            .withFieldPath("status.podIP")
+            .endFieldRef()
+            .endValueFrom()
+            .build()
+
     fun deleteServerPod(podName: String) {
         kubernetesClient
             .pods()
@@ -382,15 +386,6 @@ class KubernetesService(
 
         log.info("Force-deleted pod: name={}", podName)
     }
-
-    fun getPodIp(podName: String): String? =
-        kubernetesClient
-            .pods()
-            .inNamespace(kubernetesProperties.namespace)
-            .withName(podName)
-            .get()
-            ?.status
-            ?.podIP
 
     private data class ServerPodSpec(
         val isProxy: Boolean,

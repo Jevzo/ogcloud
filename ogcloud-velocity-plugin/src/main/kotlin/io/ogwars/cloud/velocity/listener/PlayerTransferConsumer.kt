@@ -226,7 +226,8 @@ class PlayerTransferConsumer(
 
     private fun loadRatio(server: RegisteredServer): Double {
         val serverId = serverRegistry.findServerIdByRegistered(server) ?: return server.playersConnected.size.toDouble()
-        val maxPlayers = serverRegistry.getMaxPlayers(serverId)?.takeIf { it > 0 } ?: return server.playersConnected.size.toDouble()
+        val maxPlayers =
+            serverRegistry.getMaxPlayers(serverId)?.takeIf { it > 0 } ?: return server.playersConnected.size.toDouble()
         return server.playersConnected.size.toDouble() / maxPlayers.toDouble()
     }
 

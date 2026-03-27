@@ -73,12 +73,11 @@ class ServerLifecycleService(
     fun handleHeartbeat(event: ServerHeartbeatEvent) {
         val server = findServerOrWarn(event.serverId, "heartbeat") ?: return
 
-        if (server.state == ServerState.STARTING) {
-            handleStartingServerHeartbeat(server, event)
-            return
+        when (server.state) {
+            ServerState.STARTING -> handleStartingServerHeartbeat(server, event)
+            ServerState.RUNNING -> handleRunningServerHeartbeat(server, event)
+            else -> saveServer(server.withHeartbeat(event))
         }
-
-        saveServer(server.withHeartbeat(event))
     }
 
     fun handleProxyHeartbeat(event: ProxyHeartbeatEvent) {
@@ -320,53 +319,45 @@ class ServerLifecycleService(
         server: ServerDocument,
         event: ServerHeartbeatEvent,
     ) {
-        val podIp = kubernetesService.getPodIp(server.podName)
-        if (podIp == null) {
-            handleMissingPodIp(server)
-            return
-        }
-
-        saveServer(
+        val running =
             server.withHeartbeat(event).copy(
                 state = ServerState.RUNNING,
-                podIp = podIp,
                 podIpRetries = 0,
-            ),
+            )
+
+        saveServer(
+            running,
             publishLifecycle = true,
         )
 
         log.info(
             "Server is now RUNNING: id={}, displayName={}, group={}, podIp={}",
-            server.id,
-            server.displayName,
-            server.group,
-            podIp,
+            running.id,
+            running.displayName,
+            running.group,
+            running.podIp,
         )
     }
 
-    private fun handleMissingPodIp(server: ServerDocument) {
-        val retries = server.podIpRetries + 1
+    private fun handleRunningServerHeartbeat(
+        server: ServerDocument,
+        event: ServerHeartbeatEvent,
+    ) {
+        val updated = server.withHeartbeat(event)
+        val podIpChanged = server.podIp != updated.podIp
 
-        if (retries >= MAX_POD_IP_RETRIES) {
-            log.error(
-                "Server failed to obtain pod IP after {} retries, marking as failed: id={}, group={}",
-                retries,
-                server.id,
-                server.group,
+        saveServer(updated, publishLifecycle = podIpChanged)
+
+        if (podIpChanged) {
+            log.info(
+                "Server pod IP changed: id={}, displayName={}, group={}, oldPodIp={}, newPodIp={}",
+                updated.id,
+                updated.displayName,
+                updated.group,
+                server.podIp,
+                updated.podIp,
             )
-
-            cleanupFailedServer(server, "Pod IP unavailable after $retries retries")
-            return
         }
-
-        log.warn("Pod IP not yet available for server {}, retry {}/{}", server.id, retries, MAX_POD_IP_RETRIES)
-
-        saveServer(
-            server.copy(
-                podIpRetries = retries,
-                lastHeartbeat = Instant.now(),
-            ),
-        )
     }
 
     private fun handleDrainingServer(
@@ -497,6 +488,7 @@ class ServerLifecycleService(
 
     private fun ServerDocument.withHeartbeat(event: ServerHeartbeatEvent): ServerDocument =
         copy(
+            podIp = event.podIp,
             playerCount = event.playerCount,
             maxPlayers = event.maxPlayers,
             tps = event.tps,
@@ -520,7 +512,6 @@ class ServerLifecycleService(
 
     companion object {
         private const val DISPLAY_NAME_ID_LENGTH = 6
-        private const val MAX_POD_IP_RETRIES = 5
         private const val DEFAULT_DRAIN_TIMEOUT_SECONDS = 60L
         private const val NO_TPS = -1.0
         private const val TRANSFER_GRACE_SECONDS = 30L

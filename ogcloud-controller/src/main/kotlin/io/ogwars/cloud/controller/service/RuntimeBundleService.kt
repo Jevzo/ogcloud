@@ -282,6 +282,12 @@ class RuntimeBundleService(
                         ),
                     )
                     add(
+                        managedArtifact(
+                            objectKey = pluginObjectKey(scope, PROTOCOL_LIB_FILE_NAME),
+                            sourceUrl = runtimeProperties.modernProtocolLibUrl,
+                        ),
+                    )
+                    add(
                         generatedArtifact(
                             scope = scope,
                             objectKey = bungeeGuardConfigObjectKey(scope),

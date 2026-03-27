@@ -5,6 +5,7 @@ import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
 data class PaperPluginSettings(
     val serverId: String,
     val groupName: String,
+    val podIp: String,
     val groupType: String,
     val configuredMaxPlayers: Int,
     val kafkaBrokers: String,
@@ -20,6 +21,7 @@ data class PaperPluginSettings(
             PaperPluginSettings(
                 serverId = requiredEnv("OGCLOUD_SERVER_ID"),
                 groupName = requiredEnv("OGCLOUD_GROUP"),
+                podIp = requiredEnv("OGCLOUD_SERVER_POD_IP"),
                 groupType = System.getenv("OGCLOUD_GROUP_TYPE") ?: DEFAULT_GROUP_TYPE,
                 configuredMaxPlayers =
                     System

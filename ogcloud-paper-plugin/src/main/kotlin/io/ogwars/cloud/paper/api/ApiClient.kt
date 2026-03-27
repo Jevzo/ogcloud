@@ -80,8 +80,7 @@ class ApiClient(
         return get(path, Array<ApiNpcResponse>::class.java).thenApply { it.toList() }
     }
 
-    fun getNpc(id: String): CompletableFuture<ApiNpcResponse> =
-        get("/api/v1/npcs/$id", ApiNpcResponse::class.java)
+    fun getNpc(id: String): CompletableFuture<ApiNpcResponse> = get("/api/v1/npcs/$id", ApiNpcResponse::class.java)
 
     fun createNpc(request: ApiCreateNpcRequest): CompletableFuture<ApiNpcResponse> =
         postWithResponse("/api/v1/npcs", request, ApiNpcResponse::class.java)
@@ -199,8 +198,7 @@ class ApiClient(
     private fun sendAuthorizedPost(
         path: String,
         body: Any?,
-    ): CompletableFuture<HttpResponse<String>> =
-        sendAuthorized(buildPostRequest(path, body, ensureAccessToken()))
+    ): CompletableFuture<HttpResponse<String>> = sendAuthorized(buildPostRequest(path, body, ensureAccessToken()))
 
     private fun sendAuthorized(request: HttpRequest): CompletableFuture<HttpResponse<String>> =
         httpClient

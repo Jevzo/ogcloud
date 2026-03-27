@@ -1,11 +1,11 @@
 package io.ogwars.cloud.paper
 
-import com.github.retrooper.packetevents.PacketEvents
 import io.ogwars.cloud.paper.api.ApiClient
 import io.ogwars.cloud.paper.api.OgCloudServerAPIImpl
 import io.ogwars.cloud.paper.api.toDefinition
 import io.ogwars.cloud.paper.channel.LiveChannelConsumer
 import io.ogwars.cloud.paper.channel.LiveChannelManager
+import io.ogwars.cloud.paper.command.OgCloudNpcCommand
 import io.ogwars.cloud.paper.config.PaperPluginSettings
 import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.heartbeat.HeartbeatTask
@@ -14,15 +14,12 @@ import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.paper.listener.*
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.npc.NpcManager
-import io.ogwars.cloud.paper.npc.NpcPlayerListener
 import io.ogwars.cloud.paper.npc.NpcSyncConsumer
-import io.ogwars.cloud.paper.npc.OgCloudNpcCommand
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.paper.tablist.TablistTeamManager
 import io.ogwars.cloud.server.api.OgCloudServerAPI
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
 import org.bukkit.Bukkit
 import org.bukkit.plugin.ServicePriority
 import org.bukkit.plugin.java.JavaPlugin
@@ -65,11 +62,6 @@ class OgCloudPaperPlugin : JavaPlugin() {
     private lateinit var apiClient: ApiClient
     private lateinit var liveChannelManager: LiveChannelManager
 
-    override fun onLoad() {
-        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
-        PacketEvents.getAPI().load()
-    }
-
     val configuredMaxPlayers: Int
         get() = settings.configuredMaxPlayers
 
@@ -79,9 +71,11 @@ class OgCloudPaperPlugin : JavaPlugin() {
     val groupName: String
         get() = settings.groupName
 
+    val podIp: String
+        get() = settings.podIp
+
     override fun onEnable() {
         settings = PaperPluginSettings.fromEnvironment(server.maxPlayers)
-        PacketEvents.getAPI().init()
 
         initializeInfrastructure()
         applyConfiguredMaxPlayers()
@@ -109,7 +103,6 @@ class OgCloudPaperPlugin : JavaPlugin() {
         stopConsumer(::redisManager.isInitialized) { redisManager.close() }
 
         OgCloudServerAPI.clear()
-        PacketEvents.getAPI().terminate()
 
         logger.info("OgCloud Paper Plugin disabled")
     }
@@ -261,7 +254,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
     private fun registerCommands() {
         val ogCloudCommand = OgCloudNpcCommand(this, apiClient, npcManager, groupName)
-        getCommand("ogcloud")?.apply {
+        getCommand("pogcloud")?.apply {
             setExecutor(ogCloudCommand)
             tabCompleter = ogCloudCommand
         }

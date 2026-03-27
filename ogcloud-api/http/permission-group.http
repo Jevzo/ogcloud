@@ -1,6 +1,7 @@
 @existingPermissionGroup = admin
 @managedPermissionGroup = example-moderator
 @managedPermission = ogcloud.command.execute
+@additionalPermission = ogcloud.server.view
 
 ### List permission groups
 GET {{baseUrl}}/api/v1/permissions/groups?page=0&size=50&query=admin
@@ -27,7 +28,10 @@ Content-Type: application/json
   "weight": 20,
   "default": false,
   "permissions": [
-    "{{managedPermission}}"
+    {
+      "perm": "{{managedPermission}}",
+      "description": "Allows executing remote commands."
+    }
   ]
 }
 
@@ -47,17 +51,29 @@ Content-Type: application/json
   "weight": 15,
   "default": false,
   "permissions": [
-    "{{managedPermission}}",
-    "ogcloud.server.view"
+    {
+      "perm": "{{managedPermission}}",
+      "description": "Allows executing remote commands."
+    },
+    {
+      "perm": "{{additionalPermission}}",
+      "description": "Allows viewing server state."
+    }
   ]
 }
 
 ### Add a permission to a group
-POST {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions/{{managedPermission}}
+POST {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "perm": "{{additionalPermission}}",
+  "description": "Allows viewing server state."
+}
 
 ### Remove a permission from a group
-DELETE {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions/{{managedPermission}}
+DELETE {{baseUrl}}/api/v1/permissions/groups/{{managedPermissionGroup}}/permissions/{{additionalPermission}}
 Authorization: Bearer {{accessToken}}
 
 ### Delete a permission group

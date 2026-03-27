@@ -1,7 +1,7 @@
 package io.ogwars.cloud.velocity
 
-import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.common.model.GroupType
+import io.ogwars.cloud.proxy.api.OgCloudProxyAPI
 import io.ogwars.cloud.velocity.api.ApiClient
 import io.ogwars.cloud.velocity.api.OgCloudProxyAPIImpl
 import io.ogwars.cloud.velocity.channel.LiveChannelConsumer

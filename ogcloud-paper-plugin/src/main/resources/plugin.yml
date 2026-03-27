@@ -3,10 +3,11 @@ version: "${version}"
 main: io.ogwars.cloud.paper.OgCloudPaperPlugin
 description: OgCloud Paper Plugin - Server lifecycle and heartbeat reporting
 api-version: "1.21"
+depend: [ProtocolLib]
 commands:
-  ogcloud:
+  pogcloud:
     description: OgCloud backend command surface
-    aliases: [oc]
+    aliases: [poc]
     permission: ogcloud.admin.npc
 permissions:
   ogcloud.admin.npc:

@@ -15,6 +15,8 @@ data class RuntimeProperties(
     val templateLoaderVersion: String = "latest",
     val modernPaperPluginUrl: String =
         "https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-paper-plugin-1.3.0.jar",
+    val modernProtocolLibUrl: String =
+        "https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar",
     val legacyPaperPluginUrl: String =
         "https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-legacy-paper-plugin-1.3.0.jar",
     val velocityPluginUrl: String =

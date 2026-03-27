@@ -67,6 +67,7 @@ ogcloud:
     velocity-project: ${OGCLOUD_RUNTIME_VELOCITY_PROJECT:velocity}
     template-loader-version: ${OGCLOUD_RUNTIME_TEMPLATE_LOADER_VERSION:latest}
     modern-paper-plugin-url: ${OGCLOUD_RUNTIME_MODERN_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-paper-plugin-1.3.0.jar}
+    modern-protocol-lib-url: ${OGCLOUD_RUNTIME_MODERN_PROTOCOL_LIB_URL:https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar}
     legacy-paper-plugin-url: ${OGCLOUD_RUNTIME_LEGACY_PAPER_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-legacy-paper-plugin-1.3.0.jar}
     velocity-plugin-url: ${OGCLOUD_RUNTIME_VELOCITY_PLUGIN_URL:https://github.com/Jevzo/ogcloud/releases/download/v1.3.0/ogcloud-velocity-plugin-1.3.0.jar}
     via-version-url: ${OGCLOUD_RUNTIME_VIA_VERSION_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.7.2/PAPER/ViaVersion-5.7.2.jar}
@@ -74,7 +75,7 @@ ogcloud:
     via-backwards-url: ${OGCLOUD_RUNTIME_VIA_BACKWARDS_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaBackwards/versions/5.7.2/PAPER/ViaBackwards-5.7.2.jar}
     via-rewind-url: ${OGCLOUD_RUNTIME_VIA_REWIND_URL:https://hangarcdn.papermc.io/plugins/ViaVersion/ViaRewind/versions/4.0.15/PAPER/ViaRewind-4.0.15.jar}
     bungee-guard-url: ${OGCLOUD_RUNTIME_BUNGEE_GUARD_URL:https://ci.lucko.me/job/BungeeGuard/lastStableBuild/artifact/bungeeguard-universal/target/BungeeGuard.jar}
-    protocol-lib-url: ${OGCLOUD_RUNTIME_PROTOCOL_LIB_URL:https://github.com/dmulloy2/ProtocolLib/releases/download/5.3.0/ProtocolLib.jar}
+    protocol-lib-url: ${OGCLOUD_RUNTIME_PROTOCOL_LIB_URL:https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar}
   pod:
     minio-endpoint: ${POD_MINIO_ENDPOINT:minio.ogcloud.svc.cluster.local:9000}
     minio-access-key: ${POD_MINIO_ACCESS_KEY:minioadmin}

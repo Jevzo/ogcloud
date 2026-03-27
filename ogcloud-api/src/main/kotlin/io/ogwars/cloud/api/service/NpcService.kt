@@ -15,6 +15,7 @@ import io.ogwars.cloud.api.repository.GroupRepository
 import io.ogwars.cloud.api.repository.NpcRepository
 import io.ogwars.cloud.common.model.NpcClickAction
 import io.ogwars.cloud.common.model.NpcClickActionType
+import io.ogwars.cloud.common.model.NpcDefaults
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -52,7 +53,7 @@ class NpcService(
                 title = request.title,
                 subtitle = request.subtitle,
                 model = request.model,
-                skin = request.skin?.toModel(),
+                skin = request.skin?.toModel() ?: NpcDefaults.DEFAULT_SKIN,
                 lookAt = request.lookAt.toModel(),
                 leftAction = validateAction(request.leftAction),
                 rightAction = validateAction(request.rightAction),
@@ -90,10 +91,15 @@ class NpcService(
                     location = request.location?.toModel() ?: existing.location,
                     title = request.title ?: existing.title,
                     subtitle = request.subtitle ?: existing.subtitle,
-                    model = request.model ?: existing.model,
+                    model =
+                        when {
+                            request.clearSkin -> request.model ?: NpcDefaults.DEFAULT_MODEL
+                            request.model != null -> request.model
+                            else -> existing.model
+                        },
                     skin =
                         when {
-                            request.clearSkin -> null
+                            request.clearSkin -> NpcDefaults.DEFAULT_SKIN
                             request.skin != null -> request.skin.toModel()
                             else -> existing.skin
                         },

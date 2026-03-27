@@ -2,6 +2,7 @@ package io.ogwars.cloud.paper.api
 
 import io.ogwars.cloud.common.model.NpcClickAction
 import io.ogwars.cloud.common.model.NpcClickActionType
+import io.ogwars.cloud.common.model.NpcDefaults
 import io.ogwars.cloud.common.model.NpcDefinition
 import io.ogwars.cloud.common.model.NpcLocation
 import io.ogwars.cloud.common.model.NpcLookAtConfig
@@ -40,8 +41,8 @@ data class ApiCreateNpcRequest(
     val location: NpcLocation,
     val title: String? = null,
     val subtitle: String? = null,
-    val model: NpcModel = NpcModel.STEVE,
-    val skin: NpcSkin? = null,
+    val model: NpcModel = NpcDefaults.DEFAULT_MODEL,
+    val skin: NpcSkin? = NpcDefaults.DEFAULT_SKIN,
     val lookAt: NpcLookAtConfig = NpcLookAtConfig(),
     val leftAction: ApiNpcActionRequest = ApiNpcActionRequest(),
     val rightAction: ApiNpcActionRequest = ApiNpcActionRequest(),

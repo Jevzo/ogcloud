@@ -1,12 +1,12 @@
 package io.ogwars.cloud.paper.npc
 
-import com.google.gson.Gson
 import io.ogwars.cloud.common.event.NpcSyncEvent
 import io.ogwars.cloud.common.event.NpcSyncOperation
 import io.ogwars.cloud.common.kafka.KafkaConsumerRecoverySettings
 import io.ogwars.cloud.common.kafka.KafkaTopics
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.listener.ManagedKafkaStringConsumer
+import com.google.gson.Gson
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.concurrent.CompletableFuture

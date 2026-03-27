@@ -1,5 +1,6 @@
-package io.ogwars.cloud.paper.npc
+package io.ogwars.cloud.paper.listener
 
+import io.ogwars.cloud.paper.npc.NpcManager
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
