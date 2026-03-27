@@ -2,6 +2,7 @@ package io.ogwars.cloud.common.kafka
 
 object KafkaTopics {
     const val LIVE_CHANNEL = "ogcloud.live.channel"
+    const val NPC_SYNC = "ogcloud.npc.sync"
     const val SERVER_LIFECYCLE = "ogcloud.server.lifecycle"
     const val SERVER_REQUEST = "ogcloud.server.request"
     const val SERVER_STOP = "ogcloud.server.stop"

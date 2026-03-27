@@ -4,6 +4,10 @@ class GroupNotFoundException(
     name: String,
 ) : RuntimeException("Group not found: $name")
 
+class NpcNotFoundException(
+    id: String,
+) : RuntimeException("NPC not found: $id")
+
 class GroupDeletionTimeoutException(
     name: String,
     activeServerIds: Collection<String>,
@@ -29,6 +33,10 @@ class ServerNotFoundException(
 class GroupAlreadyExistsException(
     name: String,
 ) : RuntimeException("Group already exists: $name")
+
+class NpcAlreadyExistsException(
+    id: String,
+) : RuntimeException("NPC already exists: $id")
 
 class PermissionGroupNotFoundException(
     name: String,

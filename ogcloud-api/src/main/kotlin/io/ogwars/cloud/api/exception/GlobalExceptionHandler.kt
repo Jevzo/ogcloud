@@ -17,6 +17,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(
         GroupNotFoundException::class,
+        NpcNotFoundException::class,
         ServerNotFoundException::class,
         PermissionGroupNotFoundException::class,
         PlayerNotFoundException::class,
@@ -30,6 +31,7 @@ class GlobalExceptionHandler {
         GroupDeletionTimeoutException::class,
         GroupRestartTimeoutException::class,
         GroupAlreadyExistsException::class,
+        NpcAlreadyExistsException::class,
         PermissionGroupAlreadyExistsException::class,
         PermissionReenableSyncInProgressException::class,
         WebUserAlreadyExistsException::class,
