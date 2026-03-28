@@ -1,6 +1,7 @@
 package io.ogwars.cloud.paper.listener
 
 import io.ogwars.cloud.paper.network.NetworkFeatureState
+import io.ogwars.cloud.paper.npc.NpcManager
 import io.ogwars.cloud.paper.permission.PermissionInjector
 import io.ogwars.cloud.paper.permission.PermissionManager
 import io.ogwars.cloud.paper.redis.RedisManager
@@ -18,6 +19,7 @@ class PlayerJoinListener(
     private val permissionManager: PermissionManager,
     private val tablistTeamManager: TablistTeamManager,
     private val networkFeatureState: NetworkFeatureState,
+    private val npcManager: NpcManager,
     private val redisManager: RedisManager,
     private val logger: Logger,
 ) : Listener {
@@ -39,6 +41,7 @@ class PlayerJoinListener(
         val player = event.player
 
         tablistTeamManager.removePlayer(player)
+        npcManager.handleViewerQuit(player.uniqueId)
         permissionManager.removePlayer(player.uniqueId)
         PermissionInjector.uninject(player, logger)
     }

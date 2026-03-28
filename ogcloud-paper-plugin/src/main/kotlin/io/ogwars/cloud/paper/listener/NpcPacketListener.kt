@@ -8,25 +8,24 @@ import com.comphenix.protocol.events.PacketContainer
 import com.comphenix.protocol.events.PacketEvent
 import com.comphenix.protocol.wrappers.EnumWrappers
 import com.comphenix.protocol.wrappers.WrappedEnumEntityUseAction
-import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 
 class NpcPacketListener(
-    private val plugin: JavaPlugin,
+    private val javaPlugin: JavaPlugin,
     private val npcManager: NpcManager,
 ) : PacketAdapter(
-        params(plugin, PacketType.Play.Client.USE_ENTITY).optionAsync(),
+        params(javaPlugin, PacketType.Play.Client.USE_ENTITY).optionAsync(),
     ) {
     override fun onPacketReceiving(event: PacketEvent) {
-        val player = event.player as? Player ?: return
+        val player = event.player ?: return
         val packet = event.packet
         val npcId = npcManager.findNpcIdByEntityId(packet.integers.read(0)) ?: return
         val clickType = resolveClickType(packet) ?: return
 
         event.isCancelled = true
 
-        plugin.server.scheduler.runTask(
-            plugin,
+        javaPlugin.server.scheduler.runTask(
+            javaPlugin,
             Runnable {
                 if (player.isOnline) {
                     npcManager.handleInteraction(npcId, player, clickType)

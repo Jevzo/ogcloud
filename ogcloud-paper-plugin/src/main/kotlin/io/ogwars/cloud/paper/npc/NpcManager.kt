@@ -36,6 +36,7 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.scoreboard.Team
+import java.lang.reflect.Type
 import java.nio.charset.StandardCharsets
 import java.util.EnumSet
 import java.util.UUID
@@ -640,7 +641,7 @@ class NpcManager(
                 listOf(
                     WrappedDataValue(
                         PLAYER_SKIN_PARTS_INDEX,
-                        WrappedDataWatcher.Registry.get(Byte::class.javaObjectType),
+                        WrappedDataWatcher.Registry.get(Byte::class.javaObjectType as Type),
                         PLAYER_SKIN_PARTS_MASK,
                     ),
                 ),
@@ -958,8 +959,7 @@ class NpcManager(
         private const val SINGLE_LINE_Y_OFFSET = 2.20
         private const val PLAYER_SKIN_PARTS_INDEX = 16
         private const val TABLIST_LATENCY = 20
-        private const val TEXTURE_PROPERTY_NAME = "textures"
-        private val PLAYER_SKIN_PARTS_MASK: Byte = 0xff.toByte()
+        private const val PLAYER_SKIN_PARTS_MASK: Byte = 0xff.toByte()
         private val PLAYER_INFO_ACTIONS =
             EnumSet.of(
                 EnumWrappers.PlayerInfoAction.ADD_PLAYER,

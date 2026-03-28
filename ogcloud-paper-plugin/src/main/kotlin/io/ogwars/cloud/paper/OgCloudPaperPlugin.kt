@@ -145,6 +145,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 permissionManager,
                 tablistTeamManager,
                 networkFeatureState,
+                npcManager,
                 redisManager,
                 logger,
             ),
@@ -154,7 +155,6 @@ class OgCloudPaperPlugin : JavaPlugin() {
             ChatListener(permissionManager, networkFeatureState),
             this,
         )
-        server.pluginManager.registerEvents(NpcPlayerListener(npcManager), this)
     }
 
     private fun registerPublicApi() {
