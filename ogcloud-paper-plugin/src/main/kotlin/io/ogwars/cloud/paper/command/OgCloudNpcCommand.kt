@@ -4,7 +4,6 @@ import io.ogwars.cloud.common.model.NpcClickActionType
 import io.ogwars.cloud.common.model.NpcDefinition
 import io.ogwars.cloud.common.model.NpcLookAtConfig
 import io.ogwars.cloud.common.model.NpcModel
-import io.ogwars.cloud.common.model.NpcSkin
 import io.ogwars.cloud.common.model.NpcTransferStrategy
 import io.ogwars.cloud.paper.api.ApiClient
 import io.ogwars.cloud.paper.api.ApiCreateNpcRequest
@@ -13,6 +12,7 @@ import io.ogwars.cloud.paper.api.ApiNpcResponse
 import io.ogwars.cloud.paper.api.ApiNpcTransferActionRequest
 import io.ogwars.cloud.paper.api.ApiUpdateNpcRequest
 import io.ogwars.cloud.paper.api.toDefinition
+import io.ogwars.cloud.paper.message.PaperMessages
 import io.ogwars.cloud.paper.npc.NpcManager
 import io.ogwars.cloud.paper.npc.npcLocationFromBukkit
 import io.ogwars.cloud.paper.npc.toBukkit
@@ -42,7 +42,7 @@ class OgCloudNpcCommand(
         args: Array<out String>,
     ): Boolean {
         if (!sender.hasPermission(PERMISSION)) {
-            sendError(sender, "Missing permission: $PERMISSION")
+            sendErrorTemplate(sender, PaperMessages.Command.Npc.MISSING_PERMISSION, "permission" to PERMISSION)
             return true
         }
 
@@ -129,7 +129,7 @@ class OgCloudNpcCommand(
             4 ->
                 when (args[1].lowercase(Locale.ROOT)) {
                     "model" -> mutableListOf("steve", "alex")
-                    "skin" -> mutableListOf("signed", "unsigned", "clear")
+                    "skin" -> mutableListOf(PaperMessages.Common.CLEAR)
                     "lookat" -> mutableListOf("true", "false")
                     "leftaction",
                     "rightaction",
@@ -164,21 +164,25 @@ class OgCloudNpcCommand(
         val group = args.getOrNull(2)
         runAsync(
             sender = sender,
-            failureMessage = "Failed to list NPCs",
+            failureMessage = PaperMessages.Command.Npc.LIST_FAILURE,
             block = { apiClient.listNpcs(group).join() },
             onSuccess = onSuccess@{ npcs: List<ApiNpcResponse> ->
                 if (npcs.isEmpty()) {
-                    sendPrefixed(sender, "No NPCs found.")
+                    sendPrefixed(sender, PaperMessages.Command.Npc.LIST_EMPTY)
                     return@onSuccess
                 }
 
-                sendPrefixed(sender, "NPCs: ${npcs.size}")
+                sendPrefixedTemplate(sender, PaperMessages.Command.Npc.LIST_HEADER, "count" to npcs.size)
                 npcs.sortedWith(compareBy<ApiNpcResponse> { it.group }.thenBy { it.id }).forEach { npc ->
-                    sendRaw(
+                    sendRawTemplate(
                         sender,
-                        "&8- &f${npc.id} &7group=&f${npc.group} &7world=&f${npc.location.world} &7x=&f${format(
-                            npc.location.x,
-                        )} &7y=&f${format(npc.location.y)} &7z=&f${format(npc.location.z)}",
+                        PaperMessages.Command.Npc.LIST_ENTRY,
+                        "npc_id" to npc.id,
+                        "group" to npc.group,
+                        "world" to npc.location.world,
+                        "x" to format(npc.location.x),
+                        "y" to format(npc.location.y),
+                        "z" to format(npc.location.z),
                     )
                 }
             },
@@ -194,7 +198,7 @@ class OgCloudNpcCommand(
             val player = requirePlayer(sender) ?: return true
             val npc = npcManager.findLookTarget(player)
             if (npc == null) {
-                sendError(sender, "You are not looking at a local NPC.")
+                sendError(sender, PaperMessages.Command.Npc.INFO_LOOK_TARGET_MISSING)
                 return true
             }
 
@@ -205,7 +209,7 @@ class OgCloudNpcCommand(
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
         runAsync(
             sender = sender,
-            failureMessage = "Failed to fetch NPC info",
+            failureMessage = PaperMessages.Command.Npc.INFO_FAILURE,
             block = { apiClient.getNpc(id).join() },
             onSuccess = { npc: ApiNpcResponse -> sendNpcInfo(sender, npc.toDefinition()) },
         )
@@ -230,11 +234,16 @@ class OgCloudNpcCommand(
 
         runAsync(
             sender = sender,
-            failureMessage = "Failed to create NPC",
+            failureMessage = PaperMessages.Command.Npc.CREATE_FAILURE,
             block = { apiClient.createNpc(request).join() },
             onSuccess = { npc: ApiNpcResponse ->
                 applyLocalNpc(npc)
-                sendPrefixed(sender, "Created NPC ${npc.id} for group ${npc.group}.")
+                sendPrefixedTemplate(
+                    sender,
+                    PaperMessages.Command.Npc.CREATE_SUCCESS,
+                    "npc_id" to npc.id,
+                    "group" to npc.group,
+                )
             },
         )
         return true
@@ -247,7 +256,7 @@ class OgCloudNpcCommand(
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
         runAsync(
             sender = sender,
-            failureMessage = "Failed to delete NPC",
+            failureMessage = PaperMessages.Command.Npc.DELETE_FAILURE,
             block = {
                 apiClient.deleteNpc(id).join()
                 id
@@ -256,7 +265,7 @@ class OgCloudNpcCommand(
                 if (npcManager.getLocalNpc(deletedId) != null) {
                     npcManager.removeManagedNpc(deletedId)
                 }
-                sendPrefixed(sender, "Deleted NPC $deletedId.")
+                sendPrefixedTemplate(sender, PaperMessages.Command.Npc.DELETE_SUCCESS, "npc_id" to deletedId)
             },
         )
         return true
@@ -273,7 +282,7 @@ class OgCloudNpcCommand(
             sender = sender,
             id = id,
             request = ApiUpdateNpcRequest(location = npcLocationFromBukkit(player.location)),
-            successMessage = "Moved NPC $id to your location.",
+            successMessage = formatMessage(PaperMessages.Command.Npc.MOVE_HERE_SUCCESS, "npc_id" to id),
         )
         return true
     }
@@ -287,18 +296,22 @@ class OgCloudNpcCommand(
         val npc = npcManager.getLocalNpc(id)
 
         if (npc == null) {
-            sendError(sender, "NPC $id is not loaded on this server.")
+            sendErrorTemplate(sender, PaperMessages.Command.Npc.TELEPORT_NOT_LOADED, "npc_id" to id)
             return true
         }
 
         val location = resolveLocation(npc)
         if (location == null) {
-            sendError(sender, "NPC world ${npc.location.world} is not loaded on this server.")
+            sendErrorTemplate(
+                sender,
+                PaperMessages.Command.Npc.TELEPORT_WORLD_NOT_LOADED,
+                "world" to npc.location.world,
+            )
             return true
         }
 
         player.teleport(location)
-        sendPrefixed(sender, "Teleported to NPC $id.")
+        sendPrefixedTemplate(sender, PaperMessages.Command.Npc.TELEPORT_SUCCESS, "npc_id" to id)
         return true
     }
 
@@ -308,7 +321,12 @@ class OgCloudNpcCommand(
     ): Boolean {
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
         val parsed = parseTextValue(sender, args, 3, "title") ?: return true
-        updateNpc(sender, id, ApiUpdateNpcRequest(title = parsed.value), "Updated title for NPC $id.")
+        updateNpc(
+            sender = sender,
+            id = id,
+            request = ApiUpdateNpcRequest(title = parsed.value),
+            successMessage = formatMessage(PaperMessages.Command.Npc.TITLE_SUCCESS, "npc_id" to id),
+        )
         return true
     }
 
@@ -318,7 +336,12 @@ class OgCloudNpcCommand(
     ): Boolean {
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
         val parsed = parseTextValue(sender, args, 3, "subtitle") ?: return true
-        updateNpc(sender, id, ApiUpdateNpcRequest(subtitle = parsed.value), "Updated subtitle for NPC $id.")
+        updateNpc(
+            sender = sender,
+            id = id,
+            request = ApiUpdateNpcRequest(subtitle = parsed.value),
+            successMessage = formatMessage(PaperMessages.Command.Npc.SUBTITLE_SUCCESS, "npc_id" to id),
+        )
         return true
     }
 
@@ -330,11 +353,16 @@ class OgCloudNpcCommand(
         val model =
             runCatching { NpcModel.valueOf(args.getOrNull(3)?.uppercase(Locale.ROOT) ?: "") }
                 .getOrElse {
-                    sendError(sender, "Model must be steve or alex.")
+                    sendError(sender, PaperMessages.Command.Npc.MODEL_INVALID)
                     return true
                 }
 
-        updateNpc(sender, id, ApiUpdateNpcRequest(model = model), "Updated model for NPC $id.")
+        updateNpc(
+            sender = sender,
+            id = id,
+            request = ApiUpdateNpcRequest(model = model),
+            successMessage = formatMessage(PaperMessages.Command.Npc.MODEL_SUCCESS, "npc_id" to id),
+        )
         return true
     }
 
@@ -343,36 +371,17 @@ class OgCloudNpcCommand(
         args: Array<out String>,
     ): Boolean {
         val id = args.getOrNull(2) ?: return sendUsageAndStop(sender)
-        return when (args.getOrNull(3)?.lowercase(Locale.ROOT)) {
-            "clear" -> {
-                updateNpc(
-                    sender,
-                    id,
-                    ApiUpdateNpcRequest(clearSkin = true),
-                    "Reset skin for NPC $id to the default profile.",
-                )
-                true
-            }
-
-            "unsigned" -> {
-                val value = args.getOrNull(4) ?: return sendUsageAndStop(sender)
-                updateNpc(sender, id, ApiUpdateNpcRequest(skin = NpcSkin(value, null)), "Updated skin for NPC $id.")
-                true
-            }
-
-            "signed" -> {
-                val value = args.getOrNull(4) ?: return sendUsageAndStop(sender)
-                val signature = args.getOrNull(5) ?: return sendUsageAndStop(sender)
-                updateNpc(
-                    sender,
-                    id,
-                    ApiUpdateNpcRequest(skin = NpcSkin(value, signature)),
-                    "Updated skin for NPC $id.",
-                )
-                true
-            }
-
-            else -> sendUsageAndStop(sender)
+        return if (args.size == 4 && args[3].equals(PaperMessages.Common.CLEAR, ignoreCase = true)) {
+            updateNpc(
+                sender = sender,
+                id = id,
+                request = ApiUpdateNpcRequest(clearSkin = true),
+                successMessage = formatMessage(PaperMessages.Command.Npc.SKIN_CLEAR_SUCCESS, "npc_id" to id),
+            )
+            true
+        } else {
+            sendPrefixed(sender, PaperMessages.Command.Npc.SKIN_USAGE)
+            true
         }
     }
 
@@ -384,18 +393,16 @@ class OgCloudNpcCommand(
         val enabled =
             args.getOrNull(3)?.toBooleanStrictOrNull()
                 ?: run {
-                    sendError(sender, "lookat requires true or false.")
+                    sendError(sender, PaperMessages.Command.Npc.LOOK_AT_INVALID)
                     return true
                 }
-        val radius =
-            args.getOrNull(4)?.toDoubleOrNull()
-                ?: DEFAULT_LOOK_AT_RADIUS
+        val radius = args.getOrNull(4)?.toDoubleOrNull() ?: DEFAULT_LOOK_AT_RADIUS
 
         updateNpc(
-            sender,
-            id,
-            ApiUpdateNpcRequest(lookAt = NpcLookAtConfig(enabled, radius)),
-            "Updated look-at settings for NPC $id.",
+            sender = sender,
+            id = id,
+            request = ApiUpdateNpcRequest(lookAt = NpcLookAtConfig(enabled, radius)),
+            successMessage = formatMessage(PaperMessages.Command.Npc.LOOK_AT_SUCCESS, "npc_id" to id),
         )
         return true
     }
@@ -434,7 +441,17 @@ class OgCloudNpcCommand(
             }
 
         val side = if (left) "left" else "right"
-        updateNpc(sender, id, request, "Updated $side click action for NPC $id.")
+        updateNpc(
+            sender = sender,
+            id = id,
+            request = request,
+            successMessage =
+                formatMessage(
+                    PaperMessages.Command.Npc.ACTION_SUCCESS,
+                    "side" to side,
+                    "npc_id" to id,
+                ),
+        )
         return true
     }
 
@@ -446,7 +463,7 @@ class OgCloudNpcCommand(
     ) {
         runAsync(
             sender = sender,
-            failureMessage = "Failed to update NPC",
+            failureMessage = PaperMessages.Command.Npc.UPDATE_FAILURE,
             block = { apiClient.updateNpc(id, request).join() },
             onSuccess = { npc: ApiNpcResponse ->
                 applyLocalNpc(npc)
@@ -468,32 +485,50 @@ class OgCloudNpcCommand(
         sender: CommandSender,
         npc: NpcDefinition,
     ) {
-        sendPrefixed(sender, "NPC ${npc.id}")
-        sendRaw(sender, "&8- &7group: &f${npc.group}")
-        sendRaw(
+        sendPrefixedTemplate(sender, PaperMessages.Command.Npc.INFO_HEADER, "npc_id" to npc.id)
+        sendRawTemplate(sender, PaperMessages.Command.Npc.INFO_GROUP, "group" to npc.group)
+        sendRawTemplate(
             sender,
-            "&8- &7location: &f${npc.location.world} &7(${format(
-                npc.location.x,
-            )}, ${format(
-                npc.location.y,
-            )}, ${format(
-                npc.location.z,
-            )}) &7yaw=&f${format(npc.location.yaw.toDouble())} &7pitch=&f${format(npc.location.pitch.toDouble())}",
+            PaperMessages.Command.Npc.INFO_LOCATION,
+            "world" to npc.location.world,
+            "x" to format(npc.location.x),
+            "y" to format(npc.location.y),
+            "z" to format(npc.location.z),
+            "yaw" to format(npc.location.yaw.toDouble()),
+            "pitch" to format(npc.location.pitch.toDouble()),
         )
-        sendRaw(sender, "&8- &7title: &f${npc.title ?: "off"}")
-        sendRaw(sender, "&8- &7subtitle: &f${npc.subtitle ?: "off"}")
-        sendRaw(sender, "&8- &7model: &f${npc.model.name.lowercase(Locale.ROOT)}")
+        sendRawTemplate(
+            sender,
+            PaperMessages.Command.Npc.INFO_TITLE,
+            "title" to (npc.title ?: PaperMessages.Common.OFF),
+        )
+        sendRawTemplate(
+            sender,
+            PaperMessages.Command.Npc.INFO_SUBTITLE,
+            "subtitle" to (npc.subtitle ?: PaperMessages.Common.OFF),
+        )
+        sendRawTemplate(
+            sender,
+            PaperMessages.Command.Npc.INFO_MODEL,
+            "model" to npc.model.name.lowercase(Locale.ROOT),
+        )
+
         val skin = npc.skin
         val skinState =
             when {
-                skin == null -> "clear"
-                skin.textureSignature == null -> "unsigned"
-                else -> "signed"
+                skin == null -> PaperMessages.Common.CLEAR
+                skin.textureSignature == null -> PaperMessages.Command.Npc.INFO_SKIN_UNSIGNED
+                else -> PaperMessages.Command.Npc.INFO_SKIN_SIGNED
             }
-        sendRaw(sender, "&8- &7skin: &f$skinState")
-        sendRaw(sender, "&8- &7look-at: &f${npc.lookAt.enabled} &7radius=&f${format(npc.lookAt.radius)}")
-        sendRaw(sender, "&8- &7left: &f${formatAction(npc, left = true)}")
-        sendRaw(sender, "&8- &7right: &f${formatAction(npc, left = false)}")
+        sendRawTemplate(sender, PaperMessages.Command.Npc.INFO_SKIN, "skin" to skinState)
+        sendRawTemplate(
+            sender,
+            PaperMessages.Command.Npc.INFO_LOOK_AT,
+            "enabled" to npc.lookAt.enabled,
+            "radius" to format(npc.lookAt.radius),
+        )
+        sendRawTemplate(sender, PaperMessages.Command.Npc.INFO_LEFT, "action" to formatAction(npc, left = true))
+        sendRawTemplate(sender, PaperMessages.Command.Npc.INFO_RIGHT, "action" to formatAction(npc, left = false))
     }
 
     private fun formatAction(
@@ -502,15 +537,19 @@ class OgCloudNpcCommand(
     ): String {
         val action = if (left) npc.leftAction else npc.rightAction
         if (action.type == NpcClickActionType.NONE || action.targetGroup.isNullOrBlank()) {
-            return "none"
+            return PaperMessages.Common.NONE
         }
 
         val strategy =
             action.routingStrategy
                 ?.name
                 ?.lowercase(Locale.ROOT)
-                ?.replace('_', '-') ?: "network-default"
-        return "transfer ${action.targetGroup} ($strategy)"
+                ?.replace('_', '-') ?: PaperMessages.Common.NETWORK_DEFAULT
+        return formatMessage(
+            PaperMessages.Command.Npc.INFO_ACTION_TRANSFER,
+            "group" to action.targetGroup,
+            "strategy" to strategy,
+        )
     }
 
     private fun parseTextValue(
@@ -521,17 +560,24 @@ class OgCloudNpcCommand(
     ): ParsedTextValue? {
         val parts = args.drop(startIndex)
         if (parts.isEmpty()) {
-            sendError(sender, "$fieldName requires text or off.")
+            sendErrorTemplate(sender, PaperMessages.Command.Npc.TEXT_VALUE_REQUIRED, "field" to fieldName)
             return null
         }
 
         val raw = parts.joinToString(" ").trim()
         if (raw.isEmpty()) {
-            sendError(sender, "$fieldName requires text or off.")
+            sendErrorTemplate(sender, PaperMessages.Command.Npc.TEXT_VALUE_REQUIRED, "field" to fieldName)
             return null
         }
 
-        return ParsedTextValue(value = if (raw.equals("off", ignoreCase = true)) null else raw)
+        return ParsedTextValue(
+            value =
+                if (raw.equals(PaperMessages.Common.OFF, ignoreCase = true)) {
+                    null
+                } else {
+                    raw
+                },
+        )
     }
 
     private fun parseStrategy(
@@ -540,7 +586,7 @@ class OgCloudNpcCommand(
     ): NpcTransferStrategy? =
         runCatching { NpcTransferStrategy.valueOf(raw.replace('-', '_').uppercase(Locale.ROOT)) }
             .getOrElse {
-                sendError(sender, "Invalid routing strategy: $raw")
+                sendErrorTemplate(sender, PaperMessages.Command.Npc.ROUTING_STRATEGY_INVALID, "strategy" to raw)
                 null
             }
 
@@ -549,7 +595,7 @@ class OgCloudNpcCommand(
 
     private fun requirePlayer(sender: CommandSender): Player? {
         if (sender !is Player) {
-            sendError(sender, "This command must be executed by a player.")
+            sendError(sender, PaperMessages.Command.Npc.PLAYER_ONLY)
             return null
         }
         return sender
@@ -570,7 +616,14 @@ class OgCloudNpcCommand(
                     }.onFailure { exception ->
                         plugin.server.scheduler.runTask(
                             plugin,
-                            Runnable { sendError(sender, "$failureMessage: ${exception.message ?: "unknown error"}") },
+                            Runnable {
+                                sendErrorTemplate(
+                                    sender,
+                                    PaperMessages.Command.Npc.FAILURE_TEMPLATE,
+                                    "message" to failureMessage,
+                                    "error" to (exception.message ?: PaperMessages.Common.UNKNOWN_ERROR),
+                                )
+                            },
                         )
                     }
             },
@@ -578,28 +631,49 @@ class OgCloudNpcCommand(
     }
 
     private fun sendUsage(sender: CommandSender) {
-        sendPrefixed(sender, "Use /ogcloud npc ...")
+        sendPrefixed(sender, PaperMessages.Command.Npc.ROOT_USAGE)
     }
 
     private fun sendNpcUsage(sender: CommandSender) {
-        sendPrefixed(
-            sender,
-            "Subcommands: list, info, create, delete, movehere, teleport, title, subtitle, model, skin, lookat, leftaction, rightaction",
-        )
+        sendPrefixed(sender, PaperMessages.Command.Npc.SUBCOMMAND_USAGE)
     }
 
     private fun sendPrefixed(
         sender: CommandSender,
         message: String,
     ) {
-        sendRaw(sender, "$PREFIX&7$message")
+        sendRaw(sender, "${PaperMessages.Prefix.COMMAND}&7$message")
     }
 
     private fun sendError(
         sender: CommandSender,
         message: String,
     ) {
-        sendRaw(sender, "$PREFIX&c$message")
+        sendRaw(sender, "${PaperMessages.Prefix.COMMAND}&c$message")
+    }
+
+    private fun sendPrefixedTemplate(
+        sender: CommandSender,
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ) {
+        sendPrefixed(sender, formatMessage(template, *placeholders))
+    }
+
+    private fun sendErrorTemplate(
+        sender: CommandSender,
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ) {
+        sendError(sender, formatMessage(template, *placeholders))
+    }
+
+    private fun sendRawTemplate(
+        sender: CommandSender,
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ) {
+        sendRaw(sender, formatMessage(template, *placeholders))
     }
 
     private fun sendRaw(
@@ -614,11 +688,15 @@ class OgCloudNpcCommand(
         return true
     }
 
+    private fun formatMessage(
+        template: String,
+        vararg placeholders: Pair<String, Any?>,
+    ): String = PaperMessages.format(template, *placeholders)
+
     private fun format(value: Double): String = FORMAT.format(value)
 
     companion object {
         private const val PERMISSION = "ogcloud.admin.npc"
-        private const val PREFIX = "&6OgCloud &8| "
         private const val DEFAULT_LOOK_AT_RADIUS = 4.0
         private val FORMAT = DecimalFormat("0.##")
     }

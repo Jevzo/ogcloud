@@ -11,7 +11,11 @@ import io.ogwars.cloud.paper.gamestate.GameStateManager
 import io.ogwars.cloud.paper.heartbeat.HeartbeatTask
 import io.ogwars.cloud.paper.kafka.KafkaManager
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
-import io.ogwars.cloud.paper.listener.*
+import io.ogwars.cloud.paper.listener.CommandExecuteConsumer
+import io.ogwars.cloud.paper.listener.LifecycleConsumer
+import io.ogwars.cloud.paper.listener.NetworkUpdateConsumer
+import io.ogwars.cloud.paper.listener.PermissionUpdateConsumer
+import io.ogwars.cloud.paper.listener.PlayerListener
 import io.ogwars.cloud.paper.network.NetworkFeatureState
 import io.ogwars.cloud.paper.npc.NpcManager
 import io.ogwars.cloud.paper.npc.NpcSyncConsumer
@@ -129,7 +133,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
             )
         apiClient = ApiClient(settings.apiUrl, settings.apiEmail, settings.apiPassword, logger)
         liveChannelManager = LiveChannelManager(serverId, kafkaSendDispatcher, logger)
-        npcManager = NpcManager(this, kafkaSendDispatcher, logger).also(NpcManager::start)
+        npcManager = NpcManager(this, kafkaSendDispatcher, redisManager, logger).also(NpcManager::start)
         heartbeatTask = HeartbeatTask(this, kafkaSendDispatcher).also(HeartbeatTask::start)
     }
 
@@ -140,7 +144,7 @@ class OgCloudPaperPlugin : JavaPlugin() {
 
     private fun registerListeners() {
         server.pluginManager.registerEvents(
-            PlayerJoinListener(
+            PlayerListener(
                 this,
                 permissionManager,
                 tablistTeamManager,
@@ -149,10 +153,6 @@ class OgCloudPaperPlugin : JavaPlugin() {
                 redisManager,
                 logger,
             ),
-            this,
-        )
-        server.pluginManager.registerEvents(
-            ChatListener(permissionManager, networkFeatureState),
             this,
         )
     }

@@ -28,6 +28,8 @@ internal data class NpcEntry(
     val rightSubscribers: MutableMap<UUID, Consumer<OgCloudNpcInteraction>> = linkedMapOf(),
     var titleStand: ArmorStand? = null,
     var subtitleStand: ArmorStand? = null,
+    var renderedTitle: String? = null,
+    var renderedSubtitle: String? = null,
 ) {
     val worldName: String
         get() = definition.location.world
@@ -58,6 +60,11 @@ internal data class RuntimeNpcConfig(
     val lookAt: NpcLookAtConfig,
     val leftSubscribers: Map<UUID, Consumer<OgCloudNpcInteraction>>,
     val rightSubscribers: Map<UUID, Consumer<OgCloudNpcInteraction>>,
+)
+
+internal data class NpcGroupStats(
+    val players: Int = 0,
+    val servers: Int = 0,
 )
 
 internal fun npcLocationFromBukkit(location: Location): NpcLocation =

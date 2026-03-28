@@ -8,8 +8,11 @@ import io.ogwars.cloud.common.model.NpcLookAtConfig
 import io.ogwars.cloud.common.model.NpcModel
 import io.ogwars.cloud.common.model.NpcSkin
 import io.ogwars.cloud.common.model.NpcTransferStrategy
+import io.ogwars.cloud.common.model.ServerState
+import io.ogwars.cloud.common.model.toRunningServer
 import io.ogwars.cloud.paper.kafka.KafkaSendDispatcher
 import io.ogwars.cloud.paper.listener.NpcPacketListener
+import io.ogwars.cloud.paper.redis.RedisManager
 import io.ogwars.cloud.server.api.OgCloudNpcClickType
 import io.ogwars.cloud.server.api.OgCloudNpcInteraction
 import io.ogwars.cloud.server.api.OgCloudRuntimeNpcBuilder
@@ -50,6 +53,7 @@ import kotlin.math.sqrt
 class NpcManager(
     private val plugin: JavaPlugin,
     private val kafkaSendDispatcher: KafkaSendDispatcher,
+    private val redisManager: RedisManager,
     private val logger: Logger,
 ) {
     private val gson = Gson()
@@ -58,8 +62,13 @@ class NpcManager(
     private val packetListener = NpcPacketListener(plugin, this)
     private val entries = LinkedHashMap<String, NpcEntry>()
     private val entityIds = ConcurrentHashMap<Int, String>()
+    private val groupStats = ConcurrentHashMap<String, NpcGroupStats>()
     private val nextEntityId = AtomicInteger(FIRST_ENTITY_ID)
     private var syncTask: BukkitTask? = null
+    private var placeholderSyncTask: BukkitTask? = null
+
+    @Volatile
+    private var trackedGroups: Set<String> = emptySet()
 
     fun start() {
         protocolManager.addPacketListener(packetListener)
@@ -70,16 +79,30 @@ class NpcManager(
                 SYNC_INTERVAL_TICKS,
                 SYNC_INTERVAL_TICKS,
             )
+        placeholderSyncTask =
+            plugin.server.scheduler.runTaskTimerAsynchronously(
+                plugin,
+                Runnable {
+                    runCatching(::refreshGroupStats)
+                        .onFailure { logger.warning("Failed to refresh NPC placeholder stats: ${it.message}") }
+                },
+                0L,
+                PLACEHOLDER_SYNC_INTERVAL_TICKS,
+            )
     }
 
     fun shutdown() {
         syncTask?.cancel()
         syncTask = null
+        placeholderSyncTask?.cancel()
+        placeholderSyncTask = null
         protocolManager.removePacketListener(packetListener)
 
         entries.values.toList().forEach(::removeEntry)
         entries.clear()
         entityIds.clear()
+        groupStats.clear()
+        trackedGroups = emptySet()
     }
 
     fun runtimeNpc(id: String): OgCloudRuntimeNpcBuilder = RuntimeNpcBuilder(this, id)
@@ -96,7 +119,8 @@ class NpcManager(
         if (existing == null) {
             val entry = createEntry(definition, managed = true)
             entries[entry.id] = entry
-            refreshArmorStands(entry)
+            refreshTrackedGroups()
+            syncDynamicText(entry, force = true)
             return
         }
 
@@ -168,7 +192,8 @@ class NpcManager(
         entry.rightSubscribers.putAll(config.rightSubscribers)
 
         entries[entry.id] = entry
-        refreshArmorStands(entry)
+        refreshTrackedGroups()
+        syncDynamicText(entry, force = true)
 
         return RuntimeNpcHandle(this, entry.id)
     }
@@ -263,6 +288,7 @@ class NpcManager(
 
     private fun tick() {
         entries.values.forEach { entry ->
+            syncDynamicText(entry)
             syncViewers(entry)
             updateLookAt(entry)
         }
@@ -339,12 +365,13 @@ class NpcManager(
 
         entry.definition = definition
         entry.currentRotation = Rotation(definition.location.yaw, definition.location.pitch)
+        refreshTrackedGroups()
 
         if (previous.model != definition.model) {
             entry.profileUuid = createProfileUuid(entry.id, definition.model)
         }
 
-        refreshArmorStands(entry)
+        syncDynamicText(entry, force = true)
 
         if (requiresRespawn) {
             respawnEntry(entry)
@@ -377,6 +404,10 @@ class NpcManager(
             )
         entityIds[entry.entityId] = entry.id
         return entry
+    }
+
+    private fun refreshTrackedGroups() {
+        trackedGroups = entries.values.map { it.definition.group }.toSet()
     }
 
     private fun syncViewers(entry: NpcEntry) {
@@ -452,28 +483,78 @@ class NpcManager(
                     entry.definition.lookAt.radius * entry.definition.lookAt.radius
             }.minByOrNull { player -> player.location.distanceSquared(npcLocation) }
 
-    private fun refreshArmorStands(entry: NpcEntry) {
+    private fun syncDynamicText(
+        entry: NpcEntry,
+        force: Boolean = false,
+    ) {
+        val renderedTitle = renderText(entry.definition.title, entry.definition.group)
+        val renderedSubtitle = renderText(entry.definition.subtitle, entry.definition.group)
+        if (!force && !shouldRefreshArmorStands(entry, renderedTitle, renderedSubtitle)) {
+            return
+        }
+
+        refreshArmorStands(entry, renderedTitle, renderedSubtitle)
+    }
+
+    private fun shouldRefreshArmorStands(
+        entry: NpcEntry,
+        renderedTitle: String?,
+        renderedSubtitle: String?,
+    ): Boolean {
+        if (renderedTitle != entry.renderedTitle || renderedSubtitle != entry.renderedSubtitle) {
+            return true
+        }
+
+        val world = Bukkit.getWorld(entry.worldName)
+        if (world == null) {
+            return entry.titleStand != null || entry.subtitleStand != null
+        }
+
+        if (renderedTitle.isNullOrBlank()) {
+            if (entry.titleStand != null) {
+                return true
+            }
+        } else if (!isArmorStandUsable(entry.titleStand, world)) {
+            return true
+        }
+
+        if (renderedSubtitle.isNullOrBlank()) {
+            return entry.subtitleStand != null
+        }
+
+        return !isArmorStandUsable(entry.subtitleStand, world)
+    }
+
+    private fun refreshArmorStands(
+        entry: NpcEntry,
+        renderedTitle: String?,
+        renderedSubtitle: String?,
+    ) {
         val world = Bukkit.getWorld(entry.worldName)
         if (world == null) {
             removeArmorStand(entry.titleStand)
             removeArmorStand(entry.subtitleStand)
             entry.titleStand = null
             entry.subtitleStand = null
+            entry.renderedTitle = renderedTitle
+            entry.renderedSubtitle = renderedSubtitle
             return
         }
 
         entry.titleStand =
             refreshArmorStand(
                 current = entry.titleStand,
-                rawText = entry.definition.title,
+                renderedText = renderedTitle,
                 location = armorStandLocation(world, entry.definition, titleLine = true),
             )
         entry.subtitleStand =
             refreshArmorStand(
                 current = entry.subtitleStand,
-                rawText = entry.definition.subtitle,
+                renderedText = renderedSubtitle,
                 location = armorStandLocation(world, entry.definition, titleLine = false),
             )
+        entry.renderedTitle = renderedTitle
+        entry.renderedSubtitle = renderedSubtitle
     }
 
     private fun removeEntry(entry: NpcEntry) {
@@ -482,6 +563,7 @@ class NpcManager(
         removeArmorStand(entry.subtitleStand)
         entries.remove(entry.id)
         entityIds.remove(entry.entityId)
+        refreshTrackedGroups()
     }
 
     private fun requireRuntimeEntry(id: String): NpcEntry {
@@ -722,10 +804,10 @@ class NpcManager(
 
     private fun refreshArmorStand(
         current: ArmorStand?,
-        rawText: String?,
+        renderedText: String?,
         location: Location,
     ): ArmorStand? {
-        if (rawText.isNullOrBlank()) {
+        if (renderedText.isNullOrBlank()) {
             removeArmorStand(current)
             return null
         }
@@ -736,9 +818,57 @@ class NpcManager(
                 ?: location.world.spawn(location, ArmorStand::class.java).apply(::configureArmorStand)
 
         stand.teleport(location)
-        stand.customName(legacySerializer.deserialize(rawText))
+        stand.customName(legacySerializer.deserialize(renderedText))
 
         return stand
+    }
+
+    private fun isArmorStandUsable(
+        stand: ArmorStand?,
+        world: World,
+    ): Boolean = stand != null && stand.isValid && stand.world.uid == world.uid
+
+    private fun renderText(
+        template: String?,
+        group: String,
+    ): String? {
+        if (template == null) {
+            return null
+        }
+
+        val stats = groupStats[group] ?: NpcGroupStats()
+        return template
+            .replace("%players%", stats.players.toString())
+            .replace("%servers%", stats.servers.toString())
+    }
+
+    private fun refreshGroupStats() {
+        val groups = trackedGroups
+        if (groups.isEmpty()) {
+            groupStats.clear()
+            return
+        }
+
+        val refreshed = LinkedHashMap<String, NpcGroupStats>(groups.size)
+        groups.forEach { group ->
+            val runningServers =
+                redisManager.getServerIdsByGroup(group)
+                    .mapNotNull(redisManager::getServerData)
+                    .map { it.toRunningServer() }
+                    .filter { it.state == ServerState.RUNNING }
+            refreshed[group] =
+                NpcGroupStats(
+                    players = runningServers.sumOf { it.playerCount },
+                    servers = runningServers.size,
+                )
+        }
+
+        refreshed.forEach { (group, stats) ->
+            groupStats[group] = stats
+        }
+        groupStats.keys
+            .filterNot { it in refreshed }
+            .forEach(groupStats::remove)
     }
 
     private fun configureArmorStand(stand: ArmorStand) {
@@ -954,6 +1084,7 @@ class NpcManager(
         private const val LOOK_TARGET_RADIUS_SQUARED = 1.75 * 1.75
         private const val NPC_EYE_HEIGHT = 1.62
         private const val TABLIST_REMOVE_DELAY_TICKS = 30L
+        private const val PLACEHOLDER_SYNC_INTERVAL_TICKS = 20L
         private const val TITLE_Y_OFFSET = 2.35
         private const val SUBTITLE_Y_OFFSET = 2.10
         private const val SINGLE_LINE_Y_OFFSET = 2.20
