@@ -13,7 +13,7 @@ mongodb:
     port: 27017
   persistence:
     enabled: true
-    storageClassName: ""
+    storageClassName: "standard"
     accessMode: ReadWriteOnce
     size: 1Gi
   resources:
@@ -33,7 +33,7 @@ redis:
     port: 6379
   persistence:
     enabled: true
-    storageClassName: ""
+    storageClassName: "standard"
     accessMode: ReadWriteOnce
     size: 512Mi
   resources:
@@ -62,7 +62,7 @@ minio:
     consolePort: 9001
   persistence:
     enabled: true
-    storageClassName: ""
+    storageClassName: "standard"
     accessMode: ReadWriteOnce
     size: 2Gi
   resources:
@@ -97,7 +97,7 @@ kafka:
     groupInitialRebalanceDelayMs: "0"
   persistence:
     enabled: true
-    storageClassName: ""
+    storageClassName: "standard"
     accessMode: ReadWriteOnce
     size: 1Gi
   resources:
