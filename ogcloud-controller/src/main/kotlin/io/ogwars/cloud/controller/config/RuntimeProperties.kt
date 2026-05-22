@@ -31,5 +31,5 @@ data class RuntimeProperties(
     val bungeeGuardUrl: String =
         "https://ci.lucko.me/job/BungeeGuard/lastStableBuild/artifact/bungeeguard-universal/target/BungeeGuard.jar",
     val protocolLibUrl: String =
-        "https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar",
+        "https://github.com/dmulloy2/ProtocolLib/releases/download/5.3.0/ProtocolLib.jar",
 )
