@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Single source of truth for JS/TS versions (AGENTS.md §9, D-0001). Renovate keeps them current (D-0052).
+catalog:
+  "@biomejs/biome": 2.6.3
+  i18next: 26.5.11
+  i18next-cli: 1.80.5
+  jscpd: 5.4.2
+  typescript: 7.0.2
+
+minimumReleaseAgeExclude:
+  - i18next-cli@1.80.5
+  - i18next@26.5.11
+
+# Native binaries arrive as optional dependencies; their install scripts are not needed.
+allowBuilds:
+  "@swc/core": false

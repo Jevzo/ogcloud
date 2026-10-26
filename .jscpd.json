@@ -1,0 +1,17 @@
+{
+  "threshold": 0,
+  "minTokens": 50,
+  "gitignore": true,
+  "absolute": false,
+  "reporters": ["console"],
+  "format": ["kotlin", "go", "typescript", "tsx", "javascript"],
+  "ignore": [
+    "**/build/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/generated/**",
+    "**/*.pb.go",
+    "**/*_test.go",
+    "**/src/test/**"
+  ]
+}

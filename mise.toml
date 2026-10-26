@@ -22,7 +22,7 @@ trivy = "0.76.1"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:duplication"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -64,3 +64,15 @@ for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
   (cd "$module" && golangci-lint fmt ./...)
 done
 """
+
+[tasks."check:ts"]
+description = "Biome lint and format check, then type-check every TS package"
+run = ["pnpm exec biome ci", "pnpm -r --if-present run typecheck"]
+
+[tasks."fmt:ts"]
+description = "Format and fix TypeScript, JavaScript and JSON"
+run = "pnpm exec biome check --write"
+
+[tasks."check:duplication"]
+description = "Duplicate-code check across Kotlin, Go and TypeScript (AGENTS.md §15)"
+run = "pnpm exec jscpd ."

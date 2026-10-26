@@ -1,0 +1,20 @@
+{
+  "name": "@ogcloud/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "extract": "i18next-cli extract"
+  },
+  "dependencies": {
+    "i18next": "catalog:"
+  },
+  "devDependencies": {
+    "i18next-cli": "catalog:",
+    "typescript": "catalog:"
+  }
+}
