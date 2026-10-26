@@ -50,7 +50,7 @@ class ConventionPluginsTest {
     }
 
     @Test
-    fun `mc-plugin targets the Minecraft JVM and relocates Kotlin`() {
+    fun `mc-plugin targets Java 25 and relocates Kotlin`() {
         project("ogcloud.mc-plugin")
         write("src/main/kotlin/Plugin.kt", "fun names(): List<String> = listOf(\"a\")\n")
 
@@ -67,7 +67,7 @@ class ConventionPluginsTest {
                     it.readUnsignedShort()
                     it.readUnsignedShort()
                 }
-            majorVersion shouldBe JAVA_21_CLASS_FILE_VERSION
+            majorVersion shouldBe JAVA_25_CLASS_FILE_VERSION
         }
     }
 
@@ -122,6 +122,6 @@ class ConventionPluginsTest {
     private fun run(vararg args: String): BuildResult = runner(*args).build()
 
     private companion object {
-        const val JAVA_21_CLASS_FILE_VERSION = 65
+        const val JAVA_25_CLASS_FILE_VERSION = 69
     }
 }
