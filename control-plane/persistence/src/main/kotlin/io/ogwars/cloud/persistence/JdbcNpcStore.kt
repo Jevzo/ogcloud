@@ -98,10 +98,20 @@ class JdbcNpcStore(
 
     private fun writeAction(action: NpcAction): String =
         when (action) {
-            is NpcAction.Transfer ->
+            is NpcAction.Transfer -> {
                 json.write(
-                    mapOf(TRANSFER to listOfNotNull("groupId" to action.groupId.value, action.routingStrategy?.let { "routingStrategy" to it.name }).toMap()),
+                    mapOf(
+                        TRANSFER to
+                            listOfNotNull(
+                                "groupId" to action.groupId.value,
+                                action.routingStrategy?.let {
+                                    "routingStrategy" to
+                                        it.name
+                                },
+                            ).toMap(),
+                    ),
                 )
+            }
         }
 
     private fun readAction(text: String): NpcAction {

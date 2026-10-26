@@ -13,5 +13,6 @@
     "**/*.pb.go",
     "**/*_test.go",
     "**/src/test/**"
-  ]
+  ],
+  "ignorePattern": ["import [a-zA-Z0-9_.]+"]
 }
