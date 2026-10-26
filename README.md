@@ -22,8 +22,12 @@ server, and ships the network features owners otherwise assemble from plugins.
 
 ## Development
 
-Tooling is pinned with [mise](https://mise.jdx.dev). Setup instructions follow
-once the toolchain lands.
+Every tool version is pinned in `mise.toml` and installed with [mise](https://mise.jdx.dev):
+
+```sh
+mise install      # JDK, Go, Node, pnpm, Terraform, Helm, minikube, Tilt, linters
+mise run check    # all quality gates
+```
 
 ## License
 
