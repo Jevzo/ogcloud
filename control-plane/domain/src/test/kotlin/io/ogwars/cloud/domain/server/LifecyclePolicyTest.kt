@@ -16,7 +16,7 @@ class LifecyclePolicyTest {
     private val dynamicGroup = group()
 
     @ParameterizedTest
-    @CsvSource("REQUESTED, 61", "PREPARING, 181", "STARTING, 91", "STOPPING, 181")
+    @CsvSource("REQUESTED, 301", "PREPARING, 181", "STARTING, 91", "STOPPING, 181")
     fun `servers stuck before RUNNING or in STOPPING are cleaned up`(
         state: ServerState,
         seconds: Long,

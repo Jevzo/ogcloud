@@ -8,7 +8,8 @@ import java.time.Instant
 
 /** How long a server may stay in each state before the controller intervenes. */
 data class LifecycleTimeouts(
-    val requested: Duration = Duration.ofSeconds(60),
+    /** Servers queue for the provisioner's rate limit (D-0075). */
+    val requested: Duration = Duration.ofMinutes(5),
     val preparing: Duration = Duration.ofMinutes(3),
     val starting: Duration = Duration.ofSeconds(90),
     val heartbeat: Duration = Duration.ofSeconds(30),
