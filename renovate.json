@@ -1,6 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ]
+  "baseBranchPatterns": ["v2"],
+  "useBaseBranchConfig": "merge"
 }
