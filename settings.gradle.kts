@@ -13,3 +13,4 @@ rootProject.name = "ogcloud"
 
 include(":contracts")
 include(":control-plane:domain")
+include(":control-plane:persistence")
