@@ -18,7 +18,10 @@ target design of the v2 rebuild; each section notes what is already built.
 | `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel and ACL support |
 | `control-plane/messaging` | Kafka publisher (idempotent, observed results), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
 | `control-plane/storage` | S3 object store: multipart streaming uploads, presigned URLs, stale-upload cleanup |
-| `control-plane/controller` | Skeleton: Lease leader election running the leader-only loops, readiness gated on the schema version, Prometheus metrics, OTLP traces, JSON logs, internal gRPC over TLS |
+
+Each adapter ships a Spring Boot auto-configuration (`ogcloud.valkey.*`, `ogcloud.kafka.*`, `ogcloud.s3.*`, the DataSource), so a service gets its ports by adding the dependency (D-0074).
+
+| `control-plane/controller` | Lease leader election; readiness gated on the schema version; metrics, traces, JSON logs; internal gRPC over TLS. Lifecycle: `LifecycleService` (compare-and-set transitions, `ServerLifecycleChanged` events), leader-only `Provisioner` (rate limit, PREPARING cap, EULA and crash-loop gates), `DeadlineSweeper`, `PodWatcher` (pod informer, cordoned-node drain), `CrashLoopBreaker` |
 
 ## Components
 

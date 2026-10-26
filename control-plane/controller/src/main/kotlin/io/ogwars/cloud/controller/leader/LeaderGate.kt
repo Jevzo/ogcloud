@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Campaigns for the controller Lease and runs the [LeaderLoop]s only while this replica leads. A replica that
+ * Campaigns for the controller Lease and runs the [LeaderLoop]s and [LeaderService]s only while this replica leads. A replica that
  * loses the Lease stops its loops and campaigns again; stale writes are fenced by versions (D-0069).
  */
 @Component
@@ -26,6 +26,7 @@ class LeaderGate(
     private val client: KubernetesClient,
     private val properties: ControllerProperties,
     private val loops: List<LeaderLoop>,
+    private val services: List<LeaderService>,
     private val meters: MeterRegistry,
 ) : SmartLifecycle {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -95,6 +96,7 @@ class LeaderGate(
                 )
             }
             scheduler = executor
+            services.forEach { it.startLeading() }
             leading.set(true)
         }
     }
@@ -109,7 +111,7 @@ class LeaderGate(
 
     private fun stopLeading() {
         synchronized(lock) {
-            leading.set(false)
+            if (leading.getAndSet(false)) services.forEach { it.stopLeading() }
             scheduler?.let { executor ->
                 executor.shutdownNow()
                 if (!executor.awaitTermination(LOOP_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {

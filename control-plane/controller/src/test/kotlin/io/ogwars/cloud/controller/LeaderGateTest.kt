@@ -103,6 +103,7 @@ class LeaderGateTest {
                 client,
                 ControllerProperties(NAMESPACE, identity, FAST_ELECTION.copy(leaseName = lease)),
                 listOf(loop),
+                emptyList(),
                 meters,
             )
 
