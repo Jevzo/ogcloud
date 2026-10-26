@@ -6,6 +6,8 @@ import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.server.DrainAction
+import io.ogwars.cloud.domain.server.GameState
+import io.ogwars.cloud.domain.server.GameStateAction
 import io.ogwars.cloud.domain.server.GracefulStopAction
 import io.ogwars.cloud.domain.server.LifecyclePolicy
 import io.ogwars.cloud.domain.server.Server
@@ -87,6 +89,8 @@ class LifecycleService(
     ) {
         val change =
             updater.update(id) { server ->
+                // Heartbeats on a partition stay ordered, but a redelivered old one must not roll the counts back.
+                if (server.lastHeartbeatAt?.isAfter(at) == true) return@update null
                 val alive =
                     if (server.state ==
                         ServerState.STARTING
@@ -103,6 +107,46 @@ class LifecycleService(
         val wasEmpty = change.before.players == 0
         val isEmpty = change.after.players == 0
         if (wasEmpty != isEmpty) pods.setSafeToEvict(change.after.podName, isEmpty)
+    }
+
+    /** A DYNAMIC game reports its state; ENDING sends the players away and drains the server. */
+    fun gameStateChanged(
+        id: UUID,
+        newState: GameState,
+        defaultGroupId: GroupId,
+    ) {
+        val server = servers.get(id)?.value ?: return
+        when (policy.gameStateAction(server, newState)) {
+            GameStateAction.IGNORE -> {}
+
+            GameStateAction.UPDATE -> {
+                updater.update(id) {
+                    it
+                        .takeIf { s ->
+                            s.gameState != newState
+                        }?.copy(gameState = newState)
+                }
+            }
+
+            GameStateAction.END_GAME -> {
+                endGame(server, defaultGroupId)
+            }
+        }
+    }
+
+    private fun endGame(
+        server: Server,
+        defaultGroupId: GroupId,
+    ) {
+        updater.update(server.id) {
+            it
+                .takeIf { s ->
+                    s.gameState != GameState.ENDING
+                }?.copy(gameState = GameState.ENDING)
+        }
+            ?: return
+        events.transferPlayers(server.id, policy.transferTarget(server, defaultGroupId), "game ended")
+        drain(server.id, SYSTEM, "game ended")
     }
 
     /** Graceful: running servers drain first, pending ones stop at once. */
