@@ -3,7 +3,21 @@
 OgCloud 2 is a Kubernetes-native control plane for Minecraft networks. This page describes the
 target design of the v2 rebuild; each section notes what is already built.
 
-**Built so far:** repository tooling only (toolchain, build conventions, contract generators, CI).
+**Built so far:**
+
+- Repository tooling: toolchain, build conventions, contract generators, CI.
+- Contracts: event, node-gateway, template-agent, login and live-state Protobufs; the Kafka topic
+  catalog; the runtime profile catalog (Paper 26.3, PandaSpigot 1.8.8, Velocity 4.3.0, forwarding
+  in BungeeGuard mode).
+- Control-plane libraries, each tested against a real dependency:
+
+| Module | Contents |
+| --- | --- |
+| `control-plane/domain` | Pure rules: server state machine and lifecycle deadlines, autoscaler, drain and game states, permissions and rank durations, restart planning, retention, crash-loop breaker, pseudonymizer; the store ports |
+| `control-plane/persistence` | PostgreSQL 18 schema (Flyway) and stores (Spring Data JDBC, `JdbcClient`) |
+| `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel and ACL support |
+| `control-plane/messaging` | Kafka publisher (idempotent, observed results), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
+| `control-plane/storage` | S3 object store: multipart streaming uploads, presigned URLs, stale-upload cleanup |
 
 ## Components
 
@@ -42,8 +56,8 @@ committed output is stale.
 
 | Store | Holds |
 | --- | --- |
-| PostgreSQL (CloudNativePG) | Groups, network settings, permission groups, players, NPCs, users and OAuth data, audit and scaling logs, jobs, template versions |
-| Valkey | Live server state, player sessions, locks, deadlines, cooldowns, read models. Every non-permanent key has a TTL. |
+| PostgreSQL 18 (CloudNativePG) | Groups, network settings, permission groups, players, NPCs, users and OAuth data, audit and scaling logs, jobs, template versions, runtime artifacts |
+| Valkey | Live server records and player sessions (Protobuf `ServerRecord`/`PlayerSession` with a revision for compare-and-set), locks, cooldowns, crash-loop failures, read models. Every key except read models has a TTL or self-healing index. |
 | Kafka (Strimzi) | Commands and events between services; retention 7 days, dead letters 14 days |
 | S3 (Hetzner Object Storage or SeaweedFS) | Templates and runtime bundles |
 | Infisical | Every cluster secret except its own root |
