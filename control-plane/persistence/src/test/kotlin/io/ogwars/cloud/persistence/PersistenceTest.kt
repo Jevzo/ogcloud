@@ -37,5 +37,6 @@ class FixedClockConfiguration {
     JdbcScalingLogStore::class,
     JdbcRetentionStore::class,
     JdbcRuntimeArtifactStore::class,
+    SchemaVersionProbe::class,
 )
 annotation class PersistenceTest

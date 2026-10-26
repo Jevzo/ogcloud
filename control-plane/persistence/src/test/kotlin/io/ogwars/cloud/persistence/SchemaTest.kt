@@ -10,7 +10,15 @@ import org.springframework.jdbc.core.JdbcTemplate
 @PersistenceTest
 class SchemaTest(
     @Autowired private val jdbc: JdbcTemplate,
+    @Autowired private val probe: SchemaVersionProbe,
 ) {
+    @Test
+    fun `the probe reports the migrated schema as current`() {
+        probe.requiredVersion shouldBe 1
+        probe.appliedVersion() shouldBe 1
+        probe.isCurrent() shouldBe true
+    }
+
     @Test
     fun `seeds the network settings and the default permission group`() {
         jdbc.queryForObject("select count(*) from network_settings", Int::class.java) shouldBe 1

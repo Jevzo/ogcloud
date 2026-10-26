@@ -1,5 +1,8 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
     id("ogcloud.spring-library")
+    `java-test-fixtures`
 }
 
 dependencies {
@@ -11,7 +14,11 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers-postgresql")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+
+    // The PostgreSQL container setup, shared with the services' tests.
+    testFixturesImplementation(platform(SpringBootPlugin.BOM_COORDINATES))
+    testFixturesApi("org.springframework.boot:spring-boot-test")
+    testFixturesApi("org.springframework.boot:spring-boot-testcontainers")
+    testFixturesApi("org.testcontainers:testcontainers-postgresql")
 }
