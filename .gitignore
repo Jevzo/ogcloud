@@ -1,0 +1,58 @@
+# AI working files: local only, never published (D-0055)
+/AGENTS.md
+/CLAUDE.md
+/.claude/
+/docs/memory/
+/docs/plan/
+/docs/reference/
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# OS and logs
+.DS_Store
+*.log
+
+# Gradle and Kotlin
+.gradle/
+.kotlin/
+**/build/
+**/out/
+
+# Node, pnpm, Vite
+**/node_modules/
+.pnpm-store/
+**/dist/
+**/.vite/
+**/coverage/
+
+# Go
+**/bin/
+*.test
+*.out
+go.work.sum
+
+# Terraform: state, plans, variables and kubeconfigs may hold secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+.terraform.tfstate.lock.info
+**/kubeconfig*
+!**/kubeconfig*.example
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.secret
+*.key
+*.pem
+
+# Tilt
+.tiltbuild/
