@@ -22,7 +22,7 @@ trivy = "0.76.1"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets"]
+depends = ["check:secrets", "check:jvm"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -30,3 +30,11 @@ run = [
   "gitleaks dir . --redact --no-banner",
   "gitleaks git . --redact --no-banner",
 ]
+
+[tasks."check:jvm"]
+description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
+run = "./gradlew check"
+
+[tasks."fmt:jvm"]
+description = "Format Kotlin sources and Gradle scripts"
+run = "./gradlew spotlessApply"
