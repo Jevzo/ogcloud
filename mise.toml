@@ -22,7 +22,7 @@ trivy = "0.76.1"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm"]
+depends = ["check:secrets", "check:jvm", "check:go"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -38,3 +38,29 @@ run = "./gradlew check"
 [tasks."fmt:jvm"]
 description = "Format Kotlin sources and Gradle scripts"
 run = "./gradlew spotlessApply"
+
+# go.work modules are listed by `go list -m`; `./...` does not span workspace modules.
+[tasks."check:go"]
+description = "go vet, tests with -race, golangci-lint and tidy check for every Go module"
+run = """
+set -euo pipefail
+for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
+  echo "== $module"
+  cd "$module"
+  go mod tidy -diff
+  if [ -z "$(go list ./... 2>/dev/null)" ]; then
+    echo "no packages yet, skipping"
+  else
+    go vet ./... && go test -race ./... && golangci-lint run ./...
+  fi
+done
+"""
+
+[tasks."fmt:go"]
+description = "Format Go sources"
+run = """
+set -euo pipefail
+for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
+  (cd "$module" && golangci-lint fmt ./...)
+done
+"""
