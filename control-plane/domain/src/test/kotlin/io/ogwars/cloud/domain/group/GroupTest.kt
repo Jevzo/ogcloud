@@ -37,20 +37,3 @@ class GroupTest {
         shouldThrow<IllegalArgumentException> { scaling(min = 3, max = 2) }
     }
 }
-
-fun scaling(
-    min: Int = 1,
-    max: Int = 10,
-    players: Int = 50,
-    up: Double = 0.8,
-    down: Double = 0.3,
-    cooldown: Duration = Duration.ofSeconds(60),
-) = ScalingPolicy(min, max, players, up, down, cooldown)
-
-fun group(
-    type: GroupType = GroupType.DYNAMIC,
-    scaling: ScalingPolicy = scaling(),
-    id: String = "lobby",
-    drainTimeout: Duration = Duration.ofSeconds(60),
-    maintenance: Boolean = false,
-) = Group(GroupId(id), type, "paper-26.3", scaling, drainTimeout, maintenance)

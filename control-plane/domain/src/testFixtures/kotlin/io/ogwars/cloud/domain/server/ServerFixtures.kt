@@ -2,6 +2,7 @@ package io.ogwars.cloud.domain.server
 
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
+import io.ogwars.cloud.domain.group.defaultProfile
 import java.time.Instant
 import java.util.UUID
 
@@ -17,11 +18,12 @@ fun server(
     gameState: GameState? = if (groupType == GroupType.DYNAMIC) GameState.LOBBY else null,
     startedAt: Instant? = null,
     lastHeartbeatAt: Instant? = null,
+    profileId: String = defaultProfile(groupType),
 ) = Server(
     id = id,
     groupId = GroupId(group),
     groupType = groupType,
-    profileId = if (groupType == GroupType.PROXY) "velocity-4.3.0" else "paper-26.3",
+    profileId = profileId,
     state = state,
     stateSince = since,
     players = players,
