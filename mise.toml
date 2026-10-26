@@ -1,9 +1,5 @@
 min_version = "2026.10.19"
 
-[settings]
-# Linux runners default to dash, which lacks `set -o pipefail`.
-unix_default_inline_shell_args = "bash -c"
-
 # Single source of truth for tool versions (AGENTS.md §9). Renovate keeps them current (D-0052).
 [tools]
 java = "temurin-25.0.5+8.0.LTS"
@@ -50,6 +46,7 @@ run = "./gradlew spotlessApply"
 # go.work modules are listed by `go list -m`; `./...` does not span workspace modules.
 [tasks."check:go"]
 description = "go vet, tests with -race, golangci-lint and tidy check for every Go module"
+shell = "bash -c"
 run = """
 set -euo pipefail
 for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
@@ -66,6 +63,7 @@ done
 
 [tasks."fmt:go"]
 description = "Format Go sources"
+shell = "bash -c"
 run = """
 set -euo pipefail
 for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
@@ -87,6 +85,7 @@ run = "pnpm exec jscpd ."
 
 [tasks."check:proto"]
 description = "buf lint and format check for contracts/proto"
+shell = "bash -c"
 run = """
 set -euo pipefail
 if [ -z "$(find contracts/proto -name '*.proto' -print -quit)" ]; then
@@ -103,6 +102,7 @@ depends = ["gen:proto"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
+shell = "bash -c"
 run = """
 set -euo pipefail
 if [ -z "$(find contracts/proto -name '*.proto' -print -quit)" ]; then
@@ -116,6 +116,7 @@ buf generate
 [tasks."check:generated"]
 description = "Fail when committed generated sources differ from a fresh `mise run gen`"
 depends = ["gen"]
+shell = "bash -c"
 run = """
 set -euo pipefail
 generated=(data-plane/pkg/gen)
@@ -138,6 +139,7 @@ run = "go run ./data-plane/pkg/cmd/commitmsg"
 # CI sets OGCLOUD_COMMIT_RANGE to the pushed or pull-request range; locally every unpushed commit is checked.
 [tasks."check:commits"]
 description = "Validate the messages of all commits in range"
+shell = "bash -c"
 run = """
 set -euo pipefail
 if [ -n "${OGCLOUD_COMMIT_RANGE:-}" ]; then
@@ -155,6 +157,7 @@ done
 
 [tasks."check:vulns"]
 description = "Known-vulnerability scan: govulncheck per Go module, Trivy on lockfiles and config"
+shell = "bash -c"
 run = """
 set -euo pipefail
 for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
@@ -167,6 +170,7 @@ trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip
 
 [tasks."check:actions"]
 description = "Lint GitHub Actions workflows"
+shell = "bash -c"
 run = """
 set -euo pipefail
 if [ -d .github/workflows ]; then actionlint; else echo "no workflows yet, skipping"; fi
