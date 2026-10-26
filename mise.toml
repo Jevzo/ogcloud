@@ -19,12 +19,13 @@ gitleaks = "8.30.1"
 trivy = "0.76.1"
 protoc-gen-go = "1.36.12"
 protoc-gen-go-grpc = "1.6.2"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
 
 # Each ecosystem adds its own check, fmt, build and test tasks as it lands (T-0004 to T-0008);
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:duplication", "check:proto", "check:generated"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -118,4 +119,48 @@ if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
   exit 1
 fi
+"""
+
+[tasks."hooks:install"]
+description = "Install the git commit-msg hook (Conventional Commits, no AI attribution)"
+run = "mise generate git-pre-commit --hook commit-msg --task commit-msg --write"
+
+[tasks.commit-msg]
+description = "Validate one commit message file (used by the git hook)"
+hide = true
+run = "go run ./data-plane/pkg/cmd/commitmsg"
+
+# CI sets OGCLOUD_COMMIT_RANGE to the pushed or pull-request range; locally every unpushed commit is checked.
+[tasks."check:commits"]
+description = "Validate the messages of all commits in range"
+run = """
+set -euo pipefail
+if [ -n "${OGCLOUD_COMMIT_RANGE:-}" ]; then
+  commits=$(git rev-list --no-merges "$OGCLOUD_COMMIT_RANGE")
+else
+  commits=$(git rev-list --no-merges HEAD --not --remotes)
+fi
+go build -o .gradle/commitmsg ./data-plane/pkg/cmd/commitmsg
+for commit in $commits; do
+  git log -1 --format=%B "$commit" | .gradle/commitmsg - || { echo "in commit $commit" >&2; exit 1; }
+done
+"""
+
+[tasks."check:vulns"]
+description = "Known-vulnerability scan: govulncheck per Go module, Trivy on lockfiles and config"
+run = """
+set -euo pipefail
+for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
+  if [ -n "$(cd "$module" && go list ./... 2>/dev/null)" ]; then
+    (cd "$module" && govulncheck ./...)
+  fi
+done
+trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs node_modules --quiet .
+"""
+
+[tasks."check:actions"]
+description = "Lint GitHub Actions workflows"
+run = """
+set -euo pipefail
+if [ -d .github/workflows ]; then actionlint; else echo "no workflows yet, skipping"; fi
 """
