@@ -1,5 +1,9 @@
 min_version = "2026.10.19"
 
+[settings]
+# Linux runners default to dash, which lacks `set -o pipefail`.
+unix_default_inline_shell_args = "bash -c"
+
 # Single source of truth for tool versions (AGENTS.md §9). Renovate keeps them current (D-0052).
 [tools]
 java = "temurin-25.0.5+8.0.LTS"
@@ -31,7 +35,8 @@ depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:duplicat
 description = "Scan the working tree and git history for committed secrets"
 run = [
   "gitleaks dir . --redact --no-banner",
-  "gitleaks git . --redact --no-banner",
+  # Only this branch: the v1 branches in the same repository carry their own history.
+  "gitleaks git . --redact --no-banner --log-opts=HEAD",
 ]
 
 [tasks."check:jvm"]
