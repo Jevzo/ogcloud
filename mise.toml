@@ -114,7 +114,7 @@ buf generate
 
 [tasks."gen:profiles"]
 description = "Generate the runtime profile catalog from contracts/runtime-profiles.yaml"
-run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go"
+run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go -kotlin-out control-plane/domain/src/generated/kotlin/io/ogwars/cloud/domain/runtime/RuntimeProfiles.kt"
 
 [tasks."gen:topics"]
 description = "Generate topic constants (and later Kotlin and Strimzi outputs) from contracts/kafka/topics.yaml"
@@ -127,7 +127,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics control-plane/domain/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
