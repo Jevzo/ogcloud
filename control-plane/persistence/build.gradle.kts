@@ -22,4 +22,8 @@ dependencies {
     testFixturesApi("org.springframework.boot:spring-boot-test")
     testFixturesApi("org.springframework.boot:spring-boot-testcontainers")
     testFixturesApi("org.testcontainers:testcontainers-postgresql")
+    testFixturesApi("org.flywaydb:flyway-core")
+    testFixturesApi("org.springframework:spring-jdbc")
+    testFixturesImplementation("org.postgresql:postgresql")
+    testFixturesRuntimeOnly("org.flywaydb:flyway-database-postgresql")
 }
