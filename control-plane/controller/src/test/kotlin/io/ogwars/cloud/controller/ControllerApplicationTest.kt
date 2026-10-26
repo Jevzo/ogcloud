@@ -4,6 +4,7 @@ import io.ogwars.cloud.controller.leader.LeaderGate
 import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
 import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
+import io.ogwars.cloud.persistence.migrate
 import io.fabric8.kubernetes.client.Config
 import io.grpc.health.v1.HealthCheckRequest
 import io.grpc.health.v1.HealthCheckResponse
@@ -14,7 +15,6 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.runBlocking
-import org.flywaydb.core.Flyway
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -52,12 +52,7 @@ class ControllerApplicationTest(
     fun `stays unready until the API has migrated the schema`() {
         get("/actuator/health/readiness").statusCode() shouldBe SERVICE_UNAVAILABLE
 
-        Flyway
-            .configure()
-            .dataSource(dataSource)
-            .placeholders(mapOf("controllerRole" to PostgresContainerConfiguration.CONTROLLER_ROLE))
-            .load()
-            .migrate()
+        migrate(dataSource)
 
         get("/actuator/health/readiness").statusCode() shouldBe OK
     }

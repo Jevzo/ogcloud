@@ -4,6 +4,7 @@ import io.ogwars.cloud.controller.config.LifecycleProperties
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.controller.kube.PodSpecBuilder
 import io.ogwars.cloud.domain.crashloop.CrashLoopPolicy
+import io.ogwars.cloud.domain.scaling.Autoscaler
 import io.ogwars.cloud.domain.server.LifecyclePolicy
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,6 +16,9 @@ class LifecycleConfiguration {
 
     @Bean
     fun crashLoopPolicy(properties: LifecycleProperties) = CrashLoopPolicy(properties.crashLoop)
+
+    @Bean
+    fun autoscaler() = Autoscaler()
 
     @Bean
     fun podSpecBuilder(properties: PodProperties) = PodSpecBuilder(properties)

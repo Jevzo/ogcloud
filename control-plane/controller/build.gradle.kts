@@ -24,7 +24,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     testImplementation("org.testcontainers:testcontainers-k3s")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
-    testImplementation("org.flywaydb:flyway-core")
     testImplementation("io.grpc:grpc-netty")
     testImplementation("io.grpc:grpc-services")
 }

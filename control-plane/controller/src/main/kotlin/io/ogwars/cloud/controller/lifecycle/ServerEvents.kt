@@ -2,10 +2,12 @@ package io.ogwars.cloud.controller.lifecycle
 
 import io.ogwars.cloud.contracts.events.v1.AlertRaised
 import io.ogwars.cloud.contracts.events.v1.AlertSeverity
+import io.ogwars.cloud.contracts.events.v1.ScalingDecided
 import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.TransferRequested
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.server.TransferTarget
 import io.ogwars.cloud.livestate.toProto
 import io.ogwars.cloud.messaging.EventMetadataFactory
@@ -32,6 +34,8 @@ interface ServerEvents {
         groupId: GroupId,
         failures: Int,
     )
+
+    fun scalingDecided(entry: ScalingLogEntry)
 }
 
 @Component
@@ -100,6 +104,19 @@ class KafkaServerEvents(
                 .putAttributes("failures", failures.toString())
                 .build()
         publisher.publish(KafkaTopics.ALERT_RAISED, groupId.value, event)
+    }
+
+    override fun scalingDecided(entry: ScalingLogEntry) {
+        val event =
+            ScalingDecided
+                .newBuilder()
+                .setMetadata(metadata.create(SYSTEM))
+                .setGroupId(entry.groupId.value)
+                .setAction(entry.action.toProto())
+                .setServerId(entry.serverId?.toString().orEmpty())
+                .setReason(entry.reason.name)
+                .build()
+        publisher.publish(KafkaTopics.SCALING_DECIDED, entry.groupId.value, event)
     }
 
     private companion object {

@@ -1,10 +1,12 @@
 package io.ogwars.cloud.livestate
 
 import io.ogwars.cloud.domain.group.GroupType
+import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.server.GameState
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.contracts.events.v1.GameState as ProtoGameState
 import io.ogwars.cloud.contracts.events.v1.GroupType as ProtoGroupType
+import io.ogwars.cloud.contracts.events.v1.ScalingAction as ProtoScalingAction
 import io.ogwars.cloud.contracts.events.v1.ServerState as ProtoServerState
 
 // Domain enums and their Protobuf twins share names after the proto prefix (buf's ENUM_VALUE_PREFIX rule).
@@ -12,6 +14,8 @@ import io.ogwars.cloud.contracts.events.v1.ServerState as ProtoServerState
 fun GroupType.toProto(): ProtoGroupType = ProtoGroupType.valueOf("GROUP_TYPE_$name")
 
 fun ServerState.toProto(): ProtoServerState = ProtoServerState.valueOf("SERVER_STATE_$name")
+
+fun ScalingAction.toProto(): ProtoScalingAction = ProtoScalingAction.valueOf("SCALING_ACTION_$name")
 
 /** Servers without a game state map to UNSPECIFIED. */
 fun GameState?.toProto(): ProtoGameState =

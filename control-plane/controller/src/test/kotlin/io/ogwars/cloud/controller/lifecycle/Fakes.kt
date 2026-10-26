@@ -5,6 +5,7 @@ import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.network.NetworkSettings
+import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.server.TransferTarget
 import io.ogwars.cloud.domain.store.GroupStore
@@ -54,6 +55,7 @@ class RecordingServerEvents : ServerEvents {
     val transitions = mutableListOf<Triple<ServerState, ServerState, String>>()
     val transfers = mutableListOf<Pair<UUID, TransferTarget>>()
     val pausedGroups = mutableListOf<GroupId>()
+    val scalings = mutableListOf<ScalingLogEntry>()
 
     override fun stateChanged(
         change: ServerChange,
@@ -76,6 +78,10 @@ class RecordingServerEvents : ServerEvents {
         failures: Int,
     ) {
         pausedGroups += groupId
+    }
+
+    override fun scalingDecided(entry: ScalingLogEntry) {
+        scalings += entry
     }
 }
 

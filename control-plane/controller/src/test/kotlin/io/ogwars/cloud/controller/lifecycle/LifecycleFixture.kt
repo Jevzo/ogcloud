@@ -20,6 +20,7 @@ import java.util.UUID
 class LifecycleFixture(
     groups: List<Group>,
     eulaAccepted: Boolean = true,
+    maintenance: Boolean = false,
     val properties: LifecycleProperties = LifecycleProperties(),
 ) {
     val clock = MutableClock(T0)
@@ -28,7 +29,7 @@ class LifecycleFixture(
     val pods = RecordingPodGateway()
     val events = RecordingServerEvents()
     val groupStore = InMemoryGroupStore(groups)
-    val network = FixedNetworkSettingsStore(settings(eulaAccepted))
+    val network = FixedNetworkSettingsStore(settings(eulaAccepted, maintenance))
     val policy = LifecyclePolicy(properties.timeouts)
     val breaker = CrashLoopBreaker(failures, CrashLoopPolicy(properties.crashLoop), properties, events, clock)
     val lifecycle = LifecycleService(servers, groupStore, pods, events, breaker, policy, clock)
@@ -48,22 +49,24 @@ class LifecycleFixture(
 
     fun state(id: UUID) = servers.get(id)?.value?.state
 
-    private fun settings(eulaAccepted: Boolean) =
-        NetworkSettings(
-            maintenance = false,
-            motd = "OgCloud",
-            maintenanceMotd = "Maintenance",
-            versionName = "OgCloud",
-            maintenanceVersionName = "Maintenance",
-            maxPlayers = 1000,
-            defaultGroupId = GroupId("lobby"),
-            routingStrategy = RoutingStrategy.entries.first(),
-            permissionSystemEnabled = true,
-            tablistEnabled = false,
-            tablistHeader = "",
-            tablistFooter = "",
-            maintenanceKickMessage = "Maintenance",
-            eulaAcceptedAt = if (eulaAccepted) T0 else null,
-            requireMinecraftLink = false,
-        )
+    private fun settings(
+        eulaAccepted: Boolean,
+        maintenance: Boolean,
+    ) = NetworkSettings(
+        maintenance = maintenance,
+        motd = "OgCloud",
+        maintenanceMotd = "Maintenance",
+        versionName = "OgCloud",
+        maintenanceVersionName = "Maintenance",
+        maxPlayers = 1000,
+        defaultGroupId = GroupId("lobby"),
+        routingStrategy = RoutingStrategy.entries.first(),
+        permissionSystemEnabled = true,
+        tablistEnabled = false,
+        tablistHeader = "",
+        tablistFooter = "",
+        maintenanceKickMessage = "Maintenance",
+        eulaAcceptedAt = if (eulaAccepted) T0 else null,
+        requireMinecraftLink = false,
+    )
 }
