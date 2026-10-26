@@ -103,8 +103,11 @@ class S3ObjectStore(
                     .multipartUpload(CompletedMultipartUpload.builder().parts(parts).build())
             }
         } catch (e: Exception) {
-            s3.abortMultipartUpload { it.bucket(settings.bucket).key(key).uploadId(uploadId) }
-            throw StorageException("Upload of $key failed", e)
+            val failure = StorageException("Upload of $key failed", e)
+            // The same outage often fails the abort too; the original cause matters more, and the cleanup loop retries.
+            runCatching { s3.abortMultipartUpload { it.bucket(settings.bucket).key(key).uploadId(uploadId) } }
+                .onFailure(failure::addSuppressed)
+            throw failure
         }
     }
 
