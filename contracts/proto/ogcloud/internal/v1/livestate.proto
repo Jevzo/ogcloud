@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+import "google/protobuf/timestamp.proto";
+import "ogcloud/events/v1/common.proto";
+
+// Live server record in Valkey (key "server:<id>", field "data"). Written by the controller,
+// read by the controller and the gateway. The hash field "rev" holds the revision used for
+// compare-and-set, so it is not repeated here.
+message ServerRecord {
+  string server_id = 1;
+  string group_id = 2;
+  ogcloud.events.v1.GroupType group_type = 3;
+  string profile_id = 4;
+  ogcloud.events.v1.ServerState state = 5;
+  google.protobuf.Timestamp state_since = 6;
+  // Only DYNAMIC servers have a game state.
+  ogcloud.events.v1.GameState game_state = 7;
+  string host = 8;
+  uint32 port = 9;
+  uint32 players = 10;
+  uint32 max_players = 11;
+  google.protobuf.Timestamp started_at = 12;
+  google.protobuf.Timestamp last_heartbeat_at = 13;
+}
+
+// Online player session (key "session:<uuid>", field "data").
+message PlayerSession {
+  string player_uuid = 1;
+  string player_name = 2;
+  string proxy_id = 3;
+  // Empty until the player reaches a backend.
+  string server_id = 4;
+  string permission_group_id = 5;
+  uint64 rank_version = 6;
+  google.protobuf.Timestamp connected_at = 7;
+}

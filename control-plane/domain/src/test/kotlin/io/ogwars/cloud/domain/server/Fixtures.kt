@@ -21,6 +21,7 @@ fun server(
     id = id,
     groupId = GroupId(group),
     groupType = groupType,
+    profileId = if (groupType == GroupType.PROXY) "velocity-4.3.0" else "paper-26.3",
     state = state,
     stateSince = since,
     players = players,

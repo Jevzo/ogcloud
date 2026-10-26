@@ -33,6 +33,7 @@ data class Server(
     val id: UUID,
     val groupId: GroupId,
     val groupType: GroupType,
+    val profileId: String,
     val state: ServerState,
     /** When the current [state] was entered; deadlines count from here. */
     val stateSince: Instant,
@@ -41,6 +42,9 @@ data class Server(
     val gameState: GameState? = if (groupType == GroupType.DYNAMIC) GameState.LOBBY else null,
     val startedAt: Instant? = null,
     val lastHeartbeatAt: Instant? = null,
+    /** Pod address, known once the pod is scheduled. */
+    val host: String? = null,
+    val port: Int? = null,
 ) {
     /** Pod and proxy registration name; uses the full id, so group names may contain dashes. */
     val podName: String get() = "$groupId-${id.compactHex()}"
