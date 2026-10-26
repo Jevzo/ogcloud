@@ -1,15 +1,70 @@
 # Architecture overview
 
-The system as built. Update when components, contracts, data stores or deployment change. The decisions themselves live in docs/memory.
+OgCloud 2 is a Kubernetes-native control plane for Minecraft networks. This page describes the
+target design of the v2 rebuild; each section notes what is already built.
+
+**Built so far:** repository tooling only (toolchain, build conventions, contract generators, CI).
 
 ## Components
-_TBD_
 
-## Contracts (APIs, events/topics)
-_TBD_
+```
+Player ─TCP─▶ cloud LB (PROXY) ─▶ loadbalancer (Go) ─PROXY v2─▶ Velocity ─▶ Paper / PandaSpigot / Fabric / NeoForge
+                                                            └──── gRPC + TLS + SA token ───┘
+                                                                           ▼
+Web / Electron / Expo ─HTTPS (same origin)─▶ public Gateway ─▶ api ─Kafka─▶ controller ◀─gRPC─ gateway
+Admin ─WireGuard (optional)─▶ internal Gateway ─▶ Infisical, Grafana            controller ─▶ Kubernetes API
+```
+
+| Component | Language | Role |
+| --- | --- | --- |
+| `api` | Kotlin, Spring MVC on virtual threads | REST API, built-in OIDC provider (users and OAuth client credentials), RBAC, audit log, Server-Sent Events, template uploads, privacy export and erasure. Owns the database schema. Never talks to Kubernetes. Scales horizontally. |
+| `controller` | Kotlin, Spring | Server lifecycle and autoscaling. The Lease-elected leader runs the singleton loops: autoscaler, reconciler, deadline sweeper, job runner, runtime bundles, cleanup and crash-loop breaker. Kafka consumers run on every replica. Publishes read models to Valkey and resolves player logins for the gateway. |
+| `gateway` | Go | The only endpoint plugins and mods talk to: one authenticated gRPC stream per pod. Serves queries from read models, forwards commands to Kafka, fans out events and live channels, hands presigned URLs to the template agent, exports game metrics. Scales horizontally. |
+| `loadbalancer` | Go | Minecraft-protocol-aware TCP edge in front of the Velocity proxies. Membership comes only from lifecycle state. Answers status pings (MOTD, maintenance, online count) and enforces the supported protocol range. |
+| `template-loader` | Go | Pod init container that pulls a template and the runtime bundle, plus a push agent that uploads new template versions. |
+| `bootstrap` | Go | Install and upgrade jobs that create the secrets root and set up Infisical. |
+| Integrations | Kotlin/JVM | MIT-licensed SDK, a shaded gRPC node client, platform-neutral `node-core`, and thin adapters for Velocity, Paper, PandaSpigot, Fabric and NeoForge. |
+| Apps | TypeScript | Web dashboard (Vite, React, TanStack), Electron desktop app, Expo mobile app. |
+
+## Contracts
+
+| Contract | Source of truth | Consumers |
+| --- | --- | --- |
+| REST API | Spring controllers; `contracts/openapi/openapi.yaml` is generated and drift-checked | Generated TypeScript client |
+| Kafka events, gRPC services | Protobuf in `contracts/proto`, checked with `buf lint` and `buf breaking` | Generated Go (committed) and JVM code (built) |
+| Kafka topics | `contracts/kafka/topics.yaml` | Generated Go and Kotlin constants, Strimzi topics and users with ACLs |
+| Runtime profiles | `contracts/runtime-profiles.yaml` | Generated accessors, images, overlays, protocol range |
+
+Code generators live in `data-plane/pkg/cmd/codegen`; `mise run check:generated` fails when
+committed output is stale.
 
 ## Data stores
-_TBD_
+
+| Store | Holds |
+| --- | --- |
+| PostgreSQL (CloudNativePG) | Groups, network settings, permission groups, players, NPCs, users and OAuth data, audit and scaling logs, jobs, template versions |
+| Valkey | Live server state, player sessions, locks, deadlines, cooldowns, read models. Every non-permanent key has a TTL. |
+| Kafka (Strimzi) | Commands and events between services; retention 7 days, dead letters 14 days |
+| S3 (Hetzner Object Storage or SeaweedFS) | Templates and runtime bundles |
+| Infisical | Every cluster secret except its own root |
+
+Old data is deleted automatically under one retention policy (template versions, logs, tokens,
+backups, orphaned objects).
+
+## Security
+
+- Workloads authenticate with projected Kubernetes service-account tokens; game pods hold no
+  infrastructure credentials.
+- In-cluster traffic uses TLS from a cert-manager private CA.
+- Secrets live in Infisical and are synced into Kubernetes Secrets by its operator.
+- Admin surfaces (Kubernetes API, Infisical, Grafana) are reachable only over an optional WireGuard
+  VPN, or by port-forward behind an IP allowlist.
 
 ## Deployment
-_TBD_
+
+- **One Helm chart** installs OgCloud and is reused everywhere.
+- **Local development:** minikube driven by Tilt (`mise run dev`).
+- **Hetzner:** Terraform with the kube-hetzner module provisions the cluster and installs
+  OgCloud through k3s HelmChart resources; an optional WireGuard box guards admin access.
+- Game servers run in their own namespace on a dedicated, autoscaled node pool.
+- Designed for 5,000 concurrent players and about 300 servers, with no singleton in the data path.
