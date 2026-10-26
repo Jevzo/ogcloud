@@ -45,10 +45,16 @@ typealias ValkeyConnection = StatefulRedisConnection<String, ByteArray>
 object ValkeyConnections {
     private val codec: RedisCodec<String, ByteArray> = RedisCodec.of(StringCodec.UTF8, ByteArrayCodec.INSTANCE)
 
-    /** Opens one thread-safe connection; the caller owns the client and closes both. */
+    /** Opens one thread-safe connection; the caller closes it and shuts the client down, which frees its resources. */
+    fun connect(settings: ValkeySettings): Pair<RedisClient, ValkeyConnection> {
+        val client = RedisClient.create(uri(settings))
+        return client to client.connect(codec)
+    }
+
+    /** As [connect], with shared [resources] that the caller owns and shuts down itself. */
     fun connect(
         settings: ValkeySettings,
-        resources: ClientResources = ClientResources.create(),
+        resources: ClientResources,
     ): Pair<RedisClient, ValkeyConnection> {
         val client = RedisClient.create(resources, uri(settings))
         return client to client.connect(codec)

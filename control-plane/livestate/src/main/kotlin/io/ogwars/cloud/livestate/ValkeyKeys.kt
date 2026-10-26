@@ -31,6 +31,9 @@ object ValkeyKeys {
 
     fun crashLoop(groupId: GroupId) = "crashloop:$groupId"
 
+    /** Latched pause; no ttl, only an admin resume clears it. */
+    fun crashLoopPaused(groupId: GroupId) = "crashloop:paused:$groupId"
+
     fun readModel(
         kind: ReadModelKind,
         id: String,

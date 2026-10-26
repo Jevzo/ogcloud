@@ -8,10 +8,10 @@ import io.ogwars.cloud.domain.store.LockManager
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.ScalingCooldownStore
-import io.lettuce.core.Range
 import io.lettuce.core.SetArgs
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 
 class ValkeyLockManager(
     private val valkey: ValkeyConnection,
@@ -70,30 +70,39 @@ class ValkeyCrashFailureStore(
 ) : CrashFailureStore {
     override fun record(
         groupId: GroupId,
+        serverId: UUID,
         at: Instant,
         window: Duration,
     ) {
-        val key = ValkeyKeys.crashLoop(groupId)
         val millis = at.toEpochMilli()
-        valkey.sync().zadd(key, millis.toDouble(), millis.toString().utf8())
-        valkey.sync().zremrangebyscore(
-            key,
-            Range.create(
-                Double.NEGATIVE_INFINITY,
-                (
-                    millis -
-                        window.toMillis()
-                ).toDouble(),
-            ),
+        // The server id keeps simultaneous failures of different pods apart.
+        valkey.evalLong(
+            LuaScripts.RECORD_FAILURE,
+            listOf(ValkeyKeys.crashLoop(groupId)),
+            millis.toString().utf8(),
+            "$millis:$serverId".utf8(),
+            window.millisArg(),
         )
-        valkey.sync().pexpire(key, window.toMillis())
     }
 
     override fun failures(groupId: GroupId): List<Instant> =
-        valkey.sync().zrange(ValkeyKeys.crashLoop(groupId), 0, -1).map { Instant.ofEpochMilli(it.utf8().toLong()) }
+        valkey
+            .sync()
+            .zrangeWithScores(ValkeyKeys.crashLoop(groupId), 0, -1)
+            .map { Instant.ofEpochMilli(it.score.toLong()) }
+
+    override fun pause(groupId: GroupId) {
+        valkey.sync().set(ValkeyKeys.crashLoopPaused(groupId), PAUSED)
+    }
+
+    override fun isPaused(groupId: GroupId): Boolean = valkey.sync().exists(ValkeyKeys.crashLoopPaused(groupId)) == 1L
 
     override fun clear(groupId: GroupId) {
-        valkey.sync().del(ValkeyKeys.crashLoop(groupId))
+        valkey.sync().del(ValkeyKeys.crashLoop(groupId), ValkeyKeys.crashLoopPaused(groupId))
+    }
+
+    private companion object {
+        val PAUSED = "1".utf8()
     }
 }
 

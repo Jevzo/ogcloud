@@ -88,6 +88,15 @@ class ValkeyServerStateStoreTest : ValkeyTest() {
     }
 
     @Test
+    fun `one unreadable record is skipped instead of breaking the listing`() {
+        store.create(server(1))
+        store.create(server(2))
+        valkey.sync().hset(ValkeyKeys.server(UUID(0, 2)), ValkeyKeys.FIELD_DATA, byteArrayOf(0x0a, 0x7f, 0x01))
+
+        store.listAll().map { it.value.id } shouldContainExactly listOf(UUID(0, 1))
+    }
+
+    @Test
     fun `delete removes the record and its index entries`() {
         store.create(server(1))
 

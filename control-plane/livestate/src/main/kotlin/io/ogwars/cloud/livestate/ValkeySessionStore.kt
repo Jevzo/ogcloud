@@ -24,7 +24,7 @@ class ValkeySessionStore(
 
     override fun get(playerUuid: UUID): Revisioned<PlayerSession>? =
         valkey.readRecords(listOf(ValkeyKeys.session(playerUuid))).single()?.let { (revision, data) ->
-            Revisioned(RecordCodec.decodeSession(data), revision)
+            Revisioned(RecordCodec.decodeSession(ValkeyKeys.session(playerUuid), data), revision)
         }
 
     override fun findByName(name: String): Revisioned<PlayerSession>? =
@@ -45,23 +45,26 @@ class ValkeySessionStore(
             ValkeyKeys.SESSION_TTL.millisArg(),
         ) == 1L
 
-    override fun remove(session: PlayerSession) {
-        valkey.evalLong(
+    override fun remove(session: Revisioned<PlayerSession>): Boolean {
+        val player = session.value
+        return valkey.evalLong(
             LuaScripts.REMOVE_SESSION,
             listOf(
-                ValkeyKeys.session(session.playerUuid),
-                ValkeyKeys.sessionName(session.playerName),
+                ValkeyKeys.session(player.playerUuid),
+                ValkeyKeys.sessionName(player.playerName),
                 ValkeyKeys.ONLINE_PLAYERS,
             ),
-            session.playerUuid.toString().utf8(),
-        )
+            session.revision.toString().utf8(),
+            player.playerUuid.toString().utf8(),
+        ) == 1L
     }
 
-    override fun onlinePlayers(): Set<UUID> =
-        valkey
-            .sync()
-            .smembers(ValkeyKeys.ONLINE_PLAYERS)
-            .map {
-                UUID.fromString(it.utf8())
-            }.toSet()
+    /** Players whose session expired without a disconnect (e.g. a crashed proxy) are pruned on the way. */
+    override fun onlinePlayers(): Set<UUID> {
+        val players = valkey.sync().smembers(ValkeyKeys.ONLINE_PLAYERS).map { UUID.fromString(it.utf8()) }
+        val sessions = valkey.readRecords(players.map(ValkeyKeys::session))
+        val (live, expired) = players.zip(sessions).partition { it.second != null }
+        expired.forEach { (uuid, _) -> valkey.sync().srem(ValkeyKeys.ONLINE_PLAYERS, uuid.toString().utf8()) }
+        return live.map { it.first }.toSet()
+    }
 }

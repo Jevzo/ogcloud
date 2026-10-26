@@ -4,11 +4,14 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.server.Server
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.store.ServerStateStore
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class ValkeyServerStateStore(
     private val valkey: ValkeyConnection,
 ) : ServerStateStore {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     override fun create(server: Server): Boolean =
         valkey.evalLong(
             LuaScripts.CREATE,
@@ -19,7 +22,7 @@ class ValkeyServerStateStore(
         ) == 1L
 
     override fun get(id: UUID): Revisioned<Server>? =
-        valkey.readRecords(listOf(ValkeyKeys.server(id))).single()?.let(::toServer)
+        valkey.readRecords(listOf(ValkeyKeys.server(id))).single()?.let { decode(ValkeyKeys.server(id), it) }
 
     override fun listAll(): List<Revisioned<Server>> = list(ValkeyKeys.SERVERS)
 
@@ -51,9 +54,19 @@ class ValkeyServerStateStore(
         ids.zip(records).filter { it.second == null }.forEach { (id, _) ->
             valkey.sync().srem(setKey, id.toString().utf8())
         }
-        return records.filterNotNull().map(::toServer)
+        // One unreadable record must not stall every listing (autoscaler, reconciler); it is reported and skipped.
+        return ids.zip(records).mapNotNull { (id, record) ->
+            record?.let {
+                runCatching { decode(ValkeyKeys.server(id), it) }
+                    .onFailure { error ->
+                        log.error("Skipping unreadable server record {}", ValkeyKeys.server(id), error)
+                    }.getOrNull()
+            }
+        }
     }
 
-    private fun toServer(record: Pair<Long, ByteArray>) =
-        Revisioned(RecordCodec.decodeServer(record.second), record.first)
+    private fun decode(
+        key: String,
+        record: Pair<Long, ByteArray>,
+    ) = Revisioned(RecordCodec.decodeServer(key, record.second), record.first)
 }

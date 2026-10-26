@@ -33,11 +33,25 @@ internal object LuaScripts {
         return next
     """
 
-    /** KEYS: session, name index, online set. ARGV: uuid. Leaves a name index that now belongs to someone else. */
+    /**
+     * KEYS: session, name index, online set. ARGV: expected revision, uuid. Returns 1 if removed; a
+     * reconnect that replaced the session in between (new revision) is kept. Leaves a name index that
+     * now belongs to someone else.
+     */
     const val REMOVE_SESSION = """
+        local rev = redis.call('HGET', KEYS[1], 'rev')
+        if not rev or tonumber(rev) ~= tonumber(ARGV[1]) then return 0 end
         redis.call('DEL', KEYS[1])
-        if redis.call('GET', KEYS[2]) == ARGV[1] then redis.call('DEL', KEYS[2]) end
-        redis.call('SREM', KEYS[3], ARGV[1])
+        if redis.call('GET', KEYS[2]) == ARGV[2] then redis.call('DEL', KEYS[2]) end
+        redis.call('SREM', KEYS[3], ARGV[2])
+        return 1
+    """
+
+    /** KEYS: failure set. ARGV: score (ms), member, window ms. Adds, trims to the window and refreshes the ttl. */
+    const val RECORD_FAILURE = """
+        redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
+        redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', tonumber(ARGV[1]) - tonumber(ARGV[3]))
+        redis.call('PEXPIRE', KEYS[1], ARGV[3])
         return 1
     """
 

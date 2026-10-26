@@ -47,7 +47,8 @@ interface SessionStore {
         updated: PlayerSession,
     ): Boolean
 
-    fun remove(session: PlayerSession)
+    /** Removes the session only if it is still the one read; a reconnect in between keeps the new one. */
+    fun remove(session: Revisioned<PlayerSession>): Boolean
 
     fun onlinePlayers(): Set<UUID>
 }
@@ -82,16 +83,22 @@ interface ScalingCooldownStore {
 }
 
 interface CrashFailureStore {
-    /** Records a failure and forgets those older than [window]. */
+    /** Records [serverId]'s failure and forgets failures older than [window]. */
     fun record(
         groupId: GroupId,
+        serverId: UUID,
         at: Instant,
         window: Duration,
     )
 
     fun failures(groupId: GroupId): List<Instant>
 
-    /** Called when an admin resumes a paused group. */
+    /** Latches the pause; it outlives the failure window. */
+    fun pause(groupId: GroupId)
+
+    fun isPaused(groupId: GroupId): Boolean
+
+    /** Called when an admin resumes a paused group: clears the latch and the failures. */
     fun clear(groupId: GroupId)
 }
 

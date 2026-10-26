@@ -54,12 +54,34 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
     @Test
     fun `removing a session keeps a name now used by someone else`() {
         sessions.put(session(alice, "Steve"))
+        val alicesSession = sessions.get(alice).shouldNotBeNull()
         sessions.put(session(bob, "Steve"))
 
-        sessions.remove(session(alice, "Steve"))
+        sessions.remove(alicesSession) shouldBe true
 
         sessions.findByName("steve")?.value?.playerUuid shouldBe bob
         sessions.onlinePlayers() shouldContainExactly setOf(bob)
+    }
+
+    @Test
+    fun `a late disconnect from the old proxy keeps the reconnected session`() {
+        sessions.put(session(alice, "Alice"))
+        val onOldProxy = sessions.get(alice).shouldNotBeNull()
+        sessions.put(session(alice, "Alice").copy(proxyId = UUID(2, 2)))
+
+        sessions.remove(onOldProxy) shouldBe false
+
+        sessions.get(alice)?.value?.proxyId shouldBe UUID(2, 2)
+        sessions.onlinePlayers() shouldContainExactly setOf(alice)
+    }
+
+    @Test
+    fun `players whose session expired are pruned from the online set`() {
+        sessions.put(session(alice, "Alice"))
+        valkey.sync().del(ValkeyKeys.session(alice))
+
+        sessions.onlinePlayers() shouldBe emptySet()
+        valkey.sync().smembers(ValkeyKeys.ONLINE_PLAYERS) shouldBe emptySet()
     }
 
     @Test
@@ -88,10 +110,17 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
         cooldowns.record(lobby, NOW, Duration.ofMinutes(1))
         cooldowns.lastScaledAt(lobby) shouldBe NOW
 
-        failures.record(lobby, NOW.minus(Duration.ofMinutes(20)), Duration.ofMinutes(10))
-        failures.record(lobby, NOW, Duration.ofMinutes(10))
-        failures.failures(lobby) shouldContainExactly listOf(NOW)
+        failures.record(lobby, UUID(4, 1), NOW.minus(Duration.ofMinutes(20)), Duration.ofMinutes(10))
+        failures.record(lobby, UUID(4, 2), NOW, Duration.ofMinutes(10))
+        failures.record(lobby, UUID(4, 3), NOW, Duration.ofMinutes(10))
+        // Two pods failing in the same millisecond are two failures.
+        failures.failures(lobby) shouldContainExactly listOf(NOW, NOW)
+
+        failures.pause(lobby)
+        valkey.sync().pttl(ValkeyKeys.crashLoopPaused(lobby)) shouldBe -1L
+        failures.isPaused(lobby) shouldBe true
         failures.clear(lobby)
+        failures.isPaused(lobby) shouldBe false
         failures.failures(lobby) shouldBe emptyList()
 
         readModels.put(ReadModelKind.GROUP, "lobby", byteArrayOf(1, 2, 3))
