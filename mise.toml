@@ -18,7 +18,7 @@ shellcheck = "0.11.0"
 gitleaks = "8.30.1"
 trivy = "0.76.1"
 protoc-gen-go = "1.36.12"
-protoc-gen-go-grpc = "1.6.2"
+protoc-gen-go-grpc = "1.84.0"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
 
 # Each ecosystem adds its own check, fmt, build and test tasks as it lands (T-0004 to T-0008);
