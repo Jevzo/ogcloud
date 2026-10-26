@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "baseBranchPatterns": ["v2"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "ignoreUnstable": true,
+  "prConcurrentLimit": 10,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "One PR per ecosystem for non-major updates; majors stay separate for review",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "{{manager}} non-major"
+    },
+    {
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "semanticCommitScope": "jvm"
+    },
+    {
+      "matchManagers": ["gomod"],
+      "semanticCommitScope": "go",
+      "postUpdateOptions": ["gomodTidy"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "semanticCommitScope": "ts"
+    },
+    {
+      "matchManagers": ["mise"],
+      "semanticCommitScope": "tools"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "actions"
+    }
+  ]
+}

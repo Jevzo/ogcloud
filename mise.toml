@@ -142,6 +142,8 @@ else
 fi
 go build -o .gradle/commitmsg ./data-plane/pkg/cmd/commitmsg
 for commit in $commits; do
+  # Renovate writes its own Conventional Commit headers, often longer than our 72-character limit.
+  if [ "$(git log -1 --format=%an "$commit")" = "renovate[bot]" ]; then continue; fi
   git log -1 --format=%B "$commit" | .gradle/commitmsg - || { echo "in commit $commit" >&2; exit 1; }
 done
 """
