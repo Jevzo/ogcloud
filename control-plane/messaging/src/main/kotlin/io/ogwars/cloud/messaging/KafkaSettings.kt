@@ -4,6 +4,7 @@ import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.security.scram.ScramLoginModule
+import org.springframework.boot.context.properties.ConfigurationProperties
 
 /** SCRAM credentials of the service's Strimzi KafkaUser; the password comes from Infisical (D-0044). */
 data class ScramCredentials(
@@ -16,6 +17,7 @@ data class TlsTrust(
     val caCertificatePath: String,
 )
 
+@ConfigurationProperties("ogcloud.kafka")
 data class KafkaSettings(
     val bootstrapServers: String,
     /** Service name; also the prefix of its consumer groups, matching the generated ACLs. */

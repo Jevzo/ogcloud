@@ -1,7 +1,9 @@
 package io.ogwars.cloud.storage
 
+import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 
+@ConfigurationProperties("ogcloud.s3")
 data class S3Settings(
     val endpoint: URI,
     val region: String,

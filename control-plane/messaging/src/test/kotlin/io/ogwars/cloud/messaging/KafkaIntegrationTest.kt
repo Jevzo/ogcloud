@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /** Same broker line Strimzi 1.3 runs (Kafka 4.3). */
-const val KAFKA_IMAGE = "apache/kafka:4.3.1"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KafkaIntegrationTest {

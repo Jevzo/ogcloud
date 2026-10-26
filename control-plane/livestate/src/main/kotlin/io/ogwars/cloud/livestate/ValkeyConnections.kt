@@ -48,8 +48,11 @@ object ValkeyConnections {
     /** Opens one thread-safe connection; the caller closes it and shuts the client down, which frees its resources. */
     fun connect(settings: ValkeySettings): Pair<RedisClient, ValkeyConnection> {
         val client = RedisClient.create(uri(settings))
-        return client to client.connect(codec)
+        return client to open(client)
     }
+
+    /** One thread-safe connection with OgCloud's codec; closing it leaves [client] running. */
+    fun open(client: RedisClient): ValkeyConnection = client.connect(codec)
 
     /** As [connect], with shared [resources] that the caller owns and shuts down itself. */
     fun connect(
@@ -57,7 +60,7 @@ object ValkeyConnections {
         resources: ClientResources,
     ): Pair<RedisClient, ValkeyConnection> {
         val client = RedisClient.create(resources, uri(settings))
-        return client to client.connect(codec)
+        return client to open(client)
     }
 
     fun uri(settings: ValkeySettings): RedisURI {

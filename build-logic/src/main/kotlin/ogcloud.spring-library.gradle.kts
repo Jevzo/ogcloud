@@ -9,4 +9,6 @@ plugins {
 dependencies {
     implementation(platform(SpringBootPlugin.BOM_COORDINATES))
     testImplementation(platform(SpringBootPlugin.BOM_COORDINATES))
+    // ApplicationContextRunner's context type extends an AssertJ interface; assertions stay Kotest (D-0028).
+    testImplementation("org.assertj:assertj-core")
 }

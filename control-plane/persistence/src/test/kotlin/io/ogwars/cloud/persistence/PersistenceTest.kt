@@ -22,21 +22,5 @@ class FixedClockConfiguration {
 @Retention(AnnotationRetention.RUNTIME)
 @DataJdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(
-    PostgresContainerConfiguration::class,
-    FixedClockConfiguration::class,
-    JsonCodec::class,
-    JdbcGroupStore::class,
-    JdbcNetworkSettingsStore::class,
-    JdbcPermissionGroupStore::class,
-    JdbcTemplateVersionStore::class,
-    JdbcPlayerStore::class,
-    JdbcNpcStore::class,
-    JdbcJobStore::class,
-    JdbcAuditLogStore::class,
-    JdbcScalingLogStore::class,
-    JdbcRetentionStore::class,
-    JdbcRuntimeArtifactStore::class,
-    SchemaVersionProbe::class,
-)
+@Import(PostgresContainerConfiguration::class, FixedClockConfiguration::class, PersistenceStores::class)
 annotation class PersistenceTest
