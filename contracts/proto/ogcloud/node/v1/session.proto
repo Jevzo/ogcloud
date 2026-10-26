@@ -51,6 +51,7 @@ message SessionResponse {
     ogcloud.events.v1.NodeBroadcast broadcast = 3;
     Delivery delivery = 4;
     LiveChannelDelivery live_message = 5;
+    ServerCommandResult server_command_result = 6;
   }
 }
 
@@ -104,7 +105,7 @@ message PlayerActivityReport {
 message ServerCommandRequest {
   // Set for in-game admin commands, so the audit log names the player.
   string acting_player_uuid = 1;
-  // Only for request: the server id is assigned by the gateway and returned in the result.
+  // Target for stop, kill and push_template; empty for request, whose id the gateway assigns.
   string server_id = 2;
   oneof command {
     ogcloud.events.v1.RequestServer request = 3;
@@ -112,6 +113,17 @@ message ServerCommandRequest {
     ogcloud.events.v1.KillServer kill = 5;
     ogcloud.events.v1.PushTemplate push_template = 6;
   }
+  // Chosen by the node, unique per session; echoed in the ServerCommandResult (D-0068).
+  string request_id = 7;
+}
+
+// The gateway's answer to one ServerCommandRequest.
+message ServerCommandResult {
+  string request_id = 1;
+  // The target, or the id assigned to a requested server.
+  string server_id = 2;
+  // Empty when the command was accepted; otherwise why it was rejected.
+  string error = 3;
 }
 
 message LiveChannelSubscription {
