@@ -4,6 +4,7 @@ import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobState
 import io.ogwars.cloud.domain.store.JobStore
+import io.ogwars.cloud.domain.store.StaleUpdateException
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -29,6 +30,7 @@ class JdbcJobStore(
                 createdAt = rs.instant("created_at"),
                 startedAt = rs.instantOrNull("started_at"),
                 finishedAt = rs.instantOrNull("finished_at"),
+                version = rs.getLong("version"),
             )
         }
 
@@ -53,19 +55,23 @@ class JdbcJobStore(
             .optional()
             .orElse(null)
 
-    override fun update(job: Job) {
+    override fun update(job: Job): Job {
         val updated =
             jdbc
                 .sql(
                     """
                     update jobs set state = :state, payload = cast(:payload as jsonb), progress = cast(:progress as jsonb),
                         completed_steps = :completed, total_steps = :total, message = :message,
-                        started_at = :startedAt, finished_at = :finishedAt
-                    where id = :id
+                        started_at = :startedAt, finished_at = :finishedAt, version = version + 1
+                    where id = :id and version = :version
                     """.trimIndent(),
-                ).params(parameters(job))
+                ).params(parameters(job) + ("version" to job.version))
                 .update()
-        if (updated == 0) throw NoSuchElementException("Job ${job.id} does not exist")
+        if (updated == 0) {
+            if (find(job.id) == null) throw NoSuchElementException("Job ${job.id} does not exist")
+            throw StaleUpdateException("Job ${job.id} changed since version ${job.version}")
+        }
+        return job.copy(version = job.version + 1)
     }
 
     override fun findActive(): List<Job> =

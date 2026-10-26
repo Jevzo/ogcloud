@@ -29,4 +29,6 @@ data class Job(
     val createdAt: Instant,
     val startedAt: Instant? = null,
     val finishedAt: Instant? = null,
+    /** Bumped by every update; a deposed leader's stale write is rejected (fencing). */
+    val version: Long = 0,
 )

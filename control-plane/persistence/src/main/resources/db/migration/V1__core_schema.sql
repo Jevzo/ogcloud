@@ -151,7 +151,9 @@ create table jobs (
     created_by       text        not null,
     created_at       timestamptz not null default now(),
     started_at       timestamptz,
-    finished_at      timestamptz
+    finished_at      timestamptz,
+    -- Fencing: a deposed leader's update of an older version is rejected.
+    version          bigint      not null default 0
 );
 
 create index jobs_active on jobs (created_at) where state in ('QUEUED', 'RUNNING');
@@ -204,5 +206,7 @@ insert into network_settings (id) values (1);
 insert into permission_groups (id, name, weight, is_default)
 values ('default', 'Default', 100, true);
 
--- The controller needs data access but must not change the schema.
+-- The controller needs data access but must not change the schema. Default privileges extend this
+-- to tables created by later migrations, which run as the same owner.
 grant select, insert, update, delete on all tables in schema public to ${controllerRole};
+alter default privileges in schema public grant select, insert, update, delete on tables to ${controllerRole};

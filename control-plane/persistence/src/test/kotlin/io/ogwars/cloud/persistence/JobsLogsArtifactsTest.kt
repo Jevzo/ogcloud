@@ -16,6 +16,8 @@ import io.ogwars.cloud.domain.store.JobStore
 import io.ogwars.cloud.domain.store.RetentionStore
 import io.ogwars.cloud.domain.store.RuntimeArtifactStore
 import io.ogwars.cloud.domain.store.ScalingLogStore
+import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -47,10 +49,20 @@ class JobsLogsArtifactsTest(
                 completedSteps = 1,
                 startedAt = NOW,
             )
-        jobs.update(running)
+        val saved = jobs.update(running)
 
-        jobs.find(restart.id) shouldBe running
-        jobs.findActive() shouldContainExactly listOf(running)
+        saved.version shouldBe 1
+        jobs.find(restart.id) shouldBe saved
+        jobs.findActive() shouldContainExactly listOf(saved)
+    }
+
+    @Test
+    fun `a deposed leader cannot overwrite newer job progress`() {
+        val job = job(JobState.RUNNING)
+        jobs.create(job)
+        jobs.update(job.copy(completedSteps = 2))
+
+        shouldThrow<StaleUpdateException> { jobs.update(job.copy(state = JobState.FAILED)) }
     }
 
     @Test

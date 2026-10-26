@@ -7,6 +7,9 @@ import io.ogwars.cloud.domain.group.ImageOverride
 import io.ogwars.cloud.domain.group.ResourceSpec
 import io.ogwars.cloud.domain.group.ScalingPolicy
 import io.ogwars.cloud.domain.store.GroupStore
+import io.ogwars.cloud.domain.store.Revisioned
+import io.ogwars.cloud.domain.store.StaleUpdateException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate
@@ -68,6 +71,13 @@ interface GroupRecordRepository : CrudRepository<GroupRecord, String> {
 
     @Query("select id from groups where deleted_at < :cutoff order by deleted_at")
     fun idsDeletedBefore(cutoff: Instant): List<String>
+
+    @Modifying
+    @Query("delete from groups where id = :id and deleted_at is not null and deleted_at < :cutoff")
+    fun purgeIfDeletedBefore(
+        id: String,
+        cutoff: Instant,
+    ): Int
 }
 
 @Repository
@@ -76,21 +86,30 @@ class JdbcGroupStore(
     private val aggregates: JdbcAggregateTemplate,
     private val clock: Clock,
 ) : GroupStore {
-    override fun findAll(): List<Group> = records.findAllActive().map(::toDomain)
+    override fun findAll(): List<Revisioned<Group>> = records.findAllActive().map(::revisioned)
 
-    override fun find(id: GroupId): Group? = records.findActive(id.value)?.let(::toDomain)
+    override fun find(id: GroupId): Revisioned<Group>? = records.findActive(id.value)?.let(::revisioned)
 
     override fun create(group: Group) {
         val now = clock.instant()
         aggregates.insert(toRecord(group, createdAt = now, updatedAt = now, version = 0))
     }
 
-    override fun update(group: Group) {
+    override fun update(
+        expectedVersion: Long,
+        group: Group,
+    ) {
         val existing =
             records.findActive(group.id.value) ?: throw NoSuchElementException("Group ${group.id} does not exist")
-        records.save(
-            toRecord(group, createdAt = existing.createdAt, updatedAt = clock.instant(), version = existing.version),
-        )
+        try {
+            aggregates.update(
+                toRecord(group, createdAt = existing.createdAt, updatedAt = clock.instant(), version = expectedVersion),
+            )
+        } catch (e: OptimisticLockingFailureException) {
+            throw StaleUpdateException(
+                "Group ${group.id} changed since version $expectedVersion",
+            ).apply { initCause(e) }
+        }
     }
 
     override fun softDelete(
@@ -106,7 +125,12 @@ class JdbcGroupStore(
 
     override fun deletedBefore(cutoff: Instant): List<GroupId> = records.idsDeletedBefore(cutoff).map(::GroupId)
 
-    override fun purge(id: GroupId) = records.deleteById(id.value)
+    override fun purge(
+        id: GroupId,
+        deletedBefore: Instant,
+    ): Boolean = records.purgeIfDeletedBefore(id.value, deletedBefore) == 1
+
+    private fun revisioned(record: GroupRecord) = Revisioned(toDomain(record), record.version)
 
     private fun toDomain(record: GroupRecord) =
         Group(

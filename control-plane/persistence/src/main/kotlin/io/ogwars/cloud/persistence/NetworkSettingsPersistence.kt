@@ -4,6 +4,9 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.network.NetworkSettings
 import io.ogwars.cloud.domain.network.RoutingStrategy
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
+import io.ogwars.cloud.domain.store.Revisioned
+import io.ogwars.cloud.domain.store.StaleUpdateException
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate
@@ -43,10 +46,23 @@ class JdbcNetworkSettingsStore(
     private val aggregates: JdbcAggregateTemplate,
     private val clock: Clock,
 ) : NetworkSettingsStore {
-    override fun load(): NetworkSettings = toDomain(current())
+    override fun load(): Revisioned<NetworkSettings> = current().let { Revisioned(toDomain(it), it.version) }
 
-    override fun save(settings: NetworkSettings) {
-        val existing = current()
+    override fun save(
+        expectedVersion: Long,
+        settings: NetworkSettings,
+    ) {
+        try {
+            write(expectedVersion, settings)
+        } catch (e: OptimisticLockingFailureException) {
+            throw StaleUpdateException("Network settings changed since version $expectedVersion").apply { initCause(e) }
+        }
+    }
+
+    private fun write(
+        expectedVersion: Long,
+        settings: NetworkSettings,
+    ) {
         aggregates.update(
             NetworkSettingsRecord(
                 id = SINGLETON_ID,
@@ -65,7 +81,7 @@ class JdbcNetworkSettingsStore(
                 maintenanceKickMessage = settings.maintenanceKickMessage,
                 eulaAcceptedAt = settings.eulaAcceptedAt,
                 requireMinecraftLink = settings.requireMinecraftLink,
-                version = existing.version,
+                version = expectedVersion,
                 updatedAt = clock.instant(),
             ),
         )

@@ -6,6 +6,8 @@ import io.ogwars.cloud.domain.permission.PermissionGroup
 import io.ogwars.cloud.domain.permission.RankDisplay
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.PermissionGroupStore
+import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -19,18 +21,19 @@ class SettingsAndPermissionsTest(
     @Test
     fun `network settings start from the seeded defaults and save changes`() {
         val seeded = settings.load()
-        seeded.defaultGroupId shouldBe GroupId("lobby")
-        seeded.eulaAccepted shouldBe false
+        seeded.value.defaultGroupId shouldBe GroupId("lobby")
+        seeded.value.eulaAccepted shouldBe false
 
         val changed =
-            seeded.copy(
+            seeded.value.copy(
                 maintenance = true,
                 routingStrategy = RoutingStrategy.ROUND_ROBIN,
                 eulaAcceptedAt = NOW,
             )
-        settings.save(changed)
+        settings.save(seeded.revision, changed)
 
-        settings.load() shouldBe changed
+        settings.load().value shouldBe changed
+        shouldThrow<StaleUpdateException> { settings.save(seeded.revision, changed.copy(maxPlayers = 10)) }
     }
 
     @Test

@@ -19,15 +19,18 @@ import java.util.UUID
 // Ports for persistent state (D-0009); the persistence module implements them.
 
 interface GroupStore {
-    /** Groups that are not soft-deleted. */
-    fun findAll(): List<Group>
+    /** Groups that are not soft-deleted, with the version to present when updating them. */
+    fun findAll(): List<Revisioned<Group>>
 
-    fun find(id: GroupId): Group?
+    fun find(id: GroupId): Revisioned<Group>?
 
     fun create(group: Group)
 
-    /** Overwrites the stored group and bumps its version. */
-    fun update(group: Group)
+    /** Replaces the group if it still has [expectedVersion]; otherwise throws [StaleUpdateException]. */
+    fun update(
+        expectedVersion: Long,
+        group: Group,
+    )
 
     fun softDelete(
         id: GroupId,
@@ -38,14 +41,24 @@ interface GroupStore {
 
     fun deletedBefore(cutoff: Instant): List<GroupId>
 
-    /** Removes the group with its template versions and NPCs. */
-    fun purge(id: GroupId)
+    /**
+     * Removes a group soft-deleted before [deletedBefore], with its template versions and NPCs.
+     * Returns false if it was restored meanwhile.
+     */
+    fun purge(
+        id: GroupId,
+        deletedBefore: Instant,
+    ): Boolean
 }
 
 interface NetworkSettingsStore {
-    fun load(): NetworkSettings
+    fun load(): Revisioned<NetworkSettings>
 
-    fun save(settings: NetworkSettings)
+    /** Saves if the settings still have [expectedVersion]; otherwise throws [StaleUpdateException]. */
+    fun save(
+        expectedVersion: Long,
+        settings: NetworkSettings,
+    )
 }
 
 interface PermissionGroupStore {
@@ -105,7 +118,8 @@ interface JobStore {
 
     fun find(id: UUID): Job?
 
-    fun update(job: Job)
+    /** Saves if the stored job still has [Job.version]; returns it with the new version or throws [StaleUpdateException]. */
+    fun update(job: Job): Job
 
     /** Queued and running jobs, oldest first, for a new leader to resume. */
     fun findActive(): List<Job>
@@ -139,3 +153,8 @@ interface RetentionStore {
         limit: Int,
     ): Int
 }
+
+/** The record changed since it was read; reload and decide again. */
+class StaleUpdateException(
+    message: String,
+) : RuntimeException(message)
