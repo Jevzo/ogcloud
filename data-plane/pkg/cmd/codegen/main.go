@@ -1,6 +1,7 @@
 // Command codegen renders generated sources from the contract files in contracts/ (D-0057).
 //
 //	codegen topics -in contracts/kafka/topics.yaml -go-out … -kotlin-out … -strimzi-out …
+//	codegen profiles -in contracts/runtime-profiles.yaml -go-out … -kotlin-out …
 package main
 
 import (
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/profiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/topics"
 )
 
@@ -27,11 +29,13 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: codegen topics [flags]")
+		return errors.New("usage: codegen <topics|profiles> [flags]")
 	}
 	switch args[0] {
 	case "topics":
 		return runTopics(args[1:])
+	case "profiles":
+		return runProfiles(args[1:])
 	default:
 		return fmt.Errorf("unknown generator %q", args[0])
 	}
@@ -83,6 +87,44 @@ func runTopics(args []string) error {
 		if err := write(*strimziOut, topics.RenderStrimzi(resolved)); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func runProfiles(args []string) error {
+	flags := flag.NewFlagSet("profiles", flag.ContinueOnError)
+	in := flags.String("in", "", "path to runtime-profiles.yaml")
+	goOut := flags.String("go-out", "", "Go output file (optional)")
+	kotlinOut := flags.String("kotlin-out", "", "Kotlin output file (optional)")
+	kotlinPackage := flags.String("kotlin-package", "io.ogwars.cloud.domain.runtime", "Kotlin package name")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("parse flags: %w", err)
+	}
+	if *in == "" {
+		return errors.New("profiles: -in is required")
+	}
+	data, err := os.ReadFile(*in)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", *in, err)
+	}
+	catalog, err := profiles.Parse(data)
+	if err != nil {
+		return fmt.Errorf("%s: %w", *in, err)
+	}
+	if err := catalog.Validate(); err != nil {
+		return fmt.Errorf("%s: %w", *in, err)
+	}
+	if *goOut != "" {
+		source, err := profiles.RenderGo(catalog)
+		if err != nil {
+			return err
+		}
+		if err := write(*goOut, source); err != nil {
+			return err
+		}
+	}
+	if *kotlinOut != "" {
+		return write(*kotlinOut, profiles.RenderKotlin(*kotlinPackage, catalog))
 	}
 	return nil
 }

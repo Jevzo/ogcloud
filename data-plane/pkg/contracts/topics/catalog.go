@@ -3,14 +3,13 @@
 package topics
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"time"
 
-	"go.yaml.in/yaml/v3"
+	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/internal/strictyaml"
 )
 
 const deadLetterSuffix = ".dlt"
@@ -57,10 +56,8 @@ type Topic struct {
 // Parse decodes topics.yaml, rejecting unknown fields so typos fail loudly.
 func Parse(data []byte) (Catalog, error) {
 	var catalog Catalog
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&catalog); err != nil {
-		return Catalog{}, fmt.Errorf("decode topics catalog: %w", err)
+	if err := strictyaml.Decode(data, &catalog); err != nil {
+		return Catalog{}, fmt.Errorf("topics catalog: %w", err)
 	}
 	return catalog, nil
 }

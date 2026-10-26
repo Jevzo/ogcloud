@@ -1,0 +1,14 @@
+forwarding: bungeeguard
+clientProtocols:
+  min: 47
+  max: 777
+profiles:
+  - id: paper-26.3
+    platform: paper
+    version: "26.3"
+    protocol: 777
+    java: 25
+  - id: velocity-4.3.0
+    platform: velocity
+    version: "4.3.0"
+    java: 25

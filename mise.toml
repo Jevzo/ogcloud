@@ -98,7 +98,7 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto"]
+depends = ["gen:proto", "gen:profiles"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -112,6 +112,10 @@ fi
 buf generate
 """
 
+[tasks."gen:profiles"]
+description = "Generate the runtime profile catalog from contracts/runtime-profiles.yaml"
+run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go"
+
 # Each generator's output path is listed here when its first real output is wired (T-0101, T-0102).
 [tasks."check:generated"]
 description = "Fail when committed generated sources differ from a fresh `mise run gen`"
@@ -119,7 +123,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2

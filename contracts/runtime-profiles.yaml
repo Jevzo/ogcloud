@@ -1,0 +1,26 @@
+# Runtime profile catalog (D-0006): every server platform version OgCloud can run.
+# Regenerate with `mise run gen` after editing.
+
+# Velocity forwards player info in BungeeGuard mode to every backend (D-0065).
+forwarding: bungeeguard
+
+# Client protocol numbers the load balancer admits: 1.8 up to the newest backend.
+clientProtocols:
+  min: 47
+  max: 777
+
+profiles:
+  - id: paper-26.3
+    platform: paper
+    version: "26.3"
+    protocol: 777
+    java: 25
+  - id: pandaspigot-1.8.8
+    platform: pandaspigot
+    version: "1.8.8"
+    protocol: 47
+    java: 25
+  - id: velocity-4.3.0
+    platform: velocity
+    version: "4.3.0"
+    java: 25
