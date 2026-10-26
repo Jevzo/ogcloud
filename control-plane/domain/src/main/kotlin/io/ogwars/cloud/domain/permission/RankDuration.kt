@@ -36,14 +36,21 @@ sealed interface RankDuration {
             val parts = trimmed.split(Regex("\\s+")).filter(String::isNotEmpty)
             require(parts.isNotEmpty()) { "Rank duration is empty" }
             val total =
-                parts.fold(Duration.ZERO) { sum, part ->
-                    val unit = unitByChar[part.last()] ?: throw IllegalArgumentException("Unknown time unit in '$part'")
-                    val amount = part.dropLast(1).toLongOrNull()
-                    require(amount != null && amount > 0) { "Invalid amount in '$part'" }
-                    sum + unit.multipliedBy(amount)
+                try {
+                    sum(parts)
+                } catch (e: ArithmeticException) {
+                    throw IllegalArgumentException("Rank duration '$text' is too long", e)
                 }
             return Timed(total)
         }
+
+        private fun sum(parts: List<String>): Duration =
+            parts.fold(Duration.ZERO) { sum, part ->
+                val unit = unitByChar[part.last()] ?: throw IllegalArgumentException("Unknown time unit in '$part'")
+                val amount = part.dropLast(1).toLongOrNull()
+                require(amount != null && amount > 0) { "Invalid amount in '$part'" }
+                sum + unit.multipliedBy(amount)
+            }
 
         fun format(duration: RankDuration): String =
             when (duration) {

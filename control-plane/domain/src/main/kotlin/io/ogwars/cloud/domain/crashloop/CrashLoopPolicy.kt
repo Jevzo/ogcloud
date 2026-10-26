@@ -25,7 +25,11 @@ sealed interface CrashLoopStatus {
         val until: Instant,
     ) : CrashLoopStatus
 
+    /** Latched: stays until an admin resumes the group, even after old failures age out. */
     data object Paused : CrashLoopStatus
+
+    /** The threshold was just reached; the caller latches the pause. */
+    data object PauseNow : CrashLoopStatus
 }
 
 /** A group whose servers keep failing before they run is slowed down, then paused (no pod churn). */
@@ -34,11 +38,13 @@ class CrashLoopPolicy(
 ) {
     fun status(
         failures: List<Instant>,
+        pausedByLatch: Boolean,
         now: Instant,
     ): CrashLoopStatus {
+        if (pausedByLatch) return CrashLoopStatus.Paused
         val recent = failures.filter { Duration.between(it, now) <= settings.window }.sorted()
         if (recent.isEmpty()) return CrashLoopStatus.Healthy
-        if (recent.size >= settings.pauseAfter) return CrashLoopStatus.Paused
+        if (recent.size >= settings.pauseAfter) return CrashLoopStatus.PauseNow
         val until = recent.last().plus(backoff(recent.size))
         return if (now.isBefore(until)) CrashLoopStatus.BackingOff(until) else CrashLoopStatus.Healthy
     }

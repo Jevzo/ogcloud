@@ -50,7 +50,7 @@ class LifecyclePolicyTest {
 
     @Test
     fun `after the drain timeout players are transferred, then the server is forced down`() {
-        val draining = server(state = ServerState.DRAINING, players = 3)
+        val draining = server(state = ServerState.DRAINING, players = 3, lastHeartbeatAt = T0.plusSeconds(85))
         val minecraft = group(id = "bedwars")
 
         policy.overdueAction(draining, minecraft, lobby, T0.plusSeconds(59)) shouldBe OverdueAction.None
@@ -60,11 +60,22 @@ class LifecyclePolicyTest {
     }
 
     @Test
-    fun `draining proxies with players are never forced down`() {
-        val proxy = server(state = ServerState.DRAINING, groupType = GroupType.PROXY, players = 10)
+    fun `draining proxies with players are never forced down while they heartbeat`() {
+        val later = T0.plus(Duration.ofHours(2))
+        val proxy =
+            server(state = ServerState.DRAINING, groupType = GroupType.PROXY, players = 10, lastHeartbeatAt = later)
         val proxies = group(type = GroupType.PROXY, id = "proxy")
 
-        policy.overdueAction(proxy, proxies, lobby, T0.plus(Duration.ofHours(2))) shouldBe OverdueAction.None
+        policy.overdueAction(proxy, proxies, lobby, later) shouldBe OverdueAction.None
+    }
+
+    @Test
+    fun `a draining server that stops heartbeating is stopped`() {
+        val hung = server(state = ServerState.DRAINING, groupType = GroupType.PROXY, players = 40, lastHeartbeatAt = T0)
+
+        policy
+            .overdueAction(hung, group(type = GroupType.PROXY, id = "proxy"), lobby, T0.plusSeconds(31))
+            .shouldBeInstanceOf<OverdueAction.Stop>()
     }
 
     @Test

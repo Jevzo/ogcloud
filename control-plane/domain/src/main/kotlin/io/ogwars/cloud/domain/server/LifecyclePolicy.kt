@@ -56,13 +56,35 @@ class LifecyclePolicy(
     ): OverdueAction {
         val inState = Duration.between(server.stateSince, now)
         return when (server.state) {
-            ServerState.REQUESTED -> cleanUpAfter(inState, timeouts.requested, "stuck in REQUESTED")
-            ServerState.PREPARING -> cleanUpAfter(inState, timeouts.preparing, "stuck in PREPARING")
-            ServerState.STARTING -> cleanUpAfter(inState, timeouts.starting, "no heartbeat after start")
-            ServerState.RUNNING -> heartbeatCheck(server, now)
-            ServerState.DRAINING -> drainCheck(server, group, defaultGroupId, inState)
-            ServerState.STOPPING -> cleanUpAfter(inState, timeouts.stopping, "pod did not terminate")
-            ServerState.STOPPED -> OverdueAction.None
+            ServerState.REQUESTED -> {
+                cleanUpAfter(inState, timeouts.requested, "stuck in REQUESTED")
+            }
+
+            ServerState.PREPARING -> {
+                cleanUpAfter(inState, timeouts.preparing, "stuck in PREPARING")
+            }
+
+            ServerState.STARTING -> {
+                cleanUpAfter(inState, timeouts.starting, "no heartbeat after start")
+            }
+
+            ServerState.RUNNING -> {
+                heartbeatCheck(server, now)
+            }
+
+            // A draining server that stops heartbeating would otherwise never report an empty count.
+            ServerState.DRAINING -> {
+                heartbeatCheck(server, now).takeUnless { it == OverdueAction.None }
+                    ?: drainCheck(server, group, defaultGroupId, inState)
+            }
+
+            ServerState.STOPPING -> {
+                cleanUpAfter(inState, timeouts.stopping, "pod did not terminate")
+            }
+
+            ServerState.STOPPED -> {
+                OverdueAction.None
+            }
         }
     }
 

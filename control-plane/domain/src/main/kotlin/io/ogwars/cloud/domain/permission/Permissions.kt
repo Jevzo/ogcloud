@@ -55,8 +55,19 @@ data class PlayerRank(
                 groupId = groupId,
                 expiresAt =
                     when (duration) {
-                        RankDuration.Permanent -> null
-                        is RankDuration.Timed -> now.plus(duration.duration)
+                        RankDuration.Permanent -> {
+                            null
+                        }
+
+                        is RankDuration.Timed -> {
+                            runCatching { now.plus(duration.duration) }
+                                .getOrElse {
+                                    throw IllegalArgumentException(
+                                        "Rank duration ends beyond the supported date range",
+                                        it,
+                                    )
+                                }
+                        }
                     },
             )
     }

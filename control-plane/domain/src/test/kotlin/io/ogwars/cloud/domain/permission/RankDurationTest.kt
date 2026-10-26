@@ -25,7 +25,7 @@ class RankDurationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["", "5", "5x", "-5d", "0d", "d"])
+    @ValueSource(strings = ["", "5", "5x", "-5d", "0d", "d", "99999999999999999Y"])
     fun `rejects malformed durations`(text: String) {
         shouldThrow<IllegalArgumentException> { RankDuration.parse(text) }
     }
