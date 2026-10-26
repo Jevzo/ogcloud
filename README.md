@@ -26,7 +26,7 @@ Every tool version is pinned in `mise.toml` and installed with [mise](https://mi
 
 ```sh
 mise install             # JDK, Go, Node, pnpm, Terraform, Helm, minikube, Tilt, linters
-mise run hooks:install   # commit-msg hook: Conventional Commits, no AI attribution
+mise run hooks:install   # commit-msg hook: Conventional Commits
 mise run check           # all quality gates
 mise run gen             # regenerate code from contracts/
 ```
