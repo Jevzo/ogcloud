@@ -6,6 +6,8 @@ plugins {
 dependencies {
     api(libs.protobuf.java)
     api(libs.protobuf.kotlin)
+    api(libs.grpc.protobuf)
+    api(libs.grpc.stub)
 }
 
 sourceSets {
@@ -23,10 +25,21 @@ protobuf {
                 .get()
                 .toString()
     }
+    plugins {
+        create("grpc") {
+            artifact =
+                libs.grpc.protoc.gen.java
+                    .get()
+                    .toString()
+        }
+    }
     generateProtoTasks {
         all().configureEach {
             builtins {
                 create("kotlin")
+            }
+            plugins {
+                create("grpc")
             }
         }
     }

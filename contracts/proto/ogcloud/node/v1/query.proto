@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package ogcloud.node.v1;
+
+import "google/protobuf/timestamp.proto";
+import "ogcloud/events/v1/common.proto";
+
+message ServerInfo {
+  string server_id = 1;
+  string group_id = 2;
+  ogcloud.events.v1.GroupType group_type = 3;
+  string profile_id = 4;
+  ogcloud.events.v1.ServerState state = 5;
+  ogcloud.events.v1.GameState game_state = 6;
+  string host = 7;
+  uint32 port = 8;
+  uint32 players = 9;
+  uint32 max_players = 10;
+  bool group_maintenance = 11;
+}
+
+message GetServerRequest {
+  string server_id = 1;
+}
+
+message GetServerResponse {
+  ServerInfo server = 1;
+}
+
+message ListServersRequest {
+  // Empty lists every server.
+  string group_id = 1;
+}
+
+message ListServersResponse {
+  repeated ServerInfo servers = 1;
+}
+
+message FindPlayerRequest {
+  oneof player {
+    string player_uuid = 1;
+    string player_name = 2;
+  }
+}
+
+message FindPlayerResponse {
+  // Unset when the player is offline.
+  PlayerLocation location = 1;
+}
+
+message PlayerLocation {
+  string player_uuid = 1;
+  string player_name = 2;
+  string proxy_id = 3;
+  string server_id = 4;
+}
+
+message GetPlayerProfileRequest {
+  string player_uuid = 1;
+}
+
+message GetPlayerProfileResponse {
+  PlayerProfile profile = 1;
+}
+
+// What a node needs to apply a player's rank: permissions, chat and tablist display.
+message PlayerProfile {
+  string player_uuid = 1;
+  string player_name = 2;
+  string permission_group_id = 3;
+  // Unset for permanent ranks.
+  google.protobuf.Timestamp rank_expires_at = 4;
+  // Read-model version; nodes ignore older updates.
+  uint64 version = 5;
+}
+
+message GetPermissionGroupRequest {
+  string permission_group_id = 1;
+}
+
+message GetPermissionGroupResponse {
+  PermissionGroup permission_group = 1;
+}
+
+message PermissionGroup {
+  string permission_group_id = 1;
+  string name = 2;
+  // Higher weights sort first in the tablist.
+  int32 weight = 3;
+  repeated string permissions = 4;
+  string chat_prefix = 5;
+  string chat_suffix = 6;
+  string name_color = 7;
+  string tab_prefix = 8;
+  uint64 version = 9;
+}
+
+message ListNpcsRequest {
+  string group_id = 1;
+}
+
+message ListNpcsResponse {
+  repeated Npc npcs = 1;
+}
+
+message Npc {
+  string npc_id = 1;
+  string group_id = 2;
+  Location location = 3;
+  string title = 4;
+  string subtitle = 5;
+  string skin_texture = 6;
+  string skin_signature = 7;
+  bool look_at_players = 8;
+  NpcAction left_click = 9;
+  NpcAction right_click = 10;
+}
+
+message Location {
+  string world = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+  float yaw = 5;
+  float pitch = 6;
+}
+
+message NpcAction {
+  oneof action {
+    // Transfer the clicking player to this group.
+    NpcTransfer transfer = 1;
+  }
+}
+
+message NpcTransfer {
+  string group_id = 1;
+  ogcloud.events.v1.RoutingStrategy routing_strategy = 2;
+}

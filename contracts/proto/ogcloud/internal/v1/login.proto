@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+import "ogcloud/node/v1/session.proto";
+
+// Controller endpoint the gateway calls; never exposed to nodes.
+service LoginService {
+  // Upserts the player, resolves the rank and writes the session (no Valkey polling).
+  rpc ResolveLogin(ResolveLoginRequest) returns (ResolveLoginResponse);
+}
+
+message ResolveLoginRequest {
+  ogcloud.node.v1.ResolveLoginRequest login = 1;
+  // The proxy the player connects through, taken from the authenticated gateway session.
+  string proxy_server_id = 2;
+}
+
+message ResolveLoginResponse {
+  ogcloud.node.v1.ResolveLoginResponse result = 1;
+}

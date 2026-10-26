@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package ogcloud.node.v1;
+
+// Calls of the template loader (init container) and push agent (sidecar). Pods never hold
+// object-storage credentials, only presigned URLs (D-0010).
+service TemplateAgentService {
+  // Everything the init container downloads before the server starts.
+  rpc GetPodAssets(GetPodAssetsRequest) returns (GetPodAssetsResponse);
+  // Starts a template upload and returns a presigned URL for the archive.
+  rpc CreateTemplateUpload(CreateTemplateUploadRequest) returns (CreateTemplateUploadResponse);
+  // Registers the uploaded archive as a new template version (D-0042).
+  rpc CompleteTemplateUpload(CompleteTemplateUploadRequest) returns (CompleteTemplateUploadResponse);
+}
+
+message GetPodAssetsRequest {}
+
+message GetPodAssetsResponse {
+  // Absent for groups that start without a template.
+  Download template = 1;
+  repeated BundleArtifact artifacts = 2;
+}
+
+message Download {
+  string url = 1;
+  string sha256 = 2;
+  uint64 size_bytes = 3;
+}
+
+message BundleArtifact {
+  // Path relative to the server directory, e.g. "plugins/ogcloud-paper.jar".
+  string path = 1;
+  Download download = 2;
+}
+
+message CreateTemplateUploadRequest {}
+
+message CreateTemplateUploadResponse {
+  string upload_id = 1;
+  string url = 2;
+}
+
+message CompleteTemplateUploadRequest {
+  string upload_id = 1;
+  string sha256 = 2;
+  uint64 size_bytes = 3;
+}
+
+message CompleteTemplateUploadResponse {
+  string template_version_id = 1;
+}

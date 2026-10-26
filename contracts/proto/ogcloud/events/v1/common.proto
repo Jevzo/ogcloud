@@ -66,4 +66,6 @@ enum NodeType {
   NODE_TYPE_UNSPECIFIED = 0;
   NODE_TYPE_PROXY = 1;
   NODE_TYPE_BACKEND = 2;
+  // The template push agent sidecar of a backend pod.
+  NODE_TYPE_TEMPLATE_AGENT = 3;
 }

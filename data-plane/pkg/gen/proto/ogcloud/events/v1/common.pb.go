@@ -255,6 +255,8 @@ const (
 	NodeType_NODE_TYPE_UNSPECIFIED NodeType = 0
 	NodeType_NODE_TYPE_PROXY       NodeType = 1
 	NodeType_NODE_TYPE_BACKEND     NodeType = 2
+	// The template push agent sidecar of a backend pod.
+	NodeType_NODE_TYPE_TEMPLATE_AGENT NodeType = 3
 )
 
 // Enum value maps for NodeType.
@@ -263,11 +265,13 @@ var (
 		0: "NODE_TYPE_UNSPECIFIED",
 		1: "NODE_TYPE_PROXY",
 		2: "NODE_TYPE_BACKEND",
+		3: "NODE_TYPE_TEMPLATE_AGENT",
 	}
 	NodeType_value = map[string]int32{
-		"NODE_TYPE_UNSPECIFIED": 0,
-		"NODE_TYPE_PROXY":       1,
-		"NODE_TYPE_BACKEND":     2,
+		"NODE_TYPE_UNSPECIFIED":    0,
+		"NODE_TYPE_PROXY":          1,
+		"NODE_TYPE_BACKEND":        2,
+		"NODE_TYPE_TEMPLATE_AGENT": 3,
 	}
 )
 
@@ -527,11 +531,12 @@ const file_ogcloud_events_v1_common_proto_rawDesc = "" +
 	"\x1dROUTING_STRATEGY_LEAST_FILLED\x10\x01\x12 \n" +
 	"\x1cROUTING_STRATEGY_MOST_FILLED\x10\x02\x12\x1d\n" +
 	"\x19ROUTING_STRATEGY_BALANCED\x10\x03\x12 \n" +
-	"\x1cROUTING_STRATEGY_ROUND_ROBIN\x10\x04*Q\n" +
+	"\x1cROUTING_STRATEGY_ROUND_ROBIN\x10\x04*o\n" +
 	"\bNodeType\x12\x19\n" +
 	"\x15NODE_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fNODE_TYPE_PROXY\x10\x01\x12\x15\n" +
-	"\x11NODE_TYPE_BACKEND\x10\x02B\xd8\x01\n" +
+	"\x11NODE_TYPE_BACKEND\x10\x02\x12\x1c\n" +
+	"\x18NODE_TYPE_TEMPLATE_AGENT\x10\x03B\xd8\x01\n" +
 	"\x15com.ogcloud.events.v1B\vCommonProtoP\x01ZLgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1;eventsv1\xa2\x02\x03OEX\xaa\x02\x11Ogcloud.Events.V1\xca\x02\x11Ogcloud\\Events\\V1\xe2\x02\x1dOgcloud\\Events\\V1\\GPBMetadata\xea\x02\x13Ogcloud::Events::V1b\x06proto3"
 
 var (

@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package ogcloud.node.v1;
+
+import "ogcloud/events/v1/common.proto";
+import "ogcloud/events/v1/node.proto";
+import "ogcloud/events/v1/player.proto";
+import "ogcloud/events/v1/server.proto";
+import "ogcloud/node/v1/query.proto";
+
+// The only endpoint plugins, mods and the template agent talk to (D-0008). Every call
+// carries the pod's projected service-account token as a bearer credential (D-0013).
+service GatewayService {
+  // One long-lived stream per node: Hello first, then events both ways.
+  rpc Session(stream SessionRequest) returns (stream SessionResponse);
+
+  rpc ResolveLogin(ResolveLoginRequest) returns (ResolveLoginResponse);
+  rpc GetServer(GetServerRequest) returns (GetServerResponse);
+  rpc ListServers(ListServersRequest) returns (ListServersResponse);
+  rpc FindPlayer(FindPlayerRequest) returns (FindPlayerResponse);
+  rpc GetPlayerProfile(GetPlayerProfileRequest) returns (GetPlayerProfileResponse);
+  rpc GetPermissionGroup(GetPermissionGroupRequest) returns (GetPermissionGroupResponse);
+  rpc ListNpcs(ListNpcsRequest) returns (ListNpcsResponse);
+}
+
+// Version of this node protocol; the gateway refuses versions it does not support.
+enum ProtocolVersion {
+  PROTOCOL_VERSION_UNSPECIFIED = 0;
+  PROTOCOL_VERSION_1 = 1;
+}
+
+message SessionRequest {
+  oneof message {
+    Hello hello = 1;
+    Heartbeat heartbeat = 2;
+    GameStateUpdate game_state = 3;
+    PlayerActivityReport player_activity = 4;
+    ogcloud.events.v1.TransferRequested transfer = 5;
+    ServerCommandRequest server_command = 6;
+    ogcloud.events.v1.NodeCommand node_command = 7;
+    LiveChannelSubscription live_subscription = 8;
+    LiveChannelPublish live_publish = 9;
+    DeliveryResult delivery_result = 10;
+  }
+}
+
+message SessionResponse {
+  oneof message {
+    Welcome welcome = 1;
+    ogcloud.events.v1.ServerLifecycleChanged server_lifecycle = 2;
+    ogcloud.events.v1.NodeBroadcast broadcast = 3;
+    Delivery delivery = 4;
+    LiveChannelDelivery live_message = 5;
+  }
+}
+
+// First message of every session. The server id and node type come from the token's pod;
+// these fields let the gateway reject a mismatched or outdated plugin.
+message Hello {
+  ProtocolVersion protocol_version = 1;
+  ogcloud.events.v1.NodeType node_type = 2;
+  // OgCloud integration version, e.g. "2.0.0".
+  string integration_version = 3;
+  // Optional features the node implements, e.g. "npc" or "live-channels".
+  repeated string capabilities = 4;
+}
+
+message Welcome {
+  ProtocolVersion protocol_version = 1;
+  string server_id = 2;
+  string group_id = 3;
+  ogcloud.events.v1.GroupType group_type = 4;
+  // Current state, so a node starts consistent before the first broadcast arrives.
+  ogcloud.events.v1.NetworkSettingsUpdated network_settings = 5;
+  // Proxies only: every server they may route to.
+  repeated ServerInfo servers = 6;
+}
+
+message Heartbeat {
+  uint32 players = 1;
+  uint32 max_players = 2;
+  double tps = 3;
+  double mspt = 4;
+  uint64 memory_used_bytes = 5;
+  uint64 memory_max_bytes = 6;
+}
+
+message GameStateUpdate {
+  ogcloud.events.v1.GameState game_state = 1;
+}
+
+// Proxies report players joining, switching and leaving.
+message PlayerActivityReport {
+  string player_uuid = 1;
+  oneof activity {
+    ogcloud.events.v1.PlayerConnected connected = 2;
+    ogcloud.events.v1.PlayerSwitched switched = 3;
+    ogcloud.events.v1.PlayerDisconnected disconnected = 4;
+  }
+}
+
+// Commands a node may issue; the gateway checks them against the node type and,
+// for in-game admin commands, the acting player's permissions.
+message ServerCommandRequest {
+  // Set for in-game admin commands, so the audit log names the player.
+  string acting_player_uuid = 1;
+  // Only for request: the server id is assigned by the gateway and returned in the result.
+  string server_id = 2;
+  oneof command {
+    ogcloud.events.v1.RequestServer request = 3;
+    ogcloud.events.v1.StopServer stop = 4;
+    ogcloud.events.v1.KillServer kill = 5;
+    ogcloud.events.v1.PushTemplate push_template = 6;
+  }
+}
+
+message LiveChannelSubscription {
+  string channel = 1;
+  bool subscribed = 2;
+}
+
+// Broadcast to every node subscribed to the channel, at most once; payloads up to 64 KiB.
+message LiveChannelPublish {
+  string channel = 1;
+  string type_id = 2;
+  bytes payload = 3;
+}
+
+message LiveChannelDelivery {
+  string channel = 1;
+  string sender_server_id = 2;
+  ogcloud.events.v1.NodeType sender_node_type = 3;
+  string type_id = 4;
+  bytes payload = 5;
+}
+
+// Something the node must act on and acknowledge with a DeliveryResult.
+message Delivery {
+  string delivery_id = 1;
+  oneof action {
+    ogcloud.events.v1.TransferRequested transfer = 2;
+    ogcloud.events.v1.NodeCommand command = 3;
+    ogcloud.events.v1.LinkCodeIssued link_code = 4;
+    // Template agents only: upload the server's files as a new version.
+    ogcloud.events.v1.PushTemplate push_template = 5;
+  }
+}
+
+message DeliveryResult {
+  string delivery_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message ResolveLoginRequest {
+  string player_uuid = 1;
+  string player_name = 2;
+  uint32 protocol = 3;
+  string remote_address = 4;
+}
+
+message ResolveLoginResponse {
+  bool allowed = 1;
+  // Set when allowed is false.
+  string kick_message = 2;
+  PlayerProfile profile = 3;
+}
