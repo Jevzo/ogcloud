@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.contracts.internal.v1.ServerRecord
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.server.GameState
@@ -7,11 +8,12 @@ import io.ogwars.cloud.domain.server.Server
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.session.PlayerSession
 import com.google.protobuf.Timestamp
-import ogcloud.events.v1.Common
-import ogcloud.internal.v1.Livestate.ServerRecord
 import java.time.Instant
 import java.util.UUID
-import ogcloud.internal.v1.Livestate.PlayerSession as PlayerSessionRecord
+import io.ogwars.cloud.contracts.events.v1.GameState as ProtoGameState
+import io.ogwars.cloud.contracts.events.v1.GroupType as ProtoGroupType
+import io.ogwars.cloud.contracts.events.v1.ServerState as ProtoServerState
+import io.ogwars.cloud.contracts.internal.v1.PlayerSession as PlayerSessionRecord
 
 /** Maps domain objects to the Protobuf records shared with the Go gateway. */
 internal object RecordCodec {
@@ -20,13 +22,13 @@ internal object RecordCodec {
             .newBuilder()
             .setServerId(server.id.toString())
             .setGroupId(server.groupId.value)
-            .setGroupType(Common.GroupType.valueOf("GROUP_TYPE_${server.groupType.name}"))
+            .setGroupType(ProtoGroupType.valueOf("GROUP_TYPE_${server.groupType.name}"))
             .setProfileId(server.profileId)
-            .setState(Common.ServerState.valueOf("SERVER_STATE_${server.state.name}"))
+            .setState(ProtoServerState.valueOf("SERVER_STATE_${server.state.name}"))
             .setStateSince(server.stateSince.toTimestamp())
             .setGameState(
-                server.gameState?.let { Common.GameState.valueOf("GAME_STATE_${it.name}") }
-                    ?: Common.GameState.GAME_STATE_UNSPECIFIED,
+                server.gameState?.let { ProtoGameState.valueOf("GAME_STATE_${it.name}") }
+                    ?: ProtoGameState.GAME_STATE_UNSPECIFIED,
             ).setHost(server.host.orEmpty())
             .setPort(server.port ?: 0)
             .setPlayers(server.players)
@@ -53,7 +55,7 @@ internal object RecordCodec {
                 maxPlayers = record.maxPlayers,
                 gameState =
                     record.gameState
-                        .takeUnless { it == Common.GameState.GAME_STATE_UNSPECIFIED }
+                        .takeUnless { it == ProtoGameState.GAME_STATE_UNSPECIFIED }
                         ?.let { enumFrom<GameState>(it.name, "GAME_STATE_") },
                 startedAt = if (record.hasStartedAt()) record.startedAt.toInstant() else null,
                 lastHeartbeatAt = if (record.hasLastHeartbeatAt()) record.lastHeartbeatAt.toInstant() else null,

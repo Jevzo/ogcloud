@@ -4,6 +4,9 @@ package ogcloud.internal.v1;
 
 import "ogcloud/node/v1/session.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
 // Controller endpoint the gateway calls; never exposed to nodes.
 service LoginService {
   // Upserts the player, resolves the rank and writes the session (no Valkey polling).

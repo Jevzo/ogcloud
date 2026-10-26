@@ -5,6 +5,9 @@ package ogcloud.node.v1;
 import "google/protobuf/timestamp.proto";
 import "ogcloud/events/v1/common.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.node.v1";
+
 message ServerInfo {
   string server_id = 1;
   string group_id = 2;

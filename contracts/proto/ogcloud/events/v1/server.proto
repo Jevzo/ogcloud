@@ -4,6 +4,9 @@ package ogcloud.events.v1;
 
 import "ogcloud/events/v1/common.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.events.v1";
+
 // Topic ogcloud.server.command, key server_id. Commands for the controller.
 message ServerCommand {
   EventMetadata metadata = 1;

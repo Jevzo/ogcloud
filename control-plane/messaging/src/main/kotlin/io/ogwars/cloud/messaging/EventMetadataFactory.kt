@@ -1,12 +1,12 @@
 package io.ogwars.cloud.messaging
 
+import io.ogwars.cloud.contracts.events.v1.EventMetadata
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.common.IdGenerator
 import com.google.protobuf.Timestamp
-import ogcloud.events.v1.Common.EventMetadata
 import java.time.Clock
-import ogcloud.events.v1.Common.Actor as ActorMessage
+import io.ogwars.cloud.contracts.events.v1.Actor as ActorMessage
 
 /** Stamps every event with a UUIDv7 id, the time, the producing service and the actor (field 1 of every event). */
 class EventMetadataFactory(

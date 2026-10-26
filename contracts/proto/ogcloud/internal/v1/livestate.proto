@@ -5,6 +5,9 @@ package ogcloud.internal.v1;
 import "google/protobuf/timestamp.proto";
 import "ogcloud/events/v1/common.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
 // Live server record in Valkey (key "server:<id>", field "data"). Written by the controller,
 // read by the controller and the gateway. The hash field "rev" holds the revision used for
 // compare-and-set, so it is not repeated here.

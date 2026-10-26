@@ -4,6 +4,9 @@ package ogcloud.events.v1;
 
 import "ogcloud/events/v1/common.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.events.v1";
+
 enum ScalingAction {
   SCALING_ACTION_UNSPECIFIED = 0;
   SCALING_ACTION_START = 1;

@@ -1,12 +1,12 @@
 package io.ogwars.cloud.messaging
 
+import io.ogwars.cloud.contracts.events.v1.RequestServer
+import io.ogwars.cloud.contracts.events.v1.ServerCommand
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import ogcloud.events.v1.Server.RequestServer
-import ogcloud.events.v1.Server.ServerCommand
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.serialization.ByteArrayDeserializer

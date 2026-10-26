@@ -8,6 +8,9 @@ import "ogcloud/events/v1/player.proto";
 import "ogcloud/events/v1/server.proto";
 import "ogcloud/node/v1/query.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.node.v1";
+
 // The only endpoint plugins, mods and the template agent talk to (D-0008). Every call
 // carries the pod's projected service-account token as a bearer credential (D-0013).
 service GatewayService {

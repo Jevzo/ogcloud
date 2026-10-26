@@ -4,6 +4,9 @@ package ogcloud.events.v1;
 
 import "ogcloud/events/v1/common.proto";
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.events.v1";
+
 // Topic ogcloud.job.requested, key job_id. The job row is already in PostgreSQL (D-0039).
 message JobRequested {
   EventMetadata metadata = 1;

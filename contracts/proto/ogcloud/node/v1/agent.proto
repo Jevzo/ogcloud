@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package ogcloud.node.v1;
 
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.node.v1";
+
 // Calls of the template loader (init container) and push agent (sidecar). Pods never hold
 // object-storage credentials, only presigned URLs (D-0010).
 service TemplateAgentService {

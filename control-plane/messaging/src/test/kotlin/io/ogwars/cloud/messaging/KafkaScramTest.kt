@@ -1,11 +1,11 @@
 package io.ogwars.cloud.messaging
 
+import io.ogwars.cloud.contracts.events.v1.KillServer
+import io.ogwars.cloud.contracts.events.v1.ServerCommand
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import ogcloud.events.v1.Server.KillServer
-import ogcloud.events.v1.Server.ServerCommand
 import org.junit.jupiter.api.Test
 import org.testcontainers.kafka.KafkaContainer
 import java.time.Clock
