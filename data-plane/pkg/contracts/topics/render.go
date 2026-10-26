@@ -19,7 +19,16 @@ func RenderGo(packageName string, topics []Topic) ([]byte, error) {
 	for _, topic := range topics {
 		fmt.Fprintf(&b, "\t// %s carries %s.\n\t%s = %q\n", goIdentifier(topic.Name), topic.Message, goIdentifier(topic.Name), topic.Name)
 	}
-	b.WriteString(")\n")
+	b.WriteString(")\n\n")
+	b.WriteString("// HasDeadLetter reports whether failed records of topic go to its dead-letter topic.\nfunc HasDeadLetter(topic string) bool {\n")
+	if bases := deadLettered(topics); len(bases) > 0 {
+		names := make([]string, len(bases))
+		for i, base := range bases {
+			names[i] = goIdentifier(base)
+		}
+		fmt.Fprintf(&b, "\tswitch topic {\n\tcase %s:\n\t\treturn true\n\t}\n", strings.Join(names, ", "))
+	}
+	b.WriteString("\treturn false\n}\n")
 	formatted, err := format.Source([]byte(b.String()))
 	if err != nil {
 		return nil, fmt.Errorf("format generated Go: %w", err)
@@ -34,8 +43,23 @@ func RenderKotlin(packageName string, topics []Topic) []byte {
 	for _, topic := range topics {
 		fmt.Fprintf(&b, "    /** Carries %s. */\n    const val %s = %q\n", topic.Message, kotlinIdentifier(topic.Name), topic.Name)
 	}
-	b.WriteString("}\n")
+	identifiers := make([]string, 0)
+	for _, base := range deadLettered(topics) {
+		identifiers = append(identifiers, kotlinIdentifier(base))
+	}
+	fmt.Fprintf(&b, "\n    /** Topics whose failed records go to `<topic>.dlt`. */\n    val DEAD_LETTERED: Set<String> = setOf(%s)\n}\n", strings.Join(identifiers, ", "))
 	return []byte(b.String())
+}
+
+// deadLettered returns the base topics that have a dead-letter topic, in catalog order.
+func deadLettered(topics []Topic) []string {
+	var bases []string
+	for _, topic := range topics {
+		if topic.DeadLetter {
+			bases = append(bases, strings.TrimSuffix(topic.Name, deadLetterSuffix))
+		}
+	}
+	return bases
 }
 
 // RenderStrimzi writes a Helm template with one KafkaTopic per topic and one KafkaUser per

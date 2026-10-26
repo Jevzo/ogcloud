@@ -44,3 +44,12 @@ const (
 	// LiveChannel carries ogcloud.events.v1.LiveChannelMessage.
 	LiveChannel = "ogcloud.live.channel"
 )
+
+// HasDeadLetter reports whether failed records of topic go to its dead-letter topic.
+func HasDeadLetter(topic string) bool {
+	switch topic {
+	case ServerCommand, ServerGamestate, PlayerActivity, ConfigChanged, JobRequested:
+		return true
+	}
+	return false
+}

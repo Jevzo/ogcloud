@@ -10,3 +10,12 @@ const (
 	// PlayerConnectDLT carries ogcloud.events.v1.PlayerActivity.
 	PlayerConnectDLT = "ogcloud.player.connect.dlt"
 )
+
+// HasDeadLetter reports whether failed records of topic go to its dead-letter topic.
+func HasDeadLetter(topic string) bool {
+	switch topic {
+	case PlayerConnect:
+		return true
+	}
+	return false
+}

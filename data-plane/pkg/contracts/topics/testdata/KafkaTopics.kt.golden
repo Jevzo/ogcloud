@@ -8,4 +8,7 @@ object KafkaTopics {
     const val PLAYER_CONNECT = "ogcloud.player.connect"
     /** Carries ogcloud.events.v1.PlayerActivity. */
     const val PLAYER_CONNECT_DLT = "ogcloud.player.connect.dlt"
+
+    /** Topics whose failed records go to `<topic>.dlt`. */
+    val DEAD_LETTERED: Set<String> = setOf(PLAYER_CONNECT)
 }
