@@ -1,0 +1,117 @@
+# Kafka topic catalog (D-0011): names, payloads, ordering keys, partitions, retention and
+# which service may produce or consume. Regenerate with `mise run gen` after editing.
+#
+# Partitions are sized for 5k players on about 300 servers with room to grow (D-0053);
+# retention follows D-0043. Replication is set per environment in the Helm chart.
+defaults:
+  partitions: 12
+  retention: 7d
+  deadLetterRetention: 14d
+
+topics:
+  - name: ogcloud.server.command
+    message: ogcloud.events.v1.ServerCommand
+    key: server_id
+    producers: [api, gateway]
+    consumers: [controller]
+    deadLetter: true
+
+  - name: ogcloud.server.lifecycle
+    message: ogcloud.events.v1.ServerLifecycleChanged
+    key: server_id
+    producers: [controller]
+    consumers: [api, gateway, loadbalancer]
+
+  - name: ogcloud.server.gamestate
+    message: ogcloud.events.v1.GameStateChanged
+    key: server_id
+    producers: [gateway]
+    consumers: [controller]
+    deadLetter: true
+
+  # High volume (one record per node every few seconds) and only useful while fresh.
+  - name: ogcloud.node.heartbeat
+    message: ogcloud.events.v1.NodeHeartbeat
+    key: server_id
+    partitions: 24
+    retention: 1d
+    producers: [gateway]
+    consumers: [controller, loadbalancer]
+
+  - name: ogcloud.node.broadcast
+    message: ogcloud.events.v1.NodeBroadcast
+    key: subject_id
+    producers: [controller]
+    consumers: [gateway, loadbalancer]
+
+  - name: ogcloud.node.command
+    message: ogcloud.events.v1.NodeCommand
+    key: target
+    producers: [api, gateway]
+    consumers: [gateway]
+
+  - name: ogcloud.player.activity
+    message: ogcloud.events.v1.PlayerActivity
+    key: player_uuid
+    partitions: 24
+    producers: [gateway]
+    consumers: [api, controller]
+    deadLetter: true
+
+  - name: ogcloud.player.transfer
+    message: ogcloud.events.v1.TransferRequested
+    key: player_uuid or from_server_id
+    producers: [api, controller, gateway]
+    consumers: [gateway]
+
+  # Link codes expire after minutes; nothing older is worth keeping.
+  - name: ogcloud.account.link
+    message: ogcloud.events.v1.LinkCodeIssued
+    key: player_uuid
+    partitions: 3
+    retention: 1h
+    producers: [api]
+    consumers: [gateway]
+
+  - name: ogcloud.config.changed
+    message: ogcloud.events.v1.ConfigChanged
+    key: subject_id
+    producers: [api]
+    consumers: [controller]
+    deadLetter: true
+
+  - name: ogcloud.job.requested
+    message: ogcloud.events.v1.JobRequested
+    key: job_id
+    partitions: 3
+    producers: [api]
+    consumers: [controller]
+    deadLetter: true
+
+  - name: ogcloud.job.progress
+    message: ogcloud.events.v1.JobProgress
+    key: job_id
+    partitions: 3
+    producers: [controller]
+    consumers: [api]
+
+  - name: ogcloud.scaling.decided
+    message: ogcloud.events.v1.ScalingDecided
+    key: group_id
+    producers: [controller]
+    consumers: [api]
+
+  - name: ogcloud.alert.raised
+    message: ogcloud.events.v1.AlertRaised
+    key: subject_id
+    partitions: 3
+    producers: [controller]
+    consumers: [api]
+
+  # At-most-once plugin pub/sub; replays after a restart would be wrong, not just stale.
+  - name: ogcloud.live.channel
+    message: ogcloud.events.v1.LiveChannelMessage
+    key: channel
+    retention: 1h
+    producers: [gateway]
+    consumers: [gateway]

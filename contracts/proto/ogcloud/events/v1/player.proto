@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package ogcloud.events.v1;
+
+import "ogcloud/events/v1/common.proto";
+
+// Topic ogcloud.player.activity, key player_uuid: one topic so a player's
+// connect, switch and disconnect stay in order.
+message PlayerActivity {
+  EventMetadata metadata = 1;
+  string player_uuid = 2;
+  oneof activity {
+    PlayerConnected connected = 3;
+    PlayerSwitched switched = 4;
+    PlayerDisconnected disconnected = 5;
+  }
+}
+
+message PlayerConnected {
+  string player_name = 1;
+  string proxy_id = 2;
+  uint32 protocol = 3;
+}
+
+message PlayerSwitched {
+  string from_server_id = 1;
+  string to_server_id = 2;
+}
+
+message PlayerDisconnected {
+  string proxy_id = 1;
+}
+
+// Topic ogcloud.player.transfer, key the player uuid or the source server id.
+message TransferRequested {
+  EventMetadata metadata = 1;
+  oneof subject {
+    string player_uuid = 2;
+    // Every player on this server.
+    string from_server_id = 3;
+  }
+  oneof destination {
+    string server_id = 4;
+    string group_id = 5;
+    // Disconnect with this message instead of moving.
+    string kick_message = 6;
+  }
+  // Unset uses the network's routing strategy.
+  RoutingStrategy routing_strategy = 7;
+  string reason = 8;
+}
+
+// Topic ogcloud.account.link, key player_uuid. Show a web-account link code in game.
+message LinkCodeIssued {
+  EventMetadata metadata = 1;
+  string player_uuid = 2;
+  string code = 3;
+}

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package ogcloud.events.v1;
+
+import "ogcloud/events/v1/common.proto";
+
+enum ScalingAction {
+  SCALING_ACTION_UNSPECIFIED = 0;
+  SCALING_ACTION_START = 1;
+  SCALING_ACTION_DRAIN = 2;
+  SCALING_ACTION_UNDRAIN = 3;
+  SCALING_ACTION_STOP = 4;
+}
+
+// Topic ogcloud.scaling.decided, key group_id.
+message ScalingDecided {
+  EventMetadata metadata = 1;
+  string group_id = 2;
+  ScalingAction action = 3;
+  string server_id = 4;
+  string reason = 5;
+}
+
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_INFO = 1;
+  ALERT_SEVERITY_WARNING = 2;
+  ALERT_SEVERITY_CRITICAL = 3;
+}
+
+// Topic ogcloud.alert.raised, key subject_id. Feeds the inbox and mobile push.
+message AlertRaised {
+  EventMetadata metadata = 1;
+  string subject_id = 2;
+  AlertSeverity severity = 3;
+  // Machine-readable kind, e.g. "group.crash-loop-paused"; the apps translate it.
+  string kind = 4;
+  map<string, string> attributes = 5;
+}
+
+// Topic ogcloud.live.channel, key channel. Plugin pub/sub between nodes, at most once.
+message LiveChannelMessage {
+  EventMetadata metadata = 1;
+  string channel = 2;
+  string sender_server_id = 3;
+  NodeType sender_node_type = 4;
+  // Identifies the payload type for the receiving SDK.
+  string type_id = 5;
+  bytes payload = 6;
+}

@@ -17,6 +17,7 @@ const deadLetterSuffix = ".dlt"
 var (
 	topicNamePattern   = regexp.MustCompile(`^ogcloud(\.[a-z0-9]+(-[a-z0-9]+)*)+$`)
 	serviceNamePattern = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+	messagePattern     = regexp.MustCompile(`^ogcloud\.[a-z]+\.v[0-9]+\.[A-Z][A-Za-z0-9]*$`)
 )
 
 // Catalog is the parsed topics.yaml.
@@ -35,6 +36,7 @@ type Defaults struct {
 // Spec is one topic as written in topics.yaml.
 type Spec struct {
 	Name       string    `yaml:"name"`
+	Message    string    `yaml:"message"`
 	Key        string    `yaml:"key"`
 	Partitions int       `yaml:"partitions"`
 	Retention  Retention `yaml:"retention"`
@@ -45,7 +47,9 @@ type Spec struct {
 
 // Topic is a fully resolved topic: defaults applied, dead-letter topics expanded.
 type Topic struct {
-	Name       string
+	Name string
+	// Message is the fully qualified Protobuf message every record carries.
+	Message    string
 	Partitions int
 	Retention  time.Duration
 	Producers  []string
@@ -72,6 +76,7 @@ func (c Catalog) Resolve() ([]Topic, error) {
 	for _, spec := range c.Topics {
 		topic := Topic{
 			Name:       spec.Name,
+			Message:    spec.Message,
 			Partitions: valueOr(spec.Partitions, c.Defaults.Partitions),
 			Retention:  valueOr(spec.Retention.Duration, c.Defaults.Retention.Duration),
 			Producers:  spec.Producers,
@@ -82,6 +87,7 @@ func (c Catalog) Resolve() ([]Topic, error) {
 			// Consumers park records they cannot process; operators read them back by hand.
 			resolved = append(resolved, Topic{
 				Name:       spec.Name + deadLetterSuffix,
+				Message:    spec.Message,
 				Partitions: topic.Partitions,
 				Retention:  c.Defaults.DeadLetterRetention.Duration,
 				Producers:  spec.Consumers,
@@ -122,6 +128,9 @@ func (s Spec) validate(index int, seen map[string]bool) []error {
 	seen[s.Name] = true
 	if s.DeadLetter {
 		seen[s.Name+deadLetterSuffix] = true
+	}
+	if !messagePattern.MatchString(s.Message) {
+		problems = append(problems, fmt.Errorf("%s: message must be a fully qualified Protobuf message matching %s", where, messagePattern))
 	}
 	if s.Key == "" {
 		problems = append(problems, fmt.Errorf("%s: key must name the field that orders records", where))

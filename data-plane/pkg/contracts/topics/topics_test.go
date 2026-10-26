@@ -66,19 +66,21 @@ func TestResolveAppliesDefaultsAndExpandsDeadLetters(t *testing.T) {
 
 func TestResolveRejectsInvalidCatalogs(t *testing.T) {
 	valid := "defaults: {partitions: 3, retention: 1d, deadLetterRetention: 2d}\ntopics:\n"
+	const msg = "message: ogcloud.events.v1.Test, "
 	tests := []struct {
 		name    string
 		yaml    string
 		wantErr string
 	}{
-		{"bad name", valid + "  - {name: Server.Lifecycle, key: id, producers: [a], consumers: [b]}", "name must match"},
-		{"duplicate", valid + "  - {name: ogcloud.a, key: id, producers: [a], consumers: [b]}\n  - {name: ogcloud.a, key: id, producers: [a], consumers: [b]}", "duplicate topic name"},
-		{"dlt clash", valid + "  - {name: ogcloud.a, key: id, producers: [a], consumers: [b], deadLetter: true}\n  - {name: ogcloud.a.dlt, key: id, producers: [a], consumers: [b]}", "duplicate topic name"},
-		{"missing key", valid + "  - {name: ogcloud.a, producers: [a], consumers: [b]}", "key must name"},
-		{"no consumer", valid + "  - {name: ogcloud.a, key: id, producers: [a]}", "at least one producer and one consumer"},
-		{"bad service", valid + "  - {name: ogcloud.a, key: id, producers: [Api], consumers: [b]}", `service "Api"`},
-		{"no defaults", "topics:\n  - {name: ogcloud.a, key: id, producers: [a], consumers: [b]}", "defaults.partitions must be positive"},
-		{"dlt without retention", "defaults: {partitions: 3, retention: 1d}\ntopics:\n  - {name: ogcloud.a, key: id, producers: [a], consumers: [b], deadLetter: true}", "deadLetterRetention must be positive"},
+		{"bad name", valid + "  - {name: Server.Lifecycle, " + msg + "key: id, producers: [a], consumers: [b]}", "name must match"},
+		{"duplicate", valid + "  - {name: ogcloud.a, " + msg + "key: id, producers: [a], consumers: [b]}\n  - {name: ogcloud.a, " + msg + "key: id, producers: [a], consumers: [b]}", "duplicate topic name"},
+		{"dlt clash", valid + "  - {name: ogcloud.a, " + msg + "key: id, producers: [a], consumers: [b], deadLetter: true}\n  - {name: ogcloud.a.dlt, " + msg + "key: id, producers: [a], consumers: [b]}", "duplicate topic name"},
+		{"missing key", valid + "  - {name: ogcloud.a, " + msg + "producers: [a], consumers: [b]}", "key must name"},
+		{"no consumer", valid + "  - {name: ogcloud.a, " + msg + "key: id, producers: [a]}", "at least one producer and one consumer"},
+		{"bad service", valid + "  - {name: ogcloud.a, " + msg + "key: id, producers: [Api], consumers: [b]}", `service "Api"`},
+		{"bad message", valid + "  - {name: ogcloud.a, message: ServerCommand, key: id, producers: [a], consumers: [b]}", "fully qualified Protobuf message"},
+		{"no defaults", "topics:\n  - {name: ogcloud.a, " + msg + "key: id, producers: [a], consumers: [b]}", "defaults.partitions must be positive"},
+		{"dlt without retention", "defaults: {partitions: 3, retention: 1d}\ntopics:\n  - {name: ogcloud.a, " + msg + "key: id, producers: [a], consumers: [b], deadLetter: true}", "deadLetterRetention must be positive"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

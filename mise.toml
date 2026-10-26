@@ -98,7 +98,7 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto", "gen:profiles"]
+depends = ["gen:proto", "gen:profiles", "gen:topics"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -116,6 +116,10 @@ buf generate
 description = "Generate the runtime profile catalog from contracts/runtime-profiles.yaml"
 run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go"
 
+[tasks."gen:topics"]
+description = "Generate topic constants (and later Kotlin and Strimzi outputs) from contracts/kafka/topics.yaml"
+run = "go run ./data-plane/pkg/cmd/codegen topics -in contracts/kafka/topics.yaml -go-package kafkatopics -go-out data-plane/pkg/kafkatopics/topics.gen.go"
+
 # Each generator's output path is listed here when its first real output is wired (T-0101, T-0102).
 [tasks."check:generated"]
 description = "Fail when committed generated sources differ from a fresh `mise run gen`"
@@ -123,7 +127,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2

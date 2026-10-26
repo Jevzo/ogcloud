@@ -4,10 +4,12 @@ defaults:
   deadLetterRetention: 14d
 topics:
   - name: ogcloud.server.lifecycle
+    message: ogcloud.events.v1.ServerLifecycleChanged
     key: serverId
     producers: [controller]
     consumers: [gateway, loadbalancer]
   - name: ogcloud.player.connect
+    message: ogcloud.events.v1.PlayerActivity
     key: playerUuid
     partitions: 24
     retention: 12h

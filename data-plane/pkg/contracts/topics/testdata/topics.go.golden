@@ -3,7 +3,10 @@
 package topics
 
 const (
-	ServerLifecycle  = "ogcloud.server.lifecycle"
-	PlayerConnect    = "ogcloud.player.connect"
+	// ServerLifecycle carries ogcloud.events.v1.ServerLifecycleChanged.
+	ServerLifecycle = "ogcloud.server.lifecycle"
+	// PlayerConnect carries ogcloud.events.v1.PlayerActivity.
+	PlayerConnect = "ogcloud.player.connect"
+	// PlayerConnectDLT carries ogcloud.events.v1.PlayerActivity.
 	PlayerConnectDLT = "ogcloud.player.connect.dlt"
 )

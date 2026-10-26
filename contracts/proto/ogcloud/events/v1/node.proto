@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package ogcloud.events.v1;
+
+import "ogcloud/events/v1/common.proto";
+
+// Topic ogcloud.node.heartbeat, key server_id. Published by the gateway for each node.
+message NodeHeartbeat {
+  EventMetadata metadata = 1;
+  string server_id = 2;
+  NodeType node_type = 3;
+  uint32 players = 4;
+  uint32 max_players = 5;
+  // Backends only.
+  double tps = 6;
+  double mspt = 7;
+  uint64 memory_used_bytes = 8;
+  uint64 memory_max_bytes = 9;
+}
+
+// Topic ogcloud.node.broadcast, key subject_id. State the gateway and load balancer
+// push to nodes; the controller publishes it after updating the read models.
+message NodeBroadcast {
+  EventMetadata metadata = 1;
+  // Group id, player uuid, NPC id or "network", so updates to one subject stay ordered.
+  string subject_id = 2;
+  oneof update {
+    NetworkSettingsUpdated network_settings = 3;
+    GroupUpdated group = 4;
+    PermissionGroupUpdated permission_group = 5;
+    PlayerPermissionsUpdated player_permissions = 6;
+    NpcUpdated npc = 7;
+  }
+}
+
+message NetworkSettingsUpdated {
+  // Read-model version; nodes ignore anything older than what they hold.
+  uint64 version = 1;
+  bool maintenance = 2;
+  string motd = 3;
+  string maintenance_motd = 4;
+  string version_name = 5;
+  string maintenance_version_name = 6;
+  uint32 max_players = 7;
+  string default_group_id = 8;
+  RoutingStrategy routing_strategy = 9;
+  bool permission_system_enabled = 10;
+  bool tablist_enabled = 11;
+  string tablist_header = 12;
+  string tablist_footer = 13;
+  string maintenance_kick_message = 14;
+}
+
+message GroupUpdated {
+  uint64 version = 1;
+  string group_id = 2;
+  GroupType group_type = 3;
+  bool maintenance = 4;
+  bool deleted = 5;
+}
+
+message PermissionGroupUpdated {
+  uint64 version = 1;
+  string permission_group_id = 2;
+  bool deleted = 3;
+}
+
+message PlayerPermissionsUpdated {
+  uint64 version = 1;
+  string player_uuid = 2;
+  string permission_group_id = 3;
+}
+
+message NpcUpdated {
+  uint64 version = 1;
+  string npc_id = 2;
+  string group_id = 3;
+  bool deleted = 4;
+}
+
+// Topic ogcloud.node.command, key target. Run a console command on matching nodes.
+message NodeCommand {
+  EventMetadata metadata = 1;
+  oneof target {
+    bool all = 2;
+    string server_id = 3;
+    string group_id = 4;
+  }
+  string command = 5;
+}

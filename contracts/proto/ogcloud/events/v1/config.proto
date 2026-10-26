@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package ogcloud.events.v1;
+
+import "ogcloud/events/v1/common.proto";
+
+// Topic ogcloud.config.changed, key subject_id. The API announces committed changes;
+// the controller refreshes read models and publishes NodeBroadcast.
+message ConfigChanged {
+  EventMetadata metadata = 1;
+  string subject_id = 2;
+  oneof change {
+    EntityChanged group = 3;
+    EntityChanged network_settings = 4;
+    EntityChanged permission_group = 5;
+    DefaultPermissionGroupChanged default_permission_group = 6;
+    PlayerRankChanged player_rank = 7;
+    EntityChanged npc = 8;
+  }
+}
+
+// The entity is reloaded from PostgreSQL; only its new state is signalled.
+message EntityChanged {
+  string id = 1;
+  bool deleted = 2;
+}
+
+message DefaultPermissionGroupChanged {
+  string permission_group_id = 1;
+}
+
+message PlayerRankChanged {
+  string player_uuid = 1;
+  string permission_group_id = 2;
+}

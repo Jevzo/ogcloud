@@ -17,7 +17,7 @@ func RenderGo(packageName string, topics []Topic) ([]byte, error) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "// %s\n\npackage %s\n\nconst (\n", generatedHeader, packageName)
 	for _, topic := range topics {
-		fmt.Fprintf(&b, "\t%s = %q\n", goIdentifier(topic.Name), topic.Name)
+		fmt.Fprintf(&b, "\t// %s carries %s.\n\t%s = %q\n", goIdentifier(topic.Name), topic.Message, goIdentifier(topic.Name), topic.Name)
 	}
 	b.WriteString(")\n")
 	formatted, err := format.Source([]byte(b.String()))
@@ -32,7 +32,7 @@ func RenderKotlin(packageName string, topics []Topic) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "// %s\npackage %s\n\nobject KafkaTopics {\n", generatedHeader, packageName)
 	for _, topic := range topics {
-		fmt.Fprintf(&b, "    const val %s = %q\n", kotlinIdentifier(topic.Name), topic.Name)
+		fmt.Fprintf(&b, "    /** Carries %s. */\n    const val %s = %q\n", topic.Message, kotlinIdentifier(topic.Name), topic.Name)
 	}
 	b.WriteString("}\n")
 	return []byte(b.String())

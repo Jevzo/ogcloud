@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package ogcloud.events.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Every event carries its metadata as field 1.
+message EventMetadata {
+  // UUIDv7 of this event (D-0064); consumers use it to drop duplicates.
+  string event_id = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+  // Service that published the event: api, controller, gateway or loadbalancer.
+  string producer = 3;
+  // Who caused it: a web user, an OAuth client or a player, for the audit trail.
+  Actor actor = 4;
+}
+
+message Actor {
+  oneof subject {
+    string user_id = 1;
+    string client_id = 2;
+    string player_uuid = 3;
+    // Set when the platform acted on its own, e.g. the autoscaler.
+    string system = 4;
+  }
+}
+
+enum GroupType {
+  GROUP_TYPE_UNSPECIFIED = 0;
+  // Autoscaled, disposable servers with a fresh template copy each.
+  GROUP_TYPE_DYNAMIC = 1;
+  // One server with a persistent volume.
+  GROUP_TYPE_STATIC = 2;
+  GROUP_TYPE_PROXY = 3;
+}
+
+enum ServerState {
+  SERVER_STATE_UNSPECIFIED = 0;
+  SERVER_STATE_REQUESTED = 1;
+  SERVER_STATE_PREPARING = 2;
+  SERVER_STATE_STARTING = 3;
+  SERVER_STATE_RUNNING = 4;
+  SERVER_STATE_DRAINING = 5;
+  SERVER_STATE_STOPPING = 6;
+  SERVER_STATE_STOPPED = 7;
+}
+
+enum GameState {
+  GAME_STATE_UNSPECIFIED = 0;
+  GAME_STATE_LOBBY = 1;
+  GAME_STATE_INGAME = 2;
+  // The controller moves players away and drains the server.
+  GAME_STATE_ENDING = 3;
+}
+
+enum RoutingStrategy {
+  ROUTING_STRATEGY_UNSPECIFIED = 0;
+  // Fewest players relative to capacity.
+  ROUTING_STRATEGY_LEAST_FILLED = 1;
+  ROUTING_STRATEGY_MOST_FILLED = 2;
+  ROUTING_STRATEGY_BALANCED = 3;
+  ROUTING_STRATEGY_ROUND_ROBIN = 4;
+}
+
+enum NodeType {
+  NODE_TYPE_UNSPECIFIED = 0;
+  NODE_TYPE_PROXY = 1;
+  NODE_TYPE_BACKEND = 2;
+}
