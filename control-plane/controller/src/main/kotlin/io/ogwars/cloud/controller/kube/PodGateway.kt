@@ -28,6 +28,9 @@ interface PodGateway {
     )
 
     fun ensureVolumeClaim(claim: PersistentVolumeClaim)
+
+    /** Every server pod, read fresh from the API server rather than an informer cache. */
+    fun list(): List<Pod>
 }
 
 @Component
@@ -78,6 +81,8 @@ class FabricPodGateway(
             .resource(claim)
             .serverSideApply()
     }
+
+    override fun list(): List<Pod> = pods().withLabel(PodLabels.MANAGED_BY, PodLabels.CONTROLLER_NAME).list().items
 
     private fun pods() = client.pods().inNamespace(settings.namespace)
 

@@ -46,6 +46,8 @@ class RecordingPodGateway : PodGateway {
     override fun ensureVolumeClaim(claim: PersistentVolumeClaim) {
         claims += claim
     }
+
+    override fun list(): List<Pod> = created.filter { pod -> deleted.none { it.first == pod.metadata.name } }
 }
 
 class RecordingServerEvents : ServerEvents {

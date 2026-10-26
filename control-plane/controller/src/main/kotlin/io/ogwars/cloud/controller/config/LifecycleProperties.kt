@@ -11,6 +11,7 @@ data class LifecycleProperties(
     val crashLoop: CrashLoopSettings = CrashLoopSettings(),
     val provisioning: Provisioning = Provisioning(),
     val sweepInterval: Duration = Duration.ofSeconds(5),
+    val reconcileInterval: Duration = Duration.ofSeconds(30),
 ) {
     /** Limits on pod creation (D-0075). */
     data class Provisioning(

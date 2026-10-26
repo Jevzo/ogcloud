@@ -21,7 +21,7 @@ target design of the v2 rebuild; each section notes what is already built.
 
 Each adapter ships a Spring Boot auto-configuration (`ogcloud.valkey.*`, `ogcloud.kafka.*`, `ogcloud.s3.*`, the DataSource), so a service gets its ports by adding the dependency (D-0074).
 
-| `control-plane/controller` | Lease leader election; readiness gated on the schema version; metrics, traces, JSON logs; internal gRPC over TLS. Lifecycle: `LifecycleService` (compare-and-set transitions, `ServerLifecycleChanged` events), leader-only `Provisioner` (rate limit, PREPARING cap, EULA and crash-loop gates), `DeadlineSweeper`, `PodWatcher` (pod informer, cordoned-node drain), `CrashLoopBreaker` |
+| `control-plane/controller` | Lease leader election; readiness gated on the schema version; metrics, traces, JSON logs; internal gRPC over TLS. Lifecycle: `LifecycleService` (compare-and-set transitions, `ServerLifecycleChanged` events), leader-only `Provisioner` (rate limit, PREPARING cap, EULA and crash-loop gates), `DeadlineSweeper`, `PodWatcher` (pod informer, cordoned-node drain), `CrashLoopBreaker`, `Reconciler` (adopts or deletes orphan pods, ends servers without pods, drops sessions on vanished proxies; runs on every leader change) |
 
 ## Components
 

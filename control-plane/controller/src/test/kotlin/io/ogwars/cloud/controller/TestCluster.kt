@@ -60,16 +60,15 @@ object TestCluster {
         namespace: String,
         name: String,
         serverId: UUID,
+        extraLabels: Map<String, String> = emptyMap(),
     ): Pod =
         PodBuilder()
             .withNewMetadata()
             .withName(name)
             .withNamespace(namespace)
             .withLabels<String, String>(
-                mapOf(
-                    PodLabels.MANAGED_BY to PodLabels.CONTROLLER_NAME,
-                    PodLabels.SERVER_ID to serverId.toString(),
-                ),
+                mapOf(PodLabels.MANAGED_BY to PodLabels.CONTROLLER_NAME, PodLabels.SERVER_ID to serverId.toString()) +
+                    extraLabels,
             ).endMetadata()
             .withNewSpec()
             .withServiceAccountName(SERVER_ACCOUNT)

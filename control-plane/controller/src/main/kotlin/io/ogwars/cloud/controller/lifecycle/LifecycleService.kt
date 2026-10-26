@@ -61,6 +61,13 @@ class LifecycleService(
         return server
     }
 
+    /** Puts a server rebuilt from its pod back into live state; false when a record exists meanwhile. */
+    fun restore(server: Server): Boolean {
+        if (!servers.create(server)) return false
+        events.stateChanged(ServerChange(server, server), SYSTEM, "restored from its pod")
+        return true
+    }
+
     /** The provisioner created the pod. */
     fun podCreated(id: UUID) = transition(id, SYSTEM, "pod created") { it.moveTo(ServerState.PREPARING) }
 
