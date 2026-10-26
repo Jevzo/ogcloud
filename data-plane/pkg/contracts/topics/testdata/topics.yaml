@@ -1,0 +1,16 @@
+defaults:
+  partitions: 12
+  retention: 7d
+  deadLetterRetention: 14d
+topics:
+  - name: ogcloud.server.lifecycle
+    key: serverId
+    producers: [controller]
+    consumers: [gateway, loadbalancer]
+  - name: ogcloud.player.connect
+    key: playerUuid
+    partitions: 24
+    retention: 12h
+    producers: [gateway]
+    consumers: [controller]
+    deadLetter: true
