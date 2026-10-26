@@ -16,7 +16,8 @@ data class PermissionGroup(
     val name: String,
     /** Higher weights sort first in the tablist. */
     val weight: Int,
-    val permissions: Set<String>,
+    /** Permission node to its human-readable description. */
+    val permissions: Map<String, String>,
     val display: RankDisplay,
     val isDefault: Boolean,
 ) {

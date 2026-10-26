@@ -11,11 +11,11 @@ class PermissionsTest {
 
     @Test
     fun `groups grant exact nodes, or everything with a wildcard`() {
-        val mod = group(setOf("ogcloud.admin.server"))
+        val mod = group(mapOf("ogcloud.admin.server" to "Manage servers"))
 
         mod.grants("ogcloud.admin.server") shouldBe true
         mod.grants("ogcloud.admin.group") shouldBe false
-        group(setOf("*")).grants("anything.at.all") shouldBe true
+        group(mapOf("*" to "Everything")).grants("anything.at.all") shouldBe true
     }
 
     @Test
@@ -35,7 +35,7 @@ class PermissionsTest {
         rank.isExpired(T0.plus(Duration.ofDays(10_000))) shouldBe false
     }
 
-    private fun group(permissions: Set<String>) =
+    private fun group(permissions: Map<String, String>) =
         PermissionGroup(
             "mod",
             "Moderator",

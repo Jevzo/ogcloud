@@ -4,15 +4,10 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
-import org.springframework.context.annotation.Import
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.jdbc.core.JdbcTemplate
 
-@DataJdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(PostgresContainerConfiguration::class)
+@PersistenceTest
 class SchemaTest(
     @Autowired private val jdbc: JdbcTemplate,
 ) {

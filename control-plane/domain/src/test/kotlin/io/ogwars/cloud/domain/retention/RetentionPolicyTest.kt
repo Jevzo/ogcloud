@@ -1,6 +1,10 @@
 package io.ogwars.cloud.domain.retention
 
+import io.ogwars.cloud.domain.audit.Actor
+import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.server.T0
+import io.ogwars.cloud.domain.template.TemplateSource
+import io.ogwars.cloud.domain.template.TemplateVersion
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -13,7 +17,16 @@ class RetentionPolicyTest {
     private fun version(
         n: Int,
         daysAgo: Long,
-    ) = TemplateVersion(UUID(0, n.toLong()), T0.minus(Duration.ofDays(daysAgo)))
+    ) = TemplateVersion(
+        id = UUID(0, n.toLong()),
+        groupId = GroupId("lobby"),
+        objectKey = "templates/lobby/$n.tar.gz",
+        sha256 = "0".repeat(64),
+        sizeBytes = 1,
+        source = TemplateSource.PUSH,
+        createdBy = Actor.system("test"),
+        createdAt = T0.minus(Duration.ofDays(daysAgo)),
+    )
 
     @Test
     fun `keeps the active version plus the three newest others`() {

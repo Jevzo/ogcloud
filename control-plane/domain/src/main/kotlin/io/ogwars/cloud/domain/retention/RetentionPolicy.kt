@@ -1,5 +1,6 @@
 package io.ogwars.cloud.domain.retention
 
+import io.ogwars.cloud.domain.template.TemplateVersion
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -30,11 +31,6 @@ data class RetentionSettings(
         require(RetentionKind.entries.all { it in ages }) { "Every retention kind needs an age" }
     }
 }
-
-data class TemplateVersion(
-    val id: UUID,
-    val createdAt: Instant,
-)
 
 /** Decides what the cleanup loop may delete; it never deletes anything still referenced. */
 class RetentionPolicy(

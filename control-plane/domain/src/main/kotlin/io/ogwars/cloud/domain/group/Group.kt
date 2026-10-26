@@ -1,6 +1,7 @@
 package io.ogwars.cloud.domain.group
 
 import java.time.Duration
+import java.util.UUID
 
 enum class GroupType {
     /** Autoscaled, disposable servers with a fresh template copy each. */
@@ -51,6 +52,26 @@ data class ScalingPolicy(
     }
 }
 
+/** Kubernetes resource quantities, e.g. "2Gi" or "500m"; a null CPU limit means none. */
+data class ResourceSpec(
+    val memoryRequest: String,
+    val memoryLimit: String,
+    val cpuRequest: String,
+    val cpuLimit: String? = null,
+) {
+    init {
+        require(listOf(memoryRequest, memoryLimit, cpuRequest).none(String::isBlank)) {
+            "Resource quantities must not be blank"
+        }
+    }
+}
+
+/** A custom server image instead of the runtime profile's, and the pull secret it needs. */
+data class ImageOverride(
+    val image: String,
+    val pullSecretRef: String?,
+)
+
 data class Group(
     val id: GroupId,
     val type: GroupType,
@@ -59,6 +80,12 @@ data class Group(
     /** How long a draining server waits for players to leave; zero stops immediately. */
     val drainTimeout: Duration,
     val maintenance: Boolean,
+    val resources: ResourceSpec = ResourceSpec("1Gi", "2Gi", "500m"),
+    val jvmFlags: String = "",
+    val imageOverride: ImageOverride? = null,
+    /** Volume size of a STATIC group's server, e.g. "10Gi". */
+    val storageSize: String? = null,
+    val activeTemplateVersionId: UUID? = null,
 ) {
     init {
         require(type != GroupType.STATIC || scaling.maxInstances <= 1) { "A STATIC group runs at most one server" }
