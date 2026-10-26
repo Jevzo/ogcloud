@@ -1,0 +1,15 @@
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  labels:
+    cloud.ogwars.io/group: "smp"
+    app.kubernetes.io/managed-by: "ogcloud-controller"
+  name: "static-smp"
+  namespace: "ogcloud-servers"
+spec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: "10Gi"

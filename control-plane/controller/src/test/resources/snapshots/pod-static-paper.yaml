@@ -1,0 +1,176 @@
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+  labels:
+    app.kubernetes.io/name: "ogcloud-server"
+    app.kubernetes.io/managed-by: "ogcloud-controller"
+    cloud.ogwars.io/server-id: "0192d2c1-1a2b-7c3d-8e4f-123456789abc"
+    cloud.ogwars.io/group: "smp"
+    cloud.ogwars.io/group-type: "static"
+    cloud.ogwars.io/profile: "paper-26.3"
+    cloud.ogwars.io/role: "backend"
+  name: "smp-0192d2c11a2b7c3d8e4f123456789abc"
+  namespace: "ogcloud-servers"
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: "cloud.ogwars.io/pool"
+            operator: "In"
+            values:
+            - "game"
+  automountServiceAccountToken: false
+  containers:
+  - env:
+    - name: "OGCLOUD_SERVER_ID"
+      value: "0192d2c1-1a2b-7c3d-8e4f-123456789abc"
+    - name: "OGCLOUD_GROUP_ID"
+      value: "smp"
+    - name: "OGCLOUD_GATEWAY_ADDRESS"
+      value: "ogcloud-gateway.ogcloud.svc:9443"
+    - name: "OGCLOUD_GATEWAY_TOKEN_FILE"
+      value: "/var/run/secrets/ogcloud/gateway/token"
+    - name: "OGCLOUD_JVM_FLAGS"
+      value: ""
+    image: "ghcr.io/jevzo/ogcloud/paper:26.3-2.0.0"
+    name: "server"
+    ports:
+    - containerPort: 25565
+      name: "minecraft"
+      protocol: "TCP"
+    readinessProbe:
+      periodSeconds: 5
+      tcpSocket:
+        port: "minecraft"
+    resources:
+      limits:
+        memory: "2Gi"
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - "ALL"
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - mountPath: "/data"
+      name: "data"
+      readOnly: false
+    - mountPath: "/tmp"
+      name: "tmp"
+      readOnly: false
+    - mountPath: "/var/run/secrets/ogcloud/gateway"
+      name: "gateway-token"
+      readOnly: true
+    - mountPath: "/var/run/secrets/ogcloud/forwarding"
+      name: "forwarding"
+      readOnly: true
+  enableServiceLinks: false
+  initContainers:
+  - args:
+    - "load"
+    env:
+    - name: "OGCLOUD_SERVER_ID"
+      value: "0192d2c1-1a2b-7c3d-8e4f-123456789abc"
+    - name: "OGCLOUD_GROUP_ID"
+      value: "smp"
+    - name: "OGCLOUD_GATEWAY_ADDRESS"
+      value: "ogcloud-gateway.ogcloud.svc:9443"
+    - name: "OGCLOUD_GATEWAY_TOKEN_FILE"
+      value: "/var/run/secrets/ogcloud/gateway/token"
+    - name: "OGCLOUD_TEMPLATE_VERSION_ID"
+      value: ""
+    image: "ghcr.io/jevzo/ogcloud/template-loader:2.0.0"
+    name: "template-loader"
+    resources:
+      limits:
+        memory: "128Mi"
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - "ALL"
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - mountPath: "/data"
+      name: "data"
+      readOnly: false
+    - mountPath: "/var/run/secrets/ogcloud/gateway"
+      name: "gateway-token"
+      readOnly: true
+  - args:
+    - "agent"
+    env:
+    - name: "OGCLOUD_SERVER_ID"
+      value: "0192d2c1-1a2b-7c3d-8e4f-123456789abc"
+    - name: "OGCLOUD_GROUP_ID"
+      value: "smp"
+    - name: "OGCLOUD_GATEWAY_ADDRESS"
+      value: "ogcloud-gateway.ogcloud.svc:9443"
+    - name: "OGCLOUD_GATEWAY_TOKEN_FILE"
+      value: "/var/run/secrets/ogcloud/gateway/token"
+    image: "ghcr.io/jevzo/ogcloud/template-loader:2.0.0"
+    name: "template-agent"
+    resources:
+      limits:
+        memory: "128Mi"
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+    restartPolicy: "Always"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - "ALL"
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - mountPath: "/data"
+      name: "data"
+      readOnly: false
+    - mountPath: "/var/run/secrets/ogcloud/gateway"
+      name: "gateway-token"
+      readOnly: true
+  priorityClassName: "ogcloud-game"
+  restartPolicy: "Never"
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: "RuntimeDefault"
+  serviceAccountName: "ogcloud-server"
+  terminationGracePeriodSeconds: 90
+  tolerations:
+  - effect: "NoSchedule"
+    key: "cloud.ogwars.io/game"
+    value: "true"
+  volumes:
+  - name: "data"
+    persistentVolumeClaim:
+      claimName: "static-smp"
+      readOnly: false
+  - emptyDir: {}
+    name: "tmp"
+  - name: "gateway-token"
+    projected:
+      sources:
+      - serviceAccountToken:
+          audience: "ogcloud-gateway"
+          expirationSeconds: 3600
+          path: "token"
+  - name: "forwarding"
+    secret:
+      defaultMode: 288
+      secretName: "ogcloud-forwarding"

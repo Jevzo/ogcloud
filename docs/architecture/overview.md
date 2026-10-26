@@ -41,6 +41,20 @@ Admin ─WireGuard (optional)─▶ internal Gateway ─▶ Infisical, Grafana  
 | Integrations | Kotlin/JVM | MIT-licensed SDK, a shaded gRPC node client, platform-neutral `node-core`, and thin adapters for Velocity, Paper, PandaSpigot, Fabric and NeoForge. |
 | Apps | TypeScript | Web dashboard (Vite, React, TanStack), Electron desktop app, Expo mobile app. |
 
+## Game server pods
+
+The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) and the chart (T-0601) follow this contract.
+
+| Aspect | Contract |
+| --- | --- |
+| Namespace and identity | `ogcloud-servers`, service account `ogcloud-server` with no RBAC, `automountServiceAccountToken: false`, bare pod with `restartPolicy: Never`, name `<group>-<32 hex>` |
+| Labels | `cloud.ogwars.io/{server-id,group,group-type,profile,role}`, `app.kubernetes.io/{name,managed-by}`; `role` is `backend` or `proxy` |
+| Images | `<registry>/<platform>:<mc-version>-<platform-version>`, run as uid and gid 1000, read-only root filesystem; a group may override the image only within the allowed prefixes |
+| Files | server files in `/data` (emptyDir, or the `static-<group>` volume for STATIC), `/tmp`, the gateway token in `/var/run/secrets/ogcloud/gateway/token` (projected, audience `ogcloud-gateway`), forwarding tokens in `/var/run/secrets/ogcloud/forwarding` |
+| Environment | `OGCLOUD_SERVER_ID`, `OGCLOUD_GROUP_ID`, `OGCLOUD_GATEWAY_ADDRESS`, `OGCLOUD_GATEWAY_TOKEN_FILE`, `OGCLOUD_JVM_FLAGS`; the loader also gets `OGCLOUD_TEMPLATE_VERSION_ID` |
+| Containers | `template-loader` (init, `load`), `template-agent` (native sidecar, `agent`), `server` (port 25565 `minecraft`, TCP readiness probe) |
+| Scheduling | PriorityClass `ogcloud-proxy`, `ogcloud-default-group` or `ogcloud-game`; on Hetzner the game-pool toleration and node affinity; `safe-to-evict` is `false` while players are online |
+
 ## Contracts
 
 | Contract | Source of truth | Consumers |

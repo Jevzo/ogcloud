@@ -13,6 +13,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
+    testImplementation(testFixtures(project(":control-plane:domain")))
     testImplementation(testFixtures(project(":control-plane:persistence")))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     // Kotest's eventually is a suspend function; coroutines already come in through Kotest.
@@ -22,4 +23,9 @@ dependencies {
     testImplementation("org.flywaydb:flyway-core")
     testImplementation("io.grpc:grpc-netty")
     testImplementation("io.grpc:grpc-services")
+}
+
+// `./gradlew :control-plane:controller:test -PupdateSnapshots=true` rewrites the golden files after a reviewed change.
+tasks.test {
+    systemProperty("ogcloud.updateSnapshots", providers.gradleProperty("updateSnapshots").getOrElse("false"))
 }

@@ -105,6 +105,9 @@ class ControllerApplicationTest(
             TestCluster.createNamespace(NAMESPACE)
             registry.add("ogcloud.controller.namespace") { NAMESPACE }
             registry.add("ogcloud.controller.identity") { "controller-test" }
+            registry.add("ogcloud.controller.pods.image-registry") { "ghcr.io/jevzo/ogcloud" }
+            registry.add("ogcloud.controller.pods.platform-version") { "2.0.0" }
+            registry.add("ogcloud.controller.pods.gateway-address") { "ogcloud-gateway.ogcloud.svc:9443" }
             registry.add("spring.grpc.server.port") { grpcPort }
             registry.add("spring.ssl.bundle.jks.grpc.keystore.location") { "file:${TestTls.keystore}" }
             registry.add("spring.ssl.bundle.jks.grpc.keystore.password") { TestTls.PASSWORD }
