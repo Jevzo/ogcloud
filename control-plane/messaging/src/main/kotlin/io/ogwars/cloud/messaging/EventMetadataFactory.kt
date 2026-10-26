@@ -1,10 +1,10 @@
 package io.ogwars.cloud.messaging
 
 import io.ogwars.cloud.contracts.events.v1.EventMetadata
+import io.ogwars.cloud.contracts.toTimestamp
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.common.IdGenerator
-import com.google.protobuf.Timestamp
 import java.time.Clock
 import io.ogwars.cloud.contracts.events.v1.Actor as ActorMessage
 
@@ -14,16 +14,14 @@ class EventMetadataFactory(
     private val ids: IdGenerator,
     private val producer: String,
 ) {
-    fun create(actor: Actor): EventMetadata {
-        val now = clock.instant()
-        return EventMetadata
+    fun create(actor: Actor): EventMetadata =
+        EventMetadata
             .newBuilder()
             .setEventId(ids.next().toString())
-            .setOccurredAt(Timestamp.newBuilder().setSeconds(now.epochSecond).setNanos(now.nano))
+            .setOccurredAt(clock.instant().toTimestamp())
             .setProducer(producer)
             .setActor(toMessage(actor))
             .build()
-    }
 
     private fun toMessage(actor: Actor): ActorMessage {
         val builder = ActorMessage.newBuilder()

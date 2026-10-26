@@ -1,18 +1,12 @@
 package io.ogwars.cloud.livestate
 
 import io.ogwars.cloud.contracts.internal.v1.ServerRecord
+import io.ogwars.cloud.contracts.toInstant
+import io.ogwars.cloud.contracts.toTimestamp
 import io.ogwars.cloud.domain.group.GroupId
-import io.ogwars.cloud.domain.group.GroupType
-import io.ogwars.cloud.domain.server.GameState
 import io.ogwars.cloud.domain.server.Server
-import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.session.PlayerSession
-import com.google.protobuf.Timestamp
-import java.time.Instant
 import java.util.UUID
-import io.ogwars.cloud.contracts.events.v1.GameState as ProtoGameState
-import io.ogwars.cloud.contracts.events.v1.GroupType as ProtoGroupType
-import io.ogwars.cloud.contracts.events.v1.ServerState as ProtoServerState
 import io.ogwars.cloud.contracts.internal.v1.PlayerSession as PlayerSessionRecord
 
 /** Maps domain objects to the Protobuf records shared with the Go gateway. */
@@ -22,14 +16,12 @@ internal object RecordCodec {
             .newBuilder()
             .setServerId(server.id.toString())
             .setGroupId(server.groupId.value)
-            .setGroupType(ProtoGroupType.valueOf("GROUP_TYPE_${server.groupType.name}"))
+            .setGroupType(server.groupType.toProto())
             .setProfileId(server.profileId)
-            .setState(ProtoServerState.valueOf("SERVER_STATE_${server.state.name}"))
+            .setState(server.state.toProto())
             .setStateSince(server.stateSince.toTimestamp())
-            .setGameState(
-                server.gameState?.let { ProtoGameState.valueOf("GAME_STATE_${it.name}") }
-                    ?: ProtoGameState.GAME_STATE_UNSPECIFIED,
-            ).setHost(server.host.orEmpty())
+            .setGameState(server.gameState.toProto())
+            .setHost(server.host.orEmpty())
             .setPort(server.port ?: 0)
             .setPlayers(server.players)
             .setMaxPlayers(server.maxPlayers)
@@ -47,16 +39,13 @@ internal object RecordCodec {
             Server(
                 id = UUID.fromString(record.serverId),
                 groupId = GroupId(record.groupId),
-                groupType = enumFrom<GroupType>(record.groupType.name, "GROUP_TYPE_"),
+                groupType = record.groupType.toDomain(),
                 profileId = record.profileId,
-                state = enumFrom<ServerState>(record.state.name, "SERVER_STATE_"),
+                state = record.state.toDomain(),
                 stateSince = record.stateSince.toInstant(),
                 players = record.players,
                 maxPlayers = record.maxPlayers,
-                gameState =
-                    record.gameState
-                        .takeUnless { it == ProtoGameState.GAME_STATE_UNSPECIFIED }
-                        ?.let { enumFrom<GameState>(it.name, "GAME_STATE_") },
+                gameState = record.gameState.toDomain(),
                 startedAt = if (record.hasStartedAt()) record.startedAt.toInstant() else null,
                 lastHeartbeatAt = if (record.hasLastHeartbeatAt()) record.lastHeartbeatAt.toInstant() else null,
                 host = record.host.ifEmpty { null },
@@ -94,14 +83,6 @@ internal object RecordCodec {
             )
         }
 
-    /** Maps a Protobuf enum name to the domain enum; unknown or unspecified values are errors. */
-    private inline fun <reified E : Enum<E>> enumFrom(
-        protoName: String,
-        prefix: String,
-    ): E =
-        enumValues<E>().find { prefix + it.name == protoName }
-            ?: throw IllegalStateException("No ${E::class.simpleName} for Protobuf value $protoName")
-
     private inline fun <T> decoding(
         key: String,
         decode: () -> T,
@@ -111,13 +92,4 @@ internal object RecordCodec {
         } catch (e: Exception) {
             throw IllegalStateException("Unreadable record at $key", e)
         }
-
-    private fun Instant.toTimestamp(): Timestamp =
-        Timestamp
-            .newBuilder()
-            .setSeconds(epochSecond)
-            .setNanos(nano)
-            .build()
-
-    private fun Timestamp.toInstant(): Instant = Instant.ofEpochSecond(seconds, nanos.toLong())
 }
