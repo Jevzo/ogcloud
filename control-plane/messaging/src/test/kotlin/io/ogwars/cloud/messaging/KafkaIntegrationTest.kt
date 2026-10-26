@@ -94,10 +94,10 @@ class KafkaIntegrationTest {
     }
 
     @Test
-    fun `topics without a dead-letter topic log the failure and move on`() {
+    fun `topics without a dead-letter topic skip non-retryable records and move on`() {
         val processed = LinkedBlockingQueue<String>()
         listen(KafkaTopics.SERVER_LIFECYCLE) {
-            if (it.key() == "poison") throw IllegalStateException("cannot apply")
+            if (it.key() == "poison") throw NonRetryableEventException("cannot apply")
             processed.add(it.key())
         }
 
@@ -105,6 +105,22 @@ class KafkaIntegrationTest {
         template.send(KafkaTopics.SERVER_LIFECYCLE, "healthy", byteArrayOf()).get()
 
         processed.poll(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe "healthy"
+    }
+
+    @Test
+    fun `topics without a dead-letter topic keep retrying until the dependency recovers`() {
+        val attempts = AtomicInteger()
+        val failuresBeforeRecovery = fastRetry.maxAttempts + 2
+        val processed = LinkedBlockingQueue<String>()
+        listen(KafkaTopics.ALERT_RAISED, attempts, only = "outage") {
+            if (attempts.get() <= failuresBeforeRecovery) throw IllegalStateException("valkey failing over")
+            processed.add(it.key())
+        }
+
+        template.send(KafkaTopics.ALERT_RAISED, "outage", byteArrayOf()).get()
+
+        processed.poll(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe "outage"
+        attempts.get() shouldBe failuresBeforeRecovery + 1
     }
 
     private fun request(group: String): ServerCommand =

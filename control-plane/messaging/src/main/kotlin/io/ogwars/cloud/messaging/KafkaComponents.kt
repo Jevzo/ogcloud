@@ -39,7 +39,9 @@ fun <T : Message> ConsumerRecord<String, ByteArray>.decode(parser: Parser<T>): T
 data class RetryPolicy(
     val initialInterval: Duration = Duration.ofSeconds(1),
     val multiplier: Double = 2.0,
+    /** Attempts before a record is dead-lettered; topics without a dead-letter topic retry until they succeed. */
     val maxAttempts: Int = 4,
+    val maxInterval: Duration = Duration.ofSeconds(30),
 )
 
 /** Builds producers and listener containers with OgCloud's delivery guarantees. */
@@ -65,8 +67,9 @@ class KafkaComponents(
     }
 
     /**
-     * Listener containers for one consumer group. Failed records are retried with backoff, then parked in
-     * `<topic>.dlt` when the topic has one, or logged and skipped when it does not.
+     * Listener containers for one consumer group. Failed records are retried with backoff and then parked in
+     * `<topic>.dlt`. Topics without one retry until the dependency recovers, so an outage never drops records;
+     * only non-retryable records are logged and skipped there.
      */
     fun listenerContainerFactory(
         groupId: String,
@@ -107,7 +110,7 @@ class KafkaComponents(
                     deadLetter.accept(record, error)
                 } else {
                     log.error(
-                        "Dropping record {}-{}@{} after retries: no dead-letter topic",
+                        "Dropping non-retryable record {}-{}@{}: no dead-letter topic",
                         record.topic(),
                         record.partition(),
                         record.offset(),
@@ -115,23 +118,30 @@ class KafkaComponents(
                     )
                 }
             }
-        val backOff =
-            ExponentialBackOff(retry.initialInterval.toMillis(), retry.multiplier).apply {
-                // The first delivery is not a retry.
-                maxAttempts = (retry.maxAttempts - 1).toLong()
-            }
-        return DefaultErrorHandler(recoverer, backOff).apply {
+        return DefaultErrorHandler(recoverer, backOff(retry, retry.maxAttempts)).apply {
             addNotRetryableExceptions(NonRetryableEventException::class.java)
+            setBackOffFunction { record, _ ->
+                if (record.topic() in KafkaTopics.DEAD_LETTERED) null else backOff(retry, attempts = null)
+            }
         }
     }
 
-    private companion object {
-        const val DLT_SUFFIX = ".dlt"
+    /** [attempts] counts the first delivery; null retries without limit. */
+    private fun backOff(
+        retry: RetryPolicy,
+        attempts: Int?,
+    ) = ExponentialBackOff(retry.initialInterval.toMillis(), retry.multiplier).apply {
+        maxInterval = retry.maxInterval.toMillis()
+        if (attempts != null) maxAttempts = (attempts - 1).toLong()
+    }
+
+    internal companion object {
+        private const val DLT_SUFFIX = ".dlt"
         val MAX_BLOCK: Duration = Duration.ofSeconds(5)
 
         // Kafka requires delivery >= linger + request timeout.
-        val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(15)
+        private val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(15)
         val DELIVERY_TIMEOUT: Duration = Duration.ofSeconds(30)
-        val LINGER: Duration = Duration.ofMillis(5)
+        private val LINGER: Duration = Duration.ofMillis(5)
     }
 }

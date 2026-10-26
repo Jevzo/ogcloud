@@ -63,6 +63,9 @@ class EventPublisher(
     }
 
     private companion object {
-        val DEFAULT_TIMEOUT: Duration = Duration.ofSeconds(10)
+        // Waits out the producer's own delivery deadline; a shorter wait would report a failure for a record
+        // that is still sent later, and a retrying caller would publish it twice.
+        val DEFAULT_TIMEOUT: Duration =
+            KafkaComponents.MAX_BLOCK + KafkaComponents.DELIVERY_TIMEOUT + Duration.ofSeconds(1)
     }
 }
