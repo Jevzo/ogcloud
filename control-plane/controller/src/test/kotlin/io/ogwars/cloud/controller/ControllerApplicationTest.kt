@@ -1,6 +1,8 @@
 package io.ogwars.cloud.controller
 
 import io.ogwars.cloud.controller.leader.LeaderGate
+import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
+import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
 import io.fabric8.kubernetes.client.Config
 import io.grpc.health.v1.HealthCheckRequest
@@ -33,7 +35,12 @@ import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(PostgresContainerConfiguration::class, ControllerApplicationTest.ClusterConfiguration::class)
+@Import(
+    PostgresContainerConfiguration::class,
+    ValkeyContainerConfiguration::class,
+    KafkaContainerConfiguration::class,
+    ControllerApplicationTest.ClusterConfiguration::class,
+)
 class ControllerApplicationTest(
     @Autowired private val dataSource: DataSource,
     @Autowired private val leaderGate: LeaderGate,

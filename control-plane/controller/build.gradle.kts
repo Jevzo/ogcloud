@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     implementation(project(":control-plane:persistence"))
+    implementation(project(":control-plane:livestate"))
+    implementation(project(":control-plane:messaging"))
     implementation(project(":contracts"))
     implementation(libs.fabric8.kubernetes.client)
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
@@ -15,6 +17,8 @@ dependencies {
 
     testImplementation(testFixtures(project(":control-plane:domain")))
     testImplementation(testFixtures(project(":control-plane:persistence")))
+    testImplementation(testFixtures(project(":control-plane:livestate")))
+    testImplementation(testFixtures(project(":control-plane:messaging")))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     // Kotest's eventually is a suspend function; coroutines already come in through Kotest.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")

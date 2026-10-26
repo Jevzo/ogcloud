@@ -50,6 +50,9 @@ logging:
       console: ecs
 
 ogcloud:
+  kafka:
+    # Consumer groups are ogcloud-controller-*, matching the generated ACLs.
+    client-id: controller
   controller:
     namespace: ${POD_NAMESPACE:ogcloud}
     identity: ${HOSTNAME}
