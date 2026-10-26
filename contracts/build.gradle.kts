@@ -6,6 +6,8 @@ plugins {
 dependencies {
     api(libs.protobuf.java)
     api(libs.protobuf.kotlin)
+    // grpc-java needs all its artifacts on one version; this aligns those pulled in by Spring gRPC too.
+    api(platform(libs.grpc.bom))
     api(libs.grpc.protobuf)
     api(libs.grpc.stub)
 }
