@@ -6,8 +6,10 @@ import io.ogwars.cloud.controller.config.RuntimeProperties
 import io.ogwars.cloud.controller.lifecycle.LifecycleFixture
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
+import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.runtime.Platform
+import io.ogwars.cloud.domain.store.JobStore
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.livestate.ValkeyReadModelStore
 import io.ogwars.cloud.persistence.JdbcJobStore
@@ -112,6 +114,33 @@ class RuntimeBundlesTest {
         objects.objects.size shouldBe 4
         jobs.findActive().map { it.kind to it.payload[JobKinds.PROFILE_ID] } shouldContainExactly
             listOf(JobKinds.BUNDLE_ROLLOUT to "velocity-4.3.0")
+    }
+
+    @Test
+    fun `a rollout that failed to be queued is queued by the next run`() {
+        bundles.runOnce()
+        f.request(group(GroupType.PROXY, id = "proxy"))
+        Files.writeString(pluginsDir.resolve("ogcloud-velocity.jar"), "ogcloud-2")
+        val failingOnce =
+            object : JobStore by jobs {
+                var failures = 1
+
+                override fun create(job: Job) {
+                    if (failures-- > 0) throw IllegalStateException("database unavailable")
+                    jobs.create(job)
+                }
+            }
+        val flaky =
+            RuntimeBundles(plan, {
+                viaBytes.inputStream()
+            }, objects, artifacts, readModels, f.servers, failingOnce, {
+                UUID.randomUUID()
+            }, RuntimeProperties(pluginsDir = pluginsDir), f.clock, SimpleMeterRegistry())
+
+        flaky.runOnce()
+        flaky.runOnce()
+
+        jobs.findActive().map { it.kind } shouldContainExactly listOf(JobKinds.BUNDLE_ROLLOUT)
     }
 
     @Test

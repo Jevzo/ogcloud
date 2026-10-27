@@ -31,6 +31,19 @@ class RankExpiryLoopTest {
     }
 
     @Test
+    fun `an admin's change made after the expiry was read wins`() {
+        val player = UUID.randomUUID()
+        players.recordSeen(player, "Steve", T0, PlayerRank(player, "vip", T0.plus(Duration.ofDays(1))))
+        clock.advance(Duration.ofDays(2))
+        val stale = players.withExpiredRanks(clock.instant(), limit = 10).single()
+        players.updateRank(PlayerRank(player, "vip", null))
+
+        permissions.expire(stale, clock.instant())
+
+        players.find(player)?.rank shouldBe PlayerRank(player, "vip", null)
+    }
+
+    @Test
     fun `expired timed ranks fall back to the default group and reach the player's proxy`() {
         val expiring = UUID.randomUUID()
         val permanent = UUID.randomUUID()

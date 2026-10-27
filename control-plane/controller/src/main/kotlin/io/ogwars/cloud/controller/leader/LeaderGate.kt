@@ -81,12 +81,41 @@ class LeaderGate(
 
     private fun startLeading() {
         synchronized(lock) {
-            log.info("{} leads; starting {} loops", properties.identity, loops.size)
+            log.info("{} leads; starting {} services and {} loops", properties.identity, services.size, loops.size)
             val executor =
                 Executors.newScheduledThreadPool(
                     maxOf(loops.size, 1),
                     Thread.ofVirtual().name("leader-loop-", 0).factory(),
                 )
+            scheduler = executor
+            leading.set(true)
+            executor.execute { startServicesThenLoops(executor) }
+        }
+    }
+
+    /**
+     * Services (the informers) start before the loops, so no loop acts while Kubernetes is not yet watched. A failed
+     * start is retried for as long as this replica leads, instead of leading without them.
+     */
+    private fun startServicesThenLoops(executor: ScheduledExecutorService) {
+        val started = mutableListOf<LeaderService>()
+        try {
+            services.forEach {
+                it.startLeading()
+                started += it
+            }
+        } catch (e: Exception) {
+            started.asReversed().forEach(::stopQuietly)
+            if (isInterruption(e) || executor.isShutdown) return
+            log.error("Starting the leader services failed; retrying in {}", properties.leaderElection.serviceRetry, e)
+            Counter.builder(SERVICE_FAILURES_METRIC).register(meters).increment()
+            executor.schedule({
+                startServicesThenLoops(executor)
+            }, properties.leaderElection.serviceRetry.toMillis(), TimeUnit.MILLISECONDS)
+            return
+        }
+        synchronized(lock) {
+            if (scheduler !== executor) return
             loops.forEach { loop ->
                 executor.scheduleWithFixedDelay(
                     { runGuarded(loop) },
@@ -95,9 +124,14 @@ class LeaderGate(
                     TimeUnit.MILLISECONDS,
                 )
             }
-            scheduler = executor
-            services.forEach { it.startLeading() }
-            leading.set(true)
+        }
+    }
+
+    private fun stopQuietly(service: LeaderService) {
+        try {
+            service.stopLeading()
+        } catch (e: Exception) {
+            log.error("Stopping leader service {} failed", service.javaClass.simpleName, e)
         }
     }
 
@@ -117,7 +151,7 @@ class LeaderGate(
 
     private fun stopLeading() {
         synchronized(lock) {
-            if (leading.getAndSet(false)) services.forEach { it.stopLeading() }
+            if (leading.getAndSet(false)) services.forEach(::stopQuietly)
             scheduler?.let { executor ->
                 executor.shutdownNow()
                 if (!executor.awaitTermination(LOOP_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
@@ -135,7 +169,7 @@ class LeaderGate(
             synchronized(loop) { loop.runOnce() }
         } catch (e: Exception) {
             // Losing the Lease interrupts running loops; that is not a failure of the loop.
-            if (!leading.get()) {
+            if (isInterruption(e)) {
                 log.debug("Leader loop {} stopped with the leadership", loop.name, e)
                 return
             }
@@ -148,9 +182,13 @@ class LeaderGate(
         }
     }
 
+    private fun isInterruption(e: Throwable) =
+        Thread.currentThread().isInterrupted || generateSequence(e) { it.cause }.any { it is InterruptedException }
+
     private companion object {
         const val LEADER_METRIC = "ogcloud.controller.leader"
         const val LOOP_FAILURES_METRIC = "ogcloud.controller.loop.failures"
+        const val SERVICE_FAILURES_METRIC = "ogcloud.controller.leader.service.failures"
         const val LOOP_STOP_TIMEOUT_SECONDS = 10L
     }
 }

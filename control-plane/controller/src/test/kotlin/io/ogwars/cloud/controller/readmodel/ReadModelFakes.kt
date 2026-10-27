@@ -97,6 +97,15 @@ class InMemoryPlayerStore : PlayerStore {
         return updated.rankVersion
     }
 
+    override fun resetExpiredRank(
+        playerUuid: UUID,
+        defaultGroupId: String,
+        now: Instant,
+    ): Long? {
+        val player = players[playerUuid]?.takeIf { it.rank.isExpired(now) } ?: return null
+        return updateRank(PlayerRank(playerUuid, defaultGroupId, null))
+    }
+
     override fun withExpiredRanks(
         now: Instant,
         limit: Int,

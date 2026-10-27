@@ -82,9 +82,11 @@ class RuntimeBundles(
             }
         val removed = stored.keys - sources.map { it.path }.toSet()
         removed.forEach { artifacts.delete(profile.id, it) }
-        readModels.put(ReadModelKind.RUNTIME_BUNDLE, profile.id, manifest(profile, current).toByteArray())
-        val changed = removed.isNotEmpty() || current.any { it !in stored.values }
-        if (changed && stored.isNotEmpty()) requestRollout(profile)
+        val manifest = manifest(profile, current)
+        // Compared with the published manifest, so a run that failed after storing still queues the rollout next time.
+        val published = readModels.get(ReadModelKind.RUNTIME_BUNDLE, profile.id)?.let(RuntimeBundle::parseFrom)
+        if (published != null && published.digest != manifest.digest) requestRollout(profile)
+        readModels.put(ReadModelKind.RUNTIME_BUNDLE, profile.id, manifest.toByteArray())
     }
 
     private fun upToDate(

@@ -8,6 +8,7 @@ import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.SessionStore
 import org.springframework.stereotype.Component
+import java.time.Instant
 import java.util.UUID
 
 /** One path for every rank change (admin change, expiry, re-enable sync): read model, session, then broadcast. */
@@ -37,10 +38,13 @@ class PlayerPermissions(
         }
     }
 
-    /** Resets an expired rank to the default group. */
-    fun expire(player: Player) {
+    /** Resets an expired rank to the default group, unless an admin changed it since [now] was read. */
+    fun expire(
+        player: Player,
+        now: Instant,
+    ) {
         val defaultGroup = permissionGroups.findDefault().value.id
-        val version = players.updateRank(PlayerRank(player.uuid, defaultGroup, expiresAt = null))
+        val version = players.resetExpiredRank(player.uuid, defaultGroup, now) ?: return publish(player.uuid)
         publish(player.copy(rank = PlayerRank(player.uuid, defaultGroup, null), rankVersion = version))
     }
 

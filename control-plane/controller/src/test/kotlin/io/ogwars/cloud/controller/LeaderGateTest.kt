@@ -4,6 +4,7 @@ import io.ogwars.cloud.controller.config.ControllerProperties
 import io.ogwars.cloud.controller.config.LeaderElectionProperties
 import io.ogwars.cloud.controller.leader.LeaderGate
 import io.ogwars.cloud.controller.leader.LeaderLoop
+import io.ogwars.cloud.controller.leader.LeaderService
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.ints.shouldBeGreaterThan
@@ -79,6 +80,30 @@ class LeaderGateTest {
         standby.loop.runs.get() shouldBe 0
     }
 
+    @Test
+    fun `a leader whose services fail to start retries them and only then runs its loops`() {
+        var attempts = 0
+        val flaky =
+            object : LeaderService {
+                override fun startLeading() {
+                    attempts++
+                    check(attempts > 1) { "informer list failed" }
+                }
+
+                override fun stopLeading() = Unit
+            }
+        val replica = Replica("flaky-services", "solo", services = listOf(flaky)).also(gates::add)
+
+        replica.gate.start()
+
+        runBlocking { eventually(ELECTION_TIMEOUT) { replica.loop.runs.get() shouldBeGreaterThan 0 } }
+        attempts shouldBe 2
+        replica.meters
+            .find("ogcloud.controller.leader.service.failures")
+            .counter()
+            ?.count() shouldBe 1.0
+    }
+
     private fun replicas(
         lease: String,
         loop: () -> CountingLoop = { CountingLoop() },
@@ -111,6 +136,7 @@ class LeaderGateTest {
         lease: String,
         identity: String,
         val loop: CountingLoop = CountingLoop(),
+        services: List<LeaderService> = emptyList(),
     ) : AutoCloseable {
         val meters = SimpleMeterRegistry()
         private val client = TestCluster.client()
@@ -119,7 +145,7 @@ class LeaderGateTest {
                 client,
                 ControllerProperties(NAMESPACE, identity, FAST_ELECTION.copy(leaseName = lease)),
                 listOf(loop),
-                emptyList(),
+                services,
                 meters,
             )
 
@@ -138,6 +164,7 @@ class LeaderGateTest {
                 leaseDuration = Duration.ofSeconds(3),
                 renewDeadline = Duration.ofSeconds(2),
                 retryPeriod = Duration.ofMillis(500),
+                serviceRetry = Duration.ofMillis(200),
             )
         val ELECTION_TIMEOUT = 20.seconds
 

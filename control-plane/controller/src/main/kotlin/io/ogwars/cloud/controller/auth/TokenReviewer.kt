@@ -8,29 +8,34 @@ import java.security.MessageDigest
 import java.time.Clock
 import java.time.Instant
 import java.util.HexFormat
-import java.util.concurrent.ConcurrentHashMap
 
 /** Resolves a projected service-account token to its Kubernetes username, or null when it is not valid for us. */
 fun interface TokenReviewer {
     fun username(token: String): String?
 }
 
-/** Asks the API server via TokenReview and caches answers briefly; only token hashes are kept in memory. */
+/**
+ * Asks the API server via TokenReview and caches answers briefly in a bounded LRU; only token hashes are kept in
+ * memory. Anything that is not a JWT is refused without asking the API server.
+ */
 @Component
 class KubernetesTokenReviewer(
     private val client: KubernetesClient,
     private val properties: GrpcAuthProperties,
     private val clock: Clock,
 ) : TokenReviewer {
-    private val cache = ConcurrentHashMap<String, CachedReview>()
+    private val cache =
+        object : LinkedHashMap<String, CachedReview>(MAX_ENTRIES, LOAD_FACTOR, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CachedReview>) = size > MAX_ENTRIES
+        }
 
     override fun username(token: String): String? {
+        if (token.length > MAX_TOKEN_LENGTH || !JWT.matches(token)) return null
         val key = sha256(token)
         val now = clock.instant()
-        cache[key]?.takeIf { it.expiresAt.isAfter(now) }?.let { return it.username }
+        synchronized(cache) { cache[key]?.takeIf { it.expiresAt.isAfter(now) }?.let { return it.username } }
         val username = review(token)
-        if (cache.size >= MAX_ENTRIES) cache.values.removeIf { !it.expiresAt.isAfter(now) }
-        cache[key] = CachedReview(username, now.plus(properties.cacheTtl))
+        synchronized(cache) { cache[key] = CachedReview(username, now.plus(properties.cacheTtl)) }
         return username
     }
 
@@ -68,5 +73,8 @@ class KubernetesTokenReviewer(
 
     private companion object {
         const val MAX_ENTRIES = 1000
+        const val LOAD_FACTOR = 0.75f
+        const val MAX_TOKEN_LENGTH = 8192
+        val JWT = Regex("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$")
     }
 }

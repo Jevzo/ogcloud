@@ -18,8 +18,9 @@ class RankExpiryLoop(
 
     override fun runOnce() {
         repeat(MAX_BATCHES_PER_RUN) {
-            val expired = players.withExpiredRanks(clock.instant(), BATCH_SIZE)
-            expired.forEach(permissions::expire)
+            val now = clock.instant()
+            val expired = players.withExpiredRanks(now, BATCH_SIZE)
+            expired.forEach { permissions.expire(it, now) }
             if (expired.size < BATCH_SIZE) return
         }
     }
