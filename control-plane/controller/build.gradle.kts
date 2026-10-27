@@ -6,6 +6,7 @@ dependencies {
     implementation(project(":control-plane:persistence"))
     implementation(project(":control-plane:livestate"))
     implementation(project(":control-plane:messaging"))
+    implementation(project(":control-plane:storage"))
     implementation(project(":contracts"))
     implementation(libs.fabric8.kubernetes.client)
     implementation("org.springframework.boot:spring-boot-starter-webmvc")

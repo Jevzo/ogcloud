@@ -85,6 +85,27 @@ class OtherJobsTest {
     }
 
     @Test
+    fun `a bundle rollout replaces the servers of that profile only`() {
+        val proxy = group(GroupType.PROXY, id = "proxy")
+        val lobby = group(id = "lobby")
+        val j = JobsFixture(listOf(lobby, proxy))
+        val oldProxy = j.running(proxy)
+        val backend = j.running(lobby)
+        val job = j.create(JobKinds.BUNDLE_ROLLOUT, mapOf(JobKinds.PROFILE_ID to "velocity-4.3.0"))
+
+        j.runToEnd(j.runner(BundleRolloutJob(j.f.groupStore, j.roll)), job).state shouldBe JobState.SUCCEEDED
+
+        j.f.servers.get(oldProxy) shouldBe null
+        j.f.servers
+            .get(backend)
+            ?.value
+            ?.state shouldBe ServerState.RUNNING
+        j.f.servers
+            .listByGroup(proxy.id)
+            .map { it.value.state } shouldBe listOf(ServerState.RUNNING)
+    }
+
+    @Test
     fun `an unknown job kind fails`() {
         val j = JobsFixture(listOf(group(id = "lobby")))
         val job = j.create("unknown.kind")

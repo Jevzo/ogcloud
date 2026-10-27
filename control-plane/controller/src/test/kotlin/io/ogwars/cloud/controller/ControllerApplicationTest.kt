@@ -3,6 +3,7 @@ package io.ogwars.cloud.controller
 import io.ogwars.cloud.contracts.internal.v1.LoginServiceGrpc
 import io.ogwars.cloud.contracts.internal.v1.ResolveLoginRequest
 import io.ogwars.cloud.controller.leader.LeaderGate
+import io.ogwars.cloud.controller.runtime.ArtifactFetcher
 import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
 import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import java.io.IOException
 import java.net.ServerSocket
 import java.net.URI
 import java.net.http.HttpClient
@@ -192,6 +194,11 @@ class ControllerApplicationTest(
         @Bean
         @Primary
         fun testClusterConfig(): Config = TestCluster.config
+
+        /** Bundle sync runs on the leader; tests must not reach Modrinth. */
+        @Bean
+        @Primary
+        fun offlineFetcher(): ArtifactFetcher = ArtifactFetcher { throw IOException("No downloads in tests: $it") }
     }
 
     companion object {
@@ -217,6 +224,13 @@ class ControllerApplicationTest(
             registry.add("ogcloud.controller.pods.platform-version") { "2.0.0" }
             registry.add("ogcloud.controller.pods.gateway-address") { "ogcloud-gateway.ogcloud.svc:9443" }
             registry.add("spring.grpc.server.port") { grpcPort }
+            // Object storage is not touched by these tests; the client only needs valid settings.
+            registry.add("ogcloud.s3.endpoint") { "http://localhost:1" }
+            registry.add("ogcloud.s3.region") { "test" }
+            registry.add("ogcloud.s3.bucket") { "ogcloud" }
+            registry.add("ogcloud.s3.access-key") { "test" }
+            registry.add("ogcloud.s3.secret-key") { "test" }
+            registry.add("ogcloud.s3.path-style") { "true" }
             registry.add("spring.ssl.bundle.jks.grpc.keystore.location") { "file:${TestTls.keystore}" }
             registry.add("spring.ssl.bundle.jks.grpc.keystore.password") { TestTls.PASSWORD }
             registry.add("spring.ssl.bundle.jks.grpc.keystore.type") { "PKCS12" }
