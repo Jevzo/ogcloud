@@ -2,6 +2,7 @@ package io.ogwars.cloud.persistence
 
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.TemplateVersionStore
 import io.ogwars.cloud.domain.template.TemplateSource
 import io.ogwars.cloud.domain.template.TemplateVersion
@@ -9,7 +10,9 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.CrudRepository
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
 
@@ -33,6 +36,7 @@ interface TemplateVersionRecordRepository : CrudRepository<TemplateVersionRecord
 class JdbcTemplateVersionStore(
     private val records: TemplateVersionRecordRepository,
     private val aggregates: JdbcAggregateTemplate,
+    private val jdbc: JdbcClient,
 ) : TemplateVersionStore {
     // Versions are immutable and carry their own id, so they are always inserted.
     override fun add(version: TemplateVersion) {
@@ -67,5 +71,22 @@ class JdbcTemplateVersionStore(
             createdAt = record.createdAt,
         )
 
-    override fun delete(id: UUID) = records.deleteById(id)
+    // Locks the group row, which a promote updates, so a version is never deleted while it becomes active.
+    @Transactional
+    override fun delete(id: UUID) {
+        val active =
+            jdbc
+                .sql(
+                    """
+                    select g.active_template_version_id = v.id from template_versions v
+                    join groups g on g.id = v.group_id
+                    where v.id = :id
+                    for update of g
+                    """.trimIndent(),
+                ).param("id", id)
+                .query(Boolean::class.java)
+                .optional()
+        if (active.orElse(false)) throw ConflictException("Promote another version before deleting the active one")
+        records.deleteById(id)
+    }
 }

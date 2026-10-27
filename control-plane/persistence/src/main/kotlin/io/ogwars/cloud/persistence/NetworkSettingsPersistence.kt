@@ -12,7 +12,9 @@ import org.springframework.data.annotation.Version
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.CrudRepository
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
 
@@ -44,14 +46,26 @@ interface NetworkSettingsRecordRepository : CrudRepository<NetworkSettingsRecord
 class JdbcNetworkSettingsStore(
     private val records: NetworkSettingsRecordRepository,
     private val aggregates: JdbcAggregateTemplate,
+    private val jdbc: JdbcClient,
     private val clock: Clock,
 ) : NetworkSettingsStore {
     override fun load(): Revisioned<NetworkSettings> = current().let { Revisioned(toDomain(it), it.version) }
 
+    @Transactional
     override fun save(
         expectedVersion: Long,
         settings: NetworkSettings,
     ) {
+        // After the lock, a group deleted meanwhile is seen as gone.
+        if (lockNetworkSettings(jdbc) != settings.defaultGroupId.value) {
+            val exists =
+                jdbc
+                    .sql("select exists (select 1 from groups where id = :id and deleted_at is null)")
+                    .param("id", settings.defaultGroupId.value)
+                    .query(Boolean::class.java)
+                    .single()
+            require(exists) { "The default group ${settings.defaultGroupId} does not exist" }
+        }
         try {
             write(expectedVersion, settings)
         } catch (e: OptimisticLockingFailureException) {
@@ -114,3 +128,7 @@ class JdbcNetworkSettingsStore(
         const val SINGLETON_ID: Short = 1
     }
 }
+
+/** Locks the single settings row for the rest of the transaction and returns the default group's id. */
+internal fun lockNetworkSettings(jdbc: JdbcClient): String =
+    jdbc.sql("select default_group_id from network_settings for update").query(String::class.java).single()

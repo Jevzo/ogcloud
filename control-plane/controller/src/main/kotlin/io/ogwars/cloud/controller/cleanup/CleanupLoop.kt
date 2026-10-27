@@ -9,6 +9,7 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.retention.RetentionPolicy
 import io.ogwars.cloud.domain.runtime.RuntimeProfiles
+import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.JobStore
 import io.ogwars.cloud.domain.store.ObjectStore
@@ -88,8 +89,13 @@ class CleanupLoop(
                 )
             if (!properties.dryRun) {
                 surplus.forEach { version ->
-                    objects.delete(version.objectKey)
-                    templates.delete(version.id)
+                    // The row goes first: the store refuses a version promoted meanwhile, which keeps its object.
+                    try {
+                        templates.delete(version.id)
+                        objects.delete(version.objectKey)
+                    } catch (e: ConflictException) {
+                        log.info("Keeping template version {}: {}", version.id, e.message)
+                    }
                 }
             }
             surplus.size

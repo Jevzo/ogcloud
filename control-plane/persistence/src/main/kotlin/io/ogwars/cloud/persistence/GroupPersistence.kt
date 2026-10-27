@@ -20,7 +20,9 @@ import org.springframework.data.jdbc.repository.query.Modifying
 import org.springframework.data.jdbc.repository.query.Query
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.CrudRepository
+import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -90,6 +92,7 @@ interface GroupRecordRepository : CrudRepository<GroupRecord, String> {
 class JdbcGroupStore(
     private val records: GroupRecordRepository,
     private val aggregates: JdbcAggregateTemplate,
+    private val jdbc: JdbcClient,
     private val clock: Clock,
 ) : GroupStore {
     override fun findAll(): List<Revisioned<Group>> = records.findAllActive().map(::revisioned)
@@ -122,10 +125,15 @@ class JdbcGroupStore(
         }
     }
 
+    // Locks the network settings, as a change of the default group does, so neither sees the other half done.
+    @Transactional
     override fun softDelete(
         id: GroupId,
         at: Instant,
-    ): Boolean = records.softDelete(id.value, at) == 1
+    ): Boolean {
+        if (lockNetworkSettings(jdbc) == id.value) throw ConflictException("Group $id is the network's default group")
+        return records.softDelete(id.value, at) == 1
+    }
 
     override fun restore(id: GroupId): Boolean = records.restore(id.value) == 1
 

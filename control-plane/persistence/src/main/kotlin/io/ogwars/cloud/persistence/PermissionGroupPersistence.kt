@@ -105,8 +105,15 @@ class JdbcPermissionGroupStore(
 
     @Transactional
     override fun delete(id: String): List<UUID> {
-        val group = records.findById(id).orElseThrow { NoSuchElementException("Permission group $id does not exist") }
-        if (group.isDefault) throw ConflictException("The default permission group cannot be deleted")
+        // Locked, so a concurrent update cannot make it the default while it goes.
+        val isDefault =
+            jdbc
+                .sql("select is_default from permission_groups where id = :id for update")
+                .param("id", id)
+                .query(Boolean::class.java)
+                .optional()
+                .orElseThrow { NoSuchElementException("Permission group $id does not exist") }
+        if (isDefault) throw ConflictException("The default permission group cannot be deleted")
         val moved =
             jdbc
                 .sql(

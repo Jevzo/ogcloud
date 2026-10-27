@@ -41,7 +41,7 @@ interface GroupStore {
         group: Group,
     )
 
-    /** False if no active group has [id]. */
+    /** False if no active group has [id]; throws [ConflictException] for the network's default group. */
     fun softDelete(
         id: GroupId,
         at: Instant,
@@ -68,7 +68,10 @@ interface GroupStore {
 interface NetworkSettingsStore {
     fun load(): Revisioned<NetworkSettings>
 
-    /** Saves if the settings still have [expectedVersion]; otherwise throws [StaleUpdateException]. */
+    /**
+     * Saves if the settings still have [expectedVersion]; otherwise throws [StaleUpdateException]. A new default
+     * group must exist, else [IllegalArgumentException].
+     */
     fun save(
         expectedVersion: Long,
         settings: NetworkSettings,
@@ -154,6 +157,7 @@ interface TemplateVersionStore {
 
     fun find(id: UUID): TemplateVersion?
 
+    /** Throws [ConflictException] while the version is its group's active one (D-0042). */
     fun delete(id: UUID)
 }
 

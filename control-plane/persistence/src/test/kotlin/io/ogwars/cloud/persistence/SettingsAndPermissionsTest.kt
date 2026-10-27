@@ -42,6 +42,16 @@ class SettingsAndPermissionsTest(
     }
 
     @Test
+    fun `a new default group must exist, the seeded one need not`() {
+        val seeded = settings.load()
+
+        shouldThrow<IllegalArgumentException> {
+            settings.save(seeded.revision, seeded.value.copy(defaultGroupId = GroupId("missing")))
+        }
+        settings.save(seeded.revision, seeded.value.copy(maxPlayers = 10))
+    }
+
+    @Test
     fun `permission groups keep their nodes and descriptions`() {
         val vip = rank("vip", weight = 200, permissions = mapOf("ogcloud.fly" to "Fly in lobbies"))
         permissionGroups.create(vip)
