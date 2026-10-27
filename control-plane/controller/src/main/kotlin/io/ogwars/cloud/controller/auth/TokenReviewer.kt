@@ -1,13 +1,12 @@
 package io.ogwars.cloud.controller.auth
 
 import io.ogwars.cloud.controller.config.GrpcAuthProperties
+import io.ogwars.cloud.domain.common.sha256Hex
 import io.fabric8.kubernetes.api.model.authentication.TokenReviewBuilder
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.springframework.stereotype.Component
-import java.security.MessageDigest
 import java.time.Clock
 import java.time.Instant
-import java.util.HexFormat
 
 /** Resolves a projected service-account token to its Kubernetes username, or null when it is not valid for us. */
 fun interface TokenReviewer {
@@ -31,7 +30,7 @@ class KubernetesTokenReviewer(
 
     override fun username(token: String): String? {
         if (token.length > MAX_TOKEN_LENGTH || !JWT.matches(token)) return null
-        val key = sha256(token)
+        val key = sha256Hex(token)
         val now = clock.instant()
         synchronized(cache) { cache[key]?.takeIf { it.expiresAt.isAfter(now) }?.let { return it.username } }
         val username = review(token)
@@ -62,9 +61,6 @@ class KubernetesTokenReviewer(
             null
         }
     }
-
-    private fun sha256(token: String): String =
-        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(token.toByteArray()))
 
     private data class CachedReview(
         val username: String?,

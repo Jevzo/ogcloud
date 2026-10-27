@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.jobs
 
+import io.ogwars.cloud.domain.common.sha256Hex
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
@@ -7,11 +8,9 @@ import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.service.SecretGenerator
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
-import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.util.HexFormat
 
 /** The BungeeGuard tokens in Infisical (D-0044); proxies use the last one, backends accept all (D-0065). */
 interface ForwardingTokenSource {
@@ -230,11 +229,6 @@ class ForwardingRotationJob(
         val SECRET_PROPAGATION: Duration = Duration.ofMinutes(2)
         val SYNC_TIMEOUT: Duration = Duration.ofMinutes(15)
 
-        fun fingerprint(token: String): String =
-            HexFormat
-                .of()
-                .formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(token.toByteArray()),
-                ).take(FINGERPRINT_CHARS)
+        fun fingerprint(token: String): String = sha256Hex(token).take(FINGERPRINT_CHARS)
     }
 }
