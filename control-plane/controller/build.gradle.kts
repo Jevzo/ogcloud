@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":control-plane:service-support"))
     implementation(project(":control-plane:persistence"))
     implementation(project(":control-plane:livestate"))
     implementation(project(":control-plane:messaging"))
@@ -17,6 +18,7 @@ dependencies {
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 
     testImplementation(testFixtures(project(":control-plane:domain")))
+    testImplementation(testFixtures(project(":control-plane:service-support")))
     testImplementation(testFixtures(project(":control-plane:persistence")))
     testImplementation(testFixtures(project(":control-plane:livestate")))
     testImplementation(testFixtures(project(":control-plane:messaging")))
@@ -27,9 +29,4 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("io.grpc:grpc-netty")
     testImplementation("io.grpc:grpc-services")
-}
-
-// `./gradlew :control-plane:controller:test -PupdateSnapshots=true` rewrites the golden files after a reviewed change.
-tasks.test {
-    systemProperty("ogcloud.updateSnapshots", providers.gradleProperty("updateSnapshots").getOrElse("false"))
 }

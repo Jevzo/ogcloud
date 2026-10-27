@@ -1,6 +1,5 @@
 package io.ogwars.cloud.controller.kube
 
-import io.ogwars.cloud.controller.Snapshots
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
@@ -9,6 +8,7 @@ import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.runtime.RuntimeProfile
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.server.server
+import io.ogwars.cloud.service.GoldenFiles
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.utils.Serialization
 import io.kotest.assertions.throwables.shouldThrow
@@ -16,6 +16,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 
 class PodSpecBuilderTest {
     private val builder = PodSpecBuilder(HETZNER)
@@ -23,26 +24,29 @@ class PodSpecBuilderTest {
 
     @Test
     fun `a dynamic Paper server on the game pool`() {
-        Snapshots.assertMatches("pod-dynamic-paper", yaml(build(GroupType.DYNAMIC, "bedwars")))
+        GoldenFiles.assertMatches(snapshot("pod-dynamic-paper"), yaml(build(GroupType.DYNAMIC, "bedwars")))
     }
 
     @Test
     fun `a default-group PandaSpigot lobby`() {
-        Snapshots.assertMatches(
-            "pod-default-pandaspigot",
+        GoldenFiles.assertMatches(
+            snapshot("pod-default-pandaspigot"),
             yaml(build(GroupType.DYNAMIC, "lobby", profile = "pandaspigot-1.8.8")),
         )
     }
 
     @Test
     fun `a Velocity proxy`() {
-        Snapshots.assertMatches("pod-proxy-velocity", yaml(build(GroupType.PROXY, "proxy")))
+        GoldenFiles.assertMatches(snapshot("pod-proxy-velocity"), yaml(build(GroupType.PROXY, "proxy")))
     }
 
     @Test
     fun `a STATIC server with its volume claim`() {
-        Snapshots.assertMatches("pod-static-paper", yaml(build(GroupType.STATIC, "smp")))
-        Snapshots.assertMatches("pvc-static", yaml(builder.staticVolumeClaim(group(GroupType.STATIC, id = "smp"))))
+        GoldenFiles.assertMatches(snapshot("pod-static-paper"), yaml(build(GroupType.STATIC, "smp")))
+        GoldenFiles.assertMatches(
+            snapshot("pvc-static"),
+            yaml(builder.staticVolumeClaim(group(GroupType.STATIC, id = "smp"))),
+        )
     }
 
     @Test
@@ -111,6 +115,8 @@ class PodSpecBuilderTest {
     private fun profile(id: String) = RuntimeProfile.find(id) ?: error("Unknown profile $id")
 
     private fun yaml(resource: Any): String = Serialization.asYaml(resource)
+
+    private fun snapshot(name: String) = Path.of("src/test/resources/snapshots/$name.yaml")
 
     private companion object {
         val HETZNER =

@@ -1,10 +1,10 @@
 package io.ogwars.cloud.controller.jobs
 
-import io.ogwars.cloud.controller.config.SecretGenerator
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.store.GroupStore
+import io.ogwars.cloud.service.SecretGenerator
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.security.MessageDigest

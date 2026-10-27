@@ -1,9 +1,10 @@
-package io.ogwars.cloud.controller.config
+package io.ogwars.cloud.service
 
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.common.UuidV7Generator
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import java.security.SecureRandom
 import java.time.Clock
 import java.util.Base64
@@ -13,16 +14,19 @@ fun interface SecretGenerator {
     fun next(): String
 }
 
-/** Time and ids for every component; tests replace them (AGENTS.md §10). */
-@Configuration(proxyBeanMethods = false)
-class CoreConfiguration {
+/** Time, ids and secrets for every component of a service (D-0088); tests replace them (AGENTS.md §10). */
+@AutoConfiguration
+class ServiceSupportAutoConfiguration {
     @Bean
+    @ConditionalOnMissingBean
     fun clock(): Clock = Clock.systemUTC()
 
     @Bean
+    @ConditionalOnMissingBean
     fun idGenerator(clock: Clock): IdGenerator = UuidV7Generator(clock, SecureRandom())
 
     @Bean
+    @ConditionalOnMissingBean
     fun secretGenerator(): SecretGenerator {
         val random = SecureRandom()
         return SecretGenerator {
