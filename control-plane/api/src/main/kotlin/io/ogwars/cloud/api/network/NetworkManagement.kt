@@ -26,7 +26,7 @@ class NetworkManagement(
 ) {
     fun get(): Revisioned<NetworkSettings> = network.load()
 
-    /** The EULA acceptance is kept as stored; only [acceptEula] sets it. */
+    /** The EULA acceptance is kept as stored; only [recordEula] sets it, for an owner or the chart (D-0100). */
     fun update(
         actor: Actor,
         expectedVersion: Long,

@@ -61,7 +61,7 @@ data class NetworkSettingsFields(
 
 data class NetworkSettingsView(
     val settings: NetworkSettingsFields,
-    /** Set by an owner through `POST /api/v1/network/eula`; servers start only afterwards. */
+    /** Set by an owner through `POST /api/v1/network/eula` or by the chart (D-0100); servers start only afterwards. */
     val eulaAcceptedAt: Instant?,
     /** Present it when updating; a stale one is refused with 409 (D-0069). */
     val version: Long,

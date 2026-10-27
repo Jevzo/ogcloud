@@ -14,7 +14,7 @@ fun interface SecretGenerator {
     fun next(): String
 }
 
-/** Time, ids and secrets for every component of a service (D-0088); tests replace them (AGENTS.md §10). */
+/** Time, ids and secrets for every component of a service (D-0088), injected so tests can replace them. */
 @AutoConfiguration
 class ServiceSupportAutoConfiguration {
     @Bean

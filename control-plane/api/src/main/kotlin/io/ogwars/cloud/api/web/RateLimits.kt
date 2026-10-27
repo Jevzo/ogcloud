@@ -23,7 +23,7 @@ import java.time.Clock
 /** `ogcloud.rate-limits.*`, per client address (D-0086, D-0097). */
 @ConfigurationProperties("ogcloud.rate-limits")
 data class RateLimitProperties(
-    /** Sign-in, second factor, token, setup and passkey endpoints. */
+    /** Sign-in, second factor, token, setup, passkey, password-change and Minecraft-link endpoints. */
     val auth: RateLimit = RateLimit(capacity = 20, perMinute = 10),
     val api: RateLimit = RateLimit(capacity = 600, perMinute = 600),
 )

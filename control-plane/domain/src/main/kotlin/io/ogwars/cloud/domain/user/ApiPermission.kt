@@ -46,7 +46,7 @@ enum class ApiPermission(
     }
 }
 
-/** Areas only owners may touch (D-0089). */
+/** Areas the built-in admin role lacks (D-0089); custom roles may still grant them. */
 private val OWNER_ONLY_AREAS = setOf("users", "roles", "oauth-clients", "privacy")
 
 /** Roles whose permissions are defined here rather than in the database (D-0089); V2 seeds their ids. */

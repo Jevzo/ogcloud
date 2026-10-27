@@ -7,10 +7,14 @@ import io.ogwars.cloud.messaging.PublishException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
-/** Domain failures as RFC 9457 problem details; everything else keeps Spring's own mapping. */
-@RestControllerAdvice
+/**
+ * Domain failures of the REST API as RFC 9457 problem details; everything else, the HTML login pages included,
+ * keeps Spring's own mapping.
+ */
+@RestControllerAdvice(annotations = [RestController::class])
 class ApiErrors {
     @ExceptionHandler(NoSuchElementException::class)
     fun notFound(e: NoSuchElementException): ProblemDetail = problem(HttpStatus.NOT_FOUND, e)

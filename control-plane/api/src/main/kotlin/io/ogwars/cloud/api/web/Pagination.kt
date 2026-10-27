@@ -4,13 +4,13 @@ import java.nio.ByteBuffer
 import java.util.Base64
 import java.util.UUID
 
-/** One page of a list ordered by UUIDv7 id; [nextCursor] is null on the last page. */
+/** One page of a list ordered by a UUID key; [nextCursor] is null on the last page. */
 data class Page<T>(
     val items: List<T>,
     val nextCursor: String?,
 )
 
-/** Opaque cursors over UUIDv7 ids, which sort by creation time (D-0064), so pages stay stable while rows are added. */
+/** Opaque keyset cursors over a UUID key, so pages stay stable while rows come and go. */
 object Cursors {
     const val DEFAULT_LIMIT = 50
     const val MAX_LIMIT = 200

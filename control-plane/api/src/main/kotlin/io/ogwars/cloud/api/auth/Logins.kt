@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
-/** A signed-in app or machine client holding tokens for a user. */
+/** A first-party app holding tokens for a user. */
 data class ActiveLogin(
     val clientId: String,
     val grantType: String,
@@ -15,10 +15,7 @@ data class ActiveLogin(
     val expiresAt: Instant?,
 )
 
-/**
- * A user's logins: refresh and access tokens via their authorizations, login sessions via the index. Revoking ends
- * both (D-0094, D-0095).
- */
+/** Authorizations by user or client, plus a user's login sessions via the index; revoking a user ends both (D-0094, D-0095). */
 @Component
 class Logins(
     private val jdbc: JdbcClient,

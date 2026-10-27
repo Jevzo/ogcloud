@@ -62,7 +62,7 @@ class GroupManagement(
         settings: GroupSettings,
     ): Revisioned<Group> {
         val current = get(id).value
-        // Templates are promoted by their own endpoints (T-0309), never through settings.
+        // Templates are promoted by their own endpoints, never through settings.
         groups.update(expectedVersion, validated(settings.toGroup(id, current.type, current.activeTemplateVersionId)))
         announcements.group(actor, id)
         return get(id)

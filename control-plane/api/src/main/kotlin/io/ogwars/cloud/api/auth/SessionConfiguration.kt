@@ -37,7 +37,7 @@ class SessionConfiguration {
     fun webSessionNamespace(): SessionRepositoryCustomizer<RedisIndexedSessionRepository> =
         SessionRepositoryCustomizer { it.setRedisKeyNamespace(ValkeyKeys.WEB_SESSION_NAMESPACE) }
 
-    /** Finds a user's sessions on any replica, for OIDC logout and for revoking logins (D-0095). */
+    /** Lets OIDC logout find a user's sessions on any replica (D-0095). */
     @Bean
     fun sessionRegistry(sessions: FindByIndexNameSessionRepository<out Session>): SessionRegistry =
         SpringSessionBackedSessionRegistry(sessions)
