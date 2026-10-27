@@ -9,11 +9,13 @@ defaults:
   deadLetterRetention: 14d
 
 topics:
+  # The controller runs every command except push_template, which the gateway holding the
+  # server's template agent delivers (D-0081).
   - name: ogcloud.server.command
     message: ogcloud.events.v1.ServerCommand
     key: server_id
     producers: [api, gateway]
-    consumers: [controller]
+    consumers: [controller, gateway]
     deadLetter: true
 
   - name: ogcloud.server.lifecycle

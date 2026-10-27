@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
+// Controller endpoint the gateway calls when a template agent completes an upload (D-0081).
+service TemplateService {
+  rpc RegisterTemplateVersion(RegisterTemplateVersionRequest) returns (RegisterTemplateVersionResponse);
+}
+
+message RegisterTemplateVersionRequest {
+  // The pushing server, taken from the agent's authenticated gateway session.
+  string server_id = 1;
+  // The uploaded archive, under templates/<group_id>/.
+  string object_key = 2;
+  string sha256 = 3;
+  uint64 size_bytes = 4;
+}
+
+message RegisterTemplateVersionResponse {
+  string template_version_id = 1;
+  // True when the group now starts from this version (STATIC groups promote automatically, D-0042).
+  bool promoted = 2;
+}
+
+// Read model template:<group_id> (D-0081): the archive new servers of the group start from.
+message ActiveTemplate {
+  string group_id = 1;
+  string template_version_id = 2;
+  string object_key = 3;
+  string sha256 = 4;
+  uint64 size_bytes = 5;
+}

@@ -113,6 +113,9 @@ enum class ReadModelKind(
 
     /** A profile's bundle manifest for the gateway's GetPodAssets (D-0080). */
     RUNTIME_BUNDLE("runtime-bundle"),
+
+    /** A group's active template for the gateway's GetPodAssets (D-0081). */
+    ACTIVE_TEMPLATE("template"),
 }
 
 /** Encoded read models the gateway and load balancer serve from (D-0007); the controller writes them. */

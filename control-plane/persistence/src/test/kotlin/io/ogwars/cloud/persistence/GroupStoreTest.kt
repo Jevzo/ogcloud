@@ -93,6 +93,7 @@ class GroupStoreTest(
                 NOW,
             )
         templates.add(version)
+        templates.find(version.id) shouldBe version
         groups.softDelete(lobby.id, NOW)
 
         groups.purge(lobby.id, deletedBefore = NOW.plusSeconds(1)) shouldBe true

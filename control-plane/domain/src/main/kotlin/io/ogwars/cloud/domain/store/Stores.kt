@@ -101,6 +101,8 @@ interface TemplateVersionStore {
 
     fun findByGroup(groupId: GroupId): List<TemplateVersion>
 
+    fun find(id: UUID): TemplateVersion?
+
     fun delete(id: UUID)
 }
 

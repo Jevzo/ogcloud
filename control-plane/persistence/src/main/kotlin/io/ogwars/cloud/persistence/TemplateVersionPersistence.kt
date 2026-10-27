@@ -51,18 +51,21 @@ class JdbcTemplateVersionStore(
     }
 
     override fun findByGroup(groupId: GroupId): List<TemplateVersion> =
-        records.findByGroupIdOrderByCreatedAtDesc(groupId.value).map {
-            TemplateVersion(
-                id = it.id,
-                groupId = GroupId(it.groupId),
-                objectKey = it.objectKey,
-                sha256 = it.sha256,
-                sizeBytes = it.sizeBytes,
-                source = TemplateSource.valueOf(it.source),
-                createdBy = Actor.parse(it.createdBy),
-                createdAt = it.createdAt,
-            )
-        }
+        records.findByGroupIdOrderByCreatedAtDesc(groupId.value).map(::toDomain)
+
+    override fun find(id: UUID): TemplateVersion? = records.findById(id).map(::toDomain).orElse(null)
+
+    private fun toDomain(record: TemplateVersionRecord) =
+        TemplateVersion(
+            id = record.id,
+            groupId = GroupId(record.groupId),
+            objectKey = record.objectKey,
+            sha256 = record.sha256,
+            sizeBytes = record.sizeBytes,
+            source = TemplateSource.valueOf(record.source),
+            createdBy = Actor.parse(record.createdBy),
+            createdAt = record.createdAt,
+        )
 
     override fun delete(id: UUID) = records.deleteById(id)
 }
