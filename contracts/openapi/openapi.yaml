@@ -337,6 +337,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/JobView"
+  /api/v1/groups/{groupId}/templates/active:
+    put:
+      tags:
+      - template-controller
+      operationId: templatePromote
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromoteRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TemplateVersionView"
   /api/v1/users:
     get:
       tags:
@@ -821,6 +845,49 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CrashLoopView"
+  /api/v1/groups/{groupId}/templates:
+    get:
+      tags:
+      - template-controller
+      operationId: templateList
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateVersionView"
+    post:
+      tags:
+      - template-controller
+      operationId: templateUpload
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TemplateVersionView"
   /api/v1/commands:
     post:
       tags:
@@ -1031,6 +1098,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/CrashLoopView"
+  /api/v1/groups/{groupId}/templates/{versionId}/content:
+    get:
+      tags:
+      - template-controller
+      operationId: templateDownload
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: versionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
   /api/v1/groups/deleted:
     get:
       tags:
@@ -1052,6 +1139,26 @@ paths:
       operationId: userRevokeLogins
       parameters:
       - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+  /api/v1/groups/{groupId}/templates/{versionId}:
+    delete:
+      tags:
+      - template-controller
+      operationId: templateDelete
+      parameters:
+      - name: groupId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: versionId
         in: path
         required: true
         schema:
@@ -1492,6 +1599,46 @@ components:
       - settings
       - type
       - version
+    PromoteRequest:
+      type: object
+      properties:
+        versionId:
+          type: string
+          format: uuid
+      required:
+      - versionId
+    TemplateVersionView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        source:
+          type: string
+          enum:
+          - UPLOAD
+          - PUSH
+          - IMPORT
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+      required:
+      - active
+      - createdAt
+      - createdBy
+      - id
+      - sha256
+      - sizeBytes
+      - source
     CreateUserRequest:
       type: object
       properties:

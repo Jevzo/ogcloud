@@ -172,6 +172,33 @@ class OAuthHttp(
         return send(request.method(method, payload))
     }
 
+    fun upload(
+        path: String,
+        token: String,
+        body: ByteArray,
+        contentType: String,
+    ): HttpResponse<String> =
+        send(
+            HttpRequest
+                .newBuilder(uri(path))
+                .header("Authorization", "Bearer $token")
+                .header("Content-Type", contentType)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body)),
+        )
+
+    fun download(
+        path: String,
+        token: String,
+    ): HttpResponse<ByteArray> =
+        http.send(
+            HttpRequest
+                .newBuilder(uri(path))
+                .header("Authorization", "Bearer $token")
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofByteArray(),
+        )
+
     fun json(response: HttpResponse<String>): Map<*, *> = json.readValue(response.body(), Map::class.java)
 
     fun jsonList(response: HttpResponse<String>): List<*> = json.readValue(response.body(), List::class.java)

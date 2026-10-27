@@ -3,6 +3,7 @@ package io.ogwars.cloud.apitest
 import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
 import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
+import io.ogwars.cloud.storage.SeaweedFsContainerConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -20,6 +21,9 @@ const val TEST_TOTP_KEY_ID = "k1"
 const val TEST_TOTP_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 const val UNLIMITED = 1_000_000
 
+/** Small, so the size limit can be tested without large uploads. */
+const val TEST_MAX_UPLOAD = "1MB"
+
 /** Static values, known before the web server and its filters start. */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -33,6 +37,7 @@ const val UNLIMITED = 1_000_000
         "ogcloud.rate-limits.auth.per-minute=$UNLIMITED",
         "ogcloud.rate-limits.api.capacity=$UNLIMITED",
         "ogcloud.rate-limits.api.per-minute=$UNLIMITED",
+        "ogcloud.templates.max-upload-size=$TEST_MAX_UPLOAD",
     ],
 )
 @Import(ApiTestConfiguration::class)
@@ -53,6 +58,7 @@ annotation class ApiTest
     PostgresContainerConfiguration::class,
     ValkeyContainerConfiguration::class,
     KafkaContainerConfiguration::class,
+    SeaweedFsContainerConfiguration::class,
     ProbeController::class,
 )
 class ApiTestConfiguration {
@@ -61,12 +67,5 @@ class ApiTestConfiguration {
         DynamicPropertyRegistrar { registry ->
             registry.add("ogcloud.auth.signing.keys-dir") { TestSigningKeys.dir.toString() }
             registry.add("ogcloud.auth.signing.active-key-id") { TestSigningKeys.CURRENT }
-            // Object storage is not touched by these tests; the client only needs valid settings.
-            registry.add("ogcloud.s3.endpoint") { "http://localhost:1" }
-            registry.add("ogcloud.s3.region") { "test" }
-            registry.add("ogcloud.s3.bucket") { "ogcloud" }
-            registry.add("ogcloud.s3.access-key") { "test" }
-            registry.add("ogcloud.s3.secret-key") { "test" }
-            registry.add("ogcloud.s3.path-style") { "true" }
         }
 }
