@@ -110,6 +110,9 @@ interface PlayerStore {
     /** The current names of those of [uuids] that were seen. */
     fun names(uuids: Collection<UUID>): Map<UUID, String>
 
+    /** Forgets the player (D-0049); a linked web user keeps the account but loses the link. */
+    fun delete(uuid: UUID): Boolean
+
     /** Every player seen, ordered by uuid after [after]; [namePrefix] narrows them, ignoring case. */
     fun list(
         namePrefix: String?,
@@ -192,6 +195,18 @@ interface AuditLogStore {
         before: UUID?,
         limit: Int,
     ): List<AuditEntry>
+
+    /** Every entry a user or player [identifier] caused or was the target of, newest first (D-0049). */
+    fun about(identifier: String): List<AuditEntry>
+}
+
+/** Records that outlive an erasure: audit entries, job and template authors (D-0049). */
+interface PseudonymStore {
+    /** Replaces the user or player [identifier] with [pseudonym]; returns how many records changed. */
+    fun pseudonymise(
+        identifier: String,
+        pseudonym: String,
+    ): Int
 }
 
 interface ScalingLogStore {

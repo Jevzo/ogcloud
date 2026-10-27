@@ -89,13 +89,9 @@ class InMemoryPlayerStore : PlayerStore {
 
     override fun findByName(name: String) = players.values.find { it.name.equals(name, ignoreCase = true) }
 
-    override fun names(uuids: Collection<UUID>) =
-        uuids
-            .mapNotNull { uuid ->
-                players[uuid]?.let {
-                    uuid to it.name
-                }
-            }.toMap()
+    override fun names(uuids: Collection<UUID>) = players.filterKeys { it in uuids }.mapValues { it.value.name }
+
+    override fun delete(uuid: UUID) = players.remove(uuid) != null
 
     override fun list(
         namePrefix: String?,

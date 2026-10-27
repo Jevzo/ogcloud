@@ -16,6 +16,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation(testFixtures(project(":control-plane:domain")))
 
     // The PostgreSQL container setup, shared with the services' tests.
     testFixturesImplementation(platform(SpringBootPlugin.BOM_COORDINATES))

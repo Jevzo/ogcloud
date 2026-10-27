@@ -9,8 +9,10 @@ import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.scaling.ScalingReason
 import io.ogwars.cloud.domain.store.AuditLogStore
+import io.ogwars.cloud.domain.store.PseudonymStore
 import io.ogwars.cloud.domain.store.RetentionStore
 import io.ogwars.cloud.domain.store.ScalingLogStore
+import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -48,19 +50,81 @@ class JdbcAuditLogStore(
             .sql("select * from audit_log where id < :before order by id desc limit :limit")
             .param("before", before ?: MAX_ID)
             .param("limit", limit)
-            .query { rs, _ ->
-                AuditEntry(
-                    id = rs.uuid("id"),
-                    occurredAt = rs.instant("occurred_at"),
-                    actor = Actor(ActorType.valueOf(rs.getString("actor_type")), rs.getString("actor_id")),
-                    action = rs.getString("action"),
-                    targetType = rs.getString("target_type"),
-                    targetId = rs.getString("target_id"),
-                    summary = rs.getString("summary"),
-                    metadata = json.readStringMap(rs.getString("metadata")),
-                )
-            }.list()
+            .query(auditEntry)
+            .list()
+
+    override fun about(identifier: String): List<AuditEntry> =
+        jdbc
+            .sql(
+                """
+                select * from audit_log
+                where target_id = :id or (actor_type in ($PERSONS) and actor_id = :id)
+                order by id desc
+                """.trimIndent(),
+            ).param("id", identifier)
+            .query(auditEntry)
+            .list()
+
+    private val auditEntry =
+        RowMapper { rs, _ ->
+            AuditEntry(
+                id = rs.uuid("id"),
+                occurredAt = rs.instant("occurred_at"),
+                actor = Actor(ActorType.valueOf(rs.getString("actor_type")), rs.getString("actor_id")),
+                action = rs.getString("action"),
+                targetType = rs.getString("target_type"),
+                targetId = rs.getString("target_id"),
+                summary = rs.getString("summary"),
+                metadata = json.readStringMap(rs.getString("metadata")),
+            )
+        }
 }
+
+/** Audit actors and targets, job and template authors are the records that name people (D-0049). */
+@Repository
+class JdbcPseudonymStore(
+    private val jdbc: JdbcClient,
+) : PseudonymStore {
+    override fun pseudonymise(
+        identifier: String,
+        pseudonym: String,
+    ): Int {
+        val actors =
+            Actor.PERSON_TYPES.associate {
+                "${it.name.lowercase()}:$identifier" to
+                    "${it.name.lowercase()}:$pseudonym"
+            }
+        var changed =
+            update(
+                "update audit_log set actor_id = :pseudonym where actor_type in ($PERSONS) and actor_id = :id",
+                identifier,
+                pseudonym,
+            ) +
+                update("update audit_log set target_id = :pseudonym where target_id = :id", identifier, pseudonym)
+        actors.forEach { (actor, replacement) ->
+            changed += update("update jobs set created_by = :pseudonym where created_by = :id", actor, replacement)
+            changed +=
+                update(
+                    "update template_versions set created_by = :pseudonym where created_by = :id",
+                    actor,
+                    replacement,
+                )
+        }
+        return changed
+    }
+
+    private fun update(
+        sql: String,
+        identifier: String,
+        pseudonym: String,
+    ) = jdbc
+        .sql(sql)
+        .param("id", identifier)
+        .param("pseudonym", pseudonym)
+        .update()
+}
+
+private val PERSONS = Actor.PERSON_TYPES.joinToString { "'${it.name}'" }
 
 @Repository
 class JdbcScalingLogStore(

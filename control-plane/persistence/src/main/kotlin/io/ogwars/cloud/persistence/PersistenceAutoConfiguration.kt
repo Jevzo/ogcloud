@@ -23,6 +23,7 @@ class PersistenceAutoConfiguration
     JdbcNpcStore::class,
     JdbcJobStore::class,
     JdbcAuditLogStore::class,
+    JdbcPseudonymStore::class,
     JdbcScalingLogStore::class,
     JdbcRetentionStore::class,
     JdbcRuntimeArtifactStore::class,

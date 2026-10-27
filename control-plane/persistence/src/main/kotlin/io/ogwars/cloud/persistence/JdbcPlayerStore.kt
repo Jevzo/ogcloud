@@ -33,6 +33,9 @@ class JdbcPlayerStore(
                 .toMap()
         }
 
+    override fun delete(uuid: UUID): Boolean =
+        jdbc.sql("delete from players where uuid = :uuid").param("uuid", uuid).update() > 0
+
     // Names change; the most recently seen holder of a name wins.
     override fun findByName(name: String): Player? =
         jdbc
