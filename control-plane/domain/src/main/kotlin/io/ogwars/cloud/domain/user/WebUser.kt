@@ -19,6 +19,8 @@ data class WebUser(
         require(username.length in USERNAME_LENGTH) {
             "Username must be ${USERNAME_LENGTH.first} to ${USERNAME_LENGTH.last} characters"
         }
+        // Sign-in takes a username or an email, so a username must never look like someone's email.
+        require('@' !in username) { "Usernames cannot contain @" }
         require(email.contains('@')) { "Invalid email address" }
     }
 

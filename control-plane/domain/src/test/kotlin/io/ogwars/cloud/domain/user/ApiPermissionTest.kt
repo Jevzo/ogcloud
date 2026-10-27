@@ -76,6 +76,7 @@ class ApiPermissionTest {
     @Test
     fun `web users need a sensible username and an email`() {
         shouldThrow<IllegalArgumentException> { user(username = "ab") }
+        shouldThrow<IllegalArgumentException> { user(username = "owner@example.com") }
         shouldThrow<IllegalArgumentException> { user(email = "nobody") }
         user().username shouldBe "jevzo"
     }

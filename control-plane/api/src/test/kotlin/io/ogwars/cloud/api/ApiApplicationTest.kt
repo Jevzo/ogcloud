@@ -10,6 +10,7 @@ import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.core.env.Environment
 import org.springframework.jdbc.core.simple.JdbcClient
 import java.net.URI
 import java.net.http.HttpClient
@@ -22,6 +23,7 @@ class ApiApplicationTest(
     @Autowired private val jdbc: JdbcClient,
     @Autowired private val schema: SchemaVersionProbe,
     @LocalServerPort private val port: Int,
+    @Autowired private val environment: Environment,
 ) {
     private val http = HttpClient.newHttpClient()
     private val oauth = OAuthHttp(port)
@@ -49,7 +51,7 @@ class ApiApplicationTest(
 
     @Test
     fun `forwarded client addresses are honoured only from a trusted proxy`() {
-        // The test talks to the API from 127.0.0.1, which Tomcat trusts like an in-cluster proxy.
+        // The test talks to the API from 127.0.0.1, which is trusted like the Gateway.
         val request =
             HttpRequest
                 .newBuilder(URI("http://localhost:$port/api/v1/probes/client"))
@@ -57,6 +59,15 @@ class ApiApplicationTest(
                 .header("X-Forwarded-For", "203.0.113.7")
                 .GET()
         http.send(request.build(), HttpResponse.BodyHandlers.ofString()).body() shouldBe "203.0.113.7"
+    }
+
+    @Test
+    fun `by default only loopback proxies are trusted`() {
+        val trusted = Regex(environment.getRequiredProperty("server.tomcat.remoteip.internal-proxies"))
+
+        trusted.matches("127.0.0.1") shouldBe true
+        trusted.matches("10.42.0.17") shouldBe false
+        trusted.matches("192.168.1.2") shouldBe false
     }
 
     @Test
