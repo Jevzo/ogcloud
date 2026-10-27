@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.events
 
 import io.ogwars.cloud.contracts.events.v1.KillServer
+import io.ogwars.cloud.contracts.events.v1.LinkCodeIssued
 import io.ogwars.cloud.contracts.events.v1.NodeCommand
 import io.ogwars.cloud.contracts.events.v1.PushTemplate
 import io.ogwars.cloud.contracts.events.v1.RequestServer
@@ -91,6 +92,22 @@ class Commands(
             .setMetadata(metadata.create(actor))
             .apply(target)
             .setCommand(command)
+            .build(),
+    )
+
+    /** Shows a web-account link code to the player in game (D-0106). */
+    fun linkCode(
+        actor: Actor,
+        playerUuid: UUID,
+        code: String,
+    ) = publisher.publishAndWait(
+        KafkaTopics.ACCOUNT_LINK,
+        playerUuid.toString(),
+        LinkCodeIssued
+            .newBuilder()
+            .setMetadata(metadata.create(actor))
+            .setPlayerUuid(playerUuid.toString())
+            .setCode(code)
             .build(),
     )
 

@@ -872,6 +872,49 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/me/minecraft-link:
+    post:
+      tags:
+      - me-controller
+      operationId: meRequestMinecraftLink
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MinecraftLinkRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LinkCodeSent"
+    delete:
+      tags:
+      - me-controller
+      operationId: meUnlinkMinecraft
+      responses:
+        "204":
+          description: No Content
+  /api/v1/me/minecraft-link/confirm:
+    post:
+      tags:
+      - me-controller
+      operationId: meConfirmMinecraftLink
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MinecraftLinkConfirmation"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeView"
   /api/v1/groups:
     get:
       tags:
@@ -1363,6 +1406,21 @@ paths:
                 - $ref: "#/components/schemas/JobEvent"
                 - $ref: "#/components/schemas/ScalingEvent"
                 - $ref: "#/components/schemas/AlertEvent"
+  /api/v1/users/{id}/minecraft-link:
+    delete:
+      tags:
+      - user-controller
+      operationId: userUnlinkMinecraft
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
   /api/v1/users/{id}/logins:
     delete:
       tags:
@@ -1439,6 +1497,10 @@ components:
           - string
           - "null"
           format: uuid
+        linkedPlayerName:
+          type:
+          - string
+          - "null"
         createdAt:
           type: string
           format: date-time
@@ -2157,6 +2219,66 @@ components:
           type: string
       required:
       - code
+    MinecraftLinkRequest:
+      type: object
+      properties:
+        playerName:
+          type: string
+      required:
+      - playerName
+    LinkCodeSent:
+      type: object
+      properties:
+        playerUuid:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - expiresAt
+      - playerUuid
+    MinecraftLinkConfirmation:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+      - code
+    MeView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        roleId:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        linkedPlayerUuid:
+          type:
+          - string
+          - "null"
+          format: uuid
+        linkedPlayerName:
+          type:
+          - string
+          - "null"
+        totpEnabled:
+          type: boolean
+      required:
+      - email
+      - id
+      - permissions
+      - roleId
+      - totpEnabled
+      - username
     CreateGroupRequest:
       type: object
       properties:
@@ -2592,36 +2714,6 @@ components:
       - id
       - occurredAt
       - reason
-    MeView:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        username:
-          type: string
-        email:
-          type: string
-        roleId:
-          type: string
-        permissions:
-          type: array
-          items:
-            type: string
-        linkedPlayerUuid:
-          type:
-          - string
-          - "null"
-          format: uuid
-        totpEnabled:
-          type: boolean
-      required:
-      - email
-      - id
-      - permissions
-      - roleId
-      - totpEnabled
-      - username
     PageScalingLogView:
       type: object
       properties:

@@ -12,12 +12,14 @@ data class UserView(
     val roleId: String,
     val enabled: Boolean,
     val linkedPlayerUuid: UUID?,
+    /** The linked account's current Minecraft name (D-0106). */
+    val linkedPlayerName: String?,
     val createdAt: Instant,
     /** Present it when updating; a stale one is refused with 409 (D-0069). */
     val version: Long,
 )
 
-fun Revisioned<WebUser>.toView() =
+fun Revisioned<WebUser>.toView(linkedPlayerName: String?) =
     UserView(
         value.id,
         value.username,
@@ -25,6 +27,7 @@ fun Revisioned<WebUser>.toView() =
         value.roleId,
         value.enabled,
         value.linkedPlayerUuid,
+        linkedPlayerName,
         value.createdAt,
         revision,
     )
@@ -61,6 +64,7 @@ data class MeView(
     /** What the user may do now; empty while a required Minecraft link is missing (D-0094). */
     val permissions: List<String>,
     val linkedPlayerUuid: UUID?,
+    val linkedPlayerName: String?,
     val totpEnabled: Boolean,
 )
 
@@ -77,4 +81,12 @@ data class SetupRequest(
     val username: String,
     val email: String,
     val password: String,
+)
+
+data class MinecraftLinkRequest(
+    val playerName: String,
+)
+
+data class MinecraftLinkConfirmation(
+    val code: String,
 )

@@ -29,10 +29,11 @@ class RateLimitFilterTest {
         run("POST", "/login")
         run("POST", "/oauth2/token")
         run("POST", "/webauthn/authenticate/options")
+        run("POST", "/api/v1/me/minecraft-link/confirm")
         run("GET", "/api/v1/users")
         run("GET", "/oauth2/jwks")
 
-        taken.map { it.first } shouldBe listOf("auth", "auth", "auth", "api", "api")
+        taken.map { it.first } shouldBe listOf("auth", "auth", "auth", "auth", "api", "api")
         taken.first().third shouldBe limits.auth
         taken.first().second shouldBe "203.0.113.7"
     }

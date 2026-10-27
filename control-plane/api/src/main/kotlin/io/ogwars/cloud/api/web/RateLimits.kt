@@ -74,6 +74,7 @@ class RateLimitFilter(
                 paths.matcher(HttpMethod.POST, "/api/v1/setup"),
                 paths.matcher("/api/v1/me/password"),
                 paths.matcher("/api/v1/me/totp/**"),
+                paths.matcher(HttpMethod.POST, "/api/v1/me/minecraft-link/**"),
             )
     }
 }
