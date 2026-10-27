@@ -15,6 +15,8 @@ import io.ogwars.cloud.controller.readmodel.InMemoryNpcStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPermissionGroupStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
 import io.ogwars.cloud.controller.readmodel.PlayerPermissions
+import io.ogwars.cloud.controller.readmodel.ReadModelMessages
+import io.ogwars.cloud.controller.readmodel.ReadModelSync
 import io.ogwars.cloud.controller.readmodel.RecordingBroadcasts
 import io.ogwars.cloud.controller.readmodel.permissionGroup
 import io.ogwars.cloud.controller.template.InMemoryTemplateVersionStore
@@ -31,6 +33,7 @@ import io.ogwars.cloud.livestate.ValkeySessionStore
 import io.ogwars.cloud.messaging.NonRetryableEventException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -62,8 +65,8 @@ class ConfigChangedHandlerTest {
             f.clock,
         )
     private val permissions = PlayerPermissions(players, permissionGroups, sessions, readModels, broadcasts)
-    private val handler =
-        ConfigChangedHandler(
+    private val sync =
+        ReadModelSync(
             f.groupStore,
             f.network,
             permissionGroups,
@@ -74,6 +77,7 @@ class ConfigChangedHandlerTest {
             sessions,
             templates,
         )
+    private val handler = ConfigChangedHandler(sync, permissions)
 
     @Test
     fun `a group change refreshes its read model, a deletion removes it`() {
@@ -193,4 +197,37 @@ class ConfigChangedHandlerTest {
             .setPlayerUuid(player.toString())
             .setPermissionGroupId("vip")
             .build()
+
+    @Test
+    fun `a resync repairs stale read models and broadcasts only what differs`() {
+        sync.resyncAll()
+        broadcasts.sent.clear()
+
+        sync.resyncAll()
+        broadcasts.sent shouldBe emptyList()
+
+        readModels.delete(ReadModelKind.GROUP, "lobby")
+        readModels.put(ReadModelKind.GROUP, "gone", byteArrayOf(1))
+        readModels.put(ReadModelKind.PERMISSION_GROUP, "gone", byteArrayOf(1))
+        sync.resyncAll()
+
+        val lobby = f.groupStore.find(GroupId("lobby")).shouldNotBeNull()
+        readModels.get(ReadModelKind.GROUP, "lobby") shouldBe ReadModelMessages.group(lobby).toByteArray()
+        readModels.get(ReadModelKind.GROUP, "gone") shouldBe null
+        readModels.get(ReadModelKind.PERMISSION_GROUP, "gone") shouldBe null
+        broadcasts.sent.map { it.updateCase to it.subjectId } shouldContainExactly
+            listOf(UpdateCase.GROUP to "lobby", UpdateCase.GROUP to "gone", UpdateCase.PERMISSION_GROUP to "gone")
+    }
+
+    @Test
+    fun `a resync broadcasts NPCs that changed while an announcement was lost`() {
+        sync.resyncAll()
+        broadcasts.sent.clear()
+        val npc = Npc(UUID(7, 1), GroupId("lobby"), Location("world", 0.0, 64.0, 0.0), title = "Shop")
+        npcs.save(npc)
+
+        sync.resyncAll()
+
+        broadcasts.sent.single().updateCase shouldBe UpdateCase.NPC
+    }
 }

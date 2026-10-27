@@ -6,6 +6,7 @@ import io.ogwars.cloud.controller.readmodel.InMemoryNpcStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPermissionGroupStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
 import io.ogwars.cloud.controller.readmodel.PlayerPermissions
+import io.ogwars.cloud.controller.readmodel.ReadModelSync
 import io.ogwars.cloud.controller.readmodel.RecordingBroadcasts
 import io.ogwars.cloud.controller.readmodel.permissionGroup
 import io.ogwars.cloud.controller.template.InMemoryTemplateVersionStore
@@ -62,25 +63,27 @@ class ControllerConsumersTest {
         val permissionGroups = InMemoryPermissionGroupStore(permissionGroup("default", isDefault = true))
         val broadcasts = RecordingBroadcasts()
         val permissions = PlayerPermissions(InMemoryPlayerStore(), permissionGroups, sessions, readModels, broadcasts)
-        return ConfigChangedHandler(
-            f.groupStore,
-            f.network,
-            permissionGroups,
-            InMemoryNpcStore(),
-            readModels,
-            broadcasts,
-            permissions,
-            sessions,
-            TemplateVersions(
-                f.servers,
+        val sync =
+            ReadModelSync(
                 f.groupStore,
-                InMemoryTemplateVersionStore(),
+                f.network,
+                permissionGroups,
+                InMemoryNpcStore(),
                 readModels,
-                f.pods,
-                { UUID.randomUUID() },
-                f.clock,
-            ),
-        )
+                broadcasts,
+                permissions,
+                sessions,
+                TemplateVersions(
+                    f.servers,
+                    f.groupStore,
+                    InMemoryTemplateVersionStore(),
+                    readModels,
+                    f.pods,
+                    { UUID.randomUUID() },
+                    f.clock,
+                ),
+            )
+        return ConfigChangedHandler(sync, permissions)
     }
 
     @AfterAll

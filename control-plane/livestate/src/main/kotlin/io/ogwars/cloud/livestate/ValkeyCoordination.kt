@@ -12,6 +12,8 @@ import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.RotatedTokenStore
 import io.ogwars.cloud.domain.store.ScalingCooldownStore
+import io.lettuce.core.ScanArgs
+import io.lettuce.core.ScanCursor
 import io.lettuce.core.SetArgs
 import java.time.Duration
 import java.time.Instant
@@ -131,6 +133,23 @@ class ValkeyReadModelStore(
         id: String,
     ) {
         valkey.sync().del(ValkeyKeys.readModel(kind, id))
+    }
+
+    // SCAN walks the keyspace in small steps instead of blocking Valkey like KEYS.
+    override fun ids(kind: ReadModelKind): Set<String> {
+        val prefix = ValkeyKeys.readModel(kind, "")
+        val ids = mutableSetOf<String>()
+        var cursor = ScanCursor.INITIAL
+        do {
+            val page = valkey.sync().scan(cursor, ScanArgs.Builder.matches("$prefix*").limit(SCAN_PAGE))
+            page.keys.mapTo(ids) { it.removePrefix(prefix) }
+            cursor = page
+        } while (!page.isFinished)
+        return ids
+    }
+
+    private companion object {
+        const val SCAN_PAGE = 500L
     }
 }
 

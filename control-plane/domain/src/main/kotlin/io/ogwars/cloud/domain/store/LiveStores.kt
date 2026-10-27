@@ -138,6 +138,9 @@ interface ReadModelStore {
         kind: ReadModelKind,
         id: String,
     )
+
+    /** Every stored id of [kind], so a resync can drop read models whose entity is gone (D-0100). */
+    fun ids(kind: ReadModelKind): Set<String>
 }
 
 /** Refresh tokens rotated away, so presenting one again is detected as reuse (D-0090). */

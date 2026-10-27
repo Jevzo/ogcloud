@@ -128,6 +128,9 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
 
         readModels.put(ReadModelKind.GROUP, "lobby", byteArrayOf(1, 2, 3))
         readModels.get(ReadModelKind.GROUP, "lobby")?.toList() shouldBe listOf<Byte>(1, 2, 3)
+        readModels.put(ReadModelKind.GROUP, "bedwars", byteArrayOf(4))
+        readModels.put(ReadModelKind.PERMISSION_GROUP, "vip", byteArrayOf(5))
+        readModels.ids(ReadModelKind.GROUP) shouldBe setOf("lobby", "bedwars")
         readModels.delete(ReadModelKind.GROUP, "lobby")
         readModels.get(ReadModelKind.GROUP, "lobby") shouldBe null
     }
