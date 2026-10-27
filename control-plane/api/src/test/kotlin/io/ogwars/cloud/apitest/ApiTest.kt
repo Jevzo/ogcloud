@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistrar
+import org.springframework.test.context.TestPropertySource
 
 /** The issuer tokens carry in tests; nothing listens there, flows only read the redirects. */
 const val TEST_ISSUER = "http://ogcloud.test"
@@ -19,12 +20,10 @@ const val TEST_TOTP_KEY_ID = "k1"
 const val TEST_TOTP_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 const val UNLIMITED = 1_000_000
 
-/** The full API against real PostgreSQL, Valkey and Kafka; one cached context for every API test. */
+/** Static values, known before the web server and its filters start. */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    // Static values, known before the web server and its filters start.
+@TestPropertySource(
     properties = [
         "ogcloud.auth.setup-token=$TEST_SETUP_TOKEN",
         "ogcloud.auth.totp.keys.$TEST_TOTP_KEY_ID=$TEST_TOTP_KEY",
@@ -37,6 +36,16 @@ const val UNLIMITED = 1_000_000
     ],
 )
 @Import(ApiTestConfiguration::class)
+annotation class ApiTestSetup
+
+/** The full API against real PostgreSQL, Valkey and Kafka; one cached context for every API test. */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@ApiTestSetup
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = ["ogcloud.auth.issuer=$TEST_ISSUER"],
+)
 annotation class ApiTest
 
 @TestConfiguration(proxyBeanMethods = false)
@@ -50,7 +59,6 @@ class ApiTestConfiguration {
     @Bean
     fun apiTestProperties() =
         DynamicPropertyRegistrar { registry ->
-            registry.add("ogcloud.auth.issuer") { TEST_ISSUER }
             registry.add("ogcloud.auth.signing.keys-dir") { TestSigningKeys.dir.toString() }
             registry.add("ogcloud.auth.signing.active-key-id") { TestSigningKeys.CURRENT }
             // Object storage is not touched by these tests; the client only needs valid settings.

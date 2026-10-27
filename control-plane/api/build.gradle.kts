@@ -18,4 +18,18 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
+    // Headless Chromium for the login journey, passkeys included (D-0099).
+    testImplementation(libs.playwright)
+}
+
+// Only Chromium's headless shell, installed once per machine; the tests must not fetch every browser (D-0099).
+val installChromium by tasks.registering(JavaExec::class) {
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass = "com.microsoft.playwright.CLI"
+    args("install", "--only-shell", "chromium")
+}
+
+tasks.test {
+    dependsOn(installChromium)
+    environment("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")
 }
