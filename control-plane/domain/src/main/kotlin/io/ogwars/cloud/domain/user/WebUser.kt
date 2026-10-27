@@ -24,7 +24,7 @@ data class WebUser(
 
     val isOwner: Boolean get() = roleId == BuiltInRole.OWNER.id
 
-    private companion object {
+    companion object {
         val USERNAME_LENGTH = 3..32
     }
 }

@@ -39,6 +39,14 @@ class JdbcWebUserStore(
             .map { it.value }
             .orElse(null)
 
+    override fun findByLinkedPlayer(playerUuid: UUID): Revisioned<WebUser>? =
+        jdbc
+            .sql("select * from web_users where linked_player_uuid = :player")
+            .param("player", playerUuid)
+            .query(WEB_USER)
+            .optional()
+            .orElse(null)
+
     override fun list(
         after: UUID?,
         limit: Int,

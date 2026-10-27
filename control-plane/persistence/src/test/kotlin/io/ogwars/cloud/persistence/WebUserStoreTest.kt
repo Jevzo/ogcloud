@@ -1,6 +1,8 @@
 package io.ogwars.cloud.persistence
 
+import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.domain.store.ConflictException
+import io.ogwars.cloud.domain.store.PlayerStore
 import io.ogwars.cloud.domain.store.RoleStore
 import io.ogwars.cloud.domain.store.StaleUpdateException
 import io.ogwars.cloud.domain.store.WebUserStore
@@ -25,6 +27,7 @@ import java.util.concurrent.ExecutionException
 class WebUserStoreTest(
     @Autowired private val users: WebUserStore,
     @Autowired private val roles: RoleStore,
+    @Autowired private val players: PlayerStore,
     @Autowired private val jdbc: JdbcClient,
     @Autowired private val transactions: TransactionTemplate,
 ) {
@@ -68,6 +71,21 @@ class WebUserStoreTest(
 
         users.list(after = null, limit = 2).map { it.value.id } shouldContainExactly ids.take(2)
         users.list(after = ids[1], limit = 2).map { it.value.id } shouldContainExactly ids.drop(2)
+    }
+
+    @Test
+    fun `a user is found by the Minecraft account linked to it`() {
+        val player = UUID(0, 0xbeef)
+        players.recordSeen(player, "Jevzo", NOW, PlayerRank(player, "default", null))
+        users.create(user.copy(linkedPlayerUuid = player))
+
+        users.findByLinkedPlayer(player)?.value?.id shouldBe user.id
+        users.findByLinkedPlayer(UUID(0, 1)) shouldBe null
+        shouldThrow<ConflictException> {
+            users.create(
+                WebUser(UUID(0, 8), "Other", "other@example.com", null, "admin", NOW, linkedPlayerUuid = player),
+            )
+        }
     }
 
     @Test

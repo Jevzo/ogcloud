@@ -107,6 +107,9 @@ interface PlayerStore {
 
     fun findByName(name: String): Player?
 
+    /** The current names of those of [uuids] that were seen. */
+    fun names(uuids: Collection<UUID>): Map<UUID, String>
+
     /** Every player seen, ordered by uuid after [after]; [namePrefix] narrows them, ignoring case. */
     fun list(
         namePrefix: String?,
@@ -247,6 +250,9 @@ interface WebUserStore {
 
     /** By username or email, ignoring case. */
     fun findByLogin(login: String): WebUser?
+
+    /** The user linked to the Minecraft account [playerUuid], if any (D-0106). */
+    fun findByLinkedPlayer(playerUuid: UUID): Revisioned<WebUser>?
 
     /** Ordered by id, i.e. by creation (D-0064), starting after [after]. */
     fun list(

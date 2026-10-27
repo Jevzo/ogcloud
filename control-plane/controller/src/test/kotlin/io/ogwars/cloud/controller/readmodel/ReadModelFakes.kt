@@ -89,6 +89,14 @@ class InMemoryPlayerStore : PlayerStore {
 
     override fun findByName(name: String) = players.values.find { it.name.equals(name, ignoreCase = true) }
 
+    override fun names(uuids: Collection<UUID>) =
+        uuids
+            .mapNotNull { uuid ->
+                players[uuid]?.let {
+                    uuid to it.name
+                }
+            }.toMap()
+
     override fun list(
         namePrefix: String?,
         after: UUID?,

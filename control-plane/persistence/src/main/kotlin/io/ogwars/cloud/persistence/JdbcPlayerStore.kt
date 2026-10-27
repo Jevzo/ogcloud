@@ -21,6 +21,18 @@ class JdbcPlayerStore(
             .optional()
             .orElse(null)
 
+    override fun names(uuids: Collection<UUID>): Map<UUID, String> =
+        if (uuids.isEmpty()) {
+            emptyMap()
+        } else {
+            jdbc
+                .sql("select uuid, name from players where uuid in (:uuids)")
+                .param("uuids", uuids)
+                .query { rs, _ -> rs.uuid("uuid") to rs.getString("name") }
+                .list()
+                .toMap()
+        }
+
     // Names change; the most recently seen holder of a name wins.
     override fun findByName(name: String): Player? =
         jdbc

@@ -41,6 +41,14 @@ class PlayerAndNpcStoreTest(
     }
 
     @Test
+    fun `names are looked up for many players at once`() {
+        players.recordSeen(uuid, "Jevzo", NOW, PlayerRank(uuid, "default", null))
+
+        players.names(listOf(uuid, UUID(0, 9))) shouldBe mapOf(uuid to "Jevzo")
+        players.names(emptyList()) shouldBe emptyMap()
+    }
+
+    @Test
     fun `known players are listed by uuid and narrowed by name, wildcards taken literally`() {
         val first = UUID(0, 1)
         val second = UUID(0, 2)

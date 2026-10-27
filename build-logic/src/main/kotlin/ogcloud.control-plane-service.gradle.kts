@@ -23,4 +23,6 @@ dependencies {
     "testImplementation"(testFixtures(project(":control-plane:messaging")))
     "testImplementation"(testFixtures(project(":control-plane:storage")))
     "testImplementation"("org.springframework.boot:spring-boot-starter-test")
+    // Kotest's eventually is a suspend function; coroutines already come in through Kotest.
+    "testImplementation"("org.jetbrains.kotlinx:kotlinx-coroutines-core")
 }

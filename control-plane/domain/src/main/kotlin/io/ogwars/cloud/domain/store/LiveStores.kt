@@ -192,9 +192,12 @@ enum class OneTimeKind(
 ) {
     /** Lets an EventSource, which cannot send headers, open the live-update stream (D-0105). */
     SSE_TICKET("sse-ticket"),
+
+    /** A code shown in game that links a web user to a Minecraft account (D-0106). */
+    LINK_CODE("link-code"),
 }
 
-/** Values that can be redeemed once before they expire; ids are hashes, never the secrets themselves. */
+/** Values that can be redeemed once before they expire; ids never hold the secrets themselves. */
 interface OneTimeStore {
     fun put(
         kind: OneTimeKind,
