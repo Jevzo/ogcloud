@@ -77,4 +77,23 @@ internal object LuaScripts {
         if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('PEXPIRE', KEYS[1], ARGV[2]) end
         return 0
     """
+
+    /**
+     * KEYS: bucket. ARGV: capacity, refill per minute, now ms. Returns the milliseconds to wait, 0 when a token was
+     * taken. The bucket expires once it would be full again (D-0086).
+     */
+    const val TOKEN_BUCKET = """
+        local capacity = tonumber(ARGV[1])
+        local rate = tonumber(ARGV[2]) / 60000
+        local now = tonumber(ARGV[3])
+        local state = redis.call('HMGET', KEYS[1], 'tokens', 'at')
+        local tokens = tonumber(state[1]) or capacity
+        local at = tonumber(state[2]) or now
+        tokens = math.min(capacity, tokens + math.max(0, now - at) * rate)
+        local wait = 0
+        if tokens >= 1 then tokens = tokens - 1 else wait = math.ceil((1 - tokens) / rate) end
+        redis.call('HSET', KEYS[1], 'tokens', tostring(tokens), 'at', now)
+        redis.call('PEXPIRE', KEYS[1], math.ceil(capacity / rate))
+        return wait
+    """
 }

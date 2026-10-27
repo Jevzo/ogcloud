@@ -5,6 +5,9 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.store.CrashFailureStore
 import io.ogwars.cloud.domain.store.Lock
 import io.ogwars.cloud.domain.store.LockManager
+import io.ogwars.cloud.domain.store.RateDecision
+import io.ogwars.cloud.domain.store.RateLimit
+import io.ogwars.cloud.domain.store.RateLimiter
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.RotatedTokenStore
@@ -148,4 +151,25 @@ class ValkeyRotatedTokenStore(
 
     override fun authorizationOf(tokenHash: String): String? =
         valkey.sync().get(ValkeyKeys.rotatedRefreshToken(tokenHash))?.utf8()
+}
+
+class ValkeyRateLimiter(
+    private val valkey: ValkeyConnection,
+) : RateLimiter {
+    override fun tryAcquire(
+        bucket: String,
+        client: String,
+        limit: RateLimit,
+        at: Instant,
+    ): RateDecision {
+        val waitMillis =
+            valkey.evalLong(
+                LuaScripts.TOKEN_BUCKET,
+                listOf(ValkeyKeys.rateLimit(bucket, client)),
+                limit.capacity.toString().utf8(),
+                limit.perMinute.toString().utf8(),
+                at.toEpochMilli().toString().utf8(),
+            )
+        return RateDecision(waitMillis == 0L, Duration.ofMillis(waitMillis))
+    }
 }

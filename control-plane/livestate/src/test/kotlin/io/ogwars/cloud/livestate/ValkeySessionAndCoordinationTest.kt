@@ -3,6 +3,8 @@ package io.ogwars.cloud.livestate
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.session.PlayerSession
+import io.ogwars.cloud.domain.store.RateDecision
+import io.ogwars.cloud.domain.store.RateLimit
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.longs.shouldBeInRange
@@ -139,5 +141,22 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
         rotated.authorizationOf("ab12") shouldBe "authorization-1"
         rotated.authorizationOf("cd34") shouldBe null
         valkey.sync().pttl(ValkeyKeys.rotatedRefreshToken("ab12")) shouldBeInRange 1L..Duration.ofMinutes(5).toMillis()
+    }
+
+    @Test
+    fun `a token bucket allows its burst, then refills at its rate`() {
+        val limiter = ValkeyRateLimiter(valkey)
+        val limit = RateLimit(capacity = 2, perMinute = 60)
+        val client = "203.0.113.7"
+
+        limiter.tryAcquire("login", client, limit, NOW).allowed shouldBe true
+        limiter.tryAcquire("login", client, limit, NOW).allowed shouldBe true
+        limiter.tryAcquire("login", client, limit, NOW) shouldBe RateDecision(false, Duration.ofSeconds(1))
+
+        limiter.tryAcquire("login", client, limit, NOW.plusMillis(1000)).allowed shouldBe true
+        limiter.tryAcquire("login", "198.51.100.1", limit, NOW).allowed shouldBe true
+        limiter.tryAcquire("api", client, limit, NOW).allowed shouldBe true
+        val key = ValkeyKeys.rateLimit("login", client)
+        valkey.sync().pttl(key) shouldBeInRange 1L..Duration.ofSeconds(2).toMillis()
     }
 }

@@ -42,6 +42,12 @@ object ValkeyKeys {
     /** A rotated refresh token, by SHA-256 hex; it expires with the token (D-0090). */
     fun rotatedRefreshToken(tokenHash: String) = "oauth:rotated:$tokenHash"
 
+    /** A token bucket per limited class of request and client address (D-0086). */
+    fun rateLimit(
+        bucket: String,
+        client: String,
+    ) = "ratelimit:$bucket:$client"
+
     fun readModel(
         kind: ReadModelKind,
         id: String,

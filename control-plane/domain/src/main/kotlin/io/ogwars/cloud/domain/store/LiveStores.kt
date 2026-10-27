@@ -150,3 +150,29 @@ interface RotatedTokenStore {
 
     fun authorizationOf(tokenHash: String): String?
 }
+
+/** A token bucket: [capacity] requests at once, refilled at [perMinute] (D-0086). */
+data class RateLimit(
+    val capacity: Int,
+    val perMinute: Int,
+) {
+    init {
+        require(capacity > 0 && perMinute > 0) { "Rate limits must be positive" }
+    }
+}
+
+/** Shared by every API replica; [retryAfter] is zero when the request may go ahead. */
+data class RateDecision(
+    val allowed: Boolean,
+    val retryAfter: Duration,
+)
+
+fun interface RateLimiter {
+    /** Takes a token from [client]'s bucket for one class of requests, e.g. sign-ins. */
+    fun tryAcquire(
+        bucket: String,
+        client: String,
+        limit: RateLimit,
+        at: Instant,
+    ): RateDecision
+}

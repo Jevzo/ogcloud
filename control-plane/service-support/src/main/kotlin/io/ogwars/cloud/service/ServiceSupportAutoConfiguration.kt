@@ -21,19 +21,25 @@ class ServiceSupportAutoConfiguration {
     @ConditionalOnMissingBean
     fun clock(): Clock = Clock.systemUTC()
 
+    /** The one source of cryptographic randomness, e.g. for nonces. */
     @Bean
     @ConditionalOnMissingBean
-    fun idGenerator(clock: Clock): IdGenerator = UuidV7Generator(clock, SecureRandom())
+    fun secureRandom(): SecureRandom = SecureRandom()
 
     @Bean
     @ConditionalOnMissingBean
-    fun secretGenerator(): SecretGenerator {
-        val random = SecureRandom()
-        return SecretGenerator {
+    fun idGenerator(
+        clock: Clock,
+        random: SecureRandom,
+    ): IdGenerator = UuidV7Generator(clock, random)
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun secretGenerator(random: SecureRandom): SecretGenerator =
+        SecretGenerator {
             val bytes = ByteArray(SECRET_BYTES).also(random::nextBytes)
             Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
         }
-    }
 
     private companion object {
         const val SECRET_BYTES = 32

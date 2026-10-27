@@ -28,6 +28,7 @@ class PersistenceAutoConfiguration
     JdbcRuntimeArtifactStore::class,
     JdbcWebUserStore::class,
     JdbcRoleStore::class,
+    JdbcTotpStore::class,
     SchemaVersionProbe::class,
 )
 class PersistenceStores

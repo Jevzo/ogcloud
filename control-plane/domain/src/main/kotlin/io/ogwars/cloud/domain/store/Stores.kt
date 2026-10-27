@@ -247,3 +247,44 @@ interface RoleStore {
     /** Throws [ConflictException] for built-in roles and roles still assigned to users. */
     fun delete(id: String)
 }
+
+/** A user's TOTP secret, encrypted by the API under [keyId] (D-0097). */
+data class StoredTotp(
+    val userId: UUID,
+    val keyId: String,
+    val encryptedSecret: ByteArray,
+    val confirmedAt: Instant? = null,
+    val lastUsedStep: Long? = null,
+) {
+    override fun equals(other: Any?): Boolean =
+        other is StoredTotp &&
+            userId == other.userId &&
+            keyId == other.keyId &&
+            encryptedSecret.contentEquals(other.encryptedSecret) &&
+            confirmedAt == other.confirmedAt &&
+            lastUsedStep == other.lastUsedStep
+
+    override fun hashCode(): Int = userId.hashCode()
+}
+
+interface TotpStore {
+    fun find(userId: UUID): StoredTotp?
+
+    /** Starts an enrollment, replacing an unconfirmed one; false while a confirmed one exists. */
+    fun startEnrollment(totp: StoredTotp): Boolean
+
+    /** Confirms the enrollment with the step its first code used; false if there is none. */
+    fun confirm(
+        userId: UUID,
+        at: Instant,
+        step: Long,
+    ): Boolean
+
+    /** Records [step] as used if it is newer than the last one; false for a replayed code. */
+    fun markUsed(
+        userId: UUID,
+        step: Long,
+    ): Boolean
+
+    fun delete(userId: UUID)
+}
