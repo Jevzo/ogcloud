@@ -4,6 +4,7 @@ import io.ogwars.cloud.apitest.ProbeController
 import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
 import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
+import io.ogwars.cloud.persistence.SchemaVersionProbe
 import io.ogwars.cloud.service.GoldenFiles
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -31,6 +32,7 @@ import javax.sql.DataSource
 )
 class ApiApplicationTest(
     @Autowired dataSource: DataSource,
+    @Autowired private val schema: SchemaVersionProbe,
     @LocalServerPort private val port: Int,
 ) {
     private val http = HttpClient.newHttpClient()
@@ -38,7 +40,7 @@ class ApiApplicationTest(
 
     @Test
     fun `the API migrates the schema and reports ready`() {
-        jdbc.sql("select max(version) from flyway_schema_history").query(String::class.java).single() shouldBe "1"
+        schema.isCurrent() shouldBe true
         get("/actuator/health/readiness").statusCode() shouldBe OK
         get("/actuator/prometheus").body() shouldContain "jvm_threads"
     }

@@ -14,8 +14,8 @@ class SchemaTest(
 ) {
     @Test
     fun `the probe reports the migrated schema as current`() {
-        probe.requiredVersion shouldBe 1
-        probe.appliedVersion() shouldBe 1
+        probe.requiredVersion shouldBe LATEST_MIGRATION
+        probe.appliedVersion() shouldBe LATEST_MIGRATION
         probe.isCurrent() shouldBe true
     }
 
@@ -77,3 +77,6 @@ class SchemaTest(
         maxInstances,
     )
 }
+
+/** Bump with every new migration file. */
+private const val LATEST_MIGRATION = 2
