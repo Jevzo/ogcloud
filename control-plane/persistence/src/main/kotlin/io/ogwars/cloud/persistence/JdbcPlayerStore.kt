@@ -68,6 +68,25 @@ class JdbcPlayerStore(
             .optional()
             .orElseThrow { NoSuchElementException("Player ${rank.playerUuid} does not exist") }
 
+    override fun resetExpiredRank(
+        playerUuid: UUID,
+        defaultGroupId: String,
+        now: Instant,
+    ): Long? =
+        jdbc
+            .sql(
+                """
+                update players set permission_group_id = :group, rank_expires_at = null, rank_version = rank_version + 1
+                where uuid = :uuid and rank_expires_at <= :now
+                returning rank_version
+                """.trimIndent(),
+            ).param("uuid", playerUuid)
+            .param("group", defaultGroupId)
+            .param("now", now.toTimestamp())
+            .query(Long::class.java)
+            .optional()
+            .orElse(null)
+
     override fun withExpiredRanks(
         now: Instant,
         limit: Int,

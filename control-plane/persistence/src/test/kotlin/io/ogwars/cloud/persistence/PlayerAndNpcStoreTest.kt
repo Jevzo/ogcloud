@@ -48,6 +48,19 @@ class PlayerAndNpcStoreTest(
 
         version shouldBe 1
         players.withExpiredRanks(NOW, limit = 10).map { it.uuid } shouldContainExactly listOf(uuid)
+        players.resetExpiredRank(uuid, "default", NOW) shouldBe 2
+        players.find(uuid)?.rank?.expiresAt shouldBe null
+    }
+
+    @Test
+    fun `a rank an admin changed since it expired is not reset`() {
+        val uuid = UUID.randomUUID()
+        players.recordSeen(uuid, "Steve", NOW, PlayerRank(uuid, "default", null))
+        players.updateRank(PlayerRank(uuid, "default", NOW.minusSeconds(1)))
+        players.updateRank(PlayerRank(uuid, "default", null))
+
+        players.resetExpiredRank(uuid, "default", NOW) shouldBe null
+        players.find(uuid)?.rankVersion shouldBe 2
     }
 
     @Test

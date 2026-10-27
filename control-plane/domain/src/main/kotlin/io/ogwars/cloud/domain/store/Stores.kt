@@ -97,6 +97,16 @@ interface PlayerStore {
         now: Instant,
         limit: Int,
     ): List<Player>
+
+    /**
+     * Moves the player to [defaultGroupId] only if their rank is still expired at [now]; returns the new rank version,
+     * or null when an admin changed the rank meanwhile.
+     */
+    fun resetExpiredRank(
+        playerUuid: UUID,
+        defaultGroupId: String,
+        now: Instant,
+    ): Long?
 }
 
 interface TemplateVersionStore {
