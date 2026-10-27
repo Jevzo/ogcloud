@@ -133,6 +133,41 @@ class LifecycleServiceTest {
     }
 
     @Test
+    fun `a STATIC group never gets a second server, whoever asks`() {
+        val smp = group(GroupType.STATIC, id = "smp")
+        val s = LifecycleFixture(listOf(smp))
+
+        val first = s.lifecycle.request(UUID.randomUUID(), smp.id, smp.type, smp.profileId, ACTOR)
+        val second = s.lifecycle.request(UUID.randomUUID(), smp.id, smp.type, smp.profileId, ACTOR)
+
+        (first != null) shouldBe true
+        second shouldBe null
+        s.servers.listByGroup(smp.id).map { it.value.id } shouldBe listOf(first?.id)
+    }
+
+    @Test
+    fun `a pending server we stopped does not count as a crash`() {
+        repeat(properties.crashLoop.pauseAfter) {
+            val id = request()
+            lifecycle.podCreated(id)
+            lifecycle.stopNow(id, ACTOR, "group deleted")
+            lifecycle.podEnded(id, PodEnd.FAILED, "pod deleted while starting")
+        }
+
+        failures.failures(lobby.id) shouldBe emptyList()
+    }
+
+    @Test
+    fun `an ended pod reported twice ends the server once`() {
+        val id = running()
+
+        lifecycle.podEnded(id, PodEnd.STOPPED, "pod deleted")
+        lifecycle.podEnded(id, PodEnd.STOPPED, "pod deleted")
+
+        events.transitions.count { it.second == ServerState.STOPPED } shouldBe 1
+    }
+
+    @Test
     fun `a server that ran does not count as a failed start`() {
         val id = running()
 

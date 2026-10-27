@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.template
 
 import io.ogwars.cloud.contracts.internal.v1.ActiveTemplate
+import io.ogwars.cloud.controller.kube.PodGateway
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.Group
@@ -33,23 +34,35 @@ class TemplateVersions(
     private val groups: GroupStore,
     private val templates: TemplateVersionStore,
     private val readModels: ReadModelStore,
+    private val pods: PodGateway,
     private val ids: IdGenerator,
     private val clock: Clock,
 ) {
-    /** A template agent's finished upload; [serverId] comes from its authenticated session. */
+    /**
+     * A template agent's finished upload; [serverId] comes from its authenticated session. A STATIC server pushes
+     * after its server container stopped, when its live record may be gone, so its pod's labels name the group.
+     * A retried registration returns the version it created the first time.
+     */
     fun register(
         serverId: UUID,
         objectKey: String,
         sha256: String,
         sizeBytes: Long,
     ): RegisteredVersion {
-        val server = servers.get(serverId)?.value ?: throw NoSuchElementException("Server $serverId is not running")
-        require(objectKey.startsWith("$PREFIX/${server.groupId}/")) {
-            "Uploads of ${server.groupId} belong under $PREFIX/${server.groupId}/"
+        val groupId =
+            servers.get(serverId)?.value?.groupId ?: pods.groupOfServerPod(serverId)
+                ?: throw NoSuchElementException("Server $serverId has neither a record nor a pod")
+        require(objectKeyPattern(groupId).matches(objectKey)) {
+            "Uploads of $groupId must be named $PREFIX/$groupId/<uuid>$ARCHIVE"
         }
-        val group =
-            groups.find(server.groupId)?.value
-                ?: throw NoSuchElementException("Group ${server.groupId} no longer exists")
+        require(sizeBytes > 0) { "An upload must not be empty" }
+        val group = groups.find(groupId)?.value ?: throw NoSuchElementException("Group $groupId no longer exists")
+        templates.findByGroup(groupId).find { it.objectKey == objectKey }?.let {
+            return RegisteredVersion(
+                it.id,
+                group.activeTemplateVersionId == it.id,
+            )
+        }
         val version =
             TemplateVersion(
                 ids.next(),
@@ -107,6 +120,16 @@ class TemplateVersions(
 
     private companion object {
         const val PREFIX = "templates"
+        const val ARCHIVE = ".tar.gz"
+
+        /** No dot segments or extra slashes, so a version can never point into another group's prefix. */
+        fun objectKeyPattern(groupId: GroupId) =
+            Regex(
+                "^$PREFIX/${Regex.escape(
+                    groupId.value,
+                )}/[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}${Regex.escape(ARCHIVE)}$",
+            )
+
         const val MAX_ATTEMPTS = 5
         val AGENT = Actor.system("template-agent")
     }

@@ -44,10 +44,15 @@ class Reconciler(
     override fun runOnce() {
         // Records first, then pods: the provisioner creates a pod before it moves the server past REQUESTED.
         val records = servers.listAll().map { it.value }
-        val livePods = pods.list().filter { it.metadata.deletionTimestamp == null }
+        // A terminating pod still runs its server (grace period, STATIC push), so it counts as present; only pods
+        // that are not terminating are adopted.
+        val existingPods = pods.list()
         val recordIds = records.mapTo(HashSet()) { it.id }
-        val adopted = livePods.filter { PodObservation.serverId(it) !in recordIds }.mapNotNull(::adoptOrDelete)
-        val podNames = livePods.mapTo(HashSet()) { it.metadata.name }
+        val adopted =
+            existingPods
+                .filter { it.metadata.deletionTimestamp == null && PodObservation.serverId(it) !in recordIds }
+                .mapNotNull(::adoptOrDelete)
+        val podNames = existingPods.mapTo(HashSet()) { it.metadata.name }
         val ended = records.filter { it.expectsPod() && it.podName !in podNames }.onEach(::endWithoutPod).map { it.id }
         dropStaleSessions(recordIds - ended.toSet() + adopted)
     }

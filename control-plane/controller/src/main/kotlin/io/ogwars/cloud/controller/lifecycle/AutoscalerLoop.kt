@@ -93,7 +93,8 @@ class AutoscalerLoop(
         val (action, serverId) =
             when (decision) {
                 is ScalingDecision.Start -> {
-                    ScalingAction.START to start(group)
+                    // A STATIC group whose server another caller just requested needs nothing more.
+                    ScalingAction.START to (start(group) ?: return)
                 }
 
                 is ScalingDecision.Drain -> {
@@ -117,10 +118,8 @@ class AutoscalerLoop(
             .increment()
     }
 
-    private fun start(group: Group): UUID =
-        ids.next().also {
-            lifecycle.request(it, group.id, group.type, group.profileId, ACTOR)
-        }
+    private fun start(group: Group): UUID? =
+        lifecycle.request(ids.next(), group.id, group.type, group.profileId, ACTOR)?.id
 
     private companion object {
         val ACTOR = Actor.system("autoscaler")

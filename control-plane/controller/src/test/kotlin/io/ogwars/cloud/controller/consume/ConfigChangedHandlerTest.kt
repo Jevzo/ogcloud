@@ -57,6 +57,7 @@ class ConfigChangedHandlerTest {
             f.groupStore,
             InMemoryTemplateVersionStore(),
             readModels,
+            f.pods,
             { UUID.randomUUID() },
             f.clock,
         )

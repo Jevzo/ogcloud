@@ -55,6 +55,11 @@ class RecordingPodGateway : PodGateway {
     override fun deleteVolumeClaim(name: String) {
         claims.removeIf { it.metadata.name == name }
     }
+
+    /** Pods the test says exist although their records ended. */
+    val podGroups = mutableMapOf<UUID, GroupId>()
+
+    override fun groupOfServerPod(serverId: UUID): GroupId? = podGroups[serverId]
 }
 
 class RecordingServerEvents : ServerEvents {

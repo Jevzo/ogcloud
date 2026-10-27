@@ -27,7 +27,7 @@ class ConsumerHandlersTest {
     private val f = LifecycleFixture(listOf(lobby, bedwars, smp))
     private val events = Events(f.clock)
     private val sessions = ValkeySessionStore(TestValkey.connection)
-    private val commands = ServerCommandHandler(f.lifecycle, f.groupStore, f.servers)
+    private val commands = ServerCommandHandler(f.lifecycle, f.groupStore)
     private val heartbeats = HeartbeatHandler(f.lifecycle)
     private val gameStates = GameStateHandler(f.lifecycle, f.network)
     private val activity = PlayerActivityHandler(sessions)
@@ -122,6 +122,18 @@ class ConsumerHandlersTest {
 
         f.events.transfers shouldContainExactly listOf(id to TransferTarget.ToGroup(GroupId("lobby")))
         f.state(id) shouldBe ServerState.DRAINING
+    }
+
+    @Test
+    fun `an ENDING that was recorded but not drained drains on redelivery without a second transfer`() {
+        val id = running(bedwars, players = 6)
+        val current = f.servers.get(id) ?: error("missing")
+        f.servers.compareAndSet(current.revision, current.value.copy(gameState = DomainGameState.ENDING))
+
+        gameStates.handle(events.gameState(id, GameState.GAME_STATE_ENDING))
+
+        f.state(id) shouldBe ServerState.DRAINING
+        f.events.transfers shouldBe emptyList()
     }
 
     @Test

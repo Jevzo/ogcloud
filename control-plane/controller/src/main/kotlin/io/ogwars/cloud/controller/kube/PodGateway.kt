@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.kube
 
 import io.ogwars.cloud.controller.config.PodProperties
+import io.ogwars.cloud.domain.group.GroupId
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim
 import io.fabric8.kubernetes.api.model.Pod
 import io.fabric8.kubernetes.client.KubernetesClient
@@ -10,6 +11,7 @@ import io.fabric8.kubernetes.client.dsl.base.PatchType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.util.UUID
 
 /** The pod operations the lifecycle needs. */
 interface PodGateway {
@@ -36,6 +38,9 @@ interface PodGateway {
     fun listVolumeClaims(): List<PersistentVolumeClaim>
 
     fun deleteVolumeClaim(name: String)
+
+    /** The group label of the server's pod while the pod exists, also after its live record ended. */
+    fun groupOfServerPod(serverId: UUID): GroupId?
 }
 
 @Component
@@ -104,6 +109,14 @@ class FabricPodGateway(
             .withName(name)
             .delete()
     }
+
+    override fun groupOfServerPod(serverId: UUID): GroupId? =
+        pods()
+            .withLabel(PodLabels.SERVER_ID, serverId.toString())
+            .list()
+            .items
+            .firstNotNullOfOrNull { it.metadata.labels?.get(PodLabels.GROUP) }
+            ?.let { runCatching { GroupId(it) }.getOrNull() }
 
     private fun pods() = client.pods().inNamespace(settings.namespace)
 

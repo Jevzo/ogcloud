@@ -17,7 +17,9 @@ object ValkeyKeys {
     val SERVER_TTL: Duration = Duration.ofMinutes(15)
     val SESSION_TTL: Duration = Duration.ofHours(24)
 
-    fun server(id: UUID) = "server:$id"
+    const val SERVER_PREFIX = "server:"
+
+    fun server(id: UUID) = "$SERVER_PREFIX$id"
 
     fun serversOfGroup(groupId: GroupId) = "servers:group:$groupId"
 

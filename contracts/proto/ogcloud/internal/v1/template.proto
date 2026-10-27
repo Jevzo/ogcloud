@@ -13,7 +13,7 @@ service TemplateService {
 message RegisterTemplateVersionRequest {
   // The pushing server, taken from the agent's authenticated gateway session.
   string server_id = 1;
-  // The uploaded archive, under templates/<group_id>/.
+  // The uploaded archive: templates/<group_id>/<uuid>.tar.gz, as CreateTemplateUpload names it.
   string object_key = 2;
   string sha256 = 3;
   uint64 size_bytes = 4;

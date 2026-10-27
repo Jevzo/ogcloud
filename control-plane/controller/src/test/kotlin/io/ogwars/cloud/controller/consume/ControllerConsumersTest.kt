@@ -48,7 +48,7 @@ class ControllerConsumersTest {
         ControllerConsumers(
             components,
             template,
-            ServerCommandHandler(f.lifecycle, f.groupStore, f.servers),
+            ServerCommandHandler(f.lifecycle, f.groupStore),
             HeartbeatHandler(f.lifecycle),
             GameStateHandler(f.lifecycle, f.network),
             PlayerActivityHandler(ValkeySessionStore(TestValkey.connection)),
@@ -76,6 +76,7 @@ class ControllerConsumersTest {
                 f.groupStore,
                 InMemoryTemplateVersionStore(),
                 readModels,
+                f.pods,
                 { UUID.randomUUID() },
                 f.clock,
             ),

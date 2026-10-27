@@ -25,7 +25,7 @@ type RegisterTemplateVersionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The pushing server, taken from the agent's authenticated gateway session.
 	ServerId string `protobuf:"bytes,1,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
-	// The uploaded archive, under templates/<group_id>/.
+	// The uploaded archive: templates/<group_id>/<uuid>.tar.gz, as CreateTemplateUpload names it.
 	ObjectKey     string `protobuf:"bytes,2,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
 	Sha256        string `protobuf:"bytes,3,opt,name=sha256,proto3" json:"sha256,omitempty"`
 	SizeBytes     uint64 `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`

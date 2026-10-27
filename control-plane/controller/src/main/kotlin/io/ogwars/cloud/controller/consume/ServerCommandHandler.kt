@@ -5,10 +5,7 @@ import io.ogwars.cloud.contracts.events.v1.ServerCommand.CommandCase
 import io.ogwars.cloud.controller.lifecycle.LifecycleService
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
-import io.ogwars.cloud.domain.group.GroupType
-import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.store.GroupStore
-import io.ogwars.cloud.domain.store.ServerStateStore
 import io.ogwars.cloud.messaging.NonRetryableEventException
 import io.ogwars.cloud.messaging.actor
 import org.slf4j.LoggerFactory
@@ -19,7 +16,6 @@ import org.springframework.stereotype.Component
 class ServerCommandHandler(
     private val lifecycle: LifecycleService,
     private val groups: GroupStore,
-    private val servers: ServerStateStore,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -54,14 +50,16 @@ class ServerCommandHandler(
     ) {
         val groupId = command.request.groupId.toGroupId()
         val group = groups.find(groupId)?.value ?: throw NonRetryableEventException("Group $groupId does not exist")
-        // A STATIC group's volume can only be mounted by one server at a time.
-        if (group.type == GroupType.STATIC &&
-            servers.listByGroup(groupId).any { it.value.state != ServerState.STOPPED }
-        ) {
-            log.warn("Ignoring a request for STATIC group {}: its server already exists", groupId)
-            return
-        }
-        lifecycle.request(command.serverId.toUuid("server_id"), group.id, group.type, group.profileId, actor)
+        val server =
+            lifecycle.request(
+                command.serverId.toUuid("server_id"),
+                group.id,
+                group.type,
+                group.profileId,
+                actor,
+            )
+        // The lifecycle refuses a second STATIC server atomically; the request has nothing left to do.
+        if (server == null) log.warn("Ignoring a request for STATIC group {}: its server already exists", groupId)
     }
 
     private fun String.toGroupId(): GroupId =

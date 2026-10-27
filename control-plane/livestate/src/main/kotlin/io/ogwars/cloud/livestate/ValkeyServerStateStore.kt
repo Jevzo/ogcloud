@@ -21,6 +21,16 @@ class ValkeyServerStateStore(
             server.id.toString().utf8(),
         ) == 1L
 
+    override fun createAlone(server: Server): Boolean =
+        valkey.evalLong(
+            LuaScripts.CREATE_ALONE,
+            listOf(ValkeyKeys.server(server.id), ValkeyKeys.SERVERS, ValkeyKeys.serversOfGroup(server.groupId)),
+            RecordCodec.encode(server),
+            ValkeyKeys.SERVER_TTL.millisArg(),
+            server.id.toString().utf8(),
+            ValkeyKeys.SERVER_PREFIX.utf8(),
+        ) == 1L
+
     override fun get(id: UUID): Revisioned<Server>? =
         valkey.readRecords(listOf(ValkeyKeys.server(id))).single()?.let { decode(ValkeyKeys.server(id), it) }
 

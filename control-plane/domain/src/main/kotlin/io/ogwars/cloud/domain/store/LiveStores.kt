@@ -19,6 +19,9 @@ interface ServerStateStore {
     /** Stores a new server; false if one with this id already exists. */
     fun create(server: Server): Boolean
 
+    /** As [create], atomically refused while any other server of the group exists (STATIC groups share one volume). */
+    fun createAlone(server: Server): Boolean
+
     fun get(id: UUID): Revisioned<Server>?
 
     fun listAll(): List<Revisioned<Server>>

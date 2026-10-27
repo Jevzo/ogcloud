@@ -5,6 +5,7 @@ import io.ogwars.cloud.controller.TestValkey
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.controller.kube.FabricPodGateway
 import io.ogwars.cloud.controller.kube.PodLabels
+import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
@@ -97,6 +98,32 @@ class ReconcilerTest {
     }
 
     @Test
+    fun `a terminating pod keeps its server until the pod is gone`() {
+        val id = running(lobby)
+        val name = createPod(lobby, id, finalizer = true)
+        f.lifecycle.stopNow(id, ACTOR, "stop")
+        client
+            .pods()
+            .inNamespace(NAMESPACE)
+            .withName(name)
+            .delete()
+        val session = session(id)
+
+        try {
+            reconciler.runOnce()
+
+            f.state(id) shouldBe ServerState.STOPPING
+            sessions.get(session)?.value?.proxyId shouldBe id
+        } finally {
+            client
+                .pods()
+                .inNamespace(NAMESPACE)
+                .withName(name)
+                .edit { it.apply { metadata.finalizers = emptyList() } }
+        }
+    }
+
+    @Test
     fun `sessions on a vanished proxy are dropped`() {
         val liveProxy = running(proxy).also { createPod(proxy, it) }
         val onLiveProxy = session(liveProxy)
@@ -127,9 +154,11 @@ class ReconcilerTest {
         return id
     }
 
+    /** With [finalizer], a deleted pod stays visible as terminating until the test releases it. */
     private fun createPod(
         group: Group,
         id: UUID,
+        finalizer: Boolean = false,
     ): String {
         val name = "${group.id}-${id.toString().replace("-", "")}"
         val labels =
@@ -138,11 +167,17 @@ class ReconcilerTest {
                 PodLabels.GROUP_TYPE to group.type.name.lowercase(),
                 PodLabels.PROFILE to group.profileId,
             )
+        val pod =
+            TestCluster.serverPod(NAMESPACE, name, id, labels).apply {
+                if (finalizer) {
+                    metadata.finalizers =
+                        listOf(HOLD_FINALIZER)
+                }
+            }
         return client
             .pods()
-            .inNamespace(
-                NAMESPACE,
-            ).resource(TestCluster.serverPod(NAMESPACE, name, id, labels))
+            .inNamespace(NAMESPACE)
+            .resource(pod)
             .create()
             .metadata.name
     }
@@ -164,6 +199,8 @@ class ReconcilerTest {
 
     private companion object {
         const val NAMESPACE = "reconcile-test"
+        const val HOLD_FINALIZER = "test.ogwars.io/hold"
+        val ACTOR = Actor.system("test")
         val TIMEOUT = 30.seconds
     }
 }

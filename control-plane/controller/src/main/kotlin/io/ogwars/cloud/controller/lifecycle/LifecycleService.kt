@@ -46,19 +46,20 @@ class LifecycleService(
 ) {
     private val updater = ServerUpdater(servers)
 
-    /** Records a new server; the provisioner creates its pod. A repeated request returns the existing server. */
+    /**
+     * Records a new server; the provisioner creates its pod. A repeated request returns the existing server. A STATIC
+     * group never gets a second server while one exists, whoever asks (autoscaler, command, job); that returns null.
+     */
     fun request(
         id: UUID,
         groupId: GroupId,
         groupType: GroupType,
         profileId: String,
         actor: Actor,
-    ): Server {
+    ): Server? {
         val server = Server(id, groupId, groupType, profileId, ServerState.REQUESTED, clock.instant())
-        if (!servers.create(server)) {
-            return servers.get(id)?.value
-                ?: error("Server $id vanished right after its creation")
-        }
+        val created = if (groupType == GroupType.STATIC) servers.createAlone(server) else servers.create(server)
+        if (!created) return servers.get(id)?.value
         events.stateChanged(ServerChange(server, server), actor, "requested")
         return server
     }
@@ -134,18 +135,23 @@ class LifecycleService(
         }
     }
 
+    // A retried ENDING still drains; only the transfer is not repeated.
     private fun endGame(
         server: Server,
         defaultGroupId: GroupId,
     ) {
-        updater.update(server.id) {
-            it
-                .takeIf { s ->
-                    s.gameState != GameState.ENDING
-                }?.copy(gameState = GameState.ENDING)
+        val ended =
+            updater.update(server.id) {
+                it
+                    .takeIf { s ->
+                        s.gameState != GameState.ENDING
+                    }?.copy(gameState = GameState.ENDING)
+            }
+        if (ended !=
+            null
+        ) {
+            events.transferPlayers(server.id, policy.transferTarget(server, defaultGroupId), "game ended")
         }
-            ?: return
-        events.transferPlayers(server.id, policy.transferTarget(server, defaultGroupId), "game ended")
         drain(server.id, SYSTEM, "game ended")
     }
 
@@ -202,28 +208,26 @@ class LifecycleService(
         reason: String,
     ) = terminate(id, actor, reason, grace = Duration.ZERO)
 
-    /** The pod is gone or finished: the server becomes STOPPED and leaves live state. */
+    /**
+     * The pod is gone or finished: the server becomes STOPPED and leaves live state. Only a pod that failed on its own
+     * before running counts as a crash; one we stopped (STOPPING) does not.
+     */
     fun podEnded(
         id: UUID,
         end: PodEnd,
         reason: String,
     ) {
-        val current = servers.get(id) ?: return
-        val server = current.value
-        val stopped =
-            (
-                if (server.state ==
-                    ServerState.STOPPING
-                ) {
-                    server
-                } else {
-                    server.transitionTo(ServerState.STOPPING, clock.instant())
-                }
-            ).transitionTo(ServerState.STOPPED, clock.instant())
-        if (!servers.compareAndSet(current.revision, stopped)) return podEnded(id, end, reason)
-        servers.delete(stopped)
-        events.stateChanged(ServerChange(server, stopped), SYSTEM, reason)
-        if (end == PodEnd.FAILED && server.startedAt == null) breaker.recordFailure(server.groupId, server.id)
+        val change =
+            updater.update(id) { server ->
+                val stopping = if (server.state == ServerState.STOPPING) server else server.moveTo(ServerState.STOPPING)
+                stopping?.transitionTo(ServerState.STOPPED, clock.instant())
+            } ?: return
+        servers.delete(change.after)
+        events.stateChanged(change, SYSTEM, reason)
+        val before = change.before
+        if (end == PodEnd.FAILED && before.startedAt == null && before.state != ServerState.STOPPING) {
+            breaker.recordFailure(before.groupId, before.id)
+        }
     }
 
     private fun terminate(
