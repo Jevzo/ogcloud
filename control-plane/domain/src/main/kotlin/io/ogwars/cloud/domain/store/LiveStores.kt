@@ -54,6 +54,12 @@ interface SessionStore {
     fun remove(session: Revisioned<PlayerSession>): Boolean
 
     fun onlinePlayers(): Set<UUID>
+
+    /** Online players ordered by uuid, starting after [after]; sessions that expired meanwhile are skipped. */
+    fun listOnline(
+        after: UUID?,
+        limit: Int,
+    ): List<PlayerSession>
 }
 
 /** Mutual exclusion across replicas, e.g. for restarts or the permission re-enable sync. */

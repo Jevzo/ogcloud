@@ -79,6 +79,16 @@ class InMemoryPlayerStore : PlayerStore {
 
     override fun findByName(name: String) = players.values.find { it.name.equals(name, ignoreCase = true) }
 
+    override fun list(
+        namePrefix: String?,
+        after: UUID?,
+        limit: Int,
+    ) = players.values
+        .filter { namePrefix == null || it.name.startsWith(namePrefix, ignoreCase = true) }
+        .filter { after == null || it.uuid > after }
+        .sortedBy { it.uuid }
+        .take(limit)
+
     override fun recordSeen(
         uuid: UUID,
         name: String,

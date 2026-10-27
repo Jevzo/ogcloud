@@ -41,6 +41,22 @@ class PlayerAndNpcStoreTest(
     }
 
     @Test
+    fun `known players are listed by uuid and narrowed by name, wildcards taken literally`() {
+        val first = UUID(0, 1)
+        val second = UUID(0, 2)
+        players.recordSeen(second, "Jevzo_2", NOW, PlayerRank(second, "default", null))
+        players.recordSeen(first, "jevzo", NOW, PlayerRank(first, "default", null))
+        players.recordSeen(uuid, "Notch", NOW, PlayerRank(uuid, "default", null))
+
+        players.list(namePrefix = "JEV", after = null, limit = 10).map { it.uuid } shouldContainExactly
+            listOf(first, second)
+        players.list(namePrefix = "jevzo_", after = null, limit = 10).map { it.uuid } shouldContainExactly
+            listOf(second)
+        players.list(namePrefix = "%", after = null, limit = 10) shouldBe emptyList()
+        players.list(namePrefix = null, after = first, limit = 1).map { it.uuid } shouldContainExactly listOf(second)
+    }
+
+    @Test
     fun `rank changes bump the version and expired ranks are found`() {
         players.recordSeen(uuid, "Jevzo", NOW, PlayerRank(uuid, "default", null))
 

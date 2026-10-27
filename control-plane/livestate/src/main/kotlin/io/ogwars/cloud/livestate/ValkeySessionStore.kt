@@ -67,4 +67,27 @@ class ValkeySessionStore(
         expired.forEach { (uuid, _) -> valkey.sync().srem(ValkeyKeys.ONLINE_PLAYERS, uuid.toString().utf8()) }
         return live.map { it.first }.toSet()
     }
+
+    override fun listOnline(
+        after: UUID?,
+        limit: Int,
+    ): List<PlayerSession> {
+        val candidates =
+            valkey
+                .sync()
+                .smembers(ValkeyKeys.ONLINE_PLAYERS)
+                .map { UUID.fromString(it.utf8()) }
+                .filter { after == null || it > after }
+                .sorted()
+        val sessions = mutableListOf<PlayerSession>()
+        // Fetched in chunks, so a few expired sessions do not shorten the page.
+        for (chunk in candidates.chunked(limit)) {
+            val keys = chunk.map(ValkeyKeys::session)
+            valkey.readRecords(keys).zip(keys).forEach { (record, key) ->
+                if (record != null && sessions.size < limit) sessions += RecordCodec.decodeSession(key, record.second)
+            }
+            if (sessions.size == limit) break
+        }
+        return sessions
+    }
 }

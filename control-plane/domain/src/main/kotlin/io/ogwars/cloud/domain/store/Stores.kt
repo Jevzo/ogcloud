@@ -93,6 +93,13 @@ interface PlayerStore {
 
     fun findByName(name: String): Player?
 
+    /** Every player seen, ordered by uuid after [after]; [namePrefix] narrows them, ignoring case. */
+    fun list(
+        namePrefix: String?,
+        after: UUID?,
+        limit: Int,
+    ): List<Player>
+
     /** Creates the player on first sight with [defaultRank], otherwise refreshes name and last-seen. */
     fun recordSeen(
         uuid: UUID,

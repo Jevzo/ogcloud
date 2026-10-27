@@ -88,6 +88,16 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
     }
 
     @Test
+    fun `online players are listed in pages by uuid, skipping expired sessions`() {
+        val carol = UUID(1, 3)
+        listOf(session(alice, "Alice"), session(bob, "Bob"), session(carol, "Carol")).forEach(sessions::put)
+        valkey.sync().del(ValkeyKeys.session(bob))
+
+        sessions.listOnline(after = null, limit = 2).map { it.playerUuid } shouldContainExactly listOf(alice, carol)
+        sessions.listOnline(after = alice, limit = 2).map { it.playerUuid } shouldContainExactly listOf(carol)
+    }
+
+    @Test
     fun `a lock has one holder and only that holder releases it`() {
         val first = locks.tryAcquire("network-restart", Duration.ofSeconds(30)).shouldNotBeNull()
         locks.tryAcquire("network-restart", Duration.ofSeconds(30)) shouldBe null

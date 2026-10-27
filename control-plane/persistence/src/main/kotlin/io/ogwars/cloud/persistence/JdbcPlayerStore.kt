@@ -30,6 +30,21 @@ class JdbcPlayerStore(
             .optional()
             .orElse(null)
 
+    override fun list(
+        namePrefix: String?,
+        after: UUID?,
+        limit: Int,
+    ): List<Player> =
+        jdbc
+            .sql(
+                "select * from players where lower(name) like :pattern escape '\\' and uuid > :after order by uuid limit :limit",
+            ).param("pattern", namePrefix?.lowercase()?.let { likePrefix(it) } ?: "%")
+            // The nil UUID sorts before every player's.
+            .param("after", after ?: UUID(0, 0))
+            .param("limit", limit)
+            .query(PLAYER)
+            .list()
+
     override fun recordSeen(
         uuid: UUID,
         name: String,
@@ -99,6 +114,9 @@ class JdbcPlayerStore(
             .list()
 
     private companion object {
+        /** `abc%`, with the caller's own wildcards taken literally. */
+        fun likePrefix(prefix: String) = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
         val PLAYER =
             RowMapper { rs, _ ->
                 val uuid = rs.uuid("uuid")
