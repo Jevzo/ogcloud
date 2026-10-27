@@ -56,7 +56,7 @@ create table setup_tokens (
     expires_at timestamptz not null
 );
 
--- Passkeys: Spring Security WebAuthn (D-0085). user_entities.name is the web user's username.
+-- Passkeys: Spring Security WebAuthn (D-0085). user_entities.name is the principal name, i.e. the web user's id.
 create table user_entities (
     id           varchar(1000) not null primary key,
     name         varchar(100)  not null unique,
@@ -133,9 +133,15 @@ create table oauth2_authorization (
     device_code_metadata          text
 );
 
--- The cleanup loop deletes authorizations whose tokens all expired (D-0043).
-create index oauth2_authorization_expiry on oauth2_authorization (greatest(access_token_expires_at, refresh_token_expires_at));
+-- The API's cleanup deletes authorizations whose tokens all expired (D-0043); greatest() skips missing tokens.
+create index oauth2_authorization_expiry on oauth2_authorization
+    (greatest(authorization_code_expires_at, access_token_expires_at, refresh_token_expires_at));
 create index oauth2_authorization_principal on oauth2_authorization (principal_name);
+-- Spring looks authorizations up by token value; hash indexes take values of any length.
+create index oauth2_authorization_state on oauth2_authorization using hash (state);
+create index oauth2_authorization_code on oauth2_authorization using hash (authorization_code_value);
+create index oauth2_authorization_access_token on oauth2_authorization using hash (access_token_value);
+create index oauth2_authorization_refresh_token on oauth2_authorization using hash (refresh_token_value);
 
 create table oauth2_authorization_consent (
     registered_client_id varchar(100)  not null,

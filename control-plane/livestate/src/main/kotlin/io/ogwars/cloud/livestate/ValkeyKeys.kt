@@ -36,6 +36,12 @@ object ValkeyKeys {
     /** Latched pause; no ttl, only an admin resume clears it. */
     fun crashLoopPaused(groupId: GroupId) = "crashloop:paused:$groupId"
 
+    /** Spring Session's namespace for the API's login sessions (D-0091). */
+    const val WEB_SESSION_NAMESPACE = "websession"
+
+    /** A rotated refresh token, by SHA-256 hex; it expires with the token (D-0090). */
+    fun rotatedRefreshToken(tokenHash: String) = "oauth:rotated:$tokenHash"
+
     fun readModel(
         kind: ReadModelKind,
         id: String,

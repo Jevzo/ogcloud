@@ -7,6 +7,7 @@ import io.ogwars.cloud.domain.store.Lock
 import io.ogwars.cloud.domain.store.LockManager
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
+import io.ogwars.cloud.domain.store.RotatedTokenStore
 import io.ogwars.cloud.domain.store.ScalingCooldownStore
 import io.lettuce.core.SetArgs
 import java.time.Duration
@@ -128,4 +129,23 @@ class ValkeyReadModelStore(
     ) {
         valkey.sync().del(ValkeyKeys.readModel(kind, id))
     }
+}
+
+class ValkeyRotatedTokenStore(
+    private val valkey: ValkeyConnection,
+) : RotatedTokenStore {
+    override fun remember(
+        tokenHash: String,
+        authorizationId: String,
+        ttl: Duration,
+    ) {
+        valkey.sync().set(
+            ValkeyKeys.rotatedRefreshToken(tokenHash),
+            authorizationId.utf8(),
+            SetArgs().px(ttl.toMillis()),
+        )
+    }
+
+    override fun authorizationOf(tokenHash: String): String? =
+        valkey.sync().get(ValkeyKeys.rotatedRefreshToken(tokenHash))?.utf8()
 }

@@ -26,6 +26,8 @@ class PersistenceAutoConfiguration
     JdbcScalingLogStore::class,
     JdbcRetentionStore::class,
     JdbcRuntimeArtifactStore::class,
+    JdbcWebUserStore::class,
+    JdbcRoleStore::class,
     SchemaVersionProbe::class,
 )
 class PersistenceStores

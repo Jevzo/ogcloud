@@ -5,6 +5,7 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -127,5 +128,16 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
         readModels.get(ReadModelKind.GROUP, "lobby")?.toList() shouldBe listOf<Byte>(1, 2, 3)
         readModels.delete(ReadModelKind.GROUP, "lobby")
         readModels.get(ReadModelKind.GROUP, "lobby") shouldBe null
+    }
+
+    @Test
+    fun `rotated refresh tokens are remembered until their own expiry`() {
+        val rotated = ValkeyRotatedTokenStore(valkey)
+
+        rotated.remember("ab12", "authorization-1", Duration.ofMinutes(5))
+
+        rotated.authorizationOf("ab12") shouldBe "authorization-1"
+        rotated.authorizationOf("cd34") shouldBe null
+        valkey.sync().pttl(ValkeyKeys.rotatedRefreshToken("ab12")) shouldBeInRange 1L..Duration.ofMinutes(5).toMillis()
     }
 }

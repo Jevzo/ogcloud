@@ -139,3 +139,14 @@ interface ReadModelStore {
         id: String,
     )
 }
+
+/** Refresh tokens rotated away, so presenting one again is detected as reuse (D-0090). */
+interface RotatedTokenStore {
+    fun remember(
+        tokenHash: String,
+        authorizationId: String,
+        ttl: Duration,
+    )
+
+    fun authorizationOf(tokenHash: String): String?
+}

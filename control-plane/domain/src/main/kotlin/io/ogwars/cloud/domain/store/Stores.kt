@@ -13,6 +13,8 @@ import io.ogwars.cloud.domain.retention.RetentionKind
 import io.ogwars.cloud.domain.runtime.RuntimeArtifact
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.template.TemplateVersion
+import io.ogwars.cloud.domain.user.ApiPermission
+import io.ogwars.cloud.domain.user.WebUser
 import java.time.Instant
 import java.util.UUID
 
@@ -183,3 +185,17 @@ interface RetentionStore {
 class StaleUpdateException(
     message: String,
 ) : RuntimeException(message)
+
+interface WebUserStore {
+    fun find(id: UUID): WebUser?
+
+    /** By username or email, ignoring case. */
+    fun findByLogin(login: String): WebUser?
+
+    fun create(user: WebUser)
+}
+
+interface RoleStore {
+    /** The permissions of a custom role; built-in roles keep theirs in code (D-0089). */
+    fun customPermissions(roleId: String): Set<ApiPermission>
+}
