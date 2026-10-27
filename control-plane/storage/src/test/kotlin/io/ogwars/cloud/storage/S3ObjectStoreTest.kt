@@ -8,12 +8,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.images.builder.Transferable
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.URI
@@ -24,35 +18,13 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.random.Random
 
-/** Same SeaweedFS as the chart (D-0010). */
-const val SEAWEEDFS_IMAGE = "chrislusf/seaweedfs:4.51"
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class S3ObjectStoreTest {
-    private val identities =
-        """{"identities":[{"name":"ogcloud","credentials":[{"accessKey":"$ACCESS","secretKey":"$SECRET"}],""" +
-            """"actions":["Admin","Read","Write","List","Tagging"]}]}"""
+    private val seaweed: GenericContainer<*> = seaweedFsContainer().also { it.start() }
+    private val endpoint = seaweed.s3Endpoint()
+    private val admin = seaweed.s3Admin().also { client -> client.createBucket { it.bucket(BUCKET) } }
 
-    private val seaweed: GenericContainer<*> =
-        GenericContainer(SEAWEEDFS_IMAGE)
-            .withCopyToContainer(Transferable.of(identities), "/etc/seaweedfs/s3.json")
-            .withCommand("server", "-dir=/data", "-s3", "-s3.port=$S3_PORT", "-s3.config=/etc/seaweedfs/s3.json")
-            .withExposedPorts(S3_PORT)
-            .waitingFor(Wait.forListeningPorts(S3_PORT))
-            .also { it.start() }
-
-    private val endpoint = URI("http://${seaweed.host}:${seaweed.getMappedPort(S3_PORT)}")
-    private val admin =
-        S3Client
-            .builder()
-            .endpointOverride(endpoint)
-            .region(Region.US_EAST_1)
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(ACCESS, SECRET)))
-            .forcePathStyle(true)
-            .build()
-            .also { client -> client.createBucket { it.bucket(BUCKET) } }
-
-    private val store = S3ObjectStore(settings(SECRET))
+    private val store = S3ObjectStore(settings(TEST_SECRET_KEY))
     private val http = HttpClient.newHttpClient()
 
     @AfterAll
@@ -115,9 +87,9 @@ class S3ObjectStoreTest {
     private fun settings(secret: String) =
         S3Settings(
             endpoint,
-            "us-east-1",
+            TEST_REGION,
             BUCKET,
-            ACCESS,
+            TEST_ACCESS_KEY,
             secret,
             pathStyle = true,
             partSizeBytes = S3Settings.MIN_PART_SIZE,
@@ -131,9 +103,6 @@ class S3ObjectStoreTest {
             .toList()
 
     private companion object {
-        const val S3_PORT = 8333
-        const val BUCKET = "ogcloud-test"
-        const val ACCESS = "ogcloud-access"
-        const val SECRET = "ogcloud-secret-key"
+        const val BUCKET = TEST_BUCKET
     }
 }

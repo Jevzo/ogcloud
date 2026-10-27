@@ -21,5 +21,6 @@ dependencies {
     "testImplementation"(testFixtures(project(":control-plane:persistence")))
     "testImplementation"(testFixtures(project(":control-plane:livestate")))
     "testImplementation"(testFixtures(project(":control-plane:messaging")))
+    "testImplementation"(testFixtures(project(":control-plane:storage")))
     "testImplementation"("org.springframework.boot:spring-boot-starter-test")
 }
