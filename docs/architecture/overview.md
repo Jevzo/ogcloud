@@ -18,6 +18,8 @@ target design of the v2 rebuild; each section notes what is already built.
 | `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel and ACL support |
 | `control-plane/messaging` | Kafka publisher (idempotent, observed results), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
 | `control-plane/storage` | S3 object store: multipart streaming uploads, presigned URLs, stale-upload cleanup |
+| `control-plane/service-support` | Shared service plumbing (D-0088): Clock, UUIDv7 ids, secrets, default service configuration; golden-file test fixtures |
+| `control-plane/api` | Skeleton: owns Flyway, ProblemDetail errors, cursor pagination, audit interceptor, trusted proxies, OpenAPI contract (`contracts/openapi/openapi.yaml`, drift-tested) |
 
 Each adapter ships a Spring Boot auto-configuration (`ogcloud.valkey.*`, `ogcloud.kafka.*`, `ogcloud.s3.*`, the DataSource), so a service gets its ports by adding the dependency (D-0074).
 

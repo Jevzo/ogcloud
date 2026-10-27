@@ -1,0 +1,8 @@
+openapi: 3.1.0
+info:
+  title: OgCloud API
+  version: v1
+servers:
+- url: /
+paths: {}
+components: {}

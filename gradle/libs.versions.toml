@@ -13,6 +13,7 @@ protobuf-plugin = "0.10.0"
 grpc = "1.85.1"
 aws-sdk = "2.57.3"
 fabric8 = "8.0.0"
+springdoc = "3.2.0"
 
 [libraries]
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -34,6 +35,7 @@ grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-protoc-gen-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
 aws-sdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws-sdk" }
 fabric8-kubernetes-client = { module = "io.fabric8:kubernetes-client", version.ref = "fabric8" }
+springdoc-webmvc-api = { module = "org.springdoc:springdoc-openapi-starter-webmvc-api", version.ref = "springdoc" }
 
 [plugins]
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

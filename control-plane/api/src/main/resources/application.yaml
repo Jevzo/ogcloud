@@ -1,0 +1,30 @@
+# Shared defaults (virtual threads, actuator, logs, tracing) come from service-support (D-0088).
+spring:
+  application:
+    name: ogcloud-api
+  config:
+    import: "optional:configtree:/var/run/secrets/ogcloud/"
+  # The API owns the schema (D-0009); the controller's role gets data access only.
+  flyway:
+    placeholders:
+      controllerRole: ${OGCLOUD_CONTROLLER_DB_ROLE:ogcloud_controller}
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8080
+  # Behind the Gateway (D-0051): X-Forwarded-* is honoured only from trusted proxies (Tomcat's internal-proxies,
+  # private ranges by default), so client IPs for rate limits and audit cannot be spoofed from outside.
+  forward-headers-strategy: native
+
+# Same origin (D-0051): everything the API serves sits under /api, /oauth2, /.well-known and /login.
+springdoc:
+  api-docs:
+    path: /api/openapi
+  packages-to-scan: io.ogwars.cloud.api
+
+ogcloud:
+  kafka:
+    # Consumer groups are ogcloud-api-*, matching the generated ACLs.
+    client-id: api
