@@ -7,6 +7,8 @@ import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.ImageOverride
 import io.ogwars.cloud.domain.group.ResourceSpec
 import io.ogwars.cloud.domain.group.ScalingPolicy
+import io.ogwars.cloud.domain.store.ConflictException
+import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.StaleUpdateException
 import io.ogwars.cloud.domain.store.TemplateVersionStore
@@ -70,13 +72,23 @@ class GroupStoreTest(
     fun `soft-deleted groups disappear until restored`() {
         groups.create(lobby)
 
-        groups.softDelete(lobby.id, NOW)
+        groups.restore(lobby.id) shouldBe false
+        groups.softDelete(lobby.id, NOW) shouldBe true
+        groups.softDelete(lobby.id, NOW) shouldBe false
         groups.findAll().shouldBeEmpty()
         groups.deletedBefore(NOW.plusSeconds(1)) shouldContainExactly listOf(lobby.id)
-        groups.deleted() shouldContainExactly listOf(lobby.id)
+        groups.findDeleted() shouldContainExactly listOf(DeletedGroup(lobby, NOW))
 
-        groups.restore(lobby.id)
+        groups.restore(lobby.id) shouldBe true
         groups.findAll().map { it.value } shouldContainExactly listOf(lobby)
+    }
+
+    @Test
+    fun `a deleted group's id stays taken until its purge`() {
+        groups.create(lobby)
+        groups.softDelete(lobby.id, NOW)
+
+        shouldThrow<ConflictException> { groups.create(lobby) }
     }
 
     @Test

@@ -6,9 +6,12 @@ import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.ImageOverride
 import io.ogwars.cloud.domain.group.ResourceSpec
 import io.ogwars.cloud.domain.group.ScalingPolicy
+import io.ogwars.cloud.domain.store.ConflictException
+import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.store.StaleUpdateException
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
@@ -66,11 +69,11 @@ interface GroupRecordRepository : CrudRepository<GroupRecord, String> {
     ): Int
 
     @Modifying
-    @Query("update groups set deleted_at = null, version = version + 1 where id = :id")
+    @Query("update groups set deleted_at = null, version = version + 1 where id = :id and deleted_at is not null")
     fun restore(id: String): Int
 
-    @Query("select id from groups where deleted_at is not null order by deleted_at")
-    fun idsDeleted(): List<String>
+    @Query("select * from groups where deleted_at is not null order by deleted_at")
+    fun findAllDeleted(): List<GroupRecord>
 
     @Query("select id from groups where deleted_at < :cutoff order by deleted_at")
     fun idsDeletedBefore(cutoff: Instant): List<String>
@@ -95,7 +98,11 @@ class JdbcGroupStore(
 
     override fun create(group: Group) {
         val now = clock.instant()
-        aggregates.insert(toRecord(group, createdAt = now, updatedAt = now, version = 0))
+        try {
+            aggregates.insert(toRecord(group, createdAt = now, updatedAt = now, version = 0))
+        } catch (e: DuplicateKeyException) {
+            throw ConflictException("Group ${group.id} already exists or awaits its purge").apply { initCause(e) }
+        }
     }
 
     override fun update(
@@ -118,15 +125,17 @@ class JdbcGroupStore(
     override fun softDelete(
         id: GroupId,
         at: Instant,
-    ) {
-        records.softDelete(id.value, at)
-    }
+    ): Boolean = records.softDelete(id.value, at) == 1
 
-    override fun restore(id: GroupId) {
-        records.restore(id.value)
-    }
+    override fun restore(id: GroupId): Boolean = records.restore(id.value) == 1
 
-    override fun deleted(): List<GroupId> = records.idsDeleted().map(::GroupId)
+    override fun findDeleted(): List<DeletedGroup> =
+        records.findAllDeleted().map {
+            DeletedGroup(
+                toDomain(it),
+                it.deletedAt ?: error("unreachable: the query selects deleted groups"),
+            )
+        }
 
     override fun deletedBefore(cutoff: Instant): List<GroupId> = records.idsDeletedBefore(cutoff).map(::GroupId)
 

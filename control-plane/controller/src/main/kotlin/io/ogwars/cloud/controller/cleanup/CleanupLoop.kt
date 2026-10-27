@@ -159,7 +159,8 @@ class CleanupLoop(
     }
 
     /** Live and soft-deleted groups: everything that may still own objects or a volume. */
-    private fun knownGroups(): List<GroupId> = groups.findAll().map { it.value.id } + groups.deleted()
+    private fun knownGroups(): List<GroupId> =
+        groups.findAll().map { it.value.id } + groups.findDeleted().map { it.group.id }
 
     private fun deleteObjects(keys: List<String>): Int {
         if (!properties.dryRun) keys.forEach(objects::delete)

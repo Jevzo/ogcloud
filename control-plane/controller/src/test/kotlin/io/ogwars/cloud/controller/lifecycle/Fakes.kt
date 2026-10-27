@@ -8,6 +8,7 @@ import io.ogwars.cloud.domain.network.NetworkSettings
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.server.TransferTarget
+import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.Revisioned
@@ -143,15 +144,15 @@ class InMemoryGroupStore(
     override fun softDelete(
         id: GroupId,
         at: Instant,
-    ) {
-        groups.remove(id)?.let { deleted[id] = it to at }
-    }
+    ): Boolean = groups.remove(id)?.let { deleted[id] = it to at } != null
 
-    override fun restore(id: GroupId) {
-        deleted.remove(id)?.let { groups[id] = it.first }
-    }
+    override fun restore(id: GroupId): Boolean = deleted.remove(id)?.let { groups[id] = it.first } != null
 
-    override fun deleted(): List<GroupId> = deleted.keys.toList()
+    override fun findDeleted(): List<DeletedGroup> =
+        deleted.values
+            .sortedBy {
+                it.second
+            }.map { DeletedGroup(it.first, it.second) }
 
     override fun deletedBefore(cutoff: Instant): List<GroupId> =
         deleted

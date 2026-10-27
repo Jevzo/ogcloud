@@ -79,7 +79,7 @@ class CleanupLoopTest {
 
         loop().runOnce()
 
-        f.groupStore.deleted() shouldBe emptyList()
+        f.groupStore.findDeleted() shouldBe emptyList()
         objects.objects shouldBe emptyMap()
         f.pods.claims shouldBe emptyList()
         readModels.get(ReadModelKind.GROUP, "smp") shouldBe null
@@ -96,7 +96,7 @@ class CleanupLoopTest {
 
         loop().runOnce()
 
-        f.groupStore.deleted() shouldContainExactlyInAnyOrder listOf(bedwars.id, smp.id)
+        f.groupStore.findDeleted().map { it.group.id } shouldContainExactlyInAnyOrder listOf(bedwars.id, smp.id)
     }
 
     @Test

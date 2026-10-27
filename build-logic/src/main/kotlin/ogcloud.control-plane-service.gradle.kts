@@ -16,6 +16,7 @@ dependencies {
     "implementation"("org.springframework.boot:spring-boot-starter-opentelemetry")
     "runtimeOnly"("io.micrometer:micrometer-registry-prometheus")
 
+    "testImplementation"(testFixtures(project(":control-plane:domain")))
     "testImplementation"(testFixtures(project(":control-plane:service-support")))
     "testImplementation"(testFixtures(project(":control-plane:persistence")))
     "testImplementation"(testFixtures(project(":control-plane:livestate")))

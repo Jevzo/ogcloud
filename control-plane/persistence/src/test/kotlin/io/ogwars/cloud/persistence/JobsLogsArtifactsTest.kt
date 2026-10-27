@@ -57,6 +57,15 @@ class JobsLogsArtifactsTest(
     }
 
     @Test
+    fun `jobs are listed newest first in pages`() {
+        val ids = (1L..3L).map { UUID(0x0192d2c1_0000_7000L, it) }
+        ids.forEach { jobs.create(job(JobState.SUCCEEDED).copy(id = it)) }
+
+        jobs.list(before = null, limit = 2).map { it.id } shouldContainExactly ids.reversed().take(2)
+        jobs.list(before = ids[1], limit = 2).map { it.id } shouldContainExactly listOf(ids[0])
+    }
+
+    @Test
     fun `a deposed leader cannot overwrite newer job progress`() {
         val job = job(JobState.RUNNING)
         jobs.create(job)

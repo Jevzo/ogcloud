@@ -20,12 +20,19 @@ import java.util.UUID
 
 // Ports for persistent state (D-0009); the persistence module implements them.
 
+/** A soft-deleted group, restorable until its purge (D-0043). */
+data class DeletedGroup(
+    val group: Group,
+    val deletedAt: Instant,
+)
+
 interface GroupStore {
     /** Groups that are not soft-deleted, with the version to present when updating them. */
     fun findAll(): List<Revisioned<Group>>
 
     fun find(id: GroupId): Revisioned<Group>?
 
+    /** Throws [ConflictException] if the id is taken, also by a deleted group awaiting its purge. */
     fun create(group: Group)
 
     /** Replaces the group if it still has [expectedVersion]; otherwise throws [StaleUpdateException]. */
@@ -34,15 +41,17 @@ interface GroupStore {
         group: Group,
     )
 
+    /** False if no active group has [id]. */
     fun softDelete(
         id: GroupId,
         at: Instant,
-    )
+    ): Boolean
 
-    fun restore(id: GroupId)
+    /** False if no deleted group has [id]. */
+    fun restore(id: GroupId): Boolean
 
-    /** Every soft-deleted group, whatever its deletion time. */
-    fun deleted(): List<GroupId>
+    /** Every soft-deleted group, whatever its deletion time, oldest deletion first. */
+    fun findDeleted(): List<DeletedGroup>
 
     fun deletedBefore(cutoff: Instant): List<GroupId>
 
@@ -141,6 +150,12 @@ interface JobStore {
 
     /** Queued and running jobs, oldest first, for a new leader to resume. */
     fun findActive(): List<Job>
+
+    /** Newest first, starting below [before]; ids are UUIDv7, so this is creation order (D-0064). */
+    fun list(
+        before: UUID?,
+        limit: Int,
+    ): List<Job>
 }
 
 interface AuditLogStore {

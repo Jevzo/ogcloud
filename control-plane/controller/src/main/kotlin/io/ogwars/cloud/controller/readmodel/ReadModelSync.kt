@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.readmodel
 
+import io.ogwars.cloud.contracts.NETWORK_SUBJECT
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse

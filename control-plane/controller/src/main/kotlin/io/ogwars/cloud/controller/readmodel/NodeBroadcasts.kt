@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.readmodel
 
+import io.ogwars.cloud.contracts.NETWORK_SUBJECT
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.events.v1.NodeBroadcast
@@ -91,6 +92,3 @@ fun NodeBroadcasts.npc(
             .setDeleted(deleted),
     )
 }
-
-/** The subject id of network-wide settings, in `config.changed` and `node.broadcast`. */
-const val NETWORK_SUBJECT = "network"
