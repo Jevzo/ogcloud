@@ -3,6 +3,7 @@ package io.ogwars.cloud.livestate
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.session.PlayerSession
+import io.ogwars.cloud.domain.store.OneTimeKind
 import io.ogwars.cloud.domain.store.RateDecision
 import io.ogwars.cloud.domain.store.RateLimit
 import io.ogwars.cloud.domain.store.ReadModelKind
@@ -171,5 +172,17 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
         limiter.tryAcquire("api", client, limit, NOW).allowed shouldBe true
         val key = ValkeyKeys.rateLimit("login", client)
         valkey.sync().pttl(key) shouldBeInRange 1L..Duration.ofSeconds(2).toMillis()
+    }
+
+    @Test
+    fun `a one-time value is taken once and expires with its ttl`() {
+        val store = ValkeyOneTimeStore(valkey)
+
+        store.put(OneTimeKind.SSE_TICKET, "hash-1", "user:1", Duration.ofSeconds(30))
+
+        valkey.sync().pttl(ValkeyKeys.oneTime(OneTimeKind.SSE_TICKET, "hash-1")) shouldBeInRange
+            1L..Duration.ofSeconds(30).toMillis()
+        store.take(OneTimeKind.SSE_TICKET, "hash-1") shouldBe "user:1"
+        store.take(OneTimeKind.SSE_TICKET, "hash-1") shouldBe null
     }
 }

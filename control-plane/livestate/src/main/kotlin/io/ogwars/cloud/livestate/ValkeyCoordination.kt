@@ -5,6 +5,8 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.store.CrashFailureStore
 import io.ogwars.cloud.domain.store.Lock
 import io.ogwars.cloud.domain.store.LockManager
+import io.ogwars.cloud.domain.store.OneTimeKind
+import io.ogwars.cloud.domain.store.OneTimeStore
 import io.ogwars.cloud.domain.store.RateDecision
 import io.ogwars.cloud.domain.store.RateLimit
 import io.ogwars.cloud.domain.store.RateLimiter
@@ -191,4 +193,22 @@ class ValkeyRateLimiter(
             )
         return RateDecision(waitMillis == 0L, Duration.ofMillis(waitMillis))
     }
+}
+
+class ValkeyOneTimeStore(
+    private val valkey: ValkeyConnection,
+) : OneTimeStore {
+    override fun put(
+        kind: OneTimeKind,
+        id: String,
+        value: String,
+        ttl: Duration,
+    ) {
+        valkey.sync().set(ValkeyKeys.oneTime(kind, id), value.utf8(), SetArgs().px(ttl.toMillis()))
+    }
+
+    override fun take(
+        kind: OneTimeKind,
+        id: String,
+    ): String? = valkey.sync().getdel(ValkeyKeys.oneTime(kind, id))?.utf8()
 }

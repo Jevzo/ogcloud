@@ -67,6 +67,30 @@ class KafkaIntegrationTest {
     }
 
     @Test
+    fun `a broadcast listener skips what came before it and failures it meets`() {
+        val topic = "ogcloud.test.broadcast"
+        template.send(topic, "old", byteArrayOf()).get()
+        val received = LinkedBlockingQueue<String>()
+        val container = components.broadcastContainerFactory("ogcloud-test-broadcast").createContainer(topic)
+        container.setupMessageListener(
+            MessageListener<String, ByteArray> {
+                if (it.key() == "broken") error("cannot handle")
+                received.add(it.key())
+            },
+        )
+        containers.add(container)
+        container.start()
+        // Records sent before the partitions are assigned would be skipped as old ones.
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT_SECONDS)
+        while (container.assignedPartitions.isEmpty() && System.nanoTime() < deadline) Thread.onSpinWait()
+
+        template.send(topic, "broken", byteArrayOf()).get()
+        template.send(topic, "new", byteArrayOf()).get()
+
+        received.poll(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe "new"
+    }
+
+    @Test
     fun `failing records are retried, then parked in the dead-letter topic`() {
         val sent = request("bedwars")
         val attempts = AtomicInteger()

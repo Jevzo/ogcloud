@@ -17,9 +17,11 @@ import org.springframework.kafka.core.DefaultKafkaConsumerFactory
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.kafka.listener.ConsumerRecordRecoverer
+import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.util.backoff.ExponentialBackOff
+import org.springframework.util.backoff.FixedBackOff
 import java.time.Duration
 
 /** A record that can never succeed, so it skips retries and goes straight to the dead-letter topic. */
@@ -77,9 +79,7 @@ class KafkaComponents(
         retry: RetryPolicy = RetryPolicy(),
         concurrency: Int = 1,
     ): ConcurrentKafkaListenerContainerFactory<String, ByteArray> {
-        require(groupId.startsWith("ogcloud-${settings.clientId}")) {
-            "Group $groupId must start with ogcloud-${settings.clientId} (ACLs)"
-        }
+        requireGroupPrefix(groupId)
         val consumerProperties =
             settings.commonProperties() +
                 mapOf(
@@ -96,6 +96,45 @@ class KafkaComponents(
             setConsumerFactory(DefaultKafkaConsumerFactory(consumerProperties))
             setConcurrency(concurrency)
             setCommonErrorHandler(errorHandler(template, retry))
+        }
+    }
+
+    /**
+     * Listener containers that see every record from now on, e.g. one per API replica feeding its live-update
+     * streams (D-0105). Offsets are never committed, so the group vanishes with its replica, and a record that
+     * fails is logged and skipped: delivery is at-most-once.
+     */
+    fun broadcastContainerFactory(groupId: String): ConcurrentKafkaListenerContainerFactory<String, ByteArray> {
+        requireGroupPrefix(groupId)
+        val consumerProperties =
+            settings.commonProperties() +
+                mapOf(
+                    ConsumerConfig.GROUP_ID_CONFIG to groupId,
+                    ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
+                    ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "latest",
+                    ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+                    ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java,
+                )
+        return ConcurrentKafkaListenerContainerFactory<String, ByteArray>().apply {
+            setConsumerFactory(DefaultKafkaConsumerFactory(consumerProperties))
+            containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+            setCommonErrorHandler(
+                DefaultErrorHandler({ record, error ->
+                    log.warn(
+                        "Skipping broadcast record {}-{}@{}",
+                        record.topic(),
+                        record.partition(),
+                        record.offset(),
+                        error,
+                    )
+                }, FixedBackOff(0, 0)),
+            )
+        }
+    }
+
+    private fun requireGroupPrefix(groupId: String) {
+        require(groupId.startsWith("ogcloud-${settings.clientId}")) {
+            "Group $groupId must start with ogcloud-${settings.clientId} (ACLs)"
         }
     }
 

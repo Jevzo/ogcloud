@@ -8,13 +8,11 @@ import io.ogwars.cloud.contracts.events.v1.PlayerActivity
 import io.ogwars.cloud.contracts.events.v1.ServerCommand
 import io.ogwars.cloud.messaging.KafkaComponents
 import io.ogwars.cloud.messaging.KafkaTopics
-import io.ogwars.cloud.messaging.decode
+import io.ogwars.cloud.messaging.ListenerContainers
+import io.ogwars.cloud.messaging.protobufContainer
 import com.google.protobuf.Message
 import com.google.protobuf.Parser
-import org.springframework.context.SmartLifecycle
 import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
-import org.springframework.kafka.listener.MessageListener
 import org.springframework.stereotype.Component
 
 /**
@@ -31,8 +29,8 @@ class ControllerConsumers(
     activity: PlayerActivityHandler,
     configChanges: ConfigChangedHandler,
     jobRequests: JobRequestedHandler,
-) : SmartLifecycle {
-    private val containers =
+) : ListenerContainers() {
+    override val containers =
         listOf(
             container(
                 KafkaTopics.SERVER_COMMAND,
@@ -72,23 +70,15 @@ class ControllerConsumers(
             container(KafkaTopics.JOB_REQUESTED, "jobs", JobRequested.parser(), concurrency = 1, jobRequests::handle),
         )
 
-    override fun start() = containers.forEach { it.start() }
-
-    override fun stop() = containers.forEach { it.stop() }
-
-    override fun isRunning() = containers.any { it.isRunning }
-
     private fun <T : Message> container(
         topic: String,
         name: String,
         parser: Parser<T>,
         concurrency: Int,
         handle: (T) -> Unit,
-    ): ConcurrentMessageListenerContainer<String, ByteArray> =
-        components
-            .listenerContainerFactory("$GROUP_PREFIX-$name", template, concurrency = concurrency)
-            .createContainer(topic)
-            .apply { setupMessageListener(MessageListener<String, ByteArray> { handle(it.decode(parser)) }) }
+    ) = components
+        .listenerContainerFactory("$GROUP_PREFIX-$name", template, concurrency = concurrency)
+        .protobufContainer(topic, parser, handle)
 
     private companion object {
         /** Matches the ACL prefix generated for the controller (ogcloud-controller). */

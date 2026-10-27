@@ -3,6 +3,7 @@ package io.ogwars.cloud.livestate
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.store.CrashFailureStore
 import io.ogwars.cloud.domain.store.LockManager
+import io.ogwars.cloud.domain.store.OneTimeStore
 import io.ogwars.cloud.domain.store.RateLimiter
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.RotatedTokenStore
@@ -51,4 +52,7 @@ class LiveStateAutoConfiguration {
 
     @Bean
     fun rateLimiter(valkey: ValkeyConnection): RateLimiter = ValkeyRateLimiter(valkey)
+
+    @Bean
+    fun oneTimeStore(valkey: ValkeyConnection): OneTimeStore = ValkeyOneTimeStore(valkey)
 }

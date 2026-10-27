@@ -1,6 +1,7 @@
 package io.ogwars.cloud.livestate
 
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.store.OneTimeKind
 import io.ogwars.cloud.domain.store.ReadModelKind
 import java.time.Duration
 import java.util.UUID
@@ -47,6 +48,11 @@ object ValkeyKeys {
         bucket: String,
         client: String,
     ) = "ratelimit:$bucket:$client"
+
+    fun oneTime(
+        kind: OneTimeKind,
+        id: String,
+    ) = "onetime:${kind.key}:$id"
 
     fun readModel(
         kind: ReadModelKind,

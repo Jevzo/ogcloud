@@ -185,3 +185,27 @@ fun interface RateLimiter {
         at: Instant,
     ): RateDecision
 }
+
+/** What a one-time value is for; it namespaces the keys. */
+enum class OneTimeKind(
+    val key: String,
+) {
+    /** Lets an EventSource, which cannot send headers, open the live-update stream (D-0105). */
+    SSE_TICKET("sse-ticket"),
+}
+
+/** Values that can be redeemed once before they expire; ids are hashes, never the secrets themselves. */
+interface OneTimeStore {
+    fun put(
+        kind: OneTimeKind,
+        id: String,
+        value: String,
+        ttl: Duration,
+    )
+
+    /** Returns and deletes the value, atomically; null if it was taken or expired. */
+    fun take(
+        kind: OneTimeKind,
+        id: String,
+    ): String?
+}

@@ -33,6 +33,10 @@ fun ProtoGroupType.toDomain(): GroupType = domainEnum(name, "GROUP_TYPE_")
 
 fun ProtoServerState.toDomain(): ServerState = domainEnum(name, "SERVER_STATE_")
 
+fun ProtoJobState.toDomain(): JobState = domainEnum(name, "JOB_STATE_")
+
+fun ProtoScalingAction.toDomain(): ScalingAction = domainEnum(name, "SCALING_ACTION_")
+
 /** UNSPECIFIED means the server has no game state. */
 fun ProtoGameState.toDomain(): GameState? =
     if (this ==
