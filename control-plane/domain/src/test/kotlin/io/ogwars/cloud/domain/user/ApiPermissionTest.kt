@@ -20,6 +20,12 @@ class ApiPermissionTest {
     }
 
     @Test
+    fun `callers' permission lists must only name known permissions`() {
+        ApiPermission.parse(listOf("groups:read", "groups:read")) shouldBe setOf(ApiPermission.GROUPS_READ)
+        shouldThrow<IllegalArgumentException> { ApiPermission.parse(listOf("groups:read", "openid")) }
+    }
+
+    @Test
     fun `owners may do everything`() {
         BuiltInRole.OWNER.permissions shouldBe ApiPermission.entries.toSet()
     }

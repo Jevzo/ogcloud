@@ -39,6 +39,10 @@ enum class ApiPermission(
 
         /** Null for scopes that are not permissions, such as `openid`. */
         fun fromScope(scope: String): ApiPermission? = byScope[scope]
+
+        /** Parses permissions given by a caller; unknown ones are an error, not ignored. */
+        fun parse(scopes: Collection<String>): Set<ApiPermission> =
+            scopes.map { fromScope(it) ?: throw IllegalArgumentException("Unknown permission '$it'") }.toSet()
     }
 }
 

@@ -9,7 +9,11 @@ import org.testcontainers.containers.GenericContainer
 const val VALKEY_IMAGE = "valkey/valkey:9.1.2"
 const val VALKEY_PORT = 6379
 
-fun valkeyContainer(): GenericContainer<*> = GenericContainer(VALKEY_IMAGE).withExposedPorts(VALKEY_PORT)
+/** With the keyspace events the chart enables for Spring Session's index (D-0095). */
+fun valkeyContainer(): GenericContainer<*> =
+    GenericContainer(VALKEY_IMAGE)
+        .withExposedPorts(VALKEY_PORT)
+        .withCommand("valkey-server", "--notify-keyspace-events", "Egx")
 
 /** A standalone Valkey wired into `ogcloud.valkey.*` for Spring tests of services. */
 @TestConfiguration(proxyBeanMethods = false)

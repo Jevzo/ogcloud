@@ -50,12 +50,6 @@ create table web_user_totp (
     last_step        bigint
 );
 
--- The one-time token that creates the first owner on a fresh install (T-0303); only its hash is stored.
-create table setup_tokens (
-    token_hash text        primary key,
-    expires_at timestamptz not null
-);
-
 -- Passkeys: Spring Security WebAuthn (D-0085). user_entities.name is the principal name, i.e. the web user's id.
 create table user_entities (
     id           varchar(1000) not null primary key,
@@ -151,5 +145,5 @@ create table oauth2_authorization_consent (
 );
 
 -- Credentials stay with the API: the controller's default privileges (V1) must not reach them.
-revoke all on roles, role_permissions, web_users, web_user_totp, setup_tokens, user_entities, user_credentials,
+revoke all on roles, role_permissions, web_users, web_user_totp, user_entities, user_credentials,
     oauth2_registered_client, oauth2_authorization, oauth2_authorization_consent from ${controllerRole};

@@ -22,7 +22,42 @@ data class WebUser(
         require(email.contains('@')) { "Invalid email address" }
     }
 
+    val isOwner: Boolean get() = roleId == BuiltInRole.OWNER.id
+
     private companion object {
         val USERNAME_LENGTH = 3..32
+    }
+}
+
+/** A named set of permissions; built-in roles keep theirs in code (D-0089). */
+data class Role(
+    val id: String,
+    val name: String,
+    val permissions: Set<ApiPermission>,
+    val builtIn: Boolean = false,
+) {
+    init {
+        require(ID.matches(id)) { "Role id must be lowercase letters, digits and dashes, starting with a letter" }
+        require(name.isNotBlank()) { "Role name must not be blank" }
+        require(
+            builtIn == (BuiltInRole.find(id) != null),
+        ) { "'$id' is ${if (builtIn) "not" else "already"} a built-in role" }
+    }
+
+    private companion object {
+        val ID = Regex("^[a-z][a-z0-9-]{0,30}$")
+    }
+}
+
+/** Length is all that counts (NIST SP 800-63B); bcrypt reads at most 72 bytes (D-0094). */
+object PasswordPolicy {
+    const val MIN_LENGTH = 12
+    const val MAX_BYTES = 72
+
+    fun validate(password: String) {
+        require(
+            password.codePointCount(0, password.length) >= MIN_LENGTH,
+        ) { "Passwords need at least $MIN_LENGTH characters" }
+        require(password.toByteArray().size <= MAX_BYTES) { "Passwords may have at most $MAX_BYTES bytes" }
     }
 }

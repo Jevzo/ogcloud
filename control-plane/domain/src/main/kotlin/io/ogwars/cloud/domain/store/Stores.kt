@@ -13,7 +13,7 @@ import io.ogwars.cloud.domain.retention.RetentionKind
 import io.ogwars.cloud.domain.runtime.RuntimeArtifact
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.template.TemplateVersion
-import io.ogwars.cloud.domain.user.ApiPermission
+import io.ogwars.cloud.domain.user.Role
 import io.ogwars.cloud.domain.user.WebUser
 import java.time.Instant
 import java.util.UUID
@@ -186,16 +186,64 @@ class StaleUpdateException(
     message: String,
 ) : RuntimeException(message)
 
+/** The change conflicts with current state, e.g. it would leave the network without an owner. */
+class ConflictException(
+    message: String,
+) : RuntimeException(message)
+
 interface WebUserStore {
-    fun find(id: UUID): WebUser?
+    fun find(id: UUID): Revisioned<WebUser>?
 
     /** By username or email, ignoring case. */
     fun findByLogin(login: String): WebUser?
 
+    /** Ordered by id, i.e. by creation (D-0064), starting after [after]. */
+    fun list(
+        after: UUID?,
+        limit: Int,
+    ): List<Revisioned<WebUser>>
+
+    /** Throws [ConflictException] if the username or email is taken. */
     fun create(user: WebUser)
+
+    /** Creates [owner] unless an owner exists, atomically across API replicas; false if one does (D-0094). */
+    fun createFirstOwner(owner: WebUser): Boolean
+
+    fun ownerExists(): Boolean
+
+    /**
+     * Replaces the user if it still has [expectedVersion], else throws [StaleUpdateException]. Throws
+     * [ConflictException] if the change would leave no enabled owner or reuse a taken username or email.
+     */
+    fun update(
+        expectedVersion: Long,
+        user: WebUser,
+    )
+
+    fun setPasswordHash(
+        id: UUID,
+        passwordHash: String,
+    )
+
+    /** Throws [ConflictException] for the last enabled owner. */
+    fun delete(id: UUID)
 }
 
 interface RoleStore {
-    /** The permissions of a custom role; built-in roles keep theirs in code (D-0089). */
-    fun customPermissions(roleId: String): Set<ApiPermission>
+    /** Built-in roles first, with the permissions defined in code (D-0089). */
+    fun findAll(): List<Revisioned<Role>>
+
+    fun find(id: String): Revisioned<Role>?
+
+    /** Throws [ConflictException] if the id is taken. */
+    fun create(role: Role)
+
+    /** As [GroupStore.update]; built-in roles cannot change ([ConflictException]). */
+    fun update(
+        expectedVersion: Long,
+        role: Role,
+    )
+
+    /** Throws [ConflictException] for built-in roles and roles still assigned to users. */
+    fun delete(id: String)
 }
