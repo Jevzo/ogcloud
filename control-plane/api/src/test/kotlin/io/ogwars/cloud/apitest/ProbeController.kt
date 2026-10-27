@@ -2,6 +2,7 @@ package io.ogwars.cloud.apitest
 
 import io.ogwars.cloud.api.web.AnyCaller
 import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.ogwars.cloud.messaging.PublishException
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
@@ -28,6 +29,11 @@ class ProbeController {
     @AnyCaller
     @GetMapping("/api/v1/probes/stale")
     fun stale(): String = throw StaleUpdateException("Group bedwars changed since version 3")
+
+    @AnyCaller
+    @GetMapping("/api/v1/probes/unpublished")
+    fun unpublished(): String =
+        throw PublishException("Publishing to ogcloud.server.command failed", IllegalStateException("broker down"))
 
     @GetMapping("/api/v1/probes/undeclared")
     fun undeclared(): String = "should never be served"

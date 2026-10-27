@@ -15,7 +15,8 @@ class TestPasskeys(
     private val entities: PublicKeyCredentialUserEntityRepository,
     private val credentials: UserCredentialRepository,
 ) {
-    fun register(userId: UUID) {
+    /** Returns the user entity's id as Spring stores it. */
+    fun register(userId: UUID): String {
         val entity =
             ImmutablePublicKeyCredentialUserEntity
                 .builder()
@@ -43,5 +44,6 @@ class TestPasskeys(
                 .label("test key")
                 .build(),
         )
+        return entity.id.toBase64UrlString()
     }
 }

@@ -1,7 +1,10 @@
 package io.ogwars.cloud.api.privacy
 
+import io.ogwars.cloud.api.auth.FirstPartyClients
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
+import io.ogwars.cloud.apitest.TEST_ISSUER
+import io.ogwars.cloud.apitest.TestPasskeys
 import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
@@ -19,15 +22,23 @@ import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.SessionStore
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.ApiPermission
+import io.ogwars.cloud.domain.user.Base32
 import io.ogwars.cloud.domain.user.BuiltInRole
+import io.ogwars.cloud.domain.user.Totp
 import io.ogwars.cloud.domain.user.WebUser
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
+import org.springframework.security.web.webauthn.management.UserCredentialRepository
+import org.springframework.session.FindByIndexNameSessionRepository
+import org.springframework.session.Session
 import java.time.Instant
 import java.util.UUID
 
@@ -44,9 +55,13 @@ class PrivacyTest(
     @Autowired private val jobs: JobStore,
     @Autowired private val pseudonymizer: Pseudonymizer,
     @Autowired private val jdbc: JdbcClient,
+    @Autowired private val loginSessions: FindByIndexNameSessionRepository<out Session>,
+    @Autowired entities: PublicKeyCredentialUserEntityRepository,
+    @Autowired credentials: UserCredentialRepository,
 ) {
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
+    private val passkeys = TestPasskeys(entities, credentials)
     private val owner = testUsers.token(testUsers.create(BuiltInRole.OWNER.id))
 
     @Test
@@ -93,17 +108,30 @@ class PrivacyTest(
         val actor = Actor(ActorType.USER, user.id.toString())
         audit.append(AuditEntry(UUID.randomUUID(), Instant.now(), actor, "POST /x", "x", "lobby"))
         jobs.create(job(actor))
+        val login = signIn(user)
+        enrollTotp(user)
+        val passkeyEntity = passkeys.register(user.id)
 
         val export = oauth.json(oauth.call("GET", "$USERS/${user.id}", owner))
         (export["user"] as Map<*, *>)["email"] shouldBe user.email
-        export["totpEnabled"] shouldBe false
-        export["passkeys"] shouldBe emptyList<Any>()
-        (export["auditEntries"] as List<*>).size shouldBe 1
+        export["totpEnabled"] shouldBe true
+        (export["passkeys"] as List<*>).size shouldBe 1
+        (export["logins"] as List<*>).map { (it as Map<*, *>)["clientId"] } shouldContain FirstPartyClients.WEB
+        (export["auditEntries"] as List<*>).map { (it as Map<*, *>)["action"] } shouldContainExactlyInAnyOrder
+            listOf("POST /x", "POST /api/v1/me/totp", "POST /api/v1/me/totp/confirm")
 
         oauth.call("POST", "$USERS/${user.id}/erasure", owner).statusCode() shouldBe NO_CONTENT
 
         users.find(user.id) shouldBe null
         traces(user.id) shouldBe 0
+        oauth.error(oauth.refresh(FirstPartyClients.WEB, login.refreshToken ?: error("no refresh token"))) shouldBe
+            "invalid_grant"
+        loginSessions.findByPrincipalName(user.id.toString()).keys.shouldBeEmpty()
+        jdbc
+            .sql("select count(*) from user_credentials where user_entity_user_id = :id")
+            .param("id", passkeyEntity)
+            .query(Long::class.java)
+            .single() shouldBe 0
     }
 
     @Test
@@ -118,6 +146,19 @@ class PrivacyTest(
         traces(first.id) shouldBe 0
         val pseudonym = pseudonymizer.pseudonym(first.id.toString())
         audit.about(pseudonym).single().actor shouldBe Actor(ActorType.USER, pseudonym)
+    }
+
+    private fun signIn(user: WebUser): OAuthHttp.Tokens {
+        val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
+        val callback = oauth.authorize(FirstPartyClients.WEB, WEB_REDIRECT, user.username, TestUsers.PASSWORD, verifier)
+        return oauth.exchange(FirstPartyClients.WEB, oauth.codeFrom(callback), WEB_REDIRECT, verifier)
+    }
+
+    private fun enrollTotp(user: WebUser) {
+        val token = testUsers.token(user)
+        val secret = Base32.decode(oauth.json(oauth.call("POST", "/api/v1/me/totp", token))["secret"] as String)
+        val code = Totp().let { it.code(secret, it.step(Instant.now())) }
+        oauth.call("POST", "/api/v1/me/totp/confirm", token, mapOf("code" to code)).statusCode() shouldBe NO_CONTENT
     }
 
     /** Rows anywhere a person's data could be that still contain [id]. */
@@ -147,6 +188,7 @@ class PrivacyTest(
 
     private companion object {
         const val PLAYERS = "/api/v1/privacy/players"
+        const val WEB_REDIRECT = "$TEST_ISSUER/auth/callback"
         const val USERS = "/api/v1/privacy/users"
         const val DEFAULT_GROUP = "default"
         const val SUFFIX = 8
@@ -161,6 +203,7 @@ class PrivacyTest(
                 "web_user_totp",
                 "user_entities",
                 "oauth2_authorization",
+                "oauth2_authorization_consent",
                 "audit_log",
                 "jobs",
                 "template_versions",

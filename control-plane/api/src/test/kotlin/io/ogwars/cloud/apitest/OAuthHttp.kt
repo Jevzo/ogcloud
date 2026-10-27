@@ -1,6 +1,7 @@
 package io.ogwars.cloud.apitest
 
 import tools.jackson.databind.json.JsonMapper
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -212,19 +213,28 @@ class OAuthHttp(
             HttpResponse.BodyHandlers.ofLines(),
         )
 
+    /** With [chunked], the body is streamed without a Content-Length, as a client that does not know it would. */
     fun upload(
         path: String,
         token: String,
         body: ByteArray,
         contentType: String,
-    ): HttpResponse<String> =
-        send(
+        chunked: Boolean = false,
+    ): HttpResponse<String> {
+        val publisher =
+            if (chunked) {
+                HttpRequest.BodyPublishers.ofInputStream { ByteArrayInputStream(body) }
+            } else {
+                HttpRequest.BodyPublishers.ofByteArray(body)
+            }
+        return send(
             HttpRequest
                 .newBuilder(uri(path))
                 .header("Authorization", "Bearer $token")
                 .header("Content-Type", contentType)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body)),
+                .POST(publisher),
         )
+    }
 
     fun download(
         path: String,

@@ -149,6 +149,33 @@ class WebUserStoreTest(
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `concurrent setups create one owner`() {
+        val first =
+            user.copy(
+                id = UUID(3, 1),
+                username = "setup-one",
+                email = "setup-one@example.com",
+                roleId = BuiltInRole.OWNER.id,
+            )
+        val second = first.copy(id = UUID(3, 2), username = "setup-two", email = "setup-two@example.com")
+        try {
+            var created = false
+            lateinit var other: CompletableFuture<Boolean>
+            transactions.executeWithoutResult {
+                created = users.createFirstOwner(first)
+                // Runs while this transaction holds the setup lock, so it waits for the commit below.
+                other = CompletableFuture.supplyAsync { users.createFirstOwner(second) }
+            }
+
+            created shouldBe true
+            other.get() shouldBe false
+        } finally {
+            jdbc.sql("delete from web_users where id in (:ids)").param("ids", listOf(first.id, second.id)).update()
+        }
+    }
+
+    @Test
     fun `only the first owner is created by setup`() {
         val owner = user.copy(roleId = BuiltInRole.OWNER.id)
 

@@ -11,6 +11,7 @@ import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.ApiPermission
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.ogwars.cloud.domain.user.WebUser
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -101,28 +102,53 @@ class UserAdministrationTest(
                 mapOf("password" to NEW_PASSWORD),
             ).statusCode() shouldBe
             FORBIDDEN
+        oauth.call("DELETE", "$USERS/${other.id}/logins", managerToken).statusCode() shouldBe FORBIDDEN
         oauth.call("DELETE", "$USERS/${other.id}", managerToken).statusCode() shouldBe FORBIDDEN
         oauth.call("DELETE", "$USERS/${other.id}", ownerToken).statusCode() shouldBe NO_CONTENT
     }
 
     @Test
-    fun `a role change ends the user's logins and login sessions`() {
-        val target = testUsers.create()
-        val tokens = signIn(target.username, PASSWORD)
-        sessions.findByPrincipalName(target.id.toString()).keys.shouldNotBeEmpty()
+    fun `every change that matters ends the user's logins and login sessions`() {
+        val actions: Map<String, (WebUser) -> Int> =
+            mapOf(
+                "role change" to
+                    {
+                        oauth
+                            .call(
+                                "PUT",
+                                "$USERS/${it.id}",
+                                ownerToken,
+                                update(it, roleId = BuiltInRole.MODERATOR.id),
+                            ).statusCode()
+                    },
+                "disable" to
+                    { oauth.call("PUT", "$USERS/${it.id}", ownerToken, update(it, enabled = false)).statusCode() },
+                "password reset" to {
+                    oauth
+                        .call(
+                            "PUT",
+                            "$USERS/${it.id}/password",
+                            managerToken,
+                            mapOf("password" to NEW_PASSWORD),
+                        ).statusCode()
+                },
+                "revocation" to { oauth.call("DELETE", "$USERS/${it.id}/logins", managerToken).statusCode() },
+                "deletion" to { oauth.call("DELETE", "$USERS/${it.id}", managerToken).statusCode() },
+            )
+        for ((change, action) in actions) {
+            val target = testUsers.create()
+            val tokens = signIn(target.username, PASSWORD)
+            sessions.findByPrincipalName(target.id.toString()).keys.shouldNotBeEmpty()
 
-        oauth
-            .call(
-                "PUT",
-                "$USERS/${target.id}",
-                ownerToken,
-                update(target, roleId = BuiltInRole.MODERATOR.id),
-            ).statusCode() shouldBe
-            OK
-
-        oauth.error(oauth.refresh(FirstPartyClients.WEB, tokens.refreshToken ?: error("no refresh token"))) shouldBe
-            "invalid_grant"
-        sessions.findByPrincipalName(target.id.toString()).keys.shouldBeEmpty()
+            withClue(change) {
+                action(target) / HTTP_CLASS shouldBe SUCCESS_CLASS
+                oauth.error(
+                    oauth.refresh(FirstPartyClients.WEB, tokens.refreshToken ?: error("no refresh token")),
+                ) shouldBe
+                    "invalid_grant"
+                sessions.findByPrincipalName(target.id.toString()).keys.shouldBeEmpty()
+            }
+        }
     }
 
     @Test
@@ -266,6 +292,16 @@ class UserAdministrationTest(
                 ),
             ).statusCode() shouldBe BAD_REQUEST
         oauth.jsonList(oauth.call("GET", "$ROLES/permissions", ownerToken)).size shouldBe ApiPermission.entries.size
+        val custom = "z-${suffix()}"
+        oauth.call(
+            "POST",
+            ROLES,
+            ownerToken,
+            mapOf("id" to custom, "name" to "Z", "permissions" to emptyList<String>()),
+        )
+        val change = mapOf("name" to "Z2", "permissions" to listOf("users:write"), "version" to 0)
+        oauth.call("PUT", "$ROLES/$custom", rolesManager, change).statusCode() shouldBe FORBIDDEN
+        oauth.call("DELETE", "$ROLES/$custom", rolesManager).statusCode() shouldBe FORBIDDEN
     }
 
     @Test
@@ -326,6 +362,8 @@ class UserAdministrationTest(
 
     private companion object {
         const val USERS = "/api/v1/users"
+        const val HTTP_CLASS = 100
+        const val SUCCESS_CLASS = 2
         const val ROLES = "/api/v1/roles"
         const val ME = "/api/v1/me"
         const val WEB_REDIRECT = "$TEST_ISSUER/auth/callback"

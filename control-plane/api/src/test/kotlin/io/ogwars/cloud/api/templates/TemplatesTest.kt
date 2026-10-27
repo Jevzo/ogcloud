@@ -7,7 +7,9 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.store.GroupStore
+import io.ogwars.cloud.domain.store.ObjectStore
 import io.ogwars.cloud.domain.store.WebUserStore
+import io.ogwars.cloud.domain.template.TemplateKeys
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -27,6 +29,7 @@ class TemplatesTest(
     @Autowired users: WebUserStore,
     @Autowired passwords: PasswordEncoder,
     @Autowired private val groups: GroupStore,
+    @Autowired private val objects: ObjectStore,
 ) {
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
@@ -70,7 +73,18 @@ class TemplatesTest(
         oauth.upload(templates(groupId), admin, ByteArray(0), GZIP).statusCode() shouldBe BAD_REQUEST
         oauth.upload(templates(groupId), admin, archive(Random(1).nextBytes(OVERSIZED)), GZIP).statusCode() shouldBe
             CONTENT_TOO_LARGE
+        // Without a Content-Length only the counting stream can tell, and the partial upload must not stay behind.
+        oauth
+            .upload(
+                templates(groupId),
+                admin,
+                archive(Random(2).nextBytes(OVERSIZED)),
+                GZIP,
+                chunked = true,
+            ).statusCode() shouldBe
+            CONTENT_TOO_LARGE
         oauth.jsonList(oauth.call("GET", templates(groupId), admin)) shouldBe emptyList<Any>()
+        objects.list("${TemplateKeys.PREFIX}$groupId/") shouldBe emptyList()
     }
 
     @Test

@@ -42,7 +42,12 @@ class ApiApplicationTest(
 
     @Test
     fun `domain failures become problem details`() {
-        listOf("missing" to NOT_FOUND, "invalid" to BAD_REQUEST, "stale" to CONFLICT).forEach { (probe, status) ->
+        listOf(
+            "missing" to NOT_FOUND,
+            "invalid" to BAD_REQUEST,
+            "stale" to CONFLICT,
+            "unpublished" to SERVICE_UNAVAILABLE,
+        ).forEach { (probe, status) ->
             val response = oauth.getWithToken("/api/v1/probes/$probe", token)
             response.statusCode() shouldBe status
             response.headers().firstValue("Content-Type").orElse("") shouldBe "application/problem+json"
@@ -92,6 +97,7 @@ class ApiApplicationTest(
     }
 
     private companion object {
+        const val SERVICE_UNAVAILABLE = 503
         const val OK = 200
         const val ACCEPTED = 202
         const val BAD_REQUEST = 400
