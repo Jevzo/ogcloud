@@ -18,6 +18,7 @@ import io.ogwars.cloud.domain.store.RetentionStore
 import io.ogwars.cloud.domain.store.RuntimeArtifactStore
 import io.ogwars.cloud.domain.store.ServerStateStore
 import io.ogwars.cloud.domain.store.TemplateVersionStore
+import io.ogwars.cloud.domain.template.TemplateKeys
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
@@ -143,7 +144,7 @@ class CleanupLoop(
     private fun templateObjects(now: Instant): Int {
         val referenced = knownGroups().flatMap(templates::findByGroup).map { it.objectKey }.toSet()
         val orphans =
-            objects.list(TEMPLATE_PREFIX).filter {
+            objects.list(TemplateKeys.PREFIX).filter {
                 it.key !in referenced &&
                     it.lastModified.isBefore(now.minus(properties.orphanGrace))
             }
@@ -202,7 +203,6 @@ class CleanupLoop(
 
     private companion object {
         const val RUNTIME_PREFIX = "runtime/"
-        const val TEMPLATE_PREFIX = "templates/"
         const val DELETED_METRIC = "ogcloud.controller.cleanup.deleted"
         const val FAILURES_METRIC = "ogcloud.controller.cleanup.failures"
     }

@@ -11,8 +11,9 @@ import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.ServerStateStore
-import io.ogwars.cloud.domain.store.StaleUpdateException
 import io.ogwars.cloud.domain.store.TemplateVersionStore
+import io.ogwars.cloud.domain.template.TemplateKeys
+import io.ogwars.cloud.domain.template.TemplatePromotion
 import io.ogwars.cloud.domain.template.TemplateSource
 import io.ogwars.cloud.domain.template.TemplateVersion
 import org.springframework.stereotype.Component
@@ -38,6 +39,8 @@ class TemplateVersions(
     private val ids: IdGenerator,
     private val clock: Clock,
 ) {
+    private val promotion = TemplatePromotion(groups)
+
     /**
      * A template agent's finished upload; [serverId] comes from its authenticated session. A STATIC server pushes
      * after its server container stopped, when its live record may be gone, so its pod's labels name the group.
@@ -52,8 +55,8 @@ class TemplateVersions(
         val groupId =
             servers.get(serverId)?.value?.groupId ?: pods.groupOfServerPod(serverId)
                 ?: throw NoSuchElementException("Server $serverId has neither a record nor a pod")
-        require(objectKeyPattern(groupId).matches(objectKey)) {
-            "Uploads of $groupId must be named $PREFIX/$groupId/<uuid>$ARCHIVE"
+        require(TemplateKeys.belongsTo(groupId, objectKey)) {
+            "Uploads of $groupId must be named ${TemplateKeys.describe(groupId)}"
         }
         require(sizeBytes > 0) { "An upload must not be empty" }
         val group = groups.find(groupId)?.value ?: throw NoSuchElementException("Group $groupId no longer exists")
@@ -84,20 +87,7 @@ class TemplateVersions(
     fun promote(
         groupId: GroupId,
         versionId: UUID,
-    ) {
-        repeat(MAX_ATTEMPTS) {
-            val current = groups.find(groupId) ?: throw NoSuchElementException("Group $groupId no longer exists")
-            val updated = current.value.copy(activeTemplateVersionId = versionId)
-            try {
-                groups.update(current.revision, updated)
-                publishActive(updated)
-                return
-            } catch (e: StaleUpdateException) {
-                // An admin changed the group meanwhile; reread and apply the promotion on top.
-            }
-        }
-        throw IllegalStateException("Group $groupId kept changing; promotion of $versionId gave up")
-    }
+    ) = publishActive(promotion.promote(groupId, versionId))
 
     /** Writes the read model the gateway serves pods from; groups without a template have none. */
     fun publishActive(group: Group) {
@@ -119,18 +109,6 @@ class TemplateVersions(
     }
 
     private companion object {
-        const val PREFIX = "templates"
-        const val ARCHIVE = ".tar.gz"
-
-        /** No dot segments or extra slashes, so a version can never point into another group's prefix. */
-        fun objectKeyPattern(groupId: GroupId) =
-            Regex(
-                "^$PREFIX/${Regex.escape(
-                    groupId.value,
-                )}/[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}${Regex.escape(ARCHIVE)}$",
-            )
-
-        const val MAX_ATTEMPTS = 5
         val AGENT = Actor.system("template-agent")
     }
 }
