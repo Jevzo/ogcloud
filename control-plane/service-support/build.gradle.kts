@@ -8,6 +8,7 @@ plugins {
 dependencies {
     api(project(":control-plane:domain"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
+    implementation("org.yaml:snakeyaml")
 
     testImplementation("org.springframework.boot:spring-boot-test")
 

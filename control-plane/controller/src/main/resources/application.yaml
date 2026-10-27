@@ -1,9 +1,7 @@
+# Shared defaults (virtual threads, actuator, logs, tracing) come from service-support (D-0088).
 spring:
   application:
     name: ogcloud-controller
-  threads:
-    virtual:
-      enabled: true
   # The API owns and migrates the schema (D-0009); the controller only waits for it.
   flyway:
     enabled: false
@@ -24,30 +22,11 @@ server:
   port: 8080
 
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health, prometheus
   endpoint:
     health:
-      probes:
-        enabled: true
       group:
         readiness:
           include: readinessState, schema
-  otlp:
-    metrics:
-      export:
-        enabled: false
-  tracing:
-    # The chart enables export and sets the OTLP endpoint (D-0072).
-    export:
-      enabled: false
-
-logging:
-  structured:
-    format:
-      console: ecs
 
 ogcloud:
   kafka:
