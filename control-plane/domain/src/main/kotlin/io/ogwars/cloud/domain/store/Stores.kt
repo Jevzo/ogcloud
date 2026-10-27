@@ -83,9 +83,23 @@ interface PermissionGroupStore {
 
     fun findDefault(): Revisioned<PermissionGroup>
 
-    fun save(group: PermissionGroup)
+    /** A new default group takes the flag from the old one. Throws [ConflictException] if the id is taken. */
+    fun create(group: PermissionGroup)
 
-    fun delete(id: String)
+    /**
+     * As [GroupStore.update]. A group becomes the default by setting [PermissionGroup.isDefault]; the default
+     * cannot drop the flag itself ([ConflictException]), another group takes it over.
+     */
+    fun update(
+        expectedVersion: Long,
+        group: PermissionGroup,
+    )
+
+    /**
+     * Moves the group's holders to the default group, permanently, and deletes the group in one transaction
+     * (D-0102). Returns the moved players; throws [ConflictException] for the default group.
+     */
+    fun delete(id: String): List<UUID>
 }
 
 interface PlayerStore {

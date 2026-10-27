@@ -47,12 +47,20 @@ class InMemoryPermissionGroupStore(
 
     override fun findDefault() = groups.values.single { it.value.isDefault }
 
-    override fun save(group: PermissionGroup) {
-        groups[group.id] = Revisioned(group, (groups[group.id]?.revision ?: 0) + 1)
+    override fun create(group: PermissionGroup) {
+        groups[group.id] = Revisioned(group, 1L)
     }
 
-    override fun delete(id: String) {
+    override fun update(
+        expectedVersion: Long,
+        group: PermissionGroup,
+    ) {
+        groups[group.id] = Revisioned(group, expectedVersion + 1)
+    }
+
+    override fun delete(id: String): List<UUID> {
         groups.remove(id)
+        return emptyList()
     }
 }
 

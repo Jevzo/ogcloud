@@ -21,11 +21,20 @@ data class PermissionGroup(
     val display: RankDisplay,
     val isDefault: Boolean,
 ) {
+    init {
+        require(
+            ID.matches(id),
+        ) { "Permission group id must be lowercase letters, digits, '_' or '-', starting with a letter" }
+        require(name.isNotBlank()) { "Permission group name must not be blank" }
+        require(permissions.keys.none(String::isBlank)) { "Permission nodes must not be blank" }
+    }
+
     /** Exact permission nodes, or everything for `*` (v1 semantics). */
     fun grants(permission: String): Boolean = WILDCARD in permissions || permission in permissions
 
     private companion object {
         const val WILDCARD = "*"
+        val ID = Regex("^[a-z][a-z0-9_-]{0,31}$")
     }
 }
 
