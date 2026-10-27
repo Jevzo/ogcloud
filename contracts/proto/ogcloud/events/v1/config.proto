@@ -8,7 +8,8 @@ option java_multiple_files = true;
 option java_package = "io.ogwars.cloud.contracts.events.v1";
 
 // Topic ogcloud.config.changed, key subject_id. The API announces committed changes;
-// the controller refreshes read models and publishes NodeBroadcast.
+// the controller refreshes read models and publishes NodeBroadcast. subject_id is the
+// entity id, "network" for network settings, and the NPC's group id for NPC changes.
 message ConfigChanged {
   EventMetadata metadata = 1;
   string subject_id = 2;

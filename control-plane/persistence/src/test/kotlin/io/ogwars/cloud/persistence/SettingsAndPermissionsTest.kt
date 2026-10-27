@@ -41,25 +41,25 @@ class SettingsAndPermissionsTest(
         val vip = rank("vip", weight = 200, permissions = mapOf("ogcloud.fly" to "Fly in lobbies"))
         permissionGroups.save(vip)
 
-        permissionGroups.find("vip") shouldBe vip
-        permissionGroups.findAll().map(PermissionGroup::id) shouldContainExactly listOf("vip", "default")
+        permissionGroups.find("vip")?.value shouldBe vip
+        permissionGroups.findAll().map { it.value.id } shouldContainExactly listOf("vip", "default")
     }
 
     @Test
     fun `the seeded default group can be updated`() {
-        val renamed = permissionGroups.findDefault().copy(name = "Member")
+        val renamed = permissionGroups.findDefault().value.copy(name = "Member")
 
         permissionGroups.save(renamed)
 
-        permissionGroups.findDefault() shouldBe renamed
+        permissionGroups.findDefault().value shouldBe renamed
     }
 
     @Test
     fun `making a group the default demotes the previous default`() {
         permissionGroups.save(rank("member", weight = 50, isDefault = true))
 
-        permissionGroups.findDefault().id shouldBe "member"
-        permissionGroups.find("default")?.isDefault shouldBe false
+        permissionGroups.findDefault().value.id shouldBe "member"
+        permissionGroups.find("default")?.value?.isDefault shouldBe false
     }
 
     private fun rank(

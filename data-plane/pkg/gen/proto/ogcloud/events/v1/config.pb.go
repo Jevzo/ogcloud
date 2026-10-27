@@ -22,7 +22,8 @@ const (
 )
 
 // Topic ogcloud.config.changed, key subject_id. The API announces committed changes;
-// the controller refreshes read models and publishes NodeBroadcast.
+// the controller refreshes read models and publishes NodeBroadcast. subject_id is the
+// entity id, "network" for network settings, and the NPC's group id for NPC changes.
 type ConfigChanged struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Metadata  *EventMetadata         `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`

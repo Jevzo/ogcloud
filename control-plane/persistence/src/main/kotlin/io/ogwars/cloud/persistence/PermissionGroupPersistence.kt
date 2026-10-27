@@ -3,6 +3,7 @@ package io.ogwars.cloud.persistence
 import io.ogwars.cloud.domain.permission.PermissionGroup
 import io.ogwars.cloud.domain.permission.RankDisplay
 import io.ogwars.cloud.domain.store.PermissionGroupStore
+import io.ogwars.cloud.domain.store.Revisioned
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.Version
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate
@@ -51,14 +52,16 @@ class JdbcPermissionGroupStore(
     private val aggregates: JdbcAggregateTemplate,
     private val clock: Clock,
 ) : PermissionGroupStore {
-    override fun findAll(): List<PermissionGroup> =
-        records.findAll().map(::toDomain).sortedByDescending(PermissionGroup::weight)
+    override fun findAll(): List<Revisioned<PermissionGroup>> =
+        records.findAll().map(::revisioned).sortedByDescending { it.value.weight }
 
-    override fun find(id: String): PermissionGroup? = records.findById(id).map(::toDomain).orElse(null)
+    override fun find(id: String): Revisioned<PermissionGroup>? = records.findById(id).map(::revisioned).orElse(null)
 
     // The partial unique index guarantees one row; the migration seeds it.
-    override fun findDefault(): PermissionGroup =
-        findAll().singleOrNull(PermissionGroup::isDefault) ?: throw IllegalStateException("No default permission group")
+    override fun findDefault(): Revisioned<PermissionGroup> =
+        findAll().singleOrNull { it.value.isDefault } ?: throw IllegalStateException("No default permission group")
+
+    private fun revisioned(record: PermissionGroupRecord) = Revisioned(toDomain(record), record.version)
 
     @Transactional
     override fun save(group: PermissionGroup) {

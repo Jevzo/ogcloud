@@ -61,12 +61,13 @@ interface NetworkSettingsStore {
     )
 }
 
+/** Reads carry the row version, which read models and broadcasts use so nodes can drop stale updates. */
 interface PermissionGroupStore {
-    fun findAll(): List<PermissionGroup>
+    fun findAll(): List<Revisioned<PermissionGroup>>
 
-    fun find(id: String): PermissionGroup?
+    fun find(id: String): Revisioned<PermissionGroup>?
 
-    fun findDefault(): PermissionGroup
+    fun findDefault(): Revisioned<PermissionGroup>
 
     fun save(group: PermissionGroup)
 
