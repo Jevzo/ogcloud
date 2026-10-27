@@ -16,7 +16,7 @@ class OpenApiConfiguration {
     fun openApi(): OpenAPI =
         OpenAPI()
             .info(Info().title("OgCloud API").version(API_VERSION))
-            // Relative: the API is always served from the dashboard's own origin (D-0051).
+            // Relative: the API is always served from the dashboard's own origin (D-0098).
             .servers(listOf(Server().url("/")))
 
     /** `<resource><Action>` ids such as `userList`, so the generated client gets unique, stable names (D-0096). */

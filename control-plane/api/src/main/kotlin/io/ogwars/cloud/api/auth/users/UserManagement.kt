@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.auth.users
 import io.ogwars.cloud.api.auth.LoginRevocation
 import io.ogwars.cloud.api.auth.Owners
 import io.ogwars.cloud.api.auth.hash
+import io.ogwars.cloud.api.auth.mfa.Passkeys
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.common.IdGenerator
@@ -25,6 +26,7 @@ class UserManagement(
     private val owners: Owners,
     private val passwords: PasswordEncoder,
     private val logins: LoginRevocation,
+    private val passkeys: Passkeys,
     private val ids: IdGenerator,
     private val clock: Clock,
 ) {
@@ -107,6 +109,7 @@ class UserManagement(
     ) {
         owners.requireMayManage(actor, get(id).value)
         users.delete(id)
+        passkeys.deleteAll(id)
         logins.revokeUser(id)
     }
 

@@ -61,6 +61,11 @@ data class MeView(
     /** What the user may do now; empty while a required Minecraft link is missing (D-0094). */
     val permissions: List<String>,
     val linkedPlayerUuid: UUID?,
+    val totpEnabled: Boolean,
+)
+
+data class TotpCodeRequest(
+    val code: String,
 )
 
 data class SetupStatus(

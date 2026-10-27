@@ -23,35 +23,56 @@ class OAuthHttp(
         val idToken: String?,
     )
 
-    /** Signs in through the login form and returns where the server sent the browser with the code. */
+    /**
+     * Signs in through the login form and returns where the server sent the browser: the app's redirect with a
+     * code, or the MFA page. With [totpCode], a requested code is entered on the way.
+     */
     fun authorize(
         clientId: String,
         redirectUri: String,
         login: String,
         password: String,
         verifier: String?,
+        totpCode: (() -> String)? = null,
     ): URI {
         val browser = Browser()
-        val parameters =
-            listOfNotNull(
-                "response_type" to "code",
-                "client_id" to clientId,
-                "redirect_uri" to redirectUri,
-                "scope" to "openid",
-                "state" to STATE,
-                verifier?.let { "code_challenge" to challenge(it) },
-                verifier?.let { "code_challenge_method" to "S256" },
-            )
-        val toLogin = browser.get("/oauth2/authorize?${form(parameters)}")
-        if (toLogin.statusCode() != FOUND || !toLogin.location().path.endsWith("/login")) return toLogin.location()
+        val next = browser.signIn(clientId, redirectUri, login, password, verifier)
+        if (totpCode == null || next.path != MFA_PAGE) return next
+        val afterCode = browser.secondFactor(totpCode()).location()
+        return if (afterCode.path == MFA_PAGE) afterCode else browser.get(afterCode.toString()).location()
+    }
+
+    /** As [authorize] for an owner without a second factor: enrolls an authenticator on the way; [codeFor] gets its secret. */
+    fun enrollDuringLogin(
+        clientId: String,
+        redirectUri: String,
+        login: String,
+        password: String,
+        verifier: String,
+        codeFor: (String) -> String,
+    ): URI {
+        val browser = Browser()
+        check(browser.signIn(clientId, redirectUri, login, password, verifier).path == MFA_PAGE) {
+            "No second factor was asked for"
+        }
+        val page = browser.get("$MFA_PAGE/totp-setup").body()
+        val secret = SECRET.find(page)?.groupValues?.get(1) ?: error("The setup page shows no secret")
+        val csrf = CSRF.find(page)?.groupValues?.get(1) ?: error("The setup page has no CSRF token")
+        val afterCode =
+            browser
+                .post(
+                    "$MFA_PAGE/totp-setup",
+                    form(listOf("code" to codeFor(secret), "_csrf" to csrf)),
+                ).location()
+        return browser.get(afterCode.toString()).location()
+    }
+
+    /** The passkey sign-in options the login page's script requests. */
+    fun passkeyOptions(): HttpResponse<String> {
+        val browser = Browser()
         val csrf =
             CSRF.find(browser.get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
-        val afterLogin =
-            browser.post(
-                "/login",
-                form(listOf("username" to login, "password" to password, "_csrf" to csrf)),
-            )
-        return browser.get(afterLogin.location().toString()).location()
+        return browser.postJson("/webauthn/authenticate/options", csrf)
     }
 
     fun codeFrom(callback: URI): String = query(callback)["code"] ?: error("No code in $callback")
@@ -177,6 +198,30 @@ class OAuthHttp(
     private inner class Browser {
         private val cookies = mutableMapOf<String, String>()
 
+        fun signIn(
+            clientId: String,
+            redirectUri: String,
+            login: String,
+            password: String,
+            verifier: String?,
+        ): URI {
+            val parameters =
+                listOfNotNull(
+                    "response_type" to "code",
+                    "client_id" to clientId,
+                    "redirect_uri" to redirectUri,
+                    "scope" to "openid",
+                    "state" to STATE,
+                    verifier?.let { "code_challenge" to challenge(it) },
+                    verifier?.let { "code_challenge_method" to "S256" },
+                )
+            val toLogin = get("/oauth2/authorize?${form(parameters)}")
+            if (toLogin.statusCode() != FOUND || !toLogin.location().path.endsWith("/login")) return toLogin.location()
+            val csrf = CSRF.find(get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
+            val afterLogin = post("/login", form(listOf("username" to login, "password" to password, "_csrf" to csrf)))
+            return get(afterLogin.location().toString()).location()
+        }
+
         fun get(path: String) = exchange(HttpRequest.newBuilder(uri(path)).header("Accept", "text/html").GET())
 
         fun post(
@@ -188,6 +233,22 @@ class OAuthHttp(
                 .header("Accept", "text/html")
                 .header("Content-Type", FORM)
                 .POST(HttpRequest.BodyPublishers.ofString(body)),
+        )
+
+        fun secondFactor(code: String): HttpResponse<String> {
+            val csrf = CSRF.find(get(MFA_PAGE).body())?.groupValues?.get(1) ?: error("The MFA page has no CSRF token")
+            return post("$MFA_PAGE/totp", form(listOf("code" to code, "_csrf" to csrf)))
+        }
+
+        fun postJson(
+            path: String,
+            csrf: String,
+        ) = exchange(
+            HttpRequest
+                .newBuilder(uri(path))
+                .header("Content-Type", "application/json")
+                .header("X-CSRF-TOKEN", csrf)
+                .POST(HttpRequest.BodyPublishers.noBody()),
         )
 
         private fun exchange(request: HttpRequest.Builder): HttpResponse<String> {
@@ -208,10 +269,12 @@ class OAuthHttp(
 
     companion object {
         const val STATE = "test-state"
+        const val MFA_PAGE = "/login/mfa"
         private const val OK = 200
         private const val FOUND = 302
         private const val FORM = "application/x-www-form-urlencoded"
         private val CSRF = Regex("""name="_csrf"[^>]*value="([^"]+)"""")
+        private val SECRET = Regex("""<code>([A-Z2-7]+)</code>""")
 
         fun challenge(verifier: String): String =
             Base64.getUrlEncoder().withoutPadding().encodeToString(

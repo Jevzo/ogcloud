@@ -321,6 +321,69 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthClientCredentials"
+  /api/v1/me/totp:
+    post:
+      tags:
+      - me-controller
+      operationId: meStartTotp
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TotpEnrollment"
+    delete:
+      tags:
+      - me-controller
+      operationId: meRemoveTotp
+      responses:
+        "204":
+          description: No Content
+  /api/v1/me/totp/confirm:
+    post:
+      tags:
+      - me-controller
+      operationId: meConfirmTotp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TotpCodeRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+  /login/mfa:
+    get:
+      tags:
+      - mfa-page
+      operationId: mfaShow
+      parameters:
+      - name: error
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+  /login/mfa/totp-setup:
+    get:
+      tags:
+      - mfa-page
+      operationId: mfaSetup
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
   /api/v1/roles/permissions:
     get:
       tags:
@@ -571,6 +634,23 @@ components:
       - clientSecret
       - name
       - scopes
+    TotpEnrollment:
+      type: object
+      properties:
+        secret:
+          type: string
+        uri:
+          type: string
+      required:
+      - secret
+      - uri
+    TotpCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+      - code
     PageUserView:
       type: object
       properties:
@@ -612,9 +692,12 @@ components:
           - string
           - "null"
           format: uuid
+        totpEnabled:
+          type: boolean
       required:
       - email
       - id
       - permissions
       - roleId
+      - totpEnabled
       - username

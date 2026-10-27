@@ -20,11 +20,11 @@ spring:
 
 server:
   port: 8080
-  # Behind the Gateway (D-0051): X-Forwarded-* is honoured only from trusted proxies (Tomcat's internal-proxies,
+  # Behind the Gateway (D-0098): X-Forwarded-* is honoured only from trusted proxies (Tomcat's internal-proxies,
   # private ranges by default), so client IPs for rate limits and audit cannot be spoofed from outside.
   forward-headers-strategy: native
 
-# Same origin (D-0051): everything the API serves sits under /api, /oauth2, /.well-known and /login.
+# Same origin (D-0098): everything the API serves sits under /api, /oauth2, /.well-known, /login and /webauthn.
 springdoc:
   api-docs:
     path: /api/openapi
@@ -32,7 +32,7 @@ springdoc:
 
 ogcloud:
   auth:
-    # The public origin, also the OIDC issuer (D-0051); the chart sets it.
+    # The public origin, also the OIDC issuer (D-0098); the chart sets it.
     issuer: ${OGCLOUD_PUBLIC_ORIGIN}
     signing:
       # `<kid>.pem` files synced from Infisical (D-0044, D-0090); active-key-id arrives through the config tree.

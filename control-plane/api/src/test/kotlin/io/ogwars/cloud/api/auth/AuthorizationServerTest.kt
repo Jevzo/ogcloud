@@ -179,7 +179,7 @@ class AuthorizationServerTest(
 
     @Test
     fun `an ID token is no access token`() {
-        val tokens = login(user(BuiltInRole.OWNER))
+        val tokens = login(user(BuiltInRole.ADMIN))
 
         oauth.getWithToken(PROBE, tokens.idToken ?: error("no ID token")).statusCode() shouldBe UNAUTHORIZED
         oauth.getWithToken(PROBE, tokens.accessToken).statusCode() shouldBe OK
@@ -209,7 +209,7 @@ class AuthorizationServerTest(
         return RegisteredClient
             .withId(id)
             .clientId(id)
-            .clientSecret("{noop}$SECRET")
+            .clientSecret(passwords.hash(SECRET))
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .scopes { it.addAll(scopes) }

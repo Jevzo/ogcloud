@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.scheduling.annotation.EnableScheduling
-import org.springframework.security.crypto.factory.PasswordEncoderFactories
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.core.OAuth2Token
 import org.springframework.security.oauth2.jwt.JwtDecoder
@@ -29,6 +28,11 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator
+import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository
+import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
+import org.springframework.security.web.webauthn.management.UserCredentialRepository
+import java.security.SecureRandom
 import java.time.Clock
 
 /** The OIDC provider's parts (D-0012): JDBC storage from V2, keys from Infisical, tokens per D-0090. */
@@ -59,7 +63,7 @@ class AuthorizationServerConfiguration {
             )
         }
 
-    // Every endpoint sits under the paths the Gateway routes to the API (D-0051).
+    // Every endpoint sits under the paths the Gateway routes to the API (D-0098).
     @Bean
     fun authorizationServerSettings(properties: AuthProperties): AuthorizationServerSettings =
         AuthorizationServerSettings
@@ -111,5 +115,18 @@ class AuthorizationServerConfiguration {
         )
 
     @Bean
-    fun passwordEncoder(): PasswordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder()
+    fun passwordEncoder(): PasswordEncoder = Passwords.encoder()
+
+    @Bean
+    fun secretCipher(
+        properties: AuthProperties,
+        random: SecureRandom,
+    ): SecretCipher = SecretCipher.of(properties.totp, random)
+
+    @Bean
+    fun passkeyUsers(jdbc: JdbcOperations): PublicKeyCredentialUserEntityRepository =
+        JdbcPublicKeyCredentialUserEntityRepository(jdbc)
+
+    @Bean
+    fun passkeyCredentials(jdbc: JdbcOperations): UserCredentialRepository = JdbcUserCredentialRepository(jdbc)
 }

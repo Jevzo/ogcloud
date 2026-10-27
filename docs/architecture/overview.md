@@ -19,7 +19,7 @@ target design of the v2 rebuild; each section notes what is already built.
 | `control-plane/messaging` | Kafka publisher (idempotent, observed results), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
 | `control-plane/storage` | S3 object store: multipart streaming uploads, presigned URLs, stale-upload cleanup |
 | `control-plane/service-support` | Shared service plumbing (D-0088): Clock, UUIDv7 ids, secrets, default service configuration; golden-file test fixtures |
-| `control-plane/api` | Owns Flyway, ProblemDetail errors, cursor pagination, audit interceptor (actor from the access token), trusted proxies, OpenAPI contract (`contracts/openapi/openapi.yaml`, drift-tested). OIDC provider (Spring Authorization Server, JDBC storage): PKCE apps `ogcloud-web`, `ogcloud-desktop` (any loopback port), `ogcloud-mobile`; client credentials for machines; 5-minute `at+jwt` access tokens carrying `actor` and `permissions`; rotating refresh tokens for every app with reuse detection in Valkey; RS256 keys from mounted PEM files (one active kid, all published); login sessions in Valkey (Spring Session, indexed by user); cleanup of expired authorizations every 15 minutes. Users, custom roles and machine clients under `/api/v1/users`, `/roles`, `/oauth-clients`, `/me`; first owner via `/api/v1/setup` with a setup token from Infisical; permissions are owner-only; every handler declares its permission (fail closed) |
+| `control-plane/api` | Owns Flyway, ProblemDetail errors, cursor pagination, audit interceptor (actor from the access token), trusted proxies, OpenAPI contract (`contracts/openapi/openapi.yaml`, drift-tested). OIDC provider (Spring Authorization Server, JDBC storage): PKCE apps `ogcloud-web`, `ogcloud-desktop` (any loopback port), `ogcloud-mobile`; client credentials for machines; 5-minute `at+jwt` access tokens carrying `actor` and `permissions`; rotating refresh tokens for every app with reuse detection in Valkey; RS256 keys from mounted PEM files (one active kid, all published); login sessions in Valkey (Spring Session, indexed by user); cleanup of expired authorizations every 15 minutes. Users, custom roles and machine clients under `/api/v1/users`, `/roles`, `/oauth-clients`, `/me`; first owner via `/api/v1/setup` with a setup token from Infisical; permissions are owner-only; every handler declares its permission (fail closed). MFA: owners need TOTP or a passkey, passkeys sign in alone, TOTP secrets AES-256-GCM sealed; per-IP token buckets in Valkey (strict for sign-in endpoints) |
 
 Each adapter ships a Spring Boot auto-configuration (`ogcloud.valkey.*`, `ogcloud.kafka.*`, `ogcloud.s3.*`, the DataSource), so a service gets its ports by adding the dependency (D-0074).
 
@@ -94,6 +94,8 @@ backups, orphaned objects).
 - People and machines use the API's built-in OIDC provider. Access tokens are short-lived JWTs
   whose permissions come from one role per user (or a machine client's scopes); refresh tokens
   rotate, and reusing an old one revokes the whole login.
+- Owners must use a second factor (TOTP or passkey); sign-in endpoints are rate-limited per client
+  address.
 - Admin surfaces (Kubernetes API, Infisical, Grafana) are reachable only over an optional WireGuard
   VPN, or by port-forward behind an IP allowlist.
 

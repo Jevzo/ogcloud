@@ -8,9 +8,10 @@ import java.time.Duration
 /** `ogcloud.auth.*`: the built-in OIDC provider (D-0012, D-0090). */
 @ConfigurationProperties("ogcloud.auth")
 data class AuthProperties(
-    /** The public origin, e.g. `https://cloud.example.com`; it is also the OIDC issuer (D-0051). */
+    /** The public origin, e.g. `https://cloud.example.com`; it is also the OIDC issuer (D-0098). */
     val issuer: URI,
     val signing: Signing,
+    val totp: Totp,
     val tokens: Tokens = Tokens(),
     val clients: Clients = Clients(),
     /** Creates the first owner; bootstrap puts it into Infisical and it is useless once an owner exists (D-0094). */
@@ -25,6 +26,12 @@ data class AuthProperties(
     data class Signing(
         /** Holds `<kid>.pem` RSA private keys (PKCS#8), synced from Infisical (D-0044). */
         val keysDir: Path,
+        val activeKeyId: String,
+    )
+
+    data class Totp(
+        /** Base64 AES-256 keys by id, synced from Infisical through the config tree (D-0097). */
+        val keys: Map<String, String>,
         val activeKeyId: String,
     )
 

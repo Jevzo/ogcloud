@@ -9,6 +9,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     // Login sessions shared by all replicas (D-0091).
     implementation("org.springframework.boot:spring-boot-starter-session-data-redis")
+    // Passkeys (D-0085); webauthn4j is pinned above the version spring-security-webauthn brings.
+    implementation("org.springframework.security:spring-security-webauthn")
+    implementation(libs.webauthn4j.core)
     implementation(libs.springdoc.webmvc.api)
     // springdoc reads Kotlin nullability through it to mark required fields (D-0096).
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")

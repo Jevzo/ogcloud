@@ -2,6 +2,8 @@ package io.ogwars.cloud.api.auth.users
 
 import io.ogwars.cloud.api.audit.CurrentActor
 import io.ogwars.cloud.api.auth.UserPermissions
+import io.ogwars.cloud.api.auth.mfa.TotpEnrollment
+import io.ogwars.cloud.api.auth.mfa.TotpService
 import io.ogwars.cloud.api.web.Anonymous
 import io.ogwars.cloud.api.web.AnyCaller
 import io.ogwars.cloud.api.web.Cursors
@@ -97,6 +99,7 @@ class UserController(
 class MeController(
     private val users: UserManagement,
     private val permissions: UserPermissions,
+    private val totp: TotpService,
     private val actors: CurrentActor,
 ) {
     @AnyCaller
@@ -110,8 +113,26 @@ class MeController(
             user.roleId,
             permissions.of(user).map { it.scope }.sorted(),
             user.linkedPlayerUuid,
+            totp.isEnrolled(user.id),
         )
     }
+
+    /** Starts adding an authenticator app; confirm it with a first code (D-0097). */
+    @AnyCaller
+    @PostMapping("/totp")
+    fun startTotp(): TotpEnrollment = totp.startEnrollment(users.self(actors.current()))
+
+    @AnyCaller
+    @PostMapping("/totp/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun confirmTotp(
+        @RequestBody request: TotpCodeRequest,
+    ) = totp.confirm(users.self(actors.current()).id, request.code)
+
+    @AnyCaller
+    @DeleteMapping("/totp")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun removeTotp() = totp.remove(users.self(actors.current()).id)
 
     @AnyCaller
     @PutMapping("/password")
