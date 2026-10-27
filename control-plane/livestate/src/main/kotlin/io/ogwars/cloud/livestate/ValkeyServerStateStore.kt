@@ -12,23 +12,22 @@ class ValkeyServerStateStore(
 ) : ServerStateStore {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun create(server: Server): Boolean =
+    override fun create(server: Server): Boolean = create(server, alone = false)
+
+    override fun createAlone(server: Server): Boolean = create(server, alone = true)
+
+    private fun create(
+        server: Server,
+        alone: Boolean,
+    ): Boolean =
         valkey.evalLong(
             LuaScripts.CREATE,
             listOf(ValkeyKeys.server(server.id), ValkeyKeys.SERVERS, ValkeyKeys.serversOfGroup(server.groupId)),
             RecordCodec.encode(server),
             ValkeyKeys.SERVER_TTL.millisArg(),
             server.id.toString().utf8(),
-        ) == 1L
-
-    override fun createAlone(server: Server): Boolean =
-        valkey.evalLong(
-            LuaScripts.CREATE_ALONE,
-            listOf(ValkeyKeys.server(server.id), ValkeyKeys.SERVERS, ValkeyKeys.serversOfGroup(server.groupId)),
-            RecordCodec.encode(server),
-            ValkeyKeys.SERVER_TTL.millisArg(),
-            server.id.toString().utf8(),
             ValkeyKeys.SERVER_PREFIX.utf8(),
+            (if (alone) "1" else "0").utf8(),
         ) == 1L
 
     override fun get(id: UUID): Revisioned<Server>? =

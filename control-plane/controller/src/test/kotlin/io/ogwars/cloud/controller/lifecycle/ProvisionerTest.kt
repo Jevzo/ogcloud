@@ -1,9 +1,12 @@
 package io.ogwars.cloud.controller.lifecycle
 
 import io.ogwars.cloud.controller.config.LifecycleProperties
+import io.ogwars.cloud.controller.kube.PodGateway
+import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.server.ServerState
+import io.fabric8.kubernetes.api.model.Pod
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -87,6 +90,34 @@ class ProvisionerTest {
 
         f.state(orphan) shouldBe ServerState.STOPPING
         f.state(unknownProfile) shouldBe ServerState.STOPPING
+    }
+
+    @Test
+    fun `a stop that lands while the pod is created removes the pod again`() {
+        val f = fixture()
+        val id = f.request(lobby)
+        val stopMidway =
+            object : PodGateway by f.pods {
+                override fun create(pod: Pod) {
+                    f.pods.create(pod)
+                    f.lifecycle.stopNow(id, Actor.system("test"), "admin")
+                }
+            }
+
+        Provisioner(
+            f.servers,
+            f.groupStore,
+            f.network,
+            f.breaker,
+            f.builder,
+            stopMidway,
+            f.lifecycle,
+            f.properties,
+        ).runOnce()
+
+        f.pods.deleted
+            .last()
+            .second shouldBe Duration.ZERO
     }
 
     private fun fixture(properties: LifecycleProperties = LifecycleProperties()) =

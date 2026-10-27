@@ -13,9 +13,13 @@ import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.ServerStateStore
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -31,7 +35,10 @@ class DeadlineSweeper(
     private val events: ServerEvents,
     private val properties: LifecycleProperties,
     private val clock: Clock,
+    private val meters: MeterRegistry,
 ) : LeaderLoop {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     /** Servers whose players were already sent away, so the transfer is requested once per drain. */
     private val transferred: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
 
@@ -43,15 +50,12 @@ class DeadlineSweeper(
         val now = clock.instant()
         val current = servers.listAll().map { it.value }
         transferred.retainAll(current.mapTo(HashSet()) { it.id })
+        val heartbeatsFlowing = heartbeatsFlowing(current, now)
         val groupCache = mutableMapOf<GroupId, Group?>()
         current.forEach { server ->
             val group = groupCache.getOrPut(server.groupId) { groups.find(server.groupId)?.value }
             if (group == null) {
-                if (server.state !=
-                    ServerState.STOPPING
-                ) {
-                    lifecycle.stopNow(server.id, SYSTEM, "group ${server.groupId} no longer exists")
-                }
+                withoutGroup(server, now)
                 return@forEach
             }
             when (val action = policy.overdueAction(server, group, defaultGroupId, now)) {
@@ -60,7 +64,11 @@ class DeadlineSweeper(
                 }
 
                 is OverdueAction.Stop -> {
-                    lifecycle.stopNow(server.id, SYSTEM, action.reason)
+                    if (heartbeatsFlowing ||
+                        !action.missedHeartbeats
+                    ) {
+                        lifecycle.stopNow(server.id, SYSTEM, action.reason)
+                    }
                 }
 
                 is OverdueAction.TransferPlayers -> {
@@ -72,11 +80,61 @@ class DeadlineSweeper(
         }
     }
 
+    /**
+     * When none of several running servers heartbeated within the deadline, the heartbeat pipeline (Kafka, the
+     * consumers) is stalled rather than every server dead, and stopping them all would take the network down.
+     * A single silent server is stopped: crashed pods are caught by the pod watcher anyway.
+     */
+    private fun heartbeatsFlowing(
+        current: List<Server>,
+        now: Instant,
+    ): Boolean {
+        val running = current.filter { it.state == ServerState.RUNNING || it.state == ServerState.DRAINING }
+        if (running.size < MIN_FLEET_FOR_STALL_CHECK) return true
+        val freshest = running.mapNotNull { it.lastHeartbeatAt }.maxOrNull()
+        val flowing = freshest != null && Duration.between(freshest, now) <= properties.timeouts.heartbeat
+        if (!flowing) {
+            log.warn(
+                "None of {} running servers heartbeated within {}; holding back heartbeat stops",
+                running.size,
+                properties.timeouts.heartbeat,
+            )
+            Counter.builder(STALLED_METRIC).register(meters).increment()
+        }
+        return flowing
+    }
+
+    /** A deleted group's servers stop; one whose pod will not go is forced away after the STOPPING deadline. */
+    private fun withoutGroup(
+        server: Server,
+        now: Instant,
+    ) {
+        when {
+            server.state != ServerState.STOPPING -> {
+                lifecycle.stopNow(
+                    server.id,
+                    SYSTEM,
+                    "group ${server.groupId} no longer exists",
+                )
+            }
+
+            Duration.between(
+                server.stateSince,
+                now,
+            ) > properties.timeouts.stopping -> {
+                cleanUp(server, "pod did not terminate")
+            }
+        }
+    }
+
+    // Marked only after the publish succeeded, so a failed one is retried next sweep.
     private fun transferOnce(
         server: Server,
         action: OverdueAction.TransferPlayers,
     ) {
-        if (transferred.add(server.id)) events.transferPlayers(server.id, action.target, "drain timeout")
+        if (server.id in transferred) return
+        events.transferPlayers(server.id, action.target, "drain timeout")
+        transferred.add(server.id)
     }
 
     /** A server that never became healthy, or whose pod will not terminate: force the pod away and forget it. */
@@ -91,5 +149,7 @@ class DeadlineSweeper(
 
     private companion object {
         val SYSTEM = Actor.system("controller")
+        const val STALLED_METRIC = "ogcloud.controller.heartbeats.stalled"
+        const val MIN_FLEET_FOR_STALL_CHECK = 2
     }
 }

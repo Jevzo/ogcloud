@@ -97,8 +97,14 @@ class Provisioner(
                 RuntimeProfile.find(server.profileId)
                     ?: throw IllegalArgumentException("Unknown runtime profile ${server.profileId}")
             if (group.type == GroupType.STATIC) pods.ensureVolumeClaim(builder.staticVolumeClaim(group))
-            pods.create(builder.pod(server, group, profile, settings.defaultGroupId))
-            lifecycle.podCreated(server.id)
+            val pod = builder.pod(server, group, profile, settings.defaultGroupId)
+            pods.create(pod)
+            // A stop that landed between reading the request and creating the pod already ran; remove the pod it missed.
+            if (lifecycle.podCreated(server.id) == null &&
+                servers.get(server.id)?.value?.state != ServerState.PREPARING
+            ) {
+                pods.delete(pod.metadata.name, Duration.ZERO)
+            }
         } catch (e: IllegalArgumentException) {
             // A configuration the pod can never be built from: retrying would not help.
             log.error("Cannot build a pod for server {}: {}", server.id, e.message)

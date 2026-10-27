@@ -71,6 +71,7 @@ class AutoscalerLoopTest {
             f.events,
             f.properties,
             f.clock,
+            SimpleMeterRegistry(),
         ).runOnce()
 
         f.servers.listByGroup(group.id).size shouldBe 1

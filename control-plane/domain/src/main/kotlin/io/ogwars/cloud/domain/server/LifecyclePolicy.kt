@@ -29,6 +29,8 @@ sealed interface OverdueAction {
 
     data class Stop(
         val reason: String,
+        /** The server went silent; the caller may hold back when heartbeats are not arriving at all. */
+        val missedHeartbeats: Boolean = false,
     ) : OverdueAction
 
     data class TransferPlayers(
@@ -139,7 +141,7 @@ class LifecyclePolicy(
     ): OverdueAction {
         val lastSign = server.lastHeartbeatAt ?: server.stateSince
         return if (Duration.between(lastSign, now) > timeouts.heartbeat) {
-            OverdueAction.Stop("no heartbeat for ${timeouts.heartbeat.seconds}s")
+            OverdueAction.Stop("no heartbeat for ${timeouts.heartbeat.seconds}s", missedHeartbeats = true)
         } else {
             OverdueAction.None
         }

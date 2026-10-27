@@ -7,6 +7,7 @@ import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.server.TransferTarget
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.util.UUID
@@ -25,6 +26,7 @@ class DeadlineSweeperTest {
             f.events,
             f.properties,
             f.clock,
+            SimpleMeterRegistry(),
         )
 
     @Test
@@ -63,6 +65,85 @@ class DeadlineSweeperTest {
         sweeper.runOnce()
 
         f.events.transfers shouldContainExactly listOf(id to TransferTarget.ToGroup(GroupId("lobby")))
+    }
+
+    @Test
+    fun `when every running server is silent the pipeline is stalled and nobody is stopped`() {
+        val a = running(players = 0)
+        val b = running(players = 0)
+        f.clock.advance(Duration.ofSeconds(31))
+
+        sweeper.runOnce()
+
+        listOf(a, b).map(f::state) shouldBe listOf(ServerState.RUNNING, ServerState.RUNNING)
+    }
+
+    @Test
+    fun `a silent server among heartbeating ones is stopped`() {
+        val silent = running(players = 0)
+        f.clock.advance(Duration.ofSeconds(31))
+        val alive = running(players = 0)
+
+        sweeper.runOnce()
+
+        f.state(silent) shouldBe ServerState.STOPPING
+        f.state(alive) shouldBe ServerState.RUNNING
+    }
+
+    @Test
+    fun `a stopping server of a deleted group is forced away after the deadline`() {
+        val id = running(players = 0)
+        val podName =
+            f.servers
+                .get(id)
+                ?.value
+                ?.podName
+        f.removeGroup(bedwars.id)
+        sweeper.runOnce()
+        f.clock.advance(Duration.ofMinutes(4))
+
+        sweeper.runOnce()
+
+        f.state(id) shouldBe null
+        f.pods.deleted.last() shouldBe Pair(podName, Duration.ZERO)
+    }
+
+    @Test
+    fun `a transfer that failed to publish is sent again`() {
+        val id = running(players = 5)
+        f.lifecycle.drain(id, ACTOR, "scale down")
+        f.clock.advance(Duration.ofSeconds(61))
+        f.lifecycle.heartbeat(id, players = 5, maxPlayers = 50, at = f.clock.instant())
+        var failures = 1
+        val flaky =
+            object : ServerEvents by f.events {
+                override fun transferPlayers(
+                    fromServer: UUID,
+                    target: TransferTarget,
+                    reason: String,
+                ) {
+                    if (failures-- > 0) throw IllegalStateException("Kafka unavailable")
+                    f.events.transferPlayers(fromServer, target, reason)
+                }
+            }
+        val sweeper =
+            DeadlineSweeper(
+                f.servers,
+                f.groupStore,
+                f.network,
+                f.policy,
+                f.lifecycle,
+                f.pods,
+                flaky,
+                f.properties,
+                f.clock,
+                SimpleMeterRegistry(),
+            )
+
+        runCatching { sweeper.runOnce() }
+        sweeper.runOnce()
+
+        f.events.transfers.map { it.first } shouldBe listOf(id)
     }
 
     @Test

@@ -2,26 +2,19 @@ package io.ogwars.cloud.livestate
 
 /** Atomic multi-key operations; every script runs as one Valkey command. */
 internal object LuaScripts {
-    /** KEYS: record, all-set, group-set. ARGV: data, ttl ms, member. Returns 1 if created. */
+    /**
+     * KEYS: record, all-set, group-set. ARGV: data, ttl ms, member, record key prefix, alone ("1" or "0").
+     * Returns 1 if created. With alone, refuses while the group has a live server (a STATIC volume mounts once);
+     * group members are read by id, which is fine on standalone and Sentinel Valkey (no cluster). Members whose
+     * record expired are pruned on the way.
+     */
     const val CREATE = """
         if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end
-        redis.call('HSET', KEYS[1], 'rev', 1, 'data', ARGV[1])
-        redis.call('PEXPIRE', KEYS[1], ARGV[2])
-        redis.call('SADD', KEYS[2], ARGV[3])
-        redis.call('SADD', KEYS[3], ARGV[3])
-        return 1
-    """
-
-    /**
-     * As [CREATE], but only when the group has no live server (a STATIC volume mounts once). ARGV[4] is the record
-     * key prefix: group members are read by id, which is fine on standalone and Sentinel Valkey (no cluster).
-     * Members whose record expired are pruned on the way.
-     */
-    const val CREATE_ALONE = """
-        if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end
-        for _, id in ipairs(redis.call('SMEMBERS', KEYS[3])) do
-            if redis.call('EXISTS', ARGV[4] .. id) == 1 then return 0 end
-            redis.call('SREM', KEYS[3], id)
+        if ARGV[5] == '1' then
+            for _, id in ipairs(redis.call('SMEMBERS', KEYS[3])) do
+                if redis.call('EXISTS', ARGV[4] .. id) == 1 then return 0 end
+                redis.call('SREM', KEYS[3], id)
+            end
         end
         redis.call('HSET', KEYS[1], 'rev', 1, 'data', ARGV[1])
         redis.call('PEXPIRE', KEYS[1], ARGV[2])

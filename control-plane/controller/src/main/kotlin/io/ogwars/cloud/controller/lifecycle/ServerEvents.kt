@@ -43,7 +43,8 @@ class KafkaServerEvents(
     private val publisher: EventPublisher,
     private val metadata: EventMetadataFactory,
 ) : ServerEvents {
-    // Publishing is asynchronous: a failure is logged by the publisher and repaired by the reconciler's resync.
+    // Notifications only: the live records in Valkey are the truth, which the gateway and the load balancer resync
+    // from (T-0404, T-0406), so an event lost after the publisher's retries does not leave them wrong for long.
     override fun stateChanged(
         change: ServerChange,
         actor: Actor,
@@ -87,7 +88,8 @@ class KafkaServerEvents(
                         TransferTarget.Kick -> setKickMessage(reason)
                     }
                 }.build()
-        publisher.publish(KafkaTopics.PLAYER_TRANSFER, fromServer.toString(), event)
+        // Waits, so the sweeper only marks a transfer as done once Kafka has it.
+        publisher.publishAndWait(KafkaTopics.PLAYER_TRANSFER, fromServer.toString(), event)
     }
 
     override fun crashLoopPaused(

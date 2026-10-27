@@ -97,6 +97,18 @@ class ValkeyServerStateStoreTest : ValkeyTest() {
     }
 
     @Test
+    fun `createAlone refuses a second server of a group until the first is gone`() {
+        val first = server(1).copy(groupType = GroupType.STATIC, gameState = null)
+        val second = server(2).copy(groupType = GroupType.STATIC, gameState = null)
+
+        store.createAlone(first) shouldBe true
+        store.createAlone(second) shouldBe false
+        // A member whose record expired without its index entry no longer blocks the group.
+        valkey.sync().del(ValkeyKeys.server(first.id))
+        store.createAlone(second) shouldBe true
+    }
+
+    @Test
     fun `delete removes the record and its index entries`() {
         store.create(server(1))
 

@@ -84,6 +84,9 @@ class KafkaComponents(
             settings.commonProperties() +
                 mapOf(
                     ConsumerConfig.GROUP_ID_CONFIG to groupId,
+                    // A dead replica's partitions move on well within the 30 s heartbeat deadline (D-0053).
+                    ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG to SESSION_TIMEOUT.toMillis().toInt(),
+                    ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG to HEARTBEAT_INTERVAL.toMillis().toInt(),
                     ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
                     ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
                     ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
@@ -138,6 +141,8 @@ class KafkaComponents(
     internal companion object {
         private const val DLT_SUFFIX = ".dlt"
         val MAX_BLOCK: Duration = Duration.ofSeconds(5)
+        private val SESSION_TIMEOUT: Duration = Duration.ofSeconds(10)
+        private val HEARTBEAT_INTERVAL: Duration = Duration.ofSeconds(3)
 
         // Kafka requires delivery >= linger + request timeout.
         private val REQUEST_TIMEOUT: Duration = Duration.ofSeconds(15)
