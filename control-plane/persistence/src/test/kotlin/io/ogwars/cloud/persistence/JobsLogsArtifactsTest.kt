@@ -80,6 +80,7 @@ class JobsLogsArtifactsTest(
             ),
         )
 
+        retention.countOlderThan(RetentionKind.AUDIT_LOG, NOW.minus(Duration.ofDays(90))) shouldBe 3
         retention.deleteOlderThan(RetentionKind.AUDIT_LOG, NOW.minus(Duration.ofDays(90)), limit = 2) shouldBe 2
         retention.deleteOlderThan(RetentionKind.AUDIT_LOG, NOW.minus(Duration.ofDays(90)), limit = 2) shouldBe 1
         retention.deleteOlderThan(RetentionKind.SCALING_LOG, NOW.minus(Duration.ofDays(30)), limit = 10) shouldBe 1

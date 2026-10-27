@@ -39,6 +39,9 @@ interface GroupStore {
 
     fun restore(id: GroupId)
 
+    /** Every soft-deleted group, whatever its deletion time. */
+    fun deleted(): List<GroupId>
+
     fun deletedBefore(cutoff: Instant): List<GroupId>
 
     /**
@@ -149,6 +152,15 @@ interface RuntimeArtifactStore {
 
 /** Batched deletes for the cleanup loop (D-0043). */
 interface RetentionStore {
+    /** Kinds that have a table yet; credentials join with the API's tables (T-0302). */
+    val kinds: Set<RetentionKind>
+
+    /** For dry runs: how many records of [kind] are older than [cutoff]. */
+    fun countOlderThan(
+        kind: RetentionKind,
+        cutoff: Instant,
+    ): Long
+
     /** Deletes up to [limit] records of [kind] older than [cutoff]; returns how many. */
     fun deleteOlderThan(
         kind: RetentionKind,

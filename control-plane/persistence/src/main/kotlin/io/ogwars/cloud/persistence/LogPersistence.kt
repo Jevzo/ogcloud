@@ -61,19 +61,36 @@ class JdbcScalingLogStore(
 class JdbcRetentionStore(
     private val jdbc: JdbcClient,
 ) : RetentionStore {
+    override val kinds: Set<RetentionKind> get() = targets.keys
+
+    override fun countOlderThan(
+        kind: RetentionKind,
+        cutoff: Instant,
+    ): Long {
+        val (table, column) = target(kind)
+        return jdbc
+            .sql("select count(*) from $table where $column < :cutoff")
+            .param("cutoff", cutoff.toTimestamp())
+            .query(Long::class.java)
+            .single()
+    }
+
     // Deleting through a limited sub-select keeps each batch, and its locks, short.
     override fun deleteOlderThan(
         kind: RetentionKind,
         cutoff: Instant,
         limit: Int,
     ): Int {
-        val (table, column) = targets[kind] ?: throw UnsupportedOperationException("No table holds $kind yet")
+        val (table, column) = target(kind)
         return jdbc
             .sql("delete from $table where id in (select id from $table where $column < :cutoff limit :limit)")
             .param("cutoff", cutoff.toTimestamp())
             .param("limit", limit)
             .update()
     }
+
+    private fun target(kind: RetentionKind) =
+        targets[kind] ?: throw UnsupportedOperationException("No table holds $kind yet")
 
     private companion object {
         // Credentials (tokens, OTPs, push registrations) join with their own tables in later migrations.

@@ -73,6 +73,7 @@ class GroupStoreTest(
         groups.softDelete(lobby.id, NOW)
         groups.findAll().shouldBeEmpty()
         groups.deletedBefore(NOW.plusSeconds(1)) shouldContainExactly listOf(lobby.id)
+        groups.deleted() shouldContainExactly listOf(lobby.id)
 
         groups.restore(lobby.id)
         groups.findAll().map { it.value } shouldContainExactly listOf(lobby)

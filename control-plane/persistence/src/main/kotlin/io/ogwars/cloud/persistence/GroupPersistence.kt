@@ -69,6 +69,9 @@ interface GroupRecordRepository : CrudRepository<GroupRecord, String> {
     @Query("update groups set deleted_at = null, version = version + 1 where id = :id")
     fun restore(id: String): Int
 
+    @Query("select id from groups where deleted_at is not null order by deleted_at")
+    fun idsDeleted(): List<String>
+
     @Query("select id from groups where deleted_at < :cutoff order by deleted_at")
     fun idsDeletedBefore(cutoff: Instant): List<String>
 
@@ -122,6 +125,8 @@ class JdbcGroupStore(
     override fun restore(id: GroupId) {
         records.restore(id.value)
     }
+
+    override fun deleted(): List<GroupId> = records.idsDeleted().map(::GroupId)
 
     override fun deletedBefore(cutoff: Instant): List<GroupId> = records.idsDeletedBefore(cutoff).map(::GroupId)
 
