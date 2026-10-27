@@ -127,6 +127,11 @@ class LeaderGate(
         try {
             loop.runOnce()
         } catch (e: Exception) {
+            // Losing the Lease interrupts running loops; that is not a failure of the loop.
+            if (!leading.get()) {
+                log.debug("Leader loop {} stopped with the leadership", loop.name, e)
+                return
+            }
             log.error("Leader loop {} failed; retrying in {}", loop.name, loop.interval, e)
             Counter
                 .builder(LOOP_FAILURES_METRIC)
