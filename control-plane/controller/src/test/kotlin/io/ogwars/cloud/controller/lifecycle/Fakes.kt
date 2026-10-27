@@ -49,6 +49,12 @@ class RecordingPodGateway : PodGateway {
     }
 
     override fun list(): List<Pod> = created.filter { pod -> deleted.none { it.first == pod.metadata.name } }
+
+    override fun listVolumeClaims(): List<PersistentVolumeClaim> = claims.toList()
+
+    override fun deleteVolumeClaim(name: String) {
+        claims.removeIf { it.metadata.name == name }
+    }
 }
 
 class RecordingServerEvents : ServerEvents {
@@ -112,6 +118,7 @@ class InMemoryGroupStore(
     groups: List<Group>,
 ) : GroupStore {
     private val groups = groups.associateBy { it.id }.toMutableMap()
+    private val deleted = mutableMapOf<GroupId, Pair<Group, Instant>>()
 
     override fun findAll() = groups.values.map { Revisioned(it, 0) }
 
@@ -132,17 +139,26 @@ class InMemoryGroupStore(
         id: GroupId,
         at: Instant,
     ) {
-        groups.remove(id)
+        groups.remove(id)?.let { deleted[id] = it to at }
     }
 
-    override fun restore(id: GroupId) = Unit
+    override fun restore(id: GroupId) {
+        deleted.remove(id)?.let { groups[id] = it.first }
+    }
 
-    override fun deletedBefore(cutoff: Instant): List<GroupId> = emptyList()
+    override fun deleted(): List<GroupId> = deleted.keys.toList()
+
+    override fun deletedBefore(cutoff: Instant): List<GroupId> =
+        deleted
+            .filterValues {
+                it.second.isBefore(cutoff)
+            }.keys
+            .toList()
 
     override fun purge(
         id: GroupId,
         deletedBefore: Instant,
-    ) = false
+    ): Boolean = deleted[id]?.takeIf { it.second.isBefore(deletedBefore) }?.let { deleted.remove(id) } != null
 }
 
 class InMemoryNetworkSettingsStore(

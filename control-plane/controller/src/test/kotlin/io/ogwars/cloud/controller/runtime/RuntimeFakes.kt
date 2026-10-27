@@ -10,14 +10,19 @@ import java.net.URI
 import java.time.Duration
 import java.time.Instant
 
-class InMemoryObjectStore : ObjectStore {
+/** Objects are stamped with [now] when uploaded, so tests can age them. */
+class InMemoryObjectStore(
+    var now: Instant = Instant.EPOCH,
+) : ObjectStore {
     val objects = mutableMapOf<String, ByteArray>()
+    private val modified = mutableMapOf<String, Instant>()
 
     override fun upload(
         key: String,
         content: InputStream,
     ) {
         objects[key] = content.readAllBytes()
+        modified[key] = now
     }
 
     override fun download(
@@ -27,13 +32,13 @@ class InMemoryObjectStore : ObjectStore {
         target.write(objects.getValue(key))
     }
 
-    override fun head(key: String) = objects[key]?.let { StoredObject(key, it.size.toLong(), Instant.EPOCH) }
+    override fun head(key: String) = objects[key]?.let { StoredObject(key, it.size.toLong(), modified.getValue(key)) }
 
     override fun list(prefix: String) =
         objects
             .filterKeys {
                 it.startsWith(prefix)
-            }.map { (key, bytes) -> StoredObject(key, bytes.size.toLong(), Instant.EPOCH) }
+            }.map { (key, bytes) -> StoredObject(key, bytes.size.toLong(), modified.getValue(key)) }
 
     override fun delete(key: String) {
         objects.remove(key)

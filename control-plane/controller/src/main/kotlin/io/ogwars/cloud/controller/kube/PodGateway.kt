@@ -31,6 +31,11 @@ interface PodGateway {
 
     /** Every server pod, read fresh from the API server rather than an informer cache. */
     fun list(): List<Pod>
+
+    /** The controller's volume claims in the game namespace (STATIC groups). */
+    fun listVolumeClaims(): List<PersistentVolumeClaim>
+
+    fun deleteVolumeClaim(name: String)
 }
 
 @Component
@@ -83,6 +88,22 @@ class FabricPodGateway(
     }
 
     override fun list(): List<Pod> = pods().withLabel(PodLabels.MANAGED_BY, PodLabels.CONTROLLER_NAME).list().items
+
+    override fun listVolumeClaims(): List<PersistentVolumeClaim> =
+        client
+            .persistentVolumeClaims()
+            .inNamespace(settings.namespace)
+            .withLabel(PodLabels.MANAGED_BY, PodLabels.CONTROLLER_NAME)
+            .list()
+            .items
+
+    override fun deleteVolumeClaim(name: String) {
+        client
+            .persistentVolumeClaims()
+            .inNamespace(settings.namespace)
+            .withName(name)
+            .delete()
+    }
 
     private fun pods() = client.pods().inNamespace(settings.namespace)
 
