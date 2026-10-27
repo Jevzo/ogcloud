@@ -24,3 +24,25 @@ profiles:
     platform: velocity
     version: "4.3.0"
     java: 25
+
+# Third-party plugins in the runtime bundles (D-0079): downloaded by the controller from Modrinth
+# and checked against the pinned SHA-512. Renovate bumps version, url and hash together.
+plugins:
+  - id: viaversion
+    platforms: [velocity]
+    file: ViaVersion.jar
+    version: "5.12.1"
+    url: https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar
+    sha512: b2e5c03689e2265410613a928640076cfcd576e7a3dc7ca1276a76dbe624f2f5467348c3b3eaf8b5987ed7662afb93cc5cb9373035f4c5512884116e4bb6add9
+  - id: viabackwards
+    platforms: [velocity]
+    file: ViaBackwards.jar
+    version: "5.12.1"
+    url: https://cdn.modrinth.com/data/NpvuJQoq/versions/dWw67APC/ViaBackwards-5.12.1.jar
+    sha512: 65752dd113bf1266ef2c3b25a748e79e9808bb67682a3f5fbcf3e2b097d76182786d0871562175af8d491bde7ec6addfeaf97fdb23987cb11b829b0c22f6e5ff
+  - id: viarewind
+    platforms: [velocity]
+    file: ViaRewind.jar
+    version: "4.2.0"
+    url: https://cdn.modrinth.com/data/TbHIxhx5/versions/EPLCoxMK/ViaRewind-4.2.0.jar
+    sha512: 7f3a2a972a3fe45f9c16b48a2e2b08fca6aa70da77eb8e47644726f19a43dc24116c2f7e126434f9f9388fa1b987a014efe287e3980f773b6e261313e7e939b2

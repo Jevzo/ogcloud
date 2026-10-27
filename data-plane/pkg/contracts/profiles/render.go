@@ -41,7 +41,22 @@ func RenderKotlin(packageName string, c Catalog) []byte {
 		fmt.Fprintf(&b, "            RuntimeProfile(%q, Platform.%s, ProfileRole.%s, %q, %d, %d),\n",
 			p.ID, info.kotlinEnum, strings.ToUpper(info.role), p.Version, p.Protocol, p.JavaVersion)
 	}
-	b.WriteString("        )\n}\n")
+	b.WriteString("        )\n")
+	if len(c.Plugins) > 0 {
+		b.WriteString("\n    val PLUGINS: List<RuntimePlugin> =\n        listOf(\n")
+		for _, p := range c.Plugins {
+			enums := make([]string, 0, len(p.Platforms))
+			for _, name := range p.Platforms {
+				enums = append(enums, "Platform."+platforms[name].kotlinEnum)
+			}
+			fmt.Fprintf(&b, "            RuntimePlugin(\n                %q,\n                setOf(%s),\n                %q,\n                %q,\n                %q,\n                %q,\n            ),\n",
+				p.ID, strings.Join(enums, ", "), p.File, p.Version, p.URL, p.SHA512)
+		}
+		b.WriteString("        )\n")
+	} else {
+		b.WriteString("\n    val PLUGINS: List<RuntimePlugin> = emptyList()\n")
+	}
+	b.WriteString("}\n")
 	return []byte(b.String())
 }
 

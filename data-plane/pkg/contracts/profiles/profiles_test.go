@@ -60,6 +60,10 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 		{"protocol out of range", header + proxy + "  - {id: paper-27.1, platform: paper, version: '27.1', protocol: 800, java: 25}\n", "outside clientProtocols"},
 		{"missing java", header + proxy + "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777}\n", "java are required"},
 		{"no proxy", header + paper, "at least one proxy"},
+		{"plugin from elsewhere", header + proxy + paper + plugin("velocity", "ViaVersion.jar", "https://example.com/v.jar", strings.Repeat("a", 128)), "url are required"},
+		{"plugin bad hash", header + proxy + paper + plugin("velocity", "ViaVersion.jar", modrinth, "abc"), "sha512"},
+		{"plugin unknown platform", header + proxy + paper + plugin("spigot", "ViaVersion.jar", modrinth, strings.Repeat("a", 128)), "unknown platform"},
+		{"plugin path", header + proxy + paper + plugin("velocity", "../ViaVersion.jar", modrinth, strings.Repeat("a", 128)), "plain .jar"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -72,6 +76,12 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 			}
 		})
 	}
+}
+
+const modrinth = "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar"
+
+func plugin(platform, file, url, sha string) string {
+	return "plugins:\n  - {id: viaversion, platforms: [" + platform + "], file: '" + file + "', version: 5.12.1, url: '" + url + "', sha512: '" + sha + "'}\n"
 }
 
 func parseFixture(t *testing.T) Catalog {

@@ -110,6 +110,9 @@ enum class ReadModelKind(
     PERMISSION_GROUP("permission-group"),
     PLAYER_PROFILE("player-profile"),
     NPCS_BY_GROUP("npcs-by-group"),
+
+    /** A profile's bundle manifest for the gateway's GetPodAssets (D-0080). */
+    RUNTIME_BUNDLE("runtime-bundle"),
 }
 
 /** Encoded read models the gateway and load balancer serve from (D-0007); the controller writes them. */

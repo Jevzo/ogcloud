@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
+// Read model runtime-bundle:<profile_id> (D-0080): the files a pod of that profile downloads
+// besides its template. The gateway presigns each object for GetPodAssets.
+message RuntimeBundle {
+  string profile_id = 1;
+  // SHA-256 over every artifact's path and hash; changes whenever any artifact changes.
+  string digest = 2;
+  repeated RuntimeBundleArtifact artifacts = 3;
+}
+
+message RuntimeBundleArtifact {
+  // Path relative to the server directory, e.g. "plugins/ViaVersion.jar".
+  string path = 1;
+  string object_key = 2;
+  string sha256 = 3;
+  uint64 size_bytes = 4;
+}

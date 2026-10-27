@@ -12,4 +12,32 @@ object RuntimeProfiles {
             RuntimeProfile("pandaspigot-1.8.8", Platform.PANDASPIGOT, ProfileRole.BACKEND, "1.8.8", 47, 25),
             RuntimeProfile("velocity-4.3.0", Platform.VELOCITY, ProfileRole.PROXY, "4.3.0", 0, 25),
         )
+
+    val PLUGINS: List<RuntimePlugin> =
+        listOf(
+            RuntimePlugin(
+                "viaversion",
+                setOf(Platform.VELOCITY),
+                "ViaVersion.jar",
+                "5.12.1",
+                "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar",
+                "b2e5c03689e2265410613a928640076cfcd576e7a3dc7ca1276a76dbe624f2f5467348c3b3eaf8b5987ed7662afb93cc5cb9373035f4c5512884116e4bb6add9",
+            ),
+            RuntimePlugin(
+                "viabackwards",
+                setOf(Platform.VELOCITY),
+                "ViaBackwards.jar",
+                "5.12.1",
+                "https://cdn.modrinth.com/data/NpvuJQoq/versions/dWw67APC/ViaBackwards-5.12.1.jar",
+                "65752dd113bf1266ef2c3b25a748e79e9808bb67682a3f5fbcf3e2b097d76182786d0871562175af8d491bde7ec6addfeaf97fdb23987cb11b829b0c22f6e5ff",
+            ),
+            RuntimePlugin(
+                "viarewind",
+                setOf(Platform.VELOCITY),
+                "ViaRewind.jar",
+                "4.2.0",
+                "https://cdn.modrinth.com/data/TbHIxhx5/versions/EPLCoxMK/ViaRewind-4.2.0.jar",
+                "7f3a2a972a3fe45f9c16b48a2e2b08fca6aa70da77eb8e47644726f19a43dc24116c2f7e126434f9f9388fa1b987a014efe287e3980f773b6e261313e7e939b2",
+            ),
+        )
 }

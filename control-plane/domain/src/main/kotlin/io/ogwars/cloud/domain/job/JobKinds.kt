@@ -14,9 +14,13 @@ object JobKinds {
     /** No payload. Rotates the BungeeGuard token (D-0065, D-0078). */
     const val FORWARDING_ROTATE = "forwarding.rotate"
 
+    /** Payload: `profileId`. Replaces the servers of a profile whose runtime bundle changed (D-0079). */
+    const val BUNDLE_ROLLOUT = "bundle.rollout"
+
     const val GROUP_ID = "groupId"
     const val BATCH_SIZE = "batchSize"
+    const val PROFILE_ID = "profileId"
 
     /** Jobs that replace servers; only one runs at a time, the rest wait queued. */
-    val EXCLUSIVE = setOf(GROUP_RESTART, NETWORK_RESTART, FORWARDING_ROTATE)
+    val EXCLUSIVE = setOf(GROUP_RESTART, NETWORK_RESTART, FORWARDING_ROTATE, BUNDLE_ROLLOUT)
 }

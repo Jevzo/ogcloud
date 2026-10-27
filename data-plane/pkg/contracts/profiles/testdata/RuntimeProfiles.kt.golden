@@ -11,4 +11,16 @@ object RuntimeProfiles {
             RuntimeProfile("paper-26.3", Platform.PAPER, ProfileRole.BACKEND, "26.3", 777, 25),
             RuntimeProfile("velocity-4.3.0", Platform.VELOCITY, ProfileRole.PROXY, "4.3.0", 0, 25),
         )
+
+    val PLUGINS: List<RuntimePlugin> =
+        listOf(
+            RuntimePlugin(
+                "viaversion",
+                setOf(Platform.VELOCITY),
+                "ViaVersion.jar",
+                "5.12.1",
+                "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar",
+                "b2e5c03689e2265410613a928640076cfcd576e7a3dc7ca1276a76dbe624f2f5467348c3b3eaf8b5987ed7662afb93cc5cb9373035f4c5512884116e4bb6add9",
+            ),
+        )
 }

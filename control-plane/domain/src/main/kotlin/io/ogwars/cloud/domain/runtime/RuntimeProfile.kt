@@ -25,6 +25,9 @@ data class RuntimeProfile(
     val protocol: Int,
     val javaVersion: Int,
 ) {
+    /** The third-party plugins in this profile's runtime bundle. */
+    val plugins: List<RuntimePlugin> get() = RuntimeProfiles.PLUGINS.filter { platform in it.platforms }
+
     companion object {
         fun find(id: String): RuntimeProfile? = RuntimeProfiles.ALL.find { it.id == id }
     }
