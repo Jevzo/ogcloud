@@ -3,13 +3,20 @@ package io.ogwars.cloud.api.events
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TestUsers
+import io.ogwars.cloud.contracts.events.v1.AlertRaised
+import io.ogwars.cloud.contracts.events.v1.AlertSeverity
 import io.ogwars.cloud.contracts.events.v1.GroupType
+import io.ogwars.cloud.contracts.events.v1.JobProgress
 import io.ogwars.cloud.contracts.events.v1.ScalingAction
 import io.ogwars.cloud.contracts.events.v1.ScalingDecided
 import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.domain.audit.Actor
+import io.ogwars.cloud.domain.job.Job
+import io.ogwars.cloud.domain.job.JobKinds
+import io.ogwars.cloud.domain.job.JobState
 import io.ogwars.cloud.domain.store.AuditLogStore
+import io.ogwars.cloud.domain.store.JobStore
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.ApiPermission
 import io.ogwars.cloud.messaging.EventMetadataFactory
@@ -26,6 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import java.io.UncheckedIOException
 import java.net.http.HttpResponse
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.LinkedBlockingQueue
@@ -41,6 +49,7 @@ class LiveEventsTest(
     @Autowired private val publisher: EventPublisher,
     @Autowired private val metadata: EventMetadataFactory,
     @Autowired private val audit: AuditLogStore,
+    @Autowired private val jobs: JobStore,
 ) {
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
@@ -64,7 +73,7 @@ class LiveEventsTest(
     fun `events reach only callers holding their permission`() {
         val serversOnly = testUsers.token(testUsers.create(), listOf(ApiPermission.SERVERS_READ))
         val both = testUsers.token(testUsers.create(), listOf(ApiPermission.SERVERS_READ, ApiPermission.OVERVIEW_READ))
-        // Subscribers are served in the order they connected, so the second stream sees each event after the first.
+        // Events are queued in the order streams connected, so the first stream gets each event before the second.
         EventStream(oauth.events(ticket(serversOnly))).use { first ->
             EventStream(oauth.events(ticket(both))).use { second ->
                 val group = "sse-${UUID.randomUUID().toString().take(SUFFIX)}"
@@ -79,6 +88,61 @@ class LiveEventsTest(
             }
         }
     }
+
+    @Test
+    fun `job events follow the area that started the job, alerts need the overview`() {
+        val networkOnly = testUsers.token(testUsers.create(), listOf(ApiPermission.NETWORK_READ))
+        val groupsAndOverview =
+            testUsers.token(testUsers.create(), listOf(ApiPermission.GROUPS_READ, ApiPermission.OVERVIEW_READ))
+        val groupJob = job(JobKinds.GROUP_RESTART)
+        val networkJob = job(JobKinds.NETWORK_RESTART)
+        EventStream(oauth.events(ticket(networkOnly))).use { first ->
+            EventStream(oauth.events(ticket(groupsAndOverview))).use { second ->
+                second.await("job", groupJob.toString()) { publishProgress(groupJob) }
+                val subject = "alert-${UUID.randomUUID()}"
+                second.await("alert", subject) { publishAlert(subject) }
+
+                first.await("job", networkJob.toString()) { publishProgress(networkJob) }
+
+                first.names() shouldNotContain "alert"
+                first.data().none { groupJob.toString() in it } shouldBe true
+            }
+        }
+    }
+
+    private fun job(kind: String): UUID {
+        val id = UUID.randomUUID()
+        jobs.create(
+            Job(id, kind, JobState.RUNNING, emptyMap(), emptyMap(), 0, 1, "", Actor.system("test"), Instant.now()),
+        )
+        return id
+    }
+
+    private fun publishProgress(jobId: UUID) =
+        publisher.publishAndWait(
+            KafkaTopics.JOB_PROGRESS,
+            jobId.toString(),
+            JobProgress
+                .newBuilder()
+                .setMetadata(metadata.create(Actor.system("test")))
+                .setJobId(jobId.toString())
+                .setState(io.ogwars.cloud.contracts.events.v1.JobState.JOB_STATE_RUNNING)
+                .setTotalSteps(1)
+                .build(),
+        )
+
+    private fun publishAlert(subject: String) =
+        publisher.publishAndWait(
+            KafkaTopics.ALERT_RAISED,
+            subject,
+            AlertRaised
+                .newBuilder()
+                .setMetadata(metadata.create(Actor.system("test")))
+                .setSubjectId(subject)
+                .setSeverity(AlertSeverity.ALERT_SEVERITY_WARNING)
+                .setKind("group.crash-loop-paused")
+                .build(),
+        )
 
     private fun ticket(token: String): String = oauth.json(oauth.call("POST", TICKETS, token))["ticket"] as String
 
@@ -115,7 +179,7 @@ class LiveEventsTest(
         private val response: HttpResponse<Stream<String>>,
     ) : AutoCloseable {
         private val received = LinkedBlockingQueue<Pair<String, String>>()
-        private val seen = CopyOnWriteArrayList<String>()
+        private val seen = CopyOnWriteArrayList<Pair<String, String>>()
 
         init {
             response.statusCode() shouldBe OK
@@ -124,11 +188,18 @@ class LiveEventsTest(
                 try {
                     response.body().forEach { line ->
                         when {
-                            line.startsWith(EVENT) -> name = line.removePrefix(EVENT)
+                            line.startsWith(EVENT) -> {
+                                name = line.removePrefix(EVENT)
+                            }
 
                             line.startsWith(
                                 DATA,
-                            ) -> received.add(name to line.removePrefix(DATA)).also { seen.add(name) }
+                            ) -> {
+                                (name to line.removePrefix(DATA)).let {
+                                    received.add(it)
+                                    seen.add(it)
+                                }
+                            }
                         }
                     }
                 } catch (_: UncheckedIOException) {
@@ -137,7 +208,9 @@ class LiveEventsTest(
             }
         }
 
-        fun names(): List<String> = seen.toList()
+        fun names(): List<String> = seen.map { it.first }
+
+        fun data(): List<String> = seen.map { it.second }
 
         /**
          * The broadcast consumers start at the latest offset once Kafka assigns them, so [publish] repeats until the
