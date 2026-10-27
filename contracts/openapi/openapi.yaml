@@ -1006,6 +1006,18 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/TemplateVersionView"
+  /api/v1/events/tickets:
+    post:
+      tags:
+      - event-controller
+      operationId: eventTicket
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/EventTicket"
   /api/v1/commands:
     post:
       tags:
@@ -1329,6 +1341,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DeletedGroupView"
+  /api/v1/events:
+    get:
+      tags:
+      - event-controller
+      operationId: eventStream
+      parameters:
+      - name: ticket
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: The event name tells which schema its data has
+          content:
+            text/event-stream:
+              schema:
+                oneOf:
+                - $ref: "#/components/schemas/ServerEvent"
+                - $ref: "#/components/schemas/JobEvent"
+                - $ref: "#/components/schemas/ScalingEvent"
+                - $ref: "#/components/schemas/AlertEvent"
   /api/v1/users/{id}/logins:
     delete:
       tags:
@@ -2153,6 +2187,17 @@ components:
       required:
       - failures
       - paused
+    EventTicket:
+      type: object
+      properties:
+        ticket:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+      - expiresAt
+      - ticket
     ConsoleCommandRequest:
       type: object
       properties:
@@ -2659,3 +2704,119 @@ components:
       required:
       - deletedAt
       - group
+    ServerEvent:
+      type: object
+      properties:
+        serverId:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+        groupType:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+        previousState:
+          type:
+          - string
+          - "null"
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+        reason:
+          type: string
+      required:
+      - groupId
+      - groupType
+      - reason
+      - serverId
+      - state
+    JobEvent:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - SUCCEEDED
+          - FAILED
+        completedSteps:
+          type: integer
+          format: int32
+        totalSteps:
+          type: integer
+          format: int32
+        message:
+          type: string
+      required:
+      - completedSteps
+      - jobId
+      - message
+      - state
+      - totalSteps
+    ScalingEvent:
+      type: object
+      properties:
+        groupId:
+          type: string
+        action:
+          type: string
+          enum:
+          - START
+          - DRAIN
+          - UNDRAIN
+          - STOP
+        serverId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        reason:
+          type: string
+      required:
+      - action
+      - groupId
+      - reason
+    AlertEvent:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+        kind:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - attributes
+      - kind
+      - severity
+      - subjectId

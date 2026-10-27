@@ -89,11 +89,18 @@ class JobManagement(
 
     private fun visible(job: Job) = readPermission(job.kind).scope in callerPermissions()
 
-    private fun readPermission(kind: String): ApiPermission =
-        if (kind in GROUP_KINDS) ApiPermission.GROUPS_READ else ApiPermission.NETWORK_READ
+    companion object {
+        private val GROUP_KINDS = setOf(JobKinds.GROUP_RESTART, JobKinds.GROUP_DELETE)
 
-    private companion object {
-        val GROUP_KINDS = setOf(JobKinds.GROUP_RESTART, JobKinds.GROUP_DELETE)
+        /** Jobs belong to the area that started them (D-0092). */
+        fun readPermission(kind: String): ApiPermission =
+            if (kind in
+                GROUP_KINDS
+            ) {
+                ApiPermission.GROUPS_READ
+            } else {
+                ApiPermission.NETWORK_READ
+            }
     }
 }
 

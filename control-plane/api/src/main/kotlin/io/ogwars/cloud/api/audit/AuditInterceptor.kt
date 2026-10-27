@@ -7,9 +7,15 @@ import io.ogwars.cloud.domain.store.AuditLogStore
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Component
+import org.springframework.web.method.HandlerMethod
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.time.Clock
+
+/** For POSTs that change nothing, e.g. issuing a live-update ticket. */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class NotAudited
 
 /** Who acts on the API; resolved from the access token. */
 fun interface CurrentActor {
@@ -31,6 +37,7 @@ class AuditInterceptor(
         ex: Exception?,
     ) {
         if (request.method !in CHANGING_METHODS || ex != null || response.status >= FIRST_ERROR_STATUS) return
+        if (handler is HandlerMethod && handler.hasMethodAnnotation(NotAudited::class.java)) return
         val pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as? String ?: return
 
         @Suppress("UNCHECKED_CAST") // Spring stores the URI template variables as a String map.

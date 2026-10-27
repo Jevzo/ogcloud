@@ -9,6 +9,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.security.MessageDigest
 import java.util.Base64
+import java.util.stream.Stream
 
 /** Drives the API over HTTP the way the apps will: a browser login, then token requests (D-0012, D-0090). */
 class OAuthHttp(
@@ -171,6 +172,18 @@ class OAuthHttp(
                 ?: HttpRequest.BodyPublishers.noBody()
         return send(request.method(method, payload))
     }
+
+    /** Opens the live-update stream; the body yields its lines as they arrive. */
+    fun events(ticket: String): HttpResponse<Stream<String>> =
+        http.send(
+            HttpRequest
+                .newBuilder(
+                    uri("/api/v1/events?ticket=$ticket"),
+                ).header("Accept", "text/event-stream")
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofLines(),
+        )
 
     fun upload(
         path: String,
