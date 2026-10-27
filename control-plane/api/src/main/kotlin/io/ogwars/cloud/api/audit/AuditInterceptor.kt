@@ -11,7 +11,7 @@ import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.time.Clock
 
-/** Who acts on the API; the security setup of T-0302 resolves it from the token. */
+/** Who acts on the API; resolved from the access token. */
 fun interface CurrentActor {
     fun get(request: HttpServletRequest): Actor
 }

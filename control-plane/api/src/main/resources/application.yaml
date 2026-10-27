@@ -25,6 +25,12 @@ springdoc:
   packages-to-scan: io.ogwars.cloud.api
 
 ogcloud:
+  auth:
+    # The public origin, also the OIDC issuer (D-0051); the chart sets it.
+    issuer: ${OGCLOUD_PUBLIC_ORIGIN}
+    signing:
+      # `<kid>.pem` files synced from Infisical (D-0044, D-0090); active-key-id arrives through the config tree.
+      keys-dir: /var/run/secrets/ogcloud-signing
   kafka:
     # Consumer groups are ogcloud-api-*, matching the generated ACLs.
     client-id: api
