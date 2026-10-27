@@ -85,7 +85,7 @@ class WebUserStoreTest(
             users.create(
                 WebUser(UUID(0, 8), "Other", "other@example.com", null, "admin", NOW, linkedPlayerUuid = player),
             )
-        }
+        }.message shouldBe "The Minecraft account is linked to another user"
     }
 
     @Test

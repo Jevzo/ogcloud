@@ -10,6 +10,7 @@ import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.SessionStore
 import io.ogwars.cloud.livestate.toDomain
 import io.ogwars.cloud.messaging.NonRetryableEventException
+import io.ogwars.cloud.messaging.toUuid
 import org.springframework.stereotype.Component
 
 /** `ogcloud.node.heartbeat`: player counts and liveness; the first heartbeat makes a server RUNNING. */

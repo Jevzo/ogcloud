@@ -6,6 +6,7 @@ import io.ogwars.cloud.controller.readmodel.PlayerPermissions
 import io.ogwars.cloud.controller.readmodel.ReadModelSync
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.messaging.NonRetryableEventException
+import io.ogwars.cloud.messaging.toUuid
 import org.springframework.stereotype.Component
 
 /**

@@ -175,10 +175,18 @@ class JdbcWebUserStore(
         try {
             write()
         } catch (e: DuplicateKeyException) {
-            throw ConflictException("The username or email is already in use").apply { initCause(e) }
+            val message =
+                if (LINKED_PLAYER_CONSTRAINT in e.mostSpecificCause.message.orEmpty()) {
+                    "The Minecraft account is linked to another user"
+                } else {
+                    "The username or email is already in use"
+                }
+            throw ConflictException(message).apply { initCause(e) }
         }
 
     private companion object {
+        const val LINKED_PLAYER_CONSTRAINT = "web_users_linked_player_uuid_key"
+
         /** Arbitrary, but fixed: every replica must use the same key. */
         const val SETUP_LOCK = 0x6f67636c6f7564L
 

@@ -8,6 +8,7 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.messaging.NonRetryableEventException
 import io.ogwars.cloud.messaging.actor
+import io.ogwars.cloud.messaging.toUuid
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

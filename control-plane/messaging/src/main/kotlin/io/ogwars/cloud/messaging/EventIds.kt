@@ -1,6 +1,5 @@
-package io.ogwars.cloud.controller.consume
+package io.ogwars.cloud.messaging
 
-import io.ogwars.cloud.messaging.NonRetryableEventException
 import java.util.UUID
 
 /** Parses an id field of an event; a malformed id can never succeed, so it is not retried. */
