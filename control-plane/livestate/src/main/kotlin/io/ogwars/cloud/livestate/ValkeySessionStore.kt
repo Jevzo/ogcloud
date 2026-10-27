@@ -31,7 +31,7 @@ class ValkeySessionStore(
         valkey
             .sync()
             .get(ValkeyKeys.sessionName(name))
-            ?.let { get(UUID.fromString(it.utf8())) }
+            ?.let { get(it.utf8().storedUuid()) }
 
     override fun compareAndSet(
         expectedRevision: Long,
@@ -61,7 +61,7 @@ class ValkeySessionStore(
 
     /** Players whose session expired without a disconnect (e.g. a crashed proxy) are pruned on the way. */
     override fun onlinePlayers(): Set<UUID> {
-        val players = valkey.sync().smembers(ValkeyKeys.ONLINE_PLAYERS).map { UUID.fromString(it.utf8()) }
+        val players = valkey.sync().smembers(ValkeyKeys.ONLINE_PLAYERS).map { it.utf8().storedUuid() }
         val sessions = valkey.readRecords(players.map(ValkeyKeys::session))
         val (live, expired) = players.zip(sessions).partition { it.second != null }
         expired.forEach { (uuid, _) -> valkey.sync().srem(ValkeyKeys.ONLINE_PLAYERS, uuid.toString().utf8()) }
@@ -76,7 +76,7 @@ class ValkeySessionStore(
             valkey
                 .sync()
                 .smembers(ValkeyKeys.ONLINE_PLAYERS)
-                .map { UUID.fromString(it.utf8()) }
+                .map { it.utf8().storedUuid() }
                 .filter { after == null || it > after }
                 .sorted()
         val sessions = mutableListOf<PlayerSession>()

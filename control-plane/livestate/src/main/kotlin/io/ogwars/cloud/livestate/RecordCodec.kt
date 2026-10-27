@@ -37,7 +37,7 @@ internal object RecordCodec {
         decoding(key) {
             val record = ServerRecord.parseFrom(bytes)
             Server(
-                id = UUID.fromString(record.serverId),
+                id = record.serverId.storedUuid(),
                 groupId = GroupId(record.groupId),
                 groupType = record.groupType.toDomain(),
                 profileId = record.profileId,
@@ -73,9 +73,9 @@ internal object RecordCodec {
         decoding(key) {
             val record = PlayerSessionRecord.parseFrom(bytes)
             PlayerSession(
-                playerUuid = UUID.fromString(record.playerUuid),
+                playerUuid = record.playerUuid.storedUuid(),
                 playerName = record.playerName,
-                proxyId = UUID.fromString(record.proxyId),
+                proxyId = record.proxyId.storedUuid(),
                 serverId = record.serverId.ifEmpty { null }?.let(UUID::fromString),
                 permissionGroupId = record.permissionGroupId,
                 rankVersion = record.rankVersion,

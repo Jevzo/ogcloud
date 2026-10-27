@@ -57,7 +57,7 @@ class ValkeyServerStateStore(
     }
 
     private fun list(setKey: String): List<Revisioned<Server>> {
-        val ids = valkey.sync().smembers(setKey).map { UUID.fromString(it.utf8()) }
+        val ids = valkey.sync().smembers(setKey).map { it.utf8().storedUuid() }
         val records = valkey.readRecords(ids.map(ValkeyKeys::server))
         // Ids whose record expired are dropped from the index on the way.
         ids.zip(records).filter { it.second == null }.forEach { (id, _) ->

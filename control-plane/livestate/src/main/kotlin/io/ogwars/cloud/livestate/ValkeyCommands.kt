@@ -2,12 +2,21 @@ package io.ogwars.cloud.livestate
 
 import io.lettuce.core.ScriptOutputType
 import java.time.Duration
+import java.util.UUID
 
 internal fun String.utf8(): ByteArray = toByteArray(Charsets.UTF_8)
 
 internal fun ByteArray.utf8(): String = toString(Charsets.UTF_8)
 
 internal fun Duration.millisArg(): ByteArray = toMillis().toString().utf8()
+
+/** An id read back from Valkey; a malformed one is corrupt state, not a caller's mistake. */
+internal fun String.storedUuid(): UUID =
+    try {
+        UUID.fromString(this)
+    } catch (e: IllegalArgumentException) {
+        throw IllegalStateException("Corrupt id '$this' in Valkey", e)
+    }
 
 /** Runs a script that returns an integer. */
 internal fun ValkeyConnection.evalLong(
