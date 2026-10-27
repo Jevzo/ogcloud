@@ -120,6 +120,85 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/players/{uuid}/rank:
+    put:
+      tags:
+      - rank-controller
+      operationId: rankSet
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetRankRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RankView"
+  /api/v1/permission-groups/{id}:
+    get:
+      tags:
+      - permission-group-controller
+      operationId: permissionGroupGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupView"
+    put:
+      tags:
+      - permission-group-controller
+      operationId: permissionGroupUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePermissionGroupRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupView"
+    delete:
+      tags:
+      - permission-group-controller
+      operationId: permissionGroupDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
   /api/v1/oauth-clients/{clientId}:
     put:
       tags:
@@ -496,6 +575,37 @@ paths:
       responses:
         "202":
           description: Accepted
+  /api/v1/permission-groups:
+    get:
+      tags:
+      - permission-group-controller
+      operationId: permissionGroupList
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PermissionGroupView"
+    post:
+      tags:
+      - permission-group-controller
+      operationId: permissionGroupCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermissionGroupRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PermissionGroupView"
   /api/v1/oauth-clients:
     get:
       tags:
@@ -1050,6 +1160,91 @@ components:
       - name
       - permissions
       - version
+    SetRankRequest:
+      type: object
+      properties:
+        permissionGroupId:
+          type: string
+        duration:
+          type: string
+      required:
+      - duration
+      - permissionGroupId
+    RankView:
+      type: object
+      properties:
+        permissionGroupId:
+          type: string
+        expiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - permissionGroupId
+    PermissionGroupSettings:
+      type: object
+      properties:
+        name:
+          type: string
+        weight:
+          type: integer
+          format: int32
+        defaultGroup:
+          type: boolean
+        display:
+          $ref: "#/components/schemas/RankDisplayView"
+        permissions:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - defaultGroup
+      - display
+      - name
+      - permissions
+      - weight
+    RankDisplayView:
+      type: object
+      properties:
+        chatPrefix:
+          type: string
+        chatSuffix:
+          type: string
+        nameColor:
+          type: string
+        tabPrefix:
+          type: string
+      required:
+      - chatPrefix
+      - chatSuffix
+      - nameColor
+      - tabPrefix
+    UpdatePermissionGroupRequest:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/PermissionGroupSettings"
+        version:
+          type: integer
+          format: int64
+      required:
+      - settings
+      - version
+    PermissionGroupView:
+      type: object
+      properties:
+        id:
+          type: string
+        settings:
+          $ref: "#/components/schemas/PermissionGroupSettings"
+        version:
+          type: integer
+          format: int64
+      required:
+      - id
+      - settings
+      - version
     OAuthClientRequest:
       type: object
       properties:
@@ -1384,6 +1579,16 @@ components:
       - id
       - name
       - permissions
+    CreatePermissionGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        settings:
+          $ref: "#/components/schemas/PermissionGroupSettings"
+      required:
+      - id
+      - settings
     OAuthClientCredentials:
       type: object
       properties:

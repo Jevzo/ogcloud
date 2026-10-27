@@ -2,10 +2,13 @@ package io.ogwars.cloud.api.events
 
 import io.ogwars.cloud.contracts.NETWORK_SUBJECT
 import io.ogwars.cloud.contracts.events.v1.ConfigChanged
+import io.ogwars.cloud.contracts.events.v1.DefaultPermissionGroupChanged
 import io.ogwars.cloud.contracts.events.v1.EntityChanged
 import io.ogwars.cloud.contracts.events.v1.JobRequested
+import io.ogwars.cloud.contracts.events.v1.PlayerRankChanged
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.messaging.EventMetadataFactory
 import io.ogwars.cloud.messaging.EventPublisher
 import io.ogwars.cloud.messaging.KafkaTopics
@@ -31,6 +34,31 @@ class Announcements(
         id: GroupId,
         deleted: Boolean = false,
     ) = configChanged(actor, id.value) { setGroup(entity(id.value, deleted)) }
+
+    fun permissionGroup(
+        actor: Actor,
+        id: String,
+        deleted: Boolean = false,
+    ) = configChanged(actor, id) { setPermissionGroup(entity(id, deleted)) }
+
+    fun defaultPermissionGroup(
+        actor: Actor,
+        id: String,
+    ) = configChanged(actor, id) {
+        setDefaultPermissionGroup(DefaultPermissionGroupChanged.newBuilder().setPermissionGroupId(id))
+    }
+
+    fun playerRank(
+        actor: Actor,
+        rank: PlayerRank,
+    ) = configChanged(actor, rank.playerUuid.toString()) {
+        setPlayerRank(
+            PlayerRankChanged
+                .newBuilder()
+                .setPlayerUuid(rank.playerUuid.toString())
+                .setPermissionGroupId(rank.groupId),
+        )
+    }
 
     fun networkSettings(actor: Actor) =
         configChanged(actor, NETWORK_SUBJECT) {
