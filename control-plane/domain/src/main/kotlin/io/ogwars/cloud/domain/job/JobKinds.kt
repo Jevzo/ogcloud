@@ -19,6 +19,9 @@ object JobKinds {
 
     const val GROUP_ID = "groupId"
     const val BATCH_SIZE = "batchSize"
+
+    /** Servers replaced at once when the payload sets no [BATCH_SIZE]. */
+    const val DEFAULT_BATCH_SIZE = 5
     const val PROFILE_ID = "profileId"
 
     /** Jobs that replace servers; only one runs at a time, the rest wait queued. */

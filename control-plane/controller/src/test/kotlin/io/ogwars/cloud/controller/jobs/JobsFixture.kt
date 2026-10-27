@@ -12,6 +12,7 @@ import io.ogwars.cloud.persistence.JdbcJobStore
 import io.ogwars.cloud.persistence.JsonCodec
 import io.ogwars.cloud.persistence.TestDatabase
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import java.time.Duration
 import java.util.UUID
 
 /** Jobs on PostgreSQL and the lifecycle on Valkey; [settle] plays Kubernetes and the plugins between ticks. */
@@ -87,6 +88,7 @@ class JobsFixture(
             val current = jobs.find(job) ?: error("job vanished")
             if (current.state.isFinished) return current
             settle(failing())
+            f.clock.advance(TICK)
         }
         error("Job $job did not finish within $MAX_TICKS ticks")
     }
@@ -102,6 +104,9 @@ class JobsFixture(
 
     companion object {
         val ADMIN = Actor.system("test-admin")
-        private const val MAX_TICKS = 60
+        private const val MAX_TICKS = 100
+
+        /** Time that passes between two ticks of the runner, so waits such as the secret propagation end. */
+        val TICK: Duration = Duration.ofSeconds(5)
     }
 }

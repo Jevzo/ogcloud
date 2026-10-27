@@ -24,7 +24,7 @@ abstract class RestartJob(
         val options =
             RollOptions(
                 job.createdBy,
-                job.payload[JobKinds.BATCH_SIZE]?.toIntOrNull() ?: DEFAULT_BATCH_SIZE,
+                job.payload[JobKinds.BATCH_SIZE]?.toIntOrNull() ?: JobKinds.DEFAULT_BATCH_SIZE,
                 graceful = false,
             )
         return when (val result = roll.step(phases, job.progress - PHASES, options)) {
@@ -49,7 +49,6 @@ abstract class RestartJob(
 
     private companion object {
         const val PHASES = "phases"
-        const val DEFAULT_BATCH_SIZE = 5
 
         fun encodePhases(phases: List<List<GroupId>>) =
             phases.joinToString("|") { phase ->

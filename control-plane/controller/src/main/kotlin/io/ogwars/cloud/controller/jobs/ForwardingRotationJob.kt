@@ -8,6 +8,9 @@ import io.ogwars.cloud.domain.store.GroupStore
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.security.MessageDigest
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.util.HexFormat
 
 /** The BungeeGuard tokens in Infisical (D-0044); proxies use the last one, backends accept all (D-0065). */
@@ -36,6 +39,7 @@ class ForwardingRotationJob(
     private val secrets: SecretGenerator,
     private val groups: GroupStore,
     private val roll: RollingRestart,
+    private val clock: Clock,
 ) : JobHandler {
     override val kind = JobKinds.FORWARDING_ROTATE
 
@@ -58,12 +62,14 @@ class ForwardingRotationJob(
             }
 
             WAIT_ADD -> {
-                if (fingerprint(p) in
-                    mounted.mountedTokens().map(::fingerprint)
-                ) {
-                    continueWith(p + (STAGE to ROLL), 1, "new token synced")
+                waitForAdd(p)
+            }
+
+            PROPAGATE -> {
+                if (waited(p) >= SECRET_PROPAGATION) {
+                    continueWith(p + (STAGE to ROLL), 1, "new token reached the servers")
                 } else {
-                    continueWith(p, 1, "waiting for the new token to sync")
+                    continueWith(p, 1, "waiting for kubelets to refresh mounted secrets")
                 }
             }
 
@@ -76,15 +82,7 @@ class ForwardingRotationJob(
             }
 
             WAIT_REMOVE -> {
-                if (mounted.mountedTokens().none { fingerprint(it) in p.list(OLD) }) {
-                    JobStep.Succeeded("forwarding token rotated")
-                } else {
-                    continueWith(
-                        p,
-                        STEPS - 1,
-                        "waiting for the old tokens to disappear",
-                    )
-                }
+                waitForRemove(p)
             }
 
             else -> {
@@ -101,7 +99,11 @@ class ForwardingRotationJob(
         val old = p.list(OLD).toSet()
         val added = tokens.tokens().filter { fingerprint(it) !in old }
         val token = added.singleOrNull() ?: secrets.next().also(tokens::add)
-        return continueWith(p + mapOf(STAGE to WAIT_ADD, NEW to fingerprint(token)), 1, "added the new token")
+        return continueWith(
+            p + mapOf(STAGE to WAIT_ADD, NEW to fingerprint(token), SINCE to clock.millis().toString()),
+            1,
+            "added the new token",
+        )
     }
 
     private fun rollProxies(
@@ -152,8 +154,52 @@ class ForwardingRotationJob(
     ): JobStep {
         val old = p.list(OLD).toSet()
         tokens.tokens().filter { fingerprint(it) in old }.forEach(tokens::remove)
-        return continueWith(p + (STAGE to WAIT_REMOVE), STEPS - 1, "removed the old tokens")
+        return continueWith(
+            p + mapOf(STAGE to WAIT_REMOVE, SINCE to clock.millis().toString()),
+            STEPS - 1,
+            "removed the old tokens",
+        )
     }
+
+    /**
+     * The Secret object shows the token first; kubelets update mounted files only after their sync period, so
+     * backends are given [SECRET_PROPAGATION] before replacement proxies start using it.
+     */
+    private fun waitForAdd(p: Map<String, String>): JobStep =
+        when {
+            fingerprint(p) in mounted.mountedTokens().map(::fingerprint) -> {
+                continueWith(p + mapOf(STAGE to PROPAGATE, SINCE to clock.millis().toString()), 1, "new token synced")
+            }
+
+            waited(p) > SYNC_TIMEOUT -> {
+                JobStep.Failed("The new token did not reach the Kubernetes Secret within $SYNC_TIMEOUT")
+            }
+
+            else -> {
+                continueWith(p, 1, "waiting for the new token to sync")
+            }
+        }
+
+    private fun waitForRemove(p: Map<String, String>): JobStep =
+        when {
+            mounted.mountedTokens().none { fingerprint(it) in p.list(OLD) } -> {
+                JobStep.Succeeded("forwarding token rotated")
+            }
+
+            waited(p) > SYNC_TIMEOUT -> {
+                JobStep.Failed("The old tokens stayed in the Kubernetes Secret for $SYNC_TIMEOUT")
+            }
+
+            else -> {
+                continueWith(p, STEPS - 1, "waiting for the old tokens to disappear")
+            }
+        }
+
+    private fun waited(p: Map<String, String>): Duration =
+        Duration.between(
+            Instant.ofEpochMilli(p[SINCE]?.toLong() ?: clock.millis()),
+            clock.instant(),
+        )
 
     private fun continueWith(
         progress: Map<String, String>,
@@ -171,12 +217,18 @@ class ForwardingRotationJob(
         const val START = "start"
         const val ADD = "add"
         const val WAIT_ADD = "wait-add"
+        const val PROPAGATE = "propagate"
+        const val SINCE = "since"
         const val ROLL = "roll"
         const val REMOVE = "remove"
         const val WAIT_REMOVE = "wait-remove"
         const val STEPS = 4
         const val PROXY_BATCH = 1
         const val FINGERPRINT_CHARS = 16
+
+        /** Kubelet's sync period plus its secret cache TTL, both one minute by default. */
+        val SECRET_PROPAGATION: Duration = Duration.ofMinutes(2)
+        val SYNC_TIMEOUT: Duration = Duration.ofMinutes(15)
 
         fun fingerprint(token: String): String =
             HexFormat

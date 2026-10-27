@@ -26,7 +26,7 @@ class BundleRolloutJob(
         val options =
             RollOptions(
                 job.createdBy,
-                job.payload[JobKinds.BATCH_SIZE]?.toIntOrNull() ?: DEFAULT_BATCH_SIZE,
+                job.payload[JobKinds.BATCH_SIZE]?.toIntOrNull() ?: JobKinds.DEFAULT_BATCH_SIZE,
                 graceful = true,
             )
         return when (val result = roll.step(listOf(groupIds), job.progress, options)) {
@@ -34,9 +34,5 @@ class BundleRolloutJob(
             RollResult.Finished -> JobStep.Succeeded("servers of $profileId run the new bundle")
             is RollResult.Failed -> JobStep.Failed(result.reason)
         }
-    }
-
-    private companion object {
-        const val DEFAULT_BATCH_SIZE = 5
     }
 }

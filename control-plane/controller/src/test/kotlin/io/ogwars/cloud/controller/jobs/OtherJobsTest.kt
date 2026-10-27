@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.support.StaticListableBeanFactory
+import java.time.Duration
 
 class OtherJobsTest {
     @Test
@@ -32,7 +33,14 @@ class OtherJobsTest {
         val infisical = FakeTokenSource(mutableListOf("old-token"))
         val job = j.create(JobKinds.FORWARDING_ROTATE)
         val rotation =
-            ForwardingRotationJob(provider(infisical), { infisical.tokens() }, { "new-token" }, j.f.groupStore, j.roll)
+            ForwardingRotationJob(
+                provider(infisical),
+                { infisical.tokens() },
+                { "new-token" },
+                j.f.groupStore,
+                j.roll,
+                j.f.clock,
+            )
 
         val done = j.runToEnd(j.runner(rotation), job)
 
@@ -43,6 +51,61 @@ class OtherJobsTest {
             .listByGroup(proxy.id)
             .map { it.value.state } shouldBe listOf(ServerState.RUNNING)
         done.progress.values.none { "token" in it } shouldBe true
+    }
+
+    @Test
+    fun `proxies are rolled only after mounted secrets had time to refresh`() {
+        val proxy = group(GroupType.PROXY, id = "proxy")
+        val j = JobsFixture(listOf(group(id = "lobby"), proxy))
+        val oldProxy = j.running(proxy)
+        val infisical = FakeTokenSource(mutableListOf("old-token"))
+        j.create(JobKinds.FORWARDING_ROTATE)
+        val runner =
+            j.runner(
+                ForwardingRotationJob(provider(infisical), {
+                    infisical.tokens()
+                }, { "new-token" }, j.f.groupStore, j.roll, j.f.clock),
+            )
+        repeat(4) { runner.runOnce() }
+
+        j.f.servers
+            .get(oldProxy)
+            ?.value
+            ?.state shouldBe ServerState.RUNNING
+        j.f.clock.advance(Duration.ofMinutes(2))
+        // Propagation ends, then the roll starts the phase, plans the replacement and requests it.
+        repeat(4) { runner.runOnce() }
+        (
+            j.f.servers
+                .listByGroup(proxy.id)
+                .size > 1
+        ) shouldBe true
+    }
+
+    @Test
+    fun `a graceful roll stops an old server again after the autoscaler brought it back`() {
+        val proxy = group(GroupType.PROXY, id = "proxy")
+        val j = JobsFixture(listOf(group(id = "lobby"), proxy))
+        val old = j.running(proxy, players = 4)
+        val job = j.create(JobKinds.BUNDLE_ROLLOUT, mapOf(JobKinds.PROFILE_ID to "velocity-4.3.0"))
+        val runner = j.runner(BundleRolloutJob(j.f.groupStore, j.roll))
+        repeat(6) {
+            runner.runOnce()
+            j.settle()
+        }
+        j.f.servers
+            .get(old)
+            ?.value
+            ?.state shouldBe ServerState.DRAINING
+
+        j.f.lifecycle.undrain(old, JobsFixture.ADMIN, "load")
+        runner.runOnce()
+
+        j.f.servers
+            .get(old)
+            ?.value
+            ?.state shouldBe ServerState.DRAINING
+        j.jobs.find(job)?.state shouldBe JobState.RUNNING
     }
 
     @Test
@@ -57,6 +120,7 @@ class OtherJobsTest {
                 { "new-${++generated}" },
                 j.f.groupStore,
                 j.roll,
+                j.f.clock,
             )
         val job = j.create(JobKinds.FORWARDING_ROTATE)
         val runner = j.runner(rotation)
@@ -76,7 +140,7 @@ class OtherJobsTest {
         val rotation =
             ForwardingRotationJob(StaticListableBeanFactory().getBeanProvider(ForwardingTokenSource::class.java), {
                 emptyList()
-            }, { "x" }, j.f.groupStore, j.roll)
+            }, { "x" }, j.f.groupStore, j.roll, j.f.clock)
 
         val done = j.runToEnd(j.runner(rotation), job)
 

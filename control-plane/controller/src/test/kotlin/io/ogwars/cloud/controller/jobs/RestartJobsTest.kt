@@ -118,6 +118,49 @@ class RestartJobsTest {
     }
 
     @Test
+    fun `the batch size holds from the first batch on`() {
+        val j = JobsFixture(listOf(group(id = "lobby"), bedwars))
+        val old = List(3) { j.running(bedwars) }.toSet()
+        val job = j.create(JobKinds.GROUP_RESTART, mapOf(JobKinds.GROUP_ID to "bedwars", JobKinds.BATCH_SIZE to "1"))
+        val runner = j.runner(*j.restartHandlers())
+        var mostAtOnce = 0
+
+        repeat(40) {
+            runner.runOnce()
+            val pending =
+                j.f.servers.listByGroup(bedwars.id).map { it.value }.count {
+                    it.id !in old &&
+                        it.state != ServerState.RUNNING
+                }
+            mostAtOnce = maxOf(mostAtOnce, pending)
+            j.settle()
+        }
+
+        j.jobs.find(job)?.state shouldBe JobState.SUCCEEDED
+        mostAtOnce shouldBe 1
+    }
+
+    @Test
+    fun `a STATIC replacement started by someone else is adopted instead of starting a second server`() {
+        val smp = group(GroupType.STATIC, id = "smp", maintenance = true)
+        val j = JobsFixture(listOf(group(id = "lobby"), smp))
+        j.running(smp)
+        val job = j.create(JobKinds.GROUP_RESTART, mapOf(JobKinds.GROUP_ID to "smp"))
+        val runner = j.runner(*j.restartHandlers())
+        repeat(3) {
+            runner.runOnce()
+            j.settle()
+        }
+        val startedByAutoscaler = j.running(smp)
+
+        j.runToEnd(runner, job).state shouldBe JobState.SUCCEEDED
+
+        j.f.servers
+            .listByGroup(smp.id)
+            .map { it.value.id } shouldContainExactly listOf(startedByAutoscaler)
+    }
+
+    @Test
     fun `only one restart runs at a time`() {
         val j = JobsFixture(listOf(group(id = "lobby"), bedwars))
         j.running(bedwars)

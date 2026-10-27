@@ -44,7 +44,7 @@ data class RollOptions(
 /**
  * Replaces the servers of groups phase by phase and batch by batch, one stage per step. Replacements start before
  * the old servers stop, except in phases with a STATIC group, whose single volume forces stop-first. All state is
- * in the returned map, so a new leader resumes the roll where it was.
+ * in the returned map, and every stage can be repeated safely, so a new leader resumes the roll where it was.
  */
 @Component
 class RollingRestart(
@@ -63,179 +63,183 @@ class RollingRestart(
         val phase = state[PHASE]?.toInt() ?: 0
         if (phase >= phases.size) return RollResult.Finished
         val groupIds = phases[phase]
-        val order = if (groupIds.any { groups.find(it)?.value?.type == GroupType.STATIC }) STOP_FIRST else REPLACE_FIRST
+        val roll = Roll(state, phase, stagesFor(groupIds), options)
         return when (val stage = state[STAGE] ?: START) {
-            START -> startPhase(groupIds, state, phase, order)
-            REPLACE -> replace(state, phase, order, options)
-            WAIT_NEW -> waitForReplacements(state, phase, order)
-            STOP -> stopOld(state, phase, order, options)
-            WAIT_OLD -> waitForOldGone(state, phase, order, options)
+            START -> roll.startPhase(groupIds)
+            PLAN -> roll.plan()
+            REPLACE -> roll.replace()
+            WAIT_NEW -> roll.waitForReplacements()
+            STOP -> roll.stopOld()
+            WAIT_OLD -> roll.waitForOldGone()
             else -> RollResult.Failed("Unknown roll stage $stage")
         }
     }
 
-    private fun startPhase(
-        groupIds: List<GroupId>,
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-    ): RollResult {
-        val queue =
-            groupIds.flatMap { groupId ->
-                servers
-                    .listByGroup(groupId)
-                    .map { it.value }
-                    .filter {
-                        it.state != ServerState.STOPPING &&
-                            it.state != ServerState.STOPPED
-                    }.map { entry(groupId, it.id) }
-            }
-        return nextBatch(state + (QUEUE to queue.joinedList()), phase, order)
-    }
+    private fun stagesFor(groupIds: List<GroupId>) =
+        if (groupIds.any { groups.find(it)?.value?.type == GroupType.STATIC }) STOP_FIRST else REPLACE_FIRST
 
-    private fun nextBatch(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-        batchSize: Int = state[BATCH_SIZE_KEY]?.toInt() ?: DEFAULT_BATCH,
-    ): RollResult {
-        val queue = state.list(QUEUE)
-        if (queue.isEmpty()) {
-            return RollResult.Running(
-                mapOf(PHASE to (phase + 1).toString(), STAGE to START),
-                phase + 1,
-                "phase ${phase + 1} done",
+    /** One step of one phase; [stages] is the order of the stages each batch goes through. */
+    private inner class Roll(
+        private val state: Map<String, String>,
+        private val phase: Int,
+        private val stages: List<String>,
+        private val options: RollOptions,
+    ) {
+        private val label = "phase ${phase + 1}"
+
+        fun startPhase(groupIds: List<GroupId>): RollResult {
+            val queue =
+                groupIds.flatMap { groupId ->
+                    servers
+                        .listByGroup(
+                            groupId,
+                        ).map { it.value }
+                        .filter { it.state != ServerState.STOPPING }
+                        .map { entry(groupId.value, it.id) }
+                }
+            return nextBatch(state + (QUEUE to queue.joinedList()))
+        }
+
+        /** The replacement ids are saved before any is requested, so a repeated step requests the same servers. */
+        fun plan(): RollResult {
+            val planned = state.list(BATCH).map { entry(groupOf(it), ids.next()) }
+            return running(
+                state + mapOf(NEW to planned.joinedList(), STAGE to REPLACE),
+                "$label: replacing ${planned.size} servers",
             )
         }
-        val batch = queue.take(batchSize)
-        val next =
-            state +
-                mapOf(
-                    QUEUE to queue.drop(batch.size).joinedList(),
-                    BATCH to batch.joinedList(),
-                    NEW to "",
-                    STAGE to order.first(),
-                )
-        return RollResult.Running(next, phase, "phase ${phase + 1}: replacing ${batch.size} servers")
-    }
 
-    private fun replace(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-        options: RollOptions,
-    ): RollResult {
-        val replacements =
-            state.list(BATCH).mapNotNull { entry ->
-                val group = groups.find(GroupId(entry.substringBefore(SEPARATOR)))?.value ?: return@mapNotNull null
-                ids
-                    .next()
-                    .also {
-                        lifecycle.request(it, group.id, group.type, group.profileId, options.actor)
-                    }.let { entry(group.id, it) }
-            }
-        return advance(
-            state + (NEW to replacements.joinedList()),
-            phase,
-            order,
-            REPLACE,
-            options,
-            "phase ${phase + 1}: waiting for ${replacements.size} replacements",
-        )
-    }
+        fun replace(): RollResult {
+            val requested =
+                state.list(NEW).mapNotNull { planned ->
+                    val group = groups.find(GroupId(groupOf(planned)))?.value ?: return@mapNotNull null
+                    val server = lifecycle.request(idOf(planned), group.id, group.type, group.profileId, options.actor)
+                    // A STATIC group's only server may have been started meanwhile (autoscaler, admin): it is the replacement.
+                    val id =
+                        server?.id ?: occupant(group.id)
+                            ?: return RollResult.Running(
+                                state,
+                                phase,
+                                "$label: waiting for ${group.id} to free its volume",
+                            )
+                    entry(group.id.value, id)
+                }
+            return advance(
+                state + (NEW to requested.joinedList()),
+                REPLACE,
+                "$label: waiting for ${requested.size} replacements",
+            )
+        }
 
-    private fun waitForReplacements(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-    ): RollResult {
-        val pending =
-            state.list(NEW).map {
-                it.substringBefore(SEPARATOR) to
-                    UUID.fromString(it.substringAfter(SEPARATOR))
+        fun waitForReplacements(): RollResult {
+            val pending = state.list(NEW)
+            pending.forEach { planned ->
+                val group = GroupId(groupOf(planned))
+                if (servers.get(idOf(planned)) == null ||
+                    failures.isPaused(group)
+                ) {
+                    return RollResult.Failed("A replacement server of group $group did not start")
+                }
             }
-        pending.forEach { (group, id) ->
-            if (servers.get(id) == null ||
-                failures.isPaused(GroupId(group))
+            if (pending.all {
+                    servers.get(idOf(it))?.value?.state == ServerState.RUNNING
+                }
             ) {
-                return RollResult.Failed("A replacement server of group $group did not start")
+                return advance(state, WAIT_NEW, "$label: replacements running")
             }
+            if (waited() >
+                REPLACEMENT_TIMEOUT
+            ) {
+                return RollResult.Failed("Replacements of $label did not start within $REPLACEMENT_TIMEOUT")
+            }
+            return running(state, "$label: waiting for replacements")
         }
-        if (pending.all { (_, id) -> servers.get(id)?.value?.state == ServerState.RUNNING }) {
-            return advance(state, phase, order, WAIT_NEW, null, "phase ${phase + 1}: replacements running")
-        }
-        if (waited(state) >
-            REPLACEMENT_TIMEOUT
-        ) {
-            return RollResult.Failed("Replacements of phase ${phase + 1} did not start within $REPLACEMENT_TIMEOUT")
-        }
-        return RollResult.Running(state, phase, "phase ${phase + 1}: waiting for replacements")
-    }
 
-    private fun stopOld(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-        options: RollOptions,
-    ): RollResult {
-        state.list(BATCH).map { UUID.fromString(it.substringAfter(SEPARATOR)) }.forEach { id ->
-            if (options.graceful) {
-                lifecycle.stop(
-                    id,
-                    options.actor,
-                    REASON,
+        fun stopOld(): RollResult {
+            stopEach(state.list(BATCH).map(::idOf))
+            return advance(state, STOP, "$label: stopping old servers")
+        }
+
+        fun waitForOldGone(): RollResult {
+            val remaining = state.list(BATCH).map(::idOf).mapNotNull { servers.get(it)?.value }
+            if (remaining.isEmpty()) return advance(state, WAIT_OLD, "$label: old servers stopped")
+            // The autoscaler may have brought a draining server back; it has to go again.
+            stopEach(remaining.filter { it.state == ServerState.RUNNING }.map { it.id })
+            val limit = if (options.graceful) GRACEFUL_STOP_TIMEOUT else STOP_TIMEOUT
+            if (waited() > limit) return RollResult.Failed("Old servers of $label did not stop within $limit")
+            return running(state, "$label: waiting for ${remaining.size} old servers to stop")
+        }
+
+        private fun stopEach(ids: List<UUID>) =
+            ids.forEach { id ->
+                if (options.graceful) {
+                    lifecycle.stop(
+                        id,
+                        options.actor,
+                        REASON,
+                    )
+                } else {
+                    lifecycle.stopNow(id, options.actor, REASON)
+                }
+            }
+
+        private fun nextBatch(state: Map<String, String>): RollResult {
+            val queue = state.list(QUEUE)
+            if (queue.isEmpty()) {
+                return RollResult.Running(
+                    mapOf(PHASE to (phase + 1).toString(), STAGE to START),
+                    phase + 1,
+                    "$label done",
                 )
-            } else {
-                lifecycle.stopNow(id, options.actor, REASON)
             }
+            val batch = queue.take(options.batchSize)
+            val next =
+                state +
+                    mapOf(
+                        QUEUE to queue.drop(batch.size).joinedList(),
+                        BATCH to batch.joinedList(),
+                        NEW to "",
+                        STAGE to stages.first(),
+                    )
+            return running(next, "$label: ${batch.size} servers next")
         }
-        return advance(state, phase, order, STOP, options, "phase ${phase + 1}: stopping old servers")
+
+        /** Moves to the stage after [current], or to the next batch after the last one. */
+        private fun advance(
+            state: Map<String, String>,
+            current: String,
+            message: String,
+        ): RollResult {
+            val nextStage = stages.getOrNull(stages.indexOf(current) + 1) ?: return nextBatch(state)
+            return running(state + mapOf(STAGE to nextStage, SINCE to clock.millis().toString()), message)
+        }
+
+        private fun running(
+            state: Map<String, String>,
+            message: String,
+        ) = RollResult.Running(state, phase, message)
+
+        private fun waited(): Duration =
+            Duration.between(Instant.ofEpochMilli(state[SINCE]?.toLong() ?: clock.millis()), clock.instant())
     }
 
-    private fun waitForOldGone(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-        options: RollOptions,
-    ): RollResult {
-        if (state.list(BATCH).all { servers.get(UUID.fromString(it.substringAfter(SEPARATOR))) == null }) {
-            return advance(state, phase, order, WAIT_OLD, options, "phase ${phase + 1}: old servers stopped")
-        }
-        // A graceful roll waits for players to leave; the deadline sweeper bounds every other stop.
-        if (!options.graceful &&
-            waited(state) > STOP_TIMEOUT
-        ) {
-            return RollResult.Failed("Old servers of phase ${phase + 1} did not stop within $STOP_TIMEOUT")
-        }
-        return RollResult.Running(state, phase, "phase ${phase + 1}: waiting for old servers to stop")
-    }
-
-    /** Moves to the stage after [current], or to the next batch after the last one. */
-    private fun advance(
-        state: Map<String, String>,
-        phase: Int,
-        order: List<String>,
-        current: String,
-        options: RollOptions?,
-        message: String,
-    ): RollResult {
-        val nextStage = order.getOrNull(order.indexOf(current) + 1)
-        val withBatchSize = options?.let { state + (BATCH_SIZE_KEY to it.batchSize.toString()) } ?: state
-        if (nextStage == null) return nextBatch(withBatchSize, phase, order)
-        return RollResult.Running(
-            withBatchSize + mapOf(STAGE to nextStage, SINCE to clock.millis().toString()),
-            phase,
-            message,
-        )
-    }
-
-    private fun waited(state: Map<String, String>): Duration =
-        Duration.between(Instant.ofEpochMilli(state[SINCE]?.toLong() ?: clock.millis()), clock.instant())
+    private fun occupant(groupId: GroupId): UUID? =
+        servers
+            .listByGroup(groupId)
+            .map { it.value }
+            .firstOrNull {
+                it.state !=
+                    ServerState.STOPPING
+            }?.id
 
     private fun entry(
-        groupId: GroupId,
+        groupId: String,
         id: UUID,
-    ) = "${groupId.value}$SEPARATOR$id"
+    ) = "$groupId$SEPARATOR$id"
+
+    private fun groupOf(entry: String) = entry.substringBefore(SEPARATOR)
+
+    private fun idOf(entry: String): UUID = UUID.fromString(entry.substringAfter(SEPARATOR))
 
     private companion object {
         const val PHASE = "phase"
@@ -244,20 +248,24 @@ class RollingRestart(
         const val BATCH = "batch"
         const val NEW = "new"
         const val SINCE = "since"
-        const val BATCH_SIZE_KEY = "batchSize"
         const val SEPARATOR = "/"
         const val REASON = "restart"
-        const val DEFAULT_BATCH = 5
 
         const val START = "start"
+        const val PLAN = "plan"
         const val REPLACE = "replace"
         const val WAIT_NEW = "wait-new"
         const val STOP = "stop"
         const val WAIT_OLD = "wait-old"
-        val REPLACE_FIRST = listOf(REPLACE, WAIT_NEW, STOP, WAIT_OLD)
-        val STOP_FIRST = listOf(STOP, WAIT_OLD, REPLACE, WAIT_NEW)
+
+        // PLAN must precede REPLACE in both orders: replacement ids are fixed before anything is requested.
+        val REPLACE_FIRST = listOf(PLAN, REPLACE, WAIT_NEW, STOP, WAIT_OLD)
+        val STOP_FIRST = listOf(STOP, WAIT_OLD, PLAN, REPLACE, WAIT_NEW)
 
         val REPLACEMENT_TIMEOUT: Duration = Duration.ofMinutes(10)
         val STOP_TIMEOUT: Duration = Duration.ofMinutes(10)
+
+        /** Proxies only stop once their players left; a roll that waits longer fails instead of blocking all others. */
+        val GRACEFUL_STOP_TIMEOUT: Duration = Duration.ofHours(2)
     }
 }
