@@ -43,7 +43,7 @@ jobs:
         if: steps.bump.outputs.changed == 'true'
         run: |
           mise run gen
-          (cd data-plane/pkg && go test ./contracts/...)
+          (cd data-plane && go test ./pkg/contracts/...)
       - name: Open the PR
         if: steps.bump.outputs.changed == 'true'
         run: |
