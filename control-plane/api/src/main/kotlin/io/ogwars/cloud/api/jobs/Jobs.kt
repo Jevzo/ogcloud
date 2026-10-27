@@ -65,9 +65,23 @@ class JobManagement(
         actor: Actor,
         kind: String,
         payload: Map<String, String> = emptyMap(),
+    ): Job = announce(actor, create(actor, kind, payload))
+
+    /** Stores the job without announcing it, e.g. inside a caller's transaction; [announce] it after the commit. */
+    fun create(
+        actor: Actor,
+        kind: String,
+        payload: Map<String, String> = emptyMap(),
     ): Job {
         val job = Job(ids.next(), kind, JobState.QUEUED, payload, emptyMap(), 0, 0, "", actor, clock.instant())
         jobs.create(job)
+        return job
+    }
+
+    fun announce(
+        actor: Actor,
+        job: Job,
+    ): Job {
         announcements.job(actor, job.id)
         return job
     }

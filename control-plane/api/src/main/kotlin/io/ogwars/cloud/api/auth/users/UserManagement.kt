@@ -15,10 +15,14 @@ import io.ogwars.cloud.domain.user.WebUser
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 import java.util.UUID
 
-/** Dashboard users (D-0094): roles are assigned by owners, and every change that matters ends the user's logins. */
+/**
+ * Dashboard users (D-0094): roles are assigned by owners, and every change that matters ends the user's logins in
+ * the same transaction, so a change never commits while the old logins live on.
+ */
 @Service
 class UserManagement(
     private val users: WebUserStore,
@@ -28,6 +32,7 @@ class UserManagement(
     private val logins: Logins,
     private val passkeys: Passkeys,
     private val ids: IdGenerator,
+    private val transactions: TransactionTemplate,
     private val clock: Clock,
 ) {
     fun list(
@@ -67,11 +72,13 @@ class UserManagement(
             owners.requireOwner(actor)
             requireRole(roleId)
         }
-        users.update(
-            expectedVersion,
-            current.copy(username = username, email = email, roleId = roleId, enabled = enabled),
-        )
-        if (roleId != current.roleId || enabled != current.enabled) logins.revokeUser(id)
+        transactions.executeWithoutResult {
+            users.update(
+                expectedVersion,
+                current.copy(username = username, email = email, roleId = roleId, enabled = enabled),
+            )
+            if (roleId != current.roleId || enabled != current.enabled) logins.revokeUser(id)
+        }
         return get(id)
     }
 
@@ -108,9 +115,11 @@ class UserManagement(
         id: UUID,
     ) {
         owners.requireMayManage(actor, get(id).value)
-        users.delete(id)
-        passkeys.deleteAll(id)
-        logins.revokeUser(id)
+        transactions.executeWithoutResult {
+            users.delete(id)
+            passkeys.deleteAll(id)
+            logins.revokeUser(id)
+        }
     }
 
     /** The signed-in user; machine clients have no profile. */
@@ -124,8 +133,10 @@ class UserManagement(
         password: String,
     ) {
         PasswordPolicy.validate(password)
-        users.setPasswordHash(id, passwords.hash(password))
-        logins.revokeUser(id)
+        transactions.executeWithoutResult {
+            users.setPasswordHash(id, passwords.hash(password))
+            logins.revokeUser(id)
+        }
     }
 
     private fun requireRole(roleId: String) {

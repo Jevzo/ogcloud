@@ -13,10 +13,10 @@ import io.ogwars.cloud.domain.runtime.RuntimeProfile
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.GroupStore
-import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.Revisioned
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Service
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 
 /** `ogcloud.groups.*` */
@@ -30,10 +30,10 @@ data class GroupProperties(
 @Service
 class GroupManagement(
     private val groups: GroupStore,
-    private val network: NetworkSettingsStore,
     private val jobs: JobManagement,
     private val announcements: Announcements,
     private val properties: GroupProperties,
+    private val transactions: TransactionTemplate,
     private val clock: Clock,
 ) {
     fun list(): List<Revisioned<Group>> = groups.findAll()
@@ -68,19 +68,29 @@ class GroupManagement(
         return get(id)
     }
 
-    /** Soft-deletes the group (restorable until its purge, D-0043) and starts the job that stops its servers. */
+    /**
+     * Soft-deletes the group (restorable until its purge, D-0043) and starts the job that stops its servers; both
+     * commit together. The network's default group cannot go.
+     */
     fun delete(
         actor: Actor,
         id: GroupId,
     ): Job {
-        if (network.load().value.defaultGroupId ==
-            id
-        ) {
-            throw ConflictException("Group $id is the network's default group")
-        }
-        if (!groups.softDelete(id, clock.instant())) throw NoSuchElementException("Group $id does not exist")
+        val job =
+            checkNotNull(
+                transactions.execute {
+                    if (!groups.softDelete(
+                            id,
+                            clock.instant(),
+                        )
+                    ) {
+                        throw NoSuchElementException("Group $id does not exist")
+                    }
+                    jobs.create(actor, JobKinds.GROUP_DELETE, mapOf(JobKinds.GROUP_ID to id.value))
+                },
+            )
         announcements.group(actor, id, deleted = true)
-        return jobs.start(actor, JobKinds.GROUP_DELETE, mapOf(JobKinds.GROUP_ID to id.value))
+        return jobs.announce(actor, job)
     }
 
     fun restore(

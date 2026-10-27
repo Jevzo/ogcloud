@@ -9,7 +9,6 @@ import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.network.NetworkSettings
 import io.ogwars.cloud.domain.store.ConflictException
-import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.store.StaleUpdateException
@@ -20,7 +19,6 @@ import java.time.Clock
 @Service
 class NetworkManagement(
     private val network: NetworkSettingsStore,
-    private val groups: GroupStore,
     private val owners: Owners,
     private val jobs: JobManagement,
     private val announcements: Announcements,
@@ -34,9 +32,6 @@ class NetworkManagement(
         expectedVersion: Long,
         settings: NetworkSettings,
     ): Revisioned<NetworkSettings> {
-        require(
-            groups.find(settings.defaultGroupId) != null,
-        ) { "The default group ${settings.defaultGroupId} does not exist" }
         network.save(expectedVersion, settings.copy(eulaAcceptedAt = network.load().value.eulaAcceptedAt))
         announcements.networkSettings(actor)
         return get()

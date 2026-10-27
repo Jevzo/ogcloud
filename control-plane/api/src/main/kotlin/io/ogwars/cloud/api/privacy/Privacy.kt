@@ -91,13 +91,14 @@ class Privacy(
     ) {
         if (sessions.get(uuid) != null) throw ConflictException("Player $uuid is online; erase them once they leave")
         val pseudonym = pseudonymizer.pseudonym(uuid.toString())
+        // Gone first: an offline player's profile is rewritten at their next login anyway.
+        readModels.delete(ReadModelKind.PLAYER_PROFILE, uuid.toString())
         transactions.executeWithoutResult {
             val deleted = players.delete(uuid)
             val pseudonymised = pseudonyms.pseudonymise(uuid.toString(), pseudonym)
             if (!deleted && pseudonymised == 0) throw NoSuchElementException("Nothing is stored about player $uuid")
+            recordErasure(actor, "POST $PRIVACY$PLAYER$ERASURE", uuid.toString(), pseudonym)
         }
-        readModels.delete(ReadModelKind.PLAYER_PROFILE, uuid.toString())
-        recordErasure(actor, "POST $PRIVACY$PLAYER$ERASURE", uuid.toString(), pseudonym)
     }
 
     fun exportUser(
@@ -130,8 +131,8 @@ class Privacy(
             passkeys.deleteAll(id)
             logins.revokeUser(id)
             pseudonyms.pseudonymise(id.toString(), pseudonym)
+            recordErasure(actor, "POST $PRIVACY$USER$ERASURE", id.toString(), pseudonym)
         }
-        recordErasure(actor, "POST $PRIVACY$USER$ERASURE", id.toString(), pseudonym)
     }
 
     // The entry itself must not name the erased person, even when they erased themselves.

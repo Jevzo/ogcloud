@@ -6,7 +6,6 @@ import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
-import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.ObjectStore
 import io.ogwars.cloud.domain.store.TemplateVersionStore
@@ -121,11 +120,7 @@ class Templates(
         versionId: UUID,
     ) {
         val version = version(groupId, versionId)
-        if (group(groupId).activeTemplateVersionId ==
-            versionId
-        ) {
-            throw ConflictException("Promote another version before deleting the active one")
-        }
+        // The store refuses the active version; the object goes only once the row has.
         templates.delete(versionId)
         objects.delete(version.objectKey)
     }
