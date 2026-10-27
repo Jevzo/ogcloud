@@ -66,6 +66,21 @@ internal object LuaScripts {
         return 1
     """
 
+    /**
+     * KEYS: read model. ARGV: "1" if a copy is expected, the expected bytes, "1" to write (else delete), the new
+     * bytes. Returns 1 if the stored copy was the expected one and got replaced.
+     */
+    const val REPLACE_READ_MODEL = """
+        local current = redis.call('GET', KEYS[1])
+        if ARGV[1] == '1' then
+            if current ~= ARGV[2] then return 0 end
+        elseif current then
+            return 0
+        end
+        if ARGV[3] == '1' then redis.call('SET', KEYS[1], ARGV[4]) else redis.call('DEL', KEYS[1]) end
+        return 1
+    """
+
     /** KEYS: lock. ARGV: token. Returns 1 if released by its owner. */
     const val RELEASE_LOCK = """
         if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end

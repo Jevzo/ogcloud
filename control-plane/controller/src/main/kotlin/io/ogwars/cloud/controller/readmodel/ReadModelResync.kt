@@ -4,7 +4,7 @@ import io.ogwars.cloud.controller.leader.LeaderLoop
 import org.springframework.stereotype.Component
 import java.time.Duration
 
-/** Repairs read models that missed an announcement or a Valkey failover lost (D-0048, D-0100). */
+/** Repairs config read models and ranks that missed an announcement or a Valkey failover lost (D-0048, D-0100). */
 @Component
 class ReadModelResync(
     private val sync: ReadModelSync,

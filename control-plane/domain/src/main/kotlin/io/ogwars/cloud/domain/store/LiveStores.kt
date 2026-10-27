@@ -147,6 +147,17 @@ interface ReadModelStore {
 
     /** Every stored id of [kind], so a resync can drop read models whose entity is gone (D-0100). */
     fun ids(kind: ReadModelKind): Set<String>
+
+    /**
+     * Writes [encoded], or deletes the read model when it is null, only while the stored copy is still [expected]
+     * (null: absent). False if something else wrote it meanwhile.
+     */
+    fun replace(
+        kind: ReadModelKind,
+        id: String,
+        expected: ByteArray?,
+        encoded: ByteArray?,
+    ): Boolean
 }
 
 /** Refresh tokens rotated away, so presenting one again is detected as reuse (D-0090). */

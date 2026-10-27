@@ -34,55 +34,56 @@ class ReadModelSync(
     fun group(
         id: GroupId,
         deleted: Boolean = false,
-        onlyIfChanged: Boolean = false,
+        resync: Boolean = false,
     ) {
+        val groupWrite = ReadModelWrite.of(readModels, ReadModelKind.GROUP, id.value, resync)
+        val templateWrite = ReadModelWrite.of(readModels, ReadModelKind.ACTIVE_TEMPLATE, id.value, resync)
         val group = if (deleted) null else groups.find(id)
         if (group == null) {
-            if (onlyIfChanged && readModels.get(ReadModelKind.GROUP, id.value) == null) return
-            readModels.delete(ReadModelKind.GROUP, id.value)
-            readModels.delete(ReadModelKind.ACTIVE_TEMPLATE, id.value)
-            broadcasts.group(
-                GroupUpdated
-                    .newBuilder()
-                    .setGroupId(id.value)
-                    .setDeleted(true)
-                    .build(),
-            )
+            val changed = readModels.write(ReadModelKind.GROUP, id.value, null, groupWrite)
+            readModels.write(ReadModelKind.ACTIVE_TEMPLATE, id.value, null, templateWrite)
+            if (changed || !resync) {
+                broadcasts.group(
+                    GroupUpdated
+                        .newBuilder()
+                        .setGroupId(id.value)
+                        .setDeleted(true)
+                        .build(),
+                )
+            }
             return
         }
         val message = ReadModelMessages.group(group)
-        val changed = store(ReadModelKind.GROUP, id.value, message.toByteArray())
+        val changed = readModels.write(ReadModelKind.GROUP, id.value, message.toByteArray(), groupWrite)
         // A promote or rollback by the API arrives as a group change.
-        templates.publishActive(group.value)
-        if (changed || !onlyIfChanged) broadcasts.group(message)
+        templates.publishActive(group.value, templateWrite)
+        if (changed || !resync) broadcasts.group(message)
     }
 
-    fun networkSettings(onlyIfChanged: Boolean = false) {
+    fun networkSettings(resync: Boolean = false) {
+        val stored = readModels.get(ReadModelKind.NETWORK_SETTINGS, NETWORK_SUBJECT)
         val message = ReadModelMessages.networkSettings(network.load())
-        val previous =
-            readModels
-                .get(
-                    ReadModelKind.NETWORK_SETTINGS,
-                    NETWORK_SUBJECT,
-                )?.let(NetworkSettingsUpdated::parseFrom)
-        if (!store(ReadModelKind.NETWORK_SETTINGS, NETWORK_SUBJECT, message.toByteArray()) && onlyIfChanged) return
+        val write = if (resync) ReadModelWrite.Replace(stored) else ReadModelWrite.Overwrite
+        if (!readModels.write(ReadModelKind.NETWORK_SETTINGS, NETWORK_SUBJECT, message.toByteArray(), write) &&
+            resync
+        ) {
+            return
+        }
         broadcasts.network(message)
+        val previous = stored?.let(NetworkSettingsUpdated::parseFrom)
         if (previous?.permissionSystemEnabled == false && message.permissionSystemEnabled) resyncOnlinePlayers()
     }
 
     fun permissionGroup(
         id: String,
-        onlyIfChanged: Boolean = false,
+        resync: Boolean = false,
     ) {
+        val write = ReadModelWrite.of(readModels, ReadModelKind.PERMISSION_GROUP, id, resync)
         val group = permissionGroups.find(id)
-        if (group == null) {
-            if (onlyIfChanged && readModels.get(ReadModelKind.PERMISSION_GROUP, id) == null) return
-            readModels.delete(ReadModelKind.PERMISSION_GROUP, id)
-            broadcasts.permissionGroup(id, version = 0, deleted = true)
-            return
-        }
-        val changed = store(ReadModelKind.PERMISSION_GROUP, id, ReadModelMessages.permissionGroup(group).toByteArray())
-        if (changed || !onlyIfChanged) broadcasts.permissionGroup(id, group.revision, deleted = false)
+        val encoded = group?.let { ReadModelMessages.permissionGroup(it).toByteArray() }
+        val changed = readModels.write(ReadModelKind.PERMISSION_GROUP, id, encoded, write)
+        if (!changed && resync) return
+        broadcasts.permissionGroup(id, group?.revision ?: 0, deleted = group == null)
     }
 
     /** An announced NPC change: the group's list is rewritten and that one NPC is broadcast. */
@@ -99,36 +100,46 @@ class ReadModelSync(
         broadcasts.npc(npcId, groupId.value, deleted)
     }
 
-    /** Rebuilds every read model and broadcasts what differs, e.g. after a lost announcement or a Valkey failover. */
+    /**
+     * Rebuilds the config read models (groups, active templates, NPCs, network, permission groups) and the online
+     * players' ranks, and broadcasts what differs, e.g. after a lost announcement or a Valkey failover.
+     */
     fun resyncAll() {
         val active = groups.findAll().map { it.value.id }
         val activeIds = active.map { it.value }.toSet()
         active.forEach { id ->
-            group(id, onlyIfChanged = true)
+            group(id, resync = true)
             resyncNpcs(id)
         }
-        (
-            readModels.ids(
-                ReadModelKind.GROUP,
-            ) - activeIds
-        ).forEach { group(GroupId(it), deleted = true, onlyIfChanged = true) }
+        (readModels.ids(ReadModelKind.GROUP) - activeIds).forEach { group(GroupId(it), deleted = true, resync = true) }
+        // A group restored meanwhile gets its list back on the next resync.
         (
             readModels.ids(
                 ReadModelKind.NPCS_BY_GROUP,
             ) - activeIds
         ).forEach { readModels.delete(ReadModelKind.NPCS_BY_GROUP, it) }
-        networkSettings(onlyIfChanged = true)
+        networkSettings(resync = true)
         val permissionGroupIds = permissionGroups.findAll().map { it.value.id }.toSet()
-        (permissionGroupIds + readModels.ids(ReadModelKind.PERMISSION_GROUP)).forEach {
-            permissionGroup(it, onlyIfChanged = true)
-        }
+        (
+            permissionGroupIds +
+                readModels.ids(
+                    ReadModelKind.PERMISSION_GROUP,
+                )
+        ).forEach { permissionGroup(it, resync = true) }
+        sessions.onlinePlayers().forEach(permissions::resync)
     }
 
     private fun resyncNpcs(groupId: GroupId) {
+        val stored = readModels.get(ReadModelKind.NPCS_BY_GROUP, groupId.value)
         val current = ReadModelMessages.npcs(npcs.findByGroup(groupId))
-        val stored = readModels.get(ReadModelKind.NPCS_BY_GROUP, groupId.value)?.let(ListNpcsResponse::parseFrom)
-        if (!store(ReadModelKind.NPCS_BY_GROUP, groupId.value, current.toByteArray())) return
-        val before = stored?.npcsList.orEmpty().associateBy { it.npcId }
+        val write = ReadModelWrite.Replace(stored)
+        if (!readModels.write(ReadModelKind.NPCS_BY_GROUP, groupId.value, current.toByteArray(), write)) return
+        val before =
+            stored
+                ?.let(ListNpcsResponse::parseFrom)
+                ?.npcsList
+                .orEmpty()
+                .associateBy { it.npcId }
         current.npcsList.filter { before[it.npcId] != it }.forEach {
             broadcasts.npc(
                 it.npcId,
@@ -148,16 +159,5 @@ class ReadModelSync(
     /** The permission system was switched back on: every online player's proxy needs their rank again. */
     private fun resyncOnlinePlayers() {
         sessions.onlinePlayers().forEach(permissions::publish)
-    }
-
-    /** Stores [encoded] and tells whether it differed from the stored copy. */
-    private fun store(
-        kind: ReadModelKind,
-        id: String,
-        encoded: ByteArray,
-    ): Boolean {
-        if (readModels.get(kind, id)?.contentEquals(encoded) == true) return false
-        readModels.put(kind, id, encoded)
-        return true
     }
 }

@@ -147,6 +147,41 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
     }
 
     @Test
+    fun `a read model is replaced only while it is still the expected copy`() {
+        val readModels = ValkeyReadModelStore(valkey)
+
+        readModels.replace(
+            ReadModelKind.NPCS_BY_GROUP,
+            "lobby",
+            expected = byteArrayOf(1),
+            encoded = byteArrayOf(2),
+        ) shouldBe
+            false
+        readModels.replace(ReadModelKind.NPCS_BY_GROUP, "lobby", expected = null, encoded = byteArrayOf(2)) shouldBe
+            true
+        readModels.replace(ReadModelKind.NPCS_BY_GROUP, "lobby", expected = null, encoded = byteArrayOf(3)) shouldBe
+            false
+        readModels.replace(
+            ReadModelKind.NPCS_BY_GROUP,
+            "lobby",
+            expected = byteArrayOf(9),
+            encoded = byteArrayOf(3),
+        ) shouldBe
+            false
+        readModels.replace(
+            ReadModelKind.NPCS_BY_GROUP,
+            "lobby",
+            expected = byteArrayOf(2),
+            encoded = byteArrayOf(3),
+        ) shouldBe
+            true
+        readModels.get(ReadModelKind.NPCS_BY_GROUP, "lobby")?.toList() shouldBe listOf<Byte>(3)
+        readModels.replace(ReadModelKind.NPCS_BY_GROUP, "lobby", expected = byteArrayOf(3), encoded = null) shouldBe
+            true
+        readModels.get(ReadModelKind.NPCS_BY_GROUP, "lobby") shouldBe null
+    }
+
+    @Test
     fun `rotated refresh tokens are remembered until their own expiry`() {
         val rotated = ValkeyRotatedTokenStore(valkey)
 

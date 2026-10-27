@@ -137,6 +137,23 @@ class ValkeyReadModelStore(
         valkey.sync().del(ValkeyKeys.readModel(kind, id))
     }
 
+    override fun replace(
+        kind: ReadModelKind,
+        id: String,
+        expected: ByteArray?,
+        encoded: ByteArray?,
+    ): Boolean =
+        valkey.evalLong(
+            LuaScripts.REPLACE_READ_MODEL,
+            listOf(ValkeyKeys.readModel(kind, id)),
+            flag(expected != null),
+            expected ?: EMPTY,
+            flag(encoded != null),
+            encoded ?: EMPTY,
+        ) == 1L
+
+    private fun flag(set: Boolean) = (if (set) "1" else "0").utf8()
+
     // SCAN walks the keyspace in small steps instead of blocking Valkey like KEYS.
     override fun ids(kind: ReadModelKind): Set<String> {
         val prefix = ValkeyKeys.readModel(kind, "")
@@ -152,6 +169,7 @@ class ValkeyReadModelStore(
 
     private companion object {
         const val SCAN_PAGE = 500L
+        val EMPTY = ByteArray(0)
     }
 }
 

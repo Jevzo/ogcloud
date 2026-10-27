@@ -38,6 +38,22 @@ class PlayerPermissions(
         }
     }
 
+    /** A resync: rewrites a profile that differs and tells the proxy about a rank the session lacks (D-0100). */
+    fun resync(playerUuid: UUID) {
+        val write = ReadModelWrite.of(readModels, ReadModelKind.PLAYER_PROFILE, playerUuid.toString(), resync = true)
+        val player = players.find(playerUuid) ?: return
+        readModels.write(
+            ReadModelKind.PLAYER_PROFILE,
+            playerUuid.toString(),
+            ReadModelMessages.playerProfile(player).toByteArray(),
+            write,
+        )
+        val session = sessions.get(playerUuid)?.value ?: return
+        if (session.rankVersion < player.rankVersion && updateSession(player)) {
+            broadcasts.playerPermissions(player.uuid.toString(), player.rank.groupId, player.rankVersion)
+        }
+    }
+
     /** Resets an expired rank to the default group, unless an admin changed it since [now] was read. */
     fun expire(
         player: Player,

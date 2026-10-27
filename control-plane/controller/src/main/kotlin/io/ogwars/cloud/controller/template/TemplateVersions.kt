@@ -2,6 +2,8 @@ package io.ogwars.cloud.controller.template
 
 import io.ogwars.cloud.contracts.internal.v1.ActiveTemplate
 import io.ogwars.cloud.controller.kube.PodGateway
+import io.ogwars.cloud.controller.readmodel.ReadModelWrite
+import io.ogwars.cloud.controller.readmodel.write
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.Group
@@ -90,22 +92,22 @@ class TemplateVersions(
     ) = publishActive(promotion.promote(groupId, versionId))
 
     /** Writes the read model the gateway serves pods from; groups without a template have none. */
-    fun publishActive(group: Group) {
-        val version = group.activeTemplateVersionId?.let(templates::find)
-        if (version == null) {
-            readModels.delete(ReadModelKind.ACTIVE_TEMPLATE, group.id.value)
-            return
-        }
+    fun publishActive(
+        group: Group,
+        how: ReadModelWrite = ReadModelWrite.Overwrite,
+    ) {
         val active =
-            ActiveTemplate
-                .newBuilder()
-                .setGroupId(group.id.value)
-                .setTemplateVersionId(version.id.toString())
-                .setObjectKey(version.objectKey)
-                .setSha256(version.sha256)
-                .setSizeBytes(version.sizeBytes)
-                .build()
-        readModels.put(ReadModelKind.ACTIVE_TEMPLATE, group.id.value, active.toByteArray())
+            group.activeTemplateVersionId?.let(templates::find)?.let { version ->
+                ActiveTemplate
+                    .newBuilder()
+                    .setGroupId(group.id.value)
+                    .setTemplateVersionId(version.id.toString())
+                    .setObjectKey(version.objectKey)
+                    .setSha256(version.sha256)
+                    .setSizeBytes(version.sizeBytes)
+                    .build()
+            }
+        readModels.write(ReadModelKind.ACTIVE_TEMPLATE, group.id.value, active?.toByteArray(), how)
     }
 
     private companion object {

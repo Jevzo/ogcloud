@@ -27,6 +27,7 @@ import io.ogwars.cloud.domain.npc.Location
 import io.ogwars.cloud.domain.npc.Npc
 import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.domain.session.PlayerSession
+import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.livestate.ValkeyReadModelStore
 import io.ogwars.cloud.livestate.ValkeySessionStore
@@ -217,6 +218,59 @@ class ConfigChangedHandlerTest {
         readModels.get(ReadModelKind.PERMISSION_GROUP, "gone") shouldBe null
         broadcasts.sent.map { it.updateCase to it.subjectId } shouldContainExactly
             listOf(UpdateCase.GROUP to "lobby", UpdateCase.GROUP to "gone", UpdateCase.PERMISSION_GROUP to "gone")
+    }
+
+    @Test
+    fun `a resync repairs the rank of an online player whose announcement was lost`() {
+        val online = UUID.randomUUID()
+        players.recordSeen(online, "Alex", f.clock.instant(), PlayerRank(online, "default", null))
+        sessions.put(PlayerSession(online, "Alex", UUID.randomUUID(), null, "default", 0, f.clock.instant()))
+        players.updateRank(PlayerRank(online, "vip", null))
+
+        sync.resyncAll()
+
+        sessions.get(online)?.value?.permissionGroupId shouldBe "vip"
+        PlayerProfile
+            .parseFrom(
+                readModels.get(ReadModelKind.PLAYER_PROFILE, online.toString()),
+            ).permissionGroupId shouldBe
+            "vip"
+        broadcasts.sent
+            .filter {
+                it.updateCase == UpdateCase.PLAYER_PERMISSIONS
+            }.map { it.playerPermissions.playerUuid } shouldContainExactly
+            listOf(online.toString())
+        broadcasts.sent.clear()
+        sync.resyncAll()
+        broadcasts.sent shouldBe emptyList()
+    }
+
+    @Test
+    fun `a resync never puts back an older copy that an announcement replaced meanwhile`() {
+        val newer = byteArrayOf(42)
+        // The announcement lands after the resync took its snapshot but before it writes.
+        val racing =
+            object : GroupStore by f.groupStore {
+                override fun find(id: GroupId) =
+                    f.groupStore.find(id).also { readModels.put(ReadModelKind.GROUP, id.value, newer) }
+            }
+        val resync =
+            ReadModelSync(
+                racing,
+                f.network,
+                permissionGroups,
+                npcs,
+                readModels,
+                broadcasts,
+                permissions,
+                sessions,
+                templates,
+            )
+
+        resync.resyncAll()
+
+        readModels.get(ReadModelKind.GROUP, "lobby")?.toList() shouldBe newer.toList()
+        broadcasts.sent.none { it.updateCase == UpdateCase.GROUP } shouldBe true
     }
 
     @Test
