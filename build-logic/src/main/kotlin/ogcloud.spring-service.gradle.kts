@@ -1,3 +1,4 @@
+// A deployable Spring Boot service.
 plugins {
     id("ogcloud.spring-library")
     id("org.springframework.boot")
