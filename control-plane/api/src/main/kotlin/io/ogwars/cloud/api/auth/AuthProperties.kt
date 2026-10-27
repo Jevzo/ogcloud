@@ -13,6 +13,8 @@ data class AuthProperties(
     val signing: Signing,
     val tokens: Tokens = Tokens(),
     val clients: Clients = Clients(),
+    /** Creates the first owner; bootstrap puts it into Infisical and it is useless once an owner exists (D-0094). */
+    val setupToken: String? = null,
 ) {
     init {
         require(

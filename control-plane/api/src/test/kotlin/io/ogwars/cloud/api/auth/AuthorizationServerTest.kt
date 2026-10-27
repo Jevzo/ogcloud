@@ -4,6 +4,7 @@ import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TEST_ISSUER
 import io.ogwars.cloud.apitest.TestSigningKeys
+import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.ogwars.cloud.domain.user.WebUser
@@ -27,7 +28,6 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository
-import java.time.Instant
 import java.util.UUID
 
 @ApiTest
@@ -41,6 +41,7 @@ class AuthorizationServerTest(
     @Autowired private val valkey: ValkeyConnection,
 ) {
     private val oauth = OAuthHttp(port)
+    private val testUsers = TestUsers(users, passwords)
     private val verifier = "a-pkce-verifier-that-is-long-enough-for-rfc-7636-${UUID.randomUUID()}"
 
     @Test
@@ -201,18 +202,7 @@ class AuthorizationServerTest(
 
     private fun refreshOf(tokens: OAuthHttp.Tokens) = tokens.refreshToken ?: error("no refresh token")
 
-    private fun user(role: BuiltInRole): WebUser {
-        val id = UUID.randomUUID()
-        val name = "user-${id.toString().take(SUFFIX)}"
-        return WebUser(
-            id,
-            name,
-            "$name@example.com",
-            passwords.encode(PASSWORD),
-            role.id,
-            Instant.now(),
-        ).also(users::create)
-    }
+    private fun user(role: BuiltInRole): WebUser = testUsers.create(role.id)
 
     private fun machineClient(scopes: List<String>): RegisteredClient {
         val id = "machine-${UUID.randomUUID().toString().take(SUFFIX)}"
@@ -228,7 +218,7 @@ class AuthorizationServerTest(
     }
 
     private companion object {
-        const val PASSWORD = "correct horse battery staple"
+        const val PASSWORD = TestUsers.PASSWORD
         const val SECRET = "machine-secret"
         const val WEB_REDIRECT = "$TEST_ISSUER/auth/callback"
         const val PROBE = "/api/v1/probes/client"

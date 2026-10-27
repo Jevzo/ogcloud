@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.web
 
+import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.StaleUpdateException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -17,7 +18,11 @@ class ApiErrors {
 
     /** Someone changed the record since the caller read it (D-0069): reload and retry. */
     @ExceptionHandler(StaleUpdateException::class)
-    fun conflict(e: StaleUpdateException): ProblemDetail = problem(HttpStatus.CONFLICT, e)
+    fun stale(e: StaleUpdateException): ProblemDetail = problem(HttpStatus.CONFLICT, e)
+
+    /** The change contradicts current state, e.g. it would remove the last owner. */
+    @ExceptionHandler(ConflictException::class)
+    fun conflict(e: ConflictException): ProblemDetail = problem(HttpStatus.CONFLICT, e)
 
     private fun problem(
         status: HttpStatus,

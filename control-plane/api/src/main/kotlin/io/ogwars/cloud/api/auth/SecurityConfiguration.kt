@@ -69,6 +69,8 @@ class SecurityConfiguration {
             .securityMatcher("$API_PATHS/**")
             .authorizeHttpRequests {
                 it.requestMatchers(HttpMethod.GET, "$API_PATHS/openapi", "$API_PATHS/openapi.yaml").permitAll()
+                // Creates the first owner with the setup token (D-0094).
+                it.requestMatchers("$API_PATHS/v1/setup").permitAll()
                 it.anyRequest().authenticated()
             }.oauth2ResourceServer { it.jwt { jwt -> jwt.jwtAuthenticationConverter(tokens) } }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }

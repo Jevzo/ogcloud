@@ -136,6 +136,25 @@ class OAuthHttp(
                 .POST(HttpRequest.BodyPublishers.noBody()),
         )
 
+    /** A JSON API call with a bearer token; [token] null calls anonymously. */
+    fun call(
+        method: String,
+        path: String,
+        token: String?,
+        body: Any? = null,
+    ): HttpResponse<String> {
+        val request = HttpRequest.newBuilder(uri(path)).header("Content-Type", "application/json")
+        if (token != null) request.header("Authorization", "Bearer $token")
+        val payload =
+            body?.let { HttpRequest.BodyPublishers.ofString(json.writeValueAsString(it)) }
+                ?: HttpRequest.BodyPublishers.noBody()
+        return send(request.method(method, payload))
+    }
+
+    fun json(response: HttpResponse<String>): Map<*, *> = json.readValue(response.body(), Map::class.java)
+
+    fun jsonList(response: HttpResponse<String>): List<*> = json.readValue(response.body(), List::class.java)
+
     private fun token(vararg parameters: Pair<String, String>) = post("/oauth2/token", form(parameters.toList()))
 
     private fun post(

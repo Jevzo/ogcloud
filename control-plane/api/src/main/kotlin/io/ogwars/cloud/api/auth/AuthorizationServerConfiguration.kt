@@ -91,7 +91,7 @@ class AuthorizationServerConfiguration {
     fun tokenClaims(
         keys: SigningKeys,
         users: WebUserStore,
-        permissions: RolePermissions,
+        permissions: UserPermissions,
     ): TokenClaims = TokenClaims(keys.activeKeyId, users, permissions)
 
     @Bean

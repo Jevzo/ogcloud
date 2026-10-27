@@ -10,6 +10,8 @@ dependencies {
     // Login sessions shared by all replicas (D-0091).
     implementation("org.springframework.boot:spring-boot-starter-session-data-redis")
     implementation(libs.springdoc.webmvc.api)
+    // springdoc reads Kotlin nullability through it to mark required fields (D-0096).
+    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")

@@ -4,5 +4,617 @@ info:
   version: v1
 servers:
 - url: /
-paths: {}
-components: {}
+paths:
+  /api/v1/users/{id}:
+    get:
+      tags:
+      - user-controller
+      operationId: userGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserView"
+    put:
+      tags:
+      - user-controller
+      operationId: userUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserView"
+    delete:
+      tags:
+      - user-controller
+      operationId: userDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+  /api/v1/users/{id}/password:
+    put:
+      tags:
+      - user-controller
+      operationId: userResetPassword
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+  /api/v1/roles/{id}:
+    put:
+      tags:
+      - role-controller
+      operationId: roleUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoleRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoleView"
+    delete:
+      tags:
+      - role-controller
+      operationId: roleDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+  /api/v1/oauth-clients/{clientId}:
+    put:
+      tags:
+      - o-auth-client-controller
+      operationId: oauthClientUpdate
+      parameters:
+      - name: clientId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthClientRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthClientView"
+    delete:
+      tags:
+      - o-auth-client-controller
+      operationId: oauthClientDelete
+      parameters:
+      - name: clientId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+  /api/v1/me/password:
+    put:
+      tags:
+      - me-controller
+      operationId: meChangePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: No Content
+  /api/v1/users:
+    get:
+      tags:
+      - user-controller
+      operationId: userList
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageUserView"
+    post:
+      tags:
+      - user-controller
+      operationId: userCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserView"
+  /api/v1/setup:
+    get:
+      tags:
+      - setup-controller
+      operationId: setupStatus
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SetupStatus"
+    post:
+      tags:
+      - setup-controller
+      operationId: setupComplete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserView"
+  /api/v1/roles:
+    get:
+      tags:
+      - role-controller
+      operationId: roleList
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleView"
+    post:
+      tags:
+      - role-controller
+      operationId: roleCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoleView"
+  /api/v1/oauth-clients:
+    get:
+      tags:
+      - o-auth-client-controller
+      operationId: oauthClientList
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OAuthClientView"
+    post:
+      tags:
+      - o-auth-client-controller
+      operationId: oauthClientCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthClientRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthClientCredentials"
+  /api/v1/oauth-clients/{clientId}/secret:
+    post:
+      tags:
+      - o-auth-client-controller
+      operationId: oauthClientRotateSecret
+      parameters:
+      - name: clientId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OAuthClientCredentials"
+  /api/v1/roles/permissions:
+    get:
+      tags:
+      - role-controller
+      operationId: rolePermissions
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/me:
+    get:
+      tags:
+      - me-controller
+      operationId: meGet
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeView"
+  /api/v1/users/{id}/logins:
+    delete:
+      tags:
+      - user-controller
+      operationId: userRevokeLogins
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+components:
+  schemas:
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        roleId:
+          type: string
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+      required:
+      - email
+      - enabled
+      - roleId
+      - username
+      - version
+    UserView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        roleId:
+          type: string
+        enabled:
+          type: boolean
+        linkedPlayerUuid:
+          type:
+          - string
+          - "null"
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - createdAt
+      - email
+      - enabled
+      - id
+      - roleId
+      - username
+      - version
+    PasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+      - password
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+          format: int64
+      required:
+      - name
+      - permissions
+      - version
+    RoleView:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        builtIn:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+          format: int64
+      required:
+      - builtIn
+      - id
+      - name
+      - permissions
+      - version
+    OAuthClientRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+      required:
+      - name
+      - scopes
+    OAuthClientView:
+      type: object
+      properties:
+        clientId:
+          type: string
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        firstParty:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - clientId
+      - createdAt
+      - firstParty
+      - name
+      - scopes
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+      required:
+      - currentPassword
+      - newPassword
+    CreateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        roleId:
+          type: string
+      required:
+      - email
+      - password
+      - roleId
+      - username
+    SetupRequest:
+      type: object
+      properties:
+        setupToken:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      required:
+      - email
+      - password
+      - setupToken
+      - username
+    CreateRoleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+      - id
+      - name
+      - permissions
+    OAuthClientCredentials:
+      type: object
+      properties:
+        clientId:
+          type: string
+        clientSecret:
+          type: string
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+      required:
+      - clientId
+      - clientSecret
+      - name
+      - scopes
+    PageUserView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    SetupStatus:
+      type: object
+      properties:
+        pending:
+          type: boolean
+      required:
+      - pending
+    MeView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        roleId:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        linkedPlayerUuid:
+          type:
+          - string
+          - "null"
+          format: uuid
+      required:
+      - email
+      - id
+      - permissions
+      - roleId
+      - username

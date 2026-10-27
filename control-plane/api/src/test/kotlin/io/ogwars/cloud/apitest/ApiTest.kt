@@ -12,6 +12,8 @@ import org.springframework.test.context.DynamicPropertyRegistrar
 /** The issuer tokens carry in tests; nothing listens there, flows only read the redirects. */
 const val TEST_ISSUER = "http://ogcloud.test"
 
+const val TEST_SETUP_TOKEN = "test-setup-token"
+
 /** The full API against real PostgreSQL, Valkey and Kafka; one cached context for every API test. */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -33,6 +35,7 @@ class ApiTestConfiguration {
             registry.add("ogcloud.auth.issuer") { TEST_ISSUER }
             registry.add("ogcloud.auth.signing.keys-dir") { TestSigningKeys.dir.toString() }
             registry.add("ogcloud.auth.signing.active-key-id") { TestSigningKeys.CURRENT }
+            registry.add("ogcloud.auth.setup-token") { TEST_SETUP_TOKEN }
             // Object storage is not touched by these tests; the client only needs valid settings.
             registry.add("ogcloud.s3.endpoint") { "http://localhost:1" }
             registry.add("ogcloud.s3.region") { "test" }

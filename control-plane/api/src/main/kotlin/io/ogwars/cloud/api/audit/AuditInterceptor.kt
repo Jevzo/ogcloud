@@ -13,7 +13,7 @@ import java.time.Clock
 
 /** Who acts on the API; resolved from the access token. */
 fun interface CurrentActor {
-    fun get(request: HttpServletRequest): Actor
+    fun current(): Actor
 }
 
 /** Every successful change through the API lands in the audit log (D-0049 keeps it pseudonymisable). */
@@ -40,7 +40,7 @@ class AuditInterceptor(
             AuditEntry(
                 id = ids.next(),
                 occurredAt = clock.instant(),
-                actor = actors.get(request),
+                actor = actors.current(),
                 action = "${request.method} $pattern",
                 targetType = pattern.removePrefix(API_PREFIX).trimStart('/').substringBefore('/'),
                 targetId = variables.values.firstOrNull().orEmpty(),

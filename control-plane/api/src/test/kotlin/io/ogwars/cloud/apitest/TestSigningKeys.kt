@@ -51,6 +51,7 @@ object TestSigningKeys {
     fun accessToken(
         key: RSAKey,
         permissions: List<String>,
+        actor: String = "client:test-client",
         issuer: String = TEST_ISSUER,
         type: JOSEObjectType = JOSEObjectType(TokenClaims.ACCESS_TOKEN_TYPE),
     ): String {
@@ -59,10 +60,10 @@ object TestSigningKeys {
             JWTClaimsSet
                 .Builder()
                 .issuer(issuer)
-                .subject("test-client")
+                .subject(actor.substringAfter(':'))
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plus(TOKEN_LIFETIME)))
-                .claim(TokenClaims.ACTOR_CLAIM, "client:test-client")
+                .claim(TokenClaims.ACTOR_CLAIM, actor)
                 .claim(TokenClaims.PERMISSIONS_CLAIM, permissions)
                 .build()
         val header =

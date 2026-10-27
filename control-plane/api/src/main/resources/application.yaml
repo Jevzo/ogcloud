@@ -11,6 +11,12 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  session:
+    data:
+      redis:
+        # Indexed by user (D-0095); the chart enables Valkey's keyspace events, the API never runs CONFIG.
+        repository-type: indexed
+        configure-action: none
 
 server:
   port: 8080

@@ -19,7 +19,7 @@ import java.util.UUID
 class TokenClaims(
     private val activeKeyId: String,
     private val users: WebUserStore,
-    private val permissions: RolePermissions,
+    private val permissions: UserPermissions,
 ) : OAuth2TokenCustomizer<JwtEncodingContext> {
     override fun customize(context: JwtEncodingContext) {
         context.jwsHeader.keyId(activeKeyId)
@@ -41,6 +41,7 @@ class TokenClaims(
         principalName
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.let(users::find)
+            ?.value
             ?.takeIf(WebUser::enabled)
             ?: throw OAuth2AuthenticationException(
                 OAuth2Error(OAuth2ErrorCodes.INVALID_GRANT, "The user is disabled or gone", null),
