@@ -2,8 +2,15 @@ package io.ogwars.cloud.controller.consume
 
 import io.ogwars.cloud.controller.TestValkey
 import io.ogwars.cloud.controller.lifecycle.LifecycleFixture
+import io.ogwars.cloud.controller.readmodel.InMemoryNpcStore
+import io.ogwars.cloud.controller.readmodel.InMemoryPermissionGroupStore
+import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
+import io.ogwars.cloud.controller.readmodel.PlayerPermissions
+import io.ogwars.cloud.controller.readmodel.RecordingBroadcasts
+import io.ogwars.cloud.controller.readmodel.permissionGroup
 import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.server.ServerState
+import io.ogwars.cloud.livestate.ValkeyReadModelStore
 import io.ogwars.cloud.livestate.ValkeySessionStore
 import io.ogwars.cloud.messaging.EventPublisher
 import io.ogwars.cloud.messaging.KAFKA_IMAGE
@@ -43,7 +50,26 @@ class ControllerConsumersTest {
             HeartbeatHandler(f.lifecycle),
             GameStateHandler(f.lifecycle, f.network),
             PlayerActivityHandler(ValkeySessionStore(TestValkey.connection)),
+            configHandler(),
         ).also { it.start() }
+
+    private fun configHandler(): ConfigChangedHandler {
+        val readModels = ValkeyReadModelStore(TestValkey.connection)
+        val sessions = ValkeySessionStore(TestValkey.connection)
+        val permissionGroups = InMemoryPermissionGroupStore(permissionGroup("default", isDefault = true))
+        val broadcasts = RecordingBroadcasts()
+        val permissions = PlayerPermissions(InMemoryPlayerStore(), permissionGroups, sessions, readModels, broadcasts)
+        return ConfigChangedHandler(
+            f.groupStore,
+            f.network,
+            permissionGroups,
+            InMemoryNpcStore(),
+            readModels,
+            broadcasts,
+            permissions,
+            sessions,
+        )
+    }
 
     @AfterAll
     fun stop() {

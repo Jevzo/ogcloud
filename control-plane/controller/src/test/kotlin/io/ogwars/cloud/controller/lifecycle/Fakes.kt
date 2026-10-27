@@ -137,13 +137,18 @@ class InMemoryGroupStore(
     ) = false
 }
 
-class FixedNetworkSettingsStore(
-    private val settings: NetworkSettings,
+class InMemoryNetworkSettingsStore(
+    settings: NetworkSettings,
 ) : NetworkSettingsStore {
-    override fun load() = Revisioned(settings, 0)
+    private var current = Revisioned(settings, 0)
+
+    override fun load() = current
 
     override fun save(
         expectedVersion: Long,
         settings: NetworkSettings,
-    ) = throw UnsupportedOperationException("Network settings are fixed in this test")
+    ) {
+        check(expectedVersion == current.revision) { "stale settings" }
+        current = Revisioned(settings, current.revision + 1)
+    }
 }

@@ -29,7 +29,7 @@ class LifecycleFixture(
     val pods = RecordingPodGateway()
     val events = RecordingServerEvents()
     val groupStore = InMemoryGroupStore(groups)
-    val network = FixedNetworkSettingsStore(settings(eulaAccepted, maintenance))
+    val network = InMemoryNetworkSettingsStore(settings(eulaAccepted, maintenance))
     val policy = LifecyclePolicy(properties.timeouts)
     val breaker = CrashLoopBreaker(failures, CrashLoopPolicy(properties.crashLoop), properties, events, clock)
     val lifecycle = LifecycleService(servers, groupStore, pods, events, breaker, policy, clock)

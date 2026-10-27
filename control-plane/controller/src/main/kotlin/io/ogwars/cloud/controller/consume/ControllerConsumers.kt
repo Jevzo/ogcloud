@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.consume
 
+import io.ogwars.cloud.contracts.events.v1.ConfigChanged
 import io.ogwars.cloud.contracts.events.v1.GameStateChanged
 import io.ogwars.cloud.contracts.events.v1.NodeHeartbeat
 import io.ogwars.cloud.contracts.events.v1.PlayerActivity
@@ -27,6 +28,7 @@ class ControllerConsumers(
     heartbeats: HeartbeatHandler,
     gameStates: GameStateHandler,
     activity: PlayerActivityHandler,
+    configChanges: ConfigChangedHandler,
 ) : SmartLifecycle {
     private val containers =
         listOf(
@@ -57,6 +59,13 @@ class ControllerConsumers(
                 PlayerActivity.parser(),
                 BUSY_TOPIC_CONCURRENCY,
                 activity::handle,
+            ),
+            container(
+                KafkaTopics.CONFIG_CHANGED,
+                "config",
+                ConfigChanged.parser(),
+                concurrency = 1,
+                configChanges::handle,
             ),
         )
 
