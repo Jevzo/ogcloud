@@ -119,6 +119,8 @@ spec:
       value: "ogcloud-gateway.ogcloud.svc:9443"
     - name: "OGCLOUD_GATEWAY_TOKEN_FILE"
       value: "/var/run/secrets/ogcloud/gateway/token"
+    - name: "OGCLOUD_PUSH_ON_SHUTDOWN"
+      value: "true"
     image: "ghcr.io/jevzo/ogcloud/template-loader:2.0.0"
     name: "template-agent"
     resources:

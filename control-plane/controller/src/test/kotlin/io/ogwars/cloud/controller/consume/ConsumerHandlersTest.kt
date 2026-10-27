@@ -56,7 +56,16 @@ class ConsumerHandlersTest {
                     .build(),
             )
         }
-        shouldThrow<NonRetryableEventException> { commands.handle(events.push(UUID.randomUUID())) }
+    }
+
+    @Test
+    fun `template pushes are left to the gateway`() {
+        val id = UUID.randomUUID()
+        commands.handle(events.request(id, "bedwars"))
+
+        commands.handle(events.push(id))
+
+        f.state(id) shouldBe ServerState.REQUESTED
     }
 
     @Test

@@ -198,14 +198,17 @@ class PodSpecBuilder(
             ).build()
 
     // A native sidecar (restartPolicy Always) outlives the server container's start, so it can push on shutdown.
+    // STATIC servers push their files on shutdown, so their template survives the volume (D-0042).
     private fun templateAgent(server: Server): Container =
         ContainerBuilder()
             .withName(AGENT_CONTAINER)
             .withImage(platformImage(TEMPLATE_LOADER_IMAGE))
             .withArgs("agent")
             .withRestartPolicy("Always")
-            .withEnv(identityEnv(server))
-            .withResources(SIDECAR_RESOURCES)
+            .withEnv(
+                identityEnv(server) +
+                    EnvVar(ENV_PUSH_ON_SHUTDOWN, (server.groupType == GroupType.STATIC).toString(), null),
+            ).withResources(SIDECAR_RESOURCES)
             .withSecurityContext(restricted())
             .withVolumeMounts(
                 mount(DATA_VOLUME, DATA_PATH),
@@ -323,6 +326,7 @@ class PodSpecBuilder(
         const val ENV_GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"
         const val ENV_JVM_FLAGS = "OGCLOUD_JVM_FLAGS"
         const val ENV_TEMPLATE_VERSION = "OGCLOUD_TEMPLATE_VERSION_ID"
+        const val ENV_PUSH_ON_SHUTDOWN = "OGCLOUD_PUSH_ON_SHUTDOWN"
 
         /** OgCloud's images run as this user and group (T-0508). */
         const val IMAGE_UID = 1000L

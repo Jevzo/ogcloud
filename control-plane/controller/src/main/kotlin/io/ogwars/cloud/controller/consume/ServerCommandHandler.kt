@@ -27,16 +27,24 @@ class ServerCommandHandler(
         val id = command.serverId.toUuid("server_id")
         val actor = command.metadata.actor()
         when (command.commandCase) {
-            CommandCase.REQUEST -> request(command, actor)
+            CommandCase.REQUEST -> {
+                request(command, actor)
+            }
 
-            CommandCase.STOP -> lifecycle.stop(id, actor, command.stop.reason.ifEmpty { DEFAULT_REASON })
+            CommandCase.STOP -> {
+                lifecycle.stop(id, actor, command.stop.reason.ifEmpty { DEFAULT_REASON })
+            }
 
-            CommandCase.KILL -> lifecycle.kill(id, actor, command.kill.reason.ifEmpty { DEFAULT_REASON })
+            CommandCase.KILL -> {
+                lifecycle.kill(id, actor, command.kill.reason.ifEmpty { DEFAULT_REASON })
+            }
 
-            // TODO(plan: phase-02-controller) T-0210 handles template pushes; until then they are dead-lettered.
-            CommandCase.PUSH_TEMPLATE -> throw NonRetryableEventException("Template pushes are not handled yet")
+            // The gateway that holds the server's template agent delivers pushes (D-0081).
+            CommandCase.PUSH_TEMPLATE -> {}
 
-            CommandCase.COMMAND_NOT_SET, null -> throw NonRetryableEventException("Command for $id carries no command")
+            CommandCase.COMMAND_NOT_SET, null -> {
+                throw NonRetryableEventException("Command for $id carries no command")
+            }
         }
     }
 

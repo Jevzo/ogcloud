@@ -13,6 +13,7 @@ import io.ogwars.cloud.controller.readmodel.group
 import io.ogwars.cloud.controller.readmodel.network
 import io.ogwars.cloud.controller.readmodel.npc
 import io.ogwars.cloud.controller.readmodel.permissionGroup
+import io.ogwars.cloud.controller.template.TemplateVersions
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
@@ -38,6 +39,7 @@ class ConfigChangedHandler(
     private val broadcasts: NodeBroadcasts,
     private val permissions: PlayerPermissions,
     private val sessions: SessionStore,
+    private val templates: TemplateVersions,
 ) {
     fun handle(event: ConfigChanged) {
         when (event.changeCase) {
@@ -64,6 +66,7 @@ class ConfigChangedHandler(
         val group = groups.find(id)
         if (change.deleted || group == null) {
             readModels.delete(ReadModelKind.GROUP, id.value)
+            readModels.delete(ReadModelKind.ACTIVE_TEMPLATE, id.value)
             broadcasts.group(
                 GroupUpdated
                     .newBuilder()
@@ -75,6 +78,8 @@ class ConfigChangedHandler(
         }
         val message = ReadModelMessages.group(group)
         readModels.put(ReadModelKind.GROUP, id.value, message.toByteArray())
+        // A promote or rollback by the API arrives as a group change.
+        templates.publishActive(group.value)
         broadcasts.group(message)
     }
 

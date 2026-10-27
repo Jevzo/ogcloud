@@ -8,6 +8,8 @@ import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
 import io.ogwars.cloud.controller.readmodel.PlayerPermissions
 import io.ogwars.cloud.controller.readmodel.RecordingBroadcasts
 import io.ogwars.cloud.controller.readmodel.permissionGroup
+import io.ogwars.cloud.controller.template.InMemoryTemplateVersionStore
+import io.ogwars.cloud.controller.template.TemplateVersions
 import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.livestate.ValkeyReadModelStore
@@ -69,6 +71,14 @@ class ControllerConsumersTest {
             broadcasts,
             permissions,
             sessions,
+            TemplateVersions(
+                f.servers,
+                f.groupStore,
+                InMemoryTemplateVersionStore(),
+                readModels,
+                { UUID.randomUUID() },
+                f.clock,
+            ),
         )
     }
 

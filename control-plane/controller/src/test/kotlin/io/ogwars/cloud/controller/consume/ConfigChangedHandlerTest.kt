@@ -17,6 +17,8 @@ import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
 import io.ogwars.cloud.controller.readmodel.PlayerPermissions
 import io.ogwars.cloud.controller.readmodel.RecordingBroadcasts
 import io.ogwars.cloud.controller.readmodel.permissionGroup
+import io.ogwars.cloud.controller.template.InMemoryTemplateVersionStore
+import io.ogwars.cloud.controller.template.TemplateVersions
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.npc.Location
@@ -49,6 +51,15 @@ class ConfigChangedHandlerTest {
     private val npcs = InMemoryNpcStore()
     private val players = InMemoryPlayerStore()
     private val broadcasts = RecordingBroadcasts()
+    private val templates =
+        TemplateVersions(
+            f.servers,
+            f.groupStore,
+            InMemoryTemplateVersionStore(),
+            readModels,
+            { UUID.randomUUID() },
+            f.clock,
+        )
     private val permissions = PlayerPermissions(players, permissionGroups, sessions, readModels, broadcasts)
     private val handler =
         ConfigChangedHandler(
@@ -60,6 +71,7 @@ class ConfigChangedHandlerTest {
             broadcasts,
             permissions,
             sessions,
+            templates,
         )
 
     @Test
