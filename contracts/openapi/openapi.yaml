@@ -236,6 +236,63 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/npcs/{id}:
+    get:
+      tags:
+      - npc-controller
+      operationId: npcGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NpcView"
+    put:
+      tags:
+      - npc-controller
+      operationId: npcUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NpcSettings"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NpcView"
+    delete:
+      tags:
+      - npc-controller
+      operationId: npcDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
   /api/v1/network:
     get:
       tags:
@@ -547,6 +604,30 @@ paths:
       responses:
         "202":
           description: Accepted
+  /api/v1/runtime/{profileId}/rollout:
+    post:
+      tags:
+      - runtime-controller
+      operationId: runtimeRollout
+      parameters:
+      - name: profileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestartRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/JobView"
   /api/v1/roles:
     get:
       tags:
@@ -679,6 +760,43 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthClientCredentials"
+  /api/v1/npcs:
+    get:
+      tags:
+      - npc-controller
+      operationId: npcList
+      parameters:
+      - name: groupId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NpcView"
+    post:
+      tags:
+      - npc-controller
+      operationId: npcCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NpcSettings"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NpcView"
   /api/v1/network/restart:
     post:
       tags:
@@ -939,6 +1057,20 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/SearchResult"
+  /api/v1/runtime:
+    get:
+      tags:
+      - runtime-controller
+      operationId: runtimeList
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RuntimeProfileView"
   /api/v1/roles/permissions:
     get:
       tags:
@@ -1025,6 +1157,18 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/PagePlayerView"
+  /api/v1/overview:
+    get:
+      tags:
+      - overview-controller
+      operationId: overviewGet
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OverviewView"
   /api/v1/me:
     get:
       tags:
@@ -1037,6 +1181,59 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MeView"
+  /api/v1/logs/scaling:
+    get:
+      tags:
+      - log-controller
+      operationId: logScaling
+      parameters:
+      - name: groupId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageScalingLogView"
+  /api/v1/logs/audit:
+    get:
+      tags:
+      - log-controller
+      operationId: logAudit
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAuditEntryView"
   /api/v1/jobs:
     get:
       tags:
@@ -1386,6 +1583,101 @@ components:
       - firstParty
       - name
       - scopes
+    LocationView:
+      type: object
+      properties:
+        world:
+          type: string
+        x:
+          type: number
+          format: double
+        "y":
+          type: number
+          format: double
+        z:
+          type: number
+          format: double
+        yaw:
+          type: number
+          format: float
+        pitch:
+          type: number
+          format: float
+      required:
+      - pitch
+      - world
+      - x
+      - "y"
+      - yaw
+      - z
+    NpcSettings:
+      type: object
+      properties:
+        groupId:
+          type: string
+        location:
+          $ref: "#/components/schemas/LocationView"
+        title:
+          type: string
+        subtitle:
+          type: string
+        skin:
+          oneOf:
+          - $ref: "#/components/schemas/SkinView"
+          - type: "null"
+        lookAtPlayers:
+          type: boolean
+        leftClick:
+          oneOf:
+          - $ref: "#/components/schemas/TransferActionView"
+          - type: "null"
+        rightClick:
+          oneOf:
+          - $ref: "#/components/schemas/TransferActionView"
+          - type: "null"
+      required:
+      - groupId
+      - location
+      - lookAtPlayers
+      - subtitle
+      - title
+    SkinView:
+      type: object
+      properties:
+        texture:
+          type: string
+        signature:
+          type: string
+      required:
+      - signature
+      - texture
+    TransferActionView:
+      type: object
+      properties:
+        groupId:
+          type: string
+        routingStrategy:
+          type:
+          - string
+          - "null"
+          enum:
+          - LEAST_FILLED
+          - MOST_FILLED
+          - BALANCED
+          - ROUND_ROBIN
+      required:
+      - groupId
+    NpcView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        settings:
+          $ref: "#/components/schemas/NpcSettings"
+      required:
+      - id
+      - settings
     NetworkSettingsFields:
       type: object
       properties:
@@ -1711,49 +2003,6 @@ components:
           type:
           - string
           - "null"
-    CreateRoleRequest:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        permissions:
-          type: array
-          items:
-            type: string
-      required:
-      - id
-      - name
-      - permissions
-    CreatePermissionGroupRequest:
-      type: object
-      properties:
-        id:
-          type: string
-        settings:
-          $ref: "#/components/schemas/PermissionGroupSettings"
-      required:
-      - id
-      - settings
-    OAuthClientCredentials:
-      type: object
-      properties:
-        clientId:
-          type: string
-        clientSecret:
-          type: string
-        name:
-          type: string
-        scopes:
-          type: array
-          items:
-            type: string
-      required:
-      - clientId
-      - clientSecret
-      - name
-      - scopes
     RestartRequest:
       type: object
       properties:
@@ -1814,6 +2063,49 @@ components:
       - payload
       - state
       - totalSteps
+    CreateRoleRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+      - id
+      - name
+      - permissions
+    CreatePermissionGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        settings:
+          $ref: "#/components/schemas/PermissionGroupSettings"
+      required:
+      - id
+      - settings
+    OAuthClientCredentials:
+      type: object
+      properties:
+        clientId:
+          type: string
+        clientSecret:
+          type: string
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+      required:
+      - clientId
+      - clientSecret
+      - name
+      - scopes
     TotpEnrollment:
       type: object
       properties:
@@ -1996,6 +2288,65 @@ components:
           - "null"
           items:
             $ref: "#/components/schemas/PlayerSummary"
+    RuntimeArtifactView:
+      type: object
+      properties:
+        path:
+          type: string
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        sourceUrl:
+          type: string
+        storedAt:
+          type: string
+          format: date-time
+      required:
+      - path
+      - sha256
+      - sizeBytes
+      - sourceUrl
+      - storedAt
+    RuntimeProfileView:
+      type: object
+      properties:
+        id:
+          type: string
+        platform:
+          type: string
+          enum:
+          - PAPER
+          - PANDASPIGOT
+          - VELOCITY
+          - FABRIC
+          - NEOFORGE
+        role:
+          type: string
+          enum:
+          - BACKEND
+          - PROXY
+        version:
+          type: string
+        protocol:
+          type: integer
+          format: int32
+        javaVersion:
+          type: integer
+          format: int32
+        artifacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RuntimeArtifactView"
+      required:
+      - artifacts
+      - id
+      - javaVersion
+      - platform
+      - protocol
+      - role
+      - version
     OnlinePlayerView:
       type: object
       properties:
@@ -2087,6 +2438,115 @@ components:
           - "null"
       required:
       - items
+    GroupOverview:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        maintenance:
+          type: boolean
+        crashLoopPaused:
+          type: boolean
+        running:
+          type: integer
+          format: int32
+        pending:
+          type: integer
+          format: int32
+        players:
+          type: integer
+          format: int32
+        capacity:
+          type: integer
+          format: int32
+      required:
+      - capacity
+      - crashLoopPaused
+      - id
+      - maintenance
+      - pending
+      - players
+      - running
+      - type
+    OverviewView:
+      type: object
+      properties:
+        playersOnline:
+          type: integer
+          format: int32
+        maxPlayers:
+          type: integer
+          format: int32
+        maintenance:
+          type: boolean
+        eulaAccepted:
+          type: boolean
+        serversByState:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupOverview"
+        recentScaling:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalingLogView"
+      required:
+      - eulaAccepted
+      - groups
+      - maintenance
+      - maxPlayers
+      - playersOnline
+      - recentScaling
+      - serversByState
+    ScalingLogView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        groupId:
+          type: string
+        action:
+          type: string
+          enum:
+          - START
+          - DRAIN
+          - UNDRAIN
+          - STOP
+        serverId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        reason:
+          type: string
+          enum:
+          - MIN_ONLINE
+          - LOAD
+          - SCALE_DOWN
+          - STATIC
+        details:
+          type: string
+      required:
+      - action
+      - details
+      - groupId
+      - id
+      - occurredAt
+      - reason
     MeView:
       type: object
       properties:
@@ -2117,6 +2577,64 @@ components:
       - roleId
       - totpEnabled
       - username
+    PageScalingLogView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalingLogView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    AuditEntryView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        summary:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - action
+      - actor
+      - id
+      - metadata
+      - occurredAt
+      - summary
+      - targetId
+      - targetType
+    PageAuditEntryView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntryView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
     PageJobView:
       type: object
       properties:

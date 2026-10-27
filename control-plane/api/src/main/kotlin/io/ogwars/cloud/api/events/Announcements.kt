@@ -60,6 +60,14 @@ class Announcements(
         )
     }
 
+    /** NPC changes are keyed by group, so each group's servers see them in order. */
+    fun npc(
+        actor: Actor,
+        groupId: GroupId,
+        npcId: UUID,
+        deleted: Boolean = false,
+    ) = configChanged(actor, groupId.value) { setNpc(entity(npcId.toString(), deleted)) }
+
     fun networkSettings(actor: Actor) =
         configChanged(actor, NETWORK_SUBJECT) {
             setNetworkSettings(entity(NETWORK_SUBJECT))
