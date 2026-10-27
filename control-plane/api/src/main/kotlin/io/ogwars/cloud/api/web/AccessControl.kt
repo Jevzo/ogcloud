@@ -29,6 +29,16 @@ annotation class AnyCaller
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Anonymous
 
+/** The permissions the caller's access token grants (D-0092). */
+fun callerPermissions(): Set<String> =
+    SecurityContextHolder
+        .getContext()
+        .authentication
+        ?.authorities
+        .orEmpty()
+        .mapNotNull { it.authority }
+        .toSet()
+
 /** Fails closed: an API handler that declares none of [Requires], [AnyCaller] or [Anonymous] is refused. */
 @Component
 class PermissionInterceptor : HandlerInterceptor {
@@ -40,15 +50,8 @@ class PermissionInterceptor : HandlerInterceptor {
         if (handler !is HandlerMethod) return true
         val required = handler.getMethodAnnotation(Requires::class.java)
         if (required != null) {
-            val granted =
-                SecurityContextHolder
-                    .getContext()
-                    .authentication
-                    ?.authorities
-                    .orEmpty()
-                    .map { it.authority }
             if (required.permission.scope !in
-                granted
+                callerPermissions()
             ) {
                 throw AccessDeniedException("Requires ${required.permission.scope}")
             }

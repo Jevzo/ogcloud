@@ -29,6 +29,8 @@ springdoc:
   api-docs:
     path: /api/openapi
   packages-to-scan: io.ogwars.cloud.api
+  # The login and MFA pages are HTML for browsers, not part of the API contract.
+  paths-to-match: /api/**
 
 ogcloud:
   auth:

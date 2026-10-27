@@ -157,6 +157,35 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/network:
+    get:
+      tags:
+      - network-controller
+      operationId: networkGet
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsView"
+    put:
+      tags:
+      - network-controller
+      operationId: networkUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNetworkSettingsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsView"
   /api/v1/me/password:
     put:
       tags:
@@ -171,6 +200,64 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/groups/{id}:
+    get:
+      tags:
+      - group-controller
+      operationId: groupGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupView"
+    put:
+      tags:
+      - group-controller
+      operationId: groupUpdate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupView"
+    delete:
+      tags:
+      - group-controller
+      operationId: groupDelete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/JobView"
   /api/v1/users:
     get:
       tags:
@@ -321,6 +408,48 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OAuthClientCredentials"
+  /api/v1/network/restart:
+    post:
+      tags:
+      - network-controller
+      operationId: networkRestart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestartRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/JobView"
+  /api/v1/network/forwarding/rotate:
+    post:
+      tags:
+      - network-controller
+      operationId: networkRotateForwardingToken
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/JobView"
+  /api/v1/network/eula:
+    post:
+      tags:
+      - network-controller
+      operationId: networkAcceptEula
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NetworkSettingsView"
   /api/v1/me/totp:
     post:
       tags:
@@ -354,36 +483,79 @@ paths:
       responses:
         "204":
           description: No Content
-  /login/mfa:
+  /api/v1/groups:
     get:
       tags:
-      - mfa-page
-      operationId: mfaShow
+      - group-controller
+      operationId: groupList
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GroupView"
+    post:
+      tags:
+      - group-controller
+      operationId: groupCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/GroupView"
+  /api/v1/groups/{id}/restore:
+    post:
+      tags:
+      - group-controller
+      operationId: groupRestore
       parameters:
-      - name: error
-        in: query
-        required: false
+      - name: id
+        in: path
+        required: true
         schema:
           type: string
       responses:
         "200":
           description: OK
           content:
-            text/html:
+            '*/*':
               schema:
-                type: string
-  /login/mfa/totp-setup:
-    get:
+                $ref: "#/components/schemas/GroupView"
+  /api/v1/groups/{id}/restart:
+    post:
       tags:
-      - mfa-page
-      operationId: mfaSetup
+      - group-controller
+      operationId: groupRestart
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestartRequest"
+        required: true
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           content:
-            text/html:
+            '*/*':
               schema:
-                type: string
+                $ref: "#/components/schemas/JobView"
   /api/v1/roles/permissions:
     get:
       tags:
@@ -410,6 +582,63 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MeView"
+  /api/v1/jobs:
+    get:
+      tags:
+      - job-controller
+      operationId: jobList
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageJobView"
+  /api/v1/jobs/{id}:
+    get:
+      tags:
+      - job-controller
+      operationId: jobGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/JobView"
+  /api/v1/groups/deleted:
+    get:
+      tags:
+      - group-controller
+      operationId: groupDeleted
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeletedGroupView"
   /api/v1/users/{id}/logins:
     delete:
       tags:
@@ -559,6 +788,85 @@ components:
       - firstParty
       - name
       - scopes
+    NetworkSettingsFields:
+      type: object
+      properties:
+        maintenance:
+          type: boolean
+        motd:
+          type: string
+        maintenanceMotd:
+          type: string
+        versionName:
+          type: string
+        maintenanceVersionName:
+          type: string
+        maxPlayers:
+          type: integer
+          format: int32
+        defaultGroupId:
+          type: string
+        routingStrategy:
+          type: string
+          enum:
+          - LEAST_FILLED
+          - MOST_FILLED
+          - BALANCED
+          - ROUND_ROBIN
+        permissionSystemEnabled:
+          type: boolean
+        tablistEnabled:
+          type: boolean
+        tablistHeader:
+          type: string
+        tablistFooter:
+          type: string
+        maintenanceKickMessage:
+          type: string
+        requireMinecraftLink:
+          type: boolean
+      required:
+      - defaultGroupId
+      - maintenance
+      - maintenanceKickMessage
+      - maintenanceMotd
+      - maintenanceVersionName
+      - maxPlayers
+      - motd
+      - permissionSystemEnabled
+      - requireMinecraftLink
+      - routingStrategy
+      - tablistEnabled
+      - tablistFooter
+      - tablistHeader
+      - versionName
+    UpdateNetworkSettingsRequest:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/NetworkSettingsFields"
+        version:
+          type: integer
+          format: int64
+      required:
+      - settings
+      - version
+    NetworkSettingsView:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/NetworkSettingsFields"
+        eulaAcceptedAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        version:
+          type: integer
+          format: int64
+      required:
+      - settings
+      - version
     ChangePasswordRequest:
       type: object
       properties:
@@ -569,6 +877,130 @@ components:
       required:
       - currentPassword
       - newPassword
+    GroupSettings:
+      type: object
+      properties:
+        profileId:
+          type: string
+        scaling:
+          $ref: "#/components/schemas/ScalingView"
+        drainTimeoutSeconds:
+          type: integer
+          format: int64
+        maintenance:
+          type: boolean
+        resources:
+          $ref: "#/components/schemas/ResourcesView"
+        jvmFlags:
+          type: string
+        image:
+          oneOf:
+          - $ref: "#/components/schemas/ImageView"
+          - type: "null"
+        storageSize:
+          type:
+          - string
+          - "null"
+      required:
+      - drainTimeoutSeconds
+      - jvmFlags
+      - maintenance
+      - profileId
+      - resources
+      - scaling
+    ImageView:
+      type: object
+      properties:
+        image:
+          type: string
+        pullSecretRef:
+          type:
+          - string
+          - "null"
+      required:
+      - image
+    ResourcesView:
+      type: object
+      properties:
+        memoryRequest:
+          type: string
+        memoryLimit:
+          type: string
+        cpuRequest:
+          type: string
+        cpuLimit:
+          type:
+          - string
+          - "null"
+      required:
+      - cpuRequest
+      - memoryLimit
+      - memoryRequest
+    ScalingView:
+      type: object
+      properties:
+        minOnline:
+          type: integer
+          format: int32
+        maxInstances:
+          type: integer
+          format: int32
+        playersPerServer:
+          type: integer
+          format: int32
+        scaleUpThreshold:
+          type: number
+          format: double
+        scaleDownThreshold:
+          type: number
+          format: double
+        cooldownSeconds:
+          type: integer
+          format: int64
+      required:
+      - cooldownSeconds
+      - maxInstances
+      - minOnline
+      - playersPerServer
+      - scaleDownThreshold
+      - scaleUpThreshold
+    UpdateGroupRequest:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/GroupSettings"
+        version:
+          type: integer
+          format: int64
+      required:
+      - settings
+      - version
+    GroupView:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        settings:
+          $ref: "#/components/schemas/GroupSettings"
+        activeTemplateVersionId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        version:
+          type: integer
+          format: int64
+      required:
+      - id
+      - settings
+      - type
+      - version
     CreateUserRequest:
       type: object
       properties:
@@ -634,6 +1066,66 @@ components:
       - clientSecret
       - name
       - scopes
+    RestartRequest:
+      type: object
+      properties:
+        batchSize:
+          type:
+          - integer
+          - "null"
+          format: int32
+    JobView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        state:
+          type: string
+          enum:
+          - QUEUED
+          - RUNNING
+          - SUCCEEDED
+          - FAILED
+        payload:
+          type: object
+          additionalProperties:
+            type: string
+        completedSteps:
+          type: integer
+          format: int32
+        totalSteps:
+          type: integer
+          format: int32
+        message:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        finishedAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - completedSteps
+      - createdAt
+      - createdBy
+      - id
+      - kind
+      - message
+      - payload
+      - state
+      - totalSteps
     TotpEnrollment:
       type: object
       properties:
@@ -651,6 +1143,23 @@ components:
           type: string
       required:
       - code
+    CreateGroupRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        settings:
+          $ref: "#/components/schemas/GroupSettings"
+      required:
+      - id
+      - settings
+      - type
     PageUserView:
       type: object
       properties:
@@ -701,3 +1210,27 @@ components:
       - roleId
       - totpEnabled
       - username
+    PageJobView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    DeletedGroupView:
+      type: object
+      properties:
+        group:
+          $ref: "#/components/schemas/GroupView"
+        deletedAt:
+          type: string
+          format: date-time
+      required:
+      - deletedAt
+      - group
