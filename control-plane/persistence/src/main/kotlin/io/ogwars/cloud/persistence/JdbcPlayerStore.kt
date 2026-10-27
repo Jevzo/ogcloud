@@ -39,8 +39,7 @@ class JdbcPlayerStore(
             .sql(
                 "select * from players where lower(name) like :pattern escape '\\' and uuid > :after order by uuid limit :limit",
             ).param("pattern", namePrefix?.lowercase()?.let { likePrefix(it) } ?: "%")
-            // The nil UUID sorts before every player's.
-            .param("after", after ?: UUID(0, 0))
+            .param("after", after ?: MIN_ID)
             .param("limit", limit)
             .query(PLAYER)
             .list()

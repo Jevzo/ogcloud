@@ -42,6 +42,9 @@ class JdbcNpcStore(
             )
         }
 
+    override fun findAll(): List<Npc> =
+        jdbc.sql("select * from npcs order by group_id, created_at").query(npcMapper).list()
+
     override fun findByGroup(groupId: GroupId): List<Npc> =
         jdbc
             .sql("select * from npcs where group_id = :group order by created_at")

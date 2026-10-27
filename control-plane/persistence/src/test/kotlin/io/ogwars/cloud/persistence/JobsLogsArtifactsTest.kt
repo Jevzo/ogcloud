@@ -97,6 +97,50 @@ class JobsLogsArtifactsTest(
     }
 
     @Test
+    fun `logs are listed newest first, scaling entries per group`() {
+        val ids = (1L..3L).map { UUID(0x0192d2c1_0000_7000L, it) }
+        ids.forEach { id ->
+            audit.append(
+                AuditEntry(
+                    id,
+                    NOW,
+                    Actor(ActorType.SYSTEM, "test"),
+                    "POST /x",
+                    "x",
+                    id.toString(),
+                    metadata =
+                        mapOf("k" to "v"),
+                ),
+            )
+            scaling.append(
+                ScalingLogEntry(
+                    id,
+                    NOW,
+                    GroupId(
+                        if (id ==
+                            ids[1]
+                        ) {
+                            "bedwars"
+                        } else {
+                            "lobby"
+                        },
+                    ),
+                    ScalingAction.START,
+                    null,
+                    ScalingReason.LOAD,
+                ),
+            )
+        }
+
+        audit.list(before = null, limit = 2).map { it.id } shouldContainExactly ids.reversed().take(2)
+        audit.list(before = ids[1], limit = 2).single().metadata shouldBe mapOf("k" to "v")
+        scaling.list(GroupId("lobby"), before = null, limit = 10).map { it.id } shouldContainExactly
+            listOf(ids[2], ids[0])
+        scaling.list(groupId = null, before = ids[2], limit = 10).map { it.id } shouldContainExactly
+            listOf(ids[1], ids[0])
+    }
+
+    @Test
     fun `runtime artifacts are replaced per profile and path`() {
         val via =
             RuntimeArtifact(

@@ -152,6 +152,8 @@ interface TemplateVersionStore {
 }
 
 interface NpcStore {
+    fun findAll(): List<Npc>
+
     fun findByGroup(groupId: GroupId): List<Npc>
 
     fun find(id: UUID): Npc?
@@ -181,10 +183,23 @@ interface JobStore {
 
 interface AuditLogStore {
     fun append(entry: AuditEntry)
+
+    /** Newest first, below [before]; ids are UUIDv7 (D-0064). */
+    fun list(
+        before: UUID?,
+        limit: Int,
+    ): List<AuditEntry>
 }
 
 interface ScalingLogStore {
     fun append(entry: ScalingLogEntry)
+
+    /** Newest first, below [before], optionally for one group. */
+    fun list(
+        groupId: GroupId?,
+        before: UUID?,
+        limit: Int,
+    ): List<ScalingLogEntry>
 }
 
 interface RuntimeArtifactStore {

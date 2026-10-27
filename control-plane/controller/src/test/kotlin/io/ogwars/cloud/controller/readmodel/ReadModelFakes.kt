@@ -67,6 +67,8 @@ class InMemoryPermissionGroupStore(
 class InMemoryNpcStore : NpcStore {
     private val npcs = mutableMapOf<UUID, Npc>()
 
+    override fun findAll() = npcs.values.toList()
+
     override fun findByGroup(groupId: GroupId) = npcs.values.filter { it.groupId == groupId }
 
     override fun find(id: UUID) = npcs[id]

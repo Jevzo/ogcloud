@@ -16,3 +16,9 @@ internal fun ResultSet.instant(column: String): Instant = getTimestamp(column).t
 internal fun ResultSet.instantOrNull(column: String): Instant? = getTimestamp(column)?.toInstant()
 
 internal fun Instant.toTimestamp(): Timestamp = Timestamp.from(this)
+
+/** Sorts before every UUID, so an ascending first page starts at the first row. */
+internal val MIN_ID = UUID(0, 0)
+
+/** Sorts after every UUID, so a descending first page starts at the newest row. */
+internal val MAX_ID = UUID(-1L, -1L)

@@ -105,6 +105,7 @@ class PlayerAndNpcStoreTest(
         npcs.save(npc.copy(title = "&aBedwars 4x4"))
 
         npcs.findByGroup(GroupId("hub")) shouldContainExactly listOf(npc.copy(title = "&aBedwars 4x4"))
+        npcs.findAll() shouldContainExactly listOf(npc.copy(title = "&aBedwars 4x4"))
         npcs.delete(npc.id)
         npcs.find(npc.id) shouldBe null
     }

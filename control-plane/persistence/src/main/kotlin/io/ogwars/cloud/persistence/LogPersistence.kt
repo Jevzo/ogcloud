@@ -1,14 +1,20 @@
 package io.ogwars.cloud.persistence
 
+import io.ogwars.cloud.domain.audit.Actor
+import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.audit.AuditEntry
+import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.retention.RetentionKind
+import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
+import io.ogwars.cloud.domain.scaling.ScalingReason
 import io.ogwars.cloud.domain.store.AuditLogStore
 import io.ogwars.cloud.domain.store.RetentionStore
 import io.ogwars.cloud.domain.store.ScalingLogStore
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.time.Instant
+import java.util.UUID
 
 @Repository
 class JdbcAuditLogStore(
@@ -33,6 +39,27 @@ class JdbcAuditLogStore(
             .param("metadata", json.write(entry.metadata))
             .update()
     }
+
+    override fun list(
+        before: UUID?,
+        limit: Int,
+    ): List<AuditEntry> =
+        jdbc
+            .sql("select * from audit_log where id < :before order by id desc limit :limit")
+            .param("before", before ?: MAX_ID)
+            .param("limit", limit)
+            .query { rs, _ ->
+                AuditEntry(
+                    id = rs.uuid("id"),
+                    occurredAt = rs.instant("occurred_at"),
+                    actor = Actor(ActorType.valueOf(rs.getString("actor_type")), rs.getString("actor_id")),
+                    action = rs.getString("action"),
+                    targetType = rs.getString("target_type"),
+                    targetId = rs.getString("target_id"),
+                    summary = rs.getString("summary"),
+                    metadata = json.readStringMap(rs.getString("metadata")),
+                )
+            }.list()
 }
 
 @Repository
@@ -55,6 +82,33 @@ class JdbcScalingLogStore(
             .param("details", entry.details)
             .update()
     }
+
+    override fun list(
+        groupId: GroupId?,
+        before: UUID?,
+        limit: Int,
+    ): List<ScalingLogEntry> =
+        jdbc
+            .sql(
+                """
+                select * from scaling_log
+                where id < :before and (cast(:group as text) is null or group_id = :group)
+                order by id desc limit :limit
+                """.trimIndent(),
+            ).param("before", before ?: MAX_ID)
+            .param("group", groupId?.value)
+            .param("limit", limit)
+            .query { rs, _ ->
+                ScalingLogEntry(
+                    id = rs.uuid("id"),
+                    occurredAt = rs.instant("occurred_at"),
+                    groupId = GroupId(rs.getString("group_id")),
+                    action = ScalingAction.valueOf(rs.getString("action")),
+                    serverId = rs.uuidOrNull("server_id"),
+                    reason = ScalingReason.valueOf(rs.getString("reason")),
+                    details = rs.getString("details"),
+                )
+            }.list()
 }
 
 @Repository

@@ -61,8 +61,7 @@ class JdbcJobStore(
     ): List<Job> =
         jdbc
             .sql("select * from jobs where id < :before order by id desc limit :limit")
-            // The largest UUID sorts after every generated id.
-            .param("before", before ?: UUID(-1L, -1L))
+            .param("before", before ?: MAX_ID)
             .param("limit", limit)
             .query(jobMapper)
             .list()

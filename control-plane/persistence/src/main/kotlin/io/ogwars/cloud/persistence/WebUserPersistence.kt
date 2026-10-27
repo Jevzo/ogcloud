@@ -45,8 +45,7 @@ class JdbcWebUserStore(
     ): List<Revisioned<WebUser>> =
         jdbc
             .sql("select * from web_users where id > :after order by id limit :limit")
-            // The nil UUID sorts before every generated id.
-            .param("after", after ?: UUID(0, 0))
+            .param("after", after ?: MIN_ID)
             .param("limit", limit)
             .query(WEB_USER)
             .list()
