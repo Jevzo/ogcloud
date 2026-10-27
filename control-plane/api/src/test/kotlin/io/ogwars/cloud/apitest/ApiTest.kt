@@ -19,6 +19,7 @@ const val TEST_TOTP_KEY_ID = "k1"
 
 /** 32 zero bytes, base64: fine for tests, never for an installation. */
 const val TEST_TOTP_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+const val TEST_PSEUDONYM_KEY = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
 const val UNLIMITED = 1_000_000
 
 /** Small, so the size limit can be tested without large uploads. */
@@ -30,6 +31,7 @@ const val TEST_MAX_UPLOAD = "1MB"
 @TestPropertySource(
     properties = [
         "ogcloud.auth.setup-token=$TEST_SETUP_TOKEN",
+        "ogcloud.privacy.pseudonym-key=$TEST_PSEUDONYM_KEY",
         "ogcloud.auth.totp.keys.$TEST_TOTP_KEY_ID=$TEST_TOTP_KEY",
         "ogcloud.auth.totp.active-key-id=$TEST_TOTP_KEY_ID",
         // Every API test signs in from 127.0.0.1; RateLimitFilterTest covers the limits themselves.

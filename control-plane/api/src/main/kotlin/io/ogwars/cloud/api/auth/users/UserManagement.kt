@@ -1,6 +1,6 @@
 package io.ogwars.cloud.api.auth.users
 
-import io.ogwars.cloud.api.auth.LoginRevocation
+import io.ogwars.cloud.api.auth.Logins
 import io.ogwars.cloud.api.auth.Owners
 import io.ogwars.cloud.api.auth.hash
 import io.ogwars.cloud.api.auth.mfa.Passkeys
@@ -25,7 +25,7 @@ class UserManagement(
     private val roles: RoleStore,
     private val owners: Owners,
     private val passwords: PasswordEncoder,
-    private val logins: LoginRevocation,
+    private val logins: Logins,
     private val passkeys: Passkeys,
     private val ids: IdGenerator,
     private val clock: Clock,

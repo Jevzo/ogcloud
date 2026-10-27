@@ -1,7 +1,7 @@
 package io.ogwars.cloud.api.auth.clients
 
 import io.ogwars.cloud.api.auth.AuthProperties
-import io.ogwars.cloud.api.auth.LoginRevocation
+import io.ogwars.cloud.api.auth.Logins
 import io.ogwars.cloud.api.auth.Owners
 import io.ogwars.cloud.api.auth.hash
 import io.ogwars.cloud.domain.audit.Actor
@@ -43,7 +43,7 @@ class OAuthClientManagement(
     private val clients: RegisteredClientRepository,
     private val jdbc: JdbcClient,
     private val owners: Owners,
-    private val logins: LoginRevocation,
+    private val logins: Logins,
     private val passwords: PasswordEncoder,
     private val secrets: SecretGenerator,
     private val ids: IdGenerator,

@@ -42,7 +42,7 @@ data class ScalingLogView(
 
 fun ScalingLogEntry.toView() = ScalingLogView(id, occurredAt, groupId.value, action, serverId, reason, details)
 
-private fun AuditEntry.toView() =
+fun AuditEntry.toView() =
     AuditEntryView(id, occurredAt, actor.toString(), action, targetType, targetId, summary, metadata)
 
 /** The audit and scaling logs, newest first (D-0104); retention trims them (D-0043). */

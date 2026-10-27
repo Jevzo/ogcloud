@@ -12,7 +12,7 @@ import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.time.Clock
 
-/** For POSTs that change nothing, e.g. issuing a live-update ticket. */
+/** Changes the interceptor must not record: nothing changed (a live-update ticket), or the service records it. */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class NotAudited
@@ -22,13 +22,26 @@ fun interface CurrentActor {
     fun current(): Actor
 }
 
+/** Appends audit entries; the interceptor records plain changes, services the entries it cannot (D-0107). */
+@Component
+class AuditTrail(
+    private val audit: AuditLogStore,
+    private val ids: IdGenerator,
+    private val clock: Clock,
+) {
+    fun record(
+        actor: Actor,
+        action: String,
+        targetType: String,
+        targetId: String,
+    ) = audit.append(AuditEntry(ids.next(), clock.instant(), actor, action, targetType, targetId))
+}
+
 /** Every successful change through the API lands in the audit log (D-0049 keeps it pseudonymisable). */
 @Component
 class AuditInterceptor(
-    private val audit: AuditLogStore,
+    private val trail: AuditTrail,
     private val actors: CurrentActor,
-    private val ids: IdGenerator,
-    private val clock: Clock,
 ) : HandlerInterceptor {
     override fun afterCompletion(
         request: HttpServletRequest,
@@ -43,16 +56,12 @@ class AuditInterceptor(
         @Suppress("UNCHECKED_CAST") // Spring stores the URI template variables as a String map.
         val variables =
             request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<String, String> ?: emptyMap()
-        val entry =
-            AuditEntry(
-                id = ids.next(),
-                occurredAt = clock.instant(),
-                actor = actors.current(),
-                action = "${request.method} $pattern",
-                targetType = pattern.removePrefix(API_PREFIX).trimStart('/').substringBefore('/'),
-                targetId = variables.values.firstOrNull().orEmpty(),
-            )
-        audit.append(entry)
+        trail.record(
+            actors.current(),
+            "${request.method} $pattern",
+            pattern.removePrefix(API_PREFIX).trimStart('/').substringBefore('/'),
+            variables.values.firstOrNull().orEmpty(),
+        )
     }
 
     private companion object {

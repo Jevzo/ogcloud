@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth.mfa
 
+import org.springframework.security.web.webauthn.api.CredentialRecord
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
 import org.springframework.security.web.webauthn.management.UserCredentialRepository
 import org.springframework.stereotype.Component
@@ -13,6 +14,9 @@ class Passkeys(
 ) {
     fun exist(userId: UUID): Boolean =
         userEntities.findByUsername(userId.toString())?.let { credentials.findByUserId(it.id).isNotEmpty() } == true
+
+    fun list(userId: UUID): List<CredentialRecord> =
+        userEntities.findByUsername(userId.toString())?.let { credentials.findByUserId(it.id) }.orEmpty()
 
     /** Credentials go with their user entity (V2 cascades). */
     fun deleteAll(userId: UUID) {

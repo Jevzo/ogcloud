@@ -659,6 +659,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RoleView"
+  /api/v1/privacy/users/{id}/erasure:
+    post:
+      tags:
+      - privacy-controller
+      operationId: privacyEraseUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
+  /api/v1/privacy/players/{uuid}/erasure:
+    post:
+      tags:
+      - privacy-controller
+      operationId: privacyErasePlayer
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: No Content
   /api/v1/players/{uuid}/transfer:
     post:
       tags:
@@ -1140,6 +1170,44 @@ paths:
                 type: array
                 items:
                   type: string
+  /api/v1/privacy/users/{id}:
+    get:
+      tags:
+      - privacy-controller
+      operationId: privacyExportUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserExport"
+  /api/v1/privacy/players/{uuid}:
+    get:
+      tags:
+      - privacy-controller
+      operationId: privacyExportPlayer
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayerExport"
   /api/v1/players:
     get:
       tags:
@@ -2514,53 +2582,115 @@ components:
       - protocol
       - role
       - version
-    OnlinePlayerView:
+    ActiveLogin:
       type: object
       properties:
-        uuid:
+        clientId:
           type: string
-          format: uuid
-        name:
+        grantType:
           type: string
-        session:
-          $ref: "#/components/schemas/SessionView"
-      required:
-      - name
-      - session
-      - uuid
-    PageOnlinePlayerView:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OnlinePlayerView"
-        nextCursor:
+        issuedAt:
           type:
           - string
           - "null"
-      required:
-      - items
-    SessionView:
-      type: object
-      properties:
-        proxyId:
-          type: string
-          format: uuid
-        serverId:
+          format: date-time
+        expiresAt:
           type:
           - string
           - "null"
-          format: uuid
-        permissionGroupId:
+          format: date-time
+      required:
+      - clientId
+      - grantType
+    AuditEntryView:
+      type: object
+      properties:
+        id:
           type: string
-        connectedAt:
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        summary:
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - action
+      - actor
+      - id
+      - metadata
+      - occurredAt
+      - summary
+      - targetId
+      - targetType
+    PasskeyView:
+      type: object
+      properties:
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
           type: string
           format: date-time
       required:
-      - connectedAt
-      - permissionGroupId
-      - proxyId
+      - createdAt
+      - label
+      - lastUsedAt
+    UserExport:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserView"
+        totpEnabled:
+          type: boolean
+        passkeys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PasskeyView"
+        logins:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActiveLogin"
+        auditEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntryView"
+      required:
+      - auditEntries
+      - logins
+      - passkeys
+      - totpEnabled
+      - user
+    PlayerExport:
+      type: object
+      properties:
+        player:
+          $ref: "#/components/schemas/PlayerView"
+        linkedUserId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        auditEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntryView"
+      required:
+      - auditEntries
+      - player
     PlayerView:
       type: object
       properties:
@@ -2592,6 +2722,53 @@ components:
       - name
       - permissionGroupId
       - uuid
+    SessionView:
+      type: object
+      properties:
+        proxyId:
+          type: string
+          format: uuid
+        serverId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        permissionGroupId:
+          type: string
+        connectedAt:
+          type: string
+          format: date-time
+      required:
+      - connectedAt
+      - permissionGroupId
+      - proxyId
+    OnlinePlayerView:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        session:
+          $ref: "#/components/schemas/SessionView"
+      required:
+      - name
+      - session
+      - uuid
+    PageOnlinePlayerView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnlinePlayerView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
     PagePlayerView:
       type: object
       properties:
@@ -2727,38 +2904,6 @@ components:
           - "null"
       required:
       - items
-    AuditEntryView:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        occurredAt:
-          type: string
-          format: date-time
-        actor:
-          type: string
-        action:
-          type: string
-        targetType:
-          type: string
-        targetId:
-          type: string
-        summary:
-          type: string
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-      required:
-      - action
-      - actor
-      - id
-      - metadata
-      - occurredAt
-      - summary
-      - targetId
-      - targetType
     PageAuditEntryView:
       type: object
       properties:
