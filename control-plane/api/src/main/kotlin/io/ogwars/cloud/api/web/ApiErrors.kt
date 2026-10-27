@@ -2,6 +2,7 @@ package io.ogwars.cloud.api.web
 
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.ogwars.cloud.messaging.PublishException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -23,6 +24,10 @@ class ApiErrors {
     /** The change contradicts current state, e.g. it would remove the last owner. */
     @ExceptionHandler(ConflictException::class)
     fun conflict(e: ConflictException): ProblemDetail = problem(HttpStatus.CONFLICT, e)
+
+    /** A command could not be handed to Kafka; nothing was saved, so retrying is safe. */
+    @ExceptionHandler(PublishException::class)
+    fun unavailable(e: PublishException): ProblemDetail = problem(HttpStatus.SERVICE_UNAVAILABLE, e)
 
     private fun problem(
         status: HttpStatus,

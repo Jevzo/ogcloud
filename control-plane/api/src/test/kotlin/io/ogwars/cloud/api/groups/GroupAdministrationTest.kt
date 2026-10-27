@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.groups
 
 import io.ogwars.cloud.apitest.ApiTest
+import io.ogwars.cloud.apitest.KafkaProbe
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.contracts.events.v1.ConfigChanged
@@ -11,17 +12,12 @@ import io.ogwars.cloud.messaging.KafkaTopics
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.common.serialization.ByteArrayDeserializer
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.security.crypto.password.PasswordEncoder
 import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.UUID
 
 @ApiTest
@@ -119,25 +115,8 @@ class GroupAdministrationTest(
                 oauth.call("GET", "$GROUPS/deleted", admin),
             ).map { ((it as Map<*, *>)["group"] as Map<*, *>)["id"] }
 
-    /** Reads the topic from the start; every test uses fresh group ids, so older records do not matter. */
     private fun announced(groupId: String): Boolean =
-        KafkaConsumer(
-            mapOf(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafka,
-                ConsumerConfig.GROUP_ID_CONFIG to "test-${UUID.randomUUID()}",
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
-            ),
-            StringDeserializer(),
-            ByteArrayDeserializer(),
-        ).use { consumer ->
-            consumer.subscribe(listOf(KafkaTopics.CONFIG_CHANGED))
-            (1..POLLS).any { _ ->
-                consumer.poll(Duration.ofMillis(POLL_MILLIS)).any {
-                    ConfigChanged.parseFrom(it.value()).group.id ==
-                        groupId
-                }
-            }
-        }
+        KafkaProbe(kafka).received(KafkaTopics.CONFIG_CHANGED) { ConfigChanged.parseFrom(it).group.id == groupId }
 
     private fun version(response: HttpResponse<String>) = (oauth.json(response)["version"] as Number).toLong()
 
@@ -184,8 +163,6 @@ class GroupAdministrationTest(
         const val GROUPS = "/api/v1/groups"
         const val PAPER = "paper-26.3"
         const val SUFFIX = 8
-        const val POLLS = 50
-        const val POLL_MILLIS = 200L
         const val OK = 200
         const val CREATED = 201
         const val ACCEPTED = 202

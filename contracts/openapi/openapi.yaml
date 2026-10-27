@@ -328,6 +328,122 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserView"
+  /api/v1/servers:
+    get:
+      tags:
+      - server-controller
+      operationId: serverList
+      parameters:
+      - name: groupId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServerView"
+    post:
+      tags:
+      - server-controller
+      operationId: serverRequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestServerRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RequestedServer"
+  /api/v1/servers/{id}/transfer-all:
+    post:
+      tags:
+      - server-controller
+      operationId: serverTransferAll
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+  /api/v1/servers/{id}/template-push:
+    post:
+      tags:
+      - server-controller
+      operationId: serverPushTemplate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "202":
+          description: Accepted
+  /api/v1/servers/{id}/stop:
+    post:
+      tags:
+      - server-controller
+      operationId: serverStop
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "202":
+          description: Accepted
+  /api/v1/servers/{id}/kill:
+    post:
+      tags:
+      - server-controller
+      operationId: serverKill
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "202":
+          description: Accepted
   /api/v1/roles:
     get:
       tags:
@@ -359,6 +475,27 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/RoleView"
+  /api/v1/players/{uuid}/transfer:
+    post:
+      tags:
+      - player-controller
+      operationId: playerTransfer
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
   /api/v1/oauth-clients:
     get:
       tags:
@@ -556,6 +693,75 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/JobView"
+  /api/v1/groups/{id}/crash-loop/resume:
+    post:
+      tags:
+      - crash-loop-controller
+      operationId: crashLoopResume
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CrashLoopView"
+  /api/v1/commands:
+    post:
+      tags:
+      - command-controller
+      operationId: commandRun
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsoleCommandRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+  /api/v1/servers/{id}:
+    get:
+      tags:
+      - server-controller
+      operationId: serverGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ServerView"
+  /api/v1/search:
+    get:
+      tags:
+      - search-controller
+      operationId: searchFind
+      parameters:
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SearchResult"
   /api/v1/roles/permissions:
     get:
       tags:
@@ -570,6 +776,78 @@ paths:
                 type: array
                 items:
                   type: string
+  /api/v1/players:
+    get:
+      tags:
+      - player-controller
+      operationId: playerOnline
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageOnlinePlayerView"
+  /api/v1/players/{uuid}:
+    get:
+      tags:
+      - player-controller
+      operationId: playerGet
+      parameters:
+      - name: uuid
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PlayerView"
+  /api/v1/players/known:
+    get:
+      tags:
+      - player-controller
+      operationId: playerKnown
+      parameters:
+      - name: name
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PagePlayerView"
   /api/v1/me:
     get:
       tags:
@@ -625,6 +903,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/JobView"
+  /api/v1/groups/{id}/crash-loop:
+    get:
+      tags:
+      - crash-loop-controller
+      operationId: crashLoopGet
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CrashLoopView"
   /api/v1/groups/deleted:
     get:
       tags:
@@ -1033,6 +1329,46 @@ components:
       - password
       - setupToken
       - username
+    RequestServerRequest:
+      type: object
+      properties:
+        groupId:
+          type: string
+      required:
+      - groupId
+    RequestedServer:
+      type: object
+      properties:
+        serverId:
+          type: string
+          format: uuid
+      required:
+      - serverId
+    TransferRequest:
+      type: object
+      properties:
+        serverId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        groupId:
+          type:
+          - string
+          - "null"
+        routingStrategy:
+          type:
+          - string
+          - "null"
+          enum:
+          - LEAST_FILLED
+          - MOST_FILLED
+          - BALANCED
+          - ROUND_ROBIN
+        kickMessage:
+          type:
+          - string
+          - "null"
     CreateRoleRequest:
       type: object
       properties:
@@ -1160,6 +1496,37 @@ components:
       - id
       - settings
       - type
+    CrashLoopView:
+      type: object
+      properties:
+        failures:
+          type: array
+          items:
+            type: string
+            format: date-time
+        paused:
+          type: boolean
+      required:
+      - failures
+      - paused
+    ConsoleCommandRequest:
+      type: object
+      properties:
+        target:
+          type: string
+          enum:
+          - ALL
+          - SERVER
+          - GROUP
+        id:
+          type:
+          - string
+          - "null"
+        command:
+          type: string
+      required:
+      - command
+      - target
     PageUserView:
       type: object
       properties:
@@ -1180,6 +1547,194 @@ components:
           type: boolean
       required:
       - pending
+    ServerView:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+        groupType:
+          type: string
+          enum:
+          - DYNAMIC
+          - STATIC
+          - PROXY
+        profileId:
+          type: string
+        state:
+          type: string
+          enum:
+          - REQUESTED
+          - PREPARING
+          - STARTING
+          - RUNNING
+          - DRAINING
+          - STOPPING
+          - STOPPED
+        stateSince:
+          type: string
+          format: date-time
+        players:
+          type: integer
+          format: int32
+        maxPlayers:
+          type: integer
+          format: int32
+        gameState:
+          type:
+          - string
+          - "null"
+          enum:
+          - LOBBY
+          - INGAME
+          - ENDING
+        startedAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        lastHeartbeatAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - groupId
+      - groupType
+      - id
+      - maxPlayers
+      - players
+      - profileId
+      - state
+      - stateSince
+    PlayerSummary:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        online:
+          type: boolean
+      required:
+      - name
+      - online
+      - uuid
+    SearchResult:
+      type: object
+      properties:
+        groups:
+          type:
+          - array
+          - "null"
+          items:
+            type: string
+        servers:
+          type:
+          - array
+          - "null"
+          items:
+            $ref: "#/components/schemas/ServerView"
+        players:
+          type:
+          - array
+          - "null"
+          items:
+            $ref: "#/components/schemas/PlayerSummary"
+    OnlinePlayerView:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        session:
+          $ref: "#/components/schemas/SessionView"
+      required:
+      - name
+      - session
+      - uuid
+    PageOnlinePlayerView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OnlinePlayerView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+    SessionView:
+      type: object
+      properties:
+        proxyId:
+          type: string
+          format: uuid
+        serverId:
+          type:
+          - string
+          - "null"
+          format: uuid
+        permissionGroupId:
+          type: string
+        connectedAt:
+          type: string
+          format: date-time
+      required:
+      - connectedAt
+      - permissionGroupId
+      - proxyId
+    PlayerView:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        permissionGroupId:
+          type: string
+        rankExpiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        firstSeenAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        session:
+          oneOf:
+          - $ref: "#/components/schemas/SessionView"
+          - type: "null"
+      required:
+      - firstSeenAt
+      - lastSeenAt
+      - name
+      - permissionGroupId
+      - uuid
+    PagePlayerView:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
     MeView:
       type: object
       properties:
