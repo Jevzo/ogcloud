@@ -885,6 +885,12 @@ paths:
       tags:
       - me-controller
       operationId: meRemoveTotp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TotpCodeRequest"
+        required: true
       responses:
         "204":
           description: No Content

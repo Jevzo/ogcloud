@@ -41,11 +41,16 @@ class OAuthClientAdministrationTest(
     }
 
     @Test
-    fun `scopes are set by owners only`() {
+    fun `scopes and secrets are managed by owners only`() {
         val manager = testUsers.create(BuiltInRole.ADMIN.id)
         val managerToken = testUsers.token(manager, listOf(ApiPermission.OAUTH_CLIENTS_WRITE))
 
         oauth.call("POST", CLIENTS, managerToken, client(listOf("groups:read"))).statusCode() shouldBe FORBIDDEN
+        val clientId = oauth.json(oauth.call("POST", CLIENTS, ownerToken, client(listOf("groups:read"))))["clientId"]
+        oauth.call("PUT", "$CLIENTS/$clientId", managerToken, client(listOf("groups:read"))).statusCode() shouldBe
+            FORBIDDEN
+        oauth.call("POST", "$CLIENTS/$clientId/secret", managerToken).statusCode() shouldBe FORBIDDEN
+        oauth.call("DELETE", "$CLIENTS/$clientId", managerToken).statusCode() shouldBe FORBIDDEN
         oauth.call("POST", CLIENTS, ownerToken, client(listOf("not-a-permission"))).statusCode() shouldBe BAD_REQUEST
         oauth.call("POST", CLIENTS, ownerToken, client(emptyList())).statusCode() shouldBe BAD_REQUEST
     }

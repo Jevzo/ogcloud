@@ -26,6 +26,7 @@ data class TotpEnrollment(
 @Service
 class TotpService(
     private val totps: TotpStore,
+    private val passkeys: Passkeys,
     private val cipher: SecretCipher,
     private val secrets: SecretGenerator,
     private val properties: AuthProperties,
@@ -35,14 +36,19 @@ class TotpService(
 
     fun isEnrolled(userId: UUID): Boolean = totps.find(userId)?.confirmedAt != null
 
+    /** The pending enrollment if there is one, so a mistyped first code does not change the secret. */
+    fun pendingOrStart(user: WebUser): TotpEnrollment {
+        val pending = totps.find(user.id)?.takeIf { it.confirmedAt == null } ?: return startEnrollment(user)
+        return enrollment(user.username, open(pending))
+    }
+
     fun startEnrollment(user: WebUser): TotpEnrollment {
         val secret = Base64.getUrlDecoder().decode(secrets.next())
         val sealed = cipher.seal(secret, context(user.id))
         if (!totps.startEnrollment(StoredTotp(user.id, sealed.keyId, sealed.bytes))) {
             throw ConflictException("Remove the current authenticator before adding another")
         }
-        val encoded = Base32.encode(secret)
-        return TotpEnrollment(encoded, uri(user.username, encoded))
+        return enrollment(user.username, secret)
     }
 
     fun confirm(
@@ -68,7 +74,25 @@ class TotpService(
         return totps.markUsed(userId, step)
     }
 
-    fun remove(userId: UUID) = totps.delete(userId)
+    /** Needs a current code (D-0108); an owner keeps it unless a passkey stands in (D-0097). */
+    fun remove(
+        user: WebUser,
+        code: String,
+    ) {
+        if (user.isOwner && !passkeys.exist(user.id)) {
+            throw ConflictException("Owners need a second factor; add a passkey before removing the authenticator")
+        }
+        require(verify(user.id, code)) { "Wrong code" }
+        totps.delete(user.id)
+    }
+
+    private fun enrollment(
+        username: String,
+        secret: ByteArray,
+    ): TotpEnrollment {
+        val encoded = Base32.encode(secret)
+        return TotpEnrollment(encoded, uri(username, encoded))
+    }
 
     private fun open(stored: StoredTotp) =
         cipher.open(SealedSecret(stored.keyId, stored.encryptedSecret), context(stored.userId))

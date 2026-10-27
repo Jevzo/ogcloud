@@ -90,11 +90,21 @@ class MfaPage(
 
     @GetMapping("/totp-setup", produces = [MediaType.TEXT_HTML_VALUE])
     @ResponseBody
-    fun setup(request: HttpServletRequest): String {
+    fun setup(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        @RequestParam error: String?,
+    ): String? {
         val user = users.find(userId())?.value ?: throw NoSuchElementException("Unknown user")
-        val enrollment = totp.startEnrollment(user)
+        if (totp.isEnrolled(user.id)) {
+            // Confirmed meanwhile, e.g. in another tab: nothing left to set up.
+            response.sendRedirect(PATH)
+            return null
+        }
+        val enrollment = totp.pendingOrStart(user)
+        val notice = if (error != null) paragraph("mfa.error") else ""
         return page(
-            paragraph("mfa.setup.prompt") +
+            notice + paragraph("mfa.setup.prompt") +
                 "<p><code>${escape(enrollment.secret)}</code></p>" +
                 "<p><a href=\"${escape(enrollment.uri)}\">${text("mfa.setup.link")}</a></p>" +
                 codeForm(request, "$PATH/totp-setup", "mfa.setup.confirm"),

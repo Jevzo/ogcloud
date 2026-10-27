@@ -1,6 +1,8 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.api.auth.mfa.EnrollmentGate
 import io.ogwars.cloud.api.auth.mfa.MfaGate
+import io.ogwars.cloud.api.auth.mfa.MfaPage
 import io.ogwars.cloud.api.auth.mfa.MfaRequirements
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,6 +24,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.context.SecurityContextHolderFilter
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher
+import org.springframework.security.web.util.matcher.OrRequestMatcher
 
 /** Three chains: the authorization server, the bearer-token API, and the login pages (D-0098, D-0083). */
 @Configuration(proxyBeanMethods = false)
@@ -92,18 +95,30 @@ class SecurityConfiguration {
     fun loginChain(
         http: HttpSecurity,
         properties: AuthProperties,
-    ): SecurityFilterChain =
-        http
+        mfa: MfaRequirements,
+    ): SecurityFilterChain {
+        val paths = PathPatternRequestMatcher.withDefaults()
+        return http
             .authorizeHttpRequests {
                 it.requestMatchers("/actuator/health/**", "/actuator/prometheus", "/error").permitAll()
                 it.anyRequest().authenticated()
-            }.formLogin(Customizer.withDefaults())
+            }.addFilterAfter(
+                EnrollmentGate(
+                    OrRequestMatcher(
+                        paths.matcher("/webauthn/register/**"),
+                        paths.matcher("${MfaPage.PATH}/totp-setup"),
+                    ),
+                    mfa,
+                ),
+                SecurityContextHolderFilter::class.java,
+            ).formLogin(Customizer.withDefaults())
             // Passkeys belong to the public origin (D-0085, D-0098).
             .webAuthn {
                 it.rpName(RELYING_PARTY)
                 it.rpId(properties.issuer.host)
                 it.allowedOrigins(properties.issuer.toString())
             }.build()
+    }
 
     /** The access token's permissions become authorities without a prefix, e.g. `groups:write` (D-0092). */
     @Bean

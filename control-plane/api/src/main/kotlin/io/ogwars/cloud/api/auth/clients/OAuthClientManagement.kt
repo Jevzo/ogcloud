@@ -99,8 +99,15 @@ class OAuthClientManagement(
         return updated.toView()
     }
 
-    /** Issues a new secret; tokens issued with the old one stop working. */
-    fun rotateSecret(clientId: String): OAuthClientCredentials {
+    /**
+     * Issues a new secret and drops the client's authorizations; access tokens already issued last until they expire.
+     * Owner-only, since the secret carries the client's scopes (D-0108).
+     */
+    fun rotateSecret(
+        actor: Actor,
+        clientId: String,
+    ): OAuthClientCredentials {
+        owners.requireOwner(actor)
         val secret = secrets.next()
         val rotated = RegisteredClient.from(machine(clientId)).clientSecret(passwords.hash(secret)).build()
         clients.save(rotated)
@@ -109,7 +116,11 @@ class OAuthClientManagement(
     }
 
     @Transactional
-    fun delete(clientId: String) {
+    fun delete(
+        actor: Actor,
+        clientId: String,
+    ) {
+        owners.requireOwner(actor)
         val client = machine(clientId)
         logins.revokeClient(client.id)
         jdbc

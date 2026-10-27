@@ -68,6 +68,33 @@ class OAuthHttp(
         return browser.get(afterCode.toString()).location()
     }
 
+    /**
+     * Signs in with the password alone and, while a second factor is still due, tries to add one: the statuses of
+     * the TOTP setup page, its form, and passkey registration. The last two show that the CSRF token was accepted.
+     */
+    fun enrollWithPasswordOnly(
+        clientId: String,
+        redirectUri: String,
+        login: String,
+        password: String,
+        verifier: String,
+    ): List<Int> {
+        val browser = Browser()
+        check(browser.signIn(clientId, redirectUri, login, password, verifier).path == MFA_PAGE) {
+            "No second factor was asked for"
+        }
+        val csrf =
+            CSRF.find(browser.get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
+        val code = form(listOf("code" to "000000", "_csrf" to csrf))
+        return listOf(
+            browser.get("$MFA_PAGE/totp-setup").statusCode(),
+            browser.post("$MFA_PAGE/totp-setup", code).statusCode(),
+            browser.postJson("/webauthn/register/options", csrf).statusCode(),
+            browser.post("$MFA_PAGE/totp", code).statusCode(),
+            browser.postJson("/webauthn/authenticate/options", csrf).statusCode(),
+        )
+    }
+
     /** The passkey sign-in options the login page's script requests. */
     fun passkeyOptions(): HttpResponse<String> {
         val browser = Browser()

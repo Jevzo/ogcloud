@@ -47,12 +47,12 @@ class OAuthClientController(
     @PostMapping("/{clientId}/secret")
     fun rotateSecret(
         @PathVariable clientId: String,
-    ): OAuthClientCredentials = clients.rotateSecret(clientId)
+    ): OAuthClientCredentials = clients.rotateSecret(actors.current(), clientId)
 
     @Requires(ApiPermission.OAUTH_CLIENTS_WRITE)
     @DeleteMapping("/{clientId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
         @PathVariable clientId: String,
-    ) = clients.delete(clientId)
+    ) = clients.delete(actors.current(), clientId)
 }

@@ -180,10 +180,13 @@ class MeController(
         @RequestBody request: TotpCodeRequest,
     ) = totp.confirm(users.self(actors.current()).id, request.code)
 
+    /** Needs a current code from the authenticator (D-0108). */
     @AnyCaller
     @DeleteMapping("/totp")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun removeTotp() = totp.remove(users.self(actors.current()).id)
+    fun removeTotp(
+        @RequestBody request: TotpCodeRequest,
+    ) = totp.remove(users.self(actors.current()), request.code)
 
     @AnyCaller
     @PutMapping("/password")
