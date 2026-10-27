@@ -66,9 +66,25 @@ class LeaderGateTest {
             listOf(CountingLoop.NAME)
     }
 
-    private fun replicas(lease: String): Pair<Replica, Replica> {
-        val a = Replica(lease, "a").also(gates::add)
-        val b = Replica(lease, "b").also(gates::add)
+    @Test
+    fun `runNow runs a loop at once on the leader and nowhere else`() {
+        val (a, b) = replicas("run-now") { CountingLoop(interval = Duration.ofHours(1)) }
+        runBlocking { eventually(ELECTION_TIMEOUT) { listOf(a, b).count { it.loop.runs.get() == 1 } shouldBe 1 } }
+        val (leader, standby) = if (a.gate.isLeader) a to b else b to a
+
+        leader.gate.runNow(CountingLoop.NAME)
+        standby.gate.runNow(CountingLoop.NAME)
+
+        runBlocking { eventually(ELECTION_TIMEOUT) { leader.loop.runs.get() shouldBe 2 } }
+        standby.loop.runs.get() shouldBe 0
+    }
+
+    private fun replicas(
+        lease: String,
+        loop: () -> CountingLoop = { CountingLoop() },
+    ): Pair<Replica, Replica> {
+        val a = Replica(lease, "a", loop()).also(gates::add)
+        val b = Replica(lease, "b", loop()).also(gates::add)
         a.gate.start()
         b.gate.start()
         return a to b
@@ -76,10 +92,10 @@ class LeaderGateTest {
 
     private class CountingLoop(
         private val failing: Boolean = false,
+        override val interval: Duration = Duration.ofMillis(100),
     ) : LeaderLoop {
         val runs = AtomicInteger()
         override val name = NAME
-        override val interval: Duration = Duration.ofMillis(100)
 
         override fun runOnce() {
             runs.incrementAndGet()

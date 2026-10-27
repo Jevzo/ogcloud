@@ -101,6 +101,12 @@ class LeaderGate(
         }
     }
 
+    /** Runs the loop named [name] now when this replica leads, e.g. when a job arrives; otherwise its next tick does. */
+    fun runNow(name: String) {
+        val loop = requireNotNull(loops.find { it.name == name }) { "No leader loop named $name" }
+        synchronized(lock) { if (leading.get()) scheduler?.execute { runGuarded(loop) } }
+    }
+
     private fun onLeadershipLost() {
         stopLeading()
         if (running.get()) {
@@ -125,7 +131,8 @@ class LeaderGate(
     // A loop that throws would never be scheduled again, so failures are logged, counted and retried next interval.
     private fun runGuarded(loop: LeaderLoop) {
         try {
-            loop.runOnce()
+            // runNow may overlap a scheduled run; one loop never runs twice at once.
+            synchronized(loop) { loop.runOnce() }
         } catch (e: Exception) {
             // Losing the Lease interrupts running loops; that is not a failure of the loop.
             if (!leading.get()) {

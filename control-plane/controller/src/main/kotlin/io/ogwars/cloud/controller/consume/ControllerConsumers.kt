@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.consume
 
 import io.ogwars.cloud.contracts.events.v1.ConfigChanged
 import io.ogwars.cloud.contracts.events.v1.GameStateChanged
+import io.ogwars.cloud.contracts.events.v1.JobRequested
 import io.ogwars.cloud.contracts.events.v1.NodeHeartbeat
 import io.ogwars.cloud.contracts.events.v1.PlayerActivity
 import io.ogwars.cloud.contracts.events.v1.ServerCommand
@@ -29,6 +30,7 @@ class ControllerConsumers(
     gameStates: GameStateHandler,
     activity: PlayerActivityHandler,
     configChanges: ConfigChangedHandler,
+    jobRequests: JobRequestedHandler,
 ) : SmartLifecycle {
     private val containers =
         listOf(
@@ -67,6 +69,7 @@ class ControllerConsumers(
                 concurrency = 1,
                 configChanges::handle,
             ),
+            container(KafkaTopics.JOB_REQUESTED, "jobs", JobRequested.parser(), concurrency = 1, jobRequests::handle),
         )
 
     override fun start() = containers.forEach { it.start() }

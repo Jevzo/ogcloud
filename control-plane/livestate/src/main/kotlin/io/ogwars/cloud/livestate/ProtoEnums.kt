@@ -1,12 +1,14 @@
 package io.ogwars.cloud.livestate
 
 import io.ogwars.cloud.domain.group.GroupType
+import io.ogwars.cloud.domain.job.JobState
 import io.ogwars.cloud.domain.network.RoutingStrategy
 import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.server.GameState
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.contracts.events.v1.GameState as ProtoGameState
 import io.ogwars.cloud.contracts.events.v1.GroupType as ProtoGroupType
+import io.ogwars.cloud.contracts.events.v1.JobState as ProtoJobState
 import io.ogwars.cloud.contracts.events.v1.RoutingStrategy as ProtoRoutingStrategy
 import io.ogwars.cloud.contracts.events.v1.ScalingAction as ProtoScalingAction
 import io.ogwars.cloud.contracts.events.v1.ServerState as ProtoServerState
@@ -18,6 +20,8 @@ fun GroupType.toProto(): ProtoGroupType = ProtoGroupType.valueOf("GROUP_TYPE_$na
 fun ServerState.toProto(): ProtoServerState = ProtoServerState.valueOf("SERVER_STATE_$name")
 
 fun RoutingStrategy.toProto(): ProtoRoutingStrategy = ProtoRoutingStrategy.valueOf("ROUTING_STRATEGY_$name")
+
+fun JobState.toProto(): ProtoJobState = ProtoJobState.valueOf("JOB_STATE_$name")
 
 fun ScalingAction.toProto(): ProtoScalingAction = ProtoScalingAction.valueOf("SCALING_ACTION_$name")
 

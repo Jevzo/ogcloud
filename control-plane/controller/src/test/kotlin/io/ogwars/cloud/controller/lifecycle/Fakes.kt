@@ -53,6 +53,9 @@ class RecordingPodGateway : PodGateway {
 
 class RecordingServerEvents : ServerEvents {
     val transitions = mutableListOf<Triple<ServerState, ServerState, String>>()
+
+    /** Groups of newly requested servers, in request order. */
+    val requestedGroups = mutableListOf<GroupId>()
     val transfers = mutableListOf<Pair<UUID, TransferTarget>>()
     val pausedGroups = mutableListOf<GroupId>()
     val scalings = mutableListOf<ScalingLogEntry>()
@@ -63,6 +66,11 @@ class RecordingServerEvents : ServerEvents {
         reason: String,
     ) {
         transitions += Triple(change.before.state, change.after.state, reason)
+        if (change.before == change.after &&
+            change.after.state == ServerState.REQUESTED
+        ) {
+            requestedGroups += change.after.groupId
+        }
     }
 
     override fun transferPlayers(

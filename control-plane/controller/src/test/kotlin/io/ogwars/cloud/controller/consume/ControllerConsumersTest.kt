@@ -51,6 +51,7 @@ class ControllerConsumersTest {
             GameStateHandler(f.lifecycle, f.network),
             PlayerActivityHandler(ValkeySessionStore(TestValkey.connection)),
             configHandler(),
+            JobRequestedHandler {},
         ).also { it.start() }
 
     private fun configHandler(): ConfigChangedHandler {
