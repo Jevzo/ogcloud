@@ -179,6 +179,7 @@ func runLivestate(args []string) error {
 // load reads a contract file, then parses and validates it.
 func load[T interface{ Validate() error }](path string, parse func([]byte) (T, error)) (T, error) {
 	var zero T
+	//nolint:gosec // G304: contract paths come from the developer's own codegen invocation.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return zero, fmt.Errorf("read %s: %w", path, err)
