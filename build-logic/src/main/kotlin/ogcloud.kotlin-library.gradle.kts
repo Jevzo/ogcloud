@@ -25,7 +25,12 @@ dependencies {
 // Testcontainers images come from one file shared with the Go tests (D-0113), as ogcloud.image.<name>.
 val testImages =
     Properties().apply {
-        rootDir.resolve("testing/images.properties").reader().use { load(it) }
+        // Builds outside this repository, such as the convention tests, have no such file.
+        rootDir
+            .resolve("testing/images.properties")
+            .takeIf { it.isFile }
+            ?.reader()
+            ?.use { load(it) }
     }
 
 tasks.withType<Test>().configureEach {
