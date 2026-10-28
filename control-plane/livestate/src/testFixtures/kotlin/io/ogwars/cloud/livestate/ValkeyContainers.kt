@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.test.context.DynamicPropertyRegistrar
 import org.testcontainers.containers.GenericContainer
 
-/** Same version as the chart's Valkey (D-0021). */
-const val VALKEY_IMAGE = "valkey/valkey:9.1.2"
+/** Pinned in testing/images.properties (D-0113). */
+val VALKEY_IMAGE: String = System.getProperty("ogcloud.image.valkey")
 const val VALKEY_PORT = 6379
 
 /** With the keyspace events the chart enables for Spring Session's index (D-0095). */

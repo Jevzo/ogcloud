@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.test.context.DynamicPropertyRegistrar
 import org.testcontainers.kafka.KafkaContainer
 
-/** Strimzi 1.3's newest Kafka, the broker version in the cluster (D-0021). */
-const val KAFKA_IMAGE = "apache/kafka:4.3.1"
+/** Pinned in testing/images.properties (D-0113). */
+val KAFKA_IMAGE: String = System.getProperty("ogcloud.image.kafka")
 
 /** A plaintext broker wired into `ogcloud.kafka.*` for Spring tests of services. */
 @TestConfiguration(proxyBeanMethods = false)

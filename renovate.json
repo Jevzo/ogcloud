@@ -40,6 +40,20 @@
       "matchManagers": ["github-actions"],
       "semanticCommitType": "ci",
       "semanticCommitScope": "actions"
+    },
+    {
+      "matchFileNames": ["testing/images.properties"],
+      "semanticCommitType": "test",
+      "semanticCommitScope": "images"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "Testcontainers images shared by the Kotlin and Go tests (D-0113)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^testing/images\\.properties$/"],
+      "matchStrings": ["[a-z0-9-]+=(?<depName>[^:\\s]+):(?<currentValue>\\S+)"],
+      "datasourceTemplate": "docker"
     }
   ]
 }

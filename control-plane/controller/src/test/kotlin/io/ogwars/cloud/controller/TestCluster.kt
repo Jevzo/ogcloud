@@ -13,8 +13,8 @@ import org.testcontainers.k3s.K3sContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.UUID
 
-/** The k3s line kube-hetzner installs by default (D-0070). */
-const val K3S_IMAGE = "rancher/k3s:v1.36.5-k3s1"
+/** Pinned in testing/images.properties (D-0113). */
+val K3S_IMAGE: String = System.getProperty("ogcloud.image.k3s")
 
 /** One k3s cluster per test JVM; starting it is the slow part, so test classes share it. */
 object TestCluster {

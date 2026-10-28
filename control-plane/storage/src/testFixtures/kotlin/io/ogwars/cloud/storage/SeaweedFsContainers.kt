@@ -12,8 +12,8 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import java.net.URI
 
-/** Same SeaweedFS as the chart (D-0010). */
-const val SEAWEEDFS_IMAGE = "chrislusf/seaweedfs:4.51"
+/** Pinned in testing/images.properties (D-0113). */
+val SEAWEEDFS_IMAGE: String = System.getProperty("ogcloud.image.seaweedfs")
 const val SEAWEEDFS_S3_PORT = 8333
 const val TEST_BUCKET = "ogcloud-test"
 const val TEST_ACCESS_KEY = "ogcloud-access"

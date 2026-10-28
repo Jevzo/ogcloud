@@ -15,8 +15,8 @@ class PostgresContainerConfiguration {
             .withInitScript("db/test-init.sql")
 
     companion object {
-        /** Same major as the CloudNativePG cluster (D-0067). */
-        const val POSTGRES_IMAGE = "postgres:18.6"
+        /** Pinned in testing/images.properties (D-0113). */
+        val POSTGRES_IMAGE: String = System.getProperty("ogcloud.image.postgres")
 
         /** Matches the `controllerRole` Flyway placeholder. */
         const val CONTROLLER_ROLE = "ogcloud_controller"
