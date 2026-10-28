@@ -130,9 +130,9 @@ const file_ogcloud_internal_v1_login_proto_rawDesc = "" +
 	"\x14ResolveLoginResponse\x12=\n" +
 	"\x06result\x18\x01 \x01(\v2%.ogcloud.node.v1.ResolveLoginResponseR\x06result2s\n" +
 	"\fLoginService\x12c\n" +
-	"\fResolveLogin\x12(.ogcloud.internal.v1.ResolveLoginRequest\x1a).ogcloud.internal.v1.ResolveLoginResponseB\xe5\x01\n" +
+	"\fResolveLogin\x12(.ogcloud.internal.v1.ResolveLoginRequest\x1a).ogcloud.internal.v1.ResolveLoginResponseB\xe8\x01\n" +
 	"\x17com.ogcloud.internal.v1B\n" +
-	"LoginProtoP\x01ZPgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internal/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
+	"LoginProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
 var (
 	file_ogcloud_internal_v1_login_proto_rawDescOnce sync.Once

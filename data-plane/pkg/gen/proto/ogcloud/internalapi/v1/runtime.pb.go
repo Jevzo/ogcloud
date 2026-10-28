@@ -169,8 +169,8 @@ const file_ogcloud_internal_v1_runtime_proto_rawDesc = "" +
 	"object_key\x18\x02 \x01(\tR\tobjectKey\x12\x16\n" +
 	"\x06sha256\x18\x03 \x01(\tR\x06sha256\x12\x1d\n" +
 	"\n" +
-	"size_bytes\x18\x04 \x01(\x04R\tsizeBytesB\xe7\x01\n" +
-	"\x17com.ogcloud.internal.v1B\fRuntimeProtoP\x01ZPgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internal/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
+	"size_bytes\x18\x04 \x01(\x04R\tsizeBytesB\xea\x01\n" +
+	"\x17com.ogcloud.internal.v1B\fRuntimeProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
 var (
 	file_ogcloud_internal_v1_runtime_proto_rawDescOnce sync.Once

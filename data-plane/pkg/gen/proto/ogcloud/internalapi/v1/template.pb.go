@@ -245,8 +245,8 @@ const file_ogcloud_internal_v1_template_proto_rawDesc = "" +
 	"\n" +
 	"size_bytes\x18\x05 \x01(\x04R\tsizeBytes2\x98\x01\n" +
 	"\x0fTemplateService\x12\x84\x01\n" +
-	"\x17RegisterTemplateVersion\x123.ogcloud.internal.v1.RegisterTemplateVersionRequest\x1a4.ogcloud.internal.v1.RegisterTemplateVersionResponseB\xe8\x01\n" +
-	"\x17com.ogcloud.internal.v1B\rTemplateProtoP\x01ZPgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internal/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
+	"\x17RegisterTemplateVersion\x123.ogcloud.internal.v1.RegisterTemplateVersionRequest\x1a4.ogcloud.internal.v1.RegisterTemplateVersionResponseB\xeb\x01\n" +
+	"\x17com.ogcloud.internal.v1B\rTemplateProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
 var (
 	file_ogcloud_internal_v1_template_proto_rawDescOnce sync.Once

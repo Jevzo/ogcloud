@@ -296,8 +296,8 @@ const file_ogcloud_internal_v1_livestate_proto_rawDesc = "" +
 	"\tserver_id\x18\x04 \x01(\tR\bserverId\x12.\n" +
 	"\x13permission_group_id\x18\x05 \x01(\tR\x11permissionGroupId\x12!\n" +
 	"\frank_version\x18\x06 \x01(\x04R\vrankVersion\x12=\n" +
-	"\fconnected_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vconnectedAtB\xe9\x01\n" +
-	"\x17com.ogcloud.internal.v1B\x0eLivestateProtoP\x01ZPgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internal/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
+	"\fconnected_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vconnectedAtB\xec\x01\n" +
+	"\x17com.ogcloud.internal.v1B\x0eLivestateProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
 var (
 	file_ogcloud_internal_v1_livestate_proto_rawDescOnce sync.Once
