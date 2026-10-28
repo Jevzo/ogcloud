@@ -1,0 +1,36 @@
+fields:
+  revision: rev
+  data: data
+ttls:
+  - name: server
+    duration: 15m
+    doc: Refreshed on every write.
+constants:
+  - name: webSessionNamespace
+    value: websession
+readModelKinds:
+  - name: group
+    key: group
+  - name: activeTemplate
+    key: template
+    doc: A group's active template.
+oneTimeKinds:
+  - name: sseTicket
+    key: sse-ticket
+keys:
+  - name: servers
+    pattern: servers
+    doc: Every live server id.
+  - name: server
+    pattern: server:{id:uuid}
+    prefix: true
+  - name: serversOfGroup
+    pattern: servers:group:{groupId:group}
+  - name: sessionName
+    pattern: session:name:{name:lowercase}
+  - name: rateLimit
+    pattern: ratelimit:{bucket:string}:{client:string}
+  - name: oneTime
+    pattern: onetime:{kind:oneTimeKind}:{id:string}
+  - name: readModel
+    pattern: readmodel:{kind:readModelKind}:{id:string}

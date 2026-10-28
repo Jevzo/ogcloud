@@ -2,6 +2,7 @@
 //
 //	codegen topics -in contracts/kafka/topics.yaml -go-out … -kotlin-out … -strimzi-out …
 //	codegen profiles -in contracts/runtime-profiles.yaml -go-out … -kotlin-out …
+//	codegen livestate -in contracts/livestate/keys.yaml -go-out … -kotlin-out … -kotlin-kinds-out …
 //	codegen plugins -in contracts/runtime-profiles.yaml   (bumps the bundle plugin pins, D-0082)
 package main
 
@@ -15,6 +16,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/livestate"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/profiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/topics"
 )
@@ -34,13 +36,15 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: codegen <topics|profiles|plugins> [flags]")
+		return errors.New("usage: codegen <topics|profiles|livestate|plugins> [flags]")
 	}
 	switch args[0] {
 	case "topics":
 		return runTopics(args[1:])
 	case "profiles":
 		return runProfiles(args[1:])
+	case "livestate":
+		return runLivestate(args[1:])
 	case "plugins":
 		return runPlugins(args[1:])
 	default:
@@ -110,16 +114,9 @@ func runProfiles(args []string) error {
 	if *in == "" {
 		return errors.New("profiles: -in is required")
 	}
-	data, err := os.ReadFile(*in)
+	catalog, err := load(*in, profiles.Parse)
 	if err != nil {
-		return fmt.Errorf("read %s: %w", *in, err)
-	}
-	catalog, err := profiles.Parse(data)
-	if err != nil {
-		return fmt.Errorf("%s: %w", *in, err)
-	}
-	if err := catalog.Validate(); err != nil {
-		return fmt.Errorf("%s: %w", *in, err)
+		return err
 	}
 	if *goOut != "" {
 		source, err := profiles.RenderGo(catalog)
@@ -134,6 +131,66 @@ func runProfiles(args []string) error {
 		return write(*kotlinOut, profiles.RenderKotlin(*kotlinPackage, catalog))
 	}
 	return nil
+}
+
+func runLivestate(args []string) error {
+	flags := flag.NewFlagSet("livestate", flag.ContinueOnError)
+	in := flags.String("in", "", "path to keys.yaml")
+	goOut := flags.String("go-out", "", "Go output file (optional)")
+	goPackage := flags.String("go-package", "valkeykeys", "Go package name")
+	kotlinOut := flags.String("kotlin-out", "", "Kotlin ValkeyKeys output file (optional)")
+	kotlinPackage := flags.String("kotlin-package", "io.ogwars.cloud.livestate", "Kotlin package of ValkeyKeys")
+	kindsOut := flags.String("kotlin-kinds-out", "", "Kotlin kind enums output file (optional)")
+	kindsPackage := flags.String("kotlin-kinds-package", "io.ogwars.cloud.domain.store", "Kotlin package of the kind enums")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("parse flags: %w", err)
+	}
+	if *in == "" {
+		return errors.New("livestate: -in is required")
+	}
+	catalog, err := load(*in, livestate.Parse)
+	if err != nil {
+		return err
+	}
+	if *goOut != "" {
+		source, err := livestate.RenderGo(*goPackage, catalog)
+		if err != nil {
+			return err
+		}
+		if err := write(*goOut, source); err != nil {
+			return err
+		}
+	}
+	if *kotlinOut != "" {
+		source, err := livestate.RenderKotlin(*kotlinPackage, catalog)
+		if err != nil {
+			return err
+		}
+		if err := write(*kotlinOut, source); err != nil {
+			return err
+		}
+	}
+	if *kindsOut != "" {
+		return write(*kindsOut, livestate.RenderKotlinKinds(*kindsPackage, catalog))
+	}
+	return nil
+}
+
+// load reads a contract file, then parses and validates it.
+func load[T interface{ Validate() error }](path string, parse func([]byte) (T, error)) (T, error) {
+	var zero T
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return zero, fmt.Errorf("read %s: %w", path, err)
+	}
+	catalog, err := parse(data)
+	if err != nil {
+		return zero, fmt.Errorf("%s: %w", path, err)
+	}
+	if err := catalog.Validate(); err != nil {
+		return zero, fmt.Errorf("%s: %w", path, err)
+	}
+	return catalog, nil
 }
 
 func write(path string, content []byte) error {
