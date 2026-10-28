@@ -111,22 +111,6 @@ interface CrashFailureStore {
     fun clear(groupId: GroupId)
 }
 
-enum class ReadModelKind(
-    val key: String,
-) {
-    NETWORK_SETTINGS("network-settings"),
-    GROUP("group"),
-    PERMISSION_GROUP("permission-group"),
-    PLAYER_PROFILE("player-profile"),
-    NPCS_BY_GROUP("npcs-by-group"),
-
-    /** A profile's bundle manifest for the gateway's GetPodAssets (D-0080). */
-    RUNTIME_BUNDLE("runtime-bundle"),
-
-    /** A group's active template for the gateway's GetPodAssets (D-0081). */
-    ACTIVE_TEMPLATE("template"),
-}
-
 /** Encoded read models the gateway and load balancer serve from (D-0007); the controller writes them. */
 interface ReadModelStore {
     fun put(
@@ -195,17 +179,6 @@ fun interface RateLimiter {
         limit: RateLimit,
         at: Instant,
     ): RateDecision
-}
-
-/** What a one-time value is for; it namespaces the keys. */
-enum class OneTimeKind(
-    val key: String,
-) {
-    /** Lets an EventSource, which cannot send headers, open the live-update stream (D-0105). */
-    SSE_TICKET("sse-ticket"),
-
-    /** A code shown in game that links a web user to a Minecraft account (D-0106). */
-    LINK_CODE("link-code"),
 }
 
 /** Values that can be redeemed once before they expire; ids never hold the secrets themselves. */

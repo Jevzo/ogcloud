@@ -5,6 +5,13 @@ plugins {
     `java-test-fixtures`
 }
 
+// Committed output of `mise run gen` (contracts/livestate/keys.yaml, D-0111), checked for drift.
+sourceSets {
+    main {
+        kotlin.srcDir("src/generated/kotlin")
+    }
+}
+
 dependencies {
     api(project(":control-plane:domain"))
     implementation(project(":contracts"))

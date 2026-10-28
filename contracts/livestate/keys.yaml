@@ -1,0 +1,83 @@
+# The Valkey key layout (D-0111): every key the controller, the API, the gateway and the load
+# balancer read or write. Regenerate with `mise run gen` after editing.
+#
+# A key's pattern is literal text with {name:type} parameters. Types: uuid, string, lowercase
+# (lower-cased on the way in), group (a group id), readModelKind, oneTimeKind.
+
+# Hash fields of revisioned records (servers, sessions).
+fields:
+  revision: rev
+  data: data
+
+ttls:
+  - name: server
+    duration: 15m
+    doc: Refreshed on every write; abandoned records expire and the reconciler cleans up.
+  - name: session
+    duration: 24h
+
+constants:
+  - name: webSessionNamespace
+    value: websession
+    doc: Spring Session's namespace for the API's login sessions (D-0091).
+
+readModelKinds:
+  - name: networkSettings
+    key: network-settings
+  - name: group
+    key: group
+  - name: permissionGroup
+    key: permission-group
+  - name: playerProfile
+    key: player-profile
+  - name: npcsByGroup
+    key: npcs-by-group
+  - name: runtimeBundle
+    key: runtime-bundle
+    doc: A profile's bundle manifest for the gateway's GetPodAssets (D-0080).
+  - name: activeTemplate
+    key: template
+    doc: A group's active template for the gateway's GetPodAssets (D-0081).
+
+oneTimeKinds:
+  - name: sseTicket
+    key: sse-ticket
+    doc: Lets an EventSource, which cannot send headers, open the live-update stream (D-0105).
+  - name: linkCode
+    key: link-code
+    doc: A code shown in game that links a web user to a Minecraft account (D-0106).
+
+keys:
+  - name: servers
+    pattern: servers
+    doc: Every live server id.
+  - name: onlinePlayers
+    pattern: players:online
+  - name: server
+    pattern: server:{id:uuid}
+    prefix: true
+  - name: serversOfGroup
+    pattern: servers:group:{groupId:group}
+  - name: session
+    pattern: session:{playerUuid:uuid}
+  - name: sessionName
+    pattern: session:name:{name:lowercase}
+  - name: lock
+    pattern: lock:{name:string}
+  - name: scalingCooldown
+    pattern: cooldown:scaling:{groupId:group}
+  - name: crashLoop
+    pattern: crashloop:{groupId:group}
+  - name: crashLoopPaused
+    pattern: crashloop:paused:{groupId:group}
+    doc: Latched pause; no ttl, only an admin resume clears it.
+  - name: rotatedRefreshToken
+    pattern: oauth:rotated:{tokenHash:string}
+    doc: A rotated refresh token, by SHA-256 hex; it expires with the token (D-0090).
+  - name: rateLimit
+    pattern: ratelimit:{bucket:string}:{client:string}
+    doc: A token bucket per limited class of request and client address (D-0086).
+  - name: oneTime
+    pattern: onetime:{kind:oneTimeKind}:{id:string}
+  - name: readModel
+    pattern: readmodel:{kind:readModelKind}:{id:string}
