@@ -9,7 +9,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
-	vk "github.com/valkey-io/valkey-go"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/jevzo/ogcloud/data-plane/internal/testvalkey"
@@ -27,14 +26,14 @@ const (
 func TestRecordsSessionsAndReadModelsAreReadAsTheControllerWroteThem(t *testing.T) {
 	ctx := context.Background()
 	address := testvalkey.Start(t)
-	raw := rawClient(t, address)
+	writer := testvalkey.NewWriter(t, address)
 	lobby := &internalv1.ServerRecord{ServerId: "s-1", GroupId: "lobby", State: eventsv1.ServerState_SERVER_STATE_RUNNING}
-	put(t, raw, valkeykeys.Server("s-1"), lobby)
-	must(t, raw.Do(ctx, raw.B().Sadd().Key(valkeykeys.Servers).Member("s-1", "expired").Build()).Error())
-	must(t, raw.Do(ctx, raw.B().Sadd().Key(valkeykeys.ServersOfGroup("lobby")).Member("s-1").Build()).Error())
-	put(t, raw, valkeykeys.Session("p-1"), &internalv1.PlayerSession{PlayerUuid: "p-1", PlayerName: "Jevzo"})
-	must(t, raw.Do(ctx, raw.B().Set().Key(valkeykeys.SessionName("Jevzo")).Value("p-1").Build()).Error())
-	must(t, raw.Do(ctx, raw.B().Set().Key(valkeykeys.ReadModel(valkeykeys.ReadModelGroup, "lobby")).Value("bytes").Build()).Error())
+	writer.Record(t, valkeykeys.Server("s-1"), lobby)
+	writer.Add(t, valkeykeys.Servers, "s-1", "expired")
+	writer.Add(t, valkeykeys.ServersOfGroup("lobby"), "s-1")
+	writer.Record(t, valkeykeys.Session("p-1"), &internalv1.PlayerSession{PlayerUuid: "p-1", PlayerName: "Jevzo"})
+	writer.Set(t, valkeykeys.SessionName("Jevzo"), "p-1")
+	writer.Set(t, valkeykeys.ReadModel(valkeykeys.ReadModelGroup, "lobby"), "bytes")
 	store := connect(t, Settings{Addresses: []string{address}})
 
 	servers, err := store.Servers(ctx)
@@ -72,7 +71,7 @@ func TestRecordsSessionsAndReadModelsAreReadAsTheControllerWroteThem(t *testing.
 func TestACorruptRecordIsAnError(t *testing.T) {
 	ctx := context.Background()
 	address := testvalkey.Start(t)
-	raw := rawClient(t, address)
+	raw := testvalkey.NewWriter(t, address).Client
 	must(t, raw.Do(ctx, raw.B().Hset().Key(valkeykeys.Server("s-1")).FieldValue().FieldValue(valkeykeys.FieldData, "\xff\xff").Build()).Error())
 
 	if _, err := connect(t, Settings{Addresses: []string{address}}).Server(ctx, "s-1"); err == nil {
@@ -122,23 +121,6 @@ func connect(t *testing.T, settings Settings) *Store {
 	must(t, err)
 	t.Cleanup(store.Close)
 	return store
-}
-
-func rawClient(t *testing.T, address string) vk.Client {
-	t.Helper()
-	client, err := vk.NewClient(vk.ClientOption{InitAddress: []string{address}, DisableCache: true})
-	must(t, err)
-	t.Cleanup(client.Close)
-	return client
-}
-
-// put writes a revisioned record the way the controller does.
-func put(t *testing.T, raw vk.Client, key string, record proto.Message) {
-	t.Helper()
-	encoded, err := proto.Marshal(record)
-	must(t, err)
-	must(t, raw.Do(context.Background(), raw.B().Hset().Key(key).FieldValue().
-		FieldValue(valkeykeys.FieldRevision, "1").FieldValue(valkeykeys.FieldData, string(encoded)).Build()).Error())
 }
 
 func must(t *testing.T, err error) {
