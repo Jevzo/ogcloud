@@ -38,7 +38,8 @@ topics:
     partitions: 24
     retention: 1d
     producers: [gateway]
-    consumers: [controller, loadbalancer]
+    # The load balancer reads proxy load from Valkey; heartbeats never decide membership (v1 bug 1).
+    consumers: [controller]
 
   - name: ogcloud.node.broadcast
     message: ogcloud.events.v1.NodeBroadcast
