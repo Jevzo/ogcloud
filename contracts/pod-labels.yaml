@@ -1,0 +1,30 @@
+# Labels and annotations on game server pods (D-0056): the controller sets them, the reconciler rebuilds
+# state from them, NetworkPolicies select by role, and the gateway binds a pod's token to its server.
+# Regenerate with `mise run gen` after editing.
+object: PodLabels
+doc: Labels and annotations on game server pods, shared by the controller and the gateway.
+constants:
+  - name: prefix
+    value: cloud.ogwars.io
+  - name: serverId
+    value: cloud.ogwars.io/server-id
+  - name: group
+    value: cloud.ogwars.io/group
+  - name: groupType
+    value: cloud.ogwars.io/group-type
+    doc: The group type in lower case, e.g. static.
+  - name: profile
+    value: cloud.ogwars.io/profile
+  - name: role
+    value: cloud.ogwars.io/role
+    doc: "backend or proxy: backends accept traffic only from proxies (D-0065)."
+  - name: name
+    value: app.kubernetes.io/name
+  - name: managedBy
+    value: app.kubernetes.io/managed-by
+  - name: serverName
+    value: ogcloud-server
+  - name: controllerName
+    value: ogcloud-controller
+  - name: safeToEvict
+    value: cluster-autoscaler.kubernetes.io/safe-to-evict

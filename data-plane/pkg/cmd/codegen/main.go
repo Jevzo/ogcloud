@@ -3,6 +3,7 @@
 //	codegen topics -in contracts/kafka/topics.yaml -go-out … -kotlin-out … -strimzi-out …
 //	codegen profiles -in contracts/runtime-profiles.yaml -go-out … -kotlin-out …
 //	codegen livestate -in contracts/livestate/keys.yaml -go-out … -kotlin-out … -kotlin-kinds-out …
+//	codegen constants -in contracts/pod-labels.yaml -go-package … -go-out … -kotlin-package … -kotlin-out …
 //	codegen plugins -in contracts/runtime-profiles.yaml   (bumps the bundle plugin pins, D-0082)
 package main
 
@@ -16,6 +17,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/constants"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/livestate"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/profiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/topics"
@@ -36,7 +38,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: codegen <topics|profiles|livestate|plugins> [flags]")
+		return errors.New("usage: codegen <topics|profiles|livestate|constants|plugins> [flags]")
 	}
 	switch args[0] {
 	case "topics":
@@ -45,6 +47,8 @@ func run(args []string) error {
 		return runProfiles(args[1:])
 	case "livestate":
 		return runLivestate(args[1:])
+	case "constants":
+		return runConstants(args[1:])
 	case "plugins":
 		return runPlugins(args[1:])
 	default:
@@ -174,6 +178,33 @@ func runLivestate(args []string) error {
 		return write(*kindsOut, livestate.RenderKotlinKinds(*kindsPackage, catalog))
 	}
 	return nil
+}
+
+func runConstants(args []string) error {
+	flags := flag.NewFlagSet("constants", flag.ContinueOnError)
+	in := flags.String("in", "", "path to the constants contract")
+	goOut := flags.String("go-out", "", "Go output file")
+	goPackage := flags.String("go-package", "", "Go package name")
+	kotlinOut := flags.String("kotlin-out", "", "Kotlin output file")
+	kotlinPackage := flags.String("kotlin-package", "", "Kotlin package name")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("parse flags: %w", err)
+	}
+	if *in == "" || *goOut == "" || *goPackage == "" || *kotlinOut == "" || *kotlinPackage == "" {
+		return errors.New("constants: -in, -go-out, -go-package, -kotlin-out and -kotlin-package are required")
+	}
+	catalog, err := load(*in, constants.Parse)
+	if err != nil {
+		return err
+	}
+	source, err := constants.RenderGo(*goPackage, *in, catalog)
+	if err != nil {
+		return err
+	}
+	if err := write(*goOut, source); err != nil {
+		return err
+	}
+	return write(*kotlinOut, constants.RenderKotlin(*kotlinPackage, *in, catalog))
 }
 
 // load reads a contract file, then parses and validates it.

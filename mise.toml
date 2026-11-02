@@ -98,7 +98,7 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate"]
+depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -124,6 +124,10 @@ run = "go run ./data-plane/pkg/cmd/codegen topics -in contracts/kafka/topics.yam
 description = "Generate the Valkey key layout for Go and Kotlin from contracts/livestate/keys.yaml (D-0111)"
 run = "go run ./data-plane/pkg/cmd/codegen livestate -in contracts/livestate/keys.yaml -go-out data-plane/pkg/valkeykeys/keys.gen.go -kotlin-out control-plane/livestate/src/generated/kotlin/io/ogwars/cloud/livestate/ValkeyKeys.kt -kotlin-kinds-out control-plane/domain/src/generated/kotlin/io/ogwars/cloud/domain/store/LiveStateKinds.kt"
 
+[tasks."gen:pod-labels"]
+description = "Generate the pod labels for Go and Kotlin from contracts/pod-labels.yaml"
+run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/pod-labels.yaml -go-package podlabels -go-out data-plane/pkg/podlabels/labels.gen.go -kotlin-package io.ogwars.cloud.controller.kube -kotlin-out control-plane/controller/src/generated/kotlin/io/ogwars/cloud/controller/kube/PodLabels.kt"
+
 # Each generator's output path is listed here when its first real output is wired (T-0101, T-0102).
 [tasks."check:generated"]
 description = "Fail when committed generated sources differ from a fresh `mise run gen`"
@@ -131,7 +135,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
