@@ -1,0 +1,4 @@
+#Minecraft server properties
+motd=A Lobby
+online-mode=true
+server-port = 25577
