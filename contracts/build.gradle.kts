@@ -17,6 +17,8 @@ sourceSets {
         proto {
             srcDir("proto")
         }
+        // Committed output of `mise run gen` (contracts/permission-nodes.yaml), checked for drift.
+        kotlin.srcDir("src/generated/kotlin")
     }
 }
 

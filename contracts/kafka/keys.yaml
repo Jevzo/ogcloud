@@ -1,0 +1,11 @@
+# Fixed record keys and subject ids shared by every producer and consumer. Regenerate with
+# `mise run gen` after editing.
+object: KafkaKeys
+doc: Fixed Kafka record keys and subject ids.
+constants:
+  - name: networkSubject
+    value: network
+    doc: Subject id of the network-wide settings in ogcloud.config.changed and ogcloud.node.broadcast.
+  - name: allNodes
+    value: all
+    doc: Key of an ogcloud.node.command that targets every node.

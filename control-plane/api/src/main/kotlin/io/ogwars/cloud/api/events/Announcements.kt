@@ -1,6 +1,6 @@
 package io.ogwars.cloud.api.events
 
-import io.ogwars.cloud.contracts.NETWORK_SUBJECT
+import io.ogwars.cloud.contracts.KafkaKeys
 import io.ogwars.cloud.contracts.events.v1.ConfigChanged
 import io.ogwars.cloud.contracts.events.v1.DefaultPermissionGroupChanged
 import io.ogwars.cloud.contracts.events.v1.EntityChanged
@@ -69,8 +69,8 @@ class Announcements(
     ) = configChanged(actor, groupId.value) { setNpc(entity(npcId.toString(), deleted)) }
 
     fun networkSettings(actor: Actor) =
-        configChanged(actor, NETWORK_SUBJECT) {
-            setNetworkSettings(entity(NETWORK_SUBJECT))
+        configChanged(actor, KafkaKeys.NETWORK_SUBJECT) {
+            setNetworkSettings(entity(KafkaKeys.NETWORK_SUBJECT))
         }
 
     fun job(

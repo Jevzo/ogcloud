@@ -1,0 +1,28 @@
+# In-game permission nodes that OgCloud's plugins check and the gateway enforces for in-game admin
+# commands (D-0115). Regenerate with `mise run gen` after editing.
+object: PermissionNodes
+doc: In-game permission nodes shared by the plugins and the gateway.
+constants:
+  - name: wildcard
+    value: "*"
+    doc: Grants every node (v1 semantics).
+  - name: adminServer
+    value: ogcloud.admin.server
+  - name: adminGroup
+    value: ogcloud.admin.group
+  - name: adminPlayer
+    value: ogcloud.admin.player
+  - name: adminNetwork
+    value: ogcloud.admin.network
+  - name: adminPermission
+    value: ogcloud.admin.permission
+  - name: adminCommand
+    value: ogcloud.admin.command
+    doc: Run console commands on other servers.
+  - name: adminNpc
+    value: ogcloud.admin.npc
+  - name: maintenanceBypass
+    value: ogcloud.maintenance.bypass
+  - name: notify
+    value: ogcloud.notify
+    doc: Receive admin notifications about server lifecycle events on the proxy.

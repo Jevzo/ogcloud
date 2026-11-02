@@ -1,6 +1,6 @@
 package io.ogwars.cloud.controller.readmodel
 
-import io.ogwars.cloud.contracts.NETWORK_SUBJECT
+import io.ogwars.cloud.contracts.KafkaKeys
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.events.v1.NodeBroadcast
@@ -45,7 +45,10 @@ class KafkaNodeBroadcasts(
     }
 }
 
-fun NodeBroadcasts.network(settings: NetworkSettingsUpdated) = send(NETWORK_SUBJECT) { setNetworkSettings(settings) }
+fun NodeBroadcasts.network(settings: NetworkSettingsUpdated) =
+    send(KafkaKeys.NETWORK_SUBJECT) {
+        setNetworkSettings(settings)
+    }
 
 fun NodeBroadcasts.group(group: GroupUpdated) = send(group.groupId) { setGroup(group) }
 

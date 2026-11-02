@@ -40,7 +40,7 @@ message SessionRequest {
     PlayerActivityReport player_activity = 4;
     ogcloud.events.v1.TransferRequested transfer = 5;
     ServerCommandRequest server_command = 6;
-    ogcloud.events.v1.NodeCommand node_command = 7;
+    NodeCommandRequest node_command = 7;
     LiveChannelSubscription live_subscription = 8;
     LiveChannelPublish live_publish = 9;
     DeliveryResult delivery_result = 10;
@@ -127,6 +127,13 @@ message ServerCommandResult {
   string server_id = 2;
   // Empty when the command was accepted; otherwise why it was rejected.
   string error = 3;
+}
+
+// A console command on behalf of an in-game admin; only proxies may send one (D-0115).
+message NodeCommandRequest {
+  // Must be connected through the sending proxy and hold ogcloud.admin.command.
+  string acting_player_uuid = 1;
+  ogcloud.events.v1.NodeCommand command = 2;
 }
 
 message LiveChannelSubscription {

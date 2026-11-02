@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.events.Commands
 import io.ogwars.cloud.api.events.TransferDestination
 import io.ogwars.cloud.api.web.Cursors
 import io.ogwars.cloud.api.web.Page
+import io.ogwars.cloud.contracts.KafkaKeys
 import io.ogwars.cloud.contracts.events.v1.NodeCommand
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
@@ -83,7 +84,7 @@ class LiveServers(
         require(line.isNotBlank()) { "The command is empty" }
         when (target) {
             CommandTarget.ALL -> {
-                commands.console(actor, { setAll(true) }, ALL_NODES, line)
+                commands.console(actor, { setAll(true) }, KafkaKeys.ALL_NODES, line)
             }
 
             CommandTarget.SERVER -> {
@@ -104,7 +105,6 @@ class LiveServers(
 
     private companion object {
         const val REASON = "Requested through the API"
-        const val ALL_NODES = "all"
     }
 }
 
