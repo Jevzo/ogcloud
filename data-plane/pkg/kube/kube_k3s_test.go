@@ -6,22 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/k3s"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/jevzo/ogcloud/data-plane/internal/testimages"
+	"github.com/jevzo/ogcloud/data-plane/internal/testk3s"
 )
 
 const namespace = "default"
 
 func TestTokenReviewNamesThePodAProjectedTokenBelongsTo(t *testing.T) {
 	ctx := context.Background()
-	client := cluster(t)
+	client := testk3s.Start(t).Client
 	if _, err := client.CoreV1().ServiceAccounts(namespace).Create(ctx,
 		&corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "game"}}, metav1.CreateOptions{}); err != nil {
 		t.Fatalf("service account: %v", err)
@@ -49,33 +46,6 @@ func TestTokenReviewNamesThePodAProjectedTokenBelongsTo(t *testing.T) {
 	if _, err := reviewer.Review(ctx, token(t, client, pod, "ogcloud-controller")); !errors.Is(err, ErrUnauthenticated) {
 		t.Errorf("a token for another audience passed: %v", err)
 	}
-}
-
-func cluster(t *testing.T) kubernetes.Interface {
-	t.Helper()
-	ctx := context.Background()
-	image, err := testimages.Image("k3s")
-	if err != nil {
-		t.Fatalf("image: %v", err)
-	}
-	container, err := k3s.Run(ctx, image)
-	testcontainers.CleanupContainer(t, container)
-	if err != nil {
-		t.Fatalf("start k3s: %v", err)
-	}
-	kubeconfig, err := container.GetKubeConfig(ctx)
-	if err != nil {
-		t.Fatalf("kubeconfig: %v", err)
-	}
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
-	if err != nil {
-		t.Fatalf("rest config: %v", err)
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		t.Fatalf("client: %v", err)
-	}
-	return client
 }
 
 // token requests a projected token bound to pod, as the kubelet mounts one (D-0013).
