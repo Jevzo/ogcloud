@@ -1,6 +1,5 @@
 package io.ogwars.cloud.controller.readmodel
 
-import io.ogwars.cloud.contracts.NETWORK_SUBJECT
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
@@ -13,6 +12,7 @@ import io.ogwars.cloud.domain.store.PermissionGroupStore
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.SessionStore
+import io.ogwars.cloud.livestate.ValkeyKeys
 import org.springframework.stereotype.Component
 
 /**
@@ -61,10 +61,15 @@ class ReadModelSync(
     }
 
     fun networkSettings(resync: Boolean = false) {
-        val stored = readModels.get(ReadModelKind.NETWORK_SETTINGS, NETWORK_SUBJECT)
+        val stored = readModels.get(ReadModelKind.NETWORK_SETTINGS, ValkeyKeys.NETWORK_SETTINGS_ID)
         val message = ReadModelMessages.networkSettings(network.load())
         val write = if (resync) ReadModelWrite.Replace(stored) else ReadModelWrite.Overwrite
-        if (!readModels.write(ReadModelKind.NETWORK_SETTINGS, NETWORK_SUBJECT, message.toByteArray(), write) &&
+        if (!readModels.write(
+                ReadModelKind.NETWORK_SETTINGS,
+                ValkeyKeys.NETWORK_SETTINGS_ID,
+                message.toByteArray(),
+                write,
+            ) &&
             resync
         ) {
             return

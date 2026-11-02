@@ -23,6 +23,8 @@ const (
 const (
 	// Spring Session's namespace for the API's login sessions (D-0091).
 	WebSessionNamespace = "websession"
+	// Id of the one network settings read model.
+	NetworkSettingsId = "network"
 )
 
 // ReadModelKind names a family of read models.

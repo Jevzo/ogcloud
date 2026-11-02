@@ -16,6 +16,8 @@ object ValkeyKeys {
     val SESSION_TTL: Duration = Duration.ofHours(24)
     /** Spring Session's namespace for the API's login sessions (D-0091). */
     const val WEB_SESSION_NAMESPACE = "websession"
+    /** Id of the one network settings read model. */
+    const val NETWORK_SETTINGS_ID = "network"
     /** Every live server id. */
     const val SERVERS = "servers"
     const val ONLINE_PLAYERS = "players:online"

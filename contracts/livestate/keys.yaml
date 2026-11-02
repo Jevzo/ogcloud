@@ -20,6 +20,9 @@ constants:
   - name: webSessionNamespace
     value: websession
     doc: Spring Session's namespace for the API's login sessions (D-0091).
+  - name: networkSettingsId
+    value: network
+    doc: Id of the one network settings read model.
 
 readModelKinds:
   - name: networkSettings

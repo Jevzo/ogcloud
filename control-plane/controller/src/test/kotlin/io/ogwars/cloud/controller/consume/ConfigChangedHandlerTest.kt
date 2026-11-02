@@ -29,6 +29,7 @@ import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.ReadModelKind
+import io.ogwars.cloud.livestate.ValkeyKeys
 import io.ogwars.cloud.livestate.ValkeyReadModelStore
 import io.ogwars.cloud.livestate.ValkeySessionStore
 import io.ogwars.cloud.messaging.NonRetryableEventException
@@ -109,7 +110,7 @@ class ConfigChangedHandlerTest {
 
         NetworkSettingsUpdated
             .parseFrom(
-                readModels.get(ReadModelKind.NETWORK_SETTINGS, "network"),
+                readModels.get(ReadModelKind.NETWORK_SETTINGS, ValkeyKeys.NETWORK_SETTINGS_ID),
             ).permissionSystemEnabled shouldBe
             true
         broadcasts.sent.map { it.updateCase } shouldContainExactly
