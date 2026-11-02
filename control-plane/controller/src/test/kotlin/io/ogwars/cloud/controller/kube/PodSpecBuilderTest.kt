@@ -59,9 +59,11 @@ class PodSpecBuilderTest {
             containers.flatMap { it.env }.filter { it.valueFrom != null }.shouldBeEmpty()
             containers.flatMap { it.envFrom }.shouldBeEmpty()
             spec.volumes.mapNotNull { it.secret?.secretName } shouldContainExactly listOf(HETZNER.forwardingSecret)
-            spec.volumes
-                .flatMap { it.projected?.sources.orEmpty() }
-                .map { it.serviceAccountToken.audience } shouldContainExactly listOf(HETZNER.gatewayAudience)
+            val projected = spec.volumes.flatMap { it.projected?.sources.orEmpty() }
+            projected.mapNotNull { it.serviceAccountToken?.audience } shouldContainExactly
+                listOf(HETZNER.gatewayAudience)
+            // Besides the token, only the public CA certificate is projected.
+            projected.mapNotNull { it.configMap?.name } shouldContainExactly listOf(HETZNER.gatewayCaConfigMap)
         }
     }
 

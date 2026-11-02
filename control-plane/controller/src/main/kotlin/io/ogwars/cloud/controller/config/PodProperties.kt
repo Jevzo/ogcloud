@@ -17,6 +17,8 @@ data class PodProperties(
     val gatewayAudience: String = "ogcloud-gateway",
     val gatewayTokenTtl: Duration = Duration.ofHours(1),
     val forwardingSecret: String = "ogcloud-forwarding",
+    /** ConfigMap in [namespace] whose `ca.crt` is the internal CA pods verify the gateway with (D-0041). */
+    val gatewayCaConfigMap: String = "ogcloud-internal-ca",
     /** Image prefixes a group's image override may use; empty forbids overrides. */
     val allowedImagePrefixes: List<String> = emptyList(),
     val staticStorageSize: String = "10Gi",

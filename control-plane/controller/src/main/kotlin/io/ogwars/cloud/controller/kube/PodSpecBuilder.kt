@@ -65,7 +65,7 @@ class PodSpecBuilder(
             .withType("RuntimeDefault")
             .endSeccompProfile()
             .endSecurityContext()
-            .withInitContainers(templateLoader(server, group), templateAgent(server))
+            .withInitContainers(templateLoader(server, group, profile), templateAgent(server))
             .withContainers(serverContainer(server, group, profile))
             .withVolumes(volumes(group))
             .apply {
@@ -183,6 +183,7 @@ class PodSpecBuilder(
     private fun templateLoader(
         server: Server,
         group: Group,
+        profile: RuntimeProfile,
     ): Container =
         ContainerBuilder()
             .withName(LOADER_CONTAINER)
@@ -190,7 +191,9 @@ class PodSpecBuilder(
             .withArgs("load")
             .withEnv(
                 identityEnv(server) +
-                    EnvVar(ENV_TEMPLATE_VERSION, group.activeTemplateVersionId?.toString().orEmpty(), null),
+                    EnvVar(ENV_TEMPLATE_VERSION, group.activeTemplateVersionId?.toString().orEmpty(), null) +
+                    // The loader applies the profile's overlays from the catalog (D-0119).
+                    EnvVar(ENV_PROFILE_ID, profile.id, null),
             ).withResources(SIDECAR_RESOURCES)
             .withSecurityContext(restricted())
             .withVolumeMounts(
@@ -213,6 +216,8 @@ class PodSpecBuilder(
             .withSecurityContext(restricted())
             .withVolumeMounts(
                 mount(DATA_VOLUME, DATA_PATH),
+                // Push archives are built here before the upload.
+                mount(TMP_VOLUME, TMP_PATH),
                 mount(GATEWAY_TOKEN_VOLUME, GATEWAY_TOKEN_PATH, readOnly = true),
             ).build()
 
@@ -248,6 +253,15 @@ class PodSpecBuilder(
                 .withPath(GATEWAY_TOKEN_FILE)
                 .endServiceAccountToken()
                 .endSource()
+                .addNewSource()
+                .withNewConfigMap()
+                .withName(settings.gatewayCaConfigMap)
+                .addNewItem()
+                .withKey(GATEWAY_CA_FILE)
+                .withPath(GATEWAY_CA_FILE)
+                .endItem()
+                .endConfigMap()
+                .endSource()
                 .endProjected()
                 .build(),
             VolumeBuilder()
@@ -266,6 +280,7 @@ class PodSpecBuilder(
             EnvVar(ENV_GROUP_ID, server.groupId.value, null),
             EnvVar(ENV_GATEWAY_ADDRESS, settings.gatewayAddress, null),
             EnvVar(ENV_GATEWAY_TOKEN_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_TOKEN_FILE", null),
+            EnvVar(ENV_GATEWAY_CA_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_CA_FILE", null),
         )
 
     private fun resources(group: Group): ResourceRequirements {
@@ -319,15 +334,18 @@ class PodSpecBuilder(
         const val DATA_PATH = "/data"
         const val GATEWAY_TOKEN_PATH = "/var/run/secrets/ogcloud/gateway"
         const val GATEWAY_TOKEN_FILE = "token"
+        const val GATEWAY_CA_FILE = "ca.crt"
         const val FORWARDING_PATH = "/var/run/secrets/ogcloud/forwarding"
 
         const val ENV_SERVER_ID = "OGCLOUD_SERVER_ID"
         const val ENV_GROUP_ID = "OGCLOUD_GROUP_ID"
         const val ENV_GATEWAY_ADDRESS = "OGCLOUD_GATEWAY_ADDRESS"
         const val ENV_GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"
+        const val ENV_GATEWAY_CA_FILE = "OGCLOUD_GATEWAY_CA_FILE"
         const val ENV_JVM_FLAGS = "OGCLOUD_JVM_FLAGS"
         const val ENV_TEMPLATE_VERSION = "OGCLOUD_TEMPLATE_VERSION_ID"
         const val ENV_PUSH_ON_SHUTDOWN = "OGCLOUD_PUSH_ON_SHUTDOWN"
+        const val ENV_PROFILE_ID = "OGCLOUD_PROFILE_ID"
 
         /** OgCloud's images run as this user and group (T-0508). */
         const val IMAGE_UID = 1000L
