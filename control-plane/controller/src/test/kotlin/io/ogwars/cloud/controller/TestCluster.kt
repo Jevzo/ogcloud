@@ -9,6 +9,8 @@ import io.fabric8.kubernetes.api.model.ServiceAccountBuilder
 import io.fabric8.kubernetes.client.Config
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
+import io.fabric8.kubernetes.client.dsl.base.PatchContext
+import io.fabric8.kubernetes.client.dsl.base.PatchType
 import org.testcontainers.k3s.K3sContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.UUID
@@ -85,7 +87,11 @@ object TestCluster {
         node: String,
         unschedulable: Boolean,
     ) {
-        client.nodes().withName(node).edit { it.apply { spec.unschedulable = unschedulable } }
+        client
+            .nodes()
+            .withName(
+                node,
+            ).patch(PatchContext.of(PatchType.JSON_MERGE), """{"spec":{"unschedulable":$unschedulable}}""")
     }
 
     private const val SERVER_ACCOUNT = "ogcloud-server"

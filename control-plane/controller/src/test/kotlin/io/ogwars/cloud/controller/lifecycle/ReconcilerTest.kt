@@ -12,6 +12,8 @@ import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.livestate.ValkeySessionStore
+import io.fabric8.kubernetes.client.dsl.base.PatchContext
+import io.fabric8.kubernetes.client.dsl.base.PatchType
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -119,7 +121,8 @@ class ReconcilerTest {
                 .pods()
                 .inNamespace(NAMESPACE)
                 .withName(name)
-                .edit { it.apply { metadata.finalizers = emptyList() } }
+                // A merge patch needs no resourceVersion, so status updates in between cannot conflict.
+                .patch(PatchContext.of(PatchType.JSON_MERGE), """{"metadata":{"finalizers":null}}""")
         }
     }
 
