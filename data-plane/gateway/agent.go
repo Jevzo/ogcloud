@@ -93,7 +93,7 @@ func (a *AgentService) CompleteTemplateUpload(ctx context.Context, request *node
 	if err != nil {
 		return nil, controllerError("template registration", err)
 	}
-	return &nodev1.CompleteTemplateUploadResponse{TemplateVersionId: registered.GetTemplateVersionId()}, nil
+	return &nodev1.CompleteTemplateUploadResponse{TemplateVersionId: registered.GetTemplateVersionId(), Promoted: registered.GetPromoted()}, nil
 }
 
 func (a *AgentService) download(ctx context.Context, key, sha256 string, size uint64) (*nodev1.Download, error) {

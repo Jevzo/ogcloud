@@ -66,7 +66,7 @@ func TestUploadsLandInTheGroupAndAreRegisteredForTheServer(t *testing.T) {
 	_, invalid := h.agents.CompleteTemplateUpload(ctx, &nodev1.CompleteTemplateUploadRequest{UploadId: "../bedwars/x", Sha256: archiveSHA, SizeBytes: 4})
 
 	key := "templates/lobby/" + upload.GetUploadId() + ".tar.gz"
-	if upload.GetUrl() != "put:"+key || completed.GetTemplateVersionId() != "v-1" {
+	if upload.GetUrl() != "put:"+key || completed.GetTemplateVersionId() != "v-1" || !completed.GetPromoted() {
 		t.Errorf("upload %v, completed %v", upload, completed)
 	}
 	if len(h.controller.registrations) != 1 || h.controller.registrations[0].GetObjectKey() != key || h.controller.registrations[0].GetServerId() != "s-lobby" {

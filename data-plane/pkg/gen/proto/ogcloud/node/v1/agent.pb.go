@@ -374,8 +374,10 @@ func (x *CompleteTemplateUploadRequest) GetSizeBytes() uint64 {
 type CompleteTemplateUploadResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	TemplateVersionId string                 `protobuf:"bytes,1,opt,name=template_version_id,json=templateVersionId,proto3" json:"template_version_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// True when the version became the group's active template (STATIC groups, D-0042).
+	Promoted      bool `protobuf:"varint,2,opt,name=promoted,proto3" json:"promoted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CompleteTemplateUploadResponse) Reset() {
@@ -415,6 +417,13 @@ func (x *CompleteTemplateUploadResponse) GetTemplateVersionId() string {
 	return ""
 }
 
+func (x *CompleteTemplateUploadResponse) GetPromoted() bool {
+	if x != nil {
+		return x.Promoted
+	}
+	return false
+}
+
 var File_ogcloud_node_v1_agent_proto protoreflect.FileDescriptor
 
 const file_ogcloud_node_v1_agent_proto_rawDesc = "" +
@@ -440,9 +449,10 @@ const file_ogcloud_node_v1_agent_proto_rawDesc = "" +
 	"\tupload_id\x18\x01 \x01(\tR\buploadId\x12\x16\n" +
 	"\x06sha256\x18\x02 \x01(\tR\x06sha256\x12\x1d\n" +
 	"\n" +
-	"size_bytes\x18\x03 \x01(\x04R\tsizeBytes\"P\n" +
+	"size_bytes\x18\x03 \x01(\x04R\tsizeBytes\"l\n" +
 	"\x1eCompleteTemplateUploadResponse\x12.\n" +
-	"\x13template_version_id\x18\x01 \x01(\tR\x11templateVersionId2\xe3\x02\n" +
+	"\x13template_version_id\x18\x01 \x01(\tR\x11templateVersionId\x12\x1a\n" +
+	"\bpromoted\x18\x02 \x01(\bR\bpromoted2\xe3\x02\n" +
 	"\x14TemplateAgentService\x12[\n" +
 	"\fGetPodAssets\x12$.ogcloud.node.v1.GetPodAssetsRequest\x1a%.ogcloud.node.v1.GetPodAssetsResponse\x12s\n" +
 	"\x14CreateTemplateUpload\x12,.ogcloud.node.v1.CreateTemplateUploadRequest\x1a-.ogcloud.node.v1.CreateTemplateUploadResponse\x12y\n" +

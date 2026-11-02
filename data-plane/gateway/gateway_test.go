@@ -162,7 +162,7 @@ func (f *fakeController) RegisterTemplateVersion(_ context.Context, in *internal
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.registrations = append(f.registrations, in)
-	return &internalv1.RegisterTemplateVersionResponse{TemplateVersionId: "v-1"}, f.err
+	return &internalv1.RegisterTemplateVersionResponse{TemplateVersionId: "v-1", Promoted: true}, f.err
 }
 
 // fakePresigner signs nothing; its URLs name the method and key.

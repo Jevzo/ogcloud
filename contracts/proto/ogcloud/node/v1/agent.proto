@@ -51,4 +51,6 @@ message CompleteTemplateUploadRequest {
 
 message CompleteTemplateUploadResponse {
   string template_version_id = 1;
+  // True when the version became the group's active template (STATIC groups, D-0042).
+  bool promoted = 2;
 }
