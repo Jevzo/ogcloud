@@ -6,12 +6,10 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"log/slog"
 	"net"
 	"os"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -24,10 +22,8 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/ids"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafka"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
-	"github.com/jevzo/ogcloud/data-plane/pkg/logging"
 	"github.com/jevzo/ogcloud/data-plane/pkg/objects"
 	"github.com/jevzo/ogcloud/data-plane/pkg/service"
-	"github.com/jevzo/ogcloud/data-plane/pkg/telemetry"
 	"github.com/jevzo/ogcloud/data-plane/pkg/tlsfiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkey"
 )
@@ -45,48 +41,19 @@ const (
 )
 
 type settings struct {
-	listen, admin, namespace, audience string
-	certFile, keyFile                  string
-	tracing, logLevel                  string
-	controller, controllerToken        string
-	clientTLS                          *tls.Config
-	kafka                              kafka.Settings
-	valkey                             valkey.Settings
-	objects                            objects.Settings
-	presignExpiry                      time.Duration
-	options                            gateway.Options
+	listen, namespace, audience string
+	certFile, keyFile           string
+	controller, controllerToken string
+	clientTLS                   *tls.Config
+	kafka                       kafka.Settings
+	valkey                      valkey.Settings
+	objects                     objects.Settings
+	presignExpiry               time.Duration
+	options                     gateway.Options
 }
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "gateway:", err)
-		os.Exit(1)
-	}
-}
-
-func run() error {
-	s, err := load(config.FromEnvironment())
-	if err != nil {
-		return err
-	}
-	logger, err := logging.New(os.Stdout, clientID, s.logLevel)
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-	stopTracing, err := telemetry.StartTracing(ctx, clientID, s.tracing)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = stopTracing(context.WithoutCancel(ctx)) }()
-	admin, err := (&net.ListenConfig{}).Listen(ctx, "tcp", s.admin)
-	if err != nil {
-		return fmt.Errorf("admin listener: %w", err)
-	}
-	registry := telemetry.NewRegistry()
-	return service.Run(ctx, admin, registry, func(ctx context.Context, readiness *service.Readiness) error {
-		return serve(ctx, s, logger, registry, readiness)
-	})
+	service.Start(clientID, load, serve)
 }
 
 func load(env *config.Source) (settings, error) {
@@ -97,13 +64,10 @@ func load(env *config.Source) (settings, error) {
 	}
 	s := settings{
 		listen:          env.String("OGCLOUD_GATEWAY_LISTEN", ":9443"),
-		admin:           env.String("OGCLOUD_ADMIN_LISTEN", ":8081"),
 		namespace:       env.String("OGCLOUD_GAME_NAMESPACE", "ogcloud-servers"),
 		audience:        env.String("OGCLOUD_GATEWAY_AUDIENCE", "ogcloud-gateway"),
 		certFile:        env.Required("OGCLOUD_TLS_CERT_FILE"),
 		keyFile:         env.Required("OGCLOUD_TLS_KEY_FILE"),
-		tracing:         env.String("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
-		logLevel:        env.String("OGCLOUD_LOG_LEVEL", "info"),
 		controller:      env.Required("OGCLOUD_CONTROLLER_ADDRESS"),
 		controllerToken: env.String("OGCLOUD_CONTROLLER_TOKEN_FILE", "/var/run/secrets/ogcloud/controller/token"),
 		clientTLS:       clientTLS,
@@ -120,7 +84,8 @@ func load(env *config.Source) (settings, error) {
 	return s, env.Err()
 }
 
-func serve(ctx context.Context, s settings, logger *slog.Logger, registry prometheus.Registerer, readiness *service.Readiness) error {
+func serve(ctx context.Context, s settings, env service.Env) error {
+	logger := env.Logger
 	client, err := kube.NewClient(os.Getenv("KUBECONFIG"))
 	if err != nil {
 		return err
@@ -166,7 +131,7 @@ func serve(ctx context.Context, s settings, logger *slog.Logger, registry promet
 	dependencies := gateway.Dependencies{
 		Sessions: gateway.NewRegistry(), State: store, Events: producer,
 		Stamper: events.NewStamper(idGenerator, time.Now, clientID), IDs: idGenerator,
-		Metrics: gateway.NewMetrics(registry), Logger: logger, Now: time.Now,
+		Metrics: gateway.NewMetrics(env.Registry), Logger: logger, Now: time.Now,
 		Logins: internalv1.NewLoginServiceClient(controller), Templates: internalv1.NewTemplateServiceClient(controller),
 		Objects: objects.NewPresigner(s.objects, s.presignExpiry),
 	}
@@ -193,7 +158,7 @@ func serve(ctx context.Context, s settings, logger *slog.Logger, registry promet
 	go router.RunExpiry(ctx, expiryInterval)
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
-	readiness.Set(true)
+	env.Readiness.Set(true)
 	logger.Info("serving", "address", s.listen, "replica", replica)
 
 	select {
