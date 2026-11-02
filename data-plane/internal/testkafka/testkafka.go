@@ -60,6 +60,8 @@ func Start(t *testing.T, env map[string]string) *Broker {
 			Env:          settings,
 			// The advertised address needs the mapped port, known only once the container runs.
 			Entrypoint: []string{"sh", "-c", "while [ ! -f " + startScript + " ]; do sleep 0.1; done; sh " + startScript},
+			// Docker may publish the port a moment after the start, so wait for the mapping only.
+			WaitingFor: wait.ForMappedPort(hostPort),
 		},
 		Started: true,
 	})
