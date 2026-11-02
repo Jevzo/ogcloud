@@ -1,0 +1,9 @@
+# Where template archives live in object storage: <prefix><group>/<uuid><archiveSuffix>. API uploads and
+# agent pushes use the same layout (D-0081). Regenerate with `mise run gen` after editing.
+object: TemplateObjects
+doc: The object-storage layout of template archives.
+constants:
+  - name: prefix
+    value: templates/
+  - name: archiveSuffix
+    value: .tar.gz

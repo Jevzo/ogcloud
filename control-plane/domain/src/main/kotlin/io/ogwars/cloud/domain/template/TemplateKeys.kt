@@ -6,8 +6,8 @@ import java.util.UUID
 /** Where template archives live in object storage; API uploads and agent pushes follow the same layout (D-0081). */
 object TemplateKeys {
     /** Every template object starts with this. */
-    const val PREFIX = "templates/"
-    private const val ARCHIVE = ".tar.gz"
+    const val PREFIX = TemplateObjects.PREFIX
+    private const val ARCHIVE = TemplateObjects.ARCHIVE_SUFFIX
 
     fun of(
         groupId: GroupId,
