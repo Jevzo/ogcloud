@@ -19,6 +19,8 @@ linters:
       # Errors from our own packages are already wrapped where they originate.
       ignore-package-globs:
         - github.com/jevzo/ogcloud/*
+        # gRPC status errors are what a handler answers; wrapping them would hide the code.
+        - google.golang.org/grpc/status
   exclusions:
     rules:
       - path: _test\.go
