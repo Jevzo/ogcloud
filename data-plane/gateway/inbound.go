@@ -89,7 +89,7 @@ func (s *Service) handle(ctx context.Context, session *Session, request *nodev1.
 	case *nodev1.SessionRequest_DeliveryResult:
 		s.deliveryResult(session, message.DeliveryResult)
 	case *nodev1.SessionRequest_ServerCommand:
-		s.reject(session, messageServerCommand, rejectUnsupported)
+		s.serverCommand(ctx, session, message.ServerCommand)
 	default:
 		s.reject(session, fmt.Sprintf("%T", message), rejectUnsupported)
 	}

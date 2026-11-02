@@ -19,11 +19,13 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/gateway"
 	"github.com/jevzo/ogcloud/data-plane/pkg/config"
 	"github.com/jevzo/ogcloud/data-plane/pkg/events"
+	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/ids"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafka"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 	"github.com/jevzo/ogcloud/data-plane/pkg/logging"
+	"github.com/jevzo/ogcloud/data-plane/pkg/objects"
 	"github.com/jevzo/ogcloud/data-plane/pkg/service"
 	"github.com/jevzo/ogcloud/data-plane/pkg/telemetry"
 	"github.com/jevzo/ogcloud/data-plane/pkg/tlsfiles"
@@ -36,15 +38,22 @@ const (
 	helloTimeout    = 10 * time.Second
 	deliveryTimeout = 30 * time.Second
 	expiryInterval  = 5 * time.Second
+	presignExpiry   = 15 * time.Minute
 	queueSize       = 256
+	// Spreads login resolution over every controller replica behind the headless service.
+	controllerServiceConfig = `{"loadBalancingConfig":[{"round_robin":{}}]}`
 )
 
 type settings struct {
 	listen, admin, namespace, audience string
 	certFile, keyFile                  string
 	tracing, logLevel                  string
+	controller, controllerToken        string
+	clientTLS                          *tls.Config
 	kafka                              kafka.Settings
 	valkey                             valkey.Settings
+	objects                            objects.Settings
+	presignExpiry                      time.Duration
 	options                            gateway.Options
 }
 
@@ -81,24 +90,27 @@ func run() error {
 }
 
 func load(env *config.Source) (settings, error) {
-	var clientTLS *tls.Config
-	if caFile := env.String("OGCLOUD_TLS_CA_FILE", ""); caFile != "" {
-		var err error
-		if clientTLS, err = tlsfiles.Client(caFile, ""); err != nil {
-			return settings{}, err
-		}
+	// Internal TLS everywhere (D-0041): the controller, Kafka and Valkey present certificates from the private CA.
+	clientTLS, err := tlsfiles.Client(env.Required("OGCLOUD_TLS_CA_FILE"), "")
+	if err != nil {
+		return settings{}, err
 	}
 	s := settings{
-		listen:    env.String("OGCLOUD_GATEWAY_LISTEN", ":9443"),
-		admin:     env.String("OGCLOUD_ADMIN_LISTEN", ":8081"),
-		namespace: env.String("OGCLOUD_GAME_NAMESPACE", "ogcloud-servers"),
-		audience:  env.String("OGCLOUD_GATEWAY_AUDIENCE", "ogcloud-gateway"),
-		certFile:  env.Required("OGCLOUD_TLS_CERT_FILE"),
-		keyFile:   env.Required("OGCLOUD_TLS_KEY_FILE"),
-		tracing:   env.String("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
-		logLevel:  env.String("OGCLOUD_LOG_LEVEL", "info"),
-		kafka:     kafka.FromConfig(env, clientID, clientTLS),
-		valkey:    valkey.FromConfig(env, clientTLS),
+		listen:          env.String("OGCLOUD_GATEWAY_LISTEN", ":9443"),
+		admin:           env.String("OGCLOUD_ADMIN_LISTEN", ":8081"),
+		namespace:       env.String("OGCLOUD_GAME_NAMESPACE", "ogcloud-servers"),
+		audience:        env.String("OGCLOUD_GATEWAY_AUDIENCE", "ogcloud-gateway"),
+		certFile:        env.Required("OGCLOUD_TLS_CERT_FILE"),
+		keyFile:         env.Required("OGCLOUD_TLS_KEY_FILE"),
+		tracing:         env.String("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+		logLevel:        env.String("OGCLOUD_LOG_LEVEL", "info"),
+		controller:      env.Required("OGCLOUD_CONTROLLER_ADDRESS"),
+		controllerToken: env.String("OGCLOUD_CONTROLLER_TOKEN_FILE", "/var/run/secrets/ogcloud/controller/token"),
+		clientTLS:       clientTLS,
+		kafka:           kafka.FromConfig(env, clientID, clientTLS),
+		valkey:          valkey.FromConfig(env, clientTLS),
+		objects:         objects.FromConfig(env),
+		presignExpiry:   env.Duration("OGCLOUD_S3_PRESIGN_EXPIRY", presignExpiry),
 		options: gateway.Options{
 			HelloTimeout:    env.Duration("OGCLOUD_GATEWAY_HELLO_TIMEOUT", helloTimeout),
 			QueueSize:       env.Int("OGCLOUD_GATEWAY_QUEUE_SIZE", queueSize),
@@ -140,11 +152,23 @@ func serve(ctx context.Context, s settings, logger *slog.Logger, registry promet
 	if err != nil {
 		return err
 	}
+	// The gateway's own projected token, for the controller's audience (D-0013).
+	controller, err := grpc.NewClient(s.controller,
+		grpc.WithTransportCredentials(credentials.NewTLS(s.clientTLS)),
+		grpc.WithPerRPCCredentials(kube.NewTokenFile(s.controllerToken, os.ReadFile, time.Now)),
+		grpc.WithDefaultServiceConfig(controllerServiceConfig),
+	)
+	if err != nil {
+		return fmt.Errorf("controller client: %w", err)
+	}
+	defer func() { _ = controller.Close() }()
 
 	dependencies := gateway.Dependencies{
 		Sessions: gateway.NewRegistry(), State: store, Events: producer,
 		Stamper: events.NewStamper(idGenerator, time.Now, clientID), IDs: idGenerator,
 		Metrics: gateway.NewMetrics(registry), Logger: logger, Now: time.Now,
+		Logins: internalv1.NewLoginServiceClient(controller), Templates: internalv1.NewTemplateServiceClient(controller),
+		Objects: objects.NewPresigner(s.objects, s.presignExpiry),
 	}
 	router := gateway.NewRouter(dependencies, s.options.DeliveryTimeout)
 	auth := gateway.NewAuthenticator(kube.NewReviewer(client, s.audience, time.Now), pods, s.namespace)
@@ -154,6 +178,7 @@ func serve(ctx context.Context, s settings, logger *slog.Logger, registry promet
 		grpc.StreamInterceptor(auth.StreamInterceptor()), //nolint:contextcheck // a stream's handler uses the stream's own context.
 	)
 	nodev1.RegisterGatewayServiceServer(server, gateway.NewService(dependencies, s.options))
+	nodev1.RegisterTemplateAgentServiceServer(server, gateway.NewAgentService(dependencies))
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", s.listen)
 	if err != nil {
 		return fmt.Errorf("gateway listener: %w", err)

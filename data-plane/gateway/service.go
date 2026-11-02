@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -34,8 +35,11 @@ const (
 
 // State is the live state the gateway serves from (D-0077).
 type State interface {
+	Server(ctx context.Context, id string) (*internalv1.ServerRecord, error)
 	Servers(ctx context.Context) ([]*internalv1.ServerRecord, error)
+	ServersOfGroup(ctx context.Context, groupID string) ([]*internalv1.ServerRecord, error)
 	Session(ctx context.Context, playerUUID string) (*internalv1.PlayerSession, error)
+	SessionByName(ctx context.Context, name string) (*internalv1.PlayerSession, error)
 	ReadModel(ctx context.Context, kind valkeykeys.ReadModelKind, id string) ([]byte, error)
 }
 
@@ -44,16 +48,36 @@ type Publisher interface {
 	Publish(ctx context.Context, topic, key string, event proto.Message) error
 }
 
+// LoginResolver is the controller's login service (internal gRPC).
+type LoginResolver interface {
+	ResolveLogin(ctx context.Context, in *internalv1.ResolveLoginRequest, opts ...grpc.CallOption) (*internalv1.ResolveLoginResponse, error)
+}
+
+// TemplateRegistry is the controller's template service (internal gRPC, D-0081).
+type TemplateRegistry interface {
+	RegisterTemplateVersion(ctx context.Context, in *internalv1.RegisterTemplateVersionRequest,
+		opts ...grpc.CallOption) (*internalv1.RegisterTemplateVersionResponse, error)
+}
+
+// Presigner signs object-storage URLs, so pods never hold storage credentials (D-0010).
+type Presigner interface {
+	Get(ctx context.Context, key string) (string, error)
+	Put(ctx context.Context, key string) (string, error)
+}
+
 // Dependencies are what the gateway's parts share.
 type Dependencies struct {
-	Sessions *Registry
-	State    State
-	Events   Publisher
-	Stamper  *events.Stamper
-	IDs      *ids.Generator
-	Metrics  *Metrics
-	Logger   *slog.Logger
-	Now      func() time.Time
+	Sessions  *Registry
+	State     State
+	Events    Publisher
+	Stamper   *events.Stamper
+	IDs       *ids.Generator
+	Metrics   *Metrics
+	Logger    *slog.Logger
+	Now       func() time.Time
+	Logins    LoginResolver
+	Templates TemplateRegistry
+	Objects   Presigner
 }
 
 // Options tune sessions.
@@ -181,24 +205,25 @@ func (s *Service) welcome(ctx context.Context, peer Peer) (*nodev1.Welcome, erro
 		NetworkSettings: network,
 	}
 	if peer.Role == runtimeprofiles.RoleProxy {
-		if welcome.Servers, err = s.serverInfos(ctx); err != nil {
+		records, err := s.State.Servers(ctx)
+		if err == nil {
+			welcome.Servers, err = s.serverInfos(ctx, records)
+		}
+		if err != nil {
 			return nil, status.Errorf(codes.Unavailable, "servers: %v", err)
 		}
 	}
 	return welcome, nil
 }
 
-// serverInfos lists every live server with its group's maintenance flag, for proxies to route.
-func (s *Service) serverInfos(ctx context.Context) ([]*nodev1.ServerInfo, error) {
-	records, err := s.State.Servers(ctx)
-	if err != nil {
-		return nil, err
-	}
+// serverInfos adds each group's maintenance flag to live server records, for proxies to route.
+func (s *Service) serverInfos(ctx context.Context, records []*internalv1.ServerRecord) ([]*nodev1.ServerInfo, error) {
 	maintenance := map[string]bool{}
 	infos := make([]*nodev1.ServerInfo, 0, len(records))
 	for _, record := range records {
 		inMaintenance, known := maintenance[record.GetGroupId()]
 		if !known {
+			var err error
 			if inMaintenance, err = s.groupMaintenance(ctx, record.GetGroupId()); err != nil {
 				return nil, err
 			}

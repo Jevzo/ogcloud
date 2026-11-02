@@ -24,6 +24,8 @@ type Peer struct {
 	GroupID  string
 	// Lower case, as on the pod label, e.g. dynamic.
 	GroupType string
+	// The runtime profile, e.g. paper-26.3, whose bundle the pod loads.
+	ProfileID string
 	Role      runtimeprofiles.Role
 	PodName   string
 }
@@ -82,6 +84,7 @@ func (a *Authenticator) Authenticate(ctx context.Context) (Peer, error) {
 		ServerID:  labels[podlabels.ServerId],
 		GroupID:   labels[podlabels.Group],
 		GroupType: labels[podlabels.GroupType],
+		ProfileID: labels[podlabels.Profile],
 		Role:      runtimeprofiles.Role(labels[podlabels.Role]),
 		PodName:   pod.Name,
 	}

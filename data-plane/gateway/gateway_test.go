@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -69,6 +71,34 @@ func (f *fakeState) Session(_ context.Context, playerUUID string) (*internalv1.P
 	return f.sessions[playerUUID], nil
 }
 
+func (f *fakeState) SessionByName(_ context.Context, name string) (*internalv1.PlayerSession, error) {
+	for _, session := range f.sessions {
+		if strings.EqualFold(session.GetPlayerName(), name) {
+			return session, nil
+		}
+	}
+	return nil, nil
+}
+
+func (f *fakeState) Server(_ context.Context, id string) (*internalv1.ServerRecord, error) {
+	for _, server := range f.servers {
+		if server.GetServerId() == id {
+			return server, nil
+		}
+	}
+	return nil, nil
+}
+
+func (f *fakeState) ServersOfGroup(_ context.Context, groupID string) ([]*internalv1.ServerRecord, error) {
+	var servers []*internalv1.ServerRecord
+	for _, server := range f.servers {
+		if server.GetGroupId() == groupID {
+			servers = append(servers, server)
+		}
+	}
+	return servers, nil
+}
+
 func (f *fakeState) Servers(context.Context) ([]*internalv1.ServerRecord, error) {
 	return f.servers, nil
 }
@@ -92,9 +122,13 @@ func (r *recorder) Publish(_ context.Context, topic, key string, event proto.Mes
 }
 
 func gamePod(name, serverID, role, groupType string) *corev1.Pod {
+	profile := "paper-26.3"
+	if role == "proxy" {
+		profile = "velocity-4.3.0"
+	}
 	return &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, UID: types.UID(name + "-uid"), Labels: map[string]string{
 		podlabels.ManagedBy: podlabels.ControllerName, podlabels.ServerId: serverID, podlabels.Group: "lobby",
-		podlabels.GroupType: groupType, podlabels.Role: role,
+		podlabels.GroupType: groupType, podlabels.Role: role, podlabels.Profile: profile,
 	}}}
 }
 
@@ -107,14 +141,46 @@ func marshal(t *testing.T, message proto.Message) []byte {
 	return encoded
 }
 
+// fakeController records what the gateway asks the controller.
+type fakeController struct {
+	mu            sync.Mutex
+	logins        []*internalv1.ResolveLoginRequest
+	registrations []*internalv1.RegisterTemplateVersionRequest
+	err           error
+}
+
+func (f *fakeController) ResolveLogin(_ context.Context, in *internalv1.ResolveLoginRequest, _ ...grpc.CallOption) (*internalv1.ResolveLoginResponse, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.logins = append(f.logins, in)
+	return &internalv1.ResolveLoginResponse{Result: &nodev1.ResolveLoginResponse{Allowed: true}}, f.err
+}
+
+func (f *fakeController) RegisterTemplateVersion(_ context.Context, in *internalv1.RegisterTemplateVersionRequest,
+	_ ...grpc.CallOption,
+) (*internalv1.RegisterTemplateVersionResponse, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.registrations = append(f.registrations, in)
+	return &internalv1.RegisterTemplateVersionResponse{TemplateVersionId: "v-1"}, f.err
+}
+
+// fakePresigner signs nothing; its URLs name the method and key.
+type fakePresigner struct{}
+
+func (fakePresigner) Get(_ context.Context, key string) (string, error) { return "get:" + key, nil }
+func (fakePresigner) Put(_ context.Context, key string) (string, error) { return "put:" + key, nil }
+
 type harness struct {
-	client    nodev1.GatewayServiceClient
-	published *recorder
-	sessions  *Registry
-	state     *fakeState
-	metrics   *Metrics
-	router    *Router
-	now       *time.Time
+	client     nodev1.GatewayServiceClient
+	agents     nodev1.TemplateAgentServiceClient
+	controller *fakeController
+	published  *recorder
+	sessions   *Registry
+	state      *fakeState
+	metrics    *Metrics
+	router     *Router
+	now        *time.Time
 }
 
 func start(t *testing.T, helloTimeout time.Duration) *harness {
@@ -139,10 +205,13 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 	now := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
 	clock := func() time.Time { return now }
 	dependencies := testDependencies(state, publisher, clock)
+	controller := &fakeController{}
+	dependencies.Logins, dependencies.Templates, dependencies.Objects = controller, controller, fakePresigner{}
 	service := NewService(dependencies, Options{HelloTimeout: helloTimeout, QueueSize: 8, DeliveryTimeout: deliveryTimeout})
 	auth := NewAuthenticator(reviewer, pods, namespace)
 	server := grpc.NewServer(grpc.UnaryInterceptor(auth.UnaryInterceptor()), grpc.StreamInterceptor(auth.StreamInterceptor()))
 	nodev1.RegisterGatewayServiceServer(server, service)
+	nodev1.RegisterTemplateAgentServiceServer(server, NewAgentService(dependencies))
 	listener := bufconn.Listen(1 << 20)
 	go func() { _ = server.Serve(listener) }()
 	t.Cleanup(server.Stop)
@@ -154,7 +223,8 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 	}
 	t.Cleanup(func() { _ = conn.Close() })
 	return &harness{
-		client: nodev1.NewGatewayServiceClient(conn), published: publisher, sessions: dependencies.Sessions, state: state,
+		client: nodev1.NewGatewayServiceClient(conn), agents: nodev1.NewTemplateAgentServiceClient(conn), controller: controller,
+		published: publisher, sessions: dependencies.Sessions, state: state,
 		metrics: dependencies.Metrics, router: NewRouter(dependencies, deliveryTimeout), now: &now,
 	}
 }
@@ -166,6 +236,14 @@ func testDependencies(state State, publisher Publisher, clock func() time.Time) 
 		Stamper: events.NewStamper(ids.New(clock, rand.Reader), clock, "gateway"), IDs: ids.New(clock, rand.Reader),
 		Metrics: NewMetrics(prometheus.NewRegistry()), Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: clock,
 	}
+}
+
+// as is a call context carrying token.
+func as(t *testing.T, token string) context.Context {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer "+token), patience)
+	t.Cleanup(cancel)
+	return ctx
 }
 
 func (h *harness) open(t *testing.T, token string, hello *nodev1.Hello) nodev1.GatewayService_SessionClient {
