@@ -10,9 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +18,7 @@ import (
 
 	"github.com/jevzo/ogcloud/data-plane/bootstrap/infisical"
 	"github.com/jevzo/ogcloud/data-plane/internal/testinfisical"
+	"github.com/jevzo/ogcloud/data-plane/internal/testk3s"
 )
 
 const (
@@ -117,8 +116,8 @@ func newFixture(t *testing.T) *fixture {
 		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: "infisical-reviewer", Namespace: namespace}},
 	}))
 	f := &fixture{kube: kube, api: infisical.New(env.URL, nil), dir: dir}
-	writeFile(t, filepath.Join(dir, "reviewer"), f.token(t, "infisical-reviewer"))
-	writeFile(t, filepath.Join(dir, "bootstrap"), f.token(t, "ogcloud-bootstrap"))
+	writeFile(t, filepath.Join(dir, "reviewer"), testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil))
+	writeFile(t, filepath.Join(dir, "bootstrap"), testk3s.Token(t, f.kube, namespace, "ogcloud-bootstrap", "", nil))
 	writeFile(t, filepath.Join(dir, "ca.crt"), string(env.Cluster.Config.CAData))
 	f.config = &Config{
 		Namespace: namespace,
@@ -158,21 +157,9 @@ func (f *fixture) run(t *testing.T) {
 	}
 }
 
-// token is a service-account token as the kubelet projects one.
-func (f *fixture) token(t *testing.T, account string) string {
-	t.Helper()
-	expiry := int64(time.Hour / time.Second)
-	request, err := f.kube.CoreV1().ServiceAccounts(namespace).CreateToken(context.Background(), account,
-		&authenticationv1.TokenRequest{Spec: authenticationv1.TokenRequestSpec{ExpirationSeconds: &expiry}}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("token for %s: %v", account, err)
-	}
-	return request.Status.Token
-}
-
 func (f *fixture) loginAs(t *testing.T, identityID, account string) *infisical.Client {
 	t.Helper()
-	token, err := f.api.KubernetesLogin(context.Background(), identityID, f.token(t, account))
+	token, err := f.api.KubernetesLogin(context.Background(), identityID, testk3s.Token(t, f.kube, namespace, account, "", nil))
 	if err != nil {
 		t.Fatalf("login as %s: %v", account, err)
 	}

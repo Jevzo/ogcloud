@@ -6,10 +6,8 @@ import (
 	"testing"
 	"time"
 
-	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/jevzo/ogcloud/data-plane/internal/testk3s"
 )
@@ -35,7 +33,7 @@ func TestTokenReviewNamesThePodAProjectedTokenBelongsTo(t *testing.T) {
 	}
 	reviewer := NewReviewer(client, "ogcloud-gateway", time.Now)
 
-	identity, err := reviewer.Review(ctx, token(t, client, pod, "ogcloud-gateway"))
+	identity, err := reviewer.Review(ctx, testk3s.Token(t, client, namespace, "game", "ogcloud-gateway", pod))
 
 	if err != nil {
 		t.Fatalf("Review: %v", err)
@@ -43,24 +41,7 @@ func TestTokenReviewNamesThePodAProjectedTokenBelongsTo(t *testing.T) {
 	if identity.PodName != "lobby-1" || identity.PodUID != string(pod.UID) || identity.ServiceAccount != "game" {
 		t.Errorf("identity = %+v", identity)
 	}
-	if _, err := reviewer.Review(ctx, token(t, client, pod, "ogcloud-controller")); !errors.Is(err, ErrUnauthenticated) {
+	if _, err := reviewer.Review(ctx, testk3s.Token(t, client, namespace, "game", "ogcloud-controller", pod)); !errors.Is(err, ErrUnauthenticated) {
 		t.Errorf("a token for another audience passed: %v", err)
 	}
-}
-
-// token requests a projected token bound to pod, as the kubelet mounts one (D-0013).
-func token(t *testing.T, client kubernetes.Interface, pod *corev1.Pod, audience string) string {
-	t.Helper()
-	expiry := int64(time.Hour / time.Second)
-	request, err := client.CoreV1().ServiceAccounts(namespace).CreateToken(context.Background(), "game", &authenticationv1.TokenRequest{
-		Spec: authenticationv1.TokenRequestSpec{
-			Audiences:         []string{audience},
-			ExpirationSeconds: &expiry,
-			BoundObjectRef:    &authenticationv1.BoundObjectReference{Kind: "Pod", APIVersion: "v1", Name: pod.Name, UID: pod.UID},
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("token request: %v", err)
-	}
-	return request.Status.Token
 }
