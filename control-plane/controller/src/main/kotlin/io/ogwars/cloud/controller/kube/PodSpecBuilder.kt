@@ -6,6 +6,7 @@ import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.runtime.ProfileRole
 import io.ogwars.cloud.domain.runtime.RuntimeProfile
+import io.ogwars.cloud.domain.runtime.RuntimeProfiles
 import io.ogwars.cloud.domain.server.Server
 import io.fabric8.kubernetes.api.model.Container
 import io.fabric8.kubernetes.api.model.ContainerBuilder
@@ -312,7 +313,7 @@ class PodSpecBuilder(
         const val SERVER_CONTAINER = "server"
         const val LOADER_CONTAINER = "template-loader"
         const val AGENT_CONTAINER = "template-agent"
-        const val MINECRAFT_PORT = 25565
+        const val MINECRAFT_PORT = RuntimeProfiles.SERVER_PORT
         const val MINECRAFT_PORT_NAME = "minecraft"
 
         const val DATA_PATH = "/data"

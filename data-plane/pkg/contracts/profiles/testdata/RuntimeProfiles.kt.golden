@@ -5,6 +5,7 @@ object RuntimeProfiles {
     const val FORWARDING = "bungeeguard"
     const val MIN_CLIENT_PROTOCOL = 47
     const val MAX_CLIENT_PROTOCOL = 777
+    const val SERVER_PORT = 25565
 
     val ALL: List<RuntimeProfile> =
         listOf(

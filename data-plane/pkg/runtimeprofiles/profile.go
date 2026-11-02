@@ -35,6 +35,36 @@ type Profile struct {
 	JavaVersion int
 }
 
+// OverlayFormat is how the template loader patches a file.
+type OverlayFormat string
+
+// Overlay formats.
+const (
+	OverlayProperties OverlayFormat = "properties"
+	OverlayYAML       OverlayFormat = "yaml"
+)
+
+// Overlay is one setting the template loader writes into a server file on every start (D-0119); YAML keys
+// are dotted paths.
+type Overlay struct {
+	Platform Platform
+	File     string
+	Format   OverlayFormat
+	Key      string
+	Value    string
+}
+
+// OverlaysOf returns a platform's overlays.
+func OverlaysOf(platform Platform) []Overlay {
+	var overlays []Overlay
+	for _, overlay := range Overlays() {
+		if overlay.Platform == platform {
+			overlays = append(overlays, overlay)
+		}
+	}
+	return overlays
+}
+
 // Find returns the profile with the given id.
 func Find(id string) (Profile, bool) {
 	for _, profile := range All() {

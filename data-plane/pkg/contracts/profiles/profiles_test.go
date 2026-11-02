@@ -43,7 +43,7 @@ func TestRenderersMatchGoldenFiles(t *testing.T) {
 }
 
 func TestValidateRejectsInvalidCatalogs(t *testing.T) {
-	const header = "forwarding: bungeeguard\nclientProtocols: {min: 47, max: 777}\nprofiles:\n"
+	const header = "forwarding: bungeeguard\nclientProtocols: {min: 47, max: 777}\nserverPort: 25565\nprofiles:\n"
 	const proxy = "  - {id: velocity-4.3.0, platform: velocity, version: 4.3.0, java: 25}\n"
 	const paper = "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25}\n"
 	tests := []struct {
@@ -51,8 +51,9 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 		yaml    string
 		wantErr string
 	}{
-		{"modern forwarding", "forwarding: modern\nclientProtocols: {min: 47, max: 777}\nprofiles:\n" + proxy + paper, "D-0065"},
-		{"bad range", "forwarding: bungeeguard\nclientProtocols: {min: 777, max: 47}\nprofiles:\n" + proxy + paper, "positive range"},
+		{"modern forwarding", "forwarding: modern\nclientProtocols: {min: 47, max: 777}\nserverPort: 25565\nprofiles:\n" + proxy + paper, "D-0065"},
+		{"bad range", "forwarding: bungeeguard\nclientProtocols: {min: 777, max: 47}\nserverPort: 25565\nprofiles:\n" + proxy + paper, "positive range"},
+		{"no port", "forwarding: bungeeguard\nclientProtocols: {min: 47, max: 777}\nprofiles:\n" + proxy + paper, "serverPort"},
 		{"unknown platform", header + proxy + "  - {id: spigot-1.8, platform: spigot, version: '1.8', protocol: 47, java: 25}\n", "unknown platform"},
 		{"duplicate", header + proxy + paper + paper, "duplicate id"},
 		{"bad id", header + proxy + "  - {id: Paper, platform: paper, version: '26.3', protocol: 777, java: 25}\n", "id must match"},
@@ -64,6 +65,10 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 		{"plugin bad hash", header + proxy + paper + plugin("velocity", "ViaVersion.jar", modrinth, "abc"), "sha512"},
 		{"plugin unknown platform", header + proxy + paper + plugin("spigot", "ViaVersion.jar", modrinth, strings.Repeat("a", 128)), "unknown platform"},
 		{"plugin path", header + proxy + paper + plugin("velocity", "../ViaVersion.jar", modrinth, strings.Repeat("a", 128)), "plain .jar"},
+		{"overlay escaping", header + proxy + paper + overlay("paper", "../server.properties", "properties", "online-mode"), "relative path"},
+		{"overlay format", header + proxy + paper + overlay("paper", "server.toml", "toml", "online-mode"), "properties or yaml"},
+		{"overlay key", header + proxy + paper + overlay("paper", "spigot.yml", "yaml", "settings..bungeecord"), "invalid key"},
+		{"overlay platform", header + proxy + paper + overlay("spigot", "spigot.yml", "yaml", "a"), "unknown platform"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -82,6 +87,10 @@ const modrinth = "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVe
 
 func plugin(platform, file, url, sha string) string {
 	return "plugins:\n  - {id: viaversion, platforms: [" + platform + "], file: '" + file + "', version: 5.12.1, url: '" + url + "', sha512: '" + sha + "'}\n"
+}
+
+func overlay(platform, file, format, key string) string {
+	return "overlays:\n  - {platform: " + platform + ", file: '" + file + "', format: " + format + ", set: {'" + key + "': 'false'}}\n"
 }
 
 func parseFixture(t *testing.T) Catalog {

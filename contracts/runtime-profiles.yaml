@@ -9,6 +9,9 @@ clientProtocols:
   min: 47
   max: 777
 
+# The port every server and proxy listens on inside its pod.
+serverPort: 25565
+
 profiles:
   - id: paper-26.3
     platform: paper
@@ -46,3 +49,31 @@ plugins:
     version: "4.2.0"
     url: https://cdn.modrinth.com/data/TbHIxhx5/versions/EPLCoxMK/ViaRewind-4.2.0.jar
     sha512: 7f3a2a972a3fe45f9c16b48a2e2b08fca6aa70da77eb8e47644726f19a43dc24116c2f7e126434f9f9388fa1b987a014efe287e3980f773b6e261313e7e939b2
+
+# Settings the template loader writes into server files on every start (D-0119), so BungeeGuard forwarding
+# (D-0065) works whatever the template holds. YAML keys are dotted paths; ${serverPort} is the port above.
+# Velocity needs none: its configs come in the runtime bundle.
+overlays:
+  - platform: paper
+    file: server.properties
+    format: properties
+    set:
+      online-mode: "false"
+      enforce-secure-profile: "false"
+      server-port: ${serverPort}
+  - platform: paper
+    file: spigot.yml
+    format: yaml
+    set:
+      settings.bungeecord: "true"
+  - platform: pandaspigot
+    file: server.properties
+    format: properties
+    set:
+      online-mode: "false"
+      server-port: ${serverPort}
+  - platform: pandaspigot
+    file: spigot.yml
+    format: yaml
+    set:
+      settings.bungeecord: "true"

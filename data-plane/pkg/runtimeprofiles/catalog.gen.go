@@ -11,11 +11,27 @@ const (
 	MaxClientProtocol = 777
 )
 
+// ServerPort is the port every server and proxy listens on inside its pod.
+const ServerPort = 25565
+
 // All returns every runtime profile in catalog order.
 func All() []Profile {
 	return []Profile{
 		{ID: "paper-26.3", Platform: PlatformPaper, Role: RoleBackend, Version: "26.3", Protocol: 777, JavaVersion: 25},
 		{ID: "pandaspigot-1.8.8", Platform: PlatformPandaSpigot, Role: RoleBackend, Version: "1.8.8", Protocol: 47, JavaVersion: 25},
 		{ID: "velocity-4.3.0", Platform: PlatformVelocity, Role: RoleProxy, Version: "4.3.0", Protocol: 0, JavaVersion: 25},
+	}
+}
+
+// Overlays returns the settings the template loader writes on every start (D-0119).
+func Overlays() []Overlay {
+	return []Overlay{
+		{Platform: PlatformPaper, File: "server.properties", Format: OverlayProperties, Key: "enforce-secure-profile", Value: "false"},
+		{Platform: PlatformPaper, File: "server.properties", Format: OverlayProperties, Key: "online-mode", Value: "false"},
+		{Platform: PlatformPaper, File: "server.properties", Format: OverlayProperties, Key: "server-port", Value: "25565"},
+		{Platform: PlatformPaper, File: "spigot.yml", Format: OverlayYAML, Key: "settings.bungeecord", Value: "true"},
+		{Platform: PlatformPandaSpigot, File: "server.properties", Format: OverlayProperties, Key: "online-mode", Value: "false"},
+		{Platform: PlatformPandaSpigot, File: "server.properties", Format: OverlayProperties, Key: "server-port", Value: "25565"},
+		{Platform: PlatformPandaSpigot, File: "spigot.yml", Format: OverlayYAML, Key: "settings.bungeecord", Value: "true"},
 	}
 }

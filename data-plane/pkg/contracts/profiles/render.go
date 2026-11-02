@@ -3,6 +3,7 @@ package profiles
 import (
 	"fmt"
 	"go/format"
+	"sort"
 	"strings"
 )
 
@@ -15,11 +16,25 @@ func RenderGo(c Catalog) ([]byte, error) {
 	fmt.Fprintf(&b, "// Forwarding is the network-wide player-info forwarding mode (D-0065).\nconst Forwarding = %q\n\n", c.Forwarding)
 	fmt.Fprintf(&b, "// Client protocol range the network admits.\nconst (\n\tMinClientProtocol = %d\n\tMaxClientProtocol = %d\n)\n\n",
 		c.ClientProtocols.Min, c.ClientProtocols.Max)
+	fmt.Fprintf(&b, "// ServerPort is the port every server and proxy listens on inside its pod.\nconst ServerPort = %d\n\n", c.ServerPort)
 	b.WriteString("// All returns every runtime profile in catalog order.\nfunc All() []Profile {\n\treturn []Profile{\n")
 	for _, p := range c.Profiles {
 		info := platforms[p.Platform]
 		fmt.Fprintf(&b, "\t\t{ID: %q, Platform: %s, Role: Role%s, Version: %q, Protocol: %d, JavaVersion: %d},\n",
 			p.ID, info.goConst, title(info.role), p.Version, p.Protocol, p.JavaVersion)
+	}
+	b.WriteString("\t}\n}\n\n")
+	b.WriteString("// Overlays returns the settings the template loader writes on every start (D-0119).\nfunc Overlays() []Overlay {\n\treturn []Overlay{\n")
+	for _, overlay := range c.Overlays {
+		keys := make([]string, 0, len(overlay.Set))
+		for key := range overlay.Set {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			fmt.Fprintf(&b, "\t\t{Platform: %s, File: %q, Format: %s, Key: %q, Value: %q},\n",
+				platforms[overlay.Platform].goConst, overlay.File, overlayFormats[overlay.Format], key, c.value(overlay.Set[key]))
+		}
 	}
 	b.WriteString("\t}\n}\n")
 	formatted, err := format.Source([]byte(b.String()))
@@ -33,8 +48,8 @@ func RenderGo(c Catalog) ([]byte, error) {
 func RenderKotlin(packageName string, c Catalog) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "// %s\npackage %s\n\nobject RuntimeProfiles {\n", generatedHeader, packageName)
-	fmt.Fprintf(&b, "    const val FORWARDING = %q\n    const val MIN_CLIENT_PROTOCOL = %d\n    const val MAX_CLIENT_PROTOCOL = %d\n\n",
-		c.Forwarding, c.ClientProtocols.Min, c.ClientProtocols.Max)
+	fmt.Fprintf(&b, "    const val FORWARDING = %q\n    const val MIN_CLIENT_PROTOCOL = %d\n    const val MAX_CLIENT_PROTOCOL = %d\n    const val SERVER_PORT = %d\n\n",
+		c.Forwarding, c.ClientProtocols.Min, c.ClientProtocols.Max, c.ServerPort)
 	b.WriteString("    val ALL: List<RuntimeProfile> =\n        listOf(\n")
 	for _, p := range c.Profiles {
 		info := platforms[p.Platform]

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/jevzo/ogcloud/data-plane/pkg/strictyaml"
@@ -31,17 +32,44 @@ var (
 	idPattern     = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9.]+)+$`)
 	pluginPattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 	sha512Pattern = regexp.MustCompile(`^[0-9a-f]{128}$`)
+	filePattern   = regexp.MustCompile(`^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$`)
 )
+
+const maxPort = 65535
 
 // Third-party plugins come only from Modrinth's CDN (D-0079).
 const pluginURLPrefix = "https://cdn.modrinth.com/data/"
 
 // Catalog is the parsed runtime-profiles.yaml.
 type Catalog struct {
-	Forwarding      string         `yaml:"forwarding"`
-	ClientProtocols ProtocolRange  `yaml:"clientProtocols"`
-	Profiles        []ProfileEntry `yaml:"profiles"`
-	Plugins         []PluginEntry  `yaml:"plugins"`
+	Forwarding      string        `yaml:"forwarding"`
+	ClientProtocols ProtocolRange `yaml:"clientProtocols"`
+	// ServerPort is the port every server and proxy listens on inside its pod.
+	ServerPort int            `yaml:"serverPort"`
+	Profiles   []ProfileEntry `yaml:"profiles"`
+	Plugins    []PluginEntry  `yaml:"plugins"`
+	Overlays   []OverlayEntry `yaml:"overlays"`
+}
+
+// OverlayEntry is a file the template loader patches on every start of a platform's servers (D-0119).
+type OverlayEntry struct {
+	Platform string `yaml:"platform"`
+	// File is relative to the server directory.
+	File   string `yaml:"file"`
+	Format string `yaml:"format"`
+	// Set maps keys (dotted paths for YAML) to the values written.
+	Set map[string]string `yaml:"set"`
+}
+
+// Overlay formats the loader can patch.
+var overlayFormats = map[string]string{"properties": "OverlayProperties", "yaml": "OverlayYAML"}
+
+// serverPortPlaceholder in an overlay value stands for the catalog's serverPort.
+const serverPortPlaceholder = "${serverPort}"
+
+// value resolves the placeholders in an overlay value.
+func (c Catalog) value(raw string) string {
+	return strings.ReplaceAll(raw, serverPortPlaceholder, strconv.Itoa(c.ServerPort))
 }
 
 // PluginEntry is a third-party plugin the runtime bundles of the listed platforms carry (D-0079).
@@ -85,6 +113,9 @@ func (c Catalog) Validate() error {
 	if c.Forwarding != forwardingBungeeGuard {
 		problems = append(problems, fmt.Errorf("forwarding must be %q (D-0065), got %q", forwardingBungeeGuard, c.Forwarding))
 	}
+	if c.ServerPort <= 0 || c.ServerPort > maxPort {
+		problems = append(problems, fmt.Errorf("serverPort must be a TCP port, got %d", c.ServerPort))
+	}
 	if c.ClientProtocols.Min <= 0 || c.ClientProtocols.Max < c.ClientProtocols.Min {
 		problems = append(problems, fmt.Errorf("clientProtocols must be a positive range, got %d..%d", c.ClientProtocols.Min, c.ClientProtocols.Max))
 	}
@@ -119,7 +150,38 @@ func (c Catalog) Validate() error {
 		problems = append(problems, errors.New("the catalog needs at least one proxy and one backend profile"))
 	}
 	problems = append(problems, c.validatePlugins()...)
+	problems = append(problems, c.validateOverlays()...)
 	return errors.Join(problems...)
+}
+
+func (c Catalog) validateOverlays() []error {
+	var problems []error
+	seen := map[string]bool{}
+	for i, overlay := range c.Overlays {
+		where := fmt.Sprintf("overlays[%d] (%s %s)", i, overlay.Platform, overlay.File)
+		if _, known := platforms[overlay.Platform]; !known {
+			problems = append(problems, fmt.Errorf("%s: unknown platform %q", where, overlay.Platform))
+		}
+		if !filePattern.MatchString(overlay.File) || strings.Contains(overlay.File, "..") {
+			problems = append(problems, fmt.Errorf("%s: file must be a relative path inside the server directory", where))
+		}
+		if seen[overlay.Platform+"/"+overlay.File] {
+			problems = append(problems, fmt.Errorf("%s: one entry per platform and file", where))
+		}
+		seen[overlay.Platform+"/"+overlay.File] = true
+		if _, known := overlayFormats[overlay.Format]; !known {
+			problems = append(problems, fmt.Errorf("%s: format must be properties or yaml", where))
+		}
+		if len(overlay.Set) == 0 {
+			problems = append(problems, fmt.Errorf("%s: set is required", where))
+		}
+		for key := range overlay.Set {
+			if key == "" || strings.HasPrefix(key, ".") || strings.HasSuffix(key, ".") || strings.Contains(key, "..") {
+				problems = append(problems, fmt.Errorf("%s: invalid key %q", where, key))
+			}
+		}
+	}
+	return problems
 }
 
 func (c Catalog) validatePlugins() []error {
