@@ -22,8 +22,10 @@ type Session struct {
 	NodeType     eventsv1.NodeType
 	Capabilities []string
 
-	out    chan *nodev1.SessionResponse
-	cancel context.CancelCauseFunc
+	out        chan *nodev1.SessionResponse
+	cancel     context.CancelCauseFunc
+	live       liveChannels
+	deliveries pendingDeliveries
 }
 
 func newSession(peer Peer, hello *nodev1.Hello, queueSize int, cancel context.CancelCauseFunc) *Session {
@@ -45,6 +47,15 @@ func (s *Session) Send(message *nodev1.SessionResponse) bool {
 		s.cancel(ErrSlowNode)
 		return false
 	}
+}
+
+// isNode is true for proxies and backends, the sessions that run game code.
+func (s *Session) isNode() bool {
+	return s.NodeType == eventsv1.NodeType_NODE_TYPE_PROXY || s.NodeType == eventsv1.NodeType_NODE_TYPE_BACKEND
+}
+
+func (s *Session) gameLabels() []string {
+	return []string{s.Peer.ServerID, s.Peer.GroupID, nodeTypeLabel(s.NodeType)}
 }
 
 type sessionKey struct {
@@ -95,11 +106,18 @@ func (r *Registry) Get(serverID string, nodeType eventsv1.NodeType) (*Session, b
 
 // All returns the current sessions.
 func (r *Registry) All() []*Session {
+	return r.Select(func(*Session) bool { return true })
+}
+
+// Select returns the current sessions that match.
+func (r *Registry) Select(match func(*Session) bool) []*Session {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	sessions := make([]*Session, 0, len(r.sessions))
+	var sessions []*Session
 	for _, session := range r.sessions {
-		sessions = append(sessions, session)
+		if match(session) {
+			sessions = append(sessions, session)
+		}
 	}
 	return sessions
 }

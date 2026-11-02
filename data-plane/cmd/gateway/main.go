@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -29,16 +31,20 @@ import (
 )
 
 const (
-	clientID     = "gateway"
-	stopTimeout  = 10 * time.Second
-	helloTimeout = 10 * time.Second
-	queueSize    = 256
+	clientID        = "gateway"
+	stopTimeout     = 10 * time.Second
+	helloTimeout    = 10 * time.Second
+	deliveryTimeout = 30 * time.Second
+	expiryInterval  = 5 * time.Second
+	queueSize       = 256
 )
 
 type settings struct {
 	listen, admin, namespace, audience string
-	certFile, keyFile, caFile          string
+	certFile, keyFile                  string
 	tracing, logLevel                  string
+	kafka                              kafka.Settings
+	valkey                             valkey.Settings
 	options                            gateway.Options
 }
 
@@ -50,32 +56,8 @@ func main() {
 }
 
 func run() error {
-	env := config.FromEnvironment()
-	s := settings{
-		listen:    env.String("OGCLOUD_GATEWAY_LISTEN", ":9443"),
-		admin:     env.String("OGCLOUD_ADMIN_LISTEN", ":8081"),
-		namespace: env.String("OGCLOUD_GAME_NAMESPACE", "ogcloud-servers"),
-		audience:  env.String("OGCLOUD_GATEWAY_AUDIENCE", "ogcloud-gateway"),
-		certFile:  env.Required("OGCLOUD_TLS_CERT_FILE"),
-		keyFile:   env.Required("OGCLOUD_TLS_KEY_FILE"),
-		caFile:    env.String("OGCLOUD_TLS_CA_FILE", ""),
-		tracing:   env.String("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
-		logLevel:  env.String("OGCLOUD_LOG_LEVEL", "info"),
-		options: gateway.Options{
-			HelloTimeout: env.Duration("OGCLOUD_GATEWAY_HELLO_TIMEOUT", helloTimeout),
-			QueueSize:    env.Int("OGCLOUD_GATEWAY_QUEUE_SIZE", queueSize),
-		},
-	}
-	var clientTLS *tls.Config
-	if s.caFile != "" {
-		var err error
-		if clientTLS, err = tlsfiles.Client(s.caFile, ""); err != nil {
-			return err
-		}
-	}
-	kafkaSettings := kafka.FromConfig(env, clientID, clientTLS)
-	valkeySettings := valkey.FromConfig(env, clientTLS)
-	if err := env.Err(); err != nil {
+	s, err := load(config.FromEnvironment())
+	if err != nil {
 		return err
 	}
 	logger, err := logging.New(os.Stdout, clientID, s.logLevel)
@@ -92,12 +74,41 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("admin listener: %w", err)
 	}
-	return service.Run(ctx, admin, telemetry.NewRegistry(), func(ctx context.Context, readiness *service.Readiness) error {
-		return serve(ctx, s, kafkaSettings, valkeySettings, logger, readiness)
+	registry := telemetry.NewRegistry()
+	return service.Run(ctx, admin, registry, func(ctx context.Context, readiness *service.Readiness) error {
+		return serve(ctx, s, logger, registry, readiness)
 	})
 }
 
-func serve(ctx context.Context, s settings, kafkaSettings kafka.Settings, valkeySettings valkey.Settings, logger *slog.Logger, readiness *service.Readiness) error {
+func load(env *config.Source) (settings, error) {
+	var clientTLS *tls.Config
+	if caFile := env.String("OGCLOUD_TLS_CA_FILE", ""); caFile != "" {
+		var err error
+		if clientTLS, err = tlsfiles.Client(caFile, ""); err != nil {
+			return settings{}, err
+		}
+	}
+	s := settings{
+		listen:    env.String("OGCLOUD_GATEWAY_LISTEN", ":9443"),
+		admin:     env.String("OGCLOUD_ADMIN_LISTEN", ":8081"),
+		namespace: env.String("OGCLOUD_GAME_NAMESPACE", "ogcloud-servers"),
+		audience:  env.String("OGCLOUD_GATEWAY_AUDIENCE", "ogcloud-gateway"),
+		certFile:  env.Required("OGCLOUD_TLS_CERT_FILE"),
+		keyFile:   env.Required("OGCLOUD_TLS_KEY_FILE"),
+		tracing:   env.String("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+		logLevel:  env.String("OGCLOUD_LOG_LEVEL", "info"),
+		kafka:     kafka.FromConfig(env, clientID, clientTLS),
+		valkey:    valkey.FromConfig(env, clientTLS),
+		options: gateway.Options{
+			HelloTimeout:    env.Duration("OGCLOUD_GATEWAY_HELLO_TIMEOUT", helloTimeout),
+			QueueSize:       env.Int("OGCLOUD_GATEWAY_QUEUE_SIZE", queueSize),
+			DeliveryTimeout: env.Duration("OGCLOUD_GATEWAY_DELIVERY_TIMEOUT", deliveryTimeout),
+		},
+	}
+	return s, env.Err()
+}
+
+func serve(ctx context.Context, s settings, logger *slog.Logger, registry prometheus.Registerer, readiness *service.Readiness) error {
 	client, err := kube.NewClient(os.Getenv("KUBECONFIG"))
 	if err != nil {
 		return err
@@ -106,12 +117,12 @@ func serve(ctx context.Context, s settings, kafkaSettings kafka.Settings, valkey
 	if err != nil {
 		return err
 	}
-	store, err := valkey.Connect(valkeySettings)
+	store, err := valkey.Connect(s.valkey)
 	if err != nil {
 		return err
 	}
 	defer store.Close()
-	producer, err := kafka.NewProducer(kafkaSettings)
+	producer, err := kafka.NewProducer(s.kafka)
 	if err != nil {
 		return err
 	}
@@ -120,27 +131,55 @@ func serve(ctx context.Context, s settings, kafkaSettings kafka.Settings, valkey
 	if err != nil {
 		return err
 	}
+	idGenerator := ids.New(time.Now, rand.Reader)
+	replica, err := idGenerator.Next()
+	if err != nil {
+		return err
+	}
+	broadcast, err := kafka.NewBroadcast(s.kafka, logger, "ogcloud-gateway-"+replica, gateway.Topics...)
+	if err != nil {
+		return err
+	}
 
+	dependencies := gateway.Dependencies{
+		Sessions: gateway.NewRegistry(), State: store, Events: producer,
+		Stamper: events.NewStamper(idGenerator, time.Now, clientID), IDs: idGenerator,
+		Metrics: gateway.NewMetrics(registry), Logger: logger, Now: time.Now,
+	}
+	router := gateway.NewRouter(dependencies, s.options.DeliveryTimeout)
 	auth := gateway.NewAuthenticator(kube.NewReviewer(client, s.audience, time.Now), pods, s.namespace)
-	stamper := events.NewStamper(ids.New(time.Now, rand.Reader), time.Now, clientID)
 	server := grpc.NewServer(
 		grpc.Creds(credentials.NewTLS(serverTLS)),
 		grpc.UnaryInterceptor(auth.UnaryInterceptor()),
 		grpc.StreamInterceptor(auth.StreamInterceptor()), //nolint:contextcheck // a stream's handler uses the stream's own context.
 	)
-	nodev1.RegisterGatewayServiceServer(server, gateway.NewService(gateway.NewRegistry(), store, producer, stamper, logger, s.options))
+	nodev1.RegisterGatewayServiceServer(server, gateway.NewService(dependencies, s.options))
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", s.listen)
 	if err != nil {
 		return fmt.Errorf("gateway listener: %w", err)
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	consumed := make(chan error, 1)
+	go func() {
+		consumed <- broadcast.Run(ctx, func(ctx context.Context, record *kgo.Record) { router.Handle(ctx, record.Topic, record.Value) })
+	}()
+	go router.RunExpiry(ctx, expiryInterval)
 	served := make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	readiness.Set(true)
-	logger.Info("serving", "address", s.listen)
+	logger.Info("serving", "address", s.listen, "replica", replica)
 
 	select {
 	case err := <-served:
 		return fmt.Errorf("gateway server: %w", err)
+	case err := <-consumed:
+		stop(server)
+		if ctx.Err() != nil {
+			return nil
+		}
+		return fmt.Errorf("kafka broadcast: %w", err)
 	case <-ctx.Done():
 		stop(server)
 		return nil

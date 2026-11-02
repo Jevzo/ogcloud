@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -36,7 +37,9 @@ const (
 	namespace  = "ogcloud-servers"
 	proxyToken = "proxy-token"
 	lobbyToken = "lobby-token"
-	patience   = 10 * time.Second
+
+	patience        = 10 * time.Second
+	deliveryTimeout = 30 * time.Second
 )
 
 type fakeReviewer map[string]kube.Identity
@@ -57,8 +60,13 @@ func (f fakePods) Pod(name string) (*corev1.Pod, bool) {
 }
 
 type fakeState struct {
-	servers []*internalv1.ServerRecord
-	models  map[string][]byte
+	servers  []*internalv1.ServerRecord
+	sessions map[string]*internalv1.PlayerSession
+	models   map[string][]byte
+}
+
+func (f *fakeState) Session(_ context.Context, playerUUID string) (*internalv1.PlayerSession, error) {
+	return f.sessions[playerUUID], nil
 }
 
 func (f *fakeState) Servers(context.Context) ([]*internalv1.ServerRecord, error) {
@@ -103,6 +111,10 @@ type harness struct {
 	client    nodev1.GatewayServiceClient
 	published *recorder
 	sessions  *Registry
+	state     *fakeState
+	metrics   *Metrics
+	router    *Router
+	now       *time.Time
 }
 
 func start(t *testing.T, helloTimeout time.Duration) *harness {
@@ -116,17 +128,18 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 		lobbyToken: {Namespace: namespace, ServiceAccount: "game", PodName: "lobby-1", PodUID: "lobby-1-uid"},
 	}
 	state := &fakeState{
-		servers: []*internalv1.ServerRecord{{ServerId: "s-lobby", GroupId: "lobby", State: eventsv1.ServerState_SERVER_STATE_RUNNING, Port: 25565}},
+		servers:  []*internalv1.ServerRecord{{ServerId: "s-lobby", GroupId: "lobby", State: eventsv1.ServerState_SERVER_STATE_RUNNING, Port: 25565}},
+		sessions: map[string]*internalv1.PlayerSession{},
 		models: map[string][]byte{
 			string(valkeykeys.ReadModelNetworkSettings) + ":" + valkeykeys.NetworkSettingsId: marshal(t, &eventsv1.NetworkSettingsUpdated{Motd: "hi"}),
 			string(valkeykeys.ReadModelGroup) + ":lobby":                                     marshal(t, &eventsv1.GroupUpdated{GroupId: "lobby", Maintenance: true}),
 		},
 	}
 	publisher := &recorder{events: make(chan published, 10)}
-	clock := func() time.Time { return time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC) }
-	sessions := NewRegistry()
-	service := NewService(sessions, state, publisher, events.NewStamper(ids.New(clock, rand.Reader), clock, "gateway"),
-		slog.New(slog.NewTextHandler(io.Discard, nil)), Options{HelloTimeout: helloTimeout, QueueSize: 8})
+	now := time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)
+	clock := func() time.Time { return now }
+	dependencies := testDependencies(state, publisher, clock)
+	service := NewService(dependencies, Options{HelloTimeout: helloTimeout, QueueSize: 8, DeliveryTimeout: deliveryTimeout})
 	auth := NewAuthenticator(reviewer, pods, namespace)
 	server := grpc.NewServer(grpc.UnaryInterceptor(auth.UnaryInterceptor()), grpc.StreamInterceptor(auth.StreamInterceptor()))
 	nodev1.RegisterGatewayServiceServer(server, service)
@@ -140,7 +153,19 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 		t.Fatalf("client: %v", err)
 	}
 	t.Cleanup(func() { _ = conn.Close() })
-	return &harness{client: nodev1.NewGatewayServiceClient(conn), published: publisher, sessions: sessions}
+	return &harness{
+		client: nodev1.NewGatewayServiceClient(conn), published: publisher, sessions: dependencies.Sessions, state: state,
+		metrics: dependencies.Metrics, router: NewRouter(dependencies, deliveryTimeout), now: &now,
+	}
+}
+
+// testDependencies wires fakes with a fresh metrics registry and a fixed clock.
+func testDependencies(state State, publisher Publisher, clock func() time.Time) Dependencies {
+	return Dependencies{
+		Sessions: NewRegistry(), State: state, Events: publisher,
+		Stamper: events.NewStamper(ids.New(clock, rand.Reader), clock, "gateway"), IDs: ids.New(clock, rand.Reader),
+		Metrics: NewMetrics(prometheus.NewRegistry()), Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: clock,
+	}
 }
 
 func (h *harness) open(t *testing.T, token string, hello *nodev1.Hello) nodev1.GatewayService_SessionClient {

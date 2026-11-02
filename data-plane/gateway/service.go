@@ -17,16 +17,25 @@ import (
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
-	"github.com/jevzo/ogcloud/data-plane/pkg/kafkatopics"
+	"github.com/jevzo/ogcloud/data-plane/pkg/ids"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
 )
 
 const component = "gateway"
 
+// Reasons a session ends, for metrics.
+const (
+	endClosed   = "closed"
+	endReplaced = "replaced"
+	endSlow     = "slow"
+	endError    = "error"
+)
+
 // State is the live state the gateway serves from (D-0077).
 type State interface {
 	Servers(ctx context.Context) ([]*internalv1.ServerRecord, error)
+	Session(ctx context.Context, playerUUID string) (*internalv1.PlayerSession, error)
 	ReadModel(ctx context.Context, kind valkeykeys.ReadModelKind, id string) ([]byte, error)
 }
 
@@ -35,31 +44,41 @@ type Publisher interface {
 	Publish(ctx context.Context, topic, key string, event proto.Message) error
 }
 
+// Dependencies are what the gateway's parts share.
+type Dependencies struct {
+	Sessions *Registry
+	State    State
+	Events   Publisher
+	Stamper  *events.Stamper
+	IDs      *ids.Generator
+	Metrics  *Metrics
+	Logger   *slog.Logger
+	Now      func() time.Time
+}
+
 // Options tune sessions.
 type Options struct {
 	// How long a new stream may take to say Hello.
 	HelloTimeout time.Duration
 	// Messages queued for a node before it counts as too slow.
 	QueueSize int
+	// How long a node may take to answer a delivery.
+	DeliveryTimeout time.Duration
 }
 
 // Service implements GatewayService.
 type Service struct {
 	nodev1.UnimplementedGatewayServiceServer
-	sessions *Registry
-	state    State
-	events   Publisher
-	stamper  *events.Stamper
-	logger   *slog.Logger
-	options  Options
+	Dependencies
+	options Options
 }
 
-// NewService serves sessions in registry from state and publishes node events.
-func NewService(sessions *Registry, state State, publisher Publisher, stamper *events.Stamper, logger *slog.Logger, options Options) *Service {
-	return &Service{sessions: sessions, state: state, events: publisher, stamper: stamper, logger: logger, options: options}
+// NewService serves node sessions.
+func NewService(dependencies Dependencies, options Options) *Service {
+	return &Service{Dependencies: dependencies, options: options}
 }
 
-// Session holds one node's stream: Hello first, then Welcome, then events both ways.
+// Session holds one node's stream: Hello first, then Welcome, then messages both ways.
 func (s *Service) Session(stream nodev1.GatewayService_SessionServer) error {
 	peer, ok := PeerFrom(stream.Context())
 	if !ok {
@@ -79,15 +98,17 @@ func (s *Service) Session(stream nodev1.GatewayService_SessionServer) error {
 	ctx, cancel := context.WithCancelCause(stream.Context())
 	defer cancel(nil)
 	session := newSession(peer, hello, s.options.QueueSize, cancel)
-	s.sessions.Add(session)
-	defer s.sessions.Remove(session)
-	session.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Welcome{Welcome: welcome}})
-	logger := s.logger.With("serverId", peer.ServerID, "nodeType", hello.GetNodeType().String())
+	s.Sessions.Add(session)
+	s.Metrics.opened(session)
+	logger := s.Logger.With("serverId", peer.ServerID, "nodeType", hello.GetNodeType().String())
 	logger.Info("session opened", "integrationVersion", hello.GetIntegrationVersion())
+	session.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Welcome{Welcome: welcome}})
 
 	received := make(chan error, 1)
 	go func() { received <- s.receive(ctx, stream, session) }()
 	err = forward(ctx, stream, session, received)
+	s.Sessions.Remove(session)
+	s.Metrics.closed(session, endReason(err))
 	logger.Info("session closed", "reason", err)
 	return closing(err)
 }
@@ -141,7 +162,7 @@ func checkHello(peer Peer, hello *nodev1.Hello) error {
 
 // welcome gives a node its identity and the current state, before the first broadcast arrives.
 func (s *Service) welcome(ctx context.Context, peer Peer) (*nodev1.Welcome, error) {
-	encoded, err := s.state.ReadModel(ctx, valkeykeys.ReadModelNetworkSettings, valkeykeys.NetworkSettingsId)
+	encoded, err := s.State.ReadModel(ctx, valkeykeys.ReadModelNetworkSettings, valkeykeys.NetworkSettingsId)
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "network settings: %v", err)
 	}
@@ -169,7 +190,7 @@ func (s *Service) welcome(ctx context.Context, peer Peer) (*nodev1.Welcome, erro
 
 // serverInfos lists every live server with its group's maintenance flag, for proxies to route.
 func (s *Service) serverInfos(ctx context.Context) ([]*nodev1.ServerInfo, error) {
-	records, err := s.state.Servers(ctx)
+	records, err := s.State.Servers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +215,7 @@ func (s *Service) serverInfos(ctx context.Context) ([]*nodev1.ServerInfo, error)
 }
 
 func (s *Service) groupMaintenance(ctx context.Context, groupID string) (bool, error) {
-	encoded, err := s.state.ReadModel(ctx, valkeykeys.ReadModelGroup, groupID)
+	encoded, err := s.State.ReadModel(ctx, valkeykeys.ReadModelGroup, groupID)
 	if err != nil || encoded == nil {
 		return false, err
 	}
@@ -215,29 +236,9 @@ func (s *Service) receive(ctx context.Context, stream nodev1.GatewayService_Sess
 		if err != nil {
 			return fmt.Errorf("receive: %w", err)
 		}
-		switch message := request.GetMessage().(type) {
-		case *nodev1.SessionRequest_Heartbeat:
-			s.heartbeat(ctx, session, message.Heartbeat)
-		case *nodev1.SessionRequest_Hello:
-			return status.Error(codes.FailedPrecondition, "Hello was already sent")
-		default:
-			s.logger.Warn("unsupported session message", "serverId", session.Peer.ServerID, "type", fmt.Sprintf("%T", message))
+		if err := s.handle(ctx, session, request); err != nil {
+			return err
 		}
-	}
-}
-
-// heartbeat forwards a node's vitals; a lost one only delays the controller's deadlines, so the session goes on.
-func (s *Service) heartbeat(ctx context.Context, session *Session, heartbeat *nodev1.Heartbeat) {
-	metadata, err := s.stamper.Metadata(events.System(component))
-	if err == nil {
-		err = s.events.Publish(ctx, kafkatopics.NodeHeartbeat, session.Peer.ServerID, &eventsv1.NodeHeartbeat{
-			Metadata: metadata, ServerId: session.Peer.ServerID, NodeType: session.NodeType,
-			Players: heartbeat.GetPlayers(), MaxPlayers: heartbeat.GetMaxPlayers(), Tps: heartbeat.GetTps(),
-			Mspt: heartbeat.GetMspt(), MemoryUsedBytes: heartbeat.GetMemoryUsedBytes(), MemoryMaxBytes: heartbeat.GetMemoryMaxBytes(),
-		})
-	}
-	if err != nil {
-		s.logger.Warn("heartbeat not forwarded", "serverId", session.Peer.ServerID, "error", err)
 	}
 }
 
@@ -254,6 +255,19 @@ func forward(ctx context.Context, stream nodev1.GatewayService_SessionServer, se
 		case <-ctx.Done():
 			return fmt.Errorf("session ended: %w", context.Cause(ctx))
 		}
+	}
+}
+
+func endReason(err error) string {
+	switch {
+	case err == nil, errors.Is(err, io.EOF), errors.Is(err, context.Canceled):
+		return endClosed
+	case errors.Is(err, ErrReplaced):
+		return endReplaced
+	case errors.Is(err, ErrSlowNode):
+		return endSlow
+	default:
+		return endError
 	}
 }
 
