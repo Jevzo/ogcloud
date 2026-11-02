@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/internal/strictyaml"
+	"github.com/jevzo/ogcloud/data-plane/pkg/strictyaml"
 )
 
 // Forwarding modes the platform supports (D-0065).

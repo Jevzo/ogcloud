@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/internal/strictyaml"
+	"github.com/jevzo/ogcloud/data-plane/pkg/strictyaml"
 )
 
 // ParamType says how a key parameter is typed and formatted.

@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/internal/strictyaml"
+	"github.com/jevzo/ogcloud/data-plane/pkg/strictyaml"
 )
 
 const deadLetterSuffix = ".dlt"

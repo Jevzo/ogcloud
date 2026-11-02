@@ -1,4 +1,4 @@
-// Package strictyaml decodes contract files and rejects unknown fields, so typos fail loudly.
+// Package strictyaml decodes contract and config files and rejects unknown fields, so typos fail loudly.
 package strictyaml
 
 import (
