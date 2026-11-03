@@ -1,11 +1,8 @@
 package io.ogwars.cloud.velocity
 
 import io.ogwars.cloud.contracts.events.v1.NodeType
-import io.ogwars.cloud.node.client.NodeSettings
-import io.ogwars.cloud.node.core.runtime.GatewayConnection
-import io.ogwars.cloud.node.core.runtime.NodeIdentity
+import io.ogwars.cloud.node.core.runtime.NodePod
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
-import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.sdk.OgCloud
 import io.ogwars.cloud.sdk.OgCloudInternalApi
 import com.google.inject.Inject
@@ -15,8 +12,6 @@ import com.velocitypowered.api.event.proxy.ProxyShutdownEvent
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.scheduler.ScheduledTask
 import java.time.Clock
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 /** OgCloud's Velocity plugin: connects the proxy to the gateway (D-0008) and adapts node-core to Velocity. */
@@ -53,24 +48,17 @@ class OgCloudVelocity
         private inner class Node(
             version: String,
         ) : AutoCloseable {
-            private val environment = System.getenv()
-            private val identity = NodeIdentity.fromEnvironment(environment)
-            private val scheduler: ScheduledExecutorService =
-                Executors.newSingleThreadScheduledExecutor { Thread(it, "ogcloud").apply { isDaemon = true } }
-            private val connection =
-                GatewayConnection(
-                    NodeSettings.fromEnvironment(environment, NodeType.NODE_TYPE_PROXY, version),
-                    scheduler,
-                )
+            private val pod = NodePod(NodeType.NODE_TYPE_PROXY, version)
+            private val identity = pod.identity
             private val runtime =
                 ProxyRuntime(
                     identity,
                     VelocityPlatform(proxy, ViaProtocols.ifInstalled(proxy)),
-                    connection.queries,
-                    Messages.load(),
-                    scheduler,
+                    pod.connection.queries,
+                    pod.messages,
+                    pod.scheduler,
                     Clock.systemUTC(),
-                    connection::session,
+                    pod.connection::session,
                 )
 
             @Volatile
@@ -110,8 +98,7 @@ class OgCloudVelocity
                 tablist?.cancel()
                 OgCloud.install(null)
                 runtime.close()
-                connection.close()
-                scheduler.shutdown()
+                pod.close()
             }
         }
 

@@ -25,7 +25,7 @@ internal class OgCloudCommand(
 
         override fun hasPermission(node: String) = source.hasPermission(node)
 
-        override fun reply(text: String) = source.sendMessage(Texts.of(text))
+        override fun reply(text: String) = source.sendMessage(legacyText(text))
     }
 
     companion object {

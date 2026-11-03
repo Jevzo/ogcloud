@@ -45,7 +45,7 @@ internal class VelocityPlatform(
         text: String,
     ): Boolean {
         val online = proxy.getPlayer(player).orElse(null) ?: return false
-        online.sendMessage(Texts.of(text))
+        online.sendMessage(legacyText(text))
         return true
     }
 
@@ -76,6 +76,6 @@ internal class VelocityPlatform(
         player: UUID,
         text: String,
     ) {
-        proxy.getPlayer(player).ifPresent { it.disconnect(Texts.of(text)) }
+        proxy.getPlayer(player).ifPresent { it.disconnect(legacyText(text)) }
     }
 }

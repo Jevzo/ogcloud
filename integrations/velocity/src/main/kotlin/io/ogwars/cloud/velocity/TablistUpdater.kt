@@ -41,8 +41,8 @@ internal class TablistUpdater(
                             .orEmpty(),
                 )
             player.sendPlayerListHeaderAndFooter(
-                Texts.of(Tablist.fill(settings.tablistHeader, values)),
-                Texts.of(Tablist.fill(settings.tablistFooter, values)),
+                legacyText(Tablist.fill(settings.tablistHeader, values)),
+                legacyText(Tablist.fill(settings.tablistFooter, values)),
             )
         }
     }

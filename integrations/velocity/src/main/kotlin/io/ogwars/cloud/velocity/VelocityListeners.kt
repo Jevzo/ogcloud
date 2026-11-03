@@ -37,7 +37,7 @@ internal class VelocityListeners(
         val decided =
             login.thenAccept { decision ->
                 if (decision is LoginDecision.Denied) {
-                    event.result = ResultedEvent.ComponentResult.denied(Texts.of(decision.message))
+                    event.result = ResultedEvent.ComponentResult.denied(legacyText(decision.message))
                 }
             }
         return EventTask.resumeWhenComplete(decided)
@@ -114,7 +114,7 @@ internal class VelocityListeners(
         if (isBackendCommand(event.command)) event.result = CommandExecuteEvent.CommandResult.forwardToServer()
     }
 
-    private fun text(message: Message) = Texts.of(runtime.messages.text(message))
+    private fun text(message: Message) = legacyText(runtime.messages.text(message))
 
     companion object {
         private val REPORTED_LOGINS =
