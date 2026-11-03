@@ -41,6 +41,8 @@ spec:
       value: "/var/run/secrets/ogcloud/gateway/ca.crt"
     - name: "OGCLOUD_JVM_FLAGS"
       value: ""
+    - name: "OGCLOUD_MAX_PLAYERS"
+      value: "50"
     image: "ghcr.io/jevzo/ogcloud/velocity:4.3.0-2.0.0"
     name: "server"
     ports:

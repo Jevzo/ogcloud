@@ -7,6 +7,8 @@ object PodEnv {
     const val GROUP_ID = "OGCLOUD_GROUP_ID"
     /** DYNAMIC, STATIC or PROXY, so plugins know it before the gateway's Welcome (v1 bug 3). */
     const val GROUP_TYPE = "OGCLOUD_GROUP_TYPE"
+    /** The group's players per server, the most a server or proxy takes (D-0134). */
+    const val MAX_PLAYERS = "OGCLOUD_MAX_PLAYERS"
     const val GATEWAY_ADDRESS = "OGCLOUD_GATEWAY_ADDRESS"
     /** The pod's projected token for the gateway (D-0013). */
     const val GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"

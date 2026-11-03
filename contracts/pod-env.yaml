@@ -10,6 +10,9 @@ constants:
   - name: groupType
     value: OGCLOUD_GROUP_TYPE
     doc: DYNAMIC, STATIC or PROXY, so plugins know it before the gateway's Welcome (v1 bug 3).
+  - name: maxPlayers
+    value: OGCLOUD_MAX_PLAYERS
+    doc: The group's players per server, the most a server or proxy takes (D-0134).
   - name: gatewayAddress
     value: OGCLOUD_GATEWAY_ADDRESS
   - name: gatewayTokenFile

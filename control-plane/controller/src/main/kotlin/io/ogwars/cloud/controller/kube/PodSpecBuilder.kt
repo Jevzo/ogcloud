@@ -159,8 +159,11 @@ class PodSpecBuilder(
         ContainerBuilder()
             .withName(SERVER_CONTAINER)
             .withImage(image(group, profile))
-            .withEnv(identityEnv(server) + EnvVar(PodEnv.JVM_FLAGS, group.jvmFlags, null))
-            .addNewPort()
+            .withEnv(
+                identityEnv(server) +
+                    EnvVar(PodEnv.JVM_FLAGS, group.jvmFlags, null) +
+                    EnvVar(PodEnv.MAX_PLAYERS, group.scaling.playersPerServer.toString(), null),
+            ).addNewPort()
             .withName(MINECRAFT_PORT_NAME)
             .withContainerPort(MINECRAFT_PORT)
             .withProtocol("TCP")
