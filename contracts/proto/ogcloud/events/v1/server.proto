@@ -53,6 +53,8 @@ message ServerLifecycleChanged {
   string reason = 11;
   // Short name shown to players, e.g. lobby-789abc.
   string display_name = 12;
+  // The backend's native Minecraft protocol, for ViaVersion on proxies (D-0133); 0 for proxies.
+  uint32 protocol = 13;
 }
 
 // Topic ogcloud.server.gamestate, key server_id.

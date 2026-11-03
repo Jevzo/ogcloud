@@ -7,6 +7,7 @@ import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.TransferRequested
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.runtime.RuntimeProfile
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.server.TransferTarget
 import io.ogwars.cloud.livestate.toProto
@@ -67,6 +68,7 @@ class KafkaServerEvents(
                 .setMaxPlayers(server.maxPlayers)
                 .setReason(reason)
                 .setDisplayName(server.displayName)
+                .setProtocol(RuntimeProfile.find(server.profileId)?.protocol ?: 0)
                 .build()
         // jscpd:ignore-end
         publisher.publish(KafkaTopics.SERVER_LIFECYCLE, server.id.toString(), event)

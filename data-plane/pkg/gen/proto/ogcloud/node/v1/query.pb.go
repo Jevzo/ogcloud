@@ -37,7 +37,9 @@ type ServerInfo struct {
 	MaxPlayers       uint32                 `protobuf:"varint,10,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
 	GroupMaintenance bool                   `protobuf:"varint,11,opt,name=group_maintenance,json=groupMaintenance,proto3" json:"group_maintenance,omitempty"`
 	// Short name shown to players, e.g. lobby-789abc.
-	DisplayName   string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	DisplayName string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// The backend's native Minecraft protocol, for ViaVersion on proxies (D-0133); 0 for proxies.
+	Protocol      uint32 `protobuf:"varint,13,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -154,6 +156,13 @@ func (x *ServerInfo) GetDisplayName() string {
 		return x.DisplayName
 	}
 	return ""
+}
+
+func (x *ServerInfo) GetProtocol() uint32 {
+	if x != nil {
+		return x.Protocol
+	}
+	return 0
 }
 
 type GetServerRequest struct {
@@ -1656,7 +1665,7 @@ var File_ogcloud_node_v1_query_proto protoreflect.FileDescriptor
 
 const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\n" +
-	"\x1bogcloud/node/v1/query.proto\x12\x0fogcloud.node.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xc6\x03\n" +
+	"\x1bogcloud/node/v1/query.proto\x12\x0fogcloud.node.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xe2\x03\n" +
 	"\n" +
 	"ServerInfo\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\x12\x19\n" +
@@ -1675,7 +1684,8 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	" \x01(\rR\n" +
 	"maxPlayers\x12+\n" +
 	"\x11group_maintenance\x18\v \x01(\bR\x10groupMaintenance\x12!\n" +
-	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\"/\n" +
+	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\x12\x1a\n" +
+	"\bprotocol\x18\r \x01(\rR\bprotocol\"/\n" +
 	"\x10GetServerRequest\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\"H\n" +
 	"\x11GetServerResponse\x123\n" +

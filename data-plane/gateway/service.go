@@ -269,6 +269,15 @@ func (s *Service) welcome(ctx context.Context, peer Peer) (*nodev1.Welcome, erro
 	return welcome, nil
 }
 
+// protocolOf is the native protocol of a profile's backends, for ViaVersion on proxies (D-0133); 0 when unknown.
+func protocolOf(profileID string) uint32 {
+	profile, ok := runtimeprofiles.Find(profileID)
+	if !ok || profile.Protocol <= 0 {
+		return 0
+	}
+	return uint32(profile.Protocol) //nolint:gosec // G115: catalog protocols are small positive numbers.
+}
+
 // serverInfos adds each group's maintenance flag to live server records, for proxies to route.
 func (s *Service) serverInfos(ctx context.Context, records []*internalv1.ServerRecord) ([]*nodev1.ServerInfo, error) {
 	maintenance := map[string]bool{}
@@ -286,7 +295,7 @@ func (s *Service) serverInfos(ctx context.Context, records []*internalv1.ServerR
 			ServerId: record.GetServerId(), GroupId: record.GetGroupId(), GroupType: record.GetGroupType(),
 			ProfileId: record.GetProfileId(), State: record.GetState(), GameState: record.GetGameState(),
 			Host: record.GetHost(), Port: record.GetPort(), Players: record.GetPlayers(), MaxPlayers: record.GetMaxPlayers(),
-			GroupMaintenance: inMaintenance, DisplayName: record.GetDisplayName(),
+			GroupMaintenance: inMaintenance, DisplayName: record.GetDisplayName(), Protocol: protocolOf(record.GetProfileId()),
 		})
 	}
 	return infos, nil

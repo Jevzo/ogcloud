@@ -210,6 +210,7 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 	state := &fakeState{
 		servers: []*internalv1.ServerRecord{{
 			ServerId: "s-lobby", GroupId: "lobby", State: eventsv1.ServerState_SERVER_STATE_RUNNING, Port: 25565, DisplayName: "lobby-0b1b1e",
+			ProfileId: "pandaspigot-1.8.8",
 		}},
 		sessions: map[string]*internalv1.PlayerSession{},
 		models: map[string][]byte{

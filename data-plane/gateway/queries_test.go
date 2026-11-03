@@ -9,8 +9,19 @@ import (
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
+	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
 )
+
+// legacyProtocol is PandaSpigot's protocol from the catalog, which proxies hand to ViaVersion (D-0133).
+func legacyProtocol(t *testing.T) uint32 {
+	t.Helper()
+	profile, ok := runtimeprofiles.Find("pandaspigot-1.8.8")
+	if !ok {
+		t.Fatal("pandaspigot-1.8.8 is not in the catalog")
+	}
+	return uint32(profile.Protocol) //nolint:gosec // G115: catalog protocols are small positive numbers.
+}
 
 func TestQueriesAnswerFromLiveStateAndReadModels(t *testing.T) {
 	h := start(t, patience)
@@ -29,7 +40,7 @@ func TestQueriesAnswerFromLiveStateAndReadModels(t *testing.T) {
 
 	server, err := h.client.GetServer(ctx, &nodev1.GetServerRequest{ServerId: "s-lobby"})
 	if err != nil || !server.GetServer().GetGroupMaintenance() || server.GetServer().GetState() != eventsv1.ServerState_SERVER_STATE_RUNNING ||
-		server.GetServer().GetDisplayName() != "lobby-0b1b1e" {
+		server.GetServer().GetDisplayName() != "lobby-0b1b1e" || server.GetServer().GetProtocol() != legacyProtocol(t) {
 		t.Errorf("GetServer = %v, %v", server, err)
 	}
 	listed, err := h.client.ListServers(ctx, &nodev1.ListServersRequest{GroupId: "bedwars"})

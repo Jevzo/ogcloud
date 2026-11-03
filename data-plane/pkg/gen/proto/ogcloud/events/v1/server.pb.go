@@ -340,7 +340,9 @@ type ServerLifecycleChanged struct {
 	MaxPlayers uint32 `protobuf:"varint,10,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
 	Reason     string `protobuf:"bytes,11,opt,name=reason,proto3" json:"reason,omitempty"`
 	// Short name shown to players, e.g. lobby-789abc.
-	DisplayName   string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	DisplayName string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	// The backend's native Minecraft protocol, for ViaVersion on proxies (D-0133); 0 for proxies.
+	Protocol      uint32 `protobuf:"varint,13,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -459,6 +461,13 @@ func (x *ServerLifecycleChanged) GetDisplayName() string {
 	return ""
 }
 
+func (x *ServerLifecycleChanged) GetProtocol() uint32 {
+	if x != nil {
+		return x.Protocol
+	}
+	return 0
+}
+
 // Topic ogcloud.server.gamestate, key server_id.
 type GameStateChanged struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -541,7 +550,7 @@ const file_ogcloud_events_v1_server_proto_rawDesc = "" +
 	"\n" +
 	"KillServer\x12\x16\n" +
 	"\x06reason\x18\x01 \x01(\tR\x06reason\"\x0e\n" +
-	"\fPushTemplate\"\xeb\x03\n" +
+	"\fPushTemplate\"\x87\x04\n" +
 	"\x16ServerLifecycleChanged\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x1b\n" +
 	"\tserver_id\x18\x02 \x01(\tR\bserverId\x12\x19\n" +
@@ -558,7 +567,8 @@ const file_ogcloud_events_v1_server_proto_rawDesc = "" +
 	" \x01(\rR\n" +
 	"maxPlayers\x12\x16\n" +
 	"\x06reason\x18\v \x01(\tR\x06reason\x12!\n" +
-	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\"\xaa\x01\n" +
+	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\x12\x1a\n" +
+	"\bprotocol\x18\r \x01(\rR\bprotocol\"\xaa\x01\n" +
 	"\x10GameStateChanged\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x1b\n" +
 	"\tserver_id\x18\x02 \x01(\tR\bserverId\x12;\n" +
