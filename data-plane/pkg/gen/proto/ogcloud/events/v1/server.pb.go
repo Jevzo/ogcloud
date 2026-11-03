@@ -335,10 +335,12 @@ type ServerLifecycleChanged struct {
 	State         ServerState            `protobuf:"varint,6,opt,name=state,proto3,enum=ogcloud.events.v1.ServerState" json:"state,omitempty"`
 	PreviousState ServerState            `protobuf:"varint,7,opt,name=previous_state,json=previousState,proto3,enum=ogcloud.events.v1.ServerState" json:"previous_state,omitempty"`
 	// Pod address once known, for proxies to register backends.
-	Host          string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
-	Port          uint32 `protobuf:"varint,9,opt,name=port,proto3" json:"port,omitempty"`
-	MaxPlayers    uint32 `protobuf:"varint,10,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
-	Reason        string `protobuf:"bytes,11,opt,name=reason,proto3" json:"reason,omitempty"`
+	Host       string `protobuf:"bytes,8,opt,name=host,proto3" json:"host,omitempty"`
+	Port       uint32 `protobuf:"varint,9,opt,name=port,proto3" json:"port,omitempty"`
+	MaxPlayers uint32 `protobuf:"varint,10,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
+	Reason     string `protobuf:"bytes,11,opt,name=reason,proto3" json:"reason,omitempty"`
+	// Short name shown to players, e.g. lobby-789abc.
+	DisplayName   string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -450,6 +452,13 @@ func (x *ServerLifecycleChanged) GetReason() string {
 	return ""
 }
 
+func (x *ServerLifecycleChanged) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
 // Topic ogcloud.server.gamestate, key server_id.
 type GameStateChanged struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -532,7 +541,7 @@ const file_ogcloud_events_v1_server_proto_rawDesc = "" +
 	"\n" +
 	"KillServer\x12\x16\n" +
 	"\x06reason\x18\x01 \x01(\tR\x06reason\"\x0e\n" +
-	"\fPushTemplate\"\xc8\x03\n" +
+	"\fPushTemplate\"\xeb\x03\n" +
 	"\x16ServerLifecycleChanged\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x1b\n" +
 	"\tserver_id\x18\x02 \x01(\tR\bserverId\x12\x19\n" +
@@ -548,7 +557,8 @@ const file_ogcloud_events_v1_server_proto_rawDesc = "" +
 	"\vmax_players\x18\n" +
 	" \x01(\rR\n" +
 	"maxPlayers\x12\x16\n" +
-	"\x06reason\x18\v \x01(\tR\x06reason\"\xaa\x01\n" +
+	"\x06reason\x18\v \x01(\tR\x06reason\x12!\n" +
+	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\"\xaa\x01\n" +
 	"\x10GameStateChanged\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x1b\n" +
 	"\tserver_id\x18\x02 \x01(\tR\bserverId\x12;\n" +

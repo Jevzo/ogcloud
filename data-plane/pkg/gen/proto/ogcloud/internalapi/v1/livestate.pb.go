@@ -42,8 +42,10 @@ type ServerRecord struct {
 	MaxPlayers      uint32                 `protobuf:"varint,11,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
 	StartedAt       *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
 	LastHeartbeatAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=last_heartbeat_at,json=lastHeartbeatAt,proto3" json:"last_heartbeat_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Short name shown to players, e.g. lobby-789abc.
+	DisplayName   string `protobuf:"bytes,14,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ServerRecord) Reset() {
@@ -167,6 +169,13 @@ func (x *ServerRecord) GetLastHeartbeatAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ServerRecord) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
 // Online player session (key "session:<uuid>", field "data").
 type PlayerSession struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
@@ -265,7 +274,7 @@ var File_ogcloud_internal_v1_livestate_proto protoreflect.FileDescriptor
 
 const file_ogcloud_internal_v1_livestate_proto_rawDesc = "" +
 	"\n" +
-	"#ogcloud/internal/v1/livestate.proto\x12\x13ogcloud.internal.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xb8\x04\n" +
+	"#ogcloud/internal/v1/livestate.proto\x12\x13ogcloud.internal.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xdb\x04\n" +
 	"\fServerRecord\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12;\n" +
@@ -286,7 +295,8 @@ const file_ogcloud_internal_v1_livestate_proto_rawDesc = "" +
 	"maxPlayers\x129\n" +
 	"\n" +
 	"started_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12F\n" +
-	"\x11last_heartbeat_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0flastHeartbeatAt\"\x9b\x02\n" +
+	"\x11last_heartbeat_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0flastHeartbeatAt\x12!\n" +
+	"\fdisplay_name\x18\x0e \x01(\tR\vdisplayName\"\x9b\x02\n" +
 	"\rPlayerSession\x12\x1f\n" +
 	"\vplayer_uuid\x18\x01 \x01(\tR\n" +
 	"playerUuid\x12\x1f\n" +

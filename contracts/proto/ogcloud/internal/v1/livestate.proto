@@ -26,6 +26,8 @@ message ServerRecord {
   uint32 max_players = 11;
   google.protobuf.Timestamp started_at = 12;
   google.protobuf.Timestamp last_heartbeat_at = 13;
+  // Short name shown to players, e.g. lobby-789abc.
+  string display_name = 14;
 }
 
 // Online player session (key "session:<uuid>", field "data").

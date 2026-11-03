@@ -66,6 +66,7 @@ class KafkaServerEvents(
                 .setPort(server.port ?: 0)
                 .setMaxPlayers(server.maxPlayers)
                 .setReason(reason)
+                .setDisplayName(server.displayName)
                 .build()
         // jscpd:ignore-end
         publisher.publish(KafkaTopics.SERVER_LIFECYCLE, server.id.toString(), event)

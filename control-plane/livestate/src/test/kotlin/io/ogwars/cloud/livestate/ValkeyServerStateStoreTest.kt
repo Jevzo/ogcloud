@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.contracts.internal.v1.ServerRecord
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.server.GameState
@@ -41,6 +42,14 @@ class ValkeyServerStateStoreTest : ValkeyTest() {
 
         store.get(UUID(0, 1))?.value shouldBe server(1)
         store.get(UUID(0, 1))?.revision shouldBe 1
+    }
+
+    @Test
+    fun `records carry the display name the gateway shows nodes`() {
+        store.create(server(1))
+
+        val stored = valkey.sync().hget(ValkeyKeys.server(UUID(0, 1)), ValkeyKeys.FIELD_DATA)
+        ServerRecord.parseFrom(stored).displayName shouldBe server(1).displayName
     }
 
     @Test

@@ -25,7 +25,8 @@ func TestQueriesAnswerFromLiveStateAndReadModels(t *testing.T) {
 	ctx := as(t, lobbyToken)
 
 	server, err := h.client.GetServer(ctx, &nodev1.GetServerRequest{ServerId: "s-lobby"})
-	if err != nil || !server.GetServer().GetGroupMaintenance() || server.GetServer().GetState() != eventsv1.ServerState_SERVER_STATE_RUNNING {
+	if err != nil || !server.GetServer().GetGroupMaintenance() || server.GetServer().GetState() != eventsv1.ServerState_SERVER_STATE_RUNNING ||
+		server.GetServer().GetDisplayName() != "lobby-0b1b1e" {
 		t.Errorf("GetServer = %v, %v", server, err)
 	}
 	listed, err := h.client.ListServers(ctx, &nodev1.ListServersRequest{GroupId: "bedwars"})

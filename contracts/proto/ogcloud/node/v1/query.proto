@@ -20,6 +20,8 @@ message ServerInfo {
   uint32 players = 9;
   uint32 max_players = 10;
   bool group_maintenance = 11;
+  // Short name shown to players, e.g. lobby-789abc.
+  string display_name = 12;
 }
 
 message GetServerRequest {

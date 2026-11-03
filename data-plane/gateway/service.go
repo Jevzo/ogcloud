@@ -286,7 +286,7 @@ func (s *Service) serverInfos(ctx context.Context, records []*internalv1.ServerR
 			ServerId: record.GetServerId(), GroupId: record.GetGroupId(), GroupType: record.GetGroupType(),
 			ProfileId: record.GetProfileId(), State: record.GetState(), GameState: record.GetGameState(),
 			Host: record.GetHost(), Port: record.GetPort(), Players: record.GetPlayers(), MaxPlayers: record.GetMaxPlayers(),
-			GroupMaintenance: inMaintenance,
+			GroupMaintenance: inMaintenance, DisplayName: record.GetDisplayName(),
 		})
 	}
 	return infos, nil

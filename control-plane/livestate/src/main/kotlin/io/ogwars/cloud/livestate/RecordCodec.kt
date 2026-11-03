@@ -25,6 +25,7 @@ internal object RecordCodec {
             .setPort(server.port ?: 0)
             .setPlayers(server.players)
             .setMaxPlayers(server.maxPlayers)
+            .setDisplayName(server.displayName)
             .apply { server.startedAt?.let { setStartedAt(it.toTimestamp()) } }
             .apply { server.lastHeartbeatAt?.let { setLastHeartbeatAt(it.toTimestamp()) } }
             .build()

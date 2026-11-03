@@ -36,8 +36,10 @@ type ServerInfo struct {
 	Players          uint32                 `protobuf:"varint,9,opt,name=players,proto3" json:"players,omitempty"`
 	MaxPlayers       uint32                 `protobuf:"varint,10,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
 	GroupMaintenance bool                   `protobuf:"varint,11,opt,name=group_maintenance,json=groupMaintenance,proto3" json:"group_maintenance,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Short name shown to players, e.g. lobby-789abc.
+	DisplayName   string `protobuf:"bytes,12,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ServerInfo) Reset() {
@@ -145,6 +147,13 @@ func (x *ServerInfo) GetGroupMaintenance() bool {
 		return x.GroupMaintenance
 	}
 	return false
+}
+
+func (x *ServerInfo) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
 }
 
 type GetServerRequest struct {
@@ -1557,7 +1566,7 @@ var File_ogcloud_node_v1_query_proto protoreflect.FileDescriptor
 
 const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\n" +
-	"\x1bogcloud/node/v1/query.proto\x12\x0fogcloud.node.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xa3\x03\n" +
+	"\x1bogcloud/node/v1/query.proto\x12\x0fogcloud.node.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eogcloud/events/v1/common.proto\"\xc6\x03\n" +
 	"\n" +
 	"ServerInfo\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\x12\x19\n" +
@@ -1575,7 +1584,8 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\vmax_players\x18\n" +
 	" \x01(\rR\n" +
 	"maxPlayers\x12+\n" +
-	"\x11group_maintenance\x18\v \x01(\bR\x10groupMaintenance\"/\n" +
+	"\x11group_maintenance\x18\v \x01(\bR\x10groupMaintenance\x12!\n" +
+	"\fdisplay_name\x18\f \x01(\tR\vdisplayName\"/\n" +
 	"\x10GetServerRequest\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\"H\n" +
 	"\x11GetServerResponse\x123\n" +

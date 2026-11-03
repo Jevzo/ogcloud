@@ -51,6 +51,8 @@ message ServerLifecycleChanged {
   uint32 port = 9;
   uint32 max_players = 10;
   string reason = 11;
+  // Short name shown to players, e.g. lobby-789abc.
+  string display_name = 12;
 }
 
 // Topic ogcloud.server.gamestate, key server_id.
