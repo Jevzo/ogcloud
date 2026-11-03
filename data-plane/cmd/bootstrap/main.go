@@ -1,8 +1,8 @@
 // Command bootstrap prepares secrets at install and upgrade time, driven by the chart's config (D-0044,
 // D-0114):
 //
-//	bootstrap root -config /etc/ogcloud/bootstrap.yaml       (pre-install hook: the secrets root)
-//	bootstrap infisical -config /etc/ogcloud/bootstrap.yaml  (post-install Job: Infisical setup)
+//	bootstrap root -config /etc/ogcloud/bootstrap.yaml       (pre-install and pre-upgrade hook: the secrets root)
+//	bootstrap infisical -config /etc/ogcloud/bootstrap.yaml  (post-install and post-upgrade Job: Infisical setup)
 package main
 
 import (
@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jevzo/ogcloud/data-plane/bootstrap"
 	"github.com/jevzo/ogcloud/data-plane/bootstrap/infisical"
@@ -21,6 +22,12 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 	"github.com/jevzo/ogcloud/data-plane/pkg/logging"
 	"github.com/jevzo/ogcloud/data-plane/pkg/tlsfiles"
+)
+
+// Each step after Infisical's one-time bootstrap is retried for about a minute.
+const (
+	stepAttempts = 7
+	stepPause    = 10 * time.Second
 )
 
 func main() {
@@ -59,6 +66,9 @@ func run(args []string) error {
 	case "root":
 		return bootstrap.EnsureRootSecrets(ctx, client, cfg, rand.Reader)
 	case "infisical":
+		if err := cfg.ValidateInfisical(); err != nil {
+			return err
+		}
 		api := infisical.New(cfg.Infisical.URL, nil)
 		if cfg.Infisical.CAFile != "" {
 			tlsConfig, err := tlsfiles.Client(cfg.Infisical.CAFile, "")
@@ -67,7 +77,10 @@ func run(args []string) error {
 			}
 			api = infisical.New(cfg.Infisical.URL, tlsConfig)
 		}
-		setup := &bootstrap.Setup{Kube: client, API: api, Config: cfg, ReadFile: os.ReadFile, Random: rand.Reader, Logger: logger}
+		setup := &bootstrap.Setup{
+			Kube: client, API: api, Config: cfg, ReadFile: os.ReadFile, Random: rand.Reader, Logger: logger,
+			Attempts: stepAttempts, Pause: stepPause,
+		}
 		return setup.Run(ctx)
 	default:
 		return fmt.Errorf("unknown stage %q", args[0])

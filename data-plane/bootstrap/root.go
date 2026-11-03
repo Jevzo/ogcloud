@@ -15,7 +15,8 @@ import (
 const (
 	managedByLabel = "app.kubernetes.io/managed-by"
 	managedBy      = "ogcloud-bootstrap"
-	// Helm leaves these Secrets in place on uninstall, so a reinstall finds Infisical's data readable.
+	// The Job creates these objects, so Helm never deletes them and a reinstall finds Infisical's data
+	// readable; the annotation tells readers they are meant to outlive the release.
 	keepAnnotation = "helm.sh/resource-policy"
 	keep           = "keep"
 )

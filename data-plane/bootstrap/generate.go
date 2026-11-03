@@ -19,8 +19,12 @@ const (
 	alphabet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )
 
-// Make returns the generator's value, drawing randomness from random.
+// Make returns the generator's value, drawing randomness from random. Values are never overwritten, so a
+// generator that would make a weak or empty one is refused here as well as in Validate.
 func (g Generator) Make(random io.Reader) (string, error) {
+	if err := g.Validate(); err != nil {
+		return "", err
+	}
 	if g.Generate == "" {
 		return g.Value, nil
 	}

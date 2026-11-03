@@ -91,11 +91,15 @@ func (c *Client) Bootstrap(ctx context.Context, email, password, organization st
 	if err != nil {
 		return Bootstrapped{}, err
 	}
-	return Bootstrapped{
+	booted := Bootstrapped{
 		OrganizationID:  response.Organization.ID,
 		AdminIdentityID: response.Identity.ID,
 		AdminToken:      response.Identity.Credentials.Token,
-	}, nil
+	}
+	if booted.OrganizationID == "" || booted.AdminIdentityID == "" || booted.AdminToken == "" {
+		return Bootstrapped{}, errors.New("infisical bootstrap answered without an organization, identity or token")
+	}
+	return booted, nil
 }
 
 // Identity is a machine identity of the organization.
@@ -134,6 +138,9 @@ func (c *Client) CreateIdentity(ctx context.Context, organizationID, name, role 
 	body := map[string]string{"name": name, "organizationId": organizationID, "role": role}
 	if err := c.do(ctx, http.MethodPost, "/api/v1/identities", nil, body, &response); err != nil {
 		return "", err
+	}
+	if response.Identity.ID == "" {
+		return "", fmt.Errorf("infisical created identity %s without an id", name)
 	}
 	return response.Identity.ID, nil
 }
@@ -181,6 +188,9 @@ func (c *Client) KubernetesLogin(ctx context.Context, identityID, serviceAccount
 	if err := c.do(ctx, http.MethodPost, "/api/v1/auth/kubernetes-auth/login", nil, body, &response); err != nil {
 		return "", err
 	}
+	if response.AccessToken == "" {
+		return "", errors.New("infisical's kubernetes login answered without an access token")
+	}
 	return response.AccessToken, nil
 }
 
@@ -214,14 +224,46 @@ func (c *Client) CreateProject(ctx context.Context, name, slug string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/projects", nil, body, nil)
 }
 
-// AddProjectMember makes the identity a project member with role, unless it is one already.
-func (c *Client) AddProjectMember(ctx context.Context, projectID, identityID, role string) error {
-	path := "/api/v1/projects/" + url.PathEscape(projectID) + "/memberships/identities/" + url.PathEscape(identityID)
-	err := c.do(ctx, http.MethodGet, path, nil, nil, nil)
-	if !IsNotFound(err) {
-		return err
+// ProjectMemberRole returns the identity's role in the project, or an error IsNotFound recognises.
+func (c *Client) ProjectMemberRole(ctx context.Context, projectID, identityID string) (string, error) {
+	var response struct {
+		IdentityMembership struct {
+			Roles []struct {
+				Role           string `json:"role"`
+				CustomRoleSlug string `json:"customRoleSlug"`
+			} `json:"roles"`
+		} `json:"identityMembership"`
 	}
-	return c.do(ctx, http.MethodPost, path, nil, map[string]string{"role": role}, nil)
+	if err := c.do(ctx, http.MethodGet, memberPath(projectID, identityID), nil, nil, &response); err != nil {
+		return "", err
+	}
+	roles := response.IdentityMembership.Roles
+	if len(roles) != 1 {
+		return "", fmt.Errorf("identity %s holds %d roles in project %s", identityID, len(roles), projectID)
+	}
+	if roles[0].CustomRoleSlug != "" {
+		return roles[0].CustomRoleSlug, nil
+	}
+	return roles[0].Role, nil
+}
+
+// SetProjectMember makes the identity a project member with exactly role, adding or changing it as needed.
+func (c *Client) SetProjectMember(ctx context.Context, projectID, identityID, role string) error {
+	current, err := c.ProjectMemberRole(ctx, projectID, identityID)
+	switch {
+	case IsNotFound(err):
+		return c.do(ctx, http.MethodPost, memberPath(projectID, identityID), nil, map[string]string{"role": role}, nil)
+	case err != nil:
+		return err
+	case current == role:
+		return nil
+	}
+	body := map[string]any{"roles": []map[string]any{{"role": role, "isTemporary": false}}}
+	return c.do(ctx, http.MethodPatch, memberPath(projectID, identityID), nil, body, nil)
+}
+
+func memberPath(projectID, identityID string) string {
+	return "/api/v1/projects/" + url.PathEscape(projectID) + "/memberships/identities/" + url.PathEscape(identityID)
 }
 
 // EnsureFolder creates every missing folder of path, e.g. /api/signing.

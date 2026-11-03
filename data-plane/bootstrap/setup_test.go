@@ -6,9 +6,14 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +38,8 @@ type fixture struct {
 	config *Config
 	api    *infisical.Client
 	dir    string
+	// Kubernetes logins still to fail with 503, through a proxy in front of Infisical.
+	failLogins atomic.Int32
 }
 
 func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
@@ -43,6 +50,8 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 		"CLOUDFLARE_API_TOKEN": "cf-1",
 	})
 
+	// The first scoped login fails once; the run rides it out instead of losing the admin token.
+	f.failLogins.Store(1)
 	f.run(t)
 
 	api := f.loginAs(t, f.state(t)[stateIdentity], "ogcloud-bootstrap")
@@ -60,6 +69,12 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	if got := f.value(t, api, project.ID, "/seed", "CLOUDFLARE_API_TOKEN"); got != "cf-1" {
 		t.Errorf("seeded token = %q", got)
 	}
+	for _, credential := range []string{"INFISICAL_ADMIN_EMAIL", "INFISICAL_ADMIN_PASSWORD"} {
+		ref := infisical.SecretRef{ProjectID: project.ID, Environment: "prod", Path: "/seed", Name: credential}
+		if _, found, err := api.Secret(ctx, ref); err != nil || found {
+			t.Errorf("the admin credential %s was stored (D-0114): %v", credential, err)
+		}
+	}
 	f.assertSeedGone(t)
 	identities, err := api.Identities(ctx, f.state(t)[stateOrganization])
 	if err != nil {
@@ -70,9 +85,13 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 			t.Error("the instance admin identity survived (D-0112)")
 		}
 	}
-	operator := f.loginAs(t, f.identityID(t, api, "ogcloud-secrets-operator"), "infisical-secrets-operator")
+	operatorID := f.identityID(t, api, "ogcloud-secrets-operator")
+	operator := f.loginAs(t, operatorID, "infisical-secrets-operator")
 	if got := f.value(t, operator, project.ID, "/seed", "CLOUDFLARE_API_TOKEN"); got != "cf-1" {
 		t.Errorf("the operator read %q", got)
+	}
+	if _, err := f.api.KubernetesLogin(ctx, operatorID, testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil)); err == nil {
+		t.Error("another service account logged in as the operator")
 	}
 
 	// An edit in Infisical survives a rerun with the same seed; a changed seed is imported.
@@ -82,6 +101,14 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	f.run(t)
 	if got := f.value(t, api, project.ID, "/seed", "CLOUDFLARE_API_TOKEN"); got != "edited-in-ui" {
 		t.Errorf("an unchanged seed overwrote an edit: %q", got)
+	}
+	f.assertSeedGone(t)
+
+	// A changed role in the config reaches the identity.
+	f.config.Infisical.Identities[0].Role = "member"
+	f.run(t)
+	if role, err := api.ProjectMemberRole(ctx, project.ID, operatorID); err != nil || role != "member" {
+		t.Errorf("operator role = %q, %v", role, err)
 	}
 	f.putSeed(t, map[string]string{"CLOUDFLARE_API_TOKEN": "cf-2"})
 	f.run(t)
@@ -115,7 +142,19 @@ func newFixture(t *testing.T) *fixture {
 		RoleRef:    rbacv1.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: "system:auth-delegator"},
 		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: "infisical-reviewer", Namespace: namespace}},
 	}))
-	f := &fixture{kube: kube, api: infisical.New(env.URL, nil), dir: dir}
+	f := &fixture{kube: kube, dir: dir}
+	target, err := url.Parse(env.URL)
+	must(t, err)
+	upstream := httputil.NewSingleHostReverseProxy(target)
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/kubernetes-auth/login") && f.failLogins.Add(-1) >= 0 {
+			http.Error(w, `{"message":"try again"}`, http.StatusServiceUnavailable)
+			return
+		}
+		upstream.ServeHTTP(w, r)
+	}))
+	t.Cleanup(proxy.Close)
+	f.api = infisical.New(proxy.URL, nil)
 	writeFile(t, filepath.Join(dir, "reviewer"), testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil))
 	writeFile(t, filepath.Join(dir, "bootstrap"), testk3s.Token(t, f.kube, namespace, "ogcloud-bootstrap", "", nil))
 	writeFile(t, filepath.Join(dir, "ca.crt"), string(env.Cluster.Config.CAData))
@@ -140,13 +179,14 @@ func newFixture(t *testing.T) *fixture {
 		},
 	}
 	must(t, f.config.Validate())
+	must(t, f.config.ValidateInfisical())
 	return f
 }
 
 func (f *fixture) setup() *Setup {
 	return &Setup{
 		Kube: f.kube, API: f.api, Config: f.config, ReadFile: os.ReadFile, Random: rand.Reader,
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Attempts: 3,
 	}
 }
 

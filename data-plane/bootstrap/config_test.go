@@ -58,9 +58,41 @@ infisical:
 
 	_, err := LoadConfig(path)
 
-	for _, want := range []string{"at least 16 bytes", "both a value and a generator", `unknown generator "magic"`, "not namespace/name", "absolute path"} {
+	for _, want := range []string{"at least 16 bytes", "both a value and a generator", `unknown generator "magic"`, "absolute path"} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("missing %q in %v", want, err)
 		}
+	}
+}
+
+func TestTheInfisicalStageNeedsEverythingBeforeSpendingTheAdminToken(t *testing.T) {
+	config := Config{Namespace: "ogcloud", Infisical: InfisicalSetup{
+		BootstrapIdentity: IdentitySpec{Name: "bootstrap", ServiceAccounts: []string{"ogcloud/bootstrap"}},
+		Identities: []IdentitySpec{
+			{Name: "bootstrap", Role: "viewer", ServiceAccounts: []string{"ogcloud/api"}},
+			{Name: "operator", Role: "viewer", ServiceAccounts: []string{"no-slash"}},
+			{Name: "spread", Role: "viewer", ServiceAccounts: []string{"ogcloud/api", "ogcloud-servers/game"}},
+			{Name: "anyone", Role: "viewer"},
+			{Name: "roleless", ServiceAccounts: []string{"ogcloud/x"}},
+		},
+		Seed: Seed{Path: "relative"},
+	}}
+
+	err := config.ValidateInfisical()
+
+	for _, want := range []string{
+		"infisical.url is required", "infisical.kubernetes.reviewerTokenFile is required", "infisical.seed.adminPasswordKey is required",
+		"seed.path must be absolute", `identity name "bootstrap" is used twice`, "not namespace/name", "share one namespace",
+		"an empty list would admit any", "roleless needs a project role",
+	} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("missing %q in %v", want, err)
+		}
+	}
+}
+
+func TestGeneratorsRefuseToMakeWeakValues(t *testing.T) {
+	if value, err := (Generator{Generate: "hex"}).Make(rand.Reader); err == nil {
+		t.Errorf("made %q from a generator without a size", value)
 	}
 }

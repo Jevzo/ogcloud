@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +23,8 @@ import (
 const (
 	stateOrganization = "organizationId"
 	stateIdentity     = "bootstrapIdentityId"
+	// Set while the instance admin identity outlived the first run; only an instance admin can delete it.
+	statePendingRevocation = "unrevokedAdminIdentityId"
 	// Holds the seed's hash, so an unchanged seed never overwrites edits made since (D-0044).
 	seedHashName = "OGCLOUD_SEED_SHA256"
 	// Identities get project roles; in the organization they hold nothing.
@@ -30,8 +33,8 @@ const (
 )
 
 // Setup is stage two (D-0044, D-0112): the first run bootstraps the instance and swaps the admin token for
-// a scoped identity that logs in with Kubernetes auth; every run then ensures the project, the identities,
-// the generated secrets and the seed import.
+// an organization-scoped identity that logs in with Kubernetes auth; every run then ensures the project, the
+// identities, the generated secrets and the seed import.
 type Setup struct {
 	Kube     kubernetes.Interface
 	API      *infisical.Client
@@ -39,11 +42,16 @@ type Setup struct {
 	ReadFile func(string) ([]byte, error)
 	Random   io.Reader
 	Logger   *slog.Logger
+	// Each step after the one-time bootstrap is tried this often, Pause apart: the admin token lives only in
+	// this process, so the first run has to ride out short outages itself.
+	Attempts int
+	Pause    time.Duration
 }
 
 type state struct {
-	organizationID string
-	identityID     string
+	organizationID    string
+	identityID        string
+	pendingRevocation string
 }
 
 // Run performs one idempotent pass.
@@ -54,6 +62,10 @@ func (s *Setup) Run(ctx context.Context) error {
 	current, err := s.loadState(ctx)
 	if err != nil {
 		return err
+	}
+	if current.pendingRevocation != "" {
+		s.Logger.Error("the instance admin identity was never revoked (D-0112); delete it in Infisical's admin console "+
+			"and remove the key from the state ConfigMap", "identityId", current.pendingRevocation, "key", statePendingRevocation)
 	}
 	if current.identityID == "" {
 		if current, err = s.bootstrapInstance(ctx); err != nil {
@@ -81,8 +93,9 @@ func (s *Setup) Run(ctx context.Context) error {
 	return s.importSeed(ctx, api, project.ID)
 }
 
-// bootstrapInstance runs once per installation: the admin token creates the scoped identity and then
-// deletes its own identity, so no root-equivalent credential remains (D-0112).
+// bootstrapInstance runs once per installation: the admin token creates the organization-scoped identity
+// and then deletes its own identity, so no root-equivalent credential remains (D-0112). The token cannot be
+// fetched again, so everything is checked first and every later step is retried in process.
 func (s *Setup) bootstrapInstance(ctx context.Context) (state, error) {
 	setup := s.Config.Infisical
 	seed, err := s.seed(ctx)
@@ -94,6 +107,12 @@ func (s *Setup) bootstrapInstance(ctx context.Context) (state, error) {
 		return state{}, fmt.Errorf("the first run needs %s and %s in the seed Secret %s",
 			setup.Seed.AdminEmailKey, setup.Seed.AdminPasswordKey, setup.Seed.Secret)
 	}
+	if _, err := s.kubernetesAuth(setup.BootstrapIdentity); err != nil {
+		return state{}, err
+	}
+	if _, err := s.ReadFile(setup.ServiceAccountTokenFile); err != nil {
+		return state{}, fmt.Errorf("read the service-account token: %w", err)
+	}
 	booted, err := s.API.Bootstrap(ctx, email, password, setup.Organization)
 	if errors.Is(err, infisical.ErrAlreadyBootstrapped) {
 		return state{}, fmt.Errorf("infisical is set up but the state ConfigMap %s is missing; restore it or reinstall Infisical: %w",
@@ -103,26 +122,59 @@ func (s *Setup) bootstrapInstance(ctx context.Context) (state, error) {
 		return state{}, fmt.Errorf("bootstrap infisical: %w", err)
 	}
 	admin := s.API.WithToken(booted.AdminToken)
-	identityID, err := s.identity(ctx, admin, booted.OrganizationID, setup.BootstrapIdentity.Name, organizationAdmin)
+	created := state{organizationID: booted.OrganizationID}
+	err = s.retry(ctx, "create the bootstrap identity", func() error {
+		id, stepErr := s.identity(ctx, admin, booted.OrganizationID, setup.BootstrapIdentity.Name, organizationAdmin)
+		created.identityID = id
+		return stepErr
+	})
+	if err == nil {
+		err = s.retry(ctx, "attach kubernetes auth", func() error {
+			return s.setKubernetesAuth(ctx, admin, created.identityID, setup.BootstrapIdentity)
+		})
+	}
+	if err == nil {
+		// The scoped login must work before the admin token goes.
+		err = s.retry(ctx, "log in as the bootstrap identity", func() error {
+			_, err := s.login(ctx, created.identityID)
+			return err
+		})
+	}
+	if err == nil {
+		err = s.retry(ctx, "save the state", func() error { return s.saveState(ctx, created) })
+	}
 	if err != nil {
-		return state{}, err
+		return state{}, fmt.Errorf("infisical was bootstrapped, but %w; its admin token is gone, so finish as the admin user in "+
+			"Infisical's UI or reinstall Infisical with an empty database", err)
 	}
-	if err := s.setKubernetesAuth(ctx, admin, identityID, setup.BootstrapIdentity); err != nil {
-		return state{}, err
+	// Only an instance admin may delete the instance admin identity: its own token does it.
+	err = s.retry(ctx, "revoke the instance admin identity", func() error { return admin.DeleteIdentity(ctx, booted.AdminIdentityID) })
+	if err != nil {
+		created.pendingRevocation = booted.AdminIdentityID
+		return state{}, errors.Join(err, s.saveState(ctx, created))
 	}
-	created := state{organizationID: booted.OrganizationID, identityID: identityID}
-	if err := s.saveState(ctx, created); err != nil {
-		return state{}, err
-	}
-	// The scoped login must work before the admin token goes; only an instance admin may delete its identity.
-	if _, err := s.login(ctx, identityID); err != nil {
-		return state{}, err
-	}
-	if err := admin.DeleteIdentity(ctx, booted.AdminIdentityID); err != nil {
-		return state{}, fmt.Errorf("revoke the instance admin identity: %w", err)
-	}
-	s.Logger.Info("bootstrapped infisical", "organizationId", booted.OrganizationID, "identityId", identityID)
+	s.Logger.Info("bootstrapped infisical", "organizationId", booted.OrganizationID, "identityId", created.identityID)
 	return created, nil
+}
+
+// retry runs step until it succeeds or the attempts are used up.
+func (s *Setup) retry(ctx context.Context, name string, step func() error) error {
+	attempts := max(s.Attempts, 1)
+	for attempt := 1; ; attempt++ {
+		err := step()
+		if err == nil {
+			return nil
+		}
+		if attempt == attempts {
+			return fmt.Errorf("%s failed %d times: %w", name, attempts, err)
+		}
+		s.Logger.Warn("bootstrap step failed, retrying", "step", name, "attempt", attempt, "error", err)
+		select {
+		case <-ctx.Done():
+			return errors.Join(fmt.Errorf("%s: %w", name, err), ctx.Err())
+		case <-time.After(s.Pause):
+		}
+	}
 }
 
 func (s *Setup) login(ctx context.Context, identityID string) (*infisical.Client, error) {
@@ -163,7 +215,7 @@ func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organ
 	if err := s.setKubernetesAuth(ctx, api, id, spec); err != nil {
 		return err
 	}
-	return api.AddProjectMember(ctx, projectID, id, spec.Role)
+	return api.SetProjectMember(ctx, projectID, id, spec.Role)
 }
 
 // identity finds the identity by name, or creates it; names are not unique in Infisical, so the first wins.
@@ -185,15 +237,28 @@ func (s *Setup) identity(ctx context.Context, api *infisical.Client, organizatio
 }
 
 func (s *Setup) setKubernetesAuth(ctx context.Context, api *infisical.Client, identityID string, spec IdentitySpec) error {
+	auth, err := s.kubernetesAuth(spec)
+	if err != nil {
+		return err
+	}
+	if err := api.SetKubernetesAuth(ctx, identityID, auth); err != nil {
+		return fmt.Errorf("kubernetes auth for %s: %w", spec.Name, err)
+	}
+	return nil
+}
+
+// kubernetesAuth reads what Infisical needs to review the identity's service-account tokens. The config
+// gives every identity a single namespace (ValidateInfisical), so the two lists name exactly its accounts.
+func (s *Setup) kubernetesAuth(spec IdentitySpec) (infisical.KubernetesAuth, error) {
 	kube := s.Config.Infisical.Kubernetes
 	reviewer, err := s.ReadFile(kube.ReviewerTokenFile)
 	if err != nil {
-		return fmt.Errorf("read the reviewer token: %w", err)
+		return infisical.KubernetesAuth{}, fmt.Errorf("read the reviewer token: %w", err)
 	}
 	var caCert []byte
 	if kube.CAFile != "" {
 		if caCert, err = s.ReadFile(kube.CAFile); err != nil {
-			return fmt.Errorf("read the Kubernetes CA: %w", err)
+			return infisical.KubernetesAuth{}, fmt.Errorf("read the Kubernetes CA: %w", err)
 		}
 	}
 	auth := infisical.KubernetesAuth{Host: kube.Host, CACert: string(caCert), ReviewerJWT: strings.TrimSpace(string(reviewer))}
@@ -202,10 +267,7 @@ func (s *Setup) setKubernetesAuth(ctx context.Context, api *infisical.Client, id
 		auth.Namespaces = appendUnique(auth.Namespaces, namespace)
 		auth.Names = appendUnique(auth.Names, name)
 	}
-	if err := api.SetKubernetesAuth(ctx, identityID, auth); err != nil {
-		return fmt.Errorf("kubernetes auth for %s: %w", spec.Name, err)
-	}
-	return nil
+	return auth, nil
 }
 
 // ensureSecret generates the secret once; an existing value is never replaced.
@@ -286,7 +348,10 @@ func (s *Setup) loadState(ctx context.Context) (state, error) {
 	if err != nil {
 		return state{}, fmt.Errorf("read the state ConfigMap: %w", err)
 	}
-	return state{organizationID: configMap.Data[stateOrganization], identityID: configMap.Data[stateIdentity]}, nil
+	return state{
+		organizationID: configMap.Data[stateOrganization], identityID: configMap.Data[stateIdentity],
+		pendingRevocation: configMap.Data[statePendingRevocation],
+	}, nil
 }
 
 func (s *Setup) saveState(ctx context.Context, saved state) error {
@@ -297,6 +362,9 @@ func (s *Setup) saveState(ctx context.Context, saved state) error {
 			Annotations: map[string]string{keepAnnotation: keep},
 		},
 		Data: map[string]string{stateOrganization: saved.organizationID, stateIdentity: saved.identityID},
+	}
+	if saved.pendingRevocation != "" {
+		configMap.Data[statePendingRevocation] = saved.pendingRevocation
 	}
 	configMaps := s.Kube.CoreV1().ConfigMaps(s.Config.Namespace)
 	_, err := configMaps.Create(ctx, configMap, metav1.CreateOptions{})
