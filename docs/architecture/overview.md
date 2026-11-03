@@ -90,7 +90,10 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 
 Code generators live in `data-plane/pkg/cmd/codegen`; `mise run check:generated` fails when
 committed output is stale. `mise run check:images` (and its CI job) builds every image, boots the server images with
-OgCloud's plugin and the bundle plugins it depends on, starts each platform image, and fails on critical CVEs in them.
+OgCloud's plugin and the bundle plugins it depends on, starts each platform image, fails on critical CVEs in them,
+and runs the JVM node client against the gateway image (T-0510): a `contracttest` build of the gateway that takes
+pods from a file instead of TokenReview, on real Kafka and Valkey seeded with the Kotlin adapters. Only that test
+image carries the tag.
 
 ## Data stores
 
