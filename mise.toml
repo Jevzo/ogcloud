@@ -39,6 +39,11 @@ run = [
 description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
 run = "./gradlew check"
 
+# Not part of `check`: it builds the server images and boots them, which needs Docker and the network (D-0139).
+[tasks."check:images"]
+description = "Build every server image from images/docker-bake.json and boot it with OgCloud's plugin"
+run = "./gradlew :images:smoke-test:test -Pogcloud.smoke"
+
 [tasks."fmt:jvm"]
 description = "Format Kotlin sources and Gradle scripts"
 run = "./gradlew spotlessApply"
