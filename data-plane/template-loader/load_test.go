@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
@@ -150,5 +152,86 @@ func TestBundlePathsMustStayInside(t *testing.T) {
 
 	if err := loader.Run(context.Background()); !errors.Is(err, ErrUnsafe) {
 		t.Errorf("Run = %v", err)
+	}
+}
+
+type refusingAssets struct{ calls int }
+
+func (r *refusingAssets) GetPodAssets(context.Context, *nodev1.GetPodAssetsRequest, ...grpc.CallOption) (*nodev1.GetPodAssetsResponse, error) {
+	r.calls++
+	return nil, status.Error(codes.PermissionDenied, "not a game pod")
+}
+
+func TestPermanentFailuresAreNotRetried(t *testing.T) {
+	template := archive(t, entry{name: "level.dat", typeflag: tar.TypeReg, content: "v1"})
+	server := storage(t, map[string][]byte{"/t": template})
+	tampered := download(server, "/t", template)
+	tampered.Sha256 = sum([]byte("other"))
+	refusing := &refusingAssets{}
+	for name, assets := range map[string]AssetSource{
+		"refused token":     refusing,
+		"tampered template": &fakeAssets{&nodev1.GetPodAssetsResponse{Template: tampered}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			root, _ := dataRoot(t)
+			loader := &Loader{Assets: assets, HTTP: server.Client(), Data: root, Profile: paper(t), MaxExtractBytes: 1 << 20, Logger: quiet()}
+			ctx, cancel := context.WithTimeout(context.Background(), patience)
+			defer cancel()
+
+			err := loader.Run(ctx)
+
+			if !permanent(err) || ctx.Err() != nil {
+				t.Errorf("Run = %v after the deadline %v; a permanent failure must end at once", err, ctx.Err())
+			}
+		})
+	}
+	if refusing.calls != 1 {
+		t.Errorf("a refused token was asked again %d times", refusing.calls-1)
+	}
+}
+
+func TestBundleFilesTheCatalogDroppedAreRemoved(t *testing.T) {
+	jar := []byte("via")
+	server := storage(t, map[string][]byte{"/jar": jar})
+	root, dir := dataRoot(t)
+	assets := &fakeAssets{&nodev1.GetPodAssetsResponse{Artifacts: []*nodev1.BundleArtifact{
+		{Path: "plugins/ViaVersion.jar", Download: download(server, "/jar", jar)},
+		{Path: "plugins/OldPlugin.jar", Download: download(server, "/jar", jar)},
+	}}}
+	loader := &Loader{Assets: assets, HTTP: server.Client(), Data: root, Profile: paper(t), MaxExtractBytes: 1 << 20, Logger: quiet()}
+	if err := loader.load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	assets.response.Artifacts = assets.response.Artifacts[:1]
+	if err := loader.load(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "plugins", "OldPlugin.jar")); !errors.Is(err, os.ErrNotExist) {
+		t.Error("a file the bundle dropped stayed and would be pushed into the template")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "plugins", "ViaVersion.jar")); err != nil {
+		t.Error("a current bundle file was removed")
+	}
+}
+
+func TestLinksOnAVolumeCannotRedirectWrites(t *testing.T) {
+	jar := []byte("ogcloud")
+	server := storage(t, map[string][]byte{"/jar": jar})
+	root, dir := dataRoot(t)
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(dir, "plugins")); err != nil {
+		t.Fatal(err)
+	}
+	loader := &Loader{Assets: &fakeAssets{&nodev1.GetPodAssetsResponse{Artifacts: []*nodev1.BundleArtifact{
+		{Path: "plugins/ogcloud.jar", Download: download(server, "/jar", jar)},
+	}}}, HTTP: server.Client(), Data: root, Profile: paper(t), MaxExtractBytes: 1 << 20, Logger: quiet()}
+
+	if err := loader.load(context.Background()); err == nil {
+		t.Error("a link out of the volume was followed")
+	}
+	if entries, _ := os.ReadDir(outside); len(entries) != 0 {
+		t.Errorf("wrote %d files outside the data directory", len(entries))
 	}
 }

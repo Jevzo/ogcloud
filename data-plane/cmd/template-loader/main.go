@@ -28,7 +28,7 @@ import (
 const (
 	component   = "template-loader"
 	loadTimeout = 10 * time.Minute
-	// Bounded by the pod's 90 s grace period.
+	// Below the default 90 s grace period, which the server's own shutdown also uses.
 	pushTimeout     = 80 * time.Second
 	maxExtractBytes = 64 << 30
 )

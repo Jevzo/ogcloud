@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
@@ -77,5 +78,16 @@ func golden(t *testing.T, gotPath, goldenPath string) {
 	}
 	if string(got) != string(want) {
 		t.Errorf("%s differs from %s; rerun with -update after reviewing\n%s", gotPath, goldenPath, got)
+	}
+}
+
+func TestDuplicateYAMLKeysAreAllSet(t *testing.T) {
+	bungeecord := runtimeprofiles.Overlay{File: "spigot.yml", Format: runtimeprofiles.OverlayYAML, Key: "settings.bungeecord", Value: "true"}
+	patched, err := setYAML([]byte("settings:\n  bungeecord: false\n  bungeecord: false\n"), []runtimeprofiles.Overlay{bungeecord})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(patched), "bungeecord: true") != 2 {
+		t.Errorf("patched:\n%s", patched)
 	}
 }

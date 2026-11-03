@@ -2,8 +2,10 @@ package templateloader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -42,7 +44,9 @@ func install(ctx context.Context, client *http.Client, root *os.Root, name strin
 	partial := name + ".ogcloud-partial"
 	err := fetch(ctx, client, download, func(body io.Reader) error { return writeFile(root, partial, body) })
 	if err != nil {
-		_ = root.Remove(partial)
+		if removeErr := root.Remove(partial); removeErr != nil && !errors.Is(removeErr, fs.ErrNotExist) {
+			err = errors.Join(err, removeErr)
+		}
 		return fmt.Errorf("%s: %w", name, err)
 	}
 	if err := root.Rename(partial, name); err != nil {

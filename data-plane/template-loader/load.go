@@ -10,10 +10,13 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
@@ -46,13 +49,13 @@ type Loader struct {
 	Logger          *slog.Logger
 }
 
-// Run loads until it succeeds, an archive is unsafe, or ctx ends; the pod does not restart a failed init
+// Run loads until it succeeds, fails for good, or ctx ends; the pod does not restart a failed init
 // container, so transient failures are retried here.
 func (l *Loader) Run(ctx context.Context) error {
 	wait := firstRetry
 	for {
 		err := l.load(ctx)
-		if err == nil || errors.Is(err, ErrUnsafe) {
+		if err == nil || permanent(err) {
 			return err
 		}
 		l.Logger.Warn("loading failed, retrying", "error", err, "in", wait)
@@ -70,6 +73,10 @@ func (l *Loader) load(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("pod assets: %w", err)
 	}
+	previous, err := l.bundle()
+	if err != nil {
+		return err
+	}
 	if template := assets.GetTemplate(); template != nil {
 		if err := l.template(ctx, template); err != nil {
 			return err
@@ -86,11 +93,48 @@ func (l *Loader) load(ctx context.Context) error {
 		}
 		paths = append(paths, name)
 	}
+	// Files the bundle no longer carries would otherwise stay on a STATIC volume and end up in its pushes.
+	for _, stale := range previous {
+		if !slices.Contains(paths, stale) {
+			if err := l.Data.Remove(stale); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return fmt.Errorf("remove the old bundle file %s: %w", stale, err)
+			}
+		}
+	}
 	// The agent leaves bundle files out of pushes (D-0119).
 	if err := writeState(l.Data, bundleList, strings.Join(paths, "\n")); err != nil {
 		return err
 	}
-	return applyOverlays(l.Data, runtimeprofiles.OverlaysOf(l.Profile.Platform))
+	if err := applyOverlays(l.Data, runtimeprofiles.OverlaysOf(l.Profile.Platform)); err != nil {
+		// The template's file cannot be patched; it stays broken until the template changes.
+		return fmt.Errorf("%w: %w", ErrPermanent, err)
+	}
+	return nil
+}
+
+// bundle returns the bundle files installed last time.
+func (l *Loader) bundle() ([]string, error) {
+	list, err := l.Data.ReadFile(bundleList)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read bundle list: %w", err)
+	}
+	return strings.Fields(string(list)), nil
+}
+
+// permanent tells failures a retry cannot fix from outages.
+func permanent(err error) bool {
+	if errors.Is(err, ErrUnsafe) || errors.Is(err, ErrPermanent) {
+		return true
+	}
+	switch status.Code(err) {
+	case codes.PermissionDenied, codes.Unauthenticated, codes.InvalidArgument, codes.NotFound, codes.FailedPrecondition:
+		return true
+	default:
+		return false
+	}
 }
 
 // template extracts the group's template unless the data directory already holds it, as a STATIC volume
@@ -115,5 +159,5 @@ func (l *Loader) template(ctx context.Context, template *nodev1.Download) error 
 }
 
 func writeState(root *os.Root, name, content string) error {
-	return writeFile(root, name, strings.NewReader(content+"\n"))
+	return replaceFile(root, name, strings.NewReader(content+"\n"))
 }

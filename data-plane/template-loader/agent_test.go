@@ -32,6 +32,8 @@ type fakeGateway struct {
 	nodev1.UnimplementedTemplateAgentServiceServer
 	storage  string
 	promoted bool
+	// What the gateway asks of the agent; a push unless set.
+	delivery *nodev1.Delivery
 
 	mu        sync.Mutex
 	hello     *nodev1.Hello
@@ -50,9 +52,11 @@ func (g *fakeGateway) Session(stream nodev1.GatewayService_SessionServer) error 
 	if err := stream.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Welcome{Welcome: &nodev1.Welcome{}}}); err != nil {
 		return err
 	}
-	if err := stream.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Delivery{Delivery: &nodev1.Delivery{
-		DeliveryId: "d-1", Action: &nodev1.Delivery_PushTemplate{},
-	}}}); err != nil {
+	delivery := g.delivery
+	if delivery == nil {
+		delivery = &nodev1.Delivery{DeliveryId: "d-1", Action: &nodev1.Delivery_PushTemplate{}}
+	}
+	if err := stream.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Delivery{Delivery: delivery}}); err != nil {
 		return err
 	}
 	answer, err := stream.Recv()
@@ -76,9 +80,10 @@ func (g *fakeGateway) CompleteTemplateUpload(_ context.Context, in *nodev1.Compl
 }
 
 type uploads struct {
-	mu    sync.Mutex
-	body  []byte
-	count int
+	mu     sync.Mutex
+	body   []byte
+	count  int
+	refuse bool
 }
 
 func (u *uploads) last() []byte {
@@ -97,6 +102,10 @@ func startAgent(t *testing.T, promoted, pushOnShutdown bool) (*Agent, *fakeGatew
 	t.Helper()
 	received := &uploads{}
 	storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if received.refuse {
+			http.Error(w, "full", http.StatusInsufficientStorage)
+			return
+		}
 		body, _ := io.ReadAll(r.Body)
 		if int64(len(body)) != r.ContentLength {
 			http.Error(w, "length mismatch", http.StatusBadRequest)
@@ -133,6 +142,16 @@ func startAgent(t *testing.T, promoted, pushOnShutdown bool) (*Agent, *fakeGatew
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A plugin may plant links; pushes carry files, never what links point at.
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "secret"), []byte("secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for name, target := range map[string]string{"secret.txt": filepath.Join(outside, "secret"), "world/outside": outside} {
+		if err := os.Symlink(target, filepath.Join(dir, name)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -215,5 +234,31 @@ func TestStaticServersPushOnShutdownAndUnpromotedPushesLeaveTheMarker(t *testing
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".ogcloud", "template.sha256")); !errors.Is(err, os.ErrNotExist) {
 		t.Error("an unpromoted push marked the volume")
+	}
+}
+
+func TestDeliveriesOtherThanPushesAndFailedPushesAreAnsweredAsFailures(t *testing.T) {
+	for name, setup := range map[string]func(*fakeGateway, *uploads){
+		"not a push": func(g *fakeGateway, _ *uploads) {
+			g.delivery = &nodev1.Delivery{DeliveryId: "d-1", Action: &nodev1.Delivery_Command{}}
+		},
+		"upload refused": func(_ *fakeGateway, u *uploads) { u.refuse = true },
+	} {
+		t.Run(name, func(t *testing.T) {
+			agent, gateway, received, _ := startAgent(t, true, false)
+			setup(gateway, received)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go func() { _ = agent.Run(ctx) }()
+
+			select {
+			case result := <-gateway.results:
+				if result.GetSuccess() || result.GetDeliveryId() != "d-1" || result.GetMessage() == "" {
+					t.Errorf("result = %v", result)
+				}
+			case <-time.After(patience):
+				t.Fatal("the delivery was never answered")
+			}
+		})
 	}
 }

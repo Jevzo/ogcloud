@@ -1,6 +1,6 @@
 // Package templateloader fills a game pod's data directory before the server starts (load) and pushes the
-// server's files back as a new template version (agent). Every file operation goes through an os.Root, so
-// nothing an archive or the server wrote can reach outside the data directory.
+// server's files back as a new template version (agent). Every operation on the data directory goes through
+// an os.Root, so nothing an archive or the server wrote can reach outside it.
 package templateloader
 
 import (
@@ -24,8 +24,12 @@ const (
 	stateDir = ".ogcloud"
 )
 
-// ErrUnsafe marks archives and paths that would leave the data directory or hold links; retrying cannot help.
-var ErrUnsafe = errors.New("unsafe archive entry")
+var (
+	// ErrUnsafe marks archives and paths that would leave the data directory or hold links.
+	ErrUnsafe = errors.New("unsafe archive entry")
+	// ErrPermanent marks failures a retry cannot fix, e.g. a refused token or a tampered download.
+	ErrPermanent = errors.New("permanent failure")
+)
 
 // extract unpacks a tar.gz archive into root. Links and device files are refused, and at most maxBytes
 // of file content are written.
@@ -89,6 +93,18 @@ func writeFile(root *os.Root, name string, content io.Reader) error {
 	return nil
 }
 
+// replaceFile writes name through a temporary file and a rename, so a crash never leaves it half written.
+func replaceFile(root *os.Root, name string, content io.Reader) error {
+	partial := name + ".ogcloud-partial"
+	if err := writeFile(root, partial, content); err != nil {
+		return err
+	}
+	if err := root.Rename(partial, name); err != nil {
+		return fmt.Errorf("replace %s: %w", name, err)
+	}
+	return nil
+}
+
 // wipe removes everything in root.
 func wipe(root *os.Root) error {
 	entries, err := fs.ReadDir(root.FS(), ".")
@@ -118,10 +134,11 @@ func (d *digest) Write(p []byte) (int, error) {
 
 func (d *digest) sum() string { return hex.EncodeToString(d.hash.Sum(nil)) }
 
-// check compares what passed through with what the gateway announced.
+// check compares what passed through with what the gateway announced; a complete download that differs
+// was tampered with, which no retry fixes.
 func (d *digest) check(sha256 string, size uint64) error {
 	if d.sum() != sha256 || uint64(d.size) != size { //nolint:gosec // G115: sizes are never negative.
-		return fmt.Errorf("checksum mismatch: got %s (%d bytes), want %s (%d bytes)", d.sum(), d.size, sha256, size)
+		return fmt.Errorf("%w: checksum mismatch: got %s (%d bytes), want %s (%d bytes)", ErrPermanent, d.sum(), d.size, sha256, size)
 	}
 	return nil
 }

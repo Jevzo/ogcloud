@@ -117,20 +117,29 @@ func setYAML(content []byte, overlays []runtimeprofiles.Overlay) ([]byte, error)
 	return out.Bytes(), nil
 }
 
+// setPath sets keys under mapping. Every duplicate of a key is set, since YAML readers differ in which one
+// they keep.
 func setPath(mapping *yaml.Node, keys []string, value string) error {
+	found := false
 	for i := 0; i < len(mapping.Content); i += 2 {
 		if mapping.Content[i].Value != keys[0] {
 			continue
 		}
+		found = true
 		child := mapping.Content[i+1]
 		if len(keys) == 1 {
 			mapping.Content[i+1] = scalar(value)
-			return nil
+			continue
 		}
 		if child.Kind != yaml.MappingNode {
 			return fmt.Errorf("%s is not a mapping", keys[0])
 		}
-		return setPath(child, keys[1:], value)
+		if err := setPath(child, keys[1:], value); err != nil {
+			return err
+		}
+	}
+	if found {
+		return nil
 	}
 	if len(keys) == 1 {
 		mapping.Content = append(mapping.Content, scalar(keys[0]), scalar(value))

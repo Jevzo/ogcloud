@@ -42,9 +42,11 @@ func (e excluder) excludes(name string, dir bool) bool {
 
 // pack writes everything in root that is not excluded as a tar.gz archive to out. Links are skipped: a push
 // carries files, not pointers to elsewhere.
-func pack(root *os.Root, out io.Writer, skip excluder) error {
+// It returns the paths it left out because they were links or special files.
+func pack(root *os.Root, out io.Writer, skip excluder) ([]string, error) {
 	zipped := gzip.NewWriter(out)
 	archive := tar.NewWriter(zipped)
+	var skipped []string
 	err := fs.WalkDir(root.FS(), ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -59,20 +61,21 @@ func pack(root *os.Root, out io.Writer, skip excluder) error {
 			return nil
 		}
 		if !entry.IsDir() && !entry.Type().IsRegular() {
+			skipped = append(skipped, name)
 			return nil
 		}
 		return addEntry(root, archive, name, entry)
 	})
 	if err != nil {
-		return fmt.Errorf("pack: %w", err)
+		return nil, fmt.Errorf("pack: %w", err)
 	}
 	if err := archive.Close(); err != nil {
-		return fmt.Errorf("pack: %w", err)
+		return nil, fmt.Errorf("pack: %w", err)
 	}
 	if err := zipped.Close(); err != nil {
-		return fmt.Errorf("pack: %w", err)
+		return nil, fmt.Errorf("pack: %w", err)
 	}
-	return nil
+	return skipped, nil
 }
 
 func addEntry(root *os.Root, archive *tar.Writer, name string, entry fs.DirEntry) error {

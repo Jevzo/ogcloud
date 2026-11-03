@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
@@ -57,7 +59,12 @@ func (a *Agent) Run(ctx context.Context) error {
 		if welcomed {
 			wait = firstRetry
 		}
-		a.Logger.Warn("session ended, reconnecting", "error", err, "in", wait)
+		// A refused token or pod will not heal by reconnecting; it needs someone to look.
+		level := slog.LevelWarn
+		if code := status.Code(err); code == codes.PermissionDenied || code == codes.Unauthenticated {
+			level = slog.LevelError
+		}
+		a.Logger.Log(ctx, level, "session ended, reconnecting", "error", err, "in", wait)
 		select {
 		case <-ctx.Done():
 		case <-time.After(wait):
@@ -99,15 +106,17 @@ func (a *Agent) session(ctx context.Context) (bool, error) {
 			return true, fmt.Errorf("receive: %w", err)
 		}
 		delivery := response.GetDelivery()
-		if delivery.GetPushTemplate() == nil {
+		if delivery == nil {
 			continue
 		}
-		result := &nodev1.DeliveryResult{DeliveryId: delivery.GetDeliveryId(), Success: true}
-		if version, err := a.Push(ctx); err != nil {
-			a.Logger.Error("push failed", "error", err)
-			result.Success, result.Message = false, err.Error()
-		} else {
-			result.Message = version
+		result := &nodev1.DeliveryResult{DeliveryId: delivery.GetDeliveryId(), Message: "template agents only push templates"}
+		if delivery.GetPushTemplate() != nil {
+			if version, err := a.Push(ctx); err != nil {
+				a.Logger.Error("push failed", "error", err)
+				result.Message = err.Error()
+			} else {
+				result.Success, result.Message = true, version
+			}
 		}
 		if err := stream.Send(&nodev1.SessionRequest{Message: &nodev1.SessionRequest_DeliveryResult{DeliveryResult: result}}); err != nil {
 			return true, fmt.Errorf("delivery result: %w", err)
@@ -132,8 +141,12 @@ func (a *Agent) Push(ctx context.Context) (string, error) {
 		_ = os.Remove(archive.Name())
 	}()
 	written := newDigest()
-	if err := pack(a.Data, io.MultiWriter(archive, written), skip); err != nil {
+	skipped, err := pack(a.Data, io.MultiWriter(archive, written), skip)
+	if err != nil {
 		return "", err
+	}
+	if len(skipped) > 0 {
+		a.Logger.Info("links and special files left out of the push", "paths", skipped)
 	}
 	upload, err := a.Uploads.CreateTemplateUpload(ctx, &nodev1.CreateTemplateUploadRequest{})
 	if err != nil {
@@ -148,10 +161,11 @@ func (a *Agent) Push(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("complete upload: %w", err)
 	}
-	// The volume now holds the active template, so the next start keeps it (D-0119).
+	// The volume now holds the active template, so the next start keeps it (D-0119). Without the marker the
+	// next start extracts that same template again, which costs time but loses nothing.
 	if completed.GetPromoted() {
 		if err := writeState(a.Data, templateMarker, written.sum()); err != nil {
-			return "", err
+			a.Logger.Error("pushed, but the volume is not marked as holding the template", "error", err)
 		}
 	}
 	a.Logger.Info("template pushed", "version", completed.GetTemplateVersionId(), "promoted", completed.GetPromoted(), "bytes", written.size)
