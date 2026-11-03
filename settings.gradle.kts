@@ -6,6 +6,18 @@ dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
     repositories {
         mavenCentral()
+        // Plugin APIs come only from their publishers' repositories, each limited to its own groups (D-0124).
+        exclusiveContent {
+            forRepository { maven("https://repo.papermc.io/repository/maven-public/") { name = "papermc" } }
+            filter {
+                includeGroup("com.velocitypowered")
+                includeGroup("io.papermc.paper")
+            }
+        }
+        exclusiveContent {
+            forRepository { maven("https://repo.viaversion.com/") { name = "viaversion" } }
+            filter { includeGroup("com.viaversion") }
+        }
     }
 }
 
@@ -23,3 +35,4 @@ include(":control-plane:api")
 include(":integrations:sdk")
 include(":integrations:node-client")
 include(":integrations:node-core")
+include(":integrations:velocity")

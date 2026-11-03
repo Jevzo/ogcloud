@@ -65,7 +65,7 @@ class ProxyRuntime(
     /** `/ogcloud`, for the adapter to register. */
     val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
 
-    /** Turns players away when this proxy is full (D-0134), else asks the controller (maintenance) and loads the rank. */
+    /** Refuses players while this proxy is full (D-0134), else asks the controller and loads the rank. */
     fun login(
         player: UUID,
         name: String,

@@ -18,8 +18,12 @@ fabric8 = "8.0.0"
 springdoc = "3.2.0"
 webauthn4j = "0.31.11.RELEASE"
 playwright = "1.64.0"
+velocity-api = "4.3.1"
+viaversion-api = "5.12.2"
 
 [libraries]
+velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-api" }
+viaversion-api = { module = "com.viaversion:viaversion-api", version.ref = "viaversion-api" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-allopen-plugin = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }

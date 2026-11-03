@@ -1,0 +1,10 @@
+{
+  "id": "ogcloud",
+  "name": "OgCloud",
+  "version": "${version}",
+  "description": "Connects this proxy to OgCloud.",
+  "url": "https://github.com/Jevzo/ogcloud",
+  "authors": ["Jevzo"],
+  "main": "io.ogwars.cloud.velocity.OgCloudVelocity",
+  "dependencies": [{ "id": "viaversion", "optional": true }]
+}
