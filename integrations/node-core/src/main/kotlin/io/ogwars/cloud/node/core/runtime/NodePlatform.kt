@@ -17,7 +17,6 @@ data class OnlinePlayer(
 /** One heartbeat's numbers; proxies report no tick rate. */
 data class HeartbeatSample(
     val players: Int,
-    val maxPlayers: Int,
     val tps: Double,
     val mspt: Double,
     val memoryUsedBytes: Long,

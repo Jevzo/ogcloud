@@ -38,7 +38,7 @@ class ServerRuntimeTest {
     private lateinit var session: FakeSession
     private val runtime =
         ServerRuntime(
-            NodeIdentity("s-1", "lobby", GroupType.DYNAMIC),
+            NodeIdentity("s-1", "lobby", GroupType.DYNAMIC, 50),
             platform,
             queries,
             messages,
@@ -59,6 +59,7 @@ class ServerRuntimeTest {
 
         val heartbeat = session.sent.last { it.hasHeartbeat() }.heartbeat
         heartbeat.players shouldBe 3
+        heartbeat.maxPlayers shouldBe 50
         heartbeat.tps shouldBe 19.9
     }
 

@@ -8,6 +8,8 @@ data class NodeIdentity(
     val serverId: String,
     val groupId: String,
     val groupType: GroupType,
+    /** The group's players per server (D-0134). */
+    val maxPlayers: Int,
 ) {
     companion object {
         @JvmStatic
@@ -18,6 +20,7 @@ data class NodeIdentity(
                 required(PodEnv.SERVER_ID),
                 required(PodEnv.GROUP_ID),
                 GroupType.valueOf(required(PodEnv.GROUP_TYPE)),
+                required(PodEnv.MAX_PLAYERS).toInt(),
             )
         }
     }

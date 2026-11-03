@@ -65,13 +65,16 @@ class ProxyRuntime(
     /** `/ogcloud`, for the adapter to register. */
     val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
 
-    /** Asks the controller whether [player] may join (maintenance, D-0100) and loads their rank. */
+    /** Turns players away when this proxy is full (D-0134), else asks the controller (maintenance) and loads the rank. */
     fun login(
         player: UUID,
         name: String,
         protocol: Int,
         remoteAddress: String,
     ): CompletableFuture<LoginDecision> {
+        if (platform.onlinePlayers().size >= identity.maxPlayers) {
+            return CompletableFuture.completedFuture(LoginDecision.Denied(messages.text(Message.KICK_PROXY_FULL)))
+        }
         val request =
             ResolveLoginRequest
                 .newBuilder()

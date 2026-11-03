@@ -39,7 +39,7 @@ class ProxyRuntimeTest {
     private lateinit var session: FakeSession
     private val runtime =
         ProxyRuntime(
-            NodeIdentity("p-1", "proxy", SdkGroupType.PROXY),
+            NodeIdentity("p-1", "proxy", SdkGroupType.PROXY, MAX_PLAYERS),
             platform,
             queries,
             messages,
@@ -121,6 +121,14 @@ class ProxyRuntimeTest {
         queries.login = null
         runtime.login(steve, "Steve", 47, "1.2.3.4").join() shouldBe
             LoginDecision.Denied(messages.text(Message.KICK_LOGIN_FAILED))
+    }
+
+    @Test
+    fun `a full proxy turns players away before asking anyone`() {
+        repeat(MAX_PLAYERS) { platform.players += OnlinePlayer(UUID.randomUUID(), "p$it", null) }
+
+        runtime.login(UUID.randomUUID(), "Late", 47, "1.2.3.4").join() shouldBe
+            LoginDecision.Denied(messages.text(Message.KICK_PROXY_FULL))
     }
 
     @Test
@@ -252,4 +260,8 @@ class ProxyRuntimeTest {
             .setPlayerUuid(player.toString())
             .setPermissionGroupId("default")
             .build()
+
+    private companion object {
+        const val MAX_PLAYERS = 10
+    }
 }

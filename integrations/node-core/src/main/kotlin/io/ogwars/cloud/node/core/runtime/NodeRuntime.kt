@@ -106,7 +106,7 @@ abstract class NodeRuntime(
             Heartbeat
                 .newBuilder()
                 .setPlayers(sample.players)
-                .setMaxPlayers(sample.maxPlayers)
+                .setMaxPlayers(identity.maxPlayers)
                 .setTps(sample.tps)
                 .setMspt(sample.mspt)
                 .setMemoryUsedBytes(sample.memoryUsedBytes)

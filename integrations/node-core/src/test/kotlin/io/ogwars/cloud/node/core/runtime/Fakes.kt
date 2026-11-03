@@ -86,7 +86,7 @@ open class FakePlatform : NodePlatform {
     val messages = mutableListOf<Pair<UUID, String>>()
     val consoleCommands = mutableListOf<String>()
     val rankChanges = mutableListOf<Set<UUID>>()
-    var sample = HeartbeatSample(3, 50, 19.9, 12.5, 512, 1024)
+    var sample = HeartbeatSample(3, 19.9, 12.5, 512, 1024)
 
     override fun onlinePlayers() = players.toList()
 

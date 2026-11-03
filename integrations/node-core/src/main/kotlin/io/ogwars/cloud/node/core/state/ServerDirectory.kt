@@ -15,6 +15,8 @@ data class Backend(
     val host: String,
     val port: Int,
     val maxPlayers: Int,
+    /** Its native Minecraft protocol, for ViaVersion (D-0133). */
+    val protocol: Int,
     /** A draining backend keeps its players but takes no new ones. */
     val draining: Boolean,
 )
@@ -78,10 +80,10 @@ class ServerDirectory(
     }
 
     private fun ServerInfo.toBackend(): Backend? =
-        backendOf(serverId, displayName, groupId, groupType, host, port, maxPlayers, state)
+        backendOf(serverId, displayName, groupId, groupType, host, port, maxPlayers, protocol, state)
 
     private fun ServerLifecycleChanged.toBackend(): Backend? =
-        backendOf(serverId, displayName, groupId, groupType, host, port, maxPlayers, state)
+        backendOf(serverId, displayName, groupId, groupType, host, port, maxPlayers, protocol, state)
 
     private fun backendOf(
         id: String,
@@ -91,6 +93,7 @@ class ServerDirectory(
         host: String,
         port: Int,
         maxPlayers: Int,
+        protocol: Int,
         state: ServerState,
     ): Backend? {
         val routable = state == ServerState.SERVER_STATE_RUNNING || state == ServerState.SERVER_STATE_DRAINING
@@ -103,6 +106,7 @@ class ServerDirectory(
             host,
             port,
             maxPlayers,
+            protocol,
             state == ServerState.SERVER_STATE_DRAINING,
         )
     }

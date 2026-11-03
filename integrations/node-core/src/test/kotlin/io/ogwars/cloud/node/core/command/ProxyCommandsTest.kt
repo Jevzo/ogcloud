@@ -36,7 +36,7 @@ class ProxyCommandsTest {
     private lateinit var session: FakeSession
     private val runtime =
         ProxyRuntime(
-            NodeIdentity("p-1", "proxy", SdkGroupType.PROXY),
+            NodeIdentity("p-1", "proxy", SdkGroupType.PROXY, 100),
             FakeProxyPlatform(),
             queries,
             messages,
