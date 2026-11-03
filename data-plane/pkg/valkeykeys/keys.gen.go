@@ -25,8 +25,8 @@ const (
 	WebSessionNamespace = "websession"
 	// Id of the one network settings read model.
 	NetworkSettingsId = "network"
-	// Id of the one group-list read model.
-	GroupListId = "all"
+	// Id of the one read model of each list kind.
+	ListId = "all"
 )
 
 // ReadModelKind names a family of read models.
@@ -40,6 +40,8 @@ const (
 	ReadModelNpcsByGroup     ReadModelKind = "npcs-by-group"
 	// Every group, for the gateway's ListGroups (D-0132).
 	ReadModelGroupList ReadModelKind = "group-list"
+	// Every permission group, for the gateway's ListPermissionGroups (D-0132).
+	ReadModelPermissionGroupList ReadModelKind = "permission-group-list"
 	// A profile's bundle manifest for the gateway's GetPodAssets (D-0080).
 	ReadModelRuntimeBundle ReadModelKind = "runtime-bundle"
 	// A group's active template for the gateway's GetPodAssets (D-0081).

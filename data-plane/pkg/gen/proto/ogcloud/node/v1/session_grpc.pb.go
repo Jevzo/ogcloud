@@ -19,16 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GatewayService_Session_FullMethodName            = "/ogcloud.node.v1.GatewayService/Session"
-	GatewayService_ResolveLogin_FullMethodName       = "/ogcloud.node.v1.GatewayService/ResolveLogin"
-	GatewayService_GetServer_FullMethodName          = "/ogcloud.node.v1.GatewayService/GetServer"
-	GatewayService_ListServers_FullMethodName        = "/ogcloud.node.v1.GatewayService/ListServers"
-	GatewayService_FindPlayer_FullMethodName         = "/ogcloud.node.v1.GatewayService/FindPlayer"
-	GatewayService_GetPlayerProfile_FullMethodName   = "/ogcloud.node.v1.GatewayService/GetPlayerProfile"
-	GatewayService_GetPermissionGroup_FullMethodName = "/ogcloud.node.v1.GatewayService/GetPermissionGroup"
-	GatewayService_ListNpcs_FullMethodName           = "/ogcloud.node.v1.GatewayService/ListNpcs"
-	GatewayService_ListGroups_FullMethodName         = "/ogcloud.node.v1.GatewayService/ListGroups"
-	GatewayService_ListPlayers_FullMethodName        = "/ogcloud.node.v1.GatewayService/ListPlayers"
+	GatewayService_Session_FullMethodName              = "/ogcloud.node.v1.GatewayService/Session"
+	GatewayService_ResolveLogin_FullMethodName         = "/ogcloud.node.v1.GatewayService/ResolveLogin"
+	GatewayService_GetServer_FullMethodName            = "/ogcloud.node.v1.GatewayService/GetServer"
+	GatewayService_ListServers_FullMethodName          = "/ogcloud.node.v1.GatewayService/ListServers"
+	GatewayService_FindPlayer_FullMethodName           = "/ogcloud.node.v1.GatewayService/FindPlayer"
+	GatewayService_GetPlayerProfile_FullMethodName     = "/ogcloud.node.v1.GatewayService/GetPlayerProfile"
+	GatewayService_GetPermissionGroup_FullMethodName   = "/ogcloud.node.v1.GatewayService/GetPermissionGroup"
+	GatewayService_ListNpcs_FullMethodName             = "/ogcloud.node.v1.GatewayService/ListNpcs"
+	GatewayService_ListGroups_FullMethodName           = "/ogcloud.node.v1.GatewayService/ListGroups"
+	GatewayService_ListPermissionGroups_FullMethodName = "/ogcloud.node.v1.GatewayService/ListPermissionGroups"
+	GatewayService_ListPlayers_FullMethodName          = "/ogcloud.node.v1.GatewayService/ListPlayers"
 )
 
 // GatewayServiceClient is the client API for GatewayService service.
@@ -48,6 +49,7 @@ type GatewayServiceClient interface {
 	GetPermissionGroup(ctx context.Context, in *GetPermissionGroupRequest, opts ...grpc.CallOption) (*GetPermissionGroupResponse, error)
 	ListNpcs(ctx context.Context, in *ListNpcsRequest, opts ...grpc.CallOption) (*ListNpcsResponse, error)
 	ListGroups(ctx context.Context, in *ListGroupsRequest, opts ...grpc.CallOption) (*ListGroupsResponse, error)
+	ListPermissionGroups(ctx context.Context, in *ListPermissionGroupsRequest, opts ...grpc.CallOption) (*ListPermissionGroupsResponse, error)
 	// The players on a backend or connected through a proxy.
 	ListPlayers(ctx context.Context, in *ListPlayersRequest, opts ...grpc.CallOption) (*ListPlayersResponse, error)
 }
@@ -153,6 +155,16 @@ func (c *gatewayServiceClient) ListGroups(ctx context.Context, in *ListGroupsReq
 	return out, nil
 }
 
+func (c *gatewayServiceClient) ListPermissionGroups(ctx context.Context, in *ListPermissionGroupsRequest, opts ...grpc.CallOption) (*ListPermissionGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPermissionGroupsResponse)
+	err := c.cc.Invoke(ctx, GatewayService_ListPermissionGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gatewayServiceClient) ListPlayers(ctx context.Context, in *ListPlayersRequest, opts ...grpc.CallOption) (*ListPlayersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPlayersResponse)
@@ -180,6 +192,7 @@ type GatewayServiceServer interface {
 	GetPermissionGroup(context.Context, *GetPermissionGroupRequest) (*GetPermissionGroupResponse, error)
 	ListNpcs(context.Context, *ListNpcsRequest) (*ListNpcsResponse, error)
 	ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error)
+	ListPermissionGroups(context.Context, *ListPermissionGroupsRequest) (*ListPermissionGroupsResponse, error)
 	// The players on a backend or connected through a proxy.
 	ListPlayers(context.Context, *ListPlayersRequest) (*ListPlayersResponse, error)
 	mustEmbedUnimplementedGatewayServiceServer()
@@ -218,6 +231,9 @@ func (UnimplementedGatewayServiceServer) ListNpcs(context.Context, *ListNpcsRequ
 }
 func (UnimplementedGatewayServiceServer) ListGroups(context.Context, *ListGroupsRequest) (*ListGroupsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroups not implemented")
+}
+func (UnimplementedGatewayServiceServer) ListPermissionGroups(context.Context, *ListPermissionGroupsRequest) (*ListPermissionGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPermissionGroups not implemented")
 }
 func (UnimplementedGatewayServiceServer) ListPlayers(context.Context, *ListPlayersRequest) (*ListPlayersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPlayers not implemented")
@@ -394,6 +410,24 @@ func _GatewayService_ListGroups_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GatewayService_ListPermissionGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPermissionGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServiceServer).ListPermissionGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayService_ListPermissionGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServiceServer).ListPermissionGroups(ctx, req.(*ListPermissionGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GatewayService_ListPlayers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPlayersRequest)
 	if err := dec(in); err != nil {
@@ -450,6 +484,10 @@ var GatewayService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListGroups",
 			Handler:    _GatewayService_ListGroups_Handler,
+		},
+		{
+			MethodName: "ListPermissionGroups",
+			Handler:    _GatewayService_ListPermissionGroups_Handler,
 		},
 		{
 			MethodName: "ListPlayers",

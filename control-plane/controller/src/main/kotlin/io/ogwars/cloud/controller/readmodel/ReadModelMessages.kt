@@ -5,6 +5,7 @@ import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import io.ogwars.cloud.contracts.node.v1.ListGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
+import io.ogwars.cloud.contracts.node.v1.ListPermissionGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.contracts.toTimestamp
@@ -82,8 +83,15 @@ object ReadModelMessages {
             .setNameColor(g.display.nameColor)
             .setTabPrefix(g.display.tabPrefix)
             .setVersion(group.revision)
+            .setIsDefault(g.isDefault)
             .build()
     }
+
+    fun permissionGroupList(groups: List<Revisioned<DomainPermissionGroup>>): ListPermissionGroupsResponse =
+        ListPermissionGroupsResponse
+            .newBuilder()
+            .addAllPermissionGroups(groups.sortedBy { it.value.id }.map(::permissionGroup))
+            .build()
 
     fun playerProfile(player: Player): PlayerProfile =
         PlayerProfile

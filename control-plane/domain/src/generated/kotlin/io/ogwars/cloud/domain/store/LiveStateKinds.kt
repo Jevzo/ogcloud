@@ -12,6 +12,8 @@ enum class ReadModelKind(
     NPCS_BY_GROUP("npcs-by-group"),
     /** Every group, for the gateway's ListGroups (D-0132). */
     GROUP_LIST("group-list"),
+    /** Every permission group, for the gateway's ListPermissionGroups (D-0132). */
+    PERMISSION_GROUP_LIST("permission-group-list"),
     /** A profile's bundle manifest for the gateway's GetPodAssets (D-0080). */
     RUNTIME_BUNDLE("runtime-bundle"),
     /** A group's active template for the gateway's GetPodAssets (D-0081). */

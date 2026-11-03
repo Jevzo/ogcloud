@@ -97,6 +97,8 @@ class ReadModelSync(
         val group = permissionGroups.find(id)
         val encoded = group?.let { ReadModelMessages.permissionGroup(it).toByteArray() }
         val changed = readModels.write(ReadModelKind.PERMISSION_GROUP, id, encoded, write)
+        // A resync writes the list once, after every permission group.
+        if (!resync) permissionGroupList()
         if (!changed && resync) return
         broadcasts.permissionGroup(id, group?.revision ?: 0, deleted = group == null)
     }
@@ -142,6 +144,7 @@ class ReadModelSync(
                     ReadModelKind.PERMISSION_GROUP,
                 )
         ).forEach { permissionGroup(it, resync = true) }
+        permissionGroupList()
         sessions.onlinePlayers().forEach(permissions::resync)
     }
 
@@ -149,8 +152,15 @@ class ReadModelSync(
     private fun groupList() =
         readModels.put(
             ReadModelKind.GROUP_LIST,
-            ValkeyKeys.GROUP_LIST_ID,
+            ValkeyKeys.LIST_ID,
             ReadModelMessages.groupList(groups.findAll().map { it.value }).toByteArray(),
+        )
+
+    private fun permissionGroupList() =
+        readModels.put(
+            ReadModelKind.PERMISSION_GROUP_LIST,
+            ValkeyKeys.LIST_ID,
+            ReadModelMessages.permissionGroupList(permissionGroups.findAll()).toByteArray(),
         )
 
     private fun resyncNpcs(groupId: GroupId) {

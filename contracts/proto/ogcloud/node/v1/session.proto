@@ -26,6 +26,7 @@ service GatewayService {
   rpc GetPermissionGroup(GetPermissionGroupRequest) returns (GetPermissionGroupResponse);
   rpc ListNpcs(ListNpcsRequest) returns (ListNpcsResponse);
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  rpc ListPermissionGroups(ListPermissionGroupsRequest) returns (ListPermissionGroupsResponse);
   // The players on a backend or connected through a proxy.
   rpc ListPlayers(ListPlayersRequest) returns (ListPlayersResponse);
 }

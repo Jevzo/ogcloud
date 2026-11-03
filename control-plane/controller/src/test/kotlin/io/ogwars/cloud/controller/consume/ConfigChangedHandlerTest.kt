@@ -8,6 +8,7 @@ import io.ogwars.cloud.contracts.events.v1.NodeBroadcast.UpdateCase
 import io.ogwars.cloud.contracts.events.v1.PlayerRankChanged
 import io.ogwars.cloud.contracts.node.v1.ListGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
+import io.ogwars.cloud.contracts.node.v1.ListPermissionGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.controller.TestValkey
@@ -130,10 +131,18 @@ class ConfigChangedHandlerTest {
                 readModels.get(ReadModelKind.PERMISSION_GROUP, "vip"),
             ).permissionsList shouldContainExactly
             listOf("a.node", "b.node")
+        permissionGroupList() shouldContainExactly listOf("default" to true, "vip" to false)
         permissionGroups.delete("vip")
         handler.handle(change("vip") { setPermissionGroup(entity("vip", deleted = true)) })
         readModels.get(ReadModelKind.PERMISSION_GROUP, "vip") shouldBe null
+        permissionGroupList() shouldContainExactly listOf("default" to true)
     }
+
+    private fun permissionGroupList() =
+        ListPermissionGroupsResponse
+            .parseFrom(readModels.get(ReadModelKind.PERMISSION_GROUP_LIST, ValkeyKeys.LIST_ID))
+            .permissionGroupsList
+            .map { it.permissionGroupId to it.isDefault }
 
     @Test
     fun `a rank change reaches online players only through their session`() {
@@ -179,7 +188,7 @@ class ConfigChangedHandlerTest {
 
     private fun groupList() =
         ListGroupsResponse
-            .parseFrom(readModels.get(ReadModelKind.GROUP_LIST, ValkeyKeys.GROUP_LIST_ID))
+            .parseFrom(readModels.get(ReadModelKind.GROUP_LIST, ValkeyKeys.LIST_ID))
             .groupsList
             .map { it.groupId }
 
@@ -218,7 +227,7 @@ class ConfigChangedHandlerTest {
         broadcasts.sent shouldBe emptyList()
 
         readModels.delete(ReadModelKind.GROUP, "lobby")
-        readModels.delete(ReadModelKind.GROUP_LIST, ValkeyKeys.GROUP_LIST_ID)
+        readModels.delete(ReadModelKind.GROUP_LIST, ValkeyKeys.LIST_ID)
         readModels.put(ReadModelKind.GROUP, "gone", byteArrayOf(1))
         readModels.put(ReadModelKind.PERMISSION_GROUP, "gone", byteArrayOf(1))
         sync.resyncAll()

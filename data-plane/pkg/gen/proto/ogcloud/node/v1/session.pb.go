@@ -2114,7 +2114,7 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\aprofile\x18\x03 \x01(\v2\x1e.ogcloud.node.v1.PlayerProfileR\aprofile*K\n" +
 	"\x0fProtocolVersion\x12 \n" +
 	"\x1cPROTOCOL_VERSION_UNSPECIFIED\x10\x00\x12\x16\n" +
-	"\x12PROTOCOL_VERSION_1\x10\x012\x9e\a\n" +
+	"\x12PROTOCOL_VERSION_1\x10\x012\x93\b\n" +
 	"\x0eGatewayService\x12P\n" +
 	"\aSession\x12\x1f.ogcloud.node.v1.SessionRequest\x1a .ogcloud.node.v1.SessionResponse(\x010\x01\x12[\n" +
 	"\fResolveLogin\x12$.ogcloud.node.v1.ResolveLoginRequest\x1a%.ogcloud.node.v1.ResolveLoginResponse\x12R\n" +
@@ -2126,7 +2126,8 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\x12GetPermissionGroup\x12*.ogcloud.node.v1.GetPermissionGroupRequest\x1a+.ogcloud.node.v1.GetPermissionGroupResponse\x12O\n" +
 	"\bListNpcs\x12 .ogcloud.node.v1.ListNpcsRequest\x1a!.ogcloud.node.v1.ListNpcsResponse\x12U\n" +
 	"\n" +
-	"ListGroups\x12\".ogcloud.node.v1.ListGroupsRequest\x1a#.ogcloud.node.v1.ListGroupsResponse\x12X\n" +
+	"ListGroups\x12\".ogcloud.node.v1.ListGroupsRequest\x1a#.ogcloud.node.v1.ListGroupsResponse\x12s\n" +
+	"\x14ListPermissionGroups\x12,.ogcloud.node.v1.ListPermissionGroupsRequest\x1a-.ogcloud.node.v1.ListPermissionGroupsResponse\x12X\n" +
 	"\vListPlayers\x12#.ogcloud.node.v1.ListPlayersRequest\x1a$.ogcloud.node.v1.ListPlayersResponseB\xcb\x01\n" +
 	"\x13com.ogcloud.node.v1B\fSessionProtoP\x01ZHgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1;nodev1\xa2\x02\x03ONX\xaa\x02\x0fOgcloud.Node.V1\xca\x02\x0fOgcloud\\Node\\V1\xe2\x02\x1bOgcloud\\Node\\V1\\GPBMetadata\xea\x02\x11Ogcloud::Node::V1b\x06proto3"
 
@@ -2145,67 +2146,69 @@ func file_ogcloud_node_v1_session_proto_rawDescGZIP() []byte {
 var file_ogcloud_node_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_ogcloud_node_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_ogcloud_node_v1_session_proto_goTypes = []any{
-	(ProtocolVersion)(0),               // 0: ogcloud.node.v1.ProtocolVersion
-	(*SessionRequest)(nil),             // 1: ogcloud.node.v1.SessionRequest
-	(*SessionResponse)(nil),            // 2: ogcloud.node.v1.SessionResponse
-	(*Hello)(nil),                      // 3: ogcloud.node.v1.Hello
-	(*Welcome)(nil),                    // 4: ogcloud.node.v1.Welcome
-	(*Heartbeat)(nil),                  // 5: ogcloud.node.v1.Heartbeat
-	(*GameStateUpdate)(nil),            // 6: ogcloud.node.v1.GameStateUpdate
-	(*PlayerActivityReport)(nil),       // 7: ogcloud.node.v1.PlayerActivityReport
-	(*ServerCommandRequest)(nil),       // 8: ogcloud.node.v1.ServerCommandRequest
-	(*ServerCommandResult)(nil),        // 9: ogcloud.node.v1.ServerCommandResult
-	(*NodeCommandRequest)(nil),         // 10: ogcloud.node.v1.NodeCommandRequest
-	(*PlayerSnapshot)(nil),             // 11: ogcloud.node.v1.PlayerSnapshot
-	(*NpcChangeRequest)(nil),           // 12: ogcloud.node.v1.NpcChangeRequest
-	(*AdminRequest)(nil),               // 13: ogcloud.node.v1.AdminRequest
-	(*AdminRequestResult)(nil),         // 14: ogcloud.node.v1.AdminRequestResult
-	(*LiveChannelSubscription)(nil),    // 15: ogcloud.node.v1.LiveChannelSubscription
-	(*LiveChannelPublish)(nil),         // 16: ogcloud.node.v1.LiveChannelPublish
-	(*LiveChannelDelivery)(nil),        // 17: ogcloud.node.v1.LiveChannelDelivery
-	(*Delivery)(nil),                   // 18: ogcloud.node.v1.Delivery
-	(*DeliveryResult)(nil),             // 19: ogcloud.node.v1.DeliveryResult
-	(*ResolveLoginRequest)(nil),        // 20: ogcloud.node.v1.ResolveLoginRequest
-	(*ResolveLoginResponse)(nil),       // 21: ogcloud.node.v1.ResolveLoginResponse
-	(*v1.TransferRequested)(nil),       // 22: ogcloud.events.v1.TransferRequested
-	(*v1.ServerLifecycleChanged)(nil),  // 23: ogcloud.events.v1.ServerLifecycleChanged
-	(*v1.NodeBroadcast)(nil),           // 24: ogcloud.events.v1.NodeBroadcast
-	(v1.NodeType)(0),                   // 25: ogcloud.events.v1.NodeType
-	(v1.GroupType)(0),                  // 26: ogcloud.events.v1.GroupType
-	(*v1.NetworkSettingsUpdated)(nil),  // 27: ogcloud.events.v1.NetworkSettingsUpdated
-	(*ServerInfo)(nil),                 // 28: ogcloud.node.v1.ServerInfo
-	(v1.GameState)(0),                  // 29: ogcloud.events.v1.GameState
-	(*v1.PlayerConnected)(nil),         // 30: ogcloud.events.v1.PlayerConnected
-	(*v1.PlayerSwitched)(nil),          // 31: ogcloud.events.v1.PlayerSwitched
-	(*v1.PlayerDisconnected)(nil),      // 32: ogcloud.events.v1.PlayerDisconnected
-	(*v1.RequestServer)(nil),           // 33: ogcloud.events.v1.RequestServer
-	(*v1.StopServer)(nil),              // 34: ogcloud.events.v1.StopServer
-	(*v1.KillServer)(nil),              // 35: ogcloud.events.v1.KillServer
-	(*v1.PushTemplate)(nil),            // 36: ogcloud.events.v1.PushTemplate
-	(*v1.NodeCommand)(nil),             // 37: ogcloud.events.v1.NodeCommand
-	(*v1.SnapshotPlayer)(nil),          // 38: ogcloud.events.v1.SnapshotPlayer
-	(*Npc)(nil),                        // 39: ogcloud.node.v1.Npc
-	(*GroupMaintenanceChange)(nil),     // 40: ogcloud.node.v1.GroupMaintenanceChange
-	(*NetworkMaintenanceChange)(nil),   // 41: ogcloud.node.v1.NetworkMaintenanceChange
-	(*RankChange)(nil),                 // 42: ogcloud.node.v1.RankChange
-	(*v1.LinkCodeIssued)(nil),          // 43: ogcloud.events.v1.LinkCodeIssued
-	(*PlayerProfile)(nil),              // 44: ogcloud.node.v1.PlayerProfile
-	(*GetServerRequest)(nil),           // 45: ogcloud.node.v1.GetServerRequest
-	(*ListServersRequest)(nil),         // 46: ogcloud.node.v1.ListServersRequest
-	(*FindPlayerRequest)(nil),          // 47: ogcloud.node.v1.FindPlayerRequest
-	(*GetPlayerProfileRequest)(nil),    // 48: ogcloud.node.v1.GetPlayerProfileRequest
-	(*GetPermissionGroupRequest)(nil),  // 49: ogcloud.node.v1.GetPermissionGroupRequest
-	(*ListNpcsRequest)(nil),            // 50: ogcloud.node.v1.ListNpcsRequest
-	(*ListGroupsRequest)(nil),          // 51: ogcloud.node.v1.ListGroupsRequest
-	(*ListPlayersRequest)(nil),         // 52: ogcloud.node.v1.ListPlayersRequest
-	(*GetServerResponse)(nil),          // 53: ogcloud.node.v1.GetServerResponse
-	(*ListServersResponse)(nil),        // 54: ogcloud.node.v1.ListServersResponse
-	(*FindPlayerResponse)(nil),         // 55: ogcloud.node.v1.FindPlayerResponse
-	(*GetPlayerProfileResponse)(nil),   // 56: ogcloud.node.v1.GetPlayerProfileResponse
-	(*GetPermissionGroupResponse)(nil), // 57: ogcloud.node.v1.GetPermissionGroupResponse
-	(*ListNpcsResponse)(nil),           // 58: ogcloud.node.v1.ListNpcsResponse
-	(*ListGroupsResponse)(nil),         // 59: ogcloud.node.v1.ListGroupsResponse
-	(*ListPlayersResponse)(nil),        // 60: ogcloud.node.v1.ListPlayersResponse
+	(ProtocolVersion)(0),                 // 0: ogcloud.node.v1.ProtocolVersion
+	(*SessionRequest)(nil),               // 1: ogcloud.node.v1.SessionRequest
+	(*SessionResponse)(nil),              // 2: ogcloud.node.v1.SessionResponse
+	(*Hello)(nil),                        // 3: ogcloud.node.v1.Hello
+	(*Welcome)(nil),                      // 4: ogcloud.node.v1.Welcome
+	(*Heartbeat)(nil),                    // 5: ogcloud.node.v1.Heartbeat
+	(*GameStateUpdate)(nil),              // 6: ogcloud.node.v1.GameStateUpdate
+	(*PlayerActivityReport)(nil),         // 7: ogcloud.node.v1.PlayerActivityReport
+	(*ServerCommandRequest)(nil),         // 8: ogcloud.node.v1.ServerCommandRequest
+	(*ServerCommandResult)(nil),          // 9: ogcloud.node.v1.ServerCommandResult
+	(*NodeCommandRequest)(nil),           // 10: ogcloud.node.v1.NodeCommandRequest
+	(*PlayerSnapshot)(nil),               // 11: ogcloud.node.v1.PlayerSnapshot
+	(*NpcChangeRequest)(nil),             // 12: ogcloud.node.v1.NpcChangeRequest
+	(*AdminRequest)(nil),                 // 13: ogcloud.node.v1.AdminRequest
+	(*AdminRequestResult)(nil),           // 14: ogcloud.node.v1.AdminRequestResult
+	(*LiveChannelSubscription)(nil),      // 15: ogcloud.node.v1.LiveChannelSubscription
+	(*LiveChannelPublish)(nil),           // 16: ogcloud.node.v1.LiveChannelPublish
+	(*LiveChannelDelivery)(nil),          // 17: ogcloud.node.v1.LiveChannelDelivery
+	(*Delivery)(nil),                     // 18: ogcloud.node.v1.Delivery
+	(*DeliveryResult)(nil),               // 19: ogcloud.node.v1.DeliveryResult
+	(*ResolveLoginRequest)(nil),          // 20: ogcloud.node.v1.ResolveLoginRequest
+	(*ResolveLoginResponse)(nil),         // 21: ogcloud.node.v1.ResolveLoginResponse
+	(*v1.TransferRequested)(nil),         // 22: ogcloud.events.v1.TransferRequested
+	(*v1.ServerLifecycleChanged)(nil),    // 23: ogcloud.events.v1.ServerLifecycleChanged
+	(*v1.NodeBroadcast)(nil),             // 24: ogcloud.events.v1.NodeBroadcast
+	(v1.NodeType)(0),                     // 25: ogcloud.events.v1.NodeType
+	(v1.GroupType)(0),                    // 26: ogcloud.events.v1.GroupType
+	(*v1.NetworkSettingsUpdated)(nil),    // 27: ogcloud.events.v1.NetworkSettingsUpdated
+	(*ServerInfo)(nil),                   // 28: ogcloud.node.v1.ServerInfo
+	(v1.GameState)(0),                    // 29: ogcloud.events.v1.GameState
+	(*v1.PlayerConnected)(nil),           // 30: ogcloud.events.v1.PlayerConnected
+	(*v1.PlayerSwitched)(nil),            // 31: ogcloud.events.v1.PlayerSwitched
+	(*v1.PlayerDisconnected)(nil),        // 32: ogcloud.events.v1.PlayerDisconnected
+	(*v1.RequestServer)(nil),             // 33: ogcloud.events.v1.RequestServer
+	(*v1.StopServer)(nil),                // 34: ogcloud.events.v1.StopServer
+	(*v1.KillServer)(nil),                // 35: ogcloud.events.v1.KillServer
+	(*v1.PushTemplate)(nil),              // 36: ogcloud.events.v1.PushTemplate
+	(*v1.NodeCommand)(nil),               // 37: ogcloud.events.v1.NodeCommand
+	(*v1.SnapshotPlayer)(nil),            // 38: ogcloud.events.v1.SnapshotPlayer
+	(*Npc)(nil),                          // 39: ogcloud.node.v1.Npc
+	(*GroupMaintenanceChange)(nil),       // 40: ogcloud.node.v1.GroupMaintenanceChange
+	(*NetworkMaintenanceChange)(nil),     // 41: ogcloud.node.v1.NetworkMaintenanceChange
+	(*RankChange)(nil),                   // 42: ogcloud.node.v1.RankChange
+	(*v1.LinkCodeIssued)(nil),            // 43: ogcloud.events.v1.LinkCodeIssued
+	(*PlayerProfile)(nil),                // 44: ogcloud.node.v1.PlayerProfile
+	(*GetServerRequest)(nil),             // 45: ogcloud.node.v1.GetServerRequest
+	(*ListServersRequest)(nil),           // 46: ogcloud.node.v1.ListServersRequest
+	(*FindPlayerRequest)(nil),            // 47: ogcloud.node.v1.FindPlayerRequest
+	(*GetPlayerProfileRequest)(nil),      // 48: ogcloud.node.v1.GetPlayerProfileRequest
+	(*GetPermissionGroupRequest)(nil),    // 49: ogcloud.node.v1.GetPermissionGroupRequest
+	(*ListNpcsRequest)(nil),              // 50: ogcloud.node.v1.ListNpcsRequest
+	(*ListGroupsRequest)(nil),            // 51: ogcloud.node.v1.ListGroupsRequest
+	(*ListPermissionGroupsRequest)(nil),  // 52: ogcloud.node.v1.ListPermissionGroupsRequest
+	(*ListPlayersRequest)(nil),           // 53: ogcloud.node.v1.ListPlayersRequest
+	(*GetServerResponse)(nil),            // 54: ogcloud.node.v1.GetServerResponse
+	(*ListServersResponse)(nil),          // 55: ogcloud.node.v1.ListServersResponse
+	(*FindPlayerResponse)(nil),           // 56: ogcloud.node.v1.FindPlayerResponse
+	(*GetPlayerProfileResponse)(nil),     // 57: ogcloud.node.v1.GetPlayerProfileResponse
+	(*GetPermissionGroupResponse)(nil),   // 58: ogcloud.node.v1.GetPermissionGroupResponse
+	(*ListNpcsResponse)(nil),             // 59: ogcloud.node.v1.ListNpcsResponse
+	(*ListGroupsResponse)(nil),           // 60: ogcloud.node.v1.ListGroupsResponse
+	(*ListPermissionGroupsResponse)(nil), // 61: ogcloud.node.v1.ListPermissionGroupsResponse
+	(*ListPlayersResponse)(nil),          // 62: ogcloud.node.v1.ListPlayersResponse
 }
 var file_ogcloud_node_v1_session_proto_depIdxs = []int32{
 	3,  // 0: ogcloud.node.v1.SessionRequest.hello:type_name -> ogcloud.node.v1.Hello
@@ -2264,19 +2267,21 @@ var file_ogcloud_node_v1_session_proto_depIdxs = []int32{
 	49, // 53: ogcloud.node.v1.GatewayService.GetPermissionGroup:input_type -> ogcloud.node.v1.GetPermissionGroupRequest
 	50, // 54: ogcloud.node.v1.GatewayService.ListNpcs:input_type -> ogcloud.node.v1.ListNpcsRequest
 	51, // 55: ogcloud.node.v1.GatewayService.ListGroups:input_type -> ogcloud.node.v1.ListGroupsRequest
-	52, // 56: ogcloud.node.v1.GatewayService.ListPlayers:input_type -> ogcloud.node.v1.ListPlayersRequest
-	2,  // 57: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
-	21, // 58: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
-	53, // 59: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
-	54, // 60: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
-	55, // 61: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
-	56, // 62: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
-	57, // 63: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
-	58, // 64: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
-	59, // 65: ogcloud.node.v1.GatewayService.ListGroups:output_type -> ogcloud.node.v1.ListGroupsResponse
-	60, // 66: ogcloud.node.v1.GatewayService.ListPlayers:output_type -> ogcloud.node.v1.ListPlayersResponse
-	57, // [57:67] is the sub-list for method output_type
-	47, // [47:57] is the sub-list for method input_type
+	52, // 56: ogcloud.node.v1.GatewayService.ListPermissionGroups:input_type -> ogcloud.node.v1.ListPermissionGroupsRequest
+	53, // 57: ogcloud.node.v1.GatewayService.ListPlayers:input_type -> ogcloud.node.v1.ListPlayersRequest
+	2,  // 58: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
+	21, // 59: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
+	54, // 60: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
+	55, // 61: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
+	56, // 62: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
+	57, // 63: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
+	58, // 64: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
+	59, // 65: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
+	60, // 66: ogcloud.node.v1.GatewayService.ListGroups:output_type -> ogcloud.node.v1.ListGroupsResponse
+	61, // 67: ogcloud.node.v1.GatewayService.ListPermissionGroups:output_type -> ogcloud.node.v1.ListPermissionGroupsResponse
+	62, // 68: ogcloud.node.v1.GatewayService.ListPlayers:output_type -> ogcloud.node.v1.ListPlayersResponse
+	58, // [58:69] is the sub-list for method output_type
+	47, // [47:58] is the sub-list for method input_type
 	47, // [47:47] is the sub-list for extension type_name
 	47, // [47:47] is the sub-list for extension extendee
 	0,  // [0:47] is the sub-list for field type_name

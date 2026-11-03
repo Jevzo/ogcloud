@@ -98,6 +98,8 @@ message PermissionGroup {
   string name_color = 7;
   string tab_prefix = 8;
   uint64 version = 9;
+  // Players without a rank get the default group.
+  bool is_default = 10;
 }
 
 message ListNpcsRequest {
@@ -158,6 +160,13 @@ message GroupInfo {
   uint32 min_online = 5;
   uint32 max_instances = 6;
   uint32 players_per_server = 7;
+}
+
+message ListPermissionGroupsRequest {}
+
+// Also the permission-group-list read model, which the controller keeps current (D-0132).
+message ListPermissionGroupsResponse {
+  repeated PermissionGroup permission_groups = 1;
 }
 
 message ListPlayersRequest {

@@ -107,14 +107,23 @@ func (s *Service) ListNpcs(ctx context.Context, request *nodev1.ListNpcsRequest)
 // ListGroups returns every group from the group-list read model (D-0132).
 func (s *Service) ListGroups(ctx context.Context, _ *nodev1.ListGroupsRequest) (*nodev1.ListGroupsResponse, error) {
 	groups := &nodev1.ListGroupsResponse{}
-	if err := s.readModel(ctx, valkeykeys.ReadModelGroupList, valkeykeys.GroupListId, groups); err != nil {
-		if status.Code(err) == codes.NotFound {
-			// Written on every group change and resync; absent means not written yet, never "no groups".
-			return nil, status.Error(codes.Unavailable, "the group list is not ready")
-		}
-		return nil, err
+	return groups, s.listModel(ctx, valkeykeys.ReadModelGroupList, groups)
+}
+
+// ListPermissionGroups returns every permission group from its list read model (D-0132).
+func (s *Service) ListPermissionGroups(ctx context.Context, _ *nodev1.ListPermissionGroupsRequest) (*nodev1.ListPermissionGroupsResponse, error) {
+	groups := &nodev1.ListPermissionGroupsResponse{}
+	return groups, s.listModel(ctx, valkeykeys.ReadModelPermissionGroupList, groups)
+}
+
+// listModel reads a list read model. The controller writes it on every change and resync, so a missing one is
+// not written yet, never an empty list.
+func (s *Service) listModel(ctx context.Context, kind valkeykeys.ReadModelKind, list proto.Message) error {
+	err := s.readModel(ctx, kind, valkeykeys.ListId, list)
+	if status.Code(err) == codes.NotFound {
+		return status.Errorf(codes.Unavailable, "the %s is not ready", kind)
 	}
-	return groups, nil
+	return err
 }
 
 // ListPlayers returns the players on a backend or connected through a proxy (D-0132).

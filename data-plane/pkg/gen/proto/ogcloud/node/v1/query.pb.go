@@ -788,13 +788,15 @@ type PermissionGroup struct {
 	PermissionGroupId string                 `protobuf:"bytes,1,opt,name=permission_group_id,json=permissionGroupId,proto3" json:"permission_group_id,omitempty"`
 	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Higher weights sort first in the tablist.
-	Weight        int32    `protobuf:"varint,3,opt,name=weight,proto3" json:"weight,omitempty"`
-	Permissions   []string `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	ChatPrefix    string   `protobuf:"bytes,5,opt,name=chat_prefix,json=chatPrefix,proto3" json:"chat_prefix,omitempty"`
-	ChatSuffix    string   `protobuf:"bytes,6,opt,name=chat_suffix,json=chatSuffix,proto3" json:"chat_suffix,omitempty"`
-	NameColor     string   `protobuf:"bytes,7,opt,name=name_color,json=nameColor,proto3" json:"name_color,omitempty"`
-	TabPrefix     string   `protobuf:"bytes,8,opt,name=tab_prefix,json=tabPrefix,proto3" json:"tab_prefix,omitempty"`
-	Version       uint64   `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	Weight      int32    `protobuf:"varint,3,opt,name=weight,proto3" json:"weight,omitempty"`
+	Permissions []string `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	ChatPrefix  string   `protobuf:"bytes,5,opt,name=chat_prefix,json=chatPrefix,proto3" json:"chat_prefix,omitempty"`
+	ChatSuffix  string   `protobuf:"bytes,6,opt,name=chat_suffix,json=chatSuffix,proto3" json:"chat_suffix,omitempty"`
+	NameColor   string   `protobuf:"bytes,7,opt,name=name_color,json=nameColor,proto3" json:"name_color,omitempty"`
+	TabPrefix   string   `protobuf:"bytes,8,opt,name=tab_prefix,json=tabPrefix,proto3" json:"tab_prefix,omitempty"`
+	Version     uint64   `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
+	// Players without a rank get the default group.
+	IsDefault     bool `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -890,6 +892,13 @@ func (x *PermissionGroup) GetVersion() uint64 {
 		return x.Version
 	}
 	return 0
+}
+
+func (x *PermissionGroup) GetIsDefault() bool {
+	if x != nil {
+		return x.IsDefault
+	}
+	return false
 }
 
 type ListNpcsRequest struct {
@@ -1473,6 +1482,87 @@ func (x *GroupInfo) GetPlayersPerServer() uint32 {
 	return 0
 }
 
+type ListPermissionGroupsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPermissionGroupsRequest) Reset() {
+	*x = ListPermissionGroupsRequest{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPermissionGroupsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPermissionGroupsRequest) ProtoMessage() {}
+
+func (x *ListPermissionGroupsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPermissionGroupsRequest.ProtoReflect.Descriptor instead.
+func (*ListPermissionGroupsRequest) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{23}
+}
+
+// Also the permission-group-list read model, which the controller keeps current (D-0132).
+type ListPermissionGroupsResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	PermissionGroups []*PermissionGroup     `protobuf:"bytes,1,rep,name=permission_groups,json=permissionGroups,proto3" json:"permission_groups,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ListPermissionGroupsResponse) Reset() {
+	*x = ListPermissionGroupsResponse{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPermissionGroupsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPermissionGroupsResponse) ProtoMessage() {}
+
+func (x *ListPermissionGroupsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPermissionGroupsResponse.ProtoReflect.Descriptor instead.
+func (*ListPermissionGroupsResponse) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListPermissionGroupsResponse) GetPermissionGroups() []*PermissionGroup {
+	if x != nil {
+		return x.PermissionGroups
+	}
+	return nil
+}
+
 type ListPlayersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A backend's or a proxy's id.
@@ -1483,7 +1573,7 @@ type ListPlayersRequest struct {
 
 func (x *ListPlayersRequest) Reset() {
 	*x = ListPlayersRequest{}
-	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1495,7 +1585,7 @@ func (x *ListPlayersRequest) String() string {
 func (*ListPlayersRequest) ProtoMessage() {}
 
 func (x *ListPlayersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1508,7 +1598,7 @@ func (x *ListPlayersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPlayersRequest.ProtoReflect.Descriptor instead.
 func (*ListPlayersRequest) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{23}
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListPlayersRequest) GetServerId() string {
@@ -1527,7 +1617,7 @@ type ListPlayersResponse struct {
 
 func (x *ListPlayersResponse) Reset() {
 	*x = ListPlayersResponse{}
-	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1539,7 +1629,7 @@ func (x *ListPlayersResponse) String() string {
 func (*ListPlayersResponse) ProtoMessage() {}
 
 func (x *ListPlayersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1552,7 +1642,7 @@ func (x *ListPlayersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPlayersResponse.ProtoReflect.Descriptor instead.
 func (*ListPlayersResponse) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{24}
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListPlayersResponse) GetPlayers() []*PlayerLocation {
@@ -1625,7 +1715,7 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\x19GetPermissionGroupRequest\x12.\n" +
 	"\x13permission_group_id\x18\x01 \x01(\tR\x11permissionGroupId\"i\n" +
 	"\x1aGetPermissionGroupResponse\x12K\n" +
-	"\x10permission_group\x18\x01 \x01(\v2 .ogcloud.node.v1.PermissionGroupR\x0fpermissionGroup\"\xa9\x02\n" +
+	"\x10permission_group\x18\x01 \x01(\v2 .ogcloud.node.v1.PermissionGroupR\x0fpermissionGroup\"\xc8\x02\n" +
 	"\x0fPermissionGroup\x12.\n" +
 	"\x13permission_group_id\x18\x01 \x01(\tR\x11permissionGroupId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -1639,7 +1729,10 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"name_color\x18\a \x01(\tR\tnameColor\x12\x1d\n" +
 	"\n" +
 	"tab_prefix\x18\b \x01(\tR\ttabPrefix\x12\x18\n" +
-	"\aversion\x18\t \x01(\x04R\aversion\",\n" +
+	"\aversion\x18\t \x01(\x04R\aversion\x12\x1d\n" +
+	"\n" +
+	"is_default\x18\n" +
+	" \x01(\bR\tisDefault\",\n" +
 	"\x0fListNpcsRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\"<\n" +
 	"\x10ListNpcsResponse\x12(\n" +
@@ -1684,7 +1777,10 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\n" +
 	"min_online\x18\x05 \x01(\rR\tminOnline\x12#\n" +
 	"\rmax_instances\x18\x06 \x01(\rR\fmaxInstances\x12,\n" +
-	"\x12players_per_server\x18\a \x01(\rR\x10playersPerServer\"1\n" +
+	"\x12players_per_server\x18\a \x01(\rR\x10playersPerServer\"\x1d\n" +
+	"\x1bListPermissionGroupsRequest\"m\n" +
+	"\x1cListPermissionGroupsResponse\x12M\n" +
+	"\x11permission_groups\x18\x01 \x03(\v2 .ogcloud.node.v1.PermissionGroupR\x10permissionGroups\"1\n" +
 	"\x12ListPlayersRequest\x12\x1b\n" +
 	"\tserver_id\x18\x01 \x01(\tR\bserverId\"P\n" +
 	"\x13ListPlayersResponse\x129\n" +
@@ -1704,63 +1800,66 @@ func file_ogcloud_node_v1_query_proto_rawDescGZIP() []byte {
 	return file_ogcloud_node_v1_query_proto_rawDescData
 }
 
-var file_ogcloud_node_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_ogcloud_node_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_ogcloud_node_v1_query_proto_goTypes = []any{
-	(*ServerInfo)(nil),                 // 0: ogcloud.node.v1.ServerInfo
-	(*GetServerRequest)(nil),           // 1: ogcloud.node.v1.GetServerRequest
-	(*GetServerResponse)(nil),          // 2: ogcloud.node.v1.GetServerResponse
-	(*ListServersRequest)(nil),         // 3: ogcloud.node.v1.ListServersRequest
-	(*ListServersResponse)(nil),        // 4: ogcloud.node.v1.ListServersResponse
-	(*FindPlayerRequest)(nil),          // 5: ogcloud.node.v1.FindPlayerRequest
-	(*FindPlayerResponse)(nil),         // 6: ogcloud.node.v1.FindPlayerResponse
-	(*PlayerLocation)(nil),             // 7: ogcloud.node.v1.PlayerLocation
-	(*GetPlayerProfileRequest)(nil),    // 8: ogcloud.node.v1.GetPlayerProfileRequest
-	(*GetPlayerProfileResponse)(nil),   // 9: ogcloud.node.v1.GetPlayerProfileResponse
-	(*PlayerProfile)(nil),              // 10: ogcloud.node.v1.PlayerProfile
-	(*GetPermissionGroupRequest)(nil),  // 11: ogcloud.node.v1.GetPermissionGroupRequest
-	(*GetPermissionGroupResponse)(nil), // 12: ogcloud.node.v1.GetPermissionGroupResponse
-	(*PermissionGroup)(nil),            // 13: ogcloud.node.v1.PermissionGroup
-	(*ListNpcsRequest)(nil),            // 14: ogcloud.node.v1.ListNpcsRequest
-	(*ListNpcsResponse)(nil),           // 15: ogcloud.node.v1.ListNpcsResponse
-	(*Npc)(nil),                        // 16: ogcloud.node.v1.Npc
-	(*Location)(nil),                   // 17: ogcloud.node.v1.Location
-	(*NpcAction)(nil),                  // 18: ogcloud.node.v1.NpcAction
-	(*NpcTransfer)(nil),                // 19: ogcloud.node.v1.NpcTransfer
-	(*ListGroupsRequest)(nil),          // 20: ogcloud.node.v1.ListGroupsRequest
-	(*ListGroupsResponse)(nil),         // 21: ogcloud.node.v1.ListGroupsResponse
-	(*GroupInfo)(nil),                  // 22: ogcloud.node.v1.GroupInfo
-	(*ListPlayersRequest)(nil),         // 23: ogcloud.node.v1.ListPlayersRequest
-	(*ListPlayersResponse)(nil),        // 24: ogcloud.node.v1.ListPlayersResponse
-	(v1.GroupType)(0),                  // 25: ogcloud.events.v1.GroupType
-	(v1.ServerState)(0),                // 26: ogcloud.events.v1.ServerState
-	(v1.GameState)(0),                  // 27: ogcloud.events.v1.GameState
-	(*timestamppb.Timestamp)(nil),      // 28: google.protobuf.Timestamp
-	(v1.RoutingStrategy)(0),            // 29: ogcloud.events.v1.RoutingStrategy
+	(*ServerInfo)(nil),                   // 0: ogcloud.node.v1.ServerInfo
+	(*GetServerRequest)(nil),             // 1: ogcloud.node.v1.GetServerRequest
+	(*GetServerResponse)(nil),            // 2: ogcloud.node.v1.GetServerResponse
+	(*ListServersRequest)(nil),           // 3: ogcloud.node.v1.ListServersRequest
+	(*ListServersResponse)(nil),          // 4: ogcloud.node.v1.ListServersResponse
+	(*FindPlayerRequest)(nil),            // 5: ogcloud.node.v1.FindPlayerRequest
+	(*FindPlayerResponse)(nil),           // 6: ogcloud.node.v1.FindPlayerResponse
+	(*PlayerLocation)(nil),               // 7: ogcloud.node.v1.PlayerLocation
+	(*GetPlayerProfileRequest)(nil),      // 8: ogcloud.node.v1.GetPlayerProfileRequest
+	(*GetPlayerProfileResponse)(nil),     // 9: ogcloud.node.v1.GetPlayerProfileResponse
+	(*PlayerProfile)(nil),                // 10: ogcloud.node.v1.PlayerProfile
+	(*GetPermissionGroupRequest)(nil),    // 11: ogcloud.node.v1.GetPermissionGroupRequest
+	(*GetPermissionGroupResponse)(nil),   // 12: ogcloud.node.v1.GetPermissionGroupResponse
+	(*PermissionGroup)(nil),              // 13: ogcloud.node.v1.PermissionGroup
+	(*ListNpcsRequest)(nil),              // 14: ogcloud.node.v1.ListNpcsRequest
+	(*ListNpcsResponse)(nil),             // 15: ogcloud.node.v1.ListNpcsResponse
+	(*Npc)(nil),                          // 16: ogcloud.node.v1.Npc
+	(*Location)(nil),                     // 17: ogcloud.node.v1.Location
+	(*NpcAction)(nil),                    // 18: ogcloud.node.v1.NpcAction
+	(*NpcTransfer)(nil),                  // 19: ogcloud.node.v1.NpcTransfer
+	(*ListGroupsRequest)(nil),            // 20: ogcloud.node.v1.ListGroupsRequest
+	(*ListGroupsResponse)(nil),           // 21: ogcloud.node.v1.ListGroupsResponse
+	(*GroupInfo)(nil),                    // 22: ogcloud.node.v1.GroupInfo
+	(*ListPermissionGroupsRequest)(nil),  // 23: ogcloud.node.v1.ListPermissionGroupsRequest
+	(*ListPermissionGroupsResponse)(nil), // 24: ogcloud.node.v1.ListPermissionGroupsResponse
+	(*ListPlayersRequest)(nil),           // 25: ogcloud.node.v1.ListPlayersRequest
+	(*ListPlayersResponse)(nil),          // 26: ogcloud.node.v1.ListPlayersResponse
+	(v1.GroupType)(0),                    // 27: ogcloud.events.v1.GroupType
+	(v1.ServerState)(0),                  // 28: ogcloud.events.v1.ServerState
+	(v1.GameState)(0),                    // 29: ogcloud.events.v1.GameState
+	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
+	(v1.RoutingStrategy)(0),              // 31: ogcloud.events.v1.RoutingStrategy
 }
 var file_ogcloud_node_v1_query_proto_depIdxs = []int32{
-	25, // 0: ogcloud.node.v1.ServerInfo.group_type:type_name -> ogcloud.events.v1.GroupType
-	26, // 1: ogcloud.node.v1.ServerInfo.state:type_name -> ogcloud.events.v1.ServerState
-	27, // 2: ogcloud.node.v1.ServerInfo.game_state:type_name -> ogcloud.events.v1.GameState
+	27, // 0: ogcloud.node.v1.ServerInfo.group_type:type_name -> ogcloud.events.v1.GroupType
+	28, // 1: ogcloud.node.v1.ServerInfo.state:type_name -> ogcloud.events.v1.ServerState
+	29, // 2: ogcloud.node.v1.ServerInfo.game_state:type_name -> ogcloud.events.v1.GameState
 	0,  // 3: ogcloud.node.v1.GetServerResponse.server:type_name -> ogcloud.node.v1.ServerInfo
 	0,  // 4: ogcloud.node.v1.ListServersResponse.servers:type_name -> ogcloud.node.v1.ServerInfo
 	7,  // 5: ogcloud.node.v1.FindPlayerResponse.location:type_name -> ogcloud.node.v1.PlayerLocation
 	10, // 6: ogcloud.node.v1.GetPlayerProfileResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
-	28, // 7: ogcloud.node.v1.PlayerProfile.rank_expires_at:type_name -> google.protobuf.Timestamp
+	30, // 7: ogcloud.node.v1.PlayerProfile.rank_expires_at:type_name -> google.protobuf.Timestamp
 	13, // 8: ogcloud.node.v1.GetPermissionGroupResponse.permission_group:type_name -> ogcloud.node.v1.PermissionGroup
 	16, // 9: ogcloud.node.v1.ListNpcsResponse.npcs:type_name -> ogcloud.node.v1.Npc
 	17, // 10: ogcloud.node.v1.Npc.location:type_name -> ogcloud.node.v1.Location
 	18, // 11: ogcloud.node.v1.Npc.left_click:type_name -> ogcloud.node.v1.NpcAction
 	18, // 12: ogcloud.node.v1.Npc.right_click:type_name -> ogcloud.node.v1.NpcAction
 	19, // 13: ogcloud.node.v1.NpcAction.transfer:type_name -> ogcloud.node.v1.NpcTransfer
-	29, // 14: ogcloud.node.v1.NpcTransfer.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
+	31, // 14: ogcloud.node.v1.NpcTransfer.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
 	22, // 15: ogcloud.node.v1.ListGroupsResponse.groups:type_name -> ogcloud.node.v1.GroupInfo
-	25, // 16: ogcloud.node.v1.GroupInfo.group_type:type_name -> ogcloud.events.v1.GroupType
-	7,  // 17: ogcloud.node.v1.ListPlayersResponse.players:type_name -> ogcloud.node.v1.PlayerLocation
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	27, // 16: ogcloud.node.v1.GroupInfo.group_type:type_name -> ogcloud.events.v1.GroupType
+	13, // 17: ogcloud.node.v1.ListPermissionGroupsResponse.permission_groups:type_name -> ogcloud.node.v1.PermissionGroup
+	7,  // 18: ogcloud.node.v1.ListPlayersResponse.players:type_name -> ogcloud.node.v1.PlayerLocation
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_node_v1_query_proto_init() }
@@ -1781,7 +1880,7 @@ func file_ogcloud_node_v1_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_node_v1_query_proto_rawDesc), len(file_ogcloud_node_v1_query_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
