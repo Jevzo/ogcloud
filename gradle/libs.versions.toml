@@ -11,6 +11,8 @@ mockk = "1.14.11"
 protobuf = "4.36.2"
 protobuf-plugin = "0.10.0"
 grpc = "1.85.1"
+binary-compatibility-validator = "0.18.2"
+asm = "9.11.1"
 aws-sdk = "2.57.3"
 fabric8 = "8.0.0"
 springdoc = "3.2.0"
@@ -32,6 +34,8 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin", version.ref = "protobuf" }
 protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 grpc-bom = { module = "io.grpc:grpc-bom", version.ref = "grpc" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-protoc-gen-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
@@ -43,3 +47,4 @@ playwright = { module = "com.microsoft.playwright:playwright", version.ref = "pl
 
 [plugins]
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
+binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility-validator" }

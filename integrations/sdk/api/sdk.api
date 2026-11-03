@@ -1,0 +1,144 @@
+public final class io/ogwars/cloud/sdk/GameState : java/lang/Enum {
+	public static final field ENDING Lio/ogwars/cloud/sdk/GameState;
+	public static final field INGAME Lio/ogwars/cloud/sdk/GameState;
+	public static final field LOBBY Lio/ogwars/cloud/sdk/GameState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/ogwars/cloud/sdk/GameState;
+	public static fun values ()[Lio/ogwars/cloud/sdk/GameState;
+}
+
+public final class io/ogwars/cloud/sdk/GroupType : java/lang/Enum {
+	public static final field DYNAMIC Lio/ogwars/cloud/sdk/GroupType;
+	public static final field PROXY Lio/ogwars/cloud/sdk/GroupType;
+	public static final field STATIC Lio/ogwars/cloud/sdk/GroupType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/ogwars/cloud/sdk/GroupType;
+	public static fun values ()[Lio/ogwars/cloud/sdk/GroupType;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/LiveChannels {
+	public abstract fun publish (Ljava/lang/String;Ljava/lang/String;[B)V
+	public abstract fun subscribe (Ljava/lang/String;Ljava/util/function/Consumer;)Lio/ogwars/cloud/sdk/Subscription;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/LiveMessage {
+	public abstract fun getChannel ()Ljava/lang/String;
+	public abstract fun getPayload ()[B
+	public abstract fun getSenderServerId ()Ljava/lang/String;
+	public abstract fun getTypeId ()Ljava/lang/String;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/NpcClick {
+	public abstract fun getPlayer ()Ljava/util/UUID;
+	public abstract fun getRightClick ()Z
+}
+
+public final class io/ogwars/cloud/sdk/OgCloud {
+	public static final field INSTANCE Lio/ogwars/cloud/sdk/OgCloud;
+	public static final fun install (Lio/ogwars/cloud/sdk/OgCloudNode;)V
+	public static final fun proxy ()Lio/ogwars/cloud/sdk/OgCloudProxy;
+	public static final fun server ()Lio/ogwars/cloud/sdk/OgCloudServer;
+}
+
+public final class io/ogwars/cloud/sdk/OgCloudException : java/lang/RuntimeException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public abstract interface annotation class io/ogwars/cloud/sdk/OgCloudInternalApi : java/lang/annotation/Annotation {
+}
+
+public abstract interface class io/ogwars/cloud/sdk/OgCloudNode {
+	public abstract fun findPlayer (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun findPlayer (Ljava/util/UUID;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun getGroupId ()Ljava/lang/String;
+	public abstract fun getGroupType ()Lio/ogwars/cloud/sdk/GroupType;
+	public abstract fun getLiveChannels ()Lio/ogwars/cloud/sdk/LiveChannels;
+	public abstract fun getServerId ()Ljava/lang/String;
+	public abstract fun onReady (Ljava/lang/Runnable;)V
+	public abstract fun requestServer (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun server (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun servers ()Ljava/util/concurrent/CompletableFuture;
+	public abstract fun servers (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
+	public abstract fun transferPlayer (Ljava/util/UUID;Ljava/lang/String;)V
+	public abstract fun transferPlayerToGroup (Ljava/util/UUID;Ljava/lang/String;Lio/ogwars/cloud/sdk/RoutingStrategy;)V
+}
+
+public abstract interface class io/ogwars/cloud/sdk/OgCloudProxy : io/ogwars/cloud/sdk/OgCloudNode {
+}
+
+public abstract interface class io/ogwars/cloud/sdk/OgCloudServer : io/ogwars/cloud/sdk/OgCloudNode {
+	public abstract fun getGameState ()Lio/ogwars/cloud/sdk/GameState;
+	public abstract fun getNpcs ()Lio/ogwars/cloud/sdk/RuntimeNpcs;
+	public abstract fun pushTemplate ()Ljava/util/concurrent/CompletableFuture;
+	public abstract fun setGameState (Lio/ogwars/cloud/sdk/GameState;)V
+	public abstract fun stop ()Ljava/util/concurrent/CompletableFuture;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/PlayerLocation {
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getPlayer ()Ljava/util/UUID;
+	public abstract fun getProxyId ()Ljava/lang/String;
+	public abstract fun getServerId ()Ljava/lang/String;
+}
+
+public final class io/ogwars/cloud/sdk/RoutingStrategy : java/lang/Enum {
+	public static final field BALANCED Lio/ogwars/cloud/sdk/RoutingStrategy;
+	public static final field LEAST_FILLED Lio/ogwars/cloud/sdk/RoutingStrategy;
+	public static final field MOST_FILLED Lio/ogwars/cloud/sdk/RoutingStrategy;
+	public static final field ROUND_ROBIN Lio/ogwars/cloud/sdk/RoutingStrategy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/ogwars/cloud/sdk/RoutingStrategy;
+	public static fun values ()[Lio/ogwars/cloud/sdk/RoutingStrategy;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/RuntimeNpc {
+	public abstract fun despawn ()V
+	public abstract fun getId ()Ljava/lang/String;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/RuntimeNpc$Builder {
+	public abstract fun location (Ljava/lang/String;DDDFF)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun lookAtPlayers (Z)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun onClick (Ljava/util/function/Consumer;)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun skin (Ljava/lang/String;Ljava/lang/String;)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun spawn ()Lio/ogwars/cloud/sdk/RuntimeNpc;
+	public abstract fun subtitle (Ljava/lang/String;)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun title (Ljava/lang/String;)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/RuntimeNpcs {
+	public abstract fun create (Ljava/lang/String;)Lio/ogwars/cloud/sdk/RuntimeNpc$Builder;
+	public abstract fun find (Ljava/lang/String;)Ljava/util/Optional;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/ServerInfo {
+	public abstract fun getGameState ()Lio/ogwars/cloud/sdk/GameState;
+	public abstract fun getGroupId ()Ljava/lang/String;
+	public abstract fun getGroupMaintenance ()Z
+	public abstract fun getGroupType ()Lio/ogwars/cloud/sdk/GroupType;
+	public abstract fun getHost ()Ljava/lang/String;
+	public abstract fun getMaxPlayers ()I
+	public abstract fun getPlayers ()I
+	public abstract fun getPort ()I
+	public abstract fun getProfileId ()Ljava/lang/String;
+	public abstract fun getServerId ()Ljava/lang/String;
+	public abstract fun getState ()Lio/ogwars/cloud/sdk/ServerState;
+}
+
+public final class io/ogwars/cloud/sdk/ServerState : java/lang/Enum {
+	public static final field DRAINING Lio/ogwars/cloud/sdk/ServerState;
+	public static final field PREPARING Lio/ogwars/cloud/sdk/ServerState;
+	public static final field REQUESTED Lio/ogwars/cloud/sdk/ServerState;
+	public static final field RUNNING Lio/ogwars/cloud/sdk/ServerState;
+	public static final field STARTING Lio/ogwars/cloud/sdk/ServerState;
+	public static final field STOPPED Lio/ogwars/cloud/sdk/ServerState;
+	public static final field STOPPING Lio/ogwars/cloud/sdk/ServerState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/ogwars/cloud/sdk/ServerState;
+	public static fun values ()[Lio/ogwars/cloud/sdk/ServerState;
+}
+
+public abstract interface class io/ogwars/cloud/sdk/Subscription : java/lang/AutoCloseable {
+	public abstract fun close ()V
+}
+
