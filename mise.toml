@@ -98,6 +98,8 @@ for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
     go vet ./... && go test -race ./... && golangci-lint run ./...
   fi
 done
+# The gateway's contract-test variant (T-0510) only compiles with its build tag.
+(cd "{{config_root}}/data-plane" && go vet -tags contracttest ./cmd/gateway && golangci-lint run --build-tags contracttest ./cmd/gateway/...)
 """
 
 [tasks."fmt:go"]
