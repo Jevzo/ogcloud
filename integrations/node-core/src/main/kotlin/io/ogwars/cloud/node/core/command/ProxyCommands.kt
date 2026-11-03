@@ -484,7 +484,7 @@ class ProxyCommands(
         call: Invocation,
         message: Message,
         vararg values: Pair<String, Any?>,
-    ) = call.sender.reply(messages.text(Message.PREFIX) + " " + messages.text(message, *values))
+    ) = call.sender.say(messages, message, *values)
 
     private fun status(enabled: Boolean) =
         messages.text(if (enabled) Message.STATUS_ENABLED else Message.STATUS_DISABLED)

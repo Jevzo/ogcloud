@@ -13,6 +13,13 @@ interface CommandSender {
     fun reply(text: String)
 }
 
+/** Replies with a catalog text behind OgCloud's prefix. */
+fun CommandSender.say(
+    messages: Messages,
+    message: Message,
+    vararg values: Pair<String, Any?>,
+) = reply(messages.text(Message.PREFIX) + " " + messages.text(message, *values))
+
 /** One argument of a subcommand. */
 class Argument(
     val name: String,
