@@ -4,8 +4,10 @@
 package podenv
 
 const (
-	ServerId       = "OGCLOUD_SERVER_ID"
-	GroupId        = "OGCLOUD_GROUP_ID"
+	ServerId = "OGCLOUD_SERVER_ID"
+	GroupId  = "OGCLOUD_GROUP_ID"
+	// GroupType DYNAMIC, STATIC or PROXY, so plugins know it before the gateway's Welcome (v1 bug 3).
+	GroupType      = "OGCLOUD_GROUP_TYPE"
 	GatewayAddress = "OGCLOUD_GATEWAY_ADDRESS"
 	// GatewayTokenFile The pod's projected token for the gateway (D-0013).
 	GatewayTokenFile = "OGCLOUD_GATEWAY_TOKEN_FILE"

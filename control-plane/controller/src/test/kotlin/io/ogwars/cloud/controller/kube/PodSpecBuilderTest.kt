@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.kube
 
+import io.ogwars.cloud.contracts.PodEnv
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
@@ -47,6 +48,17 @@ class PodSpecBuilderTest {
             snapshot("pvc-static"),
             yaml(builder.staticVolumeClaim(group(GroupType.STATIC, id = "smp"))),
         )
+    }
+
+    @Test
+    fun `every container learns the real group type (v1 bug 3)`() {
+        GroupType.entries.forEach { type ->
+            val spec = build(type, "g-${type.name.lowercase()}").spec
+
+            (spec.containers + spec.initContainers).forEach { container ->
+                container.env.single { it.name == PodEnv.GROUP_TYPE }.value shouldBe type.name
+            }
+        }
     }
 
     @Test

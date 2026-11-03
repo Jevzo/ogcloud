@@ -7,6 +7,9 @@ constants:
     value: OGCLOUD_SERVER_ID
   - name: groupId
     value: OGCLOUD_GROUP_ID
+  - name: groupType
+    value: OGCLOUD_GROUP_TYPE
+    doc: DYNAMIC, STATIC or PROXY, so plugins know it before the gateway's Welcome (v1 bug 3).
   - name: gatewayAddress
     value: OGCLOUD_GATEWAY_ADDRESS
   - name: gatewayTokenFile

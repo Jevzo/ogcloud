@@ -277,6 +277,7 @@ class PodSpecBuilder(
         listOf(
             EnvVar(PodEnv.SERVER_ID, server.id.toString(), null),
             EnvVar(PodEnv.GROUP_ID, server.groupId.value, null),
+            EnvVar(PodEnv.GROUP_TYPE, server.groupType.name, null),
             EnvVar(PodEnv.GATEWAY_ADDRESS, settings.gatewayAddress, null),
             EnvVar(PodEnv.GATEWAY_TOKEN_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_TOKEN_FILE", null),
             EnvVar(PodEnv.GATEWAY_CA_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_CA_FILE", null),
