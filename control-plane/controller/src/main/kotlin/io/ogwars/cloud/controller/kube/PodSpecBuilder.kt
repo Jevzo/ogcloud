@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.kube
 
+import io.ogwars.cloud.contracts.PodEnv
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
@@ -158,7 +159,7 @@ class PodSpecBuilder(
         ContainerBuilder()
             .withName(SERVER_CONTAINER)
             .withImage(image(group, profile))
-            .withEnv(identityEnv(server) + EnvVar(ENV_JVM_FLAGS, group.jvmFlags, null))
+            .withEnv(identityEnv(server) + EnvVar(PodEnv.JVM_FLAGS, group.jvmFlags, null))
             .addNewPort()
             .withName(MINECRAFT_PORT_NAME)
             .withContainerPort(MINECRAFT_PORT)
@@ -190,7 +191,7 @@ class PodSpecBuilder(
             .withArgs("load")
             .withEnv(
                 // The loader asks the gateway for the template (D-0081) and applies the profile's overlays (D-0119).
-                identityEnv(server) + EnvVar(ENV_PROFILE_ID, profile.id, null),
+                identityEnv(server) + EnvVar(PodEnv.PROFILE_ID, profile.id, null),
             ).withResources(SIDECAR_RESOURCES)
             .withSecurityContext(restricted())
             .withVolumeMounts(
@@ -209,7 +210,7 @@ class PodSpecBuilder(
             .withRestartPolicy("Always")
             .withEnv(
                 identityEnv(server) +
-                    EnvVar(ENV_PUSH_ON_SHUTDOWN, (server.groupType == GroupType.STATIC).toString(), null),
+                    EnvVar(PodEnv.PUSH_ON_SHUTDOWN, (server.groupType == GroupType.STATIC).toString(), null),
             ).withResources(SIDECAR_RESOURCES)
             .withSecurityContext(restricted())
             .withVolumeMounts(
@@ -274,11 +275,11 @@ class PodSpecBuilder(
 
     private fun identityEnv(server: Server): List<EnvVar> =
         listOf(
-            EnvVar(ENV_SERVER_ID, server.id.toString(), null),
-            EnvVar(ENV_GROUP_ID, server.groupId.value, null),
-            EnvVar(ENV_GATEWAY_ADDRESS, settings.gatewayAddress, null),
-            EnvVar(ENV_GATEWAY_TOKEN_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_TOKEN_FILE", null),
-            EnvVar(ENV_GATEWAY_CA_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_CA_FILE", null),
+            EnvVar(PodEnv.SERVER_ID, server.id.toString(), null),
+            EnvVar(PodEnv.GROUP_ID, server.groupId.value, null),
+            EnvVar(PodEnv.GATEWAY_ADDRESS, settings.gatewayAddress, null),
+            EnvVar(PodEnv.GATEWAY_TOKEN_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_TOKEN_FILE", null),
+            EnvVar(PodEnv.GATEWAY_CA_FILE, "$GATEWAY_TOKEN_PATH/$GATEWAY_CA_FILE", null),
         )
 
     private fun resources(group: Group): ResourceRequirements {
@@ -334,15 +335,6 @@ class PodSpecBuilder(
         const val GATEWAY_TOKEN_FILE = "token"
         const val GATEWAY_CA_FILE = "ca.crt"
         const val FORWARDING_PATH = "/var/run/secrets/ogcloud/forwarding"
-
-        const val ENV_SERVER_ID = "OGCLOUD_SERVER_ID"
-        const val ENV_GROUP_ID = "OGCLOUD_GROUP_ID"
-        const val ENV_GATEWAY_ADDRESS = "OGCLOUD_GATEWAY_ADDRESS"
-        const val ENV_GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"
-        const val ENV_GATEWAY_CA_FILE = "OGCLOUD_GATEWAY_CA_FILE"
-        const val ENV_JVM_FLAGS = "OGCLOUD_JVM_FLAGS"
-        const val ENV_PUSH_ON_SHUTDOWN = "OGCLOUD_PUSH_ON_SHUTDOWN"
-        const val ENV_PROFILE_ID = "OGCLOUD_PROFILE_ID"
 
         /** OgCloud's images run as this user and group (T-0508). */
         const val IMAGE_UID = 1000L

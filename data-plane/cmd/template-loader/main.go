@@ -20,6 +20,7 @@ import (
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 	"github.com/jevzo/ogcloud/data-plane/pkg/logging"
+	"github.com/jevzo/ogcloud/data-plane/pkg/podenv"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
 	"github.com/jevzo/ogcloud/data-plane/pkg/tlsfiles"
 	templateloader "github.com/jevzo/ogcloud/data-plane/template-loader"
@@ -48,13 +49,13 @@ func run(args []string) error {
 		return errors.New("usage: template-loader <load|agent>")
 	}
 	env := config.FromEnvironment()
-	address := env.Required("OGCLOUD_GATEWAY_ADDRESS")
-	tokenFile := env.Required("OGCLOUD_GATEWAY_TOKEN_FILE")
-	caFile := env.Required("OGCLOUD_GATEWAY_CA_FILE")
+	address := env.Required(podenv.GatewayAddress)
+	tokenFile := env.Required(podenv.GatewayTokenFile)
+	caFile := env.Required(podenv.GatewayCaFile)
 	dataDir := env.String("OGCLOUD_DATA_DIR", "/data")
 	logLevel := env.String("OGCLOUD_LOG_LEVEL", "info")
-	profileID := env.String("OGCLOUD_PROFILE_ID", "")
-	pushOnShutdown := env.Bool("OGCLOUD_PUSH_ON_SHUTDOWN", false)
+	profileID := env.String(podenv.ProfileId, "")
+	pushOnShutdown := env.Bool(podenv.PushOnShutdown, false)
 	timeouts := struct{ load, push time.Duration }{
 		env.Duration("OGCLOUD_LOAD_TIMEOUT", loadTimeout), env.Duration("OGCLOUD_PUSH_TIMEOUT", pushTimeout),
 	}

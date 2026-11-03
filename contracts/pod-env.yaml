@@ -1,0 +1,24 @@
+# Environment variables the controller sets in game pods and the plugins, the template loader and the agent
+# read. Regenerate with `mise run gen` after editing.
+object: PodEnv
+doc: Environment variables of game pods, shared by the controller, the node client and the template loader.
+constants:
+  - name: serverId
+    value: OGCLOUD_SERVER_ID
+  - name: groupId
+    value: OGCLOUD_GROUP_ID
+  - name: gatewayAddress
+    value: OGCLOUD_GATEWAY_ADDRESS
+  - name: gatewayTokenFile
+    value: OGCLOUD_GATEWAY_TOKEN_FILE
+    doc: The pod's projected token for the gateway (D-0013).
+  - name: gatewayCaFile
+    value: OGCLOUD_GATEWAY_CA_FILE
+    doc: The internal CA that signed the gateway's certificate (D-0041).
+  - name: jvmFlags
+    value: OGCLOUD_JVM_FLAGS
+  - name: pushOnShutdown
+    value: OGCLOUD_PUSH_ON_SHUTDOWN
+    doc: true for STATIC servers, whose agent pushes when the pod stops (D-0123).
+  - name: profileId
+    value: OGCLOUD_PROFILE_ID

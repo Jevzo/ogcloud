@@ -98,7 +98,7 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects"]
+depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects", "gen:pod-env"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -140,6 +140,10 @@ run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/kafka/keys.ya
 description = "Generate the template object layout for Go and Kotlin from contracts/storage/templates.yaml"
 run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/storage/templates.yaml -go-package templateobjects -go-out data-plane/pkg/templateobjects/objects.gen.go -kotlin-package io.ogwars.cloud.domain.template -kotlin-out control-plane/domain/src/generated/kotlin/io/ogwars/cloud/domain/template/TemplateObjects.kt"
 
+[tasks."gen:pod-env"]
+description = "Generate the game pods' environment variable names for Go and Kotlin from contracts/pod-env.yaml"
+run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/pod-env.yaml -go-package podenv -go-out data-plane/pkg/podenv/env.gen.go -kotlin-package io.ogwars.cloud.contracts -kotlin-out contracts/src/generated/kotlin/io/ogwars/cloud/contracts/PodEnv.kt"
+
 # Each generator's output path is listed here when its first real output is wired (T-0101, T-0102).
 [tasks."check:generated"]
 description = "Fail when committed generated sources differ from a fresh `mise run gen`"
@@ -147,7 +151,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
