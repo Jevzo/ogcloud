@@ -114,7 +114,7 @@ buf generate
 
 [tasks."gen:profiles"]
 description = "Generate the runtime profile catalog from contracts/runtime-profiles.yaml"
-run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go -kotlin-out control-plane/domain/src/generated/kotlin/io/ogwars/cloud/domain/runtime/RuntimeProfiles.kt"
+run = "go run ./data-plane/pkg/cmd/codegen profiles -in contracts/runtime-profiles.yaml -go-out data-plane/pkg/runtimeprofiles/catalog.gen.go -kotlin-out control-plane/domain/src/generated/kotlin/io/ogwars/cloud/domain/runtime/RuntimeProfiles.kt -bake-out images/docker-bake.json"
 
 [tasks."gen:topics"]
 description = "Generate Go and Kotlin topic constants (Strimzi output follows with the chart) from contracts/kafka/topics.yaml"
@@ -159,7 +159,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go images/docker-bake.json data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2

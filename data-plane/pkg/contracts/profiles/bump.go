@@ -32,6 +32,9 @@ type Bump struct {
 	To   string
 }
 
+// userAgent identifies codegen to the APIs it asks for new releases.
+const userAgent = "ogcloud-codegen (github.com/Jevzo/ogcloud)"
+
 var modrinthProject = regexp.MustCompile(`^https://cdn\.modrinth\.com/data/([A-Za-z0-9]+)/`)
 
 // loaders maps catalog platforms to the Modrinth loaders a plugin release must support.
@@ -46,6 +49,13 @@ var loaders = map[string][]string{
 // UpdatePlugins moves every plugin pin in runtime-profiles.yaml to its newest stable release. Only the version,
 // url and sha512 values change in place, so comments and layout stay as they are.
 func UpdatePlugins(ctx context.Context, data []byte, source ReleaseSource) ([]byte, []Bump, error) {
+	return updateEntries(data, "plugins", func(entry *yaml.Node, lines []string) (*Bump, error) {
+		return updateEntry(ctx, entry, lines, source)
+	})
+}
+
+// updateEntries runs update on every entry of the catalog's top-level list key, rewriting values on their lines.
+func updateEntries(data []byte, key string, update func(entry *yaml.Node, lines []string) (*Bump, error)) ([]byte, []Bump, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return nil, nil, fmt.Errorf("parse runtime profiles: %w", err)
@@ -53,14 +63,14 @@ func UpdatePlugins(ctx context.Context, data []byte, source ReleaseSource) ([]by
 	if len(doc.Content) == 0 {
 		return nil, nil, errors.New("runtime profiles: the file is empty")
 	}
-	plugins := mappingValue(doc.Content[0], "plugins")
-	if plugins == nil {
+	entries := mappingValue(doc.Content[0], key)
+	if entries == nil {
 		return data, nil, nil
 	}
 	lines := strings.Split(string(data), "\n")
 	var bumps []Bump
-	for _, entry := range plugins.Content {
-		bump, err := updateEntry(ctx, entry, lines, source)
+	for _, entry := range entries.Content {
+		bump, err := update(entry, lines)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -158,23 +168,9 @@ func (m ModrinthReleases) Latest(ctx context.Context, projectID string, loaders 
 		return Release{}, fmt.Errorf("encode loaders: %w", err)
 	}
 	endpoint := fmt.Sprintf("%s/v2/project/%s/version?loaders=%s", m.BaseURL, url.PathEscape(projectID), url.QueryEscape(string(encoded)))
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return Release{}, fmt.Errorf("build request: %w", err)
-	}
-	// Modrinth asks API clients to identify themselves.
-	request.Header.Set("User-Agent", "ogcloud-codegen (github.com/Jevzo/ogcloud)")
-	response, err := m.Client.Do(request)
-	if err != nil {
-		return Release{}, fmt.Errorf("query Modrinth: %w", err)
-	}
-	defer func() { _ = response.Body.Close() }()
-	if response.StatusCode != http.StatusOK {
-		return Release{}, fmt.Errorf("query Modrinth: HTTP %d for project %s", response.StatusCode, projectID)
-	}
 	var versions []modrinthVersion
-	if err := json.NewDecoder(response.Body).Decode(&versions); err != nil {
-		return Release{}, fmt.Errorf("decode Modrinth versions: %w", err)
+	if err := getJSON(ctx, m.Client, endpoint, &versions); err != nil {
+		return Release{}, fmt.Errorf("Modrinth project %s: %w", projectID, err)
 	}
 	for _, version := range versions {
 		if version.VersionType != "release" {

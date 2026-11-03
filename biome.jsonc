@@ -7,7 +7,11 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,jsonc}"]
+    // images/docker-bake.json is generated from the runtime profile catalog and drift-checked (D-0139).
+    "includes": [
+      "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,jsonc}",
+      "!images/docker-bake.json"
+    ]
   },
   "formatter": {
     "enabled": true,

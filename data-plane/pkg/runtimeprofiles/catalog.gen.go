@@ -33,5 +33,7 @@ func Overlays() []Overlay {
 		{Platform: PlatformPandaSpigot, File: "server.properties", Format: OverlayProperties, Key: "online-mode", Value: "false"},
 		{Platform: PlatformPandaSpigot, File: "server.properties", Format: OverlayProperties, Key: "server-port", Value: "25565"},
 		{Platform: PlatformPandaSpigot, File: "spigot.yml", Format: OverlayYAML, Key: "settings.bungeecord", Value: "true"},
+		{Platform: PlatformPaper, File: "eula.txt", Format: OverlayProperties, Key: "eula", Value: "true"},
+		{Platform: PlatformPandaSpigot, File: "eula.txt", Format: OverlayProperties, Key: "eula", Value: "true"},
 	}
 }

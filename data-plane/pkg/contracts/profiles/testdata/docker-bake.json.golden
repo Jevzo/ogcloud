@@ -1,0 +1,46 @@
+{
+  "variable": {
+    "REGISTRY": {
+      "default": "ghcr.io/jevzo/ogcloud"
+    },
+    "VERSION": {
+      "default": "dev"
+    }
+  },
+  "group": {
+    "default": {
+      "targets": [
+        "paper-26_3",
+        "velocity-4_3_0"
+      ]
+    }
+  },
+  "target": {
+    "paper-26_3": {
+      "context": "images/server",
+      "target": "paper",
+      "args": {
+        "JVM_FLAGS": "-XX:+UseG1GC -XX:MaxRAMPercentage=75",
+        "SERVER_SHA256": "989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6",
+        "SERVER_SOURCE": "https://github.com/PaperMC/Paper/commit/df120fd8b5211f61146a59f69497a5a62064b917",
+        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6/paper-26.3-238.jar"
+      },
+      "tags": [
+        "${REGISTRY}/paper:26.3-${VERSION}"
+      ]
+    },
+    "velocity-4_3_0": {
+      "context": "images/server",
+      "target": "velocity",
+      "args": {
+        "JVM_FLAGS": "-XX:+UseG1GC",
+        "SERVER_SHA256": "85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f",
+        "SERVER_SOURCE": "https://github.com/PaperMC/Velocity/commit/4d93ece85bb38b80d82aaf5b03bb33c1355bd6b4",
+        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f/velocity-4.3.0-44.jar"
+      },
+      "tags": [
+        "${REGISTRY}/velocity:4.3.0-${VERSION}"
+      ]
+    }
+  }
+}

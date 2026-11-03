@@ -3,16 +3,29 @@ clientProtocols:
   min: 47
   max: 777
 serverPort: 25565
+jvmFlags:
+  paper: [-XX:+UseG1GC, -XX:MaxRAMPercentage=75]
+  velocity: [-XX:+UseG1GC]
 profiles:
   - id: paper-26.3
     platform: paper
     version: "26.3"
     protocol: 777
     java: 25
+    server:
+      build: 238
+      url: https://fill-data.papermc.io/v1/objects/989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6/paper-26.3-238.jar
+      sha256: 989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6
+      source: https://github.com/PaperMC/Paper/commit/df120fd8b5211f61146a59f69497a5a62064b917
   - id: velocity-4.3.0
     platform: velocity
     version: "4.3.0"
     java: 25
+    server:
+      build: 44
+      url: https://fill-data.papermc.io/v1/objects/85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f/velocity-4.3.0-44.jar
+      sha256: 85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f
+      source: https://github.com/PaperMC/Velocity/commit/4d93ece85bb38b80d82aaf5b03bb33c1355bd6b4
 plugins:
   - id: viaversion
     platforms: [velocity]

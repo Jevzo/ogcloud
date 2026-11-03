@@ -12,21 +12,72 @@ clientProtocols:
 # The port every server and proxy listens on inside its pod.
 serverPort: 25565
 
+# JVM flags every server of a platform starts with, baked into its image; a group's own flags come after them,
+# so they win (D-0139). Backends get Aikar's G1 flags without AlwaysPreTouch, so autoscaled servers start fast;
+# proxies get Velocity's recommended flags and leave more memory to Netty's direct buffers.
+jvmFlags:
+  paper: &backend
+    - -XX:InitialRAMPercentage=75
+    - -XX:MaxRAMPercentage=75
+    - -XX:+UseG1GC
+    - -XX:+ParallelRefProcEnabled
+    - -XX:MaxGCPauseMillis=200
+    - -XX:+UnlockExperimentalVMOptions
+    - -XX:+DisableExplicitGC
+    - -XX:G1NewSizePercent=30
+    - -XX:G1MaxNewSizePercent=40
+    - -XX:G1HeapRegionSize=8M
+    - -XX:G1ReservePercent=20
+    - -XX:G1HeapWastePercent=5
+    - -XX:G1MixedGCCountTarget=4
+    - -XX:InitiatingHeapOccupancyPercent=15
+    - -XX:G1MixedGCLiveThresholdPercent=90
+    - -XX:G1RSetUpdatingPauseTimePercent=5
+    - -XX:SurvivorRatio=32
+    - -XX:+PerfDisableSharedMem
+    - -XX:MaxTenuringThreshold=1
+  pandaspigot: *backend
+  velocity:
+    - -XX:InitialRAMPercentage=60
+    - -XX:MaxRAMPercentage=60
+    - -XX:+UseG1GC
+    - -XX:G1HeapRegionSize=4M
+    - -XX:+UnlockExperimentalVMOptions
+    - -XX:+ParallelRefProcEnabled
+    - -XX:+PerfDisableSharedMem
+
+# Each profile's server jar is baked into its image (D-0046) and patched there (D-0139). `codegen servers`
+# moves build, url, sha256 and source to the newest stable build of the profile's version.
 profiles:
   - id: paper-26.3
     platform: paper
     version: "26.3"
     protocol: 777
     java: 25
+    server:
+      build: 238
+      url: https://fill-data.papermc.io/v1/objects/989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6/paper-26.3-238.jar
+      sha256: 989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6
+      source: https://github.com/PaperMC/Paper/commit/df120fd8b5211f61146a59f69497a5a62064b917
   - id: pandaspigot-1.8.8
     platform: pandaspigot
     version: "1.8.8"
     protocol: 47
     java: 25
+    server:
+      build: 226
+      url: https://downloads.hpfxd.com/v2/projects/pandaspigot/versions/1.8.8/builds/226/downloads/paperclip
+      sha256: ac73146b275230cbd0612ef0f3d6b40333abd3182beae457cad5321efff6359b
+      source: https://github.com/hpfxd/PandaSpigot/commit/1afa5656056df41dd6fec8383927b925c729623d
   - id: velocity-4.3.0
     platform: velocity
     version: "4.3.0"
     java: 25
+    server:
+      build: 44
+      url: https://fill-data.papermc.io/v1/objects/85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f/velocity-4.3.0-44.jar
+      sha256: 85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f
+      source: https://github.com/PaperMC/Velocity/commit/4d93ece85bb38b80d82aaf5b03bb33c1355bd6b4
 
 # Third-party plugins in the runtime bundles (D-0079): downloaded by the controller from Modrinth
 # and checked against the pinned SHA-512. Renovate bumps version, url and hash together.
@@ -84,3 +135,15 @@ overlays:
     format: yaml
     set:
       settings.bungeecord: "true"
+# Servers start only after the network's owner accepted the Minecraft EULA (D-0100, D-0101), so every backend
+# start accepts it on their behalf (D-0139).
+  - platform: paper
+    file: eula.txt
+    format: properties
+    set:
+      eula: "true"
+  - platform: pandaspigot
+    file: eula.txt
+    format: properties
+    set:
+      eula: "true"

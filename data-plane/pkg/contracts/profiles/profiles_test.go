@@ -16,12 +16,17 @@ func TestRenderersMatchGoldenFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderGo: %v", err)
 	}
+	bake, err := RenderBake(catalog)
+	if err != nil {
+		t.Fatalf("RenderBake: %v", err)
+	}
 	tests := []struct {
 		golden string
 		got    []byte
 	}{
 		{"catalog.go.golden", goSource},
 		{"RuntimeProfiles.kt.golden", RenderKotlin("io.ogwars.cloud.domain.runtime", catalog)},
+		{"docker-bake.json.golden", bake},
 	}
 	for _, tt := range tests {
 		t.Run(tt.golden, func(t *testing.T) {
@@ -43,9 +48,10 @@ func TestRenderersMatchGoldenFiles(t *testing.T) {
 }
 
 func TestValidateRejectsInvalidCatalogs(t *testing.T) {
-	const header = "forwarding: bungeeguard\nclientProtocols: {min: 47, max: 777}\nserverPort: 25565\nprofiles:\n"
-	const proxy = "  - {id: velocity-4.3.0, platform: velocity, version: 4.3.0, java: 25}\n"
-	const paper = "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25}\n"
+	const base = "forwarding: bungeeguard\nclientProtocols: {min: 47, max: 777}\nserverPort: 25565\n"
+	const header = base + "jvmFlags: {paper: [-XX:+UseG1GC], velocity: [-XX:+UseG1GC]}\nprofiles:\n"
+	proxy := "  - {id: velocity-4.3.0, platform: velocity, version: 4.3.0, java: 25, server: " + server(fill, sha256Hex) + "}\n"
+	paper := "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25, server: " + server(fill, sha256Hex) + "}\n"
 	tests := []struct {
 		name    string
 		yaml    string
@@ -69,6 +75,11 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 		{"overlay format", header + proxy + paper + overlay("paper", "server.toml", "toml", "online-mode"), "properties or yaml"},
 		{"overlay key", header + proxy + paper + overlay("paper", "spigot.yml", "yaml", "settings..bungeecord"), "invalid key"},
 		{"overlay platform", header + proxy + paper + overlay("spigot", "spigot.yml", "yaml", "a"), "unknown platform"},
+		{"server from elsewhere", header + proxy + "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25, server: " + server("https://example.com/paper.jar", sha256Hex) + "}\n", "server.url"},
+		{"server bad hash", header + proxy + "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25, server: " + server(fill, "abc") + "}\n", "server.sha256"},
+		{"no server", header + proxy + "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25}\n", "server.build"},
+		{"no flags", base + "profiles:\n" + proxy + paper, "jvmFlags has no flags"},
+		{"flag with a space", base + "jvmFlags: {paper: ['-Xmx1G -Xms1G'], velocity: [-XX:+UseG1GC]}\nprofiles:\n" + proxy + paper, "one plain flag"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -83,7 +94,15 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 	}
 }
 
-const modrinth = "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar"
+const (
+	modrinth  = "https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar"
+	fill      = "https://fill-data.papermc.io/v1/objects/x/paper-26.3-238.jar"
+	sha256Hex = "989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6"
+)
+
+func server(url, sha string) string {
+	return "{build: 238, url: '" + url + "', sha256: '" + sha + "', source: 'https://github.com/PaperMC/Paper/commit/abc'}"
+}
 
 func plugin(platform, file, url, sha string) string {
 	return "plugins:\n  - {id: viaversion, platforms: [" + platform + "], file: '" + file + "', version: 5.12.1, url: '" + url + "', sha512: '" + sha + "'}\n"

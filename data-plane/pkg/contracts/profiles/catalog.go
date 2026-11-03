@@ -19,15 +19,17 @@ type platform struct {
 	role       string
 	goConst    string
 	kotlinEnum string
+	// serverURL prefixes every server jar download of the platform (D-0139).
+	serverURL string
 }
 
 var (
 	platforms = map[string]platform{
-		"paper":       {"backend", "PlatformPaper", "PAPER"},
-		"pandaspigot": {"backend", "PlatformPandaSpigot", "PANDASPIGOT"},
-		"velocity":    {"proxy", "PlatformVelocity", "VELOCITY"},
-		"fabric":      {"backend", "PlatformFabric", "FABRIC"},
-		"neoforge":    {"backend", "PlatformNeoForge", "NEOFORGE"},
+		"paper":       {"backend", "PlatformPaper", "PAPER", fillDownloads},
+		"pandaspigot": {"backend", "PlatformPandaSpigot", "PANDASPIGOT", "https://downloads.hpfxd.com/"},
+		"velocity":    {"proxy", "PlatformVelocity", "VELOCITY", fillDownloads},
+		"fabric":      {"backend", "PlatformFabric", "FABRIC", ""},
+		"neoforge":    {"backend", "PlatformNeoForge", "NEOFORGE", ""},
 	}
 	idPattern     = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9.]+)+$`)
 	pluginPattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
@@ -37,6 +39,9 @@ var (
 
 const maxPort = 65535
 
+// fillDownloads is where PaperMC's Fill API serves its jars.
+const fillDownloads = "https://fill-data.papermc.io/"
+
 // Third-party plugins come only from Modrinth's CDN (D-0079).
 const pluginURLPrefix = "https://cdn.modrinth.com/data/"
 
@@ -45,10 +50,12 @@ type Catalog struct {
 	Forwarding      string        `yaml:"forwarding"`
 	ClientProtocols ProtocolRange `yaml:"clientProtocols"`
 	// ServerPort is the port every server and proxy listens on inside its pod.
-	ServerPort int            `yaml:"serverPort"`
-	Profiles   []ProfileEntry `yaml:"profiles"`
-	Plugins    []PluginEntry  `yaml:"plugins"`
-	Overlays   []OverlayEntry `yaml:"overlays"`
+	ServerPort int `yaml:"serverPort"`
+	// JVMFlags are the flags every server of a platform starts with, baked into its image (D-0139).
+	JVMFlags map[string][]string `yaml:"jvmFlags"`
+	Profiles []ProfileEntry      `yaml:"profiles"`
+	Plugins  []PluginEntry       `yaml:"plugins"`
+	Overlays []OverlayEntry      `yaml:"overlays"`
 }
 
 // OverlayEntry is a file the template loader patches on every start of a platform's servers (D-0119).
@@ -91,11 +98,12 @@ type ProtocolRange struct {
 
 // ProfileEntry is one profile as written in runtime-profiles.yaml.
 type ProfileEntry struct {
-	ID          string `yaml:"id"`
-	Platform    string `yaml:"platform"`
-	Version     string `yaml:"version"`
-	Protocol    int    `yaml:"protocol"`
-	JavaVersion int    `yaml:"java"`
+	ID          string    `yaml:"id"`
+	Platform    string    `yaml:"platform"`
+	Version     string    `yaml:"version"`
+	Protocol    int       `yaml:"protocol"`
+	JavaVersion int       `yaml:"java"`
+	Server      ServerJar `yaml:"server"`
 }
 
 // Parse decodes runtime-profiles.yaml.
@@ -139,6 +147,10 @@ func (c Catalog) Validate() error {
 		if entry.Version == "" || entry.JavaVersion <= 0 {
 			problems = append(problems, fmt.Errorf("%s: version and java are required", where))
 		}
+		problems = append(problems, entry.Server.validate(where, info)...)
+		if len(c.JVMFlags[entry.Platform]) == 0 {
+			problems = append(problems, fmt.Errorf("%s: jvmFlags has no flags for %s", where, entry.Platform))
+		}
 		switch {
 		case info.role == "proxy" && entry.Protocol != 0:
 			problems = append(problems, fmt.Errorf("%s: proxies speak every client protocol; omit protocol", where))
@@ -149,9 +161,25 @@ func (c Catalog) Validate() error {
 	if !roles["proxy"] || !roles["backend"] {
 		problems = append(problems, errors.New("the catalog needs at least one proxy and one backend profile"))
 	}
+	problems = append(problems, c.validateJVMFlags()...)
 	problems = append(problems, c.validatePlugins()...)
 	problems = append(problems, c.validateOverlays()...)
 	return errors.Join(problems...)
+}
+
+func (c Catalog) validateJVMFlags() []error {
+	var problems []error
+	for name, flags := range c.JVMFlags {
+		if _, known := platforms[name]; !known {
+			problems = append(problems, fmt.Errorf("jvmFlags: unknown platform %q", name))
+		}
+		for _, flag := range flags {
+			if !strings.HasPrefix(flag, "-") || strings.ContainsAny(flag, " \t'\"$`\\") {
+				problems = append(problems, fmt.Errorf("jvmFlags.%s: %q must be one plain flag starting with -", name, flag))
+			}
+		}
+	}
+	return problems
 }
 
 func (c Catalog) validateOverlays() []error {

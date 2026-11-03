@@ -1,0 +1,60 @@
+{
+  "variable": {
+    "REGISTRY": {
+      "default": "ghcr.io/jevzo/ogcloud"
+    },
+    "VERSION": {
+      "default": "dev"
+    }
+  },
+  "group": {
+    "default": {
+      "targets": [
+        "paper-26_3",
+        "pandaspigot-1_8_8",
+        "velocity-4_3_0"
+      ]
+    }
+  },
+  "target": {
+    "pandaspigot-1_8_8": {
+      "context": "images/server",
+      "target": "pandaspigot",
+      "args": {
+        "JVM_FLAGS": "-XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1",
+        "SERVER_SHA256": "ac73146b275230cbd0612ef0f3d6b40333abd3182beae457cad5321efff6359b",
+        "SERVER_SOURCE": "https://github.com/hpfxd/PandaSpigot/commit/1afa5656056df41dd6fec8383927b925c729623d",
+        "SERVER_URL": "https://downloads.hpfxd.com/v2/projects/pandaspigot/versions/1.8.8/builds/226/downloads/paperclip"
+      },
+      "tags": [
+        "${REGISTRY}/pandaspigot:1.8.8-${VERSION}"
+      ]
+    },
+    "paper-26_3": {
+      "context": "images/server",
+      "target": "paper",
+      "args": {
+        "JVM_FLAGS": "-XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1",
+        "SERVER_SHA256": "989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6",
+        "SERVER_SOURCE": "https://github.com/PaperMC/Paper/commit/df120fd8b5211f61146a59f69497a5a62064b917",
+        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6/paper-26.3-238.jar"
+      },
+      "tags": [
+        "${REGISTRY}/paper:26.3-${VERSION}"
+      ]
+    },
+    "velocity-4_3_0": {
+      "context": "images/server",
+      "target": "velocity",
+      "args": {
+        "JVM_FLAGS": "-XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60 -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+PerfDisableSharedMem",
+        "SERVER_SHA256": "85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f",
+        "SERVER_SOURCE": "https://github.com/PaperMC/Velocity/commit/4d93ece85bb38b80d82aaf5b03bb33c1355bd6b4",
+        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f/velocity-4.3.0-44.jar"
+      },
+      "tags": [
+        "${REGISTRY}/velocity:4.3.0-${VERSION}"
+      ]
+    }
+  }
+}
