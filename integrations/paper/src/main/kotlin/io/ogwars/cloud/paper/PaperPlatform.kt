@@ -1,9 +1,11 @@
 package io.ogwars.cloud.paper
 
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.events.v1.NpcUpdated
 import io.ogwars.cloud.node.core.runtime.HeartbeatSample
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ServerPlatform
+import io.ogwars.cloud.npc.NpcHub
 import org.bukkit.plugin.Plugin
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -16,6 +18,7 @@ internal class PaperPlatform(
     private val plugin: Plugin,
     private val serverId: String,
     private val tablist: TeamTablist,
+    private val npcs: NpcHub,
 ) : ServerPlatform {
     private val server get() = plugin.server
 
@@ -67,6 +70,11 @@ internal class PaperPlatform(
                 player.updateCommands()
             }, null)
         }
+    }
+
+    /** Any change to the group's NPCs reloads them from the read model (D-0104). */
+    override fun npcChanged(update: NpcUpdated) {
+        npcs.reload()
     }
 
     override fun settingsChanged(settings: NetworkSettingsUpdated) {

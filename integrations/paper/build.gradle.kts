@@ -4,10 +4,13 @@ plugins {
 
 dependencies {
     implementation(project(":integrations:node-core"))
-    // Paper provides its API, Adventure and Gson at runtime.
+    implementation(project(":integrations:npc"))
+    // Paper provides its API, Adventure and Gson at runtime; the PacketEvents plugin provides its API (D-0137).
     compileOnly(libs.paper.api)
+    compileOnly(libs.packetevents.api)
     testImplementation(libs.paper.api)
     testImplementation(libs.mockbukkit)
+    testImplementation(libs.packetevents.api)
 }
 
 tasks.processResources {
