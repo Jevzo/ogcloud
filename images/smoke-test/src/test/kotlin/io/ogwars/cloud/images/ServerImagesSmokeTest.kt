@@ -50,8 +50,9 @@ class ServerImagesSmokeTest {
         server: GenericContainer<*>,
         profile: RuntimeProfile,
     ) {
-        val plugins = Path.of(System.getProperty("ogcloud.smoke.plugin.${profile.platform.name.lowercase()}"))
-        server.withCopyFileToContainer(MountableFile.forHostPath(plugins), "$SEED/plugins/ogcloud.jar")
+        // The jar the controller would put into the bundle (D-0079), as `mise run images:build` staged it.
+        val plugin = Path.of(property("artifacts"), "plugins", "ogcloud-${profile.platform.name.lowercase()}.jar")
+        server.withCopyFileToContainer(MountableFile.forHostPath(plugin), "$SEED/plugins/ogcloud.jar")
         RuntimeProfiles.PLUGINS
             .filter { profile.platform in it.platforms && it.id in BUNDLE_DEPENDENCIES }
             .forEach {
@@ -85,8 +86,7 @@ class ServerImagesSmokeTest {
         )
 
     private fun imageOf(profile: RuntimeProfile) =
-        "${System.getProperty("ogcloud.smoke.registry")}/${profile.platform.name.lowercase()}:" +
-            "${profile.version}-${System.getProperty("ogcloud.smoke.version")}"
+        "${property("registry")}/${profile.platform.name.lowercase()}:${profile.version}-${property("version")}"
 
     companion object {
         private const val SEED = "/seed"
@@ -102,6 +102,12 @@ class ServerImagesSmokeTest {
         fun profiles() = RuntimeProfiles.ALL.map { Named.of(it.id, it) }
     }
 }
+
+/** The smoke settings Gradle passes, set by `mise run check:images`. */
+internal fun property(name: String): String =
+    checkNotNull(
+        System.getProperty("ogcloud.smoke.$name"),
+    ) { "ogcloud.smoke.$name is not set; run mise run check:images" }
 
 /** What a platform logs when OgCloud's plugin enabled, and what it logs when it did not. */
 private data class ImageChecks(

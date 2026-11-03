@@ -18,7 +18,7 @@ internal object BundlePlugins {
         val target =
             Path
                 .of(
-                    System.getProperty("ogcloud.smoke.cache"),
+                    property("cache"),
                 ).resolve("${plugin.id}-${plugin.sha512.take(HASH_PREFIX)}.jar")
         if (Files.exists(target) && sha512(target) == plugin.sha512) return target
         Files.createDirectories(target.parent)

@@ -39,10 +39,44 @@ run = [
 description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
 run = "./gradlew check"
 
-# Not part of `check`: it builds the server images and boots them, which needs Docker and the network (D-0139).
+# Artifacts are built here with mise's toolchains and staged in build/images; the Dockerfiles only copy them.
+[tasks."images:build"]
+description = "Build every server and platform image into the local Docker store (REGISTRY and VERSION tag them)"
+shell = "bash -c"
+run = """
+set -euo pipefail
+out=build/images
+rm -rf "$out"
+mkdir -p "$out/plugins"
+./gradlew :control-plane:api:bootJar :control-plane:controller:bootJar :integrations:paper:shadowJar :integrations:legacy-paper:shadowJar :integrations:velocity:shadowJar
+for service in api controller; do
+  java -Djarmode=tools -jar "control-plane/$service/build/libs/$service.jar" extract --layers --launcher --destination "$out/$service"
+done
+# The controller ships OgCloud's plugins as ogcloud-<platform>.jar (D-0079).
+cp integrations/paper/build/libs/paper-all.jar "$out/plugins/ogcloud-paper.jar"
+cp integrations/legacy-paper/build/libs/legacy-paper-all.jar "$out/plugins/ogcloud-pandaspigot.jar"
+cp integrations/velocity/build/libs/velocity-all.jar "$out/plugins/ogcloud-velocity.jar"
+arch=$(docker version --format '{% raw %}{{.Server.Arch}}{% endraw %}')
+for binary in gateway loadbalancer template-loader bootstrap; do
+  (cd data-plane && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "../$out/linux-$arch/$binary" "./cmd/$binary")
+done
+docker buildx bake -f images/docker-bake.json -f images/docker-bake.hcl --load default platform
+"""
+
+# Not part of `check`: it builds every image, boots the server images with OgCloud's plugins and scans the platform
+# images, which needs Docker and the network (D-0139).
 [tasks."check:images"]
-description = "Build every server image from images/docker-bake.json and boot it with OgCloud's plugin"
-run = "./gradlew :images:smoke-test:test -Pogcloud.smoke"
+description = "Build every image, smoke-test the server images, and fail on critical CVEs in the platform images"
+shell = "bash -c"
+env = { REGISTRY = "ogcloud-local", VERSION = "dev" }
+run = """
+set -euo pipefail
+mise run images:build
+./gradlew :images:smoke-test:test -Pogcloud.smoke
+for image in api controller gateway loadbalancer template-loader bootstrap; do
+  trivy image --severity CRITICAL --ignore-unfixed --exit-code 1 --quiet "$REGISTRY/$image:$VERSION"
+done
+"""
 
 [tasks."fmt:jvm"]
 description = "Format Kotlin sources and Gradle scripts"
