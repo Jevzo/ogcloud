@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.consume
 
 import io.ogwars.cloud.controller.TestValkey
 import io.ogwars.cloud.controller.lifecycle.LifecycleFixture
+import io.ogwars.cloud.controller.login.LoginResolver
 import io.ogwars.cloud.controller.readmodel.InMemoryNpcStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPermissionGroupStore
 import io.ogwars.cloud.controller.readmodel.InMemoryPlayerStore
@@ -53,9 +54,20 @@ class ControllerConsumersTest {
             HeartbeatHandler(f.lifecycle),
             GameStateHandler(f.lifecycle, f.network),
             PlayerActivityHandler(ValkeySessionStore(TestValkey.connection)),
+            snapshotHandler(),
             configHandler(),
             JobRequestedHandler {},
         ).also { it.start() }
+
+    private fun snapshotHandler(): PlayerSnapshotHandler {
+        val sessions = ValkeySessionStore(TestValkey.connection)
+        val permissionGroups = InMemoryPermissionGroupStore(permissionGroup("default", isDefault = true))
+        val readModels = ValkeyReadModelStore(TestValkey.connection)
+        return PlayerSnapshotHandler(
+            sessions,
+            LoginResolver(InMemoryPlayerStore(), permissionGroups, f.network, sessions, readModels, f.clock),
+        )
+    }
 
     private fun configHandler(): ConfigChangedHandler {
         val readModels = ValkeyReadModelStore(TestValkey.connection)

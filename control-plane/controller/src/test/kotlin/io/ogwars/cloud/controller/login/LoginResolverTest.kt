@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.login
 
+import io.ogwars.cloud.contracts.PermissionNodes
 import io.ogwars.cloud.contracts.events.v1.PlayerActivity
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.controller.TestValkey
@@ -27,7 +28,7 @@ class LoginResolverTest {
             permissionGroup("default", isDefault = true),
             permissionGroup(
                 "staff",
-                permissions = mapOf(LoginResolver.MAINTENANCE_BYPASS to "Join during maintenance"),
+                permissions = mapOf(PermissionNodes.MAINTENANCE_BYPASS to "Join during maintenance"),
             ),
         )
     private val sessions = ValkeySessionStore(TestValkey.connection)

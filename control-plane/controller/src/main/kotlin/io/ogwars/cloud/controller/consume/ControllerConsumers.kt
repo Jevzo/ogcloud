@@ -5,6 +5,7 @@ import io.ogwars.cloud.contracts.events.v1.GameStateChanged
 import io.ogwars.cloud.contracts.events.v1.JobRequested
 import io.ogwars.cloud.contracts.events.v1.NodeHeartbeat
 import io.ogwars.cloud.contracts.events.v1.PlayerActivity
+import io.ogwars.cloud.contracts.events.v1.ProxyPlayersSnapshot
 import io.ogwars.cloud.contracts.events.v1.ServerCommand
 import io.ogwars.cloud.messaging.KafkaComponents
 import io.ogwars.cloud.messaging.KafkaTopics
@@ -27,6 +28,7 @@ class ControllerConsumers(
     heartbeats: HeartbeatHandler,
     gameStates: GameStateHandler,
     activity: PlayerActivityHandler,
+    snapshots: PlayerSnapshotHandler,
     configChanges: ConfigChangedHandler,
     jobRequests: JobRequestedHandler,
 ) : ListenerContainers() {
@@ -59,6 +61,13 @@ class ControllerConsumers(
                 PlayerActivity.parser(),
                 BUSY_TOPIC_CONCURRENCY,
                 activity::handle,
+            ),
+            container(
+                KafkaTopics.PLAYER_SNAPSHOT,
+                "player-snapshots",
+                ProxyPlayersSnapshot.parser(),
+                concurrency = 1,
+                snapshots::handle,
             ),
             container(
                 KafkaTopics.CONFIG_CHANGED,
