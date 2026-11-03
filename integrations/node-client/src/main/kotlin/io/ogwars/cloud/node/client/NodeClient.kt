@@ -41,7 +41,8 @@ class NodeClient(
     private val scheduler: ScheduledExecutorService,
     private val requestIds: () -> String,
     private val backoff: Backoff = Backoff(),
-) : AutoCloseable {
+) : NodeSession,
+    AutoCloseable {
     private val log = System.getLogger(NodeClient::class.java.name)
     private val sessions = GatewayServiceGrpc.newStub(channel).withCallCredentials(credentials)
 
@@ -64,30 +65,27 @@ class NodeClient(
 
     fun start() = connect()
 
-    /** Sends [request] if a session is open; false when it is not, e.g. while reconnecting. */
-    fun send(request: SessionRequest): Boolean =
+    override fun send(request: SessionRequest): Boolean =
         synchronized(lock) {
             val open = stream.takeIf { welcomed } ?: return false
             open.onNext(request)
             true
         }
 
-    /** Sends a server command and completes with its result, or fails when the session drops first. */
-    fun serverCommand(command: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> =
+    override fun serverCommand(command: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> =
         request { id -> SessionRequest.newBuilder().setServerCommand(command.setRequestId(id)).build() }
             .thenApply { it.serverCommandResult }
 
-    /** Sends an in-game admin's change (D-0132) and completes with the gateway's answer, like [serverCommand]. */
-    fun adminRequest(request: AdminRequest.Builder): CompletableFuture<AdminRequestResult> =
+    override fun adminRequest(request: AdminRequest.Builder): CompletableFuture<AdminRequestResult> =
         request { id -> SessionRequest.newBuilder().setAdminRequest(request.setRequestId(id)).build() }
             .thenApply { it.adminRequestResult }
 
-    fun subscribe(channel: String) {
+    override fun subscribe(channel: String) {
         subscriptions += channel
         send(subscription(channel, true))
     }
 
-    fun unsubscribe(channel: String) {
+    override fun unsubscribe(channel: String) {
         subscriptions -= channel
         send(subscription(channel, false))
     }
