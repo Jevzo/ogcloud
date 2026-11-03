@@ -128,7 +128,7 @@ func TestConsoleCommandsNeedAnAdminOnTheSendingProxy(t *testing.T) {
 		t.Errorf("published %+v", published[0])
 	}
 	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNodeCommand, errNotPermitted.Error())) != 1 ||
-		testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNodeCommand, errNotOnProxy.Error())) != 1 {
+		testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNodeCommand, errPlayerElsewhere.Error())) != 1 {
 		t.Error("the refused commands were not counted")
 	}
 }

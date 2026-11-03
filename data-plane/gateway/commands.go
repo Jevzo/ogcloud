@@ -88,7 +88,7 @@ func (s *Service) authorizeServerCommand(ctx context.Context, session *Session, 
 			return nil, errInvalid
 		}
 		if err := s.actingAdmin(ctx, session, player, permissionnodes.AdminServer); err != nil {
-			if errors.Is(err, errNotOnProxy) || errors.Is(err, errNotPermitted) {
+			if errors.Is(err, errPlayerElsewhere) || errors.Is(err, errNotPermitted) {
 				return nil, err
 			}
 			s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)

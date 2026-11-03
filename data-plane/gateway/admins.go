@@ -6,25 +6,30 @@ import (
 	"fmt"
 	"slices"
 
+	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/permissionnodes"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
 )
 
 var (
-	errNotOnProxy   = errors.New("not_on_proxy")
-	errNotPermitted = errors.New("not_permitted")
+	errPlayerElsewhere = errors.New("player_elsewhere")
+	errNotPermitted    = errors.New("not_permitted")
 )
 
-// actingAdmin checks an in-game admin command (D-0115): the player must be connected through the proxy
-// that sent it and hold permission.
-func (s *Service) actingAdmin(ctx context.Context, proxy *Session, playerUUID, permission string) error {
+// actingAdmin checks an in-game admin command (D-0115, D-0129): the player must be connected through the
+// proxy, or play on the backend, that sent it and hold permission.
+func (s *Service) actingAdmin(ctx context.Context, sender *Session, playerUUID, permission string) error {
 	player, err := s.State.Session(ctx, playerUUID)
 	if err != nil {
 		return fmt.Errorf("session of %s: %w", playerUUID, err)
 	}
-	if player == nil || player.GetProxyId() != proxy.Peer.ServerID {
-		return errNotOnProxy
+	where := player.GetServerId()
+	if sender.NodeType == eventsv1.NodeType_NODE_TYPE_PROXY {
+		where = player.GetProxyId()
+	}
+	if player == nil || where != sender.Peer.ServerID {
+		return errPlayerElsewhere
 	}
 	// A missing read model is an outage, not a group without permissions; either way the command is refused.
 	group := &nodev1.PermissionGroup{}

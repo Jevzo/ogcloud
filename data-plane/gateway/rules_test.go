@@ -193,3 +193,55 @@ func TestTemplateAgentsOnlyAnswerAndPush(t *testing.T) {
 		}
 	}
 }
+
+func TestProxiesSnapshotTheirPlayers(t *testing.T) {
+	h := start(t, patience)
+	proxy := h.welcomed(t, proxyToken, eventsv1.NodeType_NODE_TYPE_PROXY)
+	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
+	players := []*eventsv1.SnapshotPlayer{{PlayerUuid: visitorUUID, PlayerName: "Jevzo", ServerId: "s-lobby"}}
+
+	send(t, proxy, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_PlayerSnapshot{PlayerSnapshot: &nodev1.PlayerSnapshot{Players: players}}})
+	send(t, proxy, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_PlayerSnapshot{PlayerSnapshot: &nodev1.PlayerSnapshot{
+		Players: []*eventsv1.SnapshotPlayer{{PlayerUuid: "Jevzo"}},
+	}}})
+	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_PlayerSnapshot{PlayerSnapshot: &nodev1.PlayerSnapshot{Players: players}}})
+
+	published := append(h.settle(t, proxy), h.settle(t, backend)...)
+	if len(published) != 1 || published[0].topic != kafkatopics.PlayerSnapshot || published[0].key != "s-proxy" ||
+		published[0].event.(*eventsv1.ProxyPlayersSnapshot).GetProxyId() != "s-proxy" {
+		t.Errorf("published %+v; only the proxy's valid snapshot counts", published)
+	}
+}
+
+func TestInGameNpcEditsNeedAnAdminOnTheBackend(t *testing.T) {
+	h := start(t, patience)
+	h.state.sessions[adminUUID] = &internalv1.PlayerSession{PlayerUuid: adminUUID, ProxyId: "s-proxy", ServerId: "s-lobby", PermissionGroupId: "builder"}
+	h.state.sessions[visitorUUID] = &internalv1.PlayerSession{PlayerUuid: visitorUUID, ProxyId: "s-proxy", ServerId: "s-other", PermissionGroupId: "builder"}
+	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":builder"] = marshal(t, &nodev1.PermissionGroup{Permissions: []string{permissionnodes.AdminNpc}})
+	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
+	change := func(actor string, npc *nodev1.Npc) *nodev1.SessionRequest {
+		return &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: &nodev1.NpcChangeRequest{
+			ActingPlayerUuid: actor, Change: &nodev1.NpcChangeRequest_Upsert{Upsert: npc},
+		}}}
+	}
+
+	send(t, backend, change(adminUUID, &nodev1.Npc{NpcId: "shop", GroupId: "lobby"}))
+	send(t, backend, change(adminUUID, &nodev1.Npc{NpcId: "shop", GroupId: "bedwars"}))
+	send(t, backend, change(visitorUUID, &nodev1.Npc{NpcId: "shop", GroupId: "lobby"}))
+	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: &nodev1.NpcChangeRequest{
+		ActingPlayerUuid: adminUUID, Change: &nodev1.NpcChangeRequest_DeleteNpcId{DeleteNpcId: "old"},
+	}}})
+
+	published := h.settle(t, backend)
+	if len(published) != 2 || published[0].topic != kafkatopics.NpcChange || published[0].key != "shop" || published[1].key != "old" {
+		t.Fatalf("published %+v", published)
+	}
+	upsert := published[0].event.(*internalv1.NpcChangeRequested)
+	if upsert.GetGroupId() != "lobby" || upsert.GetMetadata().GetActor().GetPlayerUuid() != adminUUID {
+		t.Errorf("change %v", upsert)
+	}
+	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, rejectInvalid)) != 1 ||
+		testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, errPlayerElsewhere.Error())) != 1 {
+		t.Error("another group's NPC and a player on another server must be refused")
+	}
+}

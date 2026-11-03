@@ -13,6 +13,7 @@ import (
 
 	"github.com/jevzo/ogcloud/data-plane/pkg/events"
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
+	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafkakeys"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafkatopics"
@@ -30,6 +31,8 @@ const (
 	messageLivePublish    = "live_publish"
 	messageDeliveryResult = "delivery_result"
 	messageHeartbeat      = "heartbeat"
+	messagePlayerSnapshot = "player_snapshot"
+	messageNpcChange      = "npc_change"
 )
 
 // Why a node message was dropped.
@@ -90,6 +93,14 @@ func (s *Service) handle(ctx context.Context, session *Session, request *nodev1.
 		s.deliveryResult(session, message.DeliveryResult)
 	case *nodev1.SessionRequest_ServerCommand:
 		s.serverCommand(ctx, session, message.ServerCommand)
+	case *nodev1.SessionRequest_PlayerSnapshot:
+		if s.permits(session, messagePlayerSnapshot, proxies) {
+			s.playerSnapshot(ctx, session, message.PlayerSnapshot)
+		}
+	case *nodev1.SessionRequest_NpcChange:
+		if s.permits(session, messageNpcChange, backends) {
+			s.npcChange(ctx, session, message.NpcChange)
+		}
 	default:
 		s.reject(session, fmt.Sprintf("%T", message), rejectUnsupported)
 	}
@@ -196,14 +207,8 @@ func (s *Service) nodeCommand(ctx context.Context, session *Session, request *no
 		s.reject(session, messageNodeCommand, rejectInvalid)
 		return
 	}
-	err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminCommand)
-	switch {
-	case errors.Is(err, errNotOnProxy), errors.Is(err, errNotPermitted):
-		s.reject(session, messageNodeCommand, err.Error())
-		return
-	case err != nil:
-		s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)
-		s.reject(session, messageNodeCommand, rejectUnavailable)
+	if err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminCommand); err != nil {
+		s.rejectAdmin(session, messageNodeCommand, err)
 		return
 	}
 	s.emit(ctx, session, messageNodeCommand, kafkatopics.NodeCommand, key, events.Player(request.GetActingPlayerUuid()),
@@ -211,6 +216,61 @@ func (s *Service) nodeCommand(ctx context.Context, session *Session, request *no
 			command.Metadata = metadata
 			return command
 		})
+}
+
+// playerSnapshot forwards a proxy's online players, named as the reporting pod's (D-0130).
+func (s *Service) playerSnapshot(ctx context.Context, session *Session, snapshot *nodev1.PlayerSnapshot) {
+	for _, player := range snapshot.GetPlayers() {
+		if !uuidText.MatchString(player.GetPlayerUuid()) {
+			s.reject(session, messagePlayerSnapshot, rejectInvalid)
+			return
+		}
+	}
+	proxyID := session.Peer.ServerID
+	s.emit(ctx, session, messagePlayerSnapshot, kafkatopics.PlayerSnapshot, proxyID, events.System(component),
+		func(metadata *eventsv1.EventMetadata) proto.Message {
+			return &eventsv1.ProxyPlayersSnapshot{Metadata: metadata, ProxyId: proxyID, Players: snapshot.GetPlayers()}
+		})
+}
+
+// npcChange forwards an in-game admin's NPC edit of the sending server's group to the API (D-0129).
+func (s *Service) npcChange(ctx context.Context, session *Session, request *nodev1.NpcChangeRequest) {
+	change := &internalv1.NpcChangeRequested{GroupId: session.Peer.GroupID}
+	key := request.GetDeleteNpcId()
+	switch requested := request.GetChange().(type) {
+	case *nodev1.NpcChangeRequest_Upsert:
+		key = requested.Upsert.GetNpcId()
+		if requested.Upsert.GetGroupId() != session.Peer.GroupID {
+			s.reject(session, messageNpcChange, rejectInvalid)
+			return
+		}
+		change.Change = &internalv1.NpcChangeRequested_Upsert{Upsert: requested.Upsert}
+	case *nodev1.NpcChangeRequest_DeleteNpcId:
+		change.Change = &internalv1.NpcChangeRequested_DeleteNpcId{DeleteNpcId: requested.DeleteNpcId}
+	}
+	if change.Change == nil || key == "" || !uuidText.MatchString(request.GetActingPlayerUuid()) {
+		s.reject(session, messageNpcChange, rejectInvalid)
+		return
+	}
+	if err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminNpc); err != nil {
+		s.rejectAdmin(session, messageNpcChange, err)
+		return
+	}
+	s.emit(ctx, session, messageNpcChange, kafkatopics.NpcChange, key, events.Player(request.GetActingPlayerUuid()),
+		func(metadata *eventsv1.EventMetadata) proto.Message {
+			change.Metadata = metadata
+			return change
+		})
+}
+
+// rejectAdmin counts a refused admin check by its reason, or as unavailable when the check itself failed.
+func (s *Service) rejectAdmin(session *Session, message string, err error) {
+	if errors.Is(err, errPlayerElsewhere) || errors.Is(err, errNotPermitted) {
+		s.reject(session, message, err.Error())
+		return
+	}
+	s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)
+	s.reject(session, message, rejectUnavailable)
 }
 
 // nodeCommandKey keys a command by its target, as the API does.
