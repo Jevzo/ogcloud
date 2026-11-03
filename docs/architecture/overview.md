@@ -66,7 +66,7 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | --- | --- |
 | Namespace and identity | `ogcloud-servers`, service account `ogcloud-server` with no RBAC, `automountServiceAccountToken: false`, bare pod with `restartPolicy: Never`, name `<group>-<32 hex>` |
 | Labels | `cloud.ogwars.io/{server-id,group,group-type,profile,role}`, `app.kubernetes.io/{name,managed-by}`; `role` is `backend` or `proxy` |
-| Images | `<registry>/<platform>:<mc-version>-<platform-version>`, run as uid and gid 1000, read-only root filesystem; a group may override the image only within the allowed prefixes |
+| Images | `<registry>/<platform>:<mc-version>-<platform-version>`, run as uid and gid 1000, read-only root filesystem; a group may override the image only within the allowed prefixes. Server images come from one multi-stage `images/server/Dockerfile` (D-0139): Temurin 25 on Ubuntu, the profile's pinned server jar checked against its SHA-256 and patched at build time (no Mojang download in pods), the GPL text and a source offer in `/licenses`; `start.sh` runs Java in `/data` with the catalog's JVM flags, then `OGCLOUD_JVM_FLAGS` |
 | Files | server files in `/data` (emptyDir, or the `static-<group>` volume for STATIC) with OgCloud's state in `/data/.ogcloud` (template marker, bundle list), `/tmp` (server and agent), the gateway token and the internal CA in `/var/run/secrets/ogcloud/gateway/{token,ca.crt}` (projected: audience `ogcloud-gateway`, ConfigMap `ogcloud-internal-ca`), forwarding tokens in `/var/run/secrets/ogcloud/forwarding` |
 | Environment | `OGCLOUD_SERVER_ID`, `OGCLOUD_GROUP_ID`, `OGCLOUD_GATEWAY_ADDRESS`, `OGCLOUD_GATEWAY_TOKEN_FILE`, `OGCLOUD_GATEWAY_CA_FILE`, `OGCLOUD_JVM_FLAGS`; the loader also gets `OGCLOUD_PROFILE_ID`, the agent `OGCLOUD_PUSH_ON_SHUTDOWN` (true for STATIC) |
 | Containers | `template-loader` (init, `load`), `template-agent` (native sidecar, `agent`), `server` (port 25565 `minecraft`, TCP readiness probe) |
@@ -79,7 +79,7 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | REST API | Spring controllers; `contracts/openapi/openapi.yaml` is generated and drift-checked | Generated TypeScript client |
 | Kafka events, gRPC services | Protobuf in `contracts/proto`, checked with `buf lint` and `buf breaking` | Generated Go (committed) and JVM code (built) |
 | Kafka topics | `contracts/kafka/topics.yaml` | Generated Go and Kotlin constants, Strimzi topics and users with ACLs |
-| Runtime profiles | `contracts/runtime-profiles.yaml` | Generated accessors, images, loader overlays, server port, protocol range |
+| Runtime profiles | `contracts/runtime-profiles.yaml` | Generated accessors, loader overlays (incl. `eula.txt`), server port, protocol range, and `images/docker-bake.json` (one server image per profile: stage, jar pin, JVM flags); `codegen plugins` and `codegen servers` bump the bundle plugins and server builds in a weekly PR (D-0082, D-0139) |
 | Valkey keys | `contracts/livestate/keys.yaml` | Generated Go and Kotlin key builders and TTLs (D-0111) |
 | Pod labels | `contracts/pod-labels.yaml` | Generated Go and Kotlin constants: the controller sets them, the gateway binds tokens with them |
 | Permission nodes | `contracts/permission-nodes.yaml` | Generated Go and Kotlin constants for the plugins and the gateway's admin checks |
@@ -89,7 +89,8 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | Pod environment | `contracts/pod-env.yaml` | Generated Go and Kotlin names of the variables the controller sets and the loader and node client read |
 
 Code generators live in `data-plane/pkg/cmd/codegen`; `mise run check:generated` fails when
-committed output is stale.
+committed output is stale. `mise run check:images` (and its CI job) builds the server images through the bake file
+and boots each with OgCloud's plugin and the bundle plugins it depends on.
 
 ## Data stores
 
