@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonParseException
@@ -67,7 +67,7 @@ object ForwardingHandshake {
 
     private fun parseProperties(raw: String): JsonArray? =
         try {
-            JsonParser.parseString(raw).takeIf { it.isJsonArray }?.asJsonArray?.takeIf { array ->
+            JsonParser().parse(raw).takeIf { it.isJsonArray }?.asJsonArray?.takeIf { array ->
                 array.all { it.isJsonObject }
             }
         } catch (_: JsonParseException) {

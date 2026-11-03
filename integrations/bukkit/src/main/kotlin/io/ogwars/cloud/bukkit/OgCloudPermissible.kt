@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.node.core.permission.Decision
 import org.bukkit.entity.Player
@@ -9,7 +9,7 @@ import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 
 /** As v1: a player holds OgCloud's nodes on top of everything Bukkit grants them anyway, such as op defaults. */
-internal class OgCloudPermissible(
+class OgCloudPermissible(
     private val player: Player,
     private val decide: (Player, String) -> Decision,
 ) : PermissibleBase(player) {
@@ -24,7 +24,7 @@ internal class OgCloudPermissible(
  * Puts an [OgCloudPermissible] into a player. Bukkit has no API for that, so the player's [PermissibleBase] field is
  * replaced, found by type so it works across server versions (v1's approach).
  */
-internal object PermissionInjector {
+object PermissionInjector {
     private val fields = ConcurrentHashMap<Class<*>, Field>()
 
     fun inject(

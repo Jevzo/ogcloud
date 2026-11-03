@@ -1,10 +1,11 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.npc.NpcHub
 import io.ogwars.cloud.npc.NpcLocation
 import io.ogwars.cloud.npc.NpcPlaces
 import io.ogwars.cloud.npc.NpcViewer
 import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.protocol.player.User
 import org.bukkit.Location
 import org.bukkit.Server
 import org.bukkit.entity.Player
@@ -19,9 +20,12 @@ import org.bukkit.event.player.PlayerRespawnEvent
 import java.util.UUID
 
 /** Tells the NPC hub where players are (D-0136), and moves them for `/ogcloud npc`. */
-internal class PaperNpcs(
+class NpcTracker(
     private val server: Server,
     private val hub: NpcHub,
+    private val line: BukkitLine,
+    // PacketEvents knows a player once their connection is set up; until then there is nobody to send to.
+    private val userOf: (Player) -> User? = { PacketEvents.getAPI().playerManager.getUser(it) },
 ) : Listener,
     NpcPlaces {
     @EventHandler(priority = EventPriority.MONITOR)
@@ -45,19 +49,16 @@ internal class PaperNpcs(
         player: UUID,
         location: NpcLocation,
     ) {
+        val online = server.getPlayer(player) ?: return
         val world = server.getWorld(location.world) ?: return
-        server
-            .getPlayer(
-                player,
-            )?.teleportAsync(Location(world, location.x, location.y, location.z, location.yaw, location.pitch))
+        line.teleport(online, Location(world, location.x, location.y, location.z, location.yaw, location.pitch))
     }
 
     private fun show(
         player: Player,
         at: Location,
     ) {
-        // PacketEvents knows a player once their connection is set up; until then there is nobody to send to.
-        val user = PacketEvents.getAPI().playerManager.getUser(player) ?: return
+        val user = userOf(player) ?: return
         hub.moved(NpcViewer(player.uniqueId, at.toNpcLocation(), user))
     }
 

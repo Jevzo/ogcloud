@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import java.nio.file.Files
 import java.nio.file.Path

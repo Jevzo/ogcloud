@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.events.v1.NpcUpdated
@@ -6,22 +6,20 @@ import io.ogwars.cloud.node.core.runtime.HeartbeatSample
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ServerPlatform
 import io.ogwars.cloud.npc.NpcHub
-import org.bukkit.plugin.Plugin
+import org.bukkit.ChatColor
+import org.bukkit.Server
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
-/**
- * node-core's view of Paper. Work on the game runs through Paper's region-aware schedulers, never the Bukkit
- * scheduler, so the plugin also runs on Folia (D-0135).
- */
-internal class PaperPlatform(
-    private val plugin: Plugin,
+/** node-core's view of a Paper or PandaSpigot server; [line] decides where game work runs. */
+class BukkitPlatform(
+    private val server: Server,
     private val serverId: String,
     private val tablist: TeamTablist,
     private val npcs: NpcHub,
+    private val line: BukkitLine,
+    private val ticks: TickSampler,
 ) : ServerPlatform {
-    private val server get() = plugin.server
-
     override fun onlinePlayers(): List<OnlinePlayer> =
         server.onlinePlayers.map {
             OnlinePlayer(it.uniqueId, it.name, serverId)
@@ -31,8 +29,8 @@ internal class PaperPlatform(
         val memory = Runtime.getRuntime()
         return HeartbeatSample(
             server.onlinePlayers.size,
-            server.tps.first(),
-            server.averageTickTime,
+            ticks.tps(),
+            ticks.mspt(),
             memory.totalMemory() - memory.freeMemory(),
             memory.maxMemory(),
         )
@@ -48,13 +46,13 @@ internal class PaperPlatform(
         text: String,
     ): Boolean {
         val online = server.getPlayer(player) ?: return false
-        online.sendMessage(legacyText(text))
+        online.sendMessage(legacy(text))
         return true
     }
 
     override fun runConsoleCommand(command: String): CompletableFuture<Boolean> {
         val known = CompletableFuture<Boolean>()
-        server.globalRegionScheduler.execute(plugin) {
+        line.global {
             runCatching {
                 server.dispatchCommand(server.consoleSender, command)
             }.fold(known::complete, known::completeExceptionally)
@@ -64,11 +62,11 @@ internal class PaperPlatform(
 
     override fun ranksChanged(players: Set<UUID>) {
         players.mapNotNull(server::getPlayer).forEach { player ->
-            player.scheduler.run(plugin, {
+            line.player(player) {
                 tablist.refresh(player)
                 player.recalculatePermissions()
-                player.updateCommands()
-            }, null)
+                line.refreshCommands(player)
+            }
         }
     }
 
@@ -77,7 +75,13 @@ internal class PaperPlatform(
         npcs.reload()
     }
 
-    override fun settingsChanged(settings: NetworkSettingsUpdated) {
-        server.globalRegionScheduler.execute(plugin) { tablist.enable(settings.tablistEnabled) }
+    override fun settingsChanged(settings: NetworkSettingsUpdated) =
+        line.global {
+            tablist.enable(settings.tablistEnabled)
+        }
+
+    companion object {
+        /** node-core's `&` codes as Bukkit's `§` text, which every Bukkit version shows. */
+        fun legacy(text: String): String = ChatColor.translateAlternateColorCodes('&', text)
     }
 }

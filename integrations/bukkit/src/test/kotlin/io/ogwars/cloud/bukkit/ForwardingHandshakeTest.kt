@@ -1,4 +1,4 @@
-package io.ogwars.cloud.paper
+package io.ogwars.cloud.bukkit
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf

@@ -25,6 +25,11 @@ dependencyResolutionManagement {
             forRepository { maven("https://repo.codemc.io/repository/maven-releases/") { name = "codemc" } }
             filter { includeGroup("com.github.retrooper") }
         }
+        // PandaSpigot publishes its API only as a snapshot, pinned by timestamp (D-0124).
+        exclusiveContent {
+            forRepository { maven("https://repo.hpfxd.com/releases/") { name = "hpfxd" } }
+            filter { includeGroup("com.hpfxd.pandaspigot") }
+        }
     }
 }
 
@@ -43,5 +48,6 @@ include(":integrations:sdk")
 include(":integrations:node-client")
 include(":integrations:node-core")
 include(":integrations:npc")
+include(":integrations:bukkit")
 include(":integrations:velocity")
 include(":integrations:paper")
