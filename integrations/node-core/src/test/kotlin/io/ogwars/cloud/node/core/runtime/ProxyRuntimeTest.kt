@@ -25,6 +25,9 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 import io.ogwars.cloud.sdk.GroupType as SdkGroupType
 
@@ -41,6 +44,7 @@ class ProxyRuntimeTest {
             queries,
             messages,
             scheduler.executor,
+            Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZoneOffset.UTC),
         ) { listener -> FakeSession(listener).also { session = it } }
     private val steve = UUID.randomUUID()
     private val admin = UUID.randomUUID()

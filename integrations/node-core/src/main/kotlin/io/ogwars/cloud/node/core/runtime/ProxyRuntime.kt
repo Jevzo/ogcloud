@@ -19,6 +19,7 @@ import io.ogwars.cloud.contracts.node.v1.Welcome
 import io.ogwars.cloud.node.client.DeliveryOutcome
 import io.ogwars.cloud.node.client.NodeSession
 import io.ogwars.cloud.node.client.SessionListener
+import io.ogwars.cloud.node.core.command.ProxyCommands
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.node.core.routing.Destination
 import io.ogwars.cloud.node.core.routing.Route
@@ -29,6 +30,7 @@ import io.ogwars.cloud.node.core.state.ServerDirectory
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.sdk.OgCloudProxy
+import java.time.Clock
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -53,11 +55,15 @@ class ProxyRuntime(
     queries: NodeQueries,
     messages: Messages,
     scheduler: ScheduledExecutorService,
+    clock: Clock,
     sessionOf: (SessionListener) -> NodeSession,
 ) : NodeRuntime(identity, platform, queries, messages, scheduler, sessionOf) {
     val directory = ServerDirectory(platform)
     val router = Router(directory, network)
     override val api: OgCloudProxy = ProxyApi(identity, queries, session, messages, live, ready)
+
+    /** `/ogcloud`, for the adapter to register. */
+    val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
 
     /** Asks the controller whether [player] may join (maintenance, D-0100) and loads their rank. */
     fun login(
