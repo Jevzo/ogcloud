@@ -12,6 +12,8 @@ dependencies {
     "implementation"(project(":contracts"))
     "implementation"("org.springframework.boot:spring-boot-starter-webmvc")
     "implementation"("org.springframework.boot:spring-boot-starter-actuator")
+    // Spring instantiates Kotlin classes through Kotlin reflection; tests got it transitively, the boot jar did not.
+    "runtimeOnly"("org.jetbrains.kotlin:kotlin-reflect")
     // Traces go out over OTLP; metrics are scraped by Prometheus (D-0072).
     "implementation"("org.springframework.boot:spring-boot-starter-opentelemetry")
     "runtimeOnly"("io.micrometer:micrometer-registry-prometheus")
