@@ -16,6 +16,8 @@ import io.ogwars.cloud.contracts.node.v1.Npc
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerLocation
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
+import io.ogwars.cloud.contracts.node.v1.ResolveLoginRequest
+import io.ogwars.cloud.contracts.node.v1.ResolveLoginResponse
 import io.ogwars.cloud.contracts.node.v1.ServerInfo
 import com.google.common.util.concurrent.ListenableFuture
 import io.grpc.Status
@@ -51,6 +53,9 @@ interface NodeQueries {
     fun groups(): CompletableFuture<List<GroupInfo>>
 
     fun npcs(groupId: String): CompletableFuture<List<Npc>>
+
+    /** Proxies only: whether a joining player may log in, with their rank. */
+    fun resolveLogin(request: ResolveLoginRequest): CompletableFuture<ResolveLoginResponse>
 }
 
 /** [NodeQueries] over the gateway's gRPC queries, each with [deadline]. */
@@ -103,6 +108,8 @@ class GrpcNodeQueries(
 
     override fun npcs(groupId: String) =
         call { listNpcs(ListNpcsRequest.newBuilder().setGroupId(groupId).build()) }.thenApply { it.npcsList }
+
+    override fun resolveLogin(request: ResolveLoginRequest) = call { resolveLogin(request) }
 
     private fun locationOf(response: FindPlayerResponse): PlayerLocation? =
         response.takeIf { it.hasLocation() }?.location

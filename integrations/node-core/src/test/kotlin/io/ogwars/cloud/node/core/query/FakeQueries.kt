@@ -5,6 +5,8 @@ import io.ogwars.cloud.contracts.node.v1.Npc
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerLocation
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
+import io.ogwars.cloud.contracts.node.v1.ResolveLoginRequest
+import io.ogwars.cloud.contracts.node.v1.ResolveLoginResponse
 import io.ogwars.cloud.contracts.node.v1.ServerInfo
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -18,6 +20,9 @@ class FakeQueries : NodeQueries {
     val permissionGroups = mutableMapOf<String, PermissionGroup>()
     val groups = mutableListOf<GroupInfo>()
     val npcs = mutableListOf<Npc>()
+
+    /** The answer to logins; null fails them like a gateway outage. */
+    var login: ResolveLoginResponse? = null
 
     override fun server(id: String): CompletableFuture<ServerInfo?> =
         completedFuture(
@@ -56,4 +61,7 @@ class FakeQueries : NodeQueries {
                     groupId
             },
         )
+
+    override fun resolveLogin(request: ResolveLoginRequest): CompletableFuture<ResolveLoginResponse> =
+        login?.let { completedFuture(it) } ?: CompletableFuture.failedFuture(IllegalStateException("gateway down"))
 }

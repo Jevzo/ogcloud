@@ -7,8 +7,11 @@ import io.ogwars.cloud.contracts.node.v1.ServerCommandResult
 import io.ogwars.cloud.contracts.node.v1.SessionRequest
 import java.util.concurrent.CompletableFuture
 
-/** What a node sends over its gateway session; [NodeClient] is the real one. */
-interface NodeSession {
+/** A node's gateway session; [NodeClient] is the real one. */
+interface NodeSession : AutoCloseable {
+    /** Opens the session; it reconnects on its own until closed. */
+    fun start()
+
     /** Sends [request] if a session is open; false when it is not, e.g. while reconnecting. */
     fun send(request: SessionRequest): Boolean
 

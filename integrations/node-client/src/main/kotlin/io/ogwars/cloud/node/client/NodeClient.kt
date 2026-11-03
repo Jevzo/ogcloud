@@ -30,7 +30,7 @@ data class Backoff(
 
 /**
  * A node's connection to the gateway (D-0008): one session stream with Hello and Welcome, acknowledged deliveries,
- * server commands answered with results (D-0068), live channels, and the query stubs. It reconnects on its own and
+ * server commands answered with results (D-0068) and live channels. It reconnects on its own and
  * renews its live subscriptions on every Welcome.
  */
 class NodeClient(
@@ -46,13 +46,6 @@ class NodeClient(
     private val log = System.getLogger(NodeClient::class.java.name)
     private val sessions = GatewayServiceGrpc.newStub(channel).withCallCredentials(credentials)
 
-    /** Queries: servers, players, profiles, permission groups, NPCs, logins. */
-    val queries: GatewayServiceGrpc.GatewayServiceFutureStub =
-        GatewayServiceGrpc
-            .newFutureStub(
-                channel,
-            ).withCallCredentials(credentials)
-
     private val lock = Any()
     private var stream: StreamObserver<SessionRequest>? = null
     private var welcomed = false
@@ -63,7 +56,7 @@ class NodeClient(
     // Requests awaiting their result, by request id; the result arrives as a session message.
     private val pending = ConcurrentHashMap<String, CompletableFuture<SessionResponse>>()
 
-    fun start() = connect()
+    override fun start() = connect()
 
     override fun send(request: SessionRequest): Boolean =
         synchronized(lock) {
