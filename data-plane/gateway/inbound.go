@@ -235,32 +235,67 @@ func (s *Service) playerSnapshot(ctx context.Context, session *Session, snapshot
 
 // npcChange forwards an in-game admin's NPC edit of the sending server's group to the API (D-0129).
 func (s *Service) npcChange(ctx context.Context, session *Session, request *nodev1.NpcChangeRequest) {
-	change := &internalv1.NpcChangeRequested{GroupId: session.Peer.GroupID}
-	key := request.GetDeleteNpcId()
-	switch requested := request.GetChange().(type) {
-	case *nodev1.NpcChangeRequest_Upsert:
-		key = requested.Upsert.GetNpcId()
-		if requested.Upsert.GetGroupId() != session.Peer.GroupID {
-			s.reject(session, messageNpcChange, rejectInvalid)
-			return
-		}
-		change.Change = &internalv1.NpcChangeRequested_Upsert{Upsert: requested.Upsert}
-	case *nodev1.NpcChangeRequest_DeleteNpcId:
-		change.Change = &internalv1.NpcChangeRequested_DeleteNpcId{DeleteNpcId: requested.DeleteNpcId}
-	}
-	if change.Change == nil || key == "" || !uuidText.MatchString(request.GetActingPlayerUuid()) {
-		s.reject(session, messageNpcChange, rejectInvalid)
+	change, err := s.npcChangeOf(session, request)
+	if err != nil {
+		s.reject(session, messageNpcChange, err.Error())
 		return
 	}
 	if err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminNpc); err != nil {
 		s.rejectAdmin(session, messageNpcChange, err)
 		return
 	}
-	s.emit(ctx, session, messageNpcChange, kafkatopics.NpcChange, key, events.Player(request.GetActingPlayerUuid()),
+	s.emit(ctx, session, messageNpcChange, kafkatopics.NpcChange, npcIDOf(change), events.Player(request.GetActingPlayerUuid()),
 		func(metadata *eventsv1.EventMetadata) proto.Message {
 			change.Metadata = metadata
 			return change
 		})
+}
+
+// npcChangeOf checks a requested change against the sender's group and gives a new NPC its id.
+func (s *Service) npcChangeOf(session *Session, request *nodev1.NpcChangeRequest) (*internalv1.NpcChangeRequested, error) {
+	if !uuidText.MatchString(request.GetActingPlayerUuid()) {
+		return nil, errInvalid
+	}
+	change := &internalv1.NpcChangeRequested{GroupId: session.Peer.GroupID}
+	switch requested := request.GetChange().(type) {
+	case *nodev1.NpcChangeRequest_Create:
+		if requested.Create.GetGroupId() != session.Peer.GroupID {
+			return nil, errInvalid
+		}
+		id, err := s.IDs.Next()
+		if err != nil {
+			s.Logger.Error("no NPC id", "error", err)
+			return nil, errUnavailable
+		}
+		npc := proto.CloneOf(requested.Create)
+		npc.NpcId = id
+		change.Change = &internalv1.NpcChangeRequested_Create{Create: npc}
+	case *nodev1.NpcChangeRequest_Update:
+		if requested.Update.GetGroupId() != session.Peer.GroupID || !uuidText.MatchString(requested.Update.GetNpcId()) {
+			return nil, errInvalid
+		}
+		change.Change = &internalv1.NpcChangeRequested_Update{Update: requested.Update}
+	case *nodev1.NpcChangeRequest_DeleteNpcId:
+		if !uuidText.MatchString(requested.DeleteNpcId) {
+			return nil, errInvalid
+		}
+		change.Change = &internalv1.NpcChangeRequested_DeleteNpcId{DeleteNpcId: requested.DeleteNpcId}
+	default:
+		return nil, errInvalid
+	}
+	return change, nil
+}
+
+// npcIDOf keys a change by its NPC, so edits of one NPC stay in order.
+func npcIDOf(change *internalv1.NpcChangeRequested) string {
+	switch requested := change.GetChange().(type) {
+	case *internalv1.NpcChangeRequested_Create:
+		return requested.Create.GetNpcId()
+	case *internalv1.NpcChangeRequested_Update:
+		return requested.Update.GetNpcId()
+	default:
+		return change.GetDeleteNpcId()
+	}
 }
 
 // rejectAdmin counts a refused admin check by its reason, or as unavailable when the check itself failed.

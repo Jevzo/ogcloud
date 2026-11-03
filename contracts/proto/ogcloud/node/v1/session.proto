@@ -150,8 +150,10 @@ message NpcChangeRequest {
   // Must be on the sending backend and hold ogcloud.admin.npc.
   string acting_player_uuid = 1;
   oneof change {
-    Npc upsert = 2;
-    string delete_npc_id = 3;
+    // A new NPC; the gateway assigns its id.
+    Npc create = 2;
+    Npc update = 3;
+    string delete_npc_id = 4;
   }
 }
 

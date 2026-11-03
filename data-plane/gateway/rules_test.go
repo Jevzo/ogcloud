@@ -219,29 +219,39 @@ func TestInGameNpcEditsNeedAnAdminOnTheBackend(t *testing.T) {
 	h.state.sessions[visitorUUID] = &internalv1.PlayerSession{PlayerUuid: visitorUUID, ProxyId: "s-proxy", ServerId: "s-other", PermissionGroupId: "builder"}
 	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":builder"] = marshal(t, &nodev1.PermissionGroup{Permissions: []string{permissionnodes.AdminNpc}})
 	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
-	change := func(actor string, npc *nodev1.Npc) *nodev1.SessionRequest {
-		return &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: &nodev1.NpcChangeRequest{
-			ActingPlayerUuid: actor, Change: &nodev1.NpcChangeRequest_Upsert{Upsert: npc},
-		}}}
+	const shop, old = "0192d2c1-0000-7000-8000-00000000000a", "0192d2c1-0000-7000-8000-00000000000b"
+	change := func(actor string, request *nodev1.NpcChangeRequest) *nodev1.SessionRequest {
+		request.ActingPlayerUuid = actor
+		return &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: request}}
+	}
+	create := func(group string) *nodev1.NpcChangeRequest {
+		return &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_Create{Create: &nodev1.Npc{NpcId: shop, GroupId: group, Title: "Shop"}}}
+	}
+	update := func(id string) *nodev1.NpcChangeRequest {
+		return &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_Update{Update: &nodev1.Npc{NpcId: id, GroupId: "lobby"}}}
 	}
 
-	send(t, backend, change(adminUUID, &nodev1.Npc{NpcId: "shop", GroupId: "lobby"}))
-	send(t, backend, change(adminUUID, &nodev1.Npc{NpcId: "shop", GroupId: "bedwars"}))
-	send(t, backend, change(visitorUUID, &nodev1.Npc{NpcId: "shop", GroupId: "lobby"}))
-	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: &nodev1.NpcChangeRequest{
-		ActingPlayerUuid: adminUUID, Change: &nodev1.NpcChangeRequest_DeleteNpcId{DeleteNpcId: "old"},
-	}}})
+	send(t, backend, change(adminUUID, create("lobby")))
+	send(t, backend, change(adminUUID, update(shop)))
+	send(t, backend, change(adminUUID, &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_DeleteNpcId{DeleteNpcId: old}}))
+	send(t, backend, change(adminUUID, create("bedwars")))
+	send(t, backend, change(adminUUID, update("shop")))
+	send(t, backend, change(visitorUUID, create("lobby")))
 
 	published := h.settle(t, backend)
-	if len(published) != 2 || published[0].topic != kafkatopics.NpcChange || published[0].key != "shop" || published[1].key != "old" {
+	if len(published) != 3 || published[0].topic != kafkatopics.NpcChange {
 		t.Fatalf("published %+v", published)
 	}
-	upsert := published[0].event.(*internalv1.NpcChangeRequested)
-	if upsert.GetGroupId() != "lobby" || upsert.GetMetadata().GetActor().GetPlayerUuid() != adminUUID {
-		t.Errorf("change %v", upsert)
+	created := published[0].event.(*internalv1.NpcChangeRequested)
+	if id := created.GetCreate().GetNpcId(); id == shop || !uuidText.MatchString(id) || published[0].key != id ||
+		created.GetCreate().GetTitle() != "Shop" || created.GetGroupId() != "lobby" || created.GetMetadata().GetActor().GetPlayerUuid() != adminUUID {
+		t.Errorf("a new NPC gets a gateway id and the admin as actor: %v", created)
 	}
-	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, rejectInvalid)) != 1 ||
+	if published[1].key != shop || published[1].event.(*internalv1.NpcChangeRequested).GetUpdate() == nil || published[2].key != old {
+		t.Errorf("published %+v", published[1:])
+	}
+	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, rejectInvalid)) != 2 ||
 		testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, errPlayerElsewhere.Error())) != 1 {
-		t.Error("another group's NPC and a player on another server must be refused")
+		t.Error("another group's NPC, a malformed id and a player on another server must be refused")
 	}
 }

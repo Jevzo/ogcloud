@@ -15,7 +15,10 @@ message NpcChangeRequested {
   // The group of the server it came from; the API refuses NPCs of other groups.
   string group_id = 2;
   oneof change {
-    ogcloud.node.v1.Npc upsert = 3;
-    string delete_npc_id = 4;
+    // A new NPC under the id the gateway assigned.
+    ogcloud.node.v1.Npc create = 3;
+    // Only an NPC of group_id.
+    ogcloud.node.v1.Npc update = 4;
+    string delete_npc_id = 5;
   }
 }

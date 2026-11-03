@@ -1164,7 +1164,8 @@ type NpcChangeRequest struct {
 	ActingPlayerUuid string `protobuf:"bytes,1,opt,name=acting_player_uuid,json=actingPlayerUuid,proto3" json:"acting_player_uuid,omitempty"`
 	// Types that are valid to be assigned to Change:
 	//
-	//	*NpcChangeRequest_Upsert
+	//	*NpcChangeRequest_Create
+	//	*NpcChangeRequest_Update
 	//	*NpcChangeRequest_DeleteNpcId
 	Change        isNpcChangeRequest_Change `protobuf_oneof:"change"`
 	unknownFields protoimpl.UnknownFields
@@ -1215,10 +1216,19 @@ func (x *NpcChangeRequest) GetChange() isNpcChangeRequest_Change {
 	return nil
 }
 
-func (x *NpcChangeRequest) GetUpsert() *Npc {
+func (x *NpcChangeRequest) GetCreate() *Npc {
 	if x != nil {
-		if x, ok := x.Change.(*NpcChangeRequest_Upsert); ok {
-			return x.Upsert
+		if x, ok := x.Change.(*NpcChangeRequest_Create); ok {
+			return x.Create
+		}
+	}
+	return nil
+}
+
+func (x *NpcChangeRequest) GetUpdate() *Npc {
+	if x != nil {
+		if x, ok := x.Change.(*NpcChangeRequest_Update); ok {
+			return x.Update
 		}
 	}
 	return nil
@@ -1237,15 +1247,22 @@ type isNpcChangeRequest_Change interface {
 	isNpcChangeRequest_Change()
 }
 
-type NpcChangeRequest_Upsert struct {
-	Upsert *Npc `protobuf:"bytes,2,opt,name=upsert,proto3,oneof"`
+type NpcChangeRequest_Create struct {
+	// A new NPC; the gateway assigns its id.
+	Create *Npc `protobuf:"bytes,2,opt,name=create,proto3,oneof"`
+}
+
+type NpcChangeRequest_Update struct {
+	Update *Npc `protobuf:"bytes,3,opt,name=update,proto3,oneof"`
 }
 
 type NpcChangeRequest_DeleteNpcId struct {
-	DeleteNpcId string `protobuf:"bytes,3,opt,name=delete_npc_id,json=deleteNpcId,proto3,oneof"`
+	DeleteNpcId string `protobuf:"bytes,4,opt,name=delete_npc_id,json=deleteNpcId,proto3,oneof"`
 }
 
-func (*NpcChangeRequest_Upsert) isNpcChangeRequest_Change() {}
+func (*NpcChangeRequest_Create) isNpcChangeRequest_Change() {}
+
+func (*NpcChangeRequest_Update) isNpcChangeRequest_Change() {}
 
 func (*NpcChangeRequest_DeleteNpcId) isNpcChangeRequest_Change() {}
 
@@ -1832,11 +1849,12 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\x12acting_player_uuid\x18\x01 \x01(\tR\x10actingPlayerUuid\x128\n" +
 	"\acommand\x18\x02 \x01(\v2\x1e.ogcloud.events.v1.NodeCommandR\acommand\"M\n" +
 	"\x0ePlayerSnapshot\x12;\n" +
-	"\aplayers\x18\x01 \x03(\v2!.ogcloud.events.v1.SnapshotPlayerR\aplayers\"\xa0\x01\n" +
+	"\aplayers\x18\x01 \x03(\v2!.ogcloud.events.v1.SnapshotPlayerR\aplayers\"\xd0\x01\n" +
 	"\x10NpcChangeRequest\x12,\n" +
 	"\x12acting_player_uuid\x18\x01 \x01(\tR\x10actingPlayerUuid\x12.\n" +
-	"\x06upsert\x18\x02 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06upsert\x12$\n" +
-	"\rdelete_npc_id\x18\x03 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
+	"\x06create\x18\x02 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06create\x12.\n" +
+	"\x06update\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06update\x12$\n" +
+	"\rdelete_npc_id\x18\x04 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
 	"\x06change\"S\n" +
 	"\x17LiveChannelSubscription\x12\x18\n" +
 	"\achannel\x18\x01 \x01(\tR\achannel\x12\x1e\n" +
@@ -1995,34 +2013,35 @@ var file_ogcloud_node_v1_session_proto_depIdxs = []int32{
 	34, // 31: ogcloud.node.v1.ServerCommandRequest.push_template:type_name -> ogcloud.events.v1.PushTemplate
 	35, // 32: ogcloud.node.v1.NodeCommandRequest.command:type_name -> ogcloud.events.v1.NodeCommand
 	36, // 33: ogcloud.node.v1.PlayerSnapshot.players:type_name -> ogcloud.events.v1.SnapshotPlayer
-	37, // 34: ogcloud.node.v1.NpcChangeRequest.upsert:type_name -> ogcloud.node.v1.Npc
-	23, // 35: ogcloud.node.v1.LiveChannelDelivery.sender_node_type:type_name -> ogcloud.events.v1.NodeType
-	20, // 36: ogcloud.node.v1.Delivery.transfer:type_name -> ogcloud.events.v1.TransferRequested
-	35, // 37: ogcloud.node.v1.Delivery.command:type_name -> ogcloud.events.v1.NodeCommand
-	38, // 38: ogcloud.node.v1.Delivery.link_code:type_name -> ogcloud.events.v1.LinkCodeIssued
-	34, // 39: ogcloud.node.v1.Delivery.push_template:type_name -> ogcloud.events.v1.PushTemplate
-	39, // 40: ogcloud.node.v1.ResolveLoginResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
-	1,  // 41: ogcloud.node.v1.GatewayService.Session:input_type -> ogcloud.node.v1.SessionRequest
-	18, // 42: ogcloud.node.v1.GatewayService.ResolveLogin:input_type -> ogcloud.node.v1.ResolveLoginRequest
-	40, // 43: ogcloud.node.v1.GatewayService.GetServer:input_type -> ogcloud.node.v1.GetServerRequest
-	41, // 44: ogcloud.node.v1.GatewayService.ListServers:input_type -> ogcloud.node.v1.ListServersRequest
-	42, // 45: ogcloud.node.v1.GatewayService.FindPlayer:input_type -> ogcloud.node.v1.FindPlayerRequest
-	43, // 46: ogcloud.node.v1.GatewayService.GetPlayerProfile:input_type -> ogcloud.node.v1.GetPlayerProfileRequest
-	44, // 47: ogcloud.node.v1.GatewayService.GetPermissionGroup:input_type -> ogcloud.node.v1.GetPermissionGroupRequest
-	45, // 48: ogcloud.node.v1.GatewayService.ListNpcs:input_type -> ogcloud.node.v1.ListNpcsRequest
-	2,  // 49: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
-	19, // 50: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
-	46, // 51: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
-	47, // 52: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
-	48, // 53: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
-	49, // 54: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
-	50, // 55: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
-	51, // 56: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
-	49, // [49:57] is the sub-list for method output_type
-	41, // [41:49] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	37, // 34: ogcloud.node.v1.NpcChangeRequest.create:type_name -> ogcloud.node.v1.Npc
+	37, // 35: ogcloud.node.v1.NpcChangeRequest.update:type_name -> ogcloud.node.v1.Npc
+	23, // 36: ogcloud.node.v1.LiveChannelDelivery.sender_node_type:type_name -> ogcloud.events.v1.NodeType
+	20, // 37: ogcloud.node.v1.Delivery.transfer:type_name -> ogcloud.events.v1.TransferRequested
+	35, // 38: ogcloud.node.v1.Delivery.command:type_name -> ogcloud.events.v1.NodeCommand
+	38, // 39: ogcloud.node.v1.Delivery.link_code:type_name -> ogcloud.events.v1.LinkCodeIssued
+	34, // 40: ogcloud.node.v1.Delivery.push_template:type_name -> ogcloud.events.v1.PushTemplate
+	39, // 41: ogcloud.node.v1.ResolveLoginResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
+	1,  // 42: ogcloud.node.v1.GatewayService.Session:input_type -> ogcloud.node.v1.SessionRequest
+	18, // 43: ogcloud.node.v1.GatewayService.ResolveLogin:input_type -> ogcloud.node.v1.ResolveLoginRequest
+	40, // 44: ogcloud.node.v1.GatewayService.GetServer:input_type -> ogcloud.node.v1.GetServerRequest
+	41, // 45: ogcloud.node.v1.GatewayService.ListServers:input_type -> ogcloud.node.v1.ListServersRequest
+	42, // 46: ogcloud.node.v1.GatewayService.FindPlayer:input_type -> ogcloud.node.v1.FindPlayerRequest
+	43, // 47: ogcloud.node.v1.GatewayService.GetPlayerProfile:input_type -> ogcloud.node.v1.GetPlayerProfileRequest
+	44, // 48: ogcloud.node.v1.GatewayService.GetPermissionGroup:input_type -> ogcloud.node.v1.GetPermissionGroupRequest
+	45, // 49: ogcloud.node.v1.GatewayService.ListNpcs:input_type -> ogcloud.node.v1.ListNpcsRequest
+	2,  // 50: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
+	19, // 51: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
+	46, // 52: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
+	47, // 53: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
+	48, // 54: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
+	49, // 55: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
+	50, // 56: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
+	51, // 57: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
+	50, // [50:58] is the sub-list for method output_type
+	42, // [42:50] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_node_v1_session_proto_init() }
@@ -2065,7 +2084,8 @@ func file_ogcloud_node_v1_session_proto_init() {
 		(*ServerCommandRequest_PushTemplate)(nil),
 	}
 	file_ogcloud_node_v1_session_proto_msgTypes[11].OneofWrappers = []any{
-		(*NpcChangeRequest_Upsert)(nil),
+		(*NpcChangeRequest_Create)(nil),
+		(*NpcChangeRequest_Update)(nil),
 		(*NpcChangeRequest_DeleteNpcId)(nil),
 	}
 	file_ogcloud_node_v1_session_proto_msgTypes[15].OneofWrappers = []any{

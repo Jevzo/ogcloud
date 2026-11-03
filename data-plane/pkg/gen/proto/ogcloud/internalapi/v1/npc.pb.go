@@ -32,7 +32,8 @@ type NpcChangeRequested struct {
 	GroupId string `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	// Types that are valid to be assigned to Change:
 	//
-	//	*NpcChangeRequested_Upsert
+	//	*NpcChangeRequested_Create
+	//	*NpcChangeRequested_Update
 	//	*NpcChangeRequested_DeleteNpcId
 	Change        isNpcChangeRequested_Change `protobuf_oneof:"change"`
 	unknownFields protoimpl.UnknownFields
@@ -90,10 +91,19 @@ func (x *NpcChangeRequested) GetChange() isNpcChangeRequested_Change {
 	return nil
 }
 
-func (x *NpcChangeRequested) GetUpsert() *v11.Npc {
+func (x *NpcChangeRequested) GetCreate() *v11.Npc {
 	if x != nil {
-		if x, ok := x.Change.(*NpcChangeRequested_Upsert); ok {
-			return x.Upsert
+		if x, ok := x.Change.(*NpcChangeRequested_Create); ok {
+			return x.Create
+		}
+	}
+	return nil
+}
+
+func (x *NpcChangeRequested) GetUpdate() *v11.Npc {
+	if x != nil {
+		if x, ok := x.Change.(*NpcChangeRequested_Update); ok {
+			return x.Update
 		}
 	}
 	return nil
@@ -112,15 +122,23 @@ type isNpcChangeRequested_Change interface {
 	isNpcChangeRequested_Change()
 }
 
-type NpcChangeRequested_Upsert struct {
-	Upsert *v11.Npc `protobuf:"bytes,3,opt,name=upsert,proto3,oneof"`
+type NpcChangeRequested_Create struct {
+	// A new NPC under the id the gateway assigned.
+	Create *v11.Npc `protobuf:"bytes,3,opt,name=create,proto3,oneof"`
+}
+
+type NpcChangeRequested_Update struct {
+	// Only an NPC of group_id.
+	Update *v11.Npc `protobuf:"bytes,4,opt,name=update,proto3,oneof"`
 }
 
 type NpcChangeRequested_DeleteNpcId struct {
-	DeleteNpcId string `protobuf:"bytes,4,opt,name=delete_npc_id,json=deleteNpcId,proto3,oneof"`
+	DeleteNpcId string `protobuf:"bytes,5,opt,name=delete_npc_id,json=deleteNpcId,proto3,oneof"`
 }
 
-func (*NpcChangeRequested_Upsert) isNpcChangeRequested_Change() {}
+func (*NpcChangeRequested_Create) isNpcChangeRequested_Change() {}
+
+func (*NpcChangeRequested_Update) isNpcChangeRequested_Change() {}
 
 func (*NpcChangeRequested_DeleteNpcId) isNpcChangeRequested_Change() {}
 
@@ -128,12 +146,13 @@ var File_ogcloud_internal_v1_npc_proto protoreflect.FileDescriptor
 
 const file_ogcloud_internal_v1_npc_proto_rawDesc = "" +
 	"\n" +
-	"\x1dogcloud/internal/v1/npc.proto\x12\x13ogcloud.internal.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1bogcloud/node/v1/query.proto\"\xcd\x01\n" +
+	"\x1dogcloud/internal/v1/npc.proto\x12\x13ogcloud.internal.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1bogcloud/node/v1/query.proto\"\xfd\x01\n" +
 	"\x12NpcChangeRequested\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12.\n" +
-	"\x06upsert\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06upsert\x12$\n" +
-	"\rdelete_npc_id\x18\x04 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
+	"\x06create\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06create\x12.\n" +
+	"\x06update\x18\x04 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06update\x12$\n" +
+	"\rdelete_npc_id\x18\x05 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
 	"\x06changeB\xe6\x01\n" +
 	"\x17com.ogcloud.internal.v1B\bNpcProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
@@ -157,12 +176,13 @@ var file_ogcloud_internal_v1_npc_proto_goTypes = []any{
 }
 var file_ogcloud_internal_v1_npc_proto_depIdxs = []int32{
 	1, // 0: ogcloud.internal.v1.NpcChangeRequested.metadata:type_name -> ogcloud.events.v1.EventMetadata
-	2, // 1: ogcloud.internal.v1.NpcChangeRequested.upsert:type_name -> ogcloud.node.v1.Npc
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 1: ogcloud.internal.v1.NpcChangeRequested.create:type_name -> ogcloud.node.v1.Npc
+	2, // 2: ogcloud.internal.v1.NpcChangeRequested.update:type_name -> ogcloud.node.v1.Npc
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_internal_v1_npc_proto_init() }
@@ -171,7 +191,8 @@ func file_ogcloud_internal_v1_npc_proto_init() {
 		return
 	}
 	file_ogcloud_internal_v1_npc_proto_msgTypes[0].OneofWrappers = []any{
-		(*NpcChangeRequested_Upsert)(nil),
+		(*NpcChangeRequested_Create)(nil),
+		(*NpcChangeRequested_Update)(nil),
 		(*NpcChangeRequested_DeleteNpcId)(nil),
 	}
 	type x struct{}
