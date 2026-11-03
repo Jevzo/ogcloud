@@ -40,5 +40,13 @@ object RuntimeProfiles {
                 "https://cdn.modrinth.com/data/TbHIxhx5/versions/EPLCoxMK/ViaRewind-4.2.0.jar",
                 "7f3a2a972a3fe45f9c16b48a2e2b08fca6aa70da77eb8e47644726f19a43dc24116c2f7e126434f9f9388fa1b987a014efe287e3980f773b6e261313e7e939b2",
             ),
+            RuntimePlugin(
+                "packetevents",
+                setOf(Platform.PAPER, Platform.PANDASPIGOT),
+                "packetevents.jar",
+                "2.14.0+spigot",
+                "https://cdn.modrinth.com/data/HYKaKraK/versions/m78nFxYg/packetevents-spigot-2.14.0.jar",
+                "18a942cb55f64783a63b28deea2cebbbe782e5d6a1089f6700430e183bfbce0a45398a640ed0dff4361b55190dcf47017f2ca7788f4a5c8c9efad1f549a63fe3",
+            ),
         )
 }
