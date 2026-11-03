@@ -4,6 +4,11 @@ group "platform" {
   targets = ["spring", "go"]
 }
 
+# Test-only images, built for `mise run check:images` and never published.
+group "test" {
+  targets = ["gateway-contracttest"]
+}
+
 target "_platform" {
   context  = "images/platform"
   contexts = { artifacts = "build/images" }
@@ -25,4 +30,12 @@ target "go" {
   target   = "go"
   args     = { BINARY = binary }
   tags     = ["${REGISTRY}/${binary}:${VERSION}"]
+}
+
+# The gateway built with the contracttest tag for the cross-language contract test (T-0510).
+target "gateway-contracttest" {
+  inherits = ["_platform"]
+  target   = "go"
+  args     = { BINARY = "gateway-contracttest" }
+  tags     = ["${REGISTRY}/gateway-contracttest:${VERSION}"]
 }
