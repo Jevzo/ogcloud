@@ -14,7 +14,7 @@ server, and ships the network features owners otherwise assemble from plugins.
 | `contracts/` | Protobuf events and gRPC services, Kafka topics, runtime profiles, generated OpenAPI |
 | `control-plane/` | Kotlin: API and controller plus shared domain and adapter modules |
 | `data-plane/` | Go: node gateway, load balancer, template loader, bootstrap |
-| `integrations/` | JVM plugins and mods (Velocity, Paper, PandaSpigot, Fabric, NeoForge) and the SDK |
+| `integrations/` | JVM plugins and mods (Velocity, Paper and Folia, PandaSpigot, Fabric, NeoForge) and the SDK |
 | `apps/`, `packages/` | Web, desktop and mobile apps and shared TypeScript packages |
 | `images/` | Server container images |
 | `deploy/` | Helm chart, Terraform modules and local development config |
