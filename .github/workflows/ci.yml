@@ -57,9 +57,12 @@ jobs:
             images:
               - *shared
               - images/**
-              - contracts/runtime-profiles.yaml
+              - contracts/**
               - integrations/**
+              - control-plane/**
+              - data-plane/**
               - build-logic/**
+              - gradle/**
 
   # Repository-wide gates: run on every change.
   baseline:
@@ -121,7 +124,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: mise run check:ts
 
-  # Builds the server images and boots each with OgCloud's plugin (D-0139); slow, so only when they can change.
+  # Builds every image, boots the server images with OgCloud's plugin (D-0139) and scans the platform images.
   images:
     needs: changes
     if: needs.changes.outputs.images == 'true'
