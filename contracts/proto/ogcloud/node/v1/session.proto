@@ -44,6 +44,8 @@ message SessionRequest {
     LiveChannelSubscription live_subscription = 8;
     LiveChannelPublish live_publish = 9;
     DeliveryResult delivery_result = 10;
+    PlayerSnapshot player_snapshot = 11;
+    NpcChangeRequest npc_change = 12;
   }
 }
 
@@ -136,6 +138,21 @@ message NodeCommandRequest {
   // Must be connected through the sending proxy and hold ogcloud.admin.command.
   string acting_player_uuid = 1;
   ogcloud.events.v1.NodeCommand command = 2;
+}
+
+// A proxy's online players, every 60 seconds (D-0130).
+message PlayerSnapshot {
+  repeated ogcloud.events.v1.SnapshotPlayer players = 1;
+}
+
+// An NPC change by an in-game admin on the sending backend (D-0129); only NPCs of the sender's group.
+message NpcChangeRequest {
+  // Must be on the sending backend and hold ogcloud.admin.npc.
+  string acting_player_uuid = 1;
+  oneof change {
+    Npc upsert = 2;
+    string delete_npc_id = 3;
+  }
 }
 
 message LiveChannelSubscription {

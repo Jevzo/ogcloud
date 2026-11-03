@@ -22,6 +22,12 @@ object KafkaTopics {
     const val PLAYER_ACTIVITY = "ogcloud.player.activity"
     /** Carries ogcloud.events.v1.PlayerActivity. */
     const val PLAYER_ACTIVITY_DLT = "ogcloud.player.activity.dlt"
+    /** Carries ogcloud.events.v1.ProxyPlayersSnapshot. */
+    const val PLAYER_SNAPSHOT = "ogcloud.player.snapshot"
+    /** Carries ogcloud.internal.v1.NpcChangeRequested. */
+    const val NPC_CHANGE = "ogcloud.npc.change"
+    /** Carries ogcloud.internal.v1.NpcChangeRequested. */
+    const val NPC_CHANGE_DLT = "ogcloud.npc.change.dlt"
     /** Carries ogcloud.events.v1.TransferRequested. */
     const val PLAYER_TRANSFER = "ogcloud.player.transfer"
     /** Carries ogcloud.events.v1.LinkCodeIssued. */
@@ -44,5 +50,5 @@ object KafkaTopics {
     const val LIVE_CHANNEL = "ogcloud.live.channel"
 
     /** Topics whose failed records go to `<topic>.dlt`. */
-    val DEAD_LETTERED: Set<String> = setOf(SERVER_COMMAND, SERVER_GAMESTATE, PLAYER_ACTIVITY, CONFIG_CHANGED, JOB_REQUESTED)
+    val DEAD_LETTERED: Set<String> = setOf(SERVER_COMMAND, SERVER_GAMESTATE, PLAYER_ACTIVITY, NPC_CHANGE, CONFIG_CHANGED, JOB_REQUESTED)
 }

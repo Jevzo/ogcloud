@@ -61,6 +61,23 @@ topics:
     consumers: [api, controller]
     deadLetter: true
 
+  # Only the newest snapshot of a proxy matters; older ones are worthless soon (D-0130).
+  - name: ogcloud.player.snapshot
+    message: ogcloud.events.v1.ProxyPlayersSnapshot
+    key: proxy_id
+    retention: 1h
+    producers: [gateway]
+    consumers: [controller]
+
+  # In-game NPC edits, applied by the API (D-0129).
+  - name: ogcloud.npc.change
+    message: ogcloud.internal.v1.NpcChangeRequested
+    key: npc_id
+    partitions: 3
+    producers: [gateway]
+    consumers: [api]
+    deadLetter: true
+
   - name: ogcloud.player.transfer
     message: ogcloud.events.v1.TransferRequested
     key: player_uuid or from_server_id

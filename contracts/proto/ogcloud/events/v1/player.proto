@@ -59,3 +59,18 @@ message LinkCodeIssued {
   string player_uuid = 2;
   string code = 3;
 }
+
+// Topic ogcloud.player.snapshot, key proxy_id. Every online player of a proxy, sent every 60 seconds, so the
+// controller can repair sessions after a lost join or leave (D-0130).
+message ProxyPlayersSnapshot {
+  EventMetadata metadata = 1;
+  string proxy_id = 2;
+  repeated SnapshotPlayer players = 3;
+}
+
+message SnapshotPlayer {
+  string player_uuid = 1;
+  string player_name = 2;
+  // Empty until the player reached a backend.
+  string server_id = 3;
+}

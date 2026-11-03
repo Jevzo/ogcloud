@@ -526,6 +526,129 @@ func (x *LinkCodeIssued) GetCode() string {
 	return ""
 }
 
+// Topic ogcloud.player.snapshot, key proxy_id. Every online player of a proxy, sent every 60 seconds, so the
+// controller can repair sessions after a lost join or leave (D-0130).
+type ProxyPlayersSnapshot struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Metadata      *EventMetadata         `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	ProxyId       string                 `protobuf:"bytes,2,opt,name=proxy_id,json=proxyId,proto3" json:"proxy_id,omitempty"`
+	Players       []*SnapshotPlayer      `protobuf:"bytes,3,rep,name=players,proto3" json:"players,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProxyPlayersSnapshot) Reset() {
+	*x = ProxyPlayersSnapshot{}
+	mi := &file_ogcloud_events_v1_player_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyPlayersSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyPlayersSnapshot) ProtoMessage() {}
+
+func (x *ProxyPlayersSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_events_v1_player_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyPlayersSnapshot.ProtoReflect.Descriptor instead.
+func (*ProxyPlayersSnapshot) Descriptor() ([]byte, []int) {
+	return file_ogcloud_events_v1_player_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ProxyPlayersSnapshot) GetMetadata() *EventMetadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+func (x *ProxyPlayersSnapshot) GetProxyId() string {
+	if x != nil {
+		return x.ProxyId
+	}
+	return ""
+}
+
+func (x *ProxyPlayersSnapshot) GetPlayers() []*SnapshotPlayer {
+	if x != nil {
+		return x.Players
+	}
+	return nil
+}
+
+type SnapshotPlayer struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	PlayerUuid string                 `protobuf:"bytes,1,opt,name=player_uuid,json=playerUuid,proto3" json:"player_uuid,omitempty"`
+	PlayerName string                 `protobuf:"bytes,2,opt,name=player_name,json=playerName,proto3" json:"player_name,omitempty"`
+	// Empty until the player reached a backend.
+	ServerId      string `protobuf:"bytes,3,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SnapshotPlayer) Reset() {
+	*x = SnapshotPlayer{}
+	mi := &file_ogcloud_events_v1_player_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SnapshotPlayer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SnapshotPlayer) ProtoMessage() {}
+
+func (x *SnapshotPlayer) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_events_v1_player_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SnapshotPlayer.ProtoReflect.Descriptor instead.
+func (*SnapshotPlayer) Descriptor() ([]byte, []int) {
+	return file_ogcloud_events_v1_player_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SnapshotPlayer) GetPlayerUuid() string {
+	if x != nil {
+		return x.PlayerUuid
+	}
+	return ""
+}
+
+func (x *SnapshotPlayer) GetPlayerName() string {
+	if x != nil {
+		return x.PlayerName
+	}
+	return ""
+}
+
+func (x *SnapshotPlayer) GetServerId() string {
+	if x != nil {
+		return x.ServerId
+	}
+	return ""
+}
+
 var File_ogcloud_events_v1_player_proto protoreflect.FileDescriptor
 
 const file_ogcloud_events_v1_player_proto_rawDesc = "" +
@@ -567,7 +690,17 @@ const file_ogcloud_events_v1_player_proto_rawDesc = "" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x1f\n" +
 	"\vplayer_uuid\x18\x02 \x01(\tR\n" +
 	"playerUuid\x12\x12\n" +
-	"\x04code\x18\x03 \x01(\tR\x04codeB\xd8\x01\n" +
+	"\x04code\x18\x03 \x01(\tR\x04code\"\xac\x01\n" +
+	"\x14ProxyPlayersSnapshot\x12<\n" +
+	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x19\n" +
+	"\bproxy_id\x18\x02 \x01(\tR\aproxyId\x12;\n" +
+	"\aplayers\x18\x03 \x03(\v2!.ogcloud.events.v1.SnapshotPlayerR\aplayers\"o\n" +
+	"\x0eSnapshotPlayer\x12\x1f\n" +
+	"\vplayer_uuid\x18\x01 \x01(\tR\n" +
+	"playerUuid\x12\x1f\n" +
+	"\vplayer_name\x18\x02 \x01(\tR\n" +
+	"playerName\x12\x1b\n" +
+	"\tserver_id\x18\x03 \x01(\tR\bserverIdB\xd8\x01\n" +
 	"\x15com.ogcloud.events.v1B\vPlayerProtoP\x01ZLgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1;eventsv1\xa2\x02\x03OEX\xaa\x02\x11Ogcloud.Events.V1\xca\x02\x11Ogcloud\\Events\\V1\xe2\x02\x1dOgcloud\\Events\\V1\\GPBMetadata\xea\x02\x13Ogcloud::Events::V1b\x06proto3"
 
 var (
@@ -582,30 +715,34 @@ func file_ogcloud_events_v1_player_proto_rawDescGZIP() []byte {
 	return file_ogcloud_events_v1_player_proto_rawDescData
 }
 
-var file_ogcloud_events_v1_player_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_ogcloud_events_v1_player_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_ogcloud_events_v1_player_proto_goTypes = []any{
-	(*PlayerActivity)(nil),     // 0: ogcloud.events.v1.PlayerActivity
-	(*PlayerConnected)(nil),    // 1: ogcloud.events.v1.PlayerConnected
-	(*PlayerSwitched)(nil),     // 2: ogcloud.events.v1.PlayerSwitched
-	(*PlayerDisconnected)(nil), // 3: ogcloud.events.v1.PlayerDisconnected
-	(*TransferRequested)(nil),  // 4: ogcloud.events.v1.TransferRequested
-	(*LinkCodeIssued)(nil),     // 5: ogcloud.events.v1.LinkCodeIssued
-	(*EventMetadata)(nil),      // 6: ogcloud.events.v1.EventMetadata
-	(RoutingStrategy)(0),       // 7: ogcloud.events.v1.RoutingStrategy
+	(*PlayerActivity)(nil),       // 0: ogcloud.events.v1.PlayerActivity
+	(*PlayerConnected)(nil),      // 1: ogcloud.events.v1.PlayerConnected
+	(*PlayerSwitched)(nil),       // 2: ogcloud.events.v1.PlayerSwitched
+	(*PlayerDisconnected)(nil),   // 3: ogcloud.events.v1.PlayerDisconnected
+	(*TransferRequested)(nil),    // 4: ogcloud.events.v1.TransferRequested
+	(*LinkCodeIssued)(nil),       // 5: ogcloud.events.v1.LinkCodeIssued
+	(*ProxyPlayersSnapshot)(nil), // 6: ogcloud.events.v1.ProxyPlayersSnapshot
+	(*SnapshotPlayer)(nil),       // 7: ogcloud.events.v1.SnapshotPlayer
+	(*EventMetadata)(nil),        // 8: ogcloud.events.v1.EventMetadata
+	(RoutingStrategy)(0),         // 9: ogcloud.events.v1.RoutingStrategy
 }
 var file_ogcloud_events_v1_player_proto_depIdxs = []int32{
-	6, // 0: ogcloud.events.v1.PlayerActivity.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	8, // 0: ogcloud.events.v1.PlayerActivity.metadata:type_name -> ogcloud.events.v1.EventMetadata
 	1, // 1: ogcloud.events.v1.PlayerActivity.connected:type_name -> ogcloud.events.v1.PlayerConnected
 	2, // 2: ogcloud.events.v1.PlayerActivity.switched:type_name -> ogcloud.events.v1.PlayerSwitched
 	3, // 3: ogcloud.events.v1.PlayerActivity.disconnected:type_name -> ogcloud.events.v1.PlayerDisconnected
-	6, // 4: ogcloud.events.v1.TransferRequested.metadata:type_name -> ogcloud.events.v1.EventMetadata
-	7, // 5: ogcloud.events.v1.TransferRequested.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
-	6, // 6: ogcloud.events.v1.LinkCodeIssued.metadata:type_name -> ogcloud.events.v1.EventMetadata
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	8, // 4: ogcloud.events.v1.TransferRequested.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	9, // 5: ogcloud.events.v1.TransferRequested.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
+	8, // 6: ogcloud.events.v1.LinkCodeIssued.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	8, // 7: ogcloud.events.v1.ProxyPlayersSnapshot.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	7, // 8: ogcloud.events.v1.ProxyPlayersSnapshot.players:type_name -> ogcloud.events.v1.SnapshotPlayer
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_events_v1_player_proto_init() }
@@ -632,7 +769,7 @@ func file_ogcloud_events_v1_player_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_events_v1_player_proto_rawDesc), len(file_ogcloud_events_v1_player_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

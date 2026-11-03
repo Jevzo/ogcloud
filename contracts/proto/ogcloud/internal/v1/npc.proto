@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+import "ogcloud/events/v1/common.proto";
+import "ogcloud/node/v1/query.proto";
+
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
+// Topic ogcloud.npc.change, key npc_id. An in-game admin's NPC edit for the API to apply like a dashboard
+// edit, with the player as actor (D-0129).
+message NpcChangeRequested {
+  ogcloud.events.v1.EventMetadata metadata = 1;
+  // The group of the server it came from; the API refuses NPCs of other groups.
+  string group_id = 2;
+  oneof change {
+    ogcloud.node.v1.Npc upsert = 3;
+    string delete_npc_id = 4;
+  }
+}
