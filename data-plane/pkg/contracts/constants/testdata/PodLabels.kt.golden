@@ -6,4 +6,5 @@ object PodLabels {
     const val SERVER_ID = "cloud.ogwars.io/server-id"
     /** backend or proxy. */
     const val ROLE = "cloud.ogwars.io/role"
+    const val MAX_PODS = 64
 }

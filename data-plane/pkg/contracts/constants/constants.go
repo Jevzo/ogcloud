@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/format"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/jevzo/ogcloud/data-plane/pkg/contracts/naming"
@@ -21,11 +22,22 @@ type Catalog struct {
 	Constants []Constant `yaml:"constants"`
 }
 
-// Constant is a named string.
+// Constant is a named string, or a whole number when Type is "int".
 type Constant struct {
 	Name  string `yaml:"name"`
+	Type  string `yaml:"type"`
 	Value string `yaml:"value"`
 	Doc   string `yaml:"doc"`
+}
+
+const typeInt = "int"
+
+// literal is the value as Go and Kotlin both write it.
+func (c Constant) literal() string {
+	if c.Type == typeInt {
+		return c.Value
+	}
+	return strconv.Quote(c.Value)
 }
 
 var (
@@ -56,6 +68,15 @@ func (c *Catalog) Validate() error {
 		if constant.Value == "" {
 			problems = append(problems, fmt.Errorf("constant %s has no value", constant.Name))
 		}
+		switch constant.Type {
+		case "", "string":
+		case typeInt:
+			if _, err := strconv.ParseInt(constant.Value, 10, 32); err != nil {
+				problems = append(problems, fmt.Errorf("constant %s is not an int: %w", constant.Name, err))
+			}
+		default:
+			problems = append(problems, fmt.Errorf("constant %s has unknown type %q", constant.Name, constant.Type))
+		}
 		seen[constant.Name] = true
 	}
 	return errors.Join(problems...)
@@ -70,7 +91,7 @@ func RenderGo(packageName, source string, c *Catalog) ([]byte, error) {
 		if constant.Doc != "" {
 			fmt.Fprintf(&b, "\t// %s %s\n", naming.Pascal(constant.Name), constant.Doc)
 		}
-		fmt.Fprintf(&b, "\t%s = %q\n", naming.Pascal(constant.Name), constant.Value)
+		fmt.Fprintf(&b, "\t%s = %s\n", naming.Pascal(constant.Name), constant.literal())
 	}
 	b.WriteString(")\n")
 	formatted, err := format.Source([]byte(b.String()))
@@ -89,7 +110,7 @@ func RenderKotlin(packageName, source string, c *Catalog) []byte {
 		if constant.Doc != "" {
 			fmt.Fprintf(&b, "    /** %s */\n", constant.Doc)
 		}
-		fmt.Fprintf(&b, "    const val %s = %q\n", naming.UpperSnake(constant.Name), constant.Value)
+		fmt.Fprintf(&b, "    const val %s = %s\n", naming.UpperSnake(constant.Name), constant.literal())
 	}
 	b.WriteString("}\n")
 	return []byte(b.String())

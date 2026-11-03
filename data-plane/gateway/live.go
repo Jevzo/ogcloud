@@ -5,17 +5,19 @@ import (
 	"regexp"
 	"sync"
 	"time"
+
+	"github.com/jevzo/ogcloud/data-plane/pkg/livechannels"
 )
 
-// Live-channel limits (D-0116), enforced here; the node protocol only documents the payload cap.
+// Live-channel limits (D-0116) come from contracts/live-channels.yaml, shared with the node integrations.
 const (
-	maxLiveSubscriptions   = 64
-	maxLivePayloadBytes    = 64 << 10
-	maxLiveTypeIDLength    = 256
-	livePublishesPerSecond = 200
+	maxLiveSubscriptions   = livechannels.MaxSubscriptions
+	maxLivePayloadBytes    = livechannels.MaxPayloadBytes
+	maxLiveTypeIDLength    = livechannels.MaxTypeIdLength
+	livePublishesPerSecond = livechannels.PublishesPerSecond
 )
 
-var liveChannelName = regexp.MustCompile(`^[a-z0-9._:-]{1,64}$`)
+var liveChannelName = regexp.MustCompile(livechannels.ChannelPattern)
 
 var (
 	errLiveChannelName  = errors.New("invalid_channel")

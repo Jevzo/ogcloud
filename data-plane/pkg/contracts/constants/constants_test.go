@@ -17,6 +17,7 @@ func TestRenderersMatchGoldenFiles(t *testing.T) {
 		Constants: []Constant{
 			{Name: "serverId", Value: "cloud.ogwars.io/server-id"},
 			{Name: "role", Value: "cloud.ogwars.io/role", Doc: "backend or proxy."},
+			{Name: "maxPods", Type: "int", Value: "64"},
 		},
 	}
 	goSource, err := RenderGo("podlabels", "contracts/pod-labels.yaml", catalog)
@@ -44,11 +45,14 @@ func TestRenderersMatchGoldenFiles(t *testing.T) {
 }
 
 func TestValidateRejectsBadNamesAndEmptyValues(t *testing.T) {
-	catalog := Catalog{Object: "podLabels", Constants: []Constant{{Name: "a", Value: "x"}, {Name: "a", Value: "y"}, {Name: "b"}}}
+	catalog := Catalog{Object: "podLabels", Constants: []Constant{
+		{Name: "a", Value: "x"}, {Name: "a", Value: "y"}, {Name: "b"},
+		{Name: "c", Type: "int", Value: "lots"}, {Name: "d", Type: "float", Value: "1.5"},
+	}}
 
 	err := catalog.Validate()
 
-	for _, want := range []string{"PascalCase", "unique lowerCamelCase", "no value"} {
+	for _, want := range []string{"PascalCase", "unique lowerCamelCase", "no value", "not an int", "unknown type"} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("missing %q in %v", want, err)
 		}

@@ -1,0 +1,22 @@
+# Live-channel limits (D-0116): the gateway enforces them, the SDK checks them early for plugin authors.
+# Regenerate with `mise run gen` after editing.
+object: LiveChannelLimits
+doc: Limits of live channels, shared by the gateway and the node integrations.
+constants:
+  - name: channelPattern
+    value: "^[a-z0-9._:-]{1,64}$"
+    doc: Valid channel names.
+  - name: maxSubscriptions
+    type: int
+    value: "64"
+    doc: Channels one session may subscribe to.
+  - name: maxPayloadBytes
+    type: int
+    value: "65536"
+  - name: maxTypeIdLength
+    type: int
+    value: "256"
+  - name: publishesPerSecond
+    type: int
+    value: "200"
+    doc: Publishes one session may send per second.
