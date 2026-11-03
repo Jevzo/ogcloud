@@ -37,6 +37,16 @@ fun ProtoJobState.toDomain(): JobState = domainEnum(name, "JOB_STATE_")
 
 fun ProtoScalingAction.toDomain(): ScalingAction = domainEnum(name, "SCALING_ACTION_")
 
+/** UNSPECIFIED means the network's default strategy. */
+fun ProtoRoutingStrategy.toDomain(): RoutingStrategy? =
+    if (this ==
+        ProtoRoutingStrategy.ROUTING_STRATEGY_UNSPECIFIED
+    ) {
+        null
+    } else {
+        domainEnum<RoutingStrategy>(name, "ROUTING_STRATEGY_")
+    }
+
 /** UNSPECIFIED means the server has no game state. */
 fun ProtoGameState.toDomain(): GameState? =
     if (this ==

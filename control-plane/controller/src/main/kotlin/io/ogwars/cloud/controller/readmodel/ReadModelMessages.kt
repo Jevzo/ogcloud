@@ -3,20 +3,15 @@ package io.ogwars.cloud.controller.readmodel
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
-import io.ogwars.cloud.contracts.node.v1.Location
-import io.ogwars.cloud.contracts.node.v1.NpcTransfer
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.contracts.toTimestamp
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.network.NetworkSettings
 import io.ogwars.cloud.domain.npc.Npc
-import io.ogwars.cloud.domain.npc.NpcAction
 import io.ogwars.cloud.domain.player.Player
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.livestate.toProto
-import io.ogwars.cloud.contracts.node.v1.Npc as NpcMessage
-import io.ogwars.cloud.contracts.node.v1.NpcAction as NpcActionMessage
 import io.ogwars.cloud.domain.permission.PermissionGroup as DomainPermissionGroup
 
 /**
@@ -80,42 +75,6 @@ object ReadModelMessages {
             .setVersion(player.rankVersion)
             .build()
 
-    fun npcs(npcs: List<Npc>): ListNpcsResponse = ListNpcsResponse.newBuilder().addAllNpcs(npcs.map(::npc)).build()
-
-    private fun npc(npc: Npc): NpcMessage =
-        NpcMessage
-            .newBuilder()
-            .setNpcId(npc.id.toString())
-            .setGroupId(npc.groupId.value)
-            .setLocation(
-                Location
-                    .newBuilder()
-                    .setWorld(npc.location.world)
-                    .setX(npc.location.x)
-                    .setY(npc.location.y)
-                    .setZ(npc.location.z)
-                    .setYaw(npc.location.yaw)
-                    .setPitch(npc.location.pitch),
-            ).setTitle(npc.title)
-            .setSubtitle(npc.subtitle)
-            .setSkinTexture(npc.skin?.texture.orEmpty())
-            .setSkinSignature(npc.skin?.signature.orEmpty())
-            .setLookAtPlayers(npc.lookAtPlayers)
-            .apply { npc.leftClick?.let { setLeftClick(action(it)) } }
-            .apply { npc.rightClick?.let { setRightClick(action(it)) } }
-            .build()
-
-    private fun action(action: NpcAction): NpcActionMessage =
-        when (action) {
-            is NpcAction.Transfer -> {
-                NpcActionMessage
-                    .newBuilder()
-                    .setTransfer(
-                        NpcTransfer
-                            .newBuilder()
-                            .setGroupId(action.groupId.value)
-                            .apply { action.routingStrategy?.let { setRoutingStrategy(it.toProto()) } },
-                    ).build()
-            }
-        }
+    fun npcs(npcs: List<Npc>): ListNpcsResponse =
+        ListNpcsResponse.newBuilder().addAllNpcs(npcs.map(Npc::toProto)).build()
 }

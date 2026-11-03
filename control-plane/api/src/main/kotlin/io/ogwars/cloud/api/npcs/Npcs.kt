@@ -101,6 +101,8 @@ private fun NpcAction.toView() =
         is NpcAction.Transfer -> TransferActionView(groupId.value, routingStrategy)
     }
 
+const val NPCS_PATH = "/api/v1/npcs"
+
 /** Managed NPCs; every change reaches the servers of the affected groups (D-0104). */
 @Service
 class NpcManagement(
@@ -111,14 +113,21 @@ class NpcManagement(
 ) {
     fun list(groupId: GroupId?): List<Npc> = groupId?.let(npcs::findByGroup) ?: npcs.findAll()
 
-    fun get(id: UUID): Npc = npcs.find(id) ?: throw NoSuchElementException("NPC $id does not exist")
+    fun find(id: UUID): Npc? = npcs.find(id)
+
+    fun get(id: UUID): Npc = find(id) ?: throw NoSuchElementException("NPC $id does not exist")
 
     fun create(
         actor: Actor,
         settings: NpcSettings,
+    ): Npc = create(actor, settings.toDomain(ids.next()))
+
+    /** Saves [npc] under its own id, so saving it again (a redelivered in-game create) changes nothing. */
+    fun create(
+        actor: Actor,
+        npc: Npc,
     ): Npc {
-        val npc = validated(settings.toDomain(ids.next()))
-        npcs.save(npc)
+        npcs.save(validated(npc))
         announcements.npc(actor, npc.groupId, npc.id)
         return npc
     }
@@ -127,13 +136,17 @@ class NpcManagement(
         actor: Actor,
         id: UUID,
         settings: NpcSettings,
+    ): Npc = update(actor, settings.toDomain(id))
+
+    fun update(
+        actor: Actor,
+        npc: Npc,
     ): Npc {
-        val previous = get(id)
-        val npc = validated(settings.toDomain(id))
-        npcs.save(npc)
+        val previous = get(npc.id)
+        npcs.save(validated(npc))
         // Moved to another group: the old group's servers drop it.
-        if (previous.groupId != npc.groupId) announcements.npc(actor, previous.groupId, id, deleted = true)
-        announcements.npc(actor, npc.groupId, id)
+        if (previous.groupId != npc.groupId) announcements.npc(actor, previous.groupId, npc.id, deleted = true)
+        announcements.npc(actor, npc.groupId, npc.id)
         return npc
     }
 
@@ -162,7 +175,7 @@ class NpcManagement(
 }
 
 @RestController
-@RequestMapping("/api/v1/npcs")
+@RequestMapping(NPCS_PATH)
 class NpcController(
     private val npcs: NpcManagement,
     private val actors: CurrentActor,
