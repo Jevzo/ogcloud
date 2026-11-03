@@ -80,6 +80,7 @@ func load(env *config.Source) (settings, error) {
 
 func serve(ctx context.Context, s settings, env service.Env) error {
 	logger := env.Logger
+	s.kafka.Logger, s.valkey.Logger = logger, logger
 	store, err := valkey.Connect(s.valkey)
 	if err != nil {
 		return err

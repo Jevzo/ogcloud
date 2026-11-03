@@ -1,9 +1,12 @@
 package valkey
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"log/slog"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -68,14 +71,24 @@ func TestRecordsSessionsAndReadModelsAreReadAsTheControllerWroteThem(t *testing.
 	}
 }
 
-func TestACorruptRecordIsAnError(t *testing.T) {
+func TestACorruptRecordIsAnErrorButListsSkipIt(t *testing.T) {
 	ctx := context.Background()
 	address := testvalkey.Start(t)
-	raw := testvalkey.NewWriter(t, address).Client
+	writer := testvalkey.NewWriter(t, address)
+	raw := writer.Client
 	must(t, raw.Do(ctx, raw.B().Hset().Key(valkeykeys.Server("s-1")).FieldValue().FieldValue(valkeykeys.FieldData, "\xff\xff").Build()).Error())
+	writer.Record(t, valkeykeys.Server("s-2"), &internalv1.ServerRecord{ServerId: "s-2"})
+	writer.Add(t, valkeykeys.Servers, "s-1", "s-2")
+	var logged bytes.Buffer
+	store := connect(t, Settings{Addresses: []string{address}, Logger: slog.New(slog.NewTextHandler(&logged, nil))})
 
-	if _, err := connect(t, Settings{Addresses: []string{address}}).Server(ctx, "s-1"); err == nil {
+	if _, err := store.Server(ctx, "s-1"); err == nil {
 		t.Error("a corrupt record was accepted")
+	}
+	servers, err := store.Servers(ctx)
+	must(t, err)
+	if len(servers) != 1 || servers[0].GetServerId() != "s-2" || !strings.Contains(logged.String(), "corrupt record skipped") {
+		t.Errorf("Servers = %v, logged %q", servers, logged.String())
 	}
 }
 

@@ -45,9 +45,10 @@ func (s *Source) Required(name string) string {
 	return value
 }
 
-// Int returns the variable as an integer, or fallback when unset.
+// Int returns the variable as a positive integer, or fallback when unset; sizes, limits and counts are
+// never zero.
 func (s *Source) Int(name string, fallback int) int {
-	return parse(s, name, fallback, strconv.Atoi)
+	return parse(s, name, fallback, positive(strconv.Atoi))
 }
 
 // Bool returns the variable as a boolean, or fallback when unset.
@@ -55,9 +56,9 @@ func (s *Source) Bool(name string, fallback bool) bool {
 	return parse(s, name, fallback, strconv.ParseBool)
 }
 
-// Duration returns the variable as a duration such as "30s", or fallback when unset.
+// Duration returns the variable as a positive duration such as "30s", or fallback when unset.
 func (s *Source) Duration(name string, fallback time.Duration) time.Duration {
-	return parse(s, name, fallback, time.ParseDuration)
+	return parse(s, name, fallback, positive(time.ParseDuration))
 }
 
 // List returns the comma-separated variable, without blanks; empty when unset.
@@ -89,6 +90,18 @@ func (s *Source) Secret(name string) string {
 // Err reports every problem met so far, or nil.
 func (s *Source) Err() error {
 	return errors.Join(s.problems...)
+}
+
+var errNotPositive = errors.New("must be positive")
+
+func positive[T int | time.Duration](convert func(string) (T, error)) func(string) (T, error) {
+	return func(raw string) (T, error) {
+		value, err := convert(raw)
+		if err == nil && value <= 0 {
+			return value, errNotPositive
+		}
+		return value, err
+	}
 }
 
 func parse[T any](s *Source, name string, fallback T, convert func(string) (T, error)) T {

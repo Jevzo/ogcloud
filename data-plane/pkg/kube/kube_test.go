@@ -35,7 +35,7 @@ func TestPodTokensAreReviewedOnceUntilTheyExpire(t *testing.T) {
 	calls := 0
 	now := start
 	reviewer := NewReviewer(reviewing(authenticationv1.TokenReviewStatus{
-		Authenticated: true,
+		Authenticated: true, Audiences: []string{"ogcloud-gateway"},
 		User: authenticationv1.UserInfo{
 			Username: "system:serviceaccount:ogcloud-servers:game",
 			Extra: map[string]authenticationv1.ExtraValue{
@@ -66,7 +66,8 @@ func TestVerdictsAreCachedForAtMostTwoMinutes(t *testing.T) {
 	calls := 0
 	now := start
 	reviewer := NewReviewer(reviewing(authenticationv1.TokenReviewStatus{
-		Authenticated: true, User: authenticationv1.UserInfo{Username: "system:serviceaccount:ogcloud:controller"},
+		Authenticated: true, Audiences: []string{"ogcloud-gateway"},
+		User: authenticationv1.UserInfo{Username: "system:serviceaccount:ogcloud:controller"},
 	}, &calls), "ogcloud-gateway", func() time.Time { return now })
 	token := podToken(start.Add(time.Hour))
 
@@ -83,8 +84,12 @@ func TestVerdictsAreCachedForAtMostTwoMinutes(t *testing.T) {
 
 func TestRefusedTokensAndNonServiceAccountsAreUnauthenticated(t *testing.T) {
 	for name, status := range map[string]authenticationv1.TokenReviewStatus{
-		"refused": {Authenticated: false, Error: "invalid bearer token"},
-		"user":    {Authenticated: true, User: authenticationv1.UserInfo{Username: "admin"}},
+		"refused":              {Authenticated: false, Error: "invalid bearer token"},
+		"user":                 {Authenticated: true, Audiences: []string{"ogcloud-gateway"}, User: authenticationv1.UserInfo{Username: "admin"}},
+		"unconfirmed audience": {Authenticated: true, User: authenticationv1.UserInfo{Username: "system:serviceaccount:a:b"}},
+		"other audience": {
+			Authenticated: true, Audiences: []string{"kubernetes"}, User: authenticationv1.UserInfo{Username: "system:serviceaccount:a:b"},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			calls := 0

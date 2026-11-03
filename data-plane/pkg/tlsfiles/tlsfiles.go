@@ -7,15 +7,16 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
 )
 
 // Server returns a configuration that serves the certificate in certFile and keyFile, rereading both when
-// either file changes.
-func Server(certFile, keyFile string) (*tls.Config, error) {
-	reloader := &reloader{certFile: certFile, keyFile: keyFile}
+// either file changes. Failed reloads are logged, while the previous certificate keeps serving.
+func Server(certFile, keyFile string, logger *slog.Logger) (*tls.Config, error) {
+	reloader := &reloader{certFile: certFile, keyFile: keyFile, logger: logger}
 	if _, err := reloader.certificate(); err != nil {
 		return nil, err
 	}
@@ -43,6 +44,7 @@ func Client(caFile, serverName string) (*tls.Config, error) {
 
 type reloader struct {
 	certFile, keyFile string
+	logger            *slog.Logger
 
 	mu       sync.Mutex
 	current  *tls.Certificate
@@ -64,6 +66,7 @@ func (r *reloader) certificate() (*tls.Certificate, error) {
 	if err != nil {
 		// Mid-rotation the files may not match yet; keep serving the previous certificate.
 		if r.current != nil {
+			r.logger.Warn("certificate reload failed, serving the previous one", "certFile", r.certFile, "error", err)
 			return r.current, nil
 		}
 		return nil, fmt.Errorf("load key pair %s, %s: %w", r.certFile, r.keyFile, err)

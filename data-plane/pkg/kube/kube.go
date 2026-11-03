@@ -1,5 +1,5 @@
-// Package kube talks to the Kubernetes API for the data plane: it checks the projected service-account
-// tokens pods present with TokenReview (D-0013).
+// Package kube talks to the Kubernetes API for the data plane: it builds clients, checks the projected
+// service-account tokens pods present with TokenReview, and sends a service's own token (D-0013).
 package kube
 
 import (
@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -58,8 +59,8 @@ func NewClient(kubeconfig string) (kubernetes.Interface, error) {
 	return client, nil
 }
 
-// Reviewer checks tokens for one audience and caches positive verdicts until shortly before the token
-// expires, keeping TokenReview off the hot path (D-0053).
+// Reviewer checks tokens for one audience and caches positive verdicts for at most two minutes and never past
+// the token's expiry, keeping TokenReview off the hot path (D-0053).
 type Reviewer struct {
 	client   kubernetes.Interface
 	audience string
@@ -98,6 +99,10 @@ func (r *Reviewer) Review(ctx context.Context, token string) (Identity, error) {
 	}
 	if !review.Status.Authenticated {
 		return Identity{}, fmt.Errorf("%w: %s", ErrUnauthenticated, review.Status.Error)
+	}
+	// An audience-aware API server echoes the audiences it checked; anything else was not checked for ours.
+	if !slices.Contains(review.Status.Audiences, r.audience) {
+		return Identity{}, fmt.Errorf("%w: the review did not confirm audience %s", ErrUnauthenticated, r.audience)
 	}
 	identity, err := identityOf(review.Status.User)
 	if err != nil {

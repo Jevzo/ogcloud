@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 	"time"
@@ -33,11 +34,14 @@ type Settings struct {
 	TLS *tls.Config
 	// Optional custom dialing, e.g. to map addresses Sentinel announces inside a test network.
 	Dial func(ctx context.Context, address string, dialer *net.Dialer, tlsConfig *tls.Config) (net.Conn, error)
+	// Where corrupt records skipped in lists are reported; nil uses slog's default logger.
+	Logger *slog.Logger
 }
 
 // Store reads live state.
 type Store struct {
 	client valkey.Client
+	logger *slog.Logger
 }
 
 // Connect opens a client; it fails when no node or sentinel answers.
@@ -63,7 +67,11 @@ func Connect(s Settings) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connect to Valkey %s: %w", strings.Join(s.Addresses, ","), err)
 	}
-	return &Store{client: client}, nil
+	logger := s.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return &Store{client: client, logger: logger}, nil
 }
 
 // Close disconnects.
@@ -79,7 +87,7 @@ func (s *Store) Ping(ctx context.Context) error {
 
 // Server returns the live record of a server, or nil when there is none.
 func (s *Store) Server(ctx context.Context, id string) (*internalv1.ServerRecord, error) {
-	records, err := readRecords[*internalv1.ServerRecord](ctx, s, []string{valkeykeys.Server(id)})
+	records, err := readRecords[*internalv1.ServerRecord](ctx, s, []string{valkeykeys.Server(id)}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +109,7 @@ func (s *Store) ServersOfGroup(ctx context.Context, groupID string) ([]*internal
 
 // Session returns an online player's session, or nil when the player is offline.
 func (s *Store) Session(ctx context.Context, playerUUID string) (*internalv1.PlayerSession, error) {
-	records, err := readRecords[*internalv1.PlayerSession](ctx, s, []string{valkeykeys.Session(playerUUID)})
+	records, err := readRecords[*internalv1.PlayerSession](ctx, s, []string{valkeykeys.Session(playerUUID)}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -144,12 +152,13 @@ func (s *Store) serversIn(ctx context.Context, set string) ([]*internalv1.Server
 	for i, id := range ids {
 		keys[i] = valkeykeys.Server(id)
 	}
-	return readRecords[*internalv1.ServerRecord](ctx, s, keys)
+	return readRecords[*internalv1.ServerRecord](ctx, s, keys, true)
 }
 
 // readRecords loads the data field of each revisioned record in one round trip. Records that expired
-// since their id was listed are skipped; a record that does not decode is an error.
-func readRecords[T proto.Message](ctx context.Context, s *Store, keys []string) ([]T, error) {
+// since their id was listed are skipped. A record that does not decode is an error, except in a listing,
+// where it is logged and skipped so one bad record cannot hide every server.
+func readRecords[T proto.Message](ctx context.Context, s *Store, keys []string, listing bool) ([]T, error) {
 	if len(keys) == 0 {
 		return nil, nil
 	}
@@ -168,6 +177,10 @@ func readRecords[T proto.Message](ctx context.Context, s *Store, keys []string) 
 		}
 		record := newMessage[T]()
 		if err := proto.Unmarshal(encoded, record); err != nil {
+			if listing {
+				s.logger.Error("corrupt record skipped", "key", keys[i], "error", err)
+				continue
+			}
 			return nil, errors.Join(fmt.Errorf("corrupt record %s", keys[i]), err)
 		}
 		records = append(records, record)

@@ -9,6 +9,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"io"
+	"log/slog"
 	"math/big"
 	"net"
 	"os"
@@ -23,7 +25,7 @@ func TestServersPickUpRenewedCertificates(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "ca.crt"), ca.certPEM)
 	ca.issue(t, dir, "first")
 
-	server, err := Server(filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key"))
+	server, err := Server(filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key"), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		t.Fatalf("Server: %v", err)
 	}
@@ -50,7 +52,7 @@ func TestServersPickUpRenewedCertificates(t *testing.T) {
 
 func TestMissingOrForeignFilesAreRefused(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := Server(filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key")); err == nil {
+	if _, err := Server(filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key"), slog.New(slog.NewTextHandler(io.Discard, nil))); err == nil {
 		t.Error("missing key pair accepted")
 	}
 	writeFile(t, filepath.Join(dir, "ca.crt"), []byte("not a certificate"))

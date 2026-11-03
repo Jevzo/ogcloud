@@ -64,15 +64,18 @@ func TestSecretsComeFromFilesWithoutTrailingNewline(t *testing.T) {
 }
 
 func TestEveryProblemIsReported(t *testing.T) {
-	s := source(map[string]string{"PORT": "eighty", "KEY_FILE": "/missing"}, nil)
+	s := source(map[string]string{"PORT": "eighty", "KEY_FILE": "/missing", "QUEUE": "0", "TIMEOUT": "-5s"}, nil)
 
 	s.Required("BROKERS")
 	s.Int("PORT", 1)
+	s.Int("QUEUE", 1)
+	s.Duration("TIMEOUT", time.Second)
 	s.Secret("KEY_FILE")
 	s.Secret("TOKEN_FILE")
 
 	err := s.Err()
-	for _, want := range []string{"BROKERS is required", `PORT="eighty"`, "KEY_FILE: read /missing", "TOKEN_FILE is required"} {
+	for _, want := range []string{"BROKERS is required", `PORT="eighty"`, `QUEUE="0": must be positive`, `TIMEOUT="-5s": must be positive`,
+		"KEY_FILE: read /missing", "TOKEN_FILE is required"} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("missing %q in %v", want, err)
 		}

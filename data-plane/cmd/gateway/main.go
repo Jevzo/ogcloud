@@ -86,6 +86,7 @@ func load(env *config.Source) (settings, error) {
 
 func serve(ctx context.Context, s settings, env service.Env) error {
 	logger := env.Logger
+	s.kafka.Logger, s.valkey.Logger = logger, logger
 	client, err := kube.NewClient(os.Getenv("KUBECONFIG"))
 	if err != nil {
 		return err
@@ -104,7 +105,7 @@ func serve(ctx context.Context, s settings, env service.Env) error {
 		return err
 	}
 	defer producer.Close()
-	serverTLS, err := tlsfiles.Server(s.certFile, s.keyFile)
+	serverTLS, err := tlsfiles.Server(s.certFile, s.keyFile, logger)
 	if err != nil {
 		return err
 	}

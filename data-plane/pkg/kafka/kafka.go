@@ -17,7 +17,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const lingerTime = 5 * time.Millisecond
+const (
+	lingerTime = 5 * time.Millisecond
+	// A publish fails after this instead of retrying forever, so a Kafka outage never blocks a caller (D-0121).
+	publishTimeout = 5 * time.Second
+)
 
 // Settings reach the cluster as one service, whose name prefixes the consumer groups its ACLs allow.
 type Settings struct {
@@ -28,10 +32,15 @@ type Settings struct {
 	Password string
 	// Nil for plaintext.
 	TLS *tls.Config
+	// Receives franz-go's warnings and errors, e.g. refused logins or missing ACLs; nil drops them.
+	Logger *slog.Logger
 }
 
 func (s Settings) options() []kgo.Opt {
 	opts := []kgo.Opt{kgo.SeedBrokers(s.Brokers...), kgo.ClientID(s.ClientID)}
+	if s.Logger != nil {
+		opts = append(opts, kgo.WithLogger(clientLogger{s.Logger.With("component", "franz-go")}))
+	}
 	if s.Username != "" {
 		opts = append(opts, kgo.SASL(scram.Auth{User: s.Username, Pass: s.Password}.AsSha512Mechanism()))
 	}
@@ -49,15 +58,17 @@ type Producer struct {
 
 // NewProducer connects lazily; the first publish reaches the brokers.
 func NewProducer(s Settings) (*Producer, error) {
-	client, err := kgo.NewClient(append(s.options(), kgo.ProducerLinger(lingerTime))...)
+	client, err := kgo.NewClient(append(s.options(), kgo.ProducerLinger(lingerTime), kgo.RecordDeliveryTimeout(publishTimeout))...)
 	if err != nil {
 		return nil, fmt.Errorf("kafka producer: %w", err)
 	}
 	return &Producer{client: client}, nil
 }
 
-// Publish sends event to topic under key and waits until the brokers stored it.
+// Publish sends event to topic under key and waits until the brokers stored it, at most publishTimeout.
 func (p *Producer) Publish(ctx context.Context, topic, key string, event proto.Message) error {
+	ctx, cancel := context.WithTimeout(ctx, publishTimeout)
+	defer cancel()
 	value, err := proto.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("encode %s for %s: %w", event.ProtoReflect().Descriptor().FullName(), topic, err)
@@ -69,7 +80,7 @@ func (p *Producer) Publish(ctx context.Context, topic, key string, event proto.M
 	return nil
 }
 
-// Close flushes nothing further and disconnects.
+// Close disconnects; Publish is synchronous, so nothing is left buffered.
 func (p *Producer) Close() { p.client.Close() }
 
 // Broadcast reads topics with a consumer group of its own that never commits and starts at the end, so a
@@ -113,4 +124,22 @@ func (b *Broadcast) Run(ctx context.Context, handle func(context.Context, *kgo.R
 		})
 		fetches.EachRecord(func(record *kgo.Record) { handle(ctx, record) })
 	}
+}
+
+// clientLogger hands franz-go's warnings and errors to slog.
+type clientLogger struct{ logger *slog.Logger }
+
+func (l clientLogger) Level() kgo.LogLevel { return kgo.LogLevelWarn }
+
+func (l clientLogger) Log(level kgo.LogLevel, message string, keyvals ...any) {
+	severity := slog.LevelWarn
+	switch level {
+	case kgo.LogLevelError:
+		severity = slog.LevelError
+	case kgo.LogLevelInfo:
+		severity = slog.LevelInfo
+	case kgo.LogLevelDebug:
+		severity = slog.LevelDebug
+	}
+	l.logger.Log(context.Background(), severity, message, keyvals...)
 }
