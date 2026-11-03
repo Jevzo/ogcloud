@@ -60,7 +60,7 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | Labels | `cloud.ogwars.io/{server-id,group,group-type,profile,role}`, `app.kubernetes.io/{name,managed-by}`; `role` is `backend` or `proxy` |
 | Images | `<registry>/<platform>:<mc-version>-<platform-version>`, run as uid and gid 1000, read-only root filesystem; a group may override the image only within the allowed prefixes |
 | Files | server files in `/data` (emptyDir, or the `static-<group>` volume for STATIC) with OgCloud's state in `/data/.ogcloud` (template marker, bundle list), `/tmp` (server and agent), the gateway token and the internal CA in `/var/run/secrets/ogcloud/gateway/{token,ca.crt}` (projected: audience `ogcloud-gateway`, ConfigMap `ogcloud-internal-ca`), forwarding tokens in `/var/run/secrets/ogcloud/forwarding` |
-| Environment | `OGCLOUD_SERVER_ID`, `OGCLOUD_GROUP_ID`, `OGCLOUD_GATEWAY_ADDRESS`, `OGCLOUD_GATEWAY_TOKEN_FILE`, `OGCLOUD_GATEWAY_CA_FILE`, `OGCLOUD_JVM_FLAGS`; the loader also gets `OGCLOUD_TEMPLATE_VERSION_ID` and `OGCLOUD_PROFILE_ID`, the agent `OGCLOUD_PUSH_ON_SHUTDOWN` (true for STATIC) |
+| Environment | `OGCLOUD_SERVER_ID`, `OGCLOUD_GROUP_ID`, `OGCLOUD_GATEWAY_ADDRESS`, `OGCLOUD_GATEWAY_TOKEN_FILE`, `OGCLOUD_GATEWAY_CA_FILE`, `OGCLOUD_JVM_FLAGS`; the loader also gets `OGCLOUD_PROFILE_ID`, the agent `OGCLOUD_PUSH_ON_SHUTDOWN` (true for STATIC) |
 | Containers | `template-loader` (init, `load`), `template-agent` (native sidecar, `agent`), `server` (port 25565 `minecraft`, TCP readiness probe) |
 | Scheduling | PriorityClass `ogcloud-proxy`, `ogcloud-default-group` or `ogcloud-game`; on Hetzner the game-pool toleration and node affinity; `safe-to-evict` is `false` while players are online |
 

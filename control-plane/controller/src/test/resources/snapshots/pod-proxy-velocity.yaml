@@ -89,8 +89,6 @@ spec:
       value: "/var/run/secrets/ogcloud/gateway/token"
     - name: "OGCLOUD_GATEWAY_CA_FILE"
       value: "/var/run/secrets/ogcloud/gateway/ca.crt"
-    - name: "OGCLOUD_TEMPLATE_VERSION_ID"
-      value: ""
     - name: "OGCLOUD_PROFILE_ID"
       value: "velocity-4.3.0"
     image: "ghcr.io/jevzo/ogcloud/template-loader:2.0.0"

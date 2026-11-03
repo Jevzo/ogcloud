@@ -65,7 +65,7 @@ class PodSpecBuilder(
             .withType("RuntimeDefault")
             .endSeccompProfile()
             .endSecurityContext()
-            .withInitContainers(templateLoader(server, group, profile), templateAgent(server))
+            .withInitContainers(templateLoader(server, profile), templateAgent(server))
             .withContainers(serverContainer(server, group, profile))
             .withVolumes(volumes(group))
             .apply {
@@ -182,7 +182,6 @@ class PodSpecBuilder(
 
     private fun templateLoader(
         server: Server,
-        group: Group,
         profile: RuntimeProfile,
     ): Container =
         ContainerBuilder()
@@ -190,10 +189,8 @@ class PodSpecBuilder(
             .withImage(platformImage(TEMPLATE_LOADER_IMAGE))
             .withArgs("load")
             .withEnv(
-                identityEnv(server) +
-                    EnvVar(ENV_TEMPLATE_VERSION, group.activeTemplateVersionId?.toString().orEmpty(), null) +
-                    // The loader applies the profile's overlays from the catalog (D-0119).
-                    EnvVar(ENV_PROFILE_ID, profile.id, null),
+                // The loader asks the gateway for the template (D-0081) and applies the profile's overlays (D-0119).
+                identityEnv(server) + EnvVar(ENV_PROFILE_ID, profile.id, null),
             ).withResources(SIDECAR_RESOURCES)
             .withSecurityContext(restricted())
             .withVolumeMounts(
@@ -343,7 +340,6 @@ class PodSpecBuilder(
         const val ENV_GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"
         const val ENV_GATEWAY_CA_FILE = "OGCLOUD_GATEWAY_CA_FILE"
         const val ENV_JVM_FLAGS = "OGCLOUD_JVM_FLAGS"
-        const val ENV_TEMPLATE_VERSION = "OGCLOUD_TEMPLATE_VERSION_ID"
         const val ENV_PUSH_ON_SHUTDOWN = "OGCLOUD_PUSH_ON_SHUTDOWN"
         const val ENV_PROFILE_ID = "OGCLOUD_PROFILE_ID"
 

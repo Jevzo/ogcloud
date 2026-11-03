@@ -91,23 +91,23 @@ class TemplateVersions(
         versionId: UUID,
     ) = publishActive(promotion.promote(groupId, versionId))
 
-    /** Writes the read model the gateway serves pods from; groups without a template have none. */
+    /**
+     * Writes the read model the gateway serves pods from. A group without a template gets one without an object
+     * key, so a missing read model means an outage rather than an empty world (D-0122).
+     */
     fun publishActive(
         group: Group,
         how: ReadModelWrite = ReadModelWrite.Overwrite,
     ) {
-        val active =
-            group.activeTemplateVersionId?.let(templates::find)?.let { version ->
-                ActiveTemplate
-                    .newBuilder()
-                    .setGroupId(group.id.value)
-                    .setTemplateVersionId(version.id.toString())
-                    .setObjectKey(version.objectKey)
-                    .setSha256(version.sha256)
-                    .setSizeBytes(version.sizeBytes)
-                    .build()
-            }
-        readModels.write(ReadModelKind.ACTIVE_TEMPLATE, group.id.value, active?.toByteArray(), how)
+        val active = ActiveTemplate.newBuilder().setGroupId(group.id.value)
+        group.activeTemplateVersionId?.let(templates::find)?.let { version ->
+            active
+                .setTemplateVersionId(version.id.toString())
+                .setObjectKey(version.objectKey)
+                .setSha256(version.sha256)
+                .setSizeBytes(version.sizeBytes)
+        }
+        readModels.write(ReadModelKind.ACTIVE_TEMPLATE, group.id.value, active.build().toByteArray(), how)
     }
 
     private companion object {

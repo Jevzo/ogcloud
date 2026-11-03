@@ -71,6 +71,15 @@ class TemplateVersionsTest {
     }
 
     @Test
+    fun `a group without a template still has a read model, without an object key`() {
+        versions.publishActive(bedwars)
+
+        val model = ActiveTemplate.parseFrom(readModels.get(ReadModelKind.ACTIVE_TEMPLATE, "bedwars"))
+        model.groupId shouldBe "bedwars"
+        model.objectKey shouldBe ""
+    }
+
+    @Test
     fun `uploads outside the group's names, empty ones and unknown servers are refused`() {
         val server = f.request(bedwars)
 
