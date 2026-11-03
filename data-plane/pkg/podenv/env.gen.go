@@ -9,8 +9,10 @@ const (
 	// GroupType DYNAMIC, STATIC or PROXY, so plugins know it before the gateway's Welcome (v1 bug 3).
 	GroupType = "OGCLOUD_GROUP_TYPE"
 	// MaxPlayers The group's players per server, the most a server or proxy takes (D-0134).
-	MaxPlayers     = "OGCLOUD_MAX_PLAYERS"
-	GatewayAddress = "OGCLOUD_GATEWAY_ADDRESS"
+	MaxPlayers = "OGCLOUD_MAX_PLAYERS"
+	// ForwardingTokensFile The BungeeGuard tokens, one per line; proxies use the last, backends accept all (D-0065).
+	ForwardingTokensFile = "OGCLOUD_FORWARDING_TOKENS_FILE"
+	GatewayAddress       = "OGCLOUD_GATEWAY_ADDRESS"
 	// GatewayTokenFile The pod's projected token for the gateway (D-0013).
 	GatewayTokenFile = "OGCLOUD_GATEWAY_TOKEN_FILE"
 	// GatewayCaFile The internal CA that signed the gateway's certificate (D-0041).

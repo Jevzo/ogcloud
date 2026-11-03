@@ -162,7 +162,12 @@ class PodSpecBuilder(
             .withEnv(
                 identityEnv(server) +
                     EnvVar(PodEnv.JVM_FLAGS, group.jvmFlags, null) +
-                    EnvVar(PodEnv.MAX_PLAYERS, group.scaling.playersPerServer.toString(), null),
+                    EnvVar(PodEnv.MAX_PLAYERS, group.scaling.playersPerServer.toString(), null) +
+                    EnvVar(
+                        PodEnv.FORWARDING_TOKENS_FILE,
+                        "$FORWARDING_PATH/${FabricForwardingSecretReader.TOKENS_KEY}",
+                        null,
+                    ),
             ).addNewPort()
             .withName(MINECRAFT_PORT_NAME)
             .withContainerPort(MINECRAFT_PORT)

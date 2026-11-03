@@ -43,6 +43,8 @@ spec:
       value: ""
     - name: "OGCLOUD_MAX_PLAYERS"
       value: "50"
+    - name: "OGCLOUD_FORWARDING_TOKENS_FILE"
+      value: "/var/run/secrets/ogcloud/forwarding/tokens"
     image: "ghcr.io/jevzo/ogcloud/velocity:4.3.0-2.0.0"
     name: "server"
     ports:
