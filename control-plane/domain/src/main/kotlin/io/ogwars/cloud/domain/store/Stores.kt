@@ -259,6 +259,24 @@ class StaleUpdateException(
     message: String,
 ) : RuntimeException(message)
 
+/**
+ * Runs [attempt] again after a [StaleUpdateException], so it rereads the record and applies its change on top
+ * (D-0069). Null when the record kept changing for [attempts] tries.
+ */
+inline fun <T : Any> retryOnStale(
+    attempts: Int,
+    attempt: () -> T,
+): T? {
+    repeat(attempts) {
+        try {
+            return attempt()
+        } catch (_: StaleUpdateException) {
+            // Changed meanwhile; the next attempt rereads it.
+        }
+    }
+    return null
+}
+
 /** The change conflicts with current state, e.g. it would leave the network without an owner. */
 class ConflictException(
     message: String,

@@ -11,7 +11,7 @@ import io.ogwars.cloud.domain.network.NetworkSettings
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.Revisioned
-import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.ogwars.cloud.domain.store.retryOnStale
 import org.springframework.stereotype.Service
 import java.time.Clock
 
@@ -45,19 +45,28 @@ class NetworkManagement(
     }
 
     /** Records the acceptance once; concurrent recorders, e.g. API replicas starting, settle on the first. */
-    fun recordEula(actor: Actor) {
-        repeat(ATTEMPTS) {
+    fun recordEula(actor: Actor) =
+        change(actor) { if (it.eulaAccepted) null else it.copy(eulaAcceptedAt = clock.instant()) }
+
+    /** Turns network maintenance on or off, e.g. for an in-game admin (D-0132). */
+    fun setMaintenance(
+        actor: Actor,
+        enabled: Boolean,
+    ) = change(actor) { if (it.maintenance == enabled) null else it.copy(maintenance = enabled) }
+
+    /** Applies [edit] on top of concurrent changes; an edit returning null leaves the settings as they are. */
+    private fun change(
+        actor: Actor,
+        edit: (NetworkSettings) -> NetworkSettings?,
+    ) {
+        retryOnStale(ATTEMPTS) {
             val current = network.load()
-            if (current.value.eulaAccepted) return
-            try {
-                network.save(current.revision, current.value.copy(eulaAcceptedAt = clock.instant()))
+            edit(current.value)?.let {
+                network.save(current.revision, it)
                 announcements.networkSettings(actor)
-                return
-            } catch (_: StaleUpdateException) {
-                // Someone else changed the settings meanwhile; read them again.
             }
-        }
-        throw ConflictException("The network settings kept changing; try again")
+            Unit
+        } ?: throw ConflictException("The network settings kept changing; try again")
     }
 
     /** Replaces every server, proxies first; like v1, only during network maintenance. */

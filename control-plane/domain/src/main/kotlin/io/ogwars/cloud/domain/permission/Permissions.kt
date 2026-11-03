@@ -1,5 +1,6 @@
 package io.ogwars.cloud.domain.permission
 
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -53,31 +54,21 @@ data class PlayerRank(
     ): String = if (isExpired(now)) defaultGroupId else groupId
 
     companion object {
+        /** A null [duration] makes the rank permanent. */
         fun assign(
             playerUuid: UUID,
             groupId: String,
-            duration: RankDuration,
+            duration: Duration?,
             now: Instant,
-        ): PlayerRank =
-            PlayerRank(
-                playerUuid = playerUuid,
-                groupId = groupId,
-                expiresAt =
-                    when (duration) {
-                        RankDuration.Permanent -> {
-                            null
-                        }
-
-                        is RankDuration.Timed -> {
-                            runCatching { now.plus(duration.duration) }
-                                .getOrElse {
-                                    throw IllegalArgumentException(
-                                        "Rank duration ends beyond the supported date range",
-                                        it,
-                                    )
-                                }
-                        }
-                    },
-            )
+        ): PlayerRank {
+            require(duration == null || duration.isPositive) { "A timed rank must last longer than zero" }
+            val expiresAt =
+                duration?.let {
+                    runCatching { now.plus(it) }.getOrElse { e ->
+                        throw IllegalArgumentException("Rank duration ends beyond the supported date range", e)
+                    }
+                }
+            return PlayerRank(playerUuid = playerUuid, groupId = groupId, expiresAt = expiresAt)
+        }
     }
 }

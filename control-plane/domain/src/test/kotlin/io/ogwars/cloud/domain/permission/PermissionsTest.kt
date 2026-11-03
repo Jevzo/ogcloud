@@ -20,7 +20,7 @@ class PermissionsTest {
 
     @Test
     fun `timed ranks expire back to the default group`() {
-        val rank = PlayerRank.assign(player, "vip", RankDuration.Timed(Duration.ofDays(30)), T0)
+        val rank = PlayerRank.assign(player, "vip", Duration.ofDays(30), T0)
 
         rank.expiresAt shouldBe T0.plus(Duration.ofDays(30))
         rank.effectiveGroupId(T0.plus(Duration.ofDays(29)), "default") shouldBe "vip"
@@ -29,7 +29,7 @@ class PermissionsTest {
 
     @Test
     fun `permanent ranks never expire`() {
-        val rank = PlayerRank.assign(player, "admin", RankDuration.Permanent, T0)
+        val rank = PlayerRank.assign(player, "admin", null, T0)
 
         rank.expiresAt shouldBe null
         rank.isExpired(T0.plus(Duration.ofDays(10_000))) shouldBe false

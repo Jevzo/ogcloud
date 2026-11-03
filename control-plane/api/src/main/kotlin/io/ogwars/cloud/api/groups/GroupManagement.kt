@@ -14,6 +14,7 @@ import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.store.Revisioned
+import io.ogwars.cloud.domain.store.retryOnStale
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
@@ -66,6 +67,21 @@ class GroupManagement(
         groups.update(expectedVersion, validated(settings.toGroup(id, current.type, current.activeTemplateVersionId)))
         announcements.group(actor, id)
         return get(id)
+    }
+
+    /** Turns a group's maintenance on or off, e.g. for an in-game admin (D-0132); other edits meanwhile stay. */
+    fun setMaintenance(
+        actor: Actor,
+        id: GroupId,
+        enabled: Boolean,
+    ) {
+        retryOnStale(MAINTENANCE_ATTEMPTS) {
+            val current = get(id)
+            if (current.value.maintenance != enabled) {
+                groups.update(current.revision, current.value.copy(maintenance = enabled))
+                announcements.group(actor, id)
+            }
+        } ?: throw ConflictException("Group $id kept changing; try again")
     }
 
     /**
@@ -130,6 +146,10 @@ class GroupManagement(
             }
         }
         return group
+    }
+
+    private companion object {
+        const val MAINTENANCE_ATTEMPTS = 3
     }
 }
 

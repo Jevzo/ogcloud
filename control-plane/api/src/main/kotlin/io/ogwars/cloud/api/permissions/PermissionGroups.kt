@@ -4,13 +4,13 @@ import io.ogwars.cloud.api.events.Announcements
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.permission.PermissionGroup
 import io.ogwars.cloud.domain.permission.PlayerRank
-import io.ogwars.cloud.domain.permission.RankDuration
 import io.ogwars.cloud.domain.store.PermissionGroupStore
 import io.ogwars.cloud.domain.store.PlayerStore
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.store.SessionStore
 import org.springframework.stereotype.Service
 import java.time.Clock
+import java.time.Duration
 import java.util.UUID
 
 /** The built-in permission system: groups (ranks) and who holds them (D-0102). */
@@ -68,11 +68,12 @@ class PermissionGroups(
         actor: Actor,
         playerUuid: UUID,
         groupId: String,
-        duration: String,
+        /** Null for a permanent rank. */
+        duration: Duration?,
     ): PlayerRank {
         get(groupId)
         players.find(playerUuid) ?: throw NoSuchElementException("Player $playerUuid was never seen")
-        val rank = PlayerRank.assign(playerUuid, groupId, RankDuration.parse(duration), clock.instant())
+        val rank = PlayerRank.assign(playerUuid, groupId, duration, clock.instant())
         players.updateRank(rank)
         announcements.playerRank(actor, rank)
         return rank

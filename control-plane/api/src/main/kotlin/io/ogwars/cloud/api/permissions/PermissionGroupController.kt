@@ -2,6 +2,7 @@ package io.ogwars.cloud.api.permissions
 
 import io.ogwars.cloud.api.audit.CurrentActor
 import io.ogwars.cloud.api.web.Requires
+import io.ogwars.cloud.contracts.RankDurations
 import io.ogwars.cloud.domain.permission.PermissionGroup
 import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.domain.permission.RankDisplay
@@ -145,5 +146,12 @@ class RankController(
     fun set(
         @PathVariable uuid: UUID,
         @RequestBody request: SetRankRequest,
-    ): RankView = groups.setRank(actors.current(), uuid, request.permissionGroupId, request.duration).toView()
+    ): RankView =
+        groups
+            .setRank(
+                actors.current(),
+                uuid,
+                request.permissionGroupId,
+                RankDurations.parse(request.duration),
+            ).toView()
 }

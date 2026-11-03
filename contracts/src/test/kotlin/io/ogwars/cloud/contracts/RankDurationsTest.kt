@@ -1,4 +1,4 @@
-package io.ogwars.cloud.domain.permission
+package io.ogwars.cloud.contracts
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
@@ -8,11 +8,11 @@ import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.time.Duration
 
-class RankDurationTest {
+class RankDurationsTest {
     @Test
     fun `minus one is permanent`() {
-        RankDuration.parse("-1") shouldBe RankDuration.Permanent
-        RankDuration.format(RankDuration.Permanent) shouldBe "-1"
+        RankDurations.parse("-1") shouldBe null
+        RankDurations.format(null) shouldBe "-1"
     }
 
     @ParameterizedTest
@@ -21,18 +21,18 @@ class RankDurationTest {
         text: String,
         seconds: Long,
     ) {
-        RankDuration.parse(text) shouldBe RankDuration.Timed(Duration.ofSeconds(seconds))
+        RankDurations.parse(text) shouldBe Duration.ofSeconds(seconds)
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["", "5", "5x", "-5d", "0d", "d", "99999999999999999Y"])
     fun `rejects malformed durations`(text: String) {
-        shouldThrow<IllegalArgumentException> { RankDuration.parse(text) }
+        shouldThrow<IllegalArgumentException> { RankDurations.parse(text) }
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["1Y 2M 3w 4d 5h 6m 7s", "30d", "1h 30m"])
     fun `format reverses parse`(text: String) {
-        RankDuration.format(RankDuration.parse(text)) shouldBe text.replace("30d", "4w 2d")
+        RankDurations.format(RankDurations.parse(text)) shouldBe text.replace("30d", "4w 2d")
     }
 }
