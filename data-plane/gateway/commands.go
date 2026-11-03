@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/nodeerrors"
+
 	"github.com/jevzo/ogcloud/data-plane/pkg/events"
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
@@ -12,7 +14,7 @@ import (
 )
 
 var (
-	errNotOwnServer = errors.New("not_own_server")
+	errNotOwnServer = errors.New(nodeerrors.NotOwnServer)
 	errNodeType     = errors.New(rejectNodeType)
 	errInvalid      = errors.New(rejectInvalid)
 	errUnavailable  = errors.New(rejectUnavailable)

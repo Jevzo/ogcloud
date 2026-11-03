@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/nodeerrors"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -37,11 +39,11 @@ const (
 
 // Why a node message was dropped.
 const (
-	rejectNodeType    = "node_type"
-	rejectInvalid     = "invalid"
+	rejectNodeType    = nodeerrors.NodeType
+	rejectInvalid     = nodeerrors.Invalid
 	rejectUnsupported = "unsupported"
 	rejectUnknown     = "unknown_delivery"
-	rejectUnavailable = "unavailable"
+	rejectUnavailable = nodeerrors.Unavailable
 )
 
 var (

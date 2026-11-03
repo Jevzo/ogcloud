@@ -1,0 +1,24 @@
+# Why the gateway refused a node's request: the error of a ServerCommandResult or AdminRequestResult
+# (D-0068, D-0132), which nodes turn into text from their catalog. Regenerate with `mise run gen` after editing.
+object: NodeErrors
+doc: Reasons the gateway gives nodes for refused requests.
+constants:
+  - name: invalid
+    value: invalid
+  - name: unavailable
+    value: unavailable
+    doc: A dependency failed; trying again may work.
+  - name: nodeType
+    value: node_type
+    doc: This kind of node may not send the request.
+  - name: notOwnServer
+    value: not_own_server
+  - name: playerElsewhere
+    value: player_elsewhere
+    doc: The acting player is not connected through, or playing on, the sending node.
+  - name: notPermitted
+    value: not_permitted
+  - name: unknownGroup
+    value: unknown_group
+  - name: unknownPermissionGroup
+    value: unknown_permission_group

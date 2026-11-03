@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/nodeerrors"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -19,8 +21,8 @@ import (
 )
 
 var (
-	errUnknownGroup           = errors.New("unknown_group")
-	errUnknownPermissionGroup = errors.New("unknown_permission_group")
+	errUnknownGroup           = errors.New(nodeerrors.UnknownGroup)
+	errUnknownPermissionGroup = errors.New(nodeerrors.UnknownPermissionGroup)
 )
 
 // adminChange is a checked admin request: the event, its key and the node the acting player needs.

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/nodeerrors"
+
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/permissionnodes"
@@ -13,8 +15,8 @@ import (
 )
 
 var (
-	errPlayerElsewhere = errors.New("player_elsewhere")
-	errNotPermitted    = errors.New("not_permitted")
+	errPlayerElsewhere = errors.New(nodeerrors.PlayerElsewhere)
+	errNotPermitted    = errors.New(nodeerrors.NotPermitted)
 )
 
 // actingAdmin checks an in-game admin command (D-0115, D-0129): the player must be connected through the
