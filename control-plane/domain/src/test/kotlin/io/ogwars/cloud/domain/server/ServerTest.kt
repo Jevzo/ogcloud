@@ -2,9 +2,11 @@ package io.ogwars.cloud.domain.server
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import java.util.UUID
 
 class ServerTest {
     @ParameterizedTest
@@ -53,6 +55,15 @@ class ServerTest {
         val server = server(group = "staff-lobby")
 
         server.podName shouldBe "staff-lobby-0192d2c11a2b7c3d8e4f123456789abc"
-        server.displayName shouldBe "staff-lobby-0192d2"
+        server.displayName shouldBe "staff-lobby-789abc"
+    }
+
+    @Test
+    fun `servers started together get different display names`() {
+        // UUIDv7 ids of one moment share their leading timestamp bits; only the random tail tells them apart.
+        val first = server(id = UUID.fromString("0192d2c1-1a2b-7c3d-8e4f-123456789abc"))
+        val second = server(id = UUID.fromString("0192d2c1-1a2b-7c3d-9f01-fedcba987654"))
+
+        first.displayName shouldNotBe second.displayName
     }
 }

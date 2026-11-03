@@ -49,8 +49,8 @@ data class Server(
     /** Pod and proxy registration name; uses the full id, so group names may contain dashes. */
     val podName: String get() = "$groupId-${id.compactHex()}"
 
-    /** Short name shown to players and in the dashboard. */
-    val displayName: String get() = "$groupId-${id.compactHex().take(DISPLAY_ID_LENGTH)}"
+    /** Short name shown to players and in the dashboard; the id's random tail, as UUIDv7s start with the time. */
+    val displayName: String get() = "$groupId-${id.compactHex().takeLast(DISPLAY_ID_LENGTH)}"
 
     /** Moves to [target], or fails when the transition table does not allow it. */
     fun transitionTo(
