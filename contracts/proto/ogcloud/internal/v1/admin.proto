@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ogcloud.internal.v1;
+
+import "ogcloud/events/v1/common.proto";
+import "ogcloud/node/v1/admin.proto";
+
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.internal.v1";
+
+// Topic ogcloud.admin.change, key: the group id, "network" or the player uuid. An in-game admin's change for the
+// API to apply like a dashboard edit, with the player as actor (D-0132).
+message AdminChangeRequested {
+  ogcloud.events.v1.EventMetadata metadata = 1;
+  oneof change {
+    ogcloud.node.v1.GroupMaintenanceChange group_maintenance = 2;
+    ogcloud.node.v1.NetworkMaintenanceChange network_maintenance = 3;
+    ogcloud.node.v1.RankChange rank = 4;
+  }
+}

@@ -87,12 +87,8 @@ func (s *Service) authorizeServerCommand(ctx context.Context, session *Session, 
 		if !uuidText.MatchString(player) {
 			return nil, errInvalid
 		}
-		if err := s.actingAdmin(ctx, session, player, permissionnodes.AdminServer); err != nil {
-			if errors.Is(err, errPlayerElsewhere) || errors.Is(err, errNotPermitted) {
-				return nil, err
-			}
-			s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)
-			return nil, errUnavailable
+		if err := s.adminCheck(ctx, session, player, permissionnodes.AdminServer); err != nil {
+			return nil, err
 		}
 		// An admin names the target; only the plugin API defaults to its own server.
 		if command.GetRequest() == nil && command.GetServerId() == "" {

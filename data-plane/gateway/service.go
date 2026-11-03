@@ -39,6 +39,7 @@ type State interface {
 	ServersOfGroup(ctx context.Context, groupID string) ([]*internalv1.ServerRecord, error)
 	Session(ctx context.Context, playerUUID string) (*internalv1.PlayerSession, error)
 	SessionByName(ctx context.Context, name string) (*internalv1.PlayerSession, error)
+	OnlineSessions(ctx context.Context) ([]*internalv1.PlayerSession, error)
 	ReadModel(ctx context.Context, kind valkeykeys.ReadModelKind, id string) ([]byte, error)
 }
 

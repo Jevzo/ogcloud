@@ -6,7 +6,9 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -81,6 +83,10 @@ func (f *fakeState) SessionByName(_ context.Context, name string) (*internalv1.P
 		}
 	}
 	return nil, nil
+}
+
+func (f *fakeState) OnlineSessions(context.Context) ([]*internalv1.PlayerSession, error) {
+	return slices.Collect(maps.Values(f.sessions)), nil
 }
 
 func (f *fakeState) Server(_ context.Context, id string) (*internalv1.ServerRecord, error) {

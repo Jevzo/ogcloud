@@ -6,6 +6,7 @@ import "ogcloud/events/v1/common.proto";
 import "ogcloud/events/v1/node.proto";
 import "ogcloud/events/v1/player.proto";
 import "ogcloud/events/v1/server.proto";
+import "ogcloud/node/v1/admin.proto";
 import "ogcloud/node/v1/query.proto";
 
 option java_multiple_files = true;
@@ -24,6 +25,9 @@ service GatewayService {
   rpc GetPlayerProfile(GetPlayerProfileRequest) returns (GetPlayerProfileResponse);
   rpc GetPermissionGroup(GetPermissionGroupRequest) returns (GetPermissionGroupResponse);
   rpc ListNpcs(ListNpcsRequest) returns (ListNpcsResponse);
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  // The players on a backend or connected through a proxy.
+  rpc ListPlayers(ListPlayersRequest) returns (ListPlayersResponse);
 }
 
 // Version of this node protocol; the gateway refuses versions it does not support.
@@ -46,6 +50,7 @@ message SessionRequest {
     DeliveryResult delivery_result = 10;
     PlayerSnapshot player_snapshot = 11;
     NpcChangeRequest npc_change = 12;
+    AdminRequest admin_request = 13;
   }
 }
 
@@ -57,6 +62,7 @@ message SessionResponse {
     Delivery delivery = 4;
     LiveChannelDelivery live_message = 5;
     ServerCommandResult server_command_result = 6;
+    AdminRequestResult admin_request_result = 7;
   }
 }
 
@@ -155,6 +161,26 @@ message NpcChangeRequest {
     Npc update = 3;
     string delete_npc_id = 4;
   }
+}
+
+// An in-game admin's change on behalf of a player connected through the sending proxy (D-0132).
+message AdminRequest {
+  // Chosen by the node, unique per session; echoed in the AdminRequestResult.
+  string request_id = 1;
+  // Must be connected through the sending proxy and hold the change's admin node.
+  string acting_player_uuid = 2;
+  oneof change {
+    GroupMaintenanceChange group_maintenance = 3;
+    NetworkMaintenanceChange network_maintenance = 4;
+    RankChange rank = 5;
+  }
+}
+
+// The gateway's answer to one AdminRequest; the API applies an accepted change shortly after.
+message AdminRequestResult {
+  string request_id = 1;
+  // Empty when the change was accepted; otherwise why it was rejected.
+  string error = 2;
 }
 
 message LiveChannelSubscription {

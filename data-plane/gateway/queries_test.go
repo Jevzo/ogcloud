@@ -18,6 +18,10 @@ func TestQueriesAnswerFromLiveStateAndReadModels(t *testing.T) {
 	h.state.models[string(valkeykeys.ReadModelPlayerProfile)+":"+visitorUUID] = marshal(t, &nodev1.PlayerProfile{PlayerUuid: visitorUUID, PermissionGroupId: "vip"})
 	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":vip"] = marshal(t, &nodev1.PermissionGroup{PermissionGroupId: "vip", Weight: 5})
 	h.state.models[string(valkeykeys.ReadModelNpcsByGroup)+":lobby"] = marshal(t, &nodev1.ListNpcsResponse{Npcs: []*nodev1.Npc{{NpcId: "n-1"}}})
+	h.state.models[string(valkeykeys.ReadModelGroupList)+":"+valkeykeys.GroupListId] = marshal(t, &nodev1.ListGroupsResponse{
+		Groups: []*nodev1.GroupInfo{{GroupId: "lobby", MinOnline: 2}},
+	})
+	h.state.sessions[adminUUID] = &internalv1.PlayerSession{PlayerUuid: adminUUID, PlayerName: "Admin", ProxyId: "s-proxy", ServerId: "s-other"}
 	ctx := as(t, lobbyToken)
 
 	server, err := h.client.GetServer(ctx, &nodev1.GetServerRequest{ServerId: "s-lobby"})
@@ -44,6 +48,18 @@ func TestQueriesAnswerFromLiveStateAndReadModels(t *testing.T) {
 	if err != nil || len(npcs.GetNpcs()) != 1 {
 		t.Errorf("ListNpcs = %v, %v", npcs, err)
 	}
+	groups, err := h.client.ListGroups(ctx, &nodev1.ListGroupsRequest{})
+	if err != nil || len(groups.GetGroups()) != 1 || groups.GetGroups()[0].GetMinOnline() != 2 {
+		t.Errorf("ListGroups = %v, %v", groups, err)
+	}
+	onBackend, err := h.client.ListPlayers(ctx, &nodev1.ListPlayersRequest{ServerId: "s-lobby"})
+	if err != nil || len(onBackend.GetPlayers()) != 1 || onBackend.GetPlayers()[0].GetPlayerName() != "Jevzo" {
+		t.Errorf("ListPlayers(s-lobby) = %v, %v", onBackend, err)
+	}
+	onProxy, err := h.client.ListPlayers(ctx, &nodev1.ListPlayersRequest{ServerId: "s-proxy"})
+	if err != nil || len(onProxy.GetPlayers()) != 2 {
+		t.Errorf("ListPlayers(s-proxy) = %v, %v", onProxy, err)
+	}
 }
 
 func TestQueriesForMissingThings(t *testing.T) {
@@ -55,6 +71,8 @@ func TestQueriesForMissingThings(t *testing.T) {
 	_, findErr := h.client.FindPlayer(ctx, &nodev1.FindPlayerRequest{})
 	offline, err := h.client.FindPlayer(ctx, &nodev1.FindPlayerRequest{Player: &nodev1.FindPlayerRequest_PlayerUuid{PlayerUuid: visitorUUID}})
 	npcs, npcErr := h.client.ListNpcs(ctx, &nodev1.ListNpcsRequest{GroupId: "bedwars"})
+	_, groupsErr := h.client.ListGroups(ctx, &nodev1.ListGroupsRequest{})
+	_, playersErr := h.client.ListPlayers(ctx, &nodev1.ListPlayersRequest{})
 
 	if status.Code(serverErr) != codes.NotFound || status.Code(profileErr) != codes.NotFound || status.Code(findErr) != codes.InvalidArgument {
 		t.Errorf("errors = %v, %v, %v", serverErr, profileErr, findErr)
@@ -64,6 +82,10 @@ func TestQueriesForMissingThings(t *testing.T) {
 	}
 	if npcErr != nil || len(npcs.GetNpcs()) != 0 {
 		t.Errorf("a group without NPCs = %v, %v", npcs, npcErr)
+	}
+	// A missing group list is not yet written, never an empty network.
+	if status.Code(groupsErr) != codes.Unavailable || status.Code(playersErr) != codes.InvalidArgument {
+		t.Errorf("errors = %v, %v", groupsErr, playersErr)
 	}
 }
 

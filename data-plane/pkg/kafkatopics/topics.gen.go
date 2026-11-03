@@ -29,6 +29,10 @@ const (
 	NpcChange = "ogcloud.npc.change"
 	// NpcChangeDLT carries ogcloud.internal.v1.NpcChangeRequested.
 	NpcChangeDLT = "ogcloud.npc.change.dlt"
+	// AdminChange carries ogcloud.internal.v1.AdminChangeRequested.
+	AdminChange = "ogcloud.admin.change"
+	// AdminChangeDLT carries ogcloud.internal.v1.AdminChangeRequested.
+	AdminChangeDLT = "ogcloud.admin.change.dlt"
 	// PlayerTransfer carries ogcloud.events.v1.TransferRequested.
 	PlayerTransfer = "ogcloud.player.transfer"
 	// AccountLink carries ogcloud.events.v1.LinkCodeIssued.
@@ -54,7 +58,7 @@ const (
 // HasDeadLetter reports whether failed records of topic go to its dead-letter topic.
 func HasDeadLetter(topic string) bool {
 	switch topic {
-	case ServerCommand, ServerGamestate, PlayerActivity, NpcChange, ConfigChanged, JobRequested:
+	case ServerCommand, ServerGamestate, PlayerActivity, NpcChange, AdminChange, ConfigChanged, JobRequested:
 		return true
 	}
 	return false

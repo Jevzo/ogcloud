@@ -67,9 +67,13 @@ func (s *Service) FindPlayer(ctx context.Context, request *nodev1.FindPlayerRequ
 	if player == nil {
 		return &nodev1.FindPlayerResponse{}, nil
 	}
-	return &nodev1.FindPlayerResponse{Location: &nodev1.PlayerLocation{
-		PlayerUuid: player.GetPlayerUuid(), PlayerName: player.GetPlayerName(), ProxyId: player.GetProxyId(), ServerId: player.GetServerId(),
-	}}, nil
+	return &nodev1.FindPlayerResponse{Location: locationOf(player)}, nil
+}
+
+func locationOf(session *internalv1.PlayerSession) *nodev1.PlayerLocation {
+	return &nodev1.PlayerLocation{
+		PlayerUuid: session.GetPlayerUuid(), PlayerName: session.GetPlayerName(), ProxyId: session.GetProxyId(), ServerId: session.GetServerId(),
+	}
 }
 
 // GetPlayerProfile returns a player's rank as nodes apply it.
@@ -98,6 +102,38 @@ func (s *Service) ListNpcs(ctx context.Context, request *nodev1.ListNpcsRequest)
 		return npcs, nil
 	}
 	return npcs, err
+}
+
+// ListGroups returns every group from the group-list read model (D-0132).
+func (s *Service) ListGroups(ctx context.Context, _ *nodev1.ListGroupsRequest) (*nodev1.ListGroupsResponse, error) {
+	groups := &nodev1.ListGroupsResponse{}
+	if err := s.readModel(ctx, valkeykeys.ReadModelGroupList, valkeykeys.GroupListId, groups); err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Written on every group change and resync; absent means not written yet, never "no groups".
+			return nil, status.Error(codes.Unavailable, "the group list is not ready")
+		}
+		return nil, err
+	}
+	return groups, nil
+}
+
+// ListPlayers returns the players on a backend or connected through a proxy (D-0132).
+func (s *Service) ListPlayers(ctx context.Context, request *nodev1.ListPlayersRequest) (*nodev1.ListPlayersResponse, error) {
+	server := request.GetServerId()
+	if server == "" {
+		return nil, status.Error(codes.InvalidArgument, "a server id is required")
+	}
+	sessions, err := s.State.OnlineSessions(ctx)
+	if err != nil {
+		return nil, unavailable("players", err)
+	}
+	players := &nodev1.ListPlayersResponse{}
+	for _, session := range sessions {
+		if session.GetServerId() == server || session.GetProxyId() == server {
+			players.Players = append(players.Players, locationOf(session))
+		}
+	}
+	return players, nil
 }
 
 // readModel decodes a stored read model into message; a missing one is NOT_FOUND.

@@ -85,6 +85,7 @@ type SessionRequest struct {
 	//	*SessionRequest_DeliveryResult
 	//	*SessionRequest_PlayerSnapshot
 	//	*SessionRequest_NpcChange
+	//	*SessionRequest_AdminRequest
 	Message       isSessionRequest_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -235,6 +236,15 @@ func (x *SessionRequest) GetNpcChange() *NpcChangeRequest {
 	return nil
 }
 
+func (x *SessionRequest) GetAdminRequest() *AdminRequest {
+	if x != nil {
+		if x, ok := x.Message.(*SessionRequest_AdminRequest); ok {
+			return x.AdminRequest
+		}
+	}
+	return nil
+}
+
 type isSessionRequest_Message interface {
 	isSessionRequest_Message()
 }
@@ -287,6 +297,10 @@ type SessionRequest_NpcChange struct {
 	NpcChange *NpcChangeRequest `protobuf:"bytes,12,opt,name=npc_change,json=npcChange,proto3,oneof"`
 }
 
+type SessionRequest_AdminRequest struct {
+	AdminRequest *AdminRequest `protobuf:"bytes,13,opt,name=admin_request,json=adminRequest,proto3,oneof"`
+}
+
 func (*SessionRequest_Hello) isSessionRequest_Message() {}
 
 func (*SessionRequest_Heartbeat) isSessionRequest_Message() {}
@@ -311,6 +325,8 @@ func (*SessionRequest_PlayerSnapshot) isSessionRequest_Message() {}
 
 func (*SessionRequest_NpcChange) isSessionRequest_Message() {}
 
+func (*SessionRequest_AdminRequest) isSessionRequest_Message() {}
+
 type SessionResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Message:
@@ -321,6 +337,7 @@ type SessionResponse struct {
 	//	*SessionResponse_Delivery
 	//	*SessionResponse_LiveMessage
 	//	*SessionResponse_ServerCommandResult
+	//	*SessionResponse_AdminRequestResult
 	Message       isSessionResponse_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -417,6 +434,15 @@ func (x *SessionResponse) GetServerCommandResult() *ServerCommandResult {
 	return nil
 }
 
+func (x *SessionResponse) GetAdminRequestResult() *AdminRequestResult {
+	if x != nil {
+		if x, ok := x.Message.(*SessionResponse_AdminRequestResult); ok {
+			return x.AdminRequestResult
+		}
+	}
+	return nil
+}
+
 type isSessionResponse_Message interface {
 	isSessionResponse_Message()
 }
@@ -445,6 +471,10 @@ type SessionResponse_ServerCommandResult struct {
 	ServerCommandResult *ServerCommandResult `protobuf:"bytes,6,opt,name=server_command_result,json=serverCommandResult,proto3,oneof"`
 }
 
+type SessionResponse_AdminRequestResult struct {
+	AdminRequestResult *AdminRequestResult `protobuf:"bytes,7,opt,name=admin_request_result,json=adminRequestResult,proto3,oneof"`
+}
+
 func (*SessionResponse_Welcome) isSessionResponse_Message() {}
 
 func (*SessionResponse_ServerLifecycle) isSessionResponse_Message() {}
@@ -456,6 +486,8 @@ func (*SessionResponse_Delivery) isSessionResponse_Message() {}
 func (*SessionResponse_LiveMessage) isSessionResponse_Message() {}
 
 func (*SessionResponse_ServerCommandResult) isSessionResponse_Message() {}
+
+func (*SessionResponse_AdminRequestResult) isSessionResponse_Message() {}
 
 // First message of every session. The server id and node type come from the token's pod;
 // these fields let the gateway reject a mismatched or outdated plugin.
@@ -1266,6 +1298,177 @@ func (*NpcChangeRequest_Update) isNpcChangeRequest_Change() {}
 
 func (*NpcChangeRequest_DeleteNpcId) isNpcChangeRequest_Change() {}
 
+// An in-game admin's change on behalf of a player connected through the sending proxy (D-0132).
+type AdminRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Chosen by the node, unique per session; echoed in the AdminRequestResult.
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Must be connected through the sending proxy and hold the change's admin node.
+	ActingPlayerUuid string `protobuf:"bytes,2,opt,name=acting_player_uuid,json=actingPlayerUuid,proto3" json:"acting_player_uuid,omitempty"`
+	// Types that are valid to be assigned to Change:
+	//
+	//	*AdminRequest_GroupMaintenance
+	//	*AdminRequest_NetworkMaintenance
+	//	*AdminRequest_Rank
+	Change        isAdminRequest_Change `protobuf_oneof:"change"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminRequest) Reset() {
+	*x = AdminRequest{}
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminRequest) ProtoMessage() {}
+
+func (x *AdminRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminRequest.ProtoReflect.Descriptor instead.
+func (*AdminRequest) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AdminRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AdminRequest) GetActingPlayerUuid() string {
+	if x != nil {
+		return x.ActingPlayerUuid
+	}
+	return ""
+}
+
+func (x *AdminRequest) GetChange() isAdminRequest_Change {
+	if x != nil {
+		return x.Change
+	}
+	return nil
+}
+
+func (x *AdminRequest) GetGroupMaintenance() *GroupMaintenanceChange {
+	if x != nil {
+		if x, ok := x.Change.(*AdminRequest_GroupMaintenance); ok {
+			return x.GroupMaintenance
+		}
+	}
+	return nil
+}
+
+func (x *AdminRequest) GetNetworkMaintenance() *NetworkMaintenanceChange {
+	if x != nil {
+		if x, ok := x.Change.(*AdminRequest_NetworkMaintenance); ok {
+			return x.NetworkMaintenance
+		}
+	}
+	return nil
+}
+
+func (x *AdminRequest) GetRank() *RankChange {
+	if x != nil {
+		if x, ok := x.Change.(*AdminRequest_Rank); ok {
+			return x.Rank
+		}
+	}
+	return nil
+}
+
+type isAdminRequest_Change interface {
+	isAdminRequest_Change()
+}
+
+type AdminRequest_GroupMaintenance struct {
+	GroupMaintenance *GroupMaintenanceChange `protobuf:"bytes,3,opt,name=group_maintenance,json=groupMaintenance,proto3,oneof"`
+}
+
+type AdminRequest_NetworkMaintenance struct {
+	NetworkMaintenance *NetworkMaintenanceChange `protobuf:"bytes,4,opt,name=network_maintenance,json=networkMaintenance,proto3,oneof"`
+}
+
+type AdminRequest_Rank struct {
+	Rank *RankChange `protobuf:"bytes,5,opt,name=rank,proto3,oneof"`
+}
+
+func (*AdminRequest_GroupMaintenance) isAdminRequest_Change() {}
+
+func (*AdminRequest_NetworkMaintenance) isAdminRequest_Change() {}
+
+func (*AdminRequest_Rank) isAdminRequest_Change() {}
+
+// The gateway's answer to one AdminRequest; the API applies an accepted change shortly after.
+type AdminRequestResult struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	RequestId string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Empty when the change was accepted; otherwise why it was rejected.
+	Error         string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminRequestResult) Reset() {
+	*x = AdminRequestResult{}
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminRequestResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminRequestResult) ProtoMessage() {}
+
+func (x *AdminRequestResult) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminRequestResult.ProtoReflect.Descriptor instead.
+func (*AdminRequestResult) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AdminRequestResult) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AdminRequestResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type LiveChannelSubscription struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Channel       string                 `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"`
@@ -1276,7 +1479,7 @@ type LiveChannelSubscription struct {
 
 func (x *LiveChannelSubscription) Reset() {
 	*x = LiveChannelSubscription{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[12]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1288,7 +1491,7 @@ func (x *LiveChannelSubscription) String() string {
 func (*LiveChannelSubscription) ProtoMessage() {}
 
 func (x *LiveChannelSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[12]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1301,7 +1504,7 @@ func (x *LiveChannelSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LiveChannelSubscription.ProtoReflect.Descriptor instead.
 func (*LiveChannelSubscription) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{12}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *LiveChannelSubscription) GetChannel() string {
@@ -1330,7 +1533,7 @@ type LiveChannelPublish struct {
 
 func (x *LiveChannelPublish) Reset() {
 	*x = LiveChannelPublish{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[13]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1342,7 +1545,7 @@ func (x *LiveChannelPublish) String() string {
 func (*LiveChannelPublish) ProtoMessage() {}
 
 func (x *LiveChannelPublish) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[13]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1355,7 +1558,7 @@ func (x *LiveChannelPublish) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LiveChannelPublish.ProtoReflect.Descriptor instead.
 func (*LiveChannelPublish) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{13}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *LiveChannelPublish) GetChannel() string {
@@ -1392,7 +1595,7 @@ type LiveChannelDelivery struct {
 
 func (x *LiveChannelDelivery) Reset() {
 	*x = LiveChannelDelivery{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[14]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1404,7 +1607,7 @@ func (x *LiveChannelDelivery) String() string {
 func (*LiveChannelDelivery) ProtoMessage() {}
 
 func (x *LiveChannelDelivery) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[14]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1417,7 +1620,7 @@ func (x *LiveChannelDelivery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LiveChannelDelivery.ProtoReflect.Descriptor instead.
 func (*LiveChannelDelivery) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{14}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *LiveChannelDelivery) GetChannel() string {
@@ -1472,7 +1675,7 @@ type Delivery struct {
 
 func (x *Delivery) Reset() {
 	*x = Delivery{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[15]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1484,7 +1687,7 @@ func (x *Delivery) String() string {
 func (*Delivery) ProtoMessage() {}
 
 func (x *Delivery) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[15]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1497,7 +1700,7 @@ func (x *Delivery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Delivery.ProtoReflect.Descriptor instead.
 func (*Delivery) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{15}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Delivery) GetDeliveryId() string {
@@ -1590,7 +1793,7 @@ type DeliveryResult struct {
 
 func (x *DeliveryResult) Reset() {
 	*x = DeliveryResult{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[16]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1602,7 +1805,7 @@ func (x *DeliveryResult) String() string {
 func (*DeliveryResult) ProtoMessage() {}
 
 func (x *DeliveryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[16]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1615,7 +1818,7 @@ func (x *DeliveryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeliveryResult.ProtoReflect.Descriptor instead.
 func (*DeliveryResult) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{16}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DeliveryResult) GetDeliveryId() string {
@@ -1651,7 +1854,7 @@ type ResolveLoginRequest struct {
 
 func (x *ResolveLoginRequest) Reset() {
 	*x = ResolveLoginRequest{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[17]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1663,7 +1866,7 @@ func (x *ResolveLoginRequest) String() string {
 func (*ResolveLoginRequest) ProtoMessage() {}
 
 func (x *ResolveLoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[17]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1676,7 +1879,7 @@ func (x *ResolveLoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveLoginRequest.ProtoReflect.Descriptor instead.
 func (*ResolveLoginRequest) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{17}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ResolveLoginRequest) GetPlayerUuid() string {
@@ -1719,7 +1922,7 @@ type ResolveLoginResponse struct {
 
 func (x *ResolveLoginResponse) Reset() {
 	*x = ResolveLoginResponse{}
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[18]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1731,7 +1934,7 @@ func (x *ResolveLoginResponse) String() string {
 func (*ResolveLoginResponse) ProtoMessage() {}
 
 func (x *ResolveLoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_node_v1_session_proto_msgTypes[18]
+	mi := &file_ogcloud_node_v1_session_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,7 +1947,7 @@ func (x *ResolveLoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveLoginResponse.ProtoReflect.Descriptor instead.
 func (*ResolveLoginResponse) Descriptor() ([]byte, []int) {
-	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{18}
+	return file_ogcloud_node_v1_session_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ResolveLoginResponse) GetAllowed() bool {
@@ -1772,7 +1975,7 @@ var File_ogcloud_node_v1_session_proto protoreflect.FileDescriptor
 
 const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x1dogcloud/node/v1/session.proto\x12\x0fogcloud.node.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1cogcloud/events/v1/node.proto\x1a\x1eogcloud/events/v1/player.proto\x1a\x1eogcloud/events/v1/server.proto\x1a\x1bogcloud/node/v1/query.proto\"\xf9\x06\n" +
+	"\x1dogcloud/node/v1/session.proto\x12\x0fogcloud.node.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1cogcloud/events/v1/node.proto\x1a\x1eogcloud/events/v1/player.proto\x1a\x1eogcloud/events/v1/server.proto\x1a\x1bogcloud/node/v1/admin.proto\x1a\x1bogcloud/node/v1/query.proto\"\xbf\a\n" +
 	"\x0eSessionRequest\x12.\n" +
 	"\x05hello\x18\x01 \x01(\v2\x16.ogcloud.node.v1.HelloH\x00R\x05hello\x12:\n" +
 	"\theartbeat\x18\x02 \x01(\v2\x1a.ogcloud.node.v1.HeartbeatH\x00R\theartbeat\x12A\n" +
@@ -1788,15 +1991,17 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	" \x01(\v2\x1f.ogcloud.node.v1.DeliveryResultH\x00R\x0edeliveryResult\x12J\n" +
 	"\x0fplayer_snapshot\x18\v \x01(\v2\x1f.ogcloud.node.v1.PlayerSnapshotH\x00R\x0eplayerSnapshot\x12B\n" +
 	"\n" +
-	"npc_change\x18\f \x01(\v2!.ogcloud.node.v1.NpcChangeRequestH\x00R\tnpcChangeB\t\n" +
-	"\amessage\"\xcc\x03\n" +
+	"npc_change\x18\f \x01(\v2!.ogcloud.node.v1.NpcChangeRequestH\x00R\tnpcChange\x12D\n" +
+	"\radmin_request\x18\r \x01(\v2\x1d.ogcloud.node.v1.AdminRequestH\x00R\fadminRequestB\t\n" +
+	"\amessage\"\xa5\x04\n" +
 	"\x0fSessionResponse\x124\n" +
 	"\awelcome\x18\x01 \x01(\v2\x18.ogcloud.node.v1.WelcomeH\x00R\awelcome\x12V\n" +
 	"\x10server_lifecycle\x18\x02 \x01(\v2).ogcloud.events.v1.ServerLifecycleChangedH\x00R\x0fserverLifecycle\x12@\n" +
 	"\tbroadcast\x18\x03 \x01(\v2 .ogcloud.events.v1.NodeBroadcastH\x00R\tbroadcast\x127\n" +
 	"\bdelivery\x18\x04 \x01(\v2\x19.ogcloud.node.v1.DeliveryH\x00R\bdelivery\x12I\n" +
 	"\flive_message\x18\x05 \x01(\v2$.ogcloud.node.v1.LiveChannelDeliveryH\x00R\vliveMessage\x12Z\n" +
-	"\x15server_command_result\x18\x06 \x01(\v2$.ogcloud.node.v1.ServerCommandResultH\x00R\x13serverCommandResultB\t\n" +
+	"\x15server_command_result\x18\x06 \x01(\v2$.ogcloud.node.v1.ServerCommandResultH\x00R\x13serverCommandResult\x12W\n" +
+	"\x14admin_request_result\x18\a \x01(\v2#.ogcloud.node.v1.AdminRequestResultH\x00R\x12adminRequestResultB\t\n" +
 	"\amessage\"\xe3\x01\n" +
 	"\x05Hello\x12K\n" +
 	"\x10protocol_version\x18\x01 \x01(\x0e2 .ogcloud.node.v1.ProtocolVersionR\x0fprotocolVersion\x128\n" +
@@ -1855,7 +2060,19 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\x06create\x18\x02 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06create\x12.\n" +
 	"\x06update\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06update\x12$\n" +
 	"\rdelete_npc_id\x18\x04 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
-	"\x06change\"S\n" +
+	"\x06change\"\xce\x02\n" +
+	"\fAdminRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12,\n" +
+	"\x12acting_player_uuid\x18\x02 \x01(\tR\x10actingPlayerUuid\x12V\n" +
+	"\x11group_maintenance\x18\x03 \x01(\v2'.ogcloud.node.v1.GroupMaintenanceChangeH\x00R\x10groupMaintenance\x12\\\n" +
+	"\x13network_maintenance\x18\x04 \x01(\v2).ogcloud.node.v1.NetworkMaintenanceChangeH\x00R\x12networkMaintenance\x121\n" +
+	"\x04rank\x18\x05 \x01(\v2\x1b.ogcloud.node.v1.RankChangeH\x00R\x04rankB\b\n" +
+	"\x06change\"I\n" +
+	"\x12AdminRequestResult\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"S\n" +
 	"\x17LiveChannelSubscription\x12\x18\n" +
 	"\achannel\x18\x01 \x01(\tR\achannel\x12\x1e\n" +
 	"\n" +
@@ -1897,7 +2114,7 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"\aprofile\x18\x03 \x01(\v2\x1e.ogcloud.node.v1.PlayerProfileR\aprofile*K\n" +
 	"\x0fProtocolVersion\x12 \n" +
 	"\x1cPROTOCOL_VERSION_UNSPECIFIED\x10\x00\x12\x16\n" +
-	"\x12PROTOCOL_VERSION_1\x10\x012\xed\x05\n" +
+	"\x12PROTOCOL_VERSION_1\x10\x012\x9e\a\n" +
 	"\x0eGatewayService\x12P\n" +
 	"\aSession\x12\x1f.ogcloud.node.v1.SessionRequest\x1a .ogcloud.node.v1.SessionResponse(\x010\x01\x12[\n" +
 	"\fResolveLogin\x12$.ogcloud.node.v1.ResolveLoginRequest\x1a%.ogcloud.node.v1.ResolveLoginResponse\x12R\n" +
@@ -1907,7 +2124,10 @@ const file_ogcloud_node_v1_session_proto_rawDesc = "" +
 	"FindPlayer\x12\".ogcloud.node.v1.FindPlayerRequest\x1a#.ogcloud.node.v1.FindPlayerResponse\x12g\n" +
 	"\x10GetPlayerProfile\x12(.ogcloud.node.v1.GetPlayerProfileRequest\x1a).ogcloud.node.v1.GetPlayerProfileResponse\x12m\n" +
 	"\x12GetPermissionGroup\x12*.ogcloud.node.v1.GetPermissionGroupRequest\x1a+.ogcloud.node.v1.GetPermissionGroupResponse\x12O\n" +
-	"\bListNpcs\x12 .ogcloud.node.v1.ListNpcsRequest\x1a!.ogcloud.node.v1.ListNpcsResponseB\xcb\x01\n" +
+	"\bListNpcs\x12 .ogcloud.node.v1.ListNpcsRequest\x1a!.ogcloud.node.v1.ListNpcsResponse\x12U\n" +
+	"\n" +
+	"ListGroups\x12\".ogcloud.node.v1.ListGroupsRequest\x1a#.ogcloud.node.v1.ListGroupsResponse\x12X\n" +
+	"\vListPlayers\x12#.ogcloud.node.v1.ListPlayersRequest\x1a$.ogcloud.node.v1.ListPlayersResponseB\xcb\x01\n" +
 	"\x13com.ogcloud.node.v1B\fSessionProtoP\x01ZHgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1;nodev1\xa2\x02\x03ONX\xaa\x02\x0fOgcloud.Node.V1\xca\x02\x0fOgcloud\\Node\\V1\xe2\x02\x1bOgcloud\\Node\\V1\\GPBMetadata\xea\x02\x11Ogcloud::Node::V1b\x06proto3"
 
 var (
@@ -1923,7 +2143,7 @@ func file_ogcloud_node_v1_session_proto_rawDescGZIP() []byte {
 }
 
 var file_ogcloud_node_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ogcloud_node_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_ogcloud_node_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_ogcloud_node_v1_session_proto_goTypes = []any{
 	(ProtocolVersion)(0),               // 0: ogcloud.node.v1.ProtocolVersion
 	(*SessionRequest)(nil),             // 1: ogcloud.node.v1.SessionRequest
@@ -1938,110 +2158,128 @@ var file_ogcloud_node_v1_session_proto_goTypes = []any{
 	(*NodeCommandRequest)(nil),         // 10: ogcloud.node.v1.NodeCommandRequest
 	(*PlayerSnapshot)(nil),             // 11: ogcloud.node.v1.PlayerSnapshot
 	(*NpcChangeRequest)(nil),           // 12: ogcloud.node.v1.NpcChangeRequest
-	(*LiveChannelSubscription)(nil),    // 13: ogcloud.node.v1.LiveChannelSubscription
-	(*LiveChannelPublish)(nil),         // 14: ogcloud.node.v1.LiveChannelPublish
-	(*LiveChannelDelivery)(nil),        // 15: ogcloud.node.v1.LiveChannelDelivery
-	(*Delivery)(nil),                   // 16: ogcloud.node.v1.Delivery
-	(*DeliveryResult)(nil),             // 17: ogcloud.node.v1.DeliveryResult
-	(*ResolveLoginRequest)(nil),        // 18: ogcloud.node.v1.ResolveLoginRequest
-	(*ResolveLoginResponse)(nil),       // 19: ogcloud.node.v1.ResolveLoginResponse
-	(*v1.TransferRequested)(nil),       // 20: ogcloud.events.v1.TransferRequested
-	(*v1.ServerLifecycleChanged)(nil),  // 21: ogcloud.events.v1.ServerLifecycleChanged
-	(*v1.NodeBroadcast)(nil),           // 22: ogcloud.events.v1.NodeBroadcast
-	(v1.NodeType)(0),                   // 23: ogcloud.events.v1.NodeType
-	(v1.GroupType)(0),                  // 24: ogcloud.events.v1.GroupType
-	(*v1.NetworkSettingsUpdated)(nil),  // 25: ogcloud.events.v1.NetworkSettingsUpdated
-	(*ServerInfo)(nil),                 // 26: ogcloud.node.v1.ServerInfo
-	(v1.GameState)(0),                  // 27: ogcloud.events.v1.GameState
-	(*v1.PlayerConnected)(nil),         // 28: ogcloud.events.v1.PlayerConnected
-	(*v1.PlayerSwitched)(nil),          // 29: ogcloud.events.v1.PlayerSwitched
-	(*v1.PlayerDisconnected)(nil),      // 30: ogcloud.events.v1.PlayerDisconnected
-	(*v1.RequestServer)(nil),           // 31: ogcloud.events.v1.RequestServer
-	(*v1.StopServer)(nil),              // 32: ogcloud.events.v1.StopServer
-	(*v1.KillServer)(nil),              // 33: ogcloud.events.v1.KillServer
-	(*v1.PushTemplate)(nil),            // 34: ogcloud.events.v1.PushTemplate
-	(*v1.NodeCommand)(nil),             // 35: ogcloud.events.v1.NodeCommand
-	(*v1.SnapshotPlayer)(nil),          // 36: ogcloud.events.v1.SnapshotPlayer
-	(*Npc)(nil),                        // 37: ogcloud.node.v1.Npc
-	(*v1.LinkCodeIssued)(nil),          // 38: ogcloud.events.v1.LinkCodeIssued
-	(*PlayerProfile)(nil),              // 39: ogcloud.node.v1.PlayerProfile
-	(*GetServerRequest)(nil),           // 40: ogcloud.node.v1.GetServerRequest
-	(*ListServersRequest)(nil),         // 41: ogcloud.node.v1.ListServersRequest
-	(*FindPlayerRequest)(nil),          // 42: ogcloud.node.v1.FindPlayerRequest
-	(*GetPlayerProfileRequest)(nil),    // 43: ogcloud.node.v1.GetPlayerProfileRequest
-	(*GetPermissionGroupRequest)(nil),  // 44: ogcloud.node.v1.GetPermissionGroupRequest
-	(*ListNpcsRequest)(nil),            // 45: ogcloud.node.v1.ListNpcsRequest
-	(*GetServerResponse)(nil),          // 46: ogcloud.node.v1.GetServerResponse
-	(*ListServersResponse)(nil),        // 47: ogcloud.node.v1.ListServersResponse
-	(*FindPlayerResponse)(nil),         // 48: ogcloud.node.v1.FindPlayerResponse
-	(*GetPlayerProfileResponse)(nil),   // 49: ogcloud.node.v1.GetPlayerProfileResponse
-	(*GetPermissionGroupResponse)(nil), // 50: ogcloud.node.v1.GetPermissionGroupResponse
-	(*ListNpcsResponse)(nil),           // 51: ogcloud.node.v1.ListNpcsResponse
+	(*AdminRequest)(nil),               // 13: ogcloud.node.v1.AdminRequest
+	(*AdminRequestResult)(nil),         // 14: ogcloud.node.v1.AdminRequestResult
+	(*LiveChannelSubscription)(nil),    // 15: ogcloud.node.v1.LiveChannelSubscription
+	(*LiveChannelPublish)(nil),         // 16: ogcloud.node.v1.LiveChannelPublish
+	(*LiveChannelDelivery)(nil),        // 17: ogcloud.node.v1.LiveChannelDelivery
+	(*Delivery)(nil),                   // 18: ogcloud.node.v1.Delivery
+	(*DeliveryResult)(nil),             // 19: ogcloud.node.v1.DeliveryResult
+	(*ResolveLoginRequest)(nil),        // 20: ogcloud.node.v1.ResolveLoginRequest
+	(*ResolveLoginResponse)(nil),       // 21: ogcloud.node.v1.ResolveLoginResponse
+	(*v1.TransferRequested)(nil),       // 22: ogcloud.events.v1.TransferRequested
+	(*v1.ServerLifecycleChanged)(nil),  // 23: ogcloud.events.v1.ServerLifecycleChanged
+	(*v1.NodeBroadcast)(nil),           // 24: ogcloud.events.v1.NodeBroadcast
+	(v1.NodeType)(0),                   // 25: ogcloud.events.v1.NodeType
+	(v1.GroupType)(0),                  // 26: ogcloud.events.v1.GroupType
+	(*v1.NetworkSettingsUpdated)(nil),  // 27: ogcloud.events.v1.NetworkSettingsUpdated
+	(*ServerInfo)(nil),                 // 28: ogcloud.node.v1.ServerInfo
+	(v1.GameState)(0),                  // 29: ogcloud.events.v1.GameState
+	(*v1.PlayerConnected)(nil),         // 30: ogcloud.events.v1.PlayerConnected
+	(*v1.PlayerSwitched)(nil),          // 31: ogcloud.events.v1.PlayerSwitched
+	(*v1.PlayerDisconnected)(nil),      // 32: ogcloud.events.v1.PlayerDisconnected
+	(*v1.RequestServer)(nil),           // 33: ogcloud.events.v1.RequestServer
+	(*v1.StopServer)(nil),              // 34: ogcloud.events.v1.StopServer
+	(*v1.KillServer)(nil),              // 35: ogcloud.events.v1.KillServer
+	(*v1.PushTemplate)(nil),            // 36: ogcloud.events.v1.PushTemplate
+	(*v1.NodeCommand)(nil),             // 37: ogcloud.events.v1.NodeCommand
+	(*v1.SnapshotPlayer)(nil),          // 38: ogcloud.events.v1.SnapshotPlayer
+	(*Npc)(nil),                        // 39: ogcloud.node.v1.Npc
+	(*GroupMaintenanceChange)(nil),     // 40: ogcloud.node.v1.GroupMaintenanceChange
+	(*NetworkMaintenanceChange)(nil),   // 41: ogcloud.node.v1.NetworkMaintenanceChange
+	(*RankChange)(nil),                 // 42: ogcloud.node.v1.RankChange
+	(*v1.LinkCodeIssued)(nil),          // 43: ogcloud.events.v1.LinkCodeIssued
+	(*PlayerProfile)(nil),              // 44: ogcloud.node.v1.PlayerProfile
+	(*GetServerRequest)(nil),           // 45: ogcloud.node.v1.GetServerRequest
+	(*ListServersRequest)(nil),         // 46: ogcloud.node.v1.ListServersRequest
+	(*FindPlayerRequest)(nil),          // 47: ogcloud.node.v1.FindPlayerRequest
+	(*GetPlayerProfileRequest)(nil),    // 48: ogcloud.node.v1.GetPlayerProfileRequest
+	(*GetPermissionGroupRequest)(nil),  // 49: ogcloud.node.v1.GetPermissionGroupRequest
+	(*ListNpcsRequest)(nil),            // 50: ogcloud.node.v1.ListNpcsRequest
+	(*ListGroupsRequest)(nil),          // 51: ogcloud.node.v1.ListGroupsRequest
+	(*ListPlayersRequest)(nil),         // 52: ogcloud.node.v1.ListPlayersRequest
+	(*GetServerResponse)(nil),          // 53: ogcloud.node.v1.GetServerResponse
+	(*ListServersResponse)(nil),        // 54: ogcloud.node.v1.ListServersResponse
+	(*FindPlayerResponse)(nil),         // 55: ogcloud.node.v1.FindPlayerResponse
+	(*GetPlayerProfileResponse)(nil),   // 56: ogcloud.node.v1.GetPlayerProfileResponse
+	(*GetPermissionGroupResponse)(nil), // 57: ogcloud.node.v1.GetPermissionGroupResponse
+	(*ListNpcsResponse)(nil),           // 58: ogcloud.node.v1.ListNpcsResponse
+	(*ListGroupsResponse)(nil),         // 59: ogcloud.node.v1.ListGroupsResponse
+	(*ListPlayersResponse)(nil),        // 60: ogcloud.node.v1.ListPlayersResponse
 }
 var file_ogcloud_node_v1_session_proto_depIdxs = []int32{
 	3,  // 0: ogcloud.node.v1.SessionRequest.hello:type_name -> ogcloud.node.v1.Hello
 	5,  // 1: ogcloud.node.v1.SessionRequest.heartbeat:type_name -> ogcloud.node.v1.Heartbeat
 	6,  // 2: ogcloud.node.v1.SessionRequest.game_state:type_name -> ogcloud.node.v1.GameStateUpdate
 	7,  // 3: ogcloud.node.v1.SessionRequest.player_activity:type_name -> ogcloud.node.v1.PlayerActivityReport
-	20, // 4: ogcloud.node.v1.SessionRequest.transfer:type_name -> ogcloud.events.v1.TransferRequested
+	22, // 4: ogcloud.node.v1.SessionRequest.transfer:type_name -> ogcloud.events.v1.TransferRequested
 	8,  // 5: ogcloud.node.v1.SessionRequest.server_command:type_name -> ogcloud.node.v1.ServerCommandRequest
 	10, // 6: ogcloud.node.v1.SessionRequest.node_command:type_name -> ogcloud.node.v1.NodeCommandRequest
-	13, // 7: ogcloud.node.v1.SessionRequest.live_subscription:type_name -> ogcloud.node.v1.LiveChannelSubscription
-	14, // 8: ogcloud.node.v1.SessionRequest.live_publish:type_name -> ogcloud.node.v1.LiveChannelPublish
-	17, // 9: ogcloud.node.v1.SessionRequest.delivery_result:type_name -> ogcloud.node.v1.DeliveryResult
+	15, // 7: ogcloud.node.v1.SessionRequest.live_subscription:type_name -> ogcloud.node.v1.LiveChannelSubscription
+	16, // 8: ogcloud.node.v1.SessionRequest.live_publish:type_name -> ogcloud.node.v1.LiveChannelPublish
+	19, // 9: ogcloud.node.v1.SessionRequest.delivery_result:type_name -> ogcloud.node.v1.DeliveryResult
 	11, // 10: ogcloud.node.v1.SessionRequest.player_snapshot:type_name -> ogcloud.node.v1.PlayerSnapshot
 	12, // 11: ogcloud.node.v1.SessionRequest.npc_change:type_name -> ogcloud.node.v1.NpcChangeRequest
-	4,  // 12: ogcloud.node.v1.SessionResponse.welcome:type_name -> ogcloud.node.v1.Welcome
-	21, // 13: ogcloud.node.v1.SessionResponse.server_lifecycle:type_name -> ogcloud.events.v1.ServerLifecycleChanged
-	22, // 14: ogcloud.node.v1.SessionResponse.broadcast:type_name -> ogcloud.events.v1.NodeBroadcast
-	16, // 15: ogcloud.node.v1.SessionResponse.delivery:type_name -> ogcloud.node.v1.Delivery
-	15, // 16: ogcloud.node.v1.SessionResponse.live_message:type_name -> ogcloud.node.v1.LiveChannelDelivery
-	9,  // 17: ogcloud.node.v1.SessionResponse.server_command_result:type_name -> ogcloud.node.v1.ServerCommandResult
-	0,  // 18: ogcloud.node.v1.Hello.protocol_version:type_name -> ogcloud.node.v1.ProtocolVersion
-	23, // 19: ogcloud.node.v1.Hello.node_type:type_name -> ogcloud.events.v1.NodeType
-	0,  // 20: ogcloud.node.v1.Welcome.protocol_version:type_name -> ogcloud.node.v1.ProtocolVersion
-	24, // 21: ogcloud.node.v1.Welcome.group_type:type_name -> ogcloud.events.v1.GroupType
-	25, // 22: ogcloud.node.v1.Welcome.network_settings:type_name -> ogcloud.events.v1.NetworkSettingsUpdated
-	26, // 23: ogcloud.node.v1.Welcome.servers:type_name -> ogcloud.node.v1.ServerInfo
-	27, // 24: ogcloud.node.v1.GameStateUpdate.game_state:type_name -> ogcloud.events.v1.GameState
-	28, // 25: ogcloud.node.v1.PlayerActivityReport.connected:type_name -> ogcloud.events.v1.PlayerConnected
-	29, // 26: ogcloud.node.v1.PlayerActivityReport.switched:type_name -> ogcloud.events.v1.PlayerSwitched
-	30, // 27: ogcloud.node.v1.PlayerActivityReport.disconnected:type_name -> ogcloud.events.v1.PlayerDisconnected
-	31, // 28: ogcloud.node.v1.ServerCommandRequest.request:type_name -> ogcloud.events.v1.RequestServer
-	32, // 29: ogcloud.node.v1.ServerCommandRequest.stop:type_name -> ogcloud.events.v1.StopServer
-	33, // 30: ogcloud.node.v1.ServerCommandRequest.kill:type_name -> ogcloud.events.v1.KillServer
-	34, // 31: ogcloud.node.v1.ServerCommandRequest.push_template:type_name -> ogcloud.events.v1.PushTemplate
-	35, // 32: ogcloud.node.v1.NodeCommandRequest.command:type_name -> ogcloud.events.v1.NodeCommand
-	36, // 33: ogcloud.node.v1.PlayerSnapshot.players:type_name -> ogcloud.events.v1.SnapshotPlayer
-	37, // 34: ogcloud.node.v1.NpcChangeRequest.create:type_name -> ogcloud.node.v1.Npc
-	37, // 35: ogcloud.node.v1.NpcChangeRequest.update:type_name -> ogcloud.node.v1.Npc
-	23, // 36: ogcloud.node.v1.LiveChannelDelivery.sender_node_type:type_name -> ogcloud.events.v1.NodeType
-	20, // 37: ogcloud.node.v1.Delivery.transfer:type_name -> ogcloud.events.v1.TransferRequested
-	35, // 38: ogcloud.node.v1.Delivery.command:type_name -> ogcloud.events.v1.NodeCommand
-	38, // 39: ogcloud.node.v1.Delivery.link_code:type_name -> ogcloud.events.v1.LinkCodeIssued
-	34, // 40: ogcloud.node.v1.Delivery.push_template:type_name -> ogcloud.events.v1.PushTemplate
-	39, // 41: ogcloud.node.v1.ResolveLoginResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
-	1,  // 42: ogcloud.node.v1.GatewayService.Session:input_type -> ogcloud.node.v1.SessionRequest
-	18, // 43: ogcloud.node.v1.GatewayService.ResolveLogin:input_type -> ogcloud.node.v1.ResolveLoginRequest
-	40, // 44: ogcloud.node.v1.GatewayService.GetServer:input_type -> ogcloud.node.v1.GetServerRequest
-	41, // 45: ogcloud.node.v1.GatewayService.ListServers:input_type -> ogcloud.node.v1.ListServersRequest
-	42, // 46: ogcloud.node.v1.GatewayService.FindPlayer:input_type -> ogcloud.node.v1.FindPlayerRequest
-	43, // 47: ogcloud.node.v1.GatewayService.GetPlayerProfile:input_type -> ogcloud.node.v1.GetPlayerProfileRequest
-	44, // 48: ogcloud.node.v1.GatewayService.GetPermissionGroup:input_type -> ogcloud.node.v1.GetPermissionGroupRequest
-	45, // 49: ogcloud.node.v1.GatewayService.ListNpcs:input_type -> ogcloud.node.v1.ListNpcsRequest
-	2,  // 50: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
-	19, // 51: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
-	46, // 52: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
-	47, // 53: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
-	48, // 54: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
-	49, // 55: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
-	50, // 56: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
-	51, // 57: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
-	50, // [50:58] is the sub-list for method output_type
-	42, // [42:50] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	13, // 12: ogcloud.node.v1.SessionRequest.admin_request:type_name -> ogcloud.node.v1.AdminRequest
+	4,  // 13: ogcloud.node.v1.SessionResponse.welcome:type_name -> ogcloud.node.v1.Welcome
+	23, // 14: ogcloud.node.v1.SessionResponse.server_lifecycle:type_name -> ogcloud.events.v1.ServerLifecycleChanged
+	24, // 15: ogcloud.node.v1.SessionResponse.broadcast:type_name -> ogcloud.events.v1.NodeBroadcast
+	18, // 16: ogcloud.node.v1.SessionResponse.delivery:type_name -> ogcloud.node.v1.Delivery
+	17, // 17: ogcloud.node.v1.SessionResponse.live_message:type_name -> ogcloud.node.v1.LiveChannelDelivery
+	9,  // 18: ogcloud.node.v1.SessionResponse.server_command_result:type_name -> ogcloud.node.v1.ServerCommandResult
+	14, // 19: ogcloud.node.v1.SessionResponse.admin_request_result:type_name -> ogcloud.node.v1.AdminRequestResult
+	0,  // 20: ogcloud.node.v1.Hello.protocol_version:type_name -> ogcloud.node.v1.ProtocolVersion
+	25, // 21: ogcloud.node.v1.Hello.node_type:type_name -> ogcloud.events.v1.NodeType
+	0,  // 22: ogcloud.node.v1.Welcome.protocol_version:type_name -> ogcloud.node.v1.ProtocolVersion
+	26, // 23: ogcloud.node.v1.Welcome.group_type:type_name -> ogcloud.events.v1.GroupType
+	27, // 24: ogcloud.node.v1.Welcome.network_settings:type_name -> ogcloud.events.v1.NetworkSettingsUpdated
+	28, // 25: ogcloud.node.v1.Welcome.servers:type_name -> ogcloud.node.v1.ServerInfo
+	29, // 26: ogcloud.node.v1.GameStateUpdate.game_state:type_name -> ogcloud.events.v1.GameState
+	30, // 27: ogcloud.node.v1.PlayerActivityReport.connected:type_name -> ogcloud.events.v1.PlayerConnected
+	31, // 28: ogcloud.node.v1.PlayerActivityReport.switched:type_name -> ogcloud.events.v1.PlayerSwitched
+	32, // 29: ogcloud.node.v1.PlayerActivityReport.disconnected:type_name -> ogcloud.events.v1.PlayerDisconnected
+	33, // 30: ogcloud.node.v1.ServerCommandRequest.request:type_name -> ogcloud.events.v1.RequestServer
+	34, // 31: ogcloud.node.v1.ServerCommandRequest.stop:type_name -> ogcloud.events.v1.StopServer
+	35, // 32: ogcloud.node.v1.ServerCommandRequest.kill:type_name -> ogcloud.events.v1.KillServer
+	36, // 33: ogcloud.node.v1.ServerCommandRequest.push_template:type_name -> ogcloud.events.v1.PushTemplate
+	37, // 34: ogcloud.node.v1.NodeCommandRequest.command:type_name -> ogcloud.events.v1.NodeCommand
+	38, // 35: ogcloud.node.v1.PlayerSnapshot.players:type_name -> ogcloud.events.v1.SnapshotPlayer
+	39, // 36: ogcloud.node.v1.NpcChangeRequest.create:type_name -> ogcloud.node.v1.Npc
+	39, // 37: ogcloud.node.v1.NpcChangeRequest.update:type_name -> ogcloud.node.v1.Npc
+	40, // 38: ogcloud.node.v1.AdminRequest.group_maintenance:type_name -> ogcloud.node.v1.GroupMaintenanceChange
+	41, // 39: ogcloud.node.v1.AdminRequest.network_maintenance:type_name -> ogcloud.node.v1.NetworkMaintenanceChange
+	42, // 40: ogcloud.node.v1.AdminRequest.rank:type_name -> ogcloud.node.v1.RankChange
+	25, // 41: ogcloud.node.v1.LiveChannelDelivery.sender_node_type:type_name -> ogcloud.events.v1.NodeType
+	22, // 42: ogcloud.node.v1.Delivery.transfer:type_name -> ogcloud.events.v1.TransferRequested
+	37, // 43: ogcloud.node.v1.Delivery.command:type_name -> ogcloud.events.v1.NodeCommand
+	43, // 44: ogcloud.node.v1.Delivery.link_code:type_name -> ogcloud.events.v1.LinkCodeIssued
+	36, // 45: ogcloud.node.v1.Delivery.push_template:type_name -> ogcloud.events.v1.PushTemplate
+	44, // 46: ogcloud.node.v1.ResolveLoginResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
+	1,  // 47: ogcloud.node.v1.GatewayService.Session:input_type -> ogcloud.node.v1.SessionRequest
+	20, // 48: ogcloud.node.v1.GatewayService.ResolveLogin:input_type -> ogcloud.node.v1.ResolveLoginRequest
+	45, // 49: ogcloud.node.v1.GatewayService.GetServer:input_type -> ogcloud.node.v1.GetServerRequest
+	46, // 50: ogcloud.node.v1.GatewayService.ListServers:input_type -> ogcloud.node.v1.ListServersRequest
+	47, // 51: ogcloud.node.v1.GatewayService.FindPlayer:input_type -> ogcloud.node.v1.FindPlayerRequest
+	48, // 52: ogcloud.node.v1.GatewayService.GetPlayerProfile:input_type -> ogcloud.node.v1.GetPlayerProfileRequest
+	49, // 53: ogcloud.node.v1.GatewayService.GetPermissionGroup:input_type -> ogcloud.node.v1.GetPermissionGroupRequest
+	50, // 54: ogcloud.node.v1.GatewayService.ListNpcs:input_type -> ogcloud.node.v1.ListNpcsRequest
+	51, // 55: ogcloud.node.v1.GatewayService.ListGroups:input_type -> ogcloud.node.v1.ListGroupsRequest
+	52, // 56: ogcloud.node.v1.GatewayService.ListPlayers:input_type -> ogcloud.node.v1.ListPlayersRequest
+	2,  // 57: ogcloud.node.v1.GatewayService.Session:output_type -> ogcloud.node.v1.SessionResponse
+	21, // 58: ogcloud.node.v1.GatewayService.ResolveLogin:output_type -> ogcloud.node.v1.ResolveLoginResponse
+	53, // 59: ogcloud.node.v1.GatewayService.GetServer:output_type -> ogcloud.node.v1.GetServerResponse
+	54, // 60: ogcloud.node.v1.GatewayService.ListServers:output_type -> ogcloud.node.v1.ListServersResponse
+	55, // 61: ogcloud.node.v1.GatewayService.FindPlayer:output_type -> ogcloud.node.v1.FindPlayerResponse
+	56, // 62: ogcloud.node.v1.GatewayService.GetPlayerProfile:output_type -> ogcloud.node.v1.GetPlayerProfileResponse
+	57, // 63: ogcloud.node.v1.GatewayService.GetPermissionGroup:output_type -> ogcloud.node.v1.GetPermissionGroupResponse
+	58, // 64: ogcloud.node.v1.GatewayService.ListNpcs:output_type -> ogcloud.node.v1.ListNpcsResponse
+	59, // 65: ogcloud.node.v1.GatewayService.ListGroups:output_type -> ogcloud.node.v1.ListGroupsResponse
+	60, // 66: ogcloud.node.v1.GatewayService.ListPlayers:output_type -> ogcloud.node.v1.ListPlayersResponse
+	57, // [57:67] is the sub-list for method output_type
+	47, // [47:57] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_node_v1_session_proto_init() }
@@ -2049,6 +2287,7 @@ func file_ogcloud_node_v1_session_proto_init() {
 	if File_ogcloud_node_v1_session_proto != nil {
 		return
 	}
+	file_ogcloud_node_v1_admin_proto_init()
 	file_ogcloud_node_v1_query_proto_init()
 	file_ogcloud_node_v1_session_proto_msgTypes[0].OneofWrappers = []any{
 		(*SessionRequest_Hello)(nil),
@@ -2063,6 +2302,7 @@ func file_ogcloud_node_v1_session_proto_init() {
 		(*SessionRequest_DeliveryResult)(nil),
 		(*SessionRequest_PlayerSnapshot)(nil),
 		(*SessionRequest_NpcChange)(nil),
+		(*SessionRequest_AdminRequest)(nil),
 	}
 	file_ogcloud_node_v1_session_proto_msgTypes[1].OneofWrappers = []any{
 		(*SessionResponse_Welcome)(nil),
@@ -2071,6 +2311,7 @@ func file_ogcloud_node_v1_session_proto_init() {
 		(*SessionResponse_Delivery)(nil),
 		(*SessionResponse_LiveMessage)(nil),
 		(*SessionResponse_ServerCommandResult)(nil),
+		(*SessionResponse_AdminRequestResult)(nil),
 	}
 	file_ogcloud_node_v1_session_proto_msgTypes[6].OneofWrappers = []any{
 		(*PlayerActivityReport_Connected)(nil),
@@ -2088,7 +2329,12 @@ func file_ogcloud_node_v1_session_proto_init() {
 		(*NpcChangeRequest_Update)(nil),
 		(*NpcChangeRequest_DeleteNpcId)(nil),
 	}
-	file_ogcloud_node_v1_session_proto_msgTypes[15].OneofWrappers = []any{
+	file_ogcloud_node_v1_session_proto_msgTypes[12].OneofWrappers = []any{
+		(*AdminRequest_GroupMaintenance)(nil),
+		(*AdminRequest_NetworkMaintenance)(nil),
+		(*AdminRequest_Rank)(nil),
+	}
+	file_ogcloud_node_v1_session_proto_msgTypes[17].OneofWrappers = []any{
 		(*Delivery_Transfer)(nil),
 		(*Delivery_Command)(nil),
 		(*Delivery_LinkCode)(nil),
@@ -2100,7 +2346,7 @@ func file_ogcloud_node_v1_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_node_v1_session_proto_rawDesc), len(file_ogcloud_node_v1_session_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -18,6 +18,8 @@ object ValkeyKeys {
     const val WEB_SESSION_NAMESPACE = "websession"
     /** Id of the one network settings read model. */
     const val NETWORK_SETTINGS_ID = "network"
+    /** Id of the one group-list read model. */
+    const val GROUP_LIST_ID = "all"
     /** Every live server id. */
     const val SERVERS = "servers"
     const val ONLINE_PLAYERS = "players:online"

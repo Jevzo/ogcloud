@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -33,6 +32,7 @@ const (
 	messageHeartbeat      = "heartbeat"
 	messagePlayerSnapshot = "player_snapshot"
 	messageNpcChange      = "npc_change"
+	messageAdminRequest   = "admin_request"
 )
 
 // Why a node message was dropped.
@@ -100,6 +100,10 @@ func (s *Service) handle(ctx context.Context, session *Session, request *nodev1.
 	case *nodev1.SessionRequest_NpcChange:
 		if s.permits(session, messageNpcChange, backends) {
 			s.npcChange(ctx, session, message.NpcChange)
+		}
+	case *nodev1.SessionRequest_AdminRequest:
+		if s.permits(session, messageAdminRequest, proxies) {
+			s.adminRequest(ctx, session, message.AdminRequest)
 		}
 	default:
 		s.reject(session, fmt.Sprintf("%T", message), rejectUnsupported)
@@ -207,8 +211,8 @@ func (s *Service) nodeCommand(ctx context.Context, session *Session, request *no
 		s.reject(session, messageNodeCommand, rejectInvalid)
 		return
 	}
-	if err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminCommand); err != nil {
-		s.rejectAdmin(session, messageNodeCommand, err)
+	if err := s.adminCheck(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminCommand); err != nil {
+		s.reject(session, messageNodeCommand, err.Error())
 		return
 	}
 	s.emit(ctx, session, messageNodeCommand, kafkatopics.NodeCommand, key, events.Player(request.GetActingPlayerUuid()),
@@ -240,8 +244,8 @@ func (s *Service) npcChange(ctx context.Context, session *Session, request *node
 		s.reject(session, messageNpcChange, err.Error())
 		return
 	}
-	if err := s.actingAdmin(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminNpc); err != nil {
-		s.rejectAdmin(session, messageNpcChange, err)
+	if err := s.adminCheck(ctx, session, request.GetActingPlayerUuid(), permissionnodes.AdminNpc); err != nil {
+		s.reject(session, messageNpcChange, err.Error())
 		return
 	}
 	s.emit(ctx, session, messageNpcChange, kafkatopics.NpcChange, npcIDOf(change), events.Player(request.GetActingPlayerUuid()),
@@ -296,16 +300,6 @@ func npcIDOf(change *internalv1.NpcChangeRequested) string {
 	default:
 		return change.GetDeleteNpcId()
 	}
-}
-
-// rejectAdmin counts a refused admin check by its reason, or as unavailable when the check itself failed.
-func (s *Service) rejectAdmin(session *Session, message string, err error) {
-	if errors.Is(err, errPlayerElsewhere) || errors.Is(err, errNotPermitted) {
-		s.reject(session, message, err.Error())
-		return
-	}
-	s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)
-	s.reject(session, message, rejectUnavailable)
 }
 
 // nodeCommandKey keys a command by its target, as the API does.

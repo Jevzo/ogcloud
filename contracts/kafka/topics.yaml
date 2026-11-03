@@ -78,6 +78,15 @@ topics:
     consumers: [api]
     deadLetter: true
 
+  # In-game admin changes: maintenance and ranks, applied by the API (D-0132).
+  - name: ogcloud.admin.change
+    message: ogcloud.internal.v1.AdminChangeRequested
+    key: subject
+    partitions: 3
+    producers: [gateway]
+    consumers: [api]
+    deadLetter: true
+
   - name: ogcloud.player.transfer
     message: ogcloud.events.v1.TransferRequested
     key: player_uuid or from_server_id

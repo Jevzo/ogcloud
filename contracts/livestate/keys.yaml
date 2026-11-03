@@ -23,6 +23,9 @@ constants:
   - name: networkSettingsId
     value: network
     doc: Id of the one network settings read model.
+  - name: groupListId
+    value: all
+    doc: Id of the one group-list read model.
 
 readModelKinds:
   - name: networkSettings
@@ -35,6 +38,9 @@ readModelKinds:
     key: player-profile
   - name: npcsByGroup
     key: npcs-by-group
+  - name: groupList
+    key: group-list
+    doc: Every group, for the gateway's ListGroups (D-0132).
   - name: runtimeBundle
     key: runtime-bundle
     doc: A profile's bundle manifest for the gateway's GetPodAssets (D-0080).

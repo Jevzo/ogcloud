@@ -42,6 +42,17 @@ func (s *Service) actingAdmin(ctx context.Context, sender *Session, playerUUID, 
 	return nil
 }
 
+// adminCheck runs actingAdmin and reduces the outcome to a reason the node may see: the player is elsewhere or
+// lacks the permission, or the check itself failed, which is logged and reported as unavailable.
+func (s *Service) adminCheck(ctx context.Context, sender *Session, playerUUID, permission string) error {
+	err := s.actingAdmin(ctx, sender, playerUUID, permission)
+	if err == nil || errors.Is(err, errPlayerElsewhere) || errors.Is(err, errNotPermitted) {
+		return err
+	}
+	s.Logger.Warn("admin check failed", "serverId", sender.Peer.ServerID, "error", err)
+	return errUnavailable
+}
+
 // grants follows the domain's rule: the exact node, or everything for the wildcard.
 func grants(group *nodev1.PermissionGroup, permission string) bool {
 	return slices.Contains(group.GetPermissions(), permissionnodes.Wildcard) || slices.Contains(group.GetPermissions(), permission)

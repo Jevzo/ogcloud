@@ -99,12 +99,17 @@ func (s *Store) Server(ctx context.Context, id string) (*internalv1.ServerRecord
 
 // Servers returns every live server record.
 func (s *Store) Servers(ctx context.Context) ([]*internalv1.ServerRecord, error) {
-	return s.serversIn(ctx, valkeykeys.Servers)
+	return recordsIn[*internalv1.ServerRecord](ctx, s, valkeykeys.Servers, valkeykeys.Server)
 }
 
 // ServersOfGroup returns the live records of a group's servers.
 func (s *Store) ServersOfGroup(ctx context.Context, groupID string) ([]*internalv1.ServerRecord, error) {
-	return s.serversIn(ctx, valkeykeys.ServersOfGroup(groupID))
+	return recordsIn[*internalv1.ServerRecord](ctx, s, valkeykeys.ServersOfGroup(groupID), valkeykeys.Server)
+}
+
+// OnlineSessions returns the session of every online player.
+func (s *Store) OnlineSessions(ctx context.Context) ([]*internalv1.PlayerSession, error) {
+	return recordsIn[*internalv1.PlayerSession](ctx, s, valkeykeys.OnlinePlayers, valkeykeys.Session)
 }
 
 // Session returns an online player's session, or nil when the player is offline.
@@ -143,16 +148,17 @@ func (s *Store) ReadModel(ctx context.Context, kind valkeykeys.ReadModelKind, id
 	return encoded, nil
 }
 
-func (s *Store) serversIn(ctx context.Context, set string) ([]*internalv1.ServerRecord, error) {
+// recordsIn reads the records whose ids the set lists; keyOf turns an id into its record's key.
+func recordsIn[T proto.Message](ctx context.Context, s *Store, set string, keyOf func(string) string) ([]T, error) {
 	ids, err := s.client.Do(ctx, s.client.B().Smembers().Key(set).Build()).AsStrSlice()
 	if err != nil {
 		return nil, fmt.Errorf("list %s: %w", set, err)
 	}
 	keys := make([]string, len(ids))
 	for i, id := range ids {
-		keys[i] = valkeykeys.Server(id)
+		keys[i] = keyOf(id)
 	}
-	return readRecords[*internalv1.ServerRecord](ctx, s, keys, true)
+	return readRecords[T](ctx, s, keys, true)
 }
 
 // readRecords loads the data field of each revisioned record in one round trip. Records that expired

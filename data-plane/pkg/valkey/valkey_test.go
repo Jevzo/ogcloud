@@ -36,6 +36,7 @@ func TestRecordsSessionsAndReadModelsAreReadAsTheControllerWroteThem(t *testing.
 	writer.Add(t, valkeykeys.ServersOfGroup("lobby"), "s-1")
 	writer.Record(t, valkeykeys.Session("p-1"), &internalv1.PlayerSession{PlayerUuid: "p-1", PlayerName: "Jevzo"})
 	writer.Set(t, valkeykeys.SessionName("Jevzo"), "p-1")
+	writer.Add(t, valkeykeys.OnlinePlayers, "p-1", "gone")
 	writer.Set(t, valkeykeys.ReadModel(valkeykeys.ReadModelGroup, "lobby"), "bytes")
 	store := connect(t, Settings{Addresses: []string{address}})
 
@@ -58,6 +59,11 @@ func TestRecordsSessionsAndReadModelsAreReadAsTheControllerWroteThem(t *testing.
 	must(t, err)
 	if session.GetPlayerUuid() != "p-1" {
 		t.Errorf("SessionByName = %v", session)
+	}
+	online, err := store.OnlineSessions(ctx)
+	must(t, err)
+	if len(online) != 1 || online[0].GetPlayerName() != "Jevzo" {
+		t.Errorf("OnlineSessions = %v; the expired session should be skipped", online)
 	}
 	model, err := store.ReadModel(ctx, valkeykeys.ReadModelGroup, "lobby")
 	must(t, err)

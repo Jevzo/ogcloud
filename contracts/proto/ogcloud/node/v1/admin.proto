@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package ogcloud.node.v1;
+
+import "google/protobuf/duration.proto";
+
+option java_multiple_files = true;
+option java_package = "io.ogwars.cloud.contracts.node.v1";
+
+// Changes an in-game admin makes through the proxy (D-0132); the API applies them like dashboard edits.
+
+// Needs ogcloud.admin.group.
+message GroupMaintenanceChange {
+  string group_id = 1;
+  bool enabled = 2;
+}
+
+// Needs ogcloud.admin.network.
+message NetworkMaintenanceChange {
+  bool enabled = 1;
+}
+
+// Needs ogcloud.admin.permission.
+message RankChange {
+  string player_uuid = 1;
+  string permission_group_id = 2;
+  // Unset for a permanent rank.
+  google.protobuf.Duration duration = 3;
+}

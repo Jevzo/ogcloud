@@ -3,8 +3,10 @@ package gateway
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
@@ -253,5 +255,66 @@ func TestInGameNpcEditsNeedAnAdminOnTheBackend(t *testing.T) {
 	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, rejectInvalid)) != 2 ||
 		testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageNpcChange, errPlayerElsewhere.Error())) != 1 {
 		t.Error("another group's NPC, a malformed id and a player on another server must be refused")
+	}
+}
+
+// adminResult reads session messages until the result of requestID arrives.
+func adminResult(t *testing.T, stream nodev1.GatewayService_SessionClient, requestID string) *nodev1.AdminRequestResult {
+	t.Helper()
+	for {
+		response, err := stream.Recv()
+		if err != nil {
+			t.Fatalf("Recv: %v", err)
+		}
+		if got := response.GetAdminRequestResult(); got.GetRequestId() == requestID {
+			return got
+		}
+	}
+}
+
+func TestInGameAdminChangesNeedTheirAdminNodeAndAKnownTarget(t *testing.T) {
+	h := start(t, patience)
+	h.state.sessions[adminUUID] = &internalv1.PlayerSession{PlayerUuid: adminUUID, ProxyId: "s-proxy", PermissionGroupId: "staff"}
+	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":staff"] = marshal(t, &nodev1.PermissionGroup{
+		Permissions: []string{permissionnodes.AdminGroup, permissionnodes.AdminPermission},
+	})
+	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":vip"] = marshal(t, &nodev1.PermissionGroup{PermissionGroupId: "vip"})
+	h.state.models[string(valkeykeys.ReadModelGroup)+":lobby"] = marshal(t, &eventsv1.GroupUpdated{GroupId: "lobby"})
+	proxy := h.welcomed(t, proxyToken, eventsv1.NodeType_NODE_TYPE_PROXY)
+	maintenance := func(group string) *nodev1.AdminRequest {
+		return &nodev1.AdminRequest{Change: &nodev1.AdminRequest_GroupMaintenance{GroupMaintenance: &nodev1.GroupMaintenanceChange{GroupId: group, Enabled: true}}}
+	}
+	rank := func(group string, duration time.Duration) *nodev1.AdminRequest {
+		return &nodev1.AdminRequest{Change: &nodev1.AdminRequest_Rank{Rank: &nodev1.RankChange{
+			PlayerUuid: visitorUUID, PermissionGroupId: group, Duration: durationpb.New(duration),
+		}}}
+	}
+	cases := []struct {
+		id      string
+		request *nodev1.AdminRequest
+		want    string
+	}{
+		{"lobby", maintenance("lobby"), ""},
+		{"bedwars", maintenance("bedwars"), errUnknownGroup.Error()},
+		{"network", &nodev1.AdminRequest{Change: &nodev1.AdminRequest_NetworkMaintenance{NetworkMaintenance: &nodev1.NetworkMaintenanceChange{}}}, errNotPermitted.Error()},
+		{"rank", rank("vip", time.Hour), ""},
+		{"ghost", rank("ghost", time.Hour), errUnknownPermissionGroup.Error()},
+		{"negative", rank("vip", -time.Hour), rejectInvalid},
+	}
+
+	for _, c := range cases {
+		c.request.RequestId, c.request.ActingPlayerUuid = c.id, adminUUID
+		send(t, proxy, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_AdminRequest{AdminRequest: c.request}})
+		if got := adminResult(t, proxy, c.id); got.GetError() != c.want {
+			t.Errorf("%s: error %q, want %q", c.id, got.GetError(), c.want)
+		}
+	}
+
+	published := h.settle(t, proxy)
+	if len(published) != 2 || published[0].topic != kafkatopics.AdminChange || published[0].key != "lobby" || published[1].key != visitorUUID {
+		t.Fatalf("published %+v", published)
+	}
+	if actor := published[1].event.(*internalv1.AdminChangeRequested).GetMetadata().GetActor().GetPlayerUuid(); actor != adminUUID {
+		t.Errorf("actor %s", actor)
 	}
 }

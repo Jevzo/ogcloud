@@ -1290,6 +1290,269 @@ func (x *NpcTransfer) GetRoutingStrategy() v1.RoutingStrategy {
 	return v1.RoutingStrategy(0)
 }
 
+type ListGroupsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupsRequest) Reset() {
+	*x = ListGroupsRequest{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupsRequest) ProtoMessage() {}
+
+func (x *ListGroupsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupsRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupsRequest) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{20}
+}
+
+// Also the group-list read model, which the controller keeps current (D-0132).
+type ListGroupsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Groups        []*GroupInfo           `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupsResponse) Reset() {
+	*x = ListGroupsResponse{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupsResponse) ProtoMessage() {}
+
+func (x *ListGroupsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupsResponse.ProtoReflect.Descriptor instead.
+func (*ListGroupsResponse) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListGroupsResponse) GetGroups() []*GroupInfo {
+	if x != nil {
+		return x.Groups
+	}
+	return nil
+}
+
+type GroupInfo struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	GroupId     string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	GroupType   v1.GroupType           `protobuf:"varint,2,opt,name=group_type,json=groupType,proto3,enum=ogcloud.events.v1.GroupType" json:"group_type,omitempty"`
+	Maintenance bool                   `protobuf:"varint,3,opt,name=maintenance,proto3" json:"maintenance,omitempty"`
+	// The runtime profile its servers run, e.g. paper-26.3.
+	ProfileId        string `protobuf:"bytes,4,opt,name=profile_id,json=profileId,proto3" json:"profile_id,omitempty"`
+	MinOnline        uint32 `protobuf:"varint,5,opt,name=min_online,json=minOnline,proto3" json:"min_online,omitempty"`
+	MaxInstances     uint32 `protobuf:"varint,6,opt,name=max_instances,json=maxInstances,proto3" json:"max_instances,omitempty"`
+	PlayersPerServer uint32 `protobuf:"varint,7,opt,name=players_per_server,json=playersPerServer,proto3" json:"players_per_server,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GroupInfo) Reset() {
+	*x = GroupInfo{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupInfo) ProtoMessage() {}
+
+func (x *GroupInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupInfo.ProtoReflect.Descriptor instead.
+func (*GroupInfo) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GroupInfo) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *GroupInfo) GetGroupType() v1.GroupType {
+	if x != nil {
+		return x.GroupType
+	}
+	return v1.GroupType(0)
+}
+
+func (x *GroupInfo) GetMaintenance() bool {
+	if x != nil {
+		return x.Maintenance
+	}
+	return false
+}
+
+func (x *GroupInfo) GetProfileId() string {
+	if x != nil {
+		return x.ProfileId
+	}
+	return ""
+}
+
+func (x *GroupInfo) GetMinOnline() uint32 {
+	if x != nil {
+		return x.MinOnline
+	}
+	return 0
+}
+
+func (x *GroupInfo) GetMaxInstances() uint32 {
+	if x != nil {
+		return x.MaxInstances
+	}
+	return 0
+}
+
+func (x *GroupInfo) GetPlayersPerServer() uint32 {
+	if x != nil {
+		return x.PlayersPerServer
+	}
+	return 0
+}
+
+type ListPlayersRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A backend's or a proxy's id.
+	ServerId      string `protobuf:"bytes,1,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPlayersRequest) Reset() {
+	*x = ListPlayersRequest{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPlayersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPlayersRequest) ProtoMessage() {}
+
+func (x *ListPlayersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPlayersRequest.ProtoReflect.Descriptor instead.
+func (*ListPlayersRequest) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListPlayersRequest) GetServerId() string {
+	if x != nil {
+		return x.ServerId
+	}
+	return ""
+}
+
+type ListPlayersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Players       []*PlayerLocation      `protobuf:"bytes,1,rep,name=players,proto3" json:"players,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPlayersResponse) Reset() {
+	*x = ListPlayersResponse{}
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPlayersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPlayersResponse) ProtoMessage() {}
+
+func (x *ListPlayersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_node_v1_query_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPlayersResponse.ProtoReflect.Descriptor instead.
+func (*ListPlayersResponse) Descriptor() ([]byte, []int) {
+	return file_ogcloud_node_v1_query_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListPlayersResponse) GetPlayers() []*PlayerLocation {
+	if x != nil {
+		return x.Players
+	}
+	return nil
+}
+
 var File_ogcloud_node_v1_query_proto protoreflect.FileDescriptor
 
 const file_ogcloud_node_v1_query_proto_rawDesc = "" +
@@ -1397,7 +1660,25 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\x06action\"w\n" +
 	"\vNpcTransfer\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12M\n" +
-	"\x10routing_strategy\x18\x02 \x01(\x0e2\".ogcloud.events.v1.RoutingStrategyR\x0froutingStrategyB\xc9\x01\n" +
+	"\x10routing_strategy\x18\x02 \x01(\x0e2\".ogcloud.events.v1.RoutingStrategyR\x0froutingStrategy\"\x13\n" +
+	"\x11ListGroupsRequest\"H\n" +
+	"\x12ListGroupsResponse\x122\n" +
+	"\x06groups\x18\x01 \x03(\v2\x1a.ogcloud.node.v1.GroupInfoR\x06groups\"\x96\x02\n" +
+	"\tGroupInfo\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12;\n" +
+	"\n" +
+	"group_type\x18\x02 \x01(\x0e2\x1c.ogcloud.events.v1.GroupTypeR\tgroupType\x12 \n" +
+	"\vmaintenance\x18\x03 \x01(\bR\vmaintenance\x12\x1d\n" +
+	"\n" +
+	"profile_id\x18\x04 \x01(\tR\tprofileId\x12\x1d\n" +
+	"\n" +
+	"min_online\x18\x05 \x01(\rR\tminOnline\x12#\n" +
+	"\rmax_instances\x18\x06 \x01(\rR\fmaxInstances\x12,\n" +
+	"\x12players_per_server\x18\a \x01(\rR\x10playersPerServer\"1\n" +
+	"\x12ListPlayersRequest\x12\x1b\n" +
+	"\tserver_id\x18\x01 \x01(\tR\bserverId\"P\n" +
+	"\x13ListPlayersResponse\x129\n" +
+	"\aplayers\x18\x01 \x03(\v2\x1f.ogcloud.node.v1.PlayerLocationR\aplayersB\xc9\x01\n" +
 	"\x13com.ogcloud.node.v1B\n" +
 	"QueryProtoP\x01ZHgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1;nodev1\xa2\x02\x03ONX\xaa\x02\x0fOgcloud.Node.V1\xca\x02\x0fOgcloud\\Node\\V1\xe2\x02\x1bOgcloud\\Node\\V1\\GPBMetadata\xea\x02\x11Ogcloud::Node::V1b\x06proto3"
 
@@ -1413,7 +1694,7 @@ func file_ogcloud_node_v1_query_proto_rawDescGZIP() []byte {
 	return file_ogcloud_node_v1_query_proto_rawDescData
 }
 
-var file_ogcloud_node_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_ogcloud_node_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_ogcloud_node_v1_query_proto_goTypes = []any{
 	(*ServerInfo)(nil),                 // 0: ogcloud.node.v1.ServerInfo
 	(*GetServerRequest)(nil),           // 1: ogcloud.node.v1.GetServerRequest
@@ -1435,33 +1716,41 @@ var file_ogcloud_node_v1_query_proto_goTypes = []any{
 	(*Location)(nil),                   // 17: ogcloud.node.v1.Location
 	(*NpcAction)(nil),                  // 18: ogcloud.node.v1.NpcAction
 	(*NpcTransfer)(nil),                // 19: ogcloud.node.v1.NpcTransfer
-	(v1.GroupType)(0),                  // 20: ogcloud.events.v1.GroupType
-	(v1.ServerState)(0),                // 21: ogcloud.events.v1.ServerState
-	(v1.GameState)(0),                  // 22: ogcloud.events.v1.GameState
-	(*timestamppb.Timestamp)(nil),      // 23: google.protobuf.Timestamp
-	(v1.RoutingStrategy)(0),            // 24: ogcloud.events.v1.RoutingStrategy
+	(*ListGroupsRequest)(nil),          // 20: ogcloud.node.v1.ListGroupsRequest
+	(*ListGroupsResponse)(nil),         // 21: ogcloud.node.v1.ListGroupsResponse
+	(*GroupInfo)(nil),                  // 22: ogcloud.node.v1.GroupInfo
+	(*ListPlayersRequest)(nil),         // 23: ogcloud.node.v1.ListPlayersRequest
+	(*ListPlayersResponse)(nil),        // 24: ogcloud.node.v1.ListPlayersResponse
+	(v1.GroupType)(0),                  // 25: ogcloud.events.v1.GroupType
+	(v1.ServerState)(0),                // 26: ogcloud.events.v1.ServerState
+	(v1.GameState)(0),                  // 27: ogcloud.events.v1.GameState
+	(*timestamppb.Timestamp)(nil),      // 28: google.protobuf.Timestamp
+	(v1.RoutingStrategy)(0),            // 29: ogcloud.events.v1.RoutingStrategy
 }
 var file_ogcloud_node_v1_query_proto_depIdxs = []int32{
-	20, // 0: ogcloud.node.v1.ServerInfo.group_type:type_name -> ogcloud.events.v1.GroupType
-	21, // 1: ogcloud.node.v1.ServerInfo.state:type_name -> ogcloud.events.v1.ServerState
-	22, // 2: ogcloud.node.v1.ServerInfo.game_state:type_name -> ogcloud.events.v1.GameState
+	25, // 0: ogcloud.node.v1.ServerInfo.group_type:type_name -> ogcloud.events.v1.GroupType
+	26, // 1: ogcloud.node.v1.ServerInfo.state:type_name -> ogcloud.events.v1.ServerState
+	27, // 2: ogcloud.node.v1.ServerInfo.game_state:type_name -> ogcloud.events.v1.GameState
 	0,  // 3: ogcloud.node.v1.GetServerResponse.server:type_name -> ogcloud.node.v1.ServerInfo
 	0,  // 4: ogcloud.node.v1.ListServersResponse.servers:type_name -> ogcloud.node.v1.ServerInfo
 	7,  // 5: ogcloud.node.v1.FindPlayerResponse.location:type_name -> ogcloud.node.v1.PlayerLocation
 	10, // 6: ogcloud.node.v1.GetPlayerProfileResponse.profile:type_name -> ogcloud.node.v1.PlayerProfile
-	23, // 7: ogcloud.node.v1.PlayerProfile.rank_expires_at:type_name -> google.protobuf.Timestamp
+	28, // 7: ogcloud.node.v1.PlayerProfile.rank_expires_at:type_name -> google.protobuf.Timestamp
 	13, // 8: ogcloud.node.v1.GetPermissionGroupResponse.permission_group:type_name -> ogcloud.node.v1.PermissionGroup
 	16, // 9: ogcloud.node.v1.ListNpcsResponse.npcs:type_name -> ogcloud.node.v1.Npc
 	17, // 10: ogcloud.node.v1.Npc.location:type_name -> ogcloud.node.v1.Location
 	18, // 11: ogcloud.node.v1.Npc.left_click:type_name -> ogcloud.node.v1.NpcAction
 	18, // 12: ogcloud.node.v1.Npc.right_click:type_name -> ogcloud.node.v1.NpcAction
 	19, // 13: ogcloud.node.v1.NpcAction.transfer:type_name -> ogcloud.node.v1.NpcTransfer
-	24, // 14: ogcloud.node.v1.NpcTransfer.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	29, // 14: ogcloud.node.v1.NpcTransfer.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
+	22, // 15: ogcloud.node.v1.ListGroupsResponse.groups:type_name -> ogcloud.node.v1.GroupInfo
+	25, // 16: ogcloud.node.v1.GroupInfo.group_type:type_name -> ogcloud.events.v1.GroupType
+	7,  // 17: ogcloud.node.v1.ListPlayersResponse.players:type_name -> ogcloud.node.v1.PlayerLocation
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_node_v1_query_proto_init() }
@@ -1482,7 +1771,7 @@ func file_ogcloud_node_v1_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_node_v1_query_proto_rawDesc), len(file_ogcloud_node_v1_query_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

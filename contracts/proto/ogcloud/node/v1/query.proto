@@ -139,3 +139,30 @@ message NpcTransfer {
   string group_id = 1;
   ogcloud.events.v1.RoutingStrategy routing_strategy = 2;
 }
+
+message ListGroupsRequest {}
+
+// Also the group-list read model, which the controller keeps current (D-0132).
+message ListGroupsResponse {
+  repeated GroupInfo groups = 1;
+}
+
+message GroupInfo {
+  string group_id = 1;
+  ogcloud.events.v1.GroupType group_type = 2;
+  bool maintenance = 3;
+  // The runtime profile its servers run, e.g. paper-26.3.
+  string profile_id = 4;
+  uint32 min_online = 5;
+  uint32 max_instances = 6;
+  uint32 players_per_server = 7;
+}
+
+message ListPlayersRequest {
+  // A backend's or a proxy's id.
+  string server_id = 1;
+}
+
+message ListPlayersResponse {
+  repeated PlayerLocation players = 1;
+}
