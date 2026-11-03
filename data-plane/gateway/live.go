@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Live-channel limits (D-0116); payloads are capped by the node protocol.
+// Live-channel limits (D-0116), enforced here; the node protocol only documents the payload cap.
 const (
 	maxLiveSubscriptions   = 64
 	maxLivePayloadBytes    = 64 << 10
@@ -25,7 +25,7 @@ var (
 	errLivePublishLimit = errors.New("rate_limited")
 )
 
-// liveChannels are a session's subscriptions and its publish budget, a token bucket refilled each second.
+// liveChannels are a session's subscriptions and its publish budget, a token bucket refilled continuously.
 type liveChannels struct {
 	mu         sync.Mutex
 	subscribed map[string]struct{}

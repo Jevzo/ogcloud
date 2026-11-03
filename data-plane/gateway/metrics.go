@@ -27,6 +27,8 @@ type Metrics struct {
 
 	sessions   *prometheus.GaugeVec
 	ended      *prometheus.CounterVec
+	refused    *prometheus.CounterVec
+	authFailed *prometheus.CounterVec
 	rejected   *prometheus.CounterVec
 	deliveries *prometheus.CounterVec
 	unroutable *prometheus.CounterVec
@@ -54,6 +56,8 @@ func NewMetrics(registerer prometheus.Registerer) *Metrics {
 		memoryMax:  gauge("ogcloud_node_memory_max_bytes", "Heap a node may use.", gameLabels...),
 		sessions:   gauge("ogcloud_gateway_sessions", "Open node sessions.", "node_type"),
 		ended:      counter("ogcloud_gateway_sessions_ended_total", "Node sessions that ended, by reason.", "reason"),
+		refused:    counter("ogcloud_gateway_sessions_refused_total", "Node sessions refused before their Welcome, by status code.", "code"),
+		authFailed: counter("ogcloud_gateway_auth_failures_total", "Calls refused while authenticating the pod, by status code.", "code"),
 		rejected: counter("ogcloud_gateway_rejected_messages_total",
 			"Node messages dropped because the node may not send them or they were invalid (D-0116).", "message", "reason"),
 		deliveries: counter("ogcloud_gateway_deliveries_total", "Deliveries to nodes, by outcome.", "kind", "outcome"),
@@ -66,10 +70,14 @@ func (m *Metrics) opened(session *Session) {
 	m.sessions.WithLabelValues(nodeTypeLabel(session.NodeType)).Inc()
 }
 
-// closed forgets the session's game series.
-func (m *Metrics) closed(session *Session, reason string) {
+// closed counts the end of a session and forgets its game series, unless a newer session of the same
+// server took them over.
+func (m *Metrics) closed(session *Session, reason string, current bool) {
 	m.sessions.WithLabelValues(nodeTypeLabel(session.NodeType)).Dec()
 	m.ended.WithLabelValues(reason).Inc()
+	if !current {
+		return
+	}
 	labels := session.gameLabels()
 	for _, gauge := range []*prometheus.GaugeVec{m.players, m.maxPlayers, m.tps, m.mspt, m.memoryUsed, m.memoryMax} {
 		gauge.DeleteLabelValues(labels...)

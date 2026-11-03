@@ -16,9 +16,9 @@ const (
 )
 
 type pendingDelivery struct {
-	id   string
-	kind deliveryKind
-	sent time.Time
+	id       string
+	kind     deliveryKind
+	deadline time.Time
 }
 
 // pendingDeliveries are the deliveries a node has not answered yet.
@@ -45,13 +45,13 @@ func (p *pendingDeliveries) take(id string) (pendingDelivery, bool) {
 	return delivery, ok
 }
 
-// expire removes and returns the deliveries sent before cutoff.
-func (p *pendingDeliveries) expire(cutoff time.Time) []pendingDelivery {
+// expire removes and returns the deliveries whose deadline passed before now.
+func (p *pendingDeliveries) expire(now time.Time) []pendingDelivery {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	var expired []pendingDelivery
 	for id, delivery := range p.byID {
-		if delivery.sent.Before(cutoff) {
+		if delivery.deadline.Before(now) {
 			expired = append(expired, delivery)
 			delete(p.byID, id)
 		}

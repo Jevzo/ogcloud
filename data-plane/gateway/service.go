@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -88,6 +87,15 @@ type Options struct {
 	QueueSize int
 	// How long a node may take to answer a delivery.
 	DeliveryTimeout time.Duration
+	// How long a template agent may take to answer a push, which archives and uploads the whole server.
+	PushTimeout time.Duration
+}
+
+func (o Options) validate() error {
+	if o.HelloTimeout <= 0 || o.QueueSize <= 0 || o.DeliveryTimeout <= 0 || o.PushTimeout <= 0 {
+		return fmt.Errorf("gateway options must be positive: %+v", o)
+	}
+	return nil
 }
 
 // Service implements GatewayService.
@@ -98,8 +106,22 @@ type Service struct {
 }
 
 // NewService serves node sessions.
-func NewService(dependencies Dependencies, options Options) *Service {
-	return &Service{Dependencies: dependencies, options: options}
+func NewService(dependencies Dependencies, options Options) (*Service, error) {
+	if err := options.validate(); err != nil {
+		return nil, err
+	}
+	return &Service{Dependencies: dependencies, options: options}, nil
+}
+
+// NewServer serves the gateway's services with every call authenticated (D-0013); opts add e.g. TLS.
+func NewServer(auth *Authenticator, service *Service, agents *AgentService, opts ...grpc.ServerOption) *grpc.Server {
+	server := grpc.NewServer(append(opts,
+		grpc.UnaryInterceptor(auth.UnaryInterceptor()),
+		grpc.StreamInterceptor(auth.StreamInterceptor()), //nolint:contextcheck // a stream's handler uses the stream's own context.
+	)...)
+	nodev1.RegisterGatewayServiceServer(server, service)
+	nodev1.RegisterTemplateAgentServiceServer(server, agents)
+	return server
 }
 
 // Session holds one node's stream: Hello first, then Welcome, then messages both ways.
@@ -109,32 +131,61 @@ func (s *Service) Session(stream nodev1.GatewayService_SessionServer) error {
 		return status.Error(codes.Internal, "unauthenticated stream")
 	}
 	hello, err := s.awaitHello(stream)
-	if err != nil {
-		return err
+	if err == nil {
+		err = checkHello(peer, hello)
 	}
-	if err := checkHello(peer, hello); err != nil {
-		return err
-	}
-	welcome, err := s.welcome(stream.Context(), peer)
 	if err != nil {
-		return err
+		return s.refuse(peer, err)
 	}
 	ctx, cancel := context.WithCancelCause(stream.Context())
 	defer cancel(nil)
 	session := newSession(peer, hello, s.options.QueueSize, cancel)
+	// Registered before the state is read, so no broadcast falls between the two; the Welcome still goes out
+	// first because nothing drains the queue until it is sent.
 	s.Sessions.Add(session)
+	if err := s.sendWelcome(ctx, stream, peer); err != nil {
+		s.Sessions.Remove(session)
+		return s.refuse(peer, err)
+	}
 	s.Metrics.opened(session)
 	logger := s.Logger.With("serverId", peer.ServerID, "nodeType", hello.GetNodeType().String())
 	logger.Info("session opened", "integrationVersion", hello.GetIntegrationVersion())
-	session.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Welcome{Welcome: welcome}})
 
 	received := make(chan error, 1)
 	go func() { received <- s.receive(ctx, stream, session) }()
-	err = forward(ctx, stream, session, received)
-	s.Sessions.Remove(session)
-	s.Metrics.closed(session, endReason(err))
+	// Sending runs apart from the handler: a node that stops reading blocks a send, and only returning from
+	// the handler ends the stream and frees it.
+	sent := make(chan error, 1)
+	go func() { sent <- forward(ctx, stream, session) }()
+	select {
+	case err = <-received:
+	case err = <-sent:
+	case <-ctx.Done():
+		err = context.Cause(ctx)
+	}
+	current := s.Sessions.Remove(session)
+	s.Metrics.closed(session, endReason(err), current)
 	logger.Info("session closed", "reason", err)
 	return closing(err)
+}
+
+func (s *Service) sendWelcome(ctx context.Context, stream nodev1.GatewayService_SessionServer, peer Peer) error {
+	welcome, err := s.welcome(ctx, peer)
+	if err != nil {
+		return err
+	}
+	if err := stream.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Welcome{Welcome: welcome}}); err != nil {
+		return fmt.Errorf("send welcome: %w", err)
+	}
+	return nil
+}
+
+// refuse logs and counts a session that never opened.
+func (s *Service) refuse(peer Peer, err error) error {
+	refusal := closing(err)
+	s.Metrics.refused.WithLabelValues(status.Code(refusal).String()).Inc()
+	s.Logger.Warn("session refused", "serverId", peer.ServerID, "error", refusal)
+	return refusal
 }
 
 // awaitHello reads the first message, which must arrive in time and be a Hello.
@@ -173,7 +224,8 @@ func checkHello(peer Peer, hello *nodev1.Hello) error {
 	nodeType := hello.GetNodeType()
 	switch peer.Role {
 	case runtimeprofiles.RoleProxy:
-		if nodeType == eventsv1.NodeType_NODE_TYPE_PROXY {
+		// Proxy pods run the template agent too, so proxy groups push templates like the rest (D-0120).
+		if nodeType == eventsv1.NodeType_NODE_TYPE_PROXY || nodeType == eventsv1.NodeType_NODE_TYPE_TEMPLATE_AGENT {
 			return nil
 		}
 	case runtimeprofiles.RoleBackend:
@@ -201,7 +253,7 @@ func (s *Service) welcome(ctx context.Context, peer Peer) (*nodev1.Welcome, erro
 		ProtocolVersion: nodev1.ProtocolVersion_PROTOCOL_VERSION_1,
 		ServerId:        peer.ServerID,
 		GroupId:         peer.GroupID,
-		GroupType:       eventsv1.GroupType(eventsv1.GroupType_value["GROUP_TYPE_"+strings.ToUpper(peer.GroupType)]),
+		GroupType:       peer.GroupType,
 		NetworkSettings: network,
 	}
 	if peer.Role == runtimeprofiles.RoleProxy {
@@ -267,16 +319,14 @@ func (s *Service) receive(ctx context.Context, stream nodev1.GatewayService_Sess
 	}
 }
 
-// forward sends queued messages on the stream until the node leaves or the session ends.
-func forward(ctx context.Context, stream nodev1.GatewayService_SessionServer, session *Session, received <-chan error) error {
+// forward sends queued messages on the stream until the session ends.
+func forward(ctx context.Context, stream nodev1.GatewayService_SessionServer, session *Session) error {
 	for {
 		select {
 		case message := <-session.out:
 			if err := stream.Send(message); err != nil {
 				return fmt.Errorf("send: %w", err)
 			}
-		case err := <-received:
-			return err
 		case <-ctx.Done():
 			return fmt.Errorf("session ended: %w", context.Cause(ctx))
 		}

@@ -31,7 +31,11 @@ func newNetwork(t *testing.T) *network {
 		playerUUID: {PlayerUuid: playerUUID, ProxyId: "proxy-1", ServerId: "lobby-1", PermissionGroupId: "admin"},
 	}}
 	dependencies := testDependencies(state, &recorder{events: make(chan published, 10)}, func() time.Time { return now })
-	n := &network{router: NewRouter(dependencies, deliveryTimeout), sessions: map[string]*Session{}, now: &now}
+	router, err := NewRouter(dependencies, testOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := &network{router: router, sessions: map[string]*Session{}, now: &now}
 	for name, node := range map[string]struct {
 		group    string
 		nodeType eventsv1.NodeType

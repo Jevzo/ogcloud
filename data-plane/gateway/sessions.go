@@ -86,14 +86,23 @@ func (r *Registry) Add(session *Session) {
 	}
 }
 
-// Remove forgets session unless a newer one replaced it.
-func (r *Registry) Remove(session *Session) {
+// Remove forgets session unless a newer one replaced it, and reports whether it did.
+func (r *Registry) Remove(session *Session) bool {
 	key := sessionKey{session.Peer.ServerID, session.NodeType}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.sessions[key] == session {
-		delete(r.sessions, key)
+	if r.sessions[key] != session {
+		return false
 	}
+	delete(r.sessions, key)
+	return true
+}
+
+// Holds reports whether session is the current one for its server and node type.
+func (r *Registry) Holds(session *Session) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.sessions[sessionKey{session.Peer.ServerID, session.NodeType}] == session
 }
 
 // Get returns the session of a server's node type.

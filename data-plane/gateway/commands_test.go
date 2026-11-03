@@ -75,6 +75,8 @@ func TestAdminsOnTheSendingProxyMayTargetAnyServer(t *testing.T) {
 	h.state.sessions[adminUUID] = &internalv1.PlayerSession{PlayerUuid: adminUUID, ProxyId: "s-proxy", PermissionGroupId: "admin"}
 	h.state.sessions[visitorUUID] = &internalv1.PlayerSession{PlayerUuid: visitorUUID, ProxyId: "s-proxy", PermissionGroupId: "default"}
 	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":admin"] = marshal(t, &nodev1.PermissionGroup{Permissions: []string{permissionnodes.Wildcard}})
+	// Console commands are a different permission (D-0115) and do not stop servers.
+	h.state.models[string(valkeykeys.ReadModelPermissionGroup)+":default"] = marshal(t, &nodev1.PermissionGroup{Permissions: []string{permissionnodes.AdminCommand}})
 	proxy := h.welcomed(t, proxyToken, eventsv1.NodeType_NODE_TYPE_PROXY)
 	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
 

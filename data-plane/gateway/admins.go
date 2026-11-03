@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"slices"
 
-	"google.golang.org/protobuf/proto"
-
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/permissionnodes"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
@@ -28,13 +26,10 @@ func (s *Service) actingAdmin(ctx context.Context, proxy *Session, playerUUID, p
 	if player == nil || player.GetProxyId() != proxy.Peer.ServerID {
 		return errNotOnProxy
 	}
-	encoded, err := s.State.ReadModel(ctx, valkeykeys.ReadModelPermissionGroup, player.GetPermissionGroupId())
-	if err != nil {
-		return fmt.Errorf("permission group %s: %w", player.GetPermissionGroupId(), err)
-	}
+	// A missing read model is an outage, not a group without permissions; either way the command is refused.
 	group := &nodev1.PermissionGroup{}
-	if err := proto.Unmarshal(encoded, group); err != nil {
-		return fmt.Errorf("permission group %s: %w", player.GetPermissionGroupId(), err)
+	if err := s.readModel(ctx, valkeykeys.ReadModelPermissionGroup, player.GetPermissionGroupId(), group); err != nil {
+		return fmt.Errorf("permission group of %s: %w", playerUUID, err)
 	}
 	if !grants(group, permission) {
 		return errNotPermitted

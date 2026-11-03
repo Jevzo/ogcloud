@@ -5,6 +5,7 @@ package gateway
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 
+	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 	"github.com/jevzo/ogcloud/data-plane/pkg/podlabels"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
@@ -20,10 +22,9 @@ import (
 
 // Peer is the game server behind an authenticated call.
 type Peer struct {
-	ServerID string
-	GroupID  string
-	// Lower case, as on the pod label, e.g. dynamic.
-	GroupType string
+	ServerID  string
+	GroupID   string
+	GroupType eventsv1.GroupType
 	// The runtime profile, e.g. paper-26.3, whose bundle the pod loads.
 	ProfileID string
 	Role      runtimeprofiles.Role
@@ -51,11 +52,13 @@ type Authenticator struct {
 	reviewer  reviewer
 	pods      pods
 	namespace string
+	metrics   *Metrics
+	logger    *slog.Logger
 }
 
-// NewAuthenticator accepts pod tokens from game pods in namespace (D-0056).
-func NewAuthenticator(reviewer reviewer, pods pods, namespace string) *Authenticator {
-	return &Authenticator{reviewer: reviewer, pods: pods, namespace: namespace}
+// NewAuthenticator accepts pod tokens from game pods in namespace (D-0056); refusals are logged and counted.
+func NewAuthenticator(reviewer reviewer, pods pods, namespace string, metrics *Metrics, logger *slog.Logger) *Authenticator {
+	return &Authenticator{reviewer: reviewer, pods: pods, namespace: namespace, metrics: metrics, logger: logger}
 }
 
 // Authenticate checks the token with TokenReview and binds it to a live game pod: the pod must exist with
@@ -79,26 +82,44 @@ func (a *Authenticator) Authenticate(ctx context.Context) (Peer, error) {
 	if !ok || string(pod.UID) != identity.PodUID {
 		return Peer{}, status.Error(codes.PermissionDenied, "the token's pod is gone")
 	}
+	return peerOf(pod)
+}
+
+// peerOf reads the server a pod runs from the controller's labels; anything unexpected is refused.
+func peerOf(pod *corev1.Pod) (Peer, error) {
 	labels := pod.Labels
+	groupType, knownType := eventsv1.GroupType_value["GROUP_TYPE_"+strings.ToUpper(labels[podlabels.GroupType])]
+	profile, knownProfile := runtimeprofiles.Find(labels[podlabels.Profile])
 	peer := Peer{
 		ServerID:  labels[podlabels.ServerId],
 		GroupID:   labels[podlabels.Group],
-		GroupType: labels[podlabels.GroupType],
-		ProfileID: labels[podlabels.Profile],
+		GroupType: eventsv1.GroupType(groupType),
+		ProfileID: profile.ID,
 		Role:      runtimeprofiles.Role(labels[podlabels.Role]),
 		PodName:   pod.Name,
 	}
 	if labels[podlabels.ManagedBy] != podlabels.ControllerName || peer.ServerID == "" || peer.GroupID == "" ||
-		(peer.Role != runtimeprofiles.RoleBackend && peer.Role != runtimeprofiles.RoleProxy) {
+		!knownType || peer.GroupType == eventsv1.GroupType_GROUP_TYPE_UNSPECIFIED || !knownProfile || profile.Role != peer.Role {
 		return Peer{}, status.Error(codes.PermissionDenied, "the pod is not a game server")
 	}
 	return peer, nil
 }
 
+// authenticate wraps Authenticate with the logging and counting of refusals.
+func (a *Authenticator) authenticate(ctx context.Context) (Peer, error) {
+	peer, err := a.Authenticate(ctx)
+	if err != nil {
+		code := status.Code(err)
+		a.metrics.authFailed.WithLabelValues(code.String()).Inc()
+		a.logger.Warn("call refused", "code", code.String(), "error", err)
+	}
+	return peer, err
+}
+
 // UnaryInterceptor authenticates every unary call.
 func (a *Authenticator) UnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, request any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		peer, err := a.Authenticate(ctx)
+		peer, err := a.authenticate(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +130,7 @@ func (a *Authenticator) UnaryInterceptor() grpc.UnaryServerInterceptor {
 // StreamInterceptor authenticates every stream once, when it opens.
 func (a *Authenticator) StreamInterceptor() grpc.StreamServerInterceptor {
 	return func(server any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		peer, err := a.Authenticate(stream.Context())
+		peer, err := a.authenticate(stream.Context())
 		if err != nil {
 			return err
 		}

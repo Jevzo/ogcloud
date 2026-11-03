@@ -50,7 +50,10 @@ func TestKafkaRecordsReachTheRightSessions(t *testing.T) {
 	if err := subscriber.live.subscribe("party", true); err != nil {
 		t.Fatal(err)
 	}
-	router := NewRouter(dependencies, deliveryTimeout)
+	router, err := NewRouter(dependencies, testOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
 	broadcast, err := kafka.NewBroadcast(settings, slog.New(slog.NewTextHandler(io.Discard, nil)), "ogcloud-gateway-test",
 		kafkatopics.PlayerTransfer, kafkatopics.LiveChannel)
 	if err != nil {
@@ -59,7 +62,10 @@ func TestKafkaRecordsReachTheRightSessions(t *testing.T) {
 	go func() {
 		_ = broadcast.Run(ctx, func(ctx context.Context, record *kgo.Record) { router.Handle(ctx, record.Topic, record.Value) })
 	}()
-	service := NewService(dependencies, Options{})
+	service, err := NewService(dependencies, testOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// The broadcast joins at the latest offset once assigned, so each record is sent until it arrives.
 	transfer := awaitMessage(t, playersProxy, func() {

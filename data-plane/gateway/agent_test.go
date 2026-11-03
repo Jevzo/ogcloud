@@ -45,9 +45,13 @@ func TestPodsGetTheirGroupsTemplateAndTheirProfilesBundle(t *testing.T) {
 		assets.GetArtifacts()[0].GetDownload().GetUrl() != "get:runtime/ogcloud.jar" {
 		t.Errorf("artifacts = %v", assets.GetArtifacts())
 	}
-	// The proxy's group has no template and its profile no bundle yet.
+	// The proxy's group has no template read model yet: an outage, not an empty world (D-0122).
 	if _, err := h.agents.GetPodAssets(as(t, proxyToken), &nodev1.GetPodAssetsRequest{}); status.Code(err) != codes.Unavailable {
-		t.Errorf("without a bundle: %v", err)
+		t.Errorf("without a template model: %v", err)
+	}
+	h.state.models[string(valkeykeys.ReadModelActiveTemplate)+":lobby"] = marshal(t, &internalv1.ActiveTemplate{GroupId: "lobby"})
+	if assets, err := h.agents.GetPodAssets(as(t, lobbyToken), &nodev1.GetPodAssetsRequest{}); err != nil || assets.GetTemplate() != nil {
+		t.Errorf("a group without a template: %v, %v", assets, err)
 	}
 }
 

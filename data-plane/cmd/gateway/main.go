@@ -18,7 +18,6 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/config"
 	"github.com/jevzo/ogcloud/data-plane/pkg/events"
 	internalv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1"
-	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/ids"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafka"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
@@ -33,6 +32,7 @@ const (
 	stopTimeout     = 10 * time.Second
 	helloTimeout    = 10 * time.Second
 	deliveryTimeout = 30 * time.Second
+	pushTimeout     = 15 * time.Minute
 	expiryInterval  = 5 * time.Second
 	presignExpiry   = 15 * time.Minute
 	queueSize       = 256
@@ -79,6 +79,7 @@ func load(env *config.Source) (settings, error) {
 			HelloTimeout:    env.Duration("OGCLOUD_GATEWAY_HELLO_TIMEOUT", helloTimeout),
 			QueueSize:       env.Int("OGCLOUD_GATEWAY_QUEUE_SIZE", queueSize),
 			DeliveryTimeout: env.Duration("OGCLOUD_GATEWAY_DELIVERY_TIMEOUT", deliveryTimeout),
+			PushTimeout:     env.Duration("OGCLOUD_GATEWAY_PUSH_TIMEOUT", pushTimeout),
 		},
 	}
 	return s, env.Err()
@@ -136,15 +137,17 @@ func serve(ctx context.Context, s settings, env service.Env) error {
 		Logins: internalv1.NewLoginServiceClient(controller), Templates: internalv1.NewTemplateServiceClient(controller),
 		Objects: objects.NewPresigner(s.objects, s.presignExpiry),
 	}
-	router := gateway.NewRouter(dependencies, s.options.DeliveryTimeout)
-	auth := gateway.NewAuthenticator(kube.NewReviewer(client, s.audience, time.Now), pods, s.namespace)
-	server := grpc.NewServer(
-		grpc.Creds(credentials.NewTLS(serverTLS)),
-		grpc.UnaryInterceptor(auth.UnaryInterceptor()),
-		grpc.StreamInterceptor(auth.StreamInterceptor()), //nolint:contextcheck // a stream's handler uses the stream's own context.
-	)
-	nodev1.RegisterGatewayServiceServer(server, gateway.NewService(dependencies, s.options))
-	nodev1.RegisterTemplateAgentServiceServer(server, gateway.NewAgentService(dependencies))
+	router, err := gateway.NewRouter(dependencies, s.options)
+	if err != nil {
+		return err
+	}
+	service, err := gateway.NewService(dependencies, s.options)
+	if err != nil {
+		return err
+	}
+	auth := gateway.NewAuthenticator(kube.NewReviewer(client, s.audience, time.Now), pods, s.namespace, dependencies.Metrics, logger)
+	//nolint:contextcheck // stream handlers use the stream's own context.
+	server := gateway.NewServer(auth, service, gateway.NewAgentService(dependencies), grpc.Creds(credentials.NewTLS(serverTLS)))
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", s.listen)
 	if err != nil {
 		return fmt.Errorf("gateway listener: %w", err)

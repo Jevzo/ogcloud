@@ -14,7 +14,7 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/kafkatopics"
 )
 
-// Topics lists what every gateway replica reads, each with a consumer group of its own (D-0081, D-0116).
+// Topics lists what every gateway replica reads, in one consumer group of its own per replica (D-0081, D-0116).
 var Topics = []string{
 	kafkatopics.ServerLifecycle, kafkatopics.NodeBroadcast, kafkatopics.NodeCommand, kafkatopics.PlayerTransfer,
 	kafkatopics.AccountLink, kafkatopics.LiveChannel, kafkatopics.ServerCommand,
@@ -25,12 +25,16 @@ var errUnroutable = errors.New("nothing to route")
 // Router hands records from Kafka to the sessions this replica holds that need them (D-0116).
 type Router struct {
 	Dependencies
-	deliveryTimeout time.Duration
+	options Options
 }
 
-// NewRouter routes to dependencies.Sessions; deliveries unanswered for deliveryTimeout count as timed out.
-func NewRouter(dependencies Dependencies, deliveryTimeout time.Duration) *Router {
-	return &Router{Dependencies: dependencies, deliveryTimeout: deliveryTimeout}
+// NewRouter routes to dependencies.Sessions; deliveries unanswered within the options' timeouts count as
+// timed out.
+func NewRouter(dependencies Dependencies, options Options) (*Router, error) {
+	if err := options.validate(); err != nil {
+		return nil, err
+	}
+	return &Router{Dependencies: dependencies, options: options}, nil
 }
 
 // Handle routes one record; one that cannot be routed is logged and counted.
@@ -194,7 +198,11 @@ func (r *Router) deliver(targets []*Session, kind deliveryKind, action func(*nod
 		}
 		delivery := &nodev1.Delivery{DeliveryId: id}
 		action(delivery)
-		session.deliveries.add(pendingDelivery{id: id, kind: kind, sent: r.Now()})
+		timeout := r.options.DeliveryTimeout
+		if kind == deliveryPushTemplate {
+			timeout = r.options.PushTimeout
+		}
+		session.deliveries.add(pendingDelivery{id: id, kind: kind, deadline: r.Now().Add(timeout)})
 		if !session.Send(&nodev1.SessionResponse{Message: &nodev1.SessionResponse_Delivery{Delivery: delivery}}) {
 			session.deliveries.take(id)
 			r.Metrics.delivery(kind, outcomeDropped)
@@ -202,10 +210,10 @@ func (r *Router) deliver(targets []*Session, kind deliveryKind, action func(*nod
 	}
 }
 
-// ExpireDeliveries counts the deliveries nodes left unanswered for longer than the timeout.
+// ExpireDeliveries counts the deliveries nodes left unanswered past their deadline.
 func (r *Router) ExpireDeliveries(now time.Time) {
 	for _, session := range r.Sessions.All() {
-		for _, delivery := range session.deliveries.expire(now.Add(-r.deliveryTimeout)) {
+		for _, delivery := range session.deliveries.expire(now) {
 			r.Metrics.delivery(delivery.kind, outcomeTimeout)
 			r.Logger.Warn("delivery unanswered", "serverId", session.Peer.ServerID, "kind", delivery.kind, "deliveryId", delivery.id)
 		}

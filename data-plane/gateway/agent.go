@@ -33,21 +33,22 @@ func (a *AgentService) GetPodAssets(ctx context.Context, _ *nodev1.GetPodAssetsR
 		return nil, status.Error(codes.Internal, "unauthenticated call")
 	}
 	response := &nodev1.GetPodAssetsResponse{}
+	// Every group has a template read model, empty when it has no template, so a missing one is an outage the
+	// loader waits out rather than a reason to start an empty world (D-0122).
 	template := &internalv1.ActiveTemplate{}
-	switch err := a.readModel(ctx, valkeykeys.ReadModelActiveTemplate, peer.GroupID, template); status.Code(err) {
-	case codes.OK:
+	if err := a.readModel(ctx, valkeykeys.ReadModelActiveTemplate, peer.GroupID, template); err != nil {
+		return nil, status.Errorf(codes.Unavailable, "template of %s: %s", peer.GroupID, status.Convert(err).Message())
+	}
+	if template.GetObjectKey() != "" {
 		download, err := a.download(ctx, template.GetObjectKey(), template.GetSha256(), template.GetSizeBytes())
 		if err != nil {
 			return nil, err
 		}
 		response.Template = download
-	case codes.NotFound: // The group starts without a template.
-	default:
-		return nil, err
 	}
 	bundle := &internalv1.RuntimeBundle{}
 	if err := a.readModel(ctx, valkeykeys.ReadModelRuntimeBundle, peer.ProfileID, bundle); err != nil {
-		// The controller publishes every profile's bundle; until then the loader retries (D-0079).
+		// The controller publishes every profile's bundle; until then the loader retries (D-0080).
 		return nil, status.Errorf(codes.Unavailable, "runtime bundle of %s: %s", peer.ProfileID, status.Convert(err).Message())
 	}
 	for _, artifact := range bundle.GetArtifacts() {

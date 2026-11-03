@@ -124,9 +124,11 @@ func (s *Service) emit(ctx context.Context, session *Session, message, topic, ke
 	}
 }
 
-// heartbeat forwards a node's vitals and updates its game metrics.
+// heartbeat forwards a node's vitals and updates its game metrics; a replaced session no longer owns them.
 func (s *Service) heartbeat(ctx context.Context, session *Session, heartbeat *nodev1.Heartbeat) {
-	s.Metrics.heartbeat(session, heartbeat)
+	if s.Sessions.Holds(session) {
+		s.Metrics.heartbeat(session, heartbeat)
+	}
 	serverID := session.Peer.ServerID
 	s.emit(ctx, session, messageHeartbeat, kafkatopics.NodeHeartbeat, serverID, events.System(component),
 		func(metadata *eventsv1.EventMetadata) proto.Message {
@@ -186,7 +188,7 @@ func (s *Service) transfer(ctx context.Context, session *Session, transfer *even
 		})
 }
 
-// nodeCommand runs a console command for an in-game admin on the proxy that sent it (D-0115).
+// nodeCommand publishes a console command for an in-game admin connected through the sending proxy (D-0115).
 func (s *Service) nodeCommand(ctx context.Context, session *Session, request *nodev1.NodeCommandRequest) {
 	command := request.GetCommand()
 	key, ok := nodeCommandKey(command)

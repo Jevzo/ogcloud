@@ -42,7 +42,8 @@ func (s *Service) issueServerCommand(ctx context.Context, session *Session, requ
 		}
 		id, err := s.IDs.Next()
 		if err != nil {
-			return "", errors.Join(errUnavailable, err)
+			s.Logger.Error("no server id", "error", err)
+			return "", errUnavailable
 		}
 		command.ServerId = id
 		command.Command = &eventsv1.ServerCommand_Request{Request: requested.Request}
@@ -92,6 +93,10 @@ func (s *Service) authorizeServerCommand(ctx context.Context, session *Session, 
 			}
 			s.Logger.Warn("admin check failed", "serverId", session.Peer.ServerID, "error", err)
 			return nil, errUnavailable
+		}
+		// An admin names the target; only the plugin API defaults to its own server.
+		if command.GetRequest() == nil && command.GetServerId() == "" {
+			return nil, errInvalid
 		}
 		return events.Player(player), nil
 	}

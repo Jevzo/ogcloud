@@ -2,9 +2,12 @@ package gateway
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -34,7 +37,8 @@ func TestPodTokensAreBoundToTheirLiveGamePod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("StartPodCache: %v", err)
 	}
-	auth := NewAuthenticator(kube.NewReviewer(client, audience, time.Now), cache, namespace)
+	auth := NewAuthenticator(kube.NewReviewer(client, audience, time.Now), cache, namespace,
+		NewMetrics(prometheus.NewRegistry()), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	token := testk3s.Token(t, client, namespace, "game", audience, lobby)
 
 	peer, err := auth.Authenticate(withBearer(token))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,9 @@ type PodCache struct {
 	lister listerscorev1.PodNamespaceLister
 }
 
+// syncTimeout bounds the first list, e.g. when the gateway may not list pods.
+const syncTimeout = time.Minute
+
 // StartPodCache watches namespace until ctx ends and returns once the first list is in.
 func StartPodCache(ctx context.Context, client kubernetes.Interface, namespace string) (*PodCache, error) {
 	selector := podlabels.ManagedBy + "=" + podlabels.ControllerName
@@ -31,8 +35,10 @@ func StartPodCache(ctx context.Context, client kubernetes.Interface, namespace s
 	lister := pods.Lister().Pods(namespace)
 	informer := pods.Informer()
 	factory.Start(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
-		return nil, errors.Join(fmt.Errorf("pod cache for %s did not sync", namespace), ctx.Err())
+	syncCtx, cancel := context.WithTimeout(ctx, syncTimeout)
+	defer cancel()
+	if !cache.WaitForCacheSync(syncCtx.Done(), informer.HasSynced) {
+		return nil, errors.Join(fmt.Errorf("pod cache for %s did not sync; can the gateway list pods there?", namespace), syncCtx.Err())
 	}
 	return &PodCache{lister: lister}, nil
 }

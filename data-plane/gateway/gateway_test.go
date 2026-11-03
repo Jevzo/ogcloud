@@ -42,6 +42,7 @@ const (
 
 	patience        = 10 * time.Second
 	deliveryTimeout = 30 * time.Second
+	pushTimeout     = 15 * time.Minute
 )
 
 type fakeReviewer map[string]kube.Identity
@@ -65,10 +66,12 @@ type fakeState struct {
 	servers  []*internalv1.ServerRecord
 	sessions map[string]*internalv1.PlayerSession
 	models   map[string][]byte
+	// Returned by Session, e.g. to fake a Valkey outage during an admin check.
+	sessionErr error
 }
 
 func (f *fakeState) Session(_ context.Context, playerUUID string) (*internalv1.PlayerSession, error) {
-	return f.sessions[playerUUID], nil
+	return f.sessions[playerUUID], f.sessionErr
 }
 
 func (f *fakeState) SessionByName(_ context.Context, name string) (*internalv1.PlayerSession, error) {
@@ -114,9 +117,14 @@ type published struct {
 
 type recorder struct {
 	events chan published
+	// Fails every publish to this topic, e.g. to fake a Kafka outage.
+	failing string
 }
 
 func (r *recorder) Publish(_ context.Context, topic, key string, event proto.Message) error {
+	if topic == r.failing {
+		return errors.New("kafka is down")
+	}
 	r.events <- published{topic, key, event}
 	return nil
 }
@@ -207,11 +215,18 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 	dependencies := testDependencies(state, publisher, clock)
 	controller := &fakeController{}
 	dependencies.Logins, dependencies.Templates, dependencies.Objects = controller, controller, fakePresigner{}
-	service := NewService(dependencies, Options{HelloTimeout: helloTimeout, QueueSize: 8, DeliveryTimeout: deliveryTimeout})
-	auth := NewAuthenticator(reviewer, pods, namespace)
-	server := grpc.NewServer(grpc.UnaryInterceptor(auth.UnaryInterceptor()), grpc.StreamInterceptor(auth.StreamInterceptor()))
-	nodev1.RegisterGatewayServiceServer(server, service)
-	nodev1.RegisterTemplateAgentServiceServer(server, NewAgentService(dependencies))
+	options := testOptions()
+	options.HelloTimeout = helloTimeout
+	service, err := NewService(dependencies, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router, err := NewRouter(dependencies, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := NewAuthenticator(reviewer, pods, namespace, dependencies.Metrics, dependencies.Logger)
+	server := NewServer(auth, service, NewAgentService(dependencies))
 	listener := bufconn.Listen(1 << 20)
 	go func() { _ = server.Serve(listener) }()
 	t.Cleanup(server.Stop)
@@ -225,8 +240,13 @@ func start(t *testing.T, helloTimeout time.Duration) *harness {
 	return &harness{
 		client: nodev1.NewGatewayServiceClient(conn), agents: nodev1.NewTemplateAgentServiceClient(conn), controller: controller,
 		published: publisher, sessions: dependencies.Sessions, state: state,
-		metrics: dependencies.Metrics, router: NewRouter(dependencies, deliveryTimeout), now: &now,
+		metrics: dependencies.Metrics, router: router, now: &now,
 	}
+}
+
+// testOptions are the gateway's options with test timeouts and a small queue.
+func testOptions() Options {
+	return Options{HelloTimeout: patience, QueueSize: 8, DeliveryTimeout: deliveryTimeout, PushTimeout: pushTimeout}
 }
 
 // testDependencies wires fakes with a fresh metrics registry and a fixed clock.
@@ -384,16 +404,27 @@ func TestASlowNodeIsDisconnectedRatherThanQueuedForever(t *testing.T) {
 
 func TestTokensOfDeletedOrForeignPodsAreRefused(t *testing.T) {
 	pods := fakePods{"lobby-1": gamePod("lobby-1", "s-lobby", "backend", "dynamic")}
-	unmanaged := gamePod("rogue", "s-x", "backend", "dynamic")
-	unmanaged.Labels[podlabels.ManagedBy] = "someone"
-	pods["rogue"] = unmanaged
 	reviewer := fakeReviewer{
 		"other-namespace": {Namespace: "ogcloud", PodName: "lobby-1", PodUID: "lobby-1-uid"},
 		"replaced-pod":    {Namespace: namespace, PodName: "lobby-1", PodUID: "older-uid"},
-		"unmanaged":       {Namespace: namespace, PodName: "rogue", PodUID: "rogue-uid"},
 		"no-pod":          {Namespace: namespace},
+		"not-cached":      {Namespace: namespace, PodName: "ghost", PodUID: "ghost-uid"},
 	}
-	auth := NewAuthenticator(reviewer, pods, namespace)
+	for name, change := range map[string]func(labels map[string]string){
+		"unmanaged":       func(l map[string]string) { l[podlabels.ManagedBy] = "someone" },
+		"no-server-id":    func(l map[string]string) { delete(l, podlabels.ServerId) },
+		"no-group":        func(l map[string]string) { delete(l, podlabels.Group) },
+		"unknown-role":    func(l map[string]string) { l[podlabels.Role] = "admin" },
+		"unknown-type":    func(l map[string]string) { l[podlabels.GroupType] = "weird" },
+		"unknown-profile": func(l map[string]string) { l[podlabels.Profile] = "spigot-1.0" },
+		"role-vs-profile": func(l map[string]string) { l[podlabels.Profile] = "velocity-4.3.0" },
+	} {
+		pod := gamePod(name, "s-"+name, "backend", "dynamic")
+		change(pod.Labels)
+		pods[name] = pod
+		reviewer[name] = kube.Identity{Namespace: namespace, PodName: name, PodUID: name + "-uid"}
+	}
+	auth := NewAuthenticator(reviewer, pods, namespace, NewMetrics(prometheus.NewRegistry()), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	for token := range reviewer {
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 		if _, err := auth.Authenticate(ctx); status.Code(err) != codes.PermissionDenied {
