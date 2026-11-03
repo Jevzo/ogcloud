@@ -16,7 +16,7 @@ server, and ships the network features owners otherwise assemble from plugins.
 | `data-plane/` | Go: node gateway, load balancer, template loader, bootstrap |
 | `integrations/` | JVM plugins and mods (Velocity, Paper and Folia, PandaSpigot, Fabric, NeoForge) and the SDK |
 | `apps/`, `packages/` | Web, desktop and mobile apps and shared TypeScript packages |
-| `images/` | Server container images (one multi-stage Dockerfile, a bake file generated from the catalog) and their smoke tests |
+| `images/` | Server and platform container images, their bake files and smoke tests (`mise run images:build`, `mise run check:images`) |
 | `deploy/` | Helm chart, Terraform modules and local development config |
 | `docs/` | Architecture, runbooks and the docs site |
 

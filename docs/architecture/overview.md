@@ -89,8 +89,8 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | Pod environment | `contracts/pod-env.yaml` | Generated Go and Kotlin names of the variables the controller sets and the loader and node client read |
 
 Code generators live in `data-plane/pkg/cmd/codegen`; `mise run check:generated` fails when
-committed output is stale. `mise run check:images` (and its CI job) builds the server images through the bake file
-and boots each with OgCloud's plugin and the bundle plugins it depends on.
+committed output is stale. `mise run check:images` (and its CI job) builds every image, boots the server images with
+OgCloud's plugin and the bundle plugins it depends on, starts each platform image, and fails on critical CVEs in them.
 
 ## Data stores
 
@@ -122,6 +122,12 @@ backups, orphaned objects).
 ## Deployment
 
 - **One Helm chart** installs OgCloud and is reused everywhere.
+- **Images:** `mise run images:build` builds the artifacts with mise's toolchains (Spring boot jars unpacked into
+  their layers, static Go binaries, the plugin jars) into `build/images`, then bakes every image from
+  `images/docker-bake.json` (server images, generated from the catalog) and `images/docker-bake.hcl` (platform images).
+  The api and controller run on distroless Java 25, the Go services on distroless static, all as uid 1000 (D-0128);
+  the controller image carries `ogcloud-<platform>.jar` in `/opt/ogcloud/plugins` (D-0079). Tags are
+  `<registry>/<name>:<platform-version>`, as the controller expects.
 - **Local development:** minikube driven by Tilt (`mise run dev`).
 - **Hetzner:** Terraform with the kube-hetzner module provisions the cluster and installs
   OgCloud through k3s HelmChart resources; an optional WireGuard box guards admin access.
