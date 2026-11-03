@@ -103,12 +103,14 @@ message PlayerActivityReport {
   }
 }
 
-// Commands a node may issue; the gateway checks them against the node type and,
-// for in-game admin commands, the acting player's permissions.
+// Commands a node may issue (D-0117): without an acting player a node may request servers and
+// stop, kill or push only its own; an in-game admin command may target any server.
 message ServerCommandRequest {
-  // Set for in-game admin commands, so the audit log names the player.
+  // Set for in-game admin commands: only proxies send them, for a player connected through
+  // them who holds ogcloud.admin.server.
   string acting_player_uuid = 1;
-  // Target for stop, kill and push_template; empty for request, whose id the gateway assigns.
+  // Target for stop, kill and push_template; empty means the sender's own server, except for
+  // admin commands, which must name it. Empty for request, whose id the gateway assigns.
   string server_id = 2;
   oneof command {
     ogcloud.events.v1.RequestServer request = 3;

@@ -12,7 +12,7 @@ import (
 const tokenReread = time.Minute
 
 // TokenFile is a gRPC credential that sends a projected service-account token from its file as a
-// bearer token (D-0013), for calls to the controller.
+// bearer token (D-0013), e.g. the gateway's calls to the controller and a pod's calls to the gateway.
 type TokenFile struct {
 	path string
 	read func(string) ([]byte, error)

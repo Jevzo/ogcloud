@@ -198,7 +198,8 @@ class PodSpecBuilder(
                 mount(GATEWAY_TOKEN_VOLUME, GATEWAY_TOKEN_PATH, readOnly = true),
             ).build()
 
-    // A native sidecar (restartPolicy Always) outlives the server container's start, so it can push on shutdown.
+    // A native sidecar (restartPolicy Always) is stopped only after the server container exited, so its push on
+    // shutdown sees the saved files.
     // STATIC servers push their files on shutdown, so their template survives the volume (D-0042).
     private fun templateAgent(server: Server): Container =
         ContainerBuilder()

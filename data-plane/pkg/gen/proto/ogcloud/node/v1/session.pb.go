@@ -818,13 +818,15 @@ func (*PlayerActivityReport_Switched) isPlayerActivityReport_Activity() {}
 
 func (*PlayerActivityReport_Disconnected) isPlayerActivityReport_Activity() {}
 
-// Commands a node may issue; the gateway checks them against the node type and,
-// for in-game admin commands, the acting player's permissions.
+// Commands a node may issue (D-0117): without an acting player a node may request servers and
+// stop, kill or push only its own; an in-game admin command may target any server.
 type ServerCommandRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Set for in-game admin commands, so the audit log names the player.
+	// Set for in-game admin commands: only proxies send them, for a player connected through
+	// them who holds ogcloud.admin.server.
 	ActingPlayerUuid string `protobuf:"bytes,1,opt,name=acting_player_uuid,json=actingPlayerUuid,proto3" json:"acting_player_uuid,omitempty"`
-	// Target for stop, kill and push_template; empty for request, whose id the gateway assigns.
+	// Target for stop, kill and push_template; empty means the sender's own server, except for
+	// admin commands, which must name it. Empty for request, whose id the gateway assigns.
 	ServerId string `protobuf:"bytes,2,opt,name=server_id,json=serverId,proto3" json:"server_id,omitempty"`
 	// Types that are valid to be assigned to Command:
 	//
