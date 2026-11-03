@@ -53,8 +53,11 @@ interface OgCloudServer : OgCloudNode {
     /** What the server is doing; ENDING moves its players away and drains it. */
     var gameState: GameState
 
-    /** Uploads this server's files as a new template version; completes with its id. */
-    fun pushTemplate(): CompletableFuture<String>
+    /**
+     * Uploads this server's files as a new template version. Completes once OgCloud accepted the push; the
+     * version appears shortly after, when the upload finished.
+     */
+    fun pushTemplate(): CompletableFuture<Void>
 
     /** Stops this server gracefully. */
     fun stop(): CompletableFuture<Void>
