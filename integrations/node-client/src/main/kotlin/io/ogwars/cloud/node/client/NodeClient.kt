@@ -1,5 +1,7 @@
 package io.ogwars.cloud.node.client
 
+import io.ogwars.cloud.contracts.node.v1.AdminRequest
+import io.ogwars.cloud.contracts.node.v1.AdminRequestResult
 import io.ogwars.cloud.contracts.node.v1.Delivery
 import io.ogwars.cloud.contracts.node.v1.DeliveryResult
 import io.ogwars.cloud.contracts.node.v1.GatewayServiceGrpc
@@ -56,7 +58,9 @@ class NodeClient(
     private var failures = 0
     private var closed = false
     private val subscriptions = ConcurrentHashMap.newKeySet<String>()
-    private val pending = ConcurrentHashMap<String, CompletableFuture<ServerCommandResult>>()
+
+    // Requests awaiting their result, by request id; the result arrives as a session message.
+    private val pending = ConcurrentHashMap<String, CompletableFuture<SessionResponse>>()
 
     fun start() = connect()
 
@@ -69,16 +73,14 @@ class NodeClient(
         }
 
     /** Sends a server command and completes with its result, or fails when the session drops first. */
-    fun serverCommand(command: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> {
-        val id = requestIds()
-        val result = CompletableFuture<ServerCommandResult>()
-        pending[id] = result
-        if (!send(SessionRequest.newBuilder().setServerCommand(command.setRequestId(id)).build())) {
-            pending.remove(id)
-            result.completeExceptionally(NotConnectedException())
-        }
-        return result
-    }
+    fun serverCommand(command: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> =
+        request { id -> SessionRequest.newBuilder().setServerCommand(command.setRequestId(id)).build() }
+            .thenApply { it.serverCommandResult }
+
+    /** Sends an in-game admin's change (D-0132) and completes with the gateway's answer, like [serverCommand]. */
+    fun adminRequest(request: AdminRequest.Builder): CompletableFuture<AdminRequestResult> =
+        request { id -> SessionRequest.newBuilder().setAdminRequest(request.setRequestId(id)).build() }
+            .thenApply { it.adminRequestResult }
 
     fun subscribe(channel: String) {
         subscriptions += channel
@@ -113,6 +115,17 @@ class NodeClient(
                 }
             }
         requests.onNext(SessionRequest.newBuilder().setHello(hello()).build())
+    }
+
+    private fun request(build: (String) -> SessionRequest): CompletableFuture<SessionResponse> {
+        val id = requestIds()
+        val result = CompletableFuture<SessionResponse>()
+        pending[id] = result
+        if (!send(build(id))) {
+            pending.remove(id)
+            result.completeExceptionally(NotConnectedException())
+        }
+        return result
     }
 
     private fun hello() =
@@ -205,7 +218,11 @@ class NodeClient(
                 }
 
                 SessionResponse.MessageCase.SERVER_COMMAND_RESULT -> {
-                    pending.remove(response.serverCommandResult.requestId)?.complete(response.serverCommandResult)
+                    pending.remove(response.serverCommandResult.requestId)?.complete(response)
+                }
+
+                SessionResponse.MessageCase.ADMIN_REQUEST_RESULT -> {
+                    pending.remove(response.adminRequestResult.requestId)?.complete(response)
                 }
 
                 else -> {

@@ -4,8 +4,11 @@ import io.ogwars.cloud.contracts.events.v1.KillServer
 import io.ogwars.cloud.contracts.events.v1.NodeBroadcast
 import io.ogwars.cloud.contracts.events.v1.NodeType
 import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
+import io.ogwars.cloud.contracts.node.v1.AdminRequest
+import io.ogwars.cloud.contracts.node.v1.AdminRequestResult
 import io.ogwars.cloud.contracts.node.v1.Delivery
 import io.ogwars.cloud.contracts.node.v1.LiveChannelDelivery
+import io.ogwars.cloud.contracts.node.v1.NetworkMaintenanceChange
 import io.ogwars.cloud.contracts.node.v1.ServerCommandRequest
 import io.ogwars.cloud.contracts.node.v1.ServerCommandResult
 import io.ogwars.cloud.contracts.node.v1.SessionRequest
@@ -131,6 +134,30 @@ class NodeClientTest {
         shouldThrow<ExecutionException> {
             dropped.get(FakeGateway.WAIT_SECONDS, TimeUnit.SECONDS)
         }.cause.shouldBeInstanceOf<NotConnectedException>()
+    }
+
+    @Test
+    fun `admin requests complete with the gateway's answer`() {
+        client.start()
+        val session = welcomed()
+        session.next()
+
+        val answered =
+            client.adminRequest(
+                AdminRequest
+                    .newBuilder()
+                    .setNetworkMaintenance(NetworkMaintenanceChange.newBuilder().setEnabled(true)),
+            )
+        val request = session.next().adminRequest
+        session.send(
+            SessionResponse
+                .newBuilder()
+                .setAdminRequestResult(
+                    AdminRequestResult.newBuilder().setRequestId(request.requestId).setError("not_permitted"),
+                ).build(),
+        )
+
+        answered.get(FakeGateway.WAIT_SECONDS, TimeUnit.SECONDS).error shouldBe "not_permitted"
     }
 
     @Test
