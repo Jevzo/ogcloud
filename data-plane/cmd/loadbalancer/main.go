@@ -106,6 +106,11 @@ func serve(ctx context.Context, s settings, env service.Env) error {
 	}
 	listener := &proxyproto.Listener{Listener: tcp, ConnPolicy: loadbalancer.ProxyPolicy(s.trusted), ReadHeaderTimeout: s.options.HandshakeTimeout}
 
+	server, err := loadbalancer.NewServer(pool, s.options, metrics, logger, time.Now)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go refresher.Run(ctx, s.refresh)
@@ -114,9 +119,7 @@ func serve(ctx context.Context, s settings, env service.Env) error {
 		consumed <- broadcast.Run(ctx, func(ctx context.Context, record *kgo.Record) { refresher.Handle(ctx, record.Topic, record.Value) })
 	}()
 	served := make(chan error, 1)
-	go func() {
-		served <- loadbalancer.NewServer(pool, s.options, metrics, logger, time.Now).Serve(ctx, listener)
-	}()
+	go func() { served <- server.Serve(ctx, listener) }()
 	env.Readiness.Set(true)
 	logger.Info("serving", "address", s.listen, "replica", replica)
 

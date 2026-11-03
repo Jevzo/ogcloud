@@ -10,7 +10,7 @@ import (
 type Limits struct {
 	// Open connections per address.
 	Open int
-	// New connections per second per address, and the burst above that.
+	// New connections per second per address, from a bucket of Burst tokens.
 	Rate  float64
 	Burst float64
 }
@@ -21,7 +21,7 @@ type client struct {
 	refilled time.Time
 }
 
-// limiter tracks clients by address; idle ones are forgotten by Sweep.
+// limiter tracks clients by address; idle ones are forgotten by sweep.
 type limiter struct {
 	limits Limits
 	mu     sync.Mutex

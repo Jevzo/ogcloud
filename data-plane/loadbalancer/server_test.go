@@ -41,7 +41,10 @@ func startLB(t *testing.T, options Options, trusted ...netip.Prefix) *lb {
 	}
 	pool := NewPool()
 	metrics := NewMetrics(prometheus.NewRegistry())
-	server := NewServer(pool, options, metrics, slog.New(slog.NewTextHandler(io.Discard, nil)), time.Now)
+	server, err := NewServer(pool, options, metrics, slog.New(slog.NewTextHandler(io.Discard, nil)), time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
 	go func() {
 		_ = server.Serve(ctx, &proxyproto.Listener{Listener: listener, ConnPolicy: ProxyPolicy(trusted), ReadHeaderTimeout: patience})
 	}()
@@ -64,23 +67,25 @@ func fakeProxy(t *testing.T, l *lb) <-chan upstreamConn {
 	t.Cleanup(func() { _ = listener.Close() })
 	host, port, _ := net.SplitHostPort(listener.Addr().String())
 	number, _ := strconv.Atoi(port)
-	l.pool.Update([]*internalv1.ServerRecord{{
+	l.pool.Update(0, []*internalv1.ServerRecord{{
 		ServerId: "p-1", GroupType: eventsv1.GroupType_GROUP_TYPE_PROXY, State: eventsv1.ServerState_SERVER_STATE_RUNNING,
 		Host: host, Port: uint32(number), MaxPlayers: 100,
 	}}, network)
-	accepted := make(chan upstreamConn, 1)
+	accepted := make(chan upstreamConn, 8)
 	go func() {
-		conn, err := listener.Accept()
-		if err != nil {
-			return
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			reader := bufio.NewReader(conn)
+			header, err := proxyproto.Read(reader)
+			if err != nil {
+				_ = conn.Close()
+				continue
+			}
+			accepted <- upstreamConn{header: header, reader: reader, conn: conn}
 		}
-		reader := bufio.NewReader(conn)
-		header, err := proxyproto.Read(reader)
-		if err != nil {
-			_ = conn.Close()
-			return
-		}
-		accepted <- upstreamConn{header: header, reader: reader, conn: conn}
 	}()
 	return accepted
 }
@@ -132,7 +137,7 @@ func TestLoginsReachAProxyWithTheClientAddressAndTheirOwnBytes(t *testing.T) {
 
 func TestStatusPingsAreAnsweredWithoutAProxy(t *testing.T) {
 	l := startLB(t, testOptions)
-	l.pool.Update(nil, network)
+	l.pool.Update(0, nil, network)
 	client := dial(t, l.address)
 	ping := append(appendVarInt(nil, packetPing), 1, 2, 3, 4, 5, 6, 7, 8)
 

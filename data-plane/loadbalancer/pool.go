@@ -21,11 +21,12 @@ type proxy struct {
 	pending uint32
 }
 
-// fill is the share of the proxy in use.
+// fill is the share of the proxy in use; a proxy that has not reported its capacity yet counts its players.
 func (p *proxy) fill() float64 {
 	return float64(p.players+p.pending) / float64(max(p.max, 1))
 }
 
+// full is never true before the proxy reported its capacity.
 func (p *proxy) full() bool { return p.max > 0 && p.players+p.pending >= p.max }
 
 // Pool holds the proxies that may take logins and the network's state for status pings.
@@ -35,16 +36,28 @@ type Pool struct {
 	online  uint32
 	network *eventsv1.NetworkSettingsUpdated
 	next    int
+	// generation counts removals; removed holds the generation each removed proxy left at, so a refresh
+	// that read Valkey before a removal cannot bring the proxy back.
+	generation uint64
+	removed    map[string]uint64
 }
 
 // NewPool starts empty; until the first refresh every login is refused.
 func NewPool() *Pool {
-	return &Pool{network: &eventsv1.NetworkSettingsUpdated{}}
+	return &Pool{network: &eventsv1.NetworkSettingsUpdated{}, removed: map[string]uint64{}}
 }
 
-// Update replaces the membership with the RUNNING proxies among records. Membership comes from the
-// controller's state only, never from heartbeats, so a draining proxy cannot come back (v1 bug 1).
-func (p *Pool) Update(records []*internalv1.ServerRecord, network *eventsv1.NetworkSettingsUpdated) {
+// Generation is taken before reading the records Update receives.
+func (p *Pool) Generation() uint64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.generation
+}
+
+// Update replaces the membership with the RUNNING proxies among records, read at generation since.
+// Membership comes from the controller's state only, never from heartbeats, so a draining proxy cannot come
+// back (v1 bug 1).
+func (p *Pool) Update(since uint64, records []*internalv1.ServerRecord, network *eventsv1.NetworkSettingsUpdated) {
 	var proxies []*proxy
 	var online uint32
 	for _, record := range records {
@@ -62,7 +75,19 @@ func (p *Pool) Update(records []*internalv1.ServerRecord, network *eventsv1.Netw
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.proxies, p.online = proxies, online
+	kept := proxies[:0]
+	for _, candidate := range proxies {
+		if left, removed := p.removed[candidate.id]; !removed || left <= since {
+			kept = append(kept, candidate)
+		}
+	}
+	// Records read after a removal already show it, so it need not be remembered any longer.
+	for id, left := range p.removed {
+		if left <= since {
+			delete(p.removed, id)
+		}
+	}
+	p.proxies, p.online = kept, online
 	if network != nil {
 		p.network = network
 	}
@@ -72,6 +97,8 @@ func (p *Pool) Update(records []*internalv1.ServerRecord, network *eventsv1.Netw
 func (p *Pool) Remove(serverID string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.generation++
+	p.removed[serverID] = p.generation
 	for i, candidate := range p.proxies {
 		if candidate.id == serverID {
 			p.proxies = append(p.proxies[:i:i], p.proxies[i+1:]...)

@@ -22,7 +22,7 @@ const running = eventsv1.ServerState_SERVER_STATE_RUNNING
 func TestADrainingProxyNeverTakesLogins(t *testing.T) {
 	// v1 bug 1: heartbeats of a draining proxy put it back into the pool.
 	pool := NewPool()
-	pool.Update([]*internalv1.ServerRecord{
+	pool.Update(0, []*internalv1.ServerRecord{
 		proxyRecord("p-1", eventsv1.ServerState_SERVER_STATE_DRAINING, 0, 100),
 		proxyRecord("p-2", running, 90, 100),
 	}, network)
@@ -39,7 +39,7 @@ func TestADrainingProxyNeverTakesLogins(t *testing.T) {
 
 func TestLoginsGoToTheLeastFilledProxyAndSkipFullOnes(t *testing.T) {
 	pool := NewPool()
-	pool.Update([]*internalv1.ServerRecord{
+	pool.Update(0, []*internalv1.ServerRecord{
 		proxyRecord("p-1", running, 50, 100), proxyRecord("p-2", running, 10, 20), proxyRecord("p-3", running, 20, 20),
 		{ServerId: "lobby-1", GroupType: eventsv1.GroupType_GROUP_TYPE_DYNAMIC, State: running, Host: "10.0.1.1", Port: 25565, Players: 9},
 	}, network)
@@ -64,7 +64,7 @@ func TestRoundRobinAndNoProxy(t *testing.T) {
 	if _, _, err := pool.Select(); err == nil {
 		t.Error("an empty pool selected a proxy")
 	}
-	pool.Update([]*internalv1.ServerRecord{proxyRecord("p-1", running, 0, 100), proxyRecord("p-2", running, 0, 100)},
+	pool.Update(0, []*internalv1.ServerRecord{proxyRecord("p-1", running, 0, 100), proxyRecord("p-2", running, 0, 100)},
 		&eventsv1.NetworkSettingsUpdated{RoutingStrategy: eventsv1.RoutingStrategy_ROUTING_STRATEGY_ROUND_ROBIN})
 
 	first, _, _ := pool.Select()
@@ -105,5 +105,27 @@ func TestClientsAreLimitedPerAddress(t *testing.T) {
 	limits.sweep(now.Add(10 * time.Second))
 	if len(limits.byAddr) != 1 {
 		t.Errorf("tracked %d addresses; only the one with open connections should stay", len(limits.byAddr))
+	}
+}
+
+func TestARefreshReadBeforeARemovalCannotBringTheProxyBack(t *testing.T) {
+	pool := NewPool()
+	records := []*internalv1.ServerRecord{proxyRecord("p-1", running, 0, 100), proxyRecord("p-2", running, 0, 100)}
+	pool.Update(pool.Generation(), records, network)
+	staleRead := pool.Generation()
+
+	// p-1 starts draining after the refresh read Valkey, but before it applied what it read.
+	pool.Remove("p-1")
+	pool.Update(staleRead, records, network)
+
+	for range 3 {
+		if id, _, err := pool.Select(); err != nil || id != "p-2" {
+			t.Fatalf("selected %s, %v", id, err)
+		}
+	}
+	// A later read shows the drain itself, so the removal need not be remembered any longer.
+	pool.Update(pool.Generation(), []*internalv1.ServerRecord{proxyRecord("p-1", eventsv1.ServerState_SERVER_STATE_DRAINING, 0, 100), records[1]}, network)
+	if _, ok := pool.removed["p-1"]; ok {
+		t.Error("the removal outlived a read that already reflects it")
 	}
 }

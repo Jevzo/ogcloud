@@ -14,7 +14,8 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
 )
 
-// Topics are read with a consumer group per replica; they only nudge a refresh.
+// Topics are read with a consumer group per replica: a proxy leaving RUNNING is dropped at once, everything
+// else nudges a refresh.
 var Topics = []string{kafkatopics.ServerLifecycle, kafkatopics.NodeBroadcast}
 
 // Source is the controller's live state in Valkey.
@@ -39,6 +40,7 @@ func NewRefresher(source Source, pool *Pool, metrics *Metrics, logger *slog.Logg
 
 // Refresh reads every server record and the network settings once.
 func (r *Refresher) Refresh(ctx context.Context) error {
+	since := r.pool.Generation()
 	records, err := r.source.Servers(ctx)
 	if err != nil {
 		return fmt.Errorf("servers: %w", err)
@@ -54,7 +56,7 @@ func (r *Refresher) Refresh(ctx context.Context) error {
 			return fmt.Errorf("network settings: %w", err)
 		}
 	}
-	r.pool.Update(records, network)
+	r.pool.Update(since, records, network)
 	r.metrics.proxies.Set(float64(r.pool.size()))
 	return nil
 }

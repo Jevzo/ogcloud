@@ -11,6 +11,9 @@ const (
 	outcomeUnsupported = "unsupported"
 	outcomeNoProxy     = "no_proxy"
 	outcomeDialFailed  = "dial_failed"
+	// A trusted network sent no PROXY header, or an untrusted one sent one: the settings are wrong.
+	outcomeProxyHeaderMissing   = "proxy_header_missing"
+	outcomeProxyHeaderUntrusted = "proxy_header_untrusted"
 )
 
 // Metrics count connections by outcome and show the proxies that take logins.

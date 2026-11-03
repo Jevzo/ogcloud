@@ -11,13 +11,14 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
 )
 
-// Status pings and login refusals carry at most this much from the client.
+// Sizes the status exchange accepts from the client.
 const (
 	maxStatusRequestBytes = 16
 	pingPayloadBytes      = 8
-	// The version a client shows in red, so it knows it cannot join.
-	incompatibleProtocol = -1
 )
+
+// incompatibleProtocol is the version a client shows in red, so it knows it cannot join.
+const incompatibleProtocol = -1
 
 // Kick texts; players see them when the network cannot take them.
 const (

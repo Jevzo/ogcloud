@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -19,6 +20,9 @@ const (
 	acceptBackoff = 50 * time.Millisecond
 	sweepInterval = 10 * time.Second
 	proxyHeaderV2 = 2
+	// The PROXY protocol's signatures, version 1 and version 2.
+	proxyV1Signature = "PROXY "
+	proxyV2Signature = "\r\n\r\n\x00\r\nQUIT\n"
 )
 
 // Options tune connections (D-0118).
@@ -41,8 +45,13 @@ type Server struct {
 }
 
 // NewServer routes logins to proxies in pool.
-func NewServer(pool *Pool, options Options, metrics *Metrics, logger *slog.Logger, now func() time.Time) *Server {
-	return &Server{pool: pool, limiter: newLimiter(options.Limits), options: options, metrics: metrics, logger: logger, now: now}
+func NewServer(pool *Pool, options Options, metrics *Metrics, logger *slog.Logger, now func() time.Time) (*Server, error) {
+	limits := options.Limits
+	if options.HandshakeTimeout <= 0 || options.DialTimeout <= 0 || options.MaxPacketBytes <= 0 ||
+		limits.Open < 1 || limits.Rate <= 0 || limits.Burst < 1 {
+		return nil, fmt.Errorf("load balancer options must be positive, with a burst of at least 1: %+v", options)
+	}
+	return &Server{pool: pool, limiter: newLimiter(limits), options: options, metrics: metrics, logger: logger, now: now}, nil
 }
 
 // ProxyPolicy requires a PROXY header from trusted networks, the cloud load balancer (D-0118). Other
@@ -111,8 +120,16 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 	}
 	defer release()
 	reader := bufio.NewReader(conn)
-	if first, err := reader.Peek(1); err != nil || first[0] == legacyPing {
+	first, err := reader.Peek(1)
+	switch {
+	case errors.Is(err, proxyproto.ErrNoProxyProtocol):
+		s.misconfigured(conn, outcomeProxyHeaderMissing, "a trusted network sent no PROXY header; does the cloud load balancer send one?")
+		return
+	case err != nil || first[0] == legacyPing:
 		s.metrics.outcome(outcomeMalformed)
+		return
+	case untrustedProxyHeader(reader):
+		s.misconfigured(conn, outcomeProxyHeaderUntrusted, "a PROXY header came from a network outside OGCLOUD_LB_TRUSTED_PROXIES")
 		return
 	}
 	id, payload, raw, err := readPacket(reader, s.options.MaxPacketBytes)
@@ -176,6 +193,22 @@ func (s *Server) login(ctx context.Context, conn net.Conn, reader *bufio.Reader,
 	s.metrics.active.Inc()
 	defer s.metrics.active.Dec()
 	pipe(conn, reader, upstream)
+}
+
+// misconfigured counts and logs connections that point at wrong PROXY settings rather than at a bad client.
+func (s *Server) misconfigured(conn net.Conn, outcome, problem string) {
+	s.metrics.outcome(outcome)
+	s.logger.Warn(problem, "remote", conn.RemoteAddr().String())
+}
+
+// untrustedProxyHeader looks at what already arrived without waiting for more: a PROXY header starts with
+// one of two signatures, which no Minecraft handshake does.
+func untrustedProxyHeader(reader *bufio.Reader) bool {
+	arrived, _ := reader.Peek(min(reader.Buffered(), len(proxyV2Signature)))
+	if len(arrived) < len(proxyV1Signature) {
+		return false
+	}
+	return bytes.HasPrefix(arrived, []byte(proxyV1Signature)) || bytes.HasPrefix([]byte(proxyV2Signature), arrived)
 }
 
 func (s *Server) refuse(conn net.Conn, outcome, message string) {
