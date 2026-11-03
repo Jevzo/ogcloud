@@ -89,6 +89,7 @@ enum class Message(
     PERM_DURATION_INVALID("perm.duration.invalid", "duration"),
     COMMAND_SENT("command.sent", "command", "target"),
     KICK_PROXY_FULL("kick.proxy-full"),
+    KICK_SERVER_FULL("kick.server-full"),
     KICK_NO_SERVERS("kick.no-servers"),
     KICK_SERVER_DOWN("kick.server-down"),
     KICK_SHUTDOWN("kick.shutdown"),

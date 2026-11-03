@@ -1,0 +1,10 @@
+name: OgCloud
+version: "${version}"
+main: io.ogwars.cloud.legacy.OgCloudLegacyPaper
+description: Connects this server to OgCloud.
+# NPCs run on the PacketEvents plugin from the runtime bundle (D-0137).
+depend: [packetevents]
+commands:
+  ogcloud:
+    description: OgCloud on this server
+    aliases: [oc]
