@@ -135,8 +135,10 @@ class PermissionGroupController(
     ) = groups.delete(actors.current(), id)
 }
 
+const val RANK_PATH = "/api/v1/players/{uuid}/rank"
+
 @RestController
-@RequestMapping("/api/v1/players/{uuid}/rank")
+@RequestMapping(RANK_PATH)
 class RankController(
     private val groups: PermissionGroups,
     private val actors: CurrentActor,

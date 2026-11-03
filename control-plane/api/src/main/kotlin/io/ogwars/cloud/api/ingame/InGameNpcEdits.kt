@@ -1,6 +1,8 @@
-package io.ogwars.cloud.api.npcs
+package io.ogwars.cloud.api.ingame
 
 import io.ogwars.cloud.api.audit.AuditTrail
+import io.ogwars.cloud.api.npcs.NPCS_PATH
+import io.ogwars.cloud.api.npcs.NpcManagement
 import io.ogwars.cloud.contracts.internal.v1.NpcChangeRequested
 import io.ogwars.cloud.contracts.internal.v1.NpcChangeRequested.ChangeCase
 import io.ogwars.cloud.domain.audit.Actor
@@ -37,8 +39,8 @@ class InGameNpcEdits(
 
     fun handle(change: NpcChangeRequested) {
         val actor = change.metadata.actor()
-        val group = GroupId(change.groupId)
-        try {
+        applyOrRefuse(change.metadata.eventId) {
+            val group = GroupId(change.groupId)
             when (change.changeCase) {
                 ChangeCase.CREATE -> {
                     val npc = change.create.toDomain().inGroup(group)
@@ -64,10 +66,6 @@ class InGameNpcEdits(
                     throw NonRetryableEventException("NPC change ${change.metadata.eventId} carries no change")
                 }
             }
-        } catch (e: IllegalArgumentException) {
-            throw NonRetryableEventException("NPC change ${change.metadata.eventId} refused: ${e.message}", e)
-        } catch (e: NoSuchElementException) {
-            throw NonRetryableEventException("NPC change ${change.metadata.eventId} refused: ${e.message}", e)
         }
     }
 

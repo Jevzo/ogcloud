@@ -1,5 +1,6 @@
-package io.ogwars.cloud.api.npcs
+package io.ogwars.cloud.api.ingame
 
+import io.ogwars.cloud.api.npcs.NPCS_PATH
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.contracts.internal.v1.NpcChangeRequested
 import io.ogwars.cloud.domain.audit.Actor
@@ -46,10 +47,14 @@ class InGameNpcEditsTest(
         publish(hub, id) { setUpdate(npc(id, hub, "Shop 2")) }
         runBlocking { eventually(WAIT) { npcs.find(id)?.title shouldBe "Shop 2" } }
         publish(hub, id) { setDeleteNpcId(id.toString()) }
-        runBlocking { eventually(WAIT) { npcs.find(id) shouldBe null } }
-
-        audit.about(admin.toString()).map { it.action } shouldContainExactlyInAnyOrder
-            listOf("POST $NPCS_PATH", "PUT $NPCS_PATH/{id}", "DELETE $NPCS_PATH/{id}")
+        runBlocking {
+            eventually(WAIT) {
+                npcs.find(id) shouldBe null
+                // Audited right after each change, so wait for the entries too.
+                audit.about(admin.toString()).map { it.action } shouldContainExactlyInAnyOrder
+                    listOf("POST $NPCS_PATH", "PUT $NPCS_PATH/{id}", "DELETE $NPCS_PATH/{id}")
+            }
+        }
     }
 
     @Test

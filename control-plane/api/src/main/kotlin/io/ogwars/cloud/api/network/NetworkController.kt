@@ -96,8 +96,10 @@ private fun Revisioned<NetworkSettings>.toView() =
         )
     }
 
+const val NETWORK_PATH = "/api/v1/network"
+
 @RestController
-@RequestMapping("/api/v1/network")
+@RequestMapping(NETWORK_PATH)
 class NetworkController(
     private val network: NetworkManagement,
     private val actors: CurrentActor,
