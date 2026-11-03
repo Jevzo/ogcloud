@@ -2,6 +2,8 @@ package io.ogwars.cloud.controller.readmodel
 
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.node.v1.GroupInfo
+import io.ogwars.cloud.contracts.node.v1.ListGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
@@ -48,6 +50,24 @@ object ReadModelMessages {
             .setGroupType(group.value.type.toProto())
             .setMaintenance(group.value.maintenance)
             .build()
+
+    fun groupList(groups: List<Group>): ListGroupsResponse =
+        ListGroupsResponse
+            .newBuilder()
+            .addAllGroups(
+                groups.sortedBy { it.id.value }.map {
+                    GroupInfo
+                        .newBuilder()
+                        .setGroupId(it.id.value)
+                        .setGroupType(it.type.toProto())
+                        .setMaintenance(it.maintenance)
+                        .setProfileId(it.profileId)
+                        .setMinOnline(it.scaling.minOnline)
+                        .setMaxInstances(it.scaling.maxInstances)
+                        .setPlayersPerServer(it.scaling.playersPerServer)
+                        .build()
+                },
+            ).build()
 
     fun permissionGroup(group: Revisioned<DomainPermissionGroup>): PermissionGroup {
         val g = group.value

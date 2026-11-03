@@ -36,6 +36,16 @@ class ReadModelSync(
         deleted: Boolean = false,
         resync: Boolean = false,
     ) {
+        writeGroup(id, deleted, resync)
+        // A resync writes the list once, after every group.
+        if (!resync) groupList()
+    }
+
+    private fun writeGroup(
+        id: GroupId,
+        deleted: Boolean,
+        resync: Boolean,
+    ) {
         val groupWrite = ReadModelWrite.of(readModels, ReadModelKind.GROUP, id.value, resync)
         val templateWrite = ReadModelWrite.of(readModels, ReadModelKind.ACTIVE_TEMPLATE, id.value, resync)
         val group = if (deleted) null else groups.find(id)
@@ -117,6 +127,7 @@ class ReadModelSync(
             resyncNpcs(id)
         }
         (readModels.ids(ReadModelKind.GROUP) - activeIds).forEach { group(GroupId(it), deleted = true, resync = true) }
+        groupList()
         // A group restored meanwhile gets its list back on the next resync.
         (
             readModels.ids(
@@ -133,6 +144,14 @@ class ReadModelSync(
         ).forEach { permissionGroup(it, resync = true) }
         sessions.onlinePlayers().forEach(permissions::resync)
     }
+
+    /** Every group for the gateway's ListGroups (D-0132); only queried, so never broadcast. */
+    private fun groupList() =
+        readModels.put(
+            ReadModelKind.GROUP_LIST,
+            ValkeyKeys.GROUP_LIST_ID,
+            ReadModelMessages.groupList(groups.findAll().map { it.value }).toByteArray(),
+        )
 
     private fun resyncNpcs(groupId: GroupId) {
         val stored = readModels.get(ReadModelKind.NPCS_BY_GROUP, groupId.value)

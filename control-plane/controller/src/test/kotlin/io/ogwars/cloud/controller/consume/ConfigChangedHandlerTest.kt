@@ -6,6 +6,7 @@ import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.events.v1.NodeBroadcast.UpdateCase
 import io.ogwars.cloud.contracts.events.v1.PlayerRankChanged
+import io.ogwars.cloud.contracts.node.v1.ListGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
@@ -86,10 +87,12 @@ class ConfigChangedHandlerTest {
         handler.handle(change("bedwars") { setGroup(entity("bedwars")) })
 
         GroupUpdated.parseFrom(readModels.get(ReadModelKind.GROUP, "bedwars")).groupId shouldBe "bedwars"
+        groupList() shouldContainExactly listOf("bedwars", "lobby")
         f.removeGroup(GroupId("bedwars"))
         handler.handle(change("bedwars") { setGroup(entity("bedwars", deleted = true)) })
 
         readModels.get(ReadModelKind.GROUP, "bedwars") shouldBe null
+        groupList() shouldContainExactly listOf("lobby")
         broadcasts.sent.map { it.group.deleted } shouldContainExactly listOf(false, true)
     }
 
@@ -174,6 +177,12 @@ class ConfigChangedHandlerTest {
         shouldThrow<NonRetryableEventException> { handler.handle(change("network") {}) }
     }
 
+    private fun groupList() =
+        ListGroupsResponse
+            .parseFrom(readModels.get(ReadModelKind.GROUP_LIST, ValkeyKeys.GROUP_LIST_ID))
+            .groupsList
+            .map { it.groupId }
+
     private fun change(
         subject: String,
         body: ConfigChanged.Builder.() -> Unit,
@@ -209,9 +218,12 @@ class ConfigChangedHandlerTest {
         broadcasts.sent shouldBe emptyList()
 
         readModels.delete(ReadModelKind.GROUP, "lobby")
+        readModels.delete(ReadModelKind.GROUP_LIST, ValkeyKeys.GROUP_LIST_ID)
         readModels.put(ReadModelKind.GROUP, "gone", byteArrayOf(1))
         readModels.put(ReadModelKind.PERMISSION_GROUP, "gone", byteArrayOf(1))
         sync.resyncAll()
+
+        groupList() shouldContainExactly listOf("bedwars", "lobby")
 
         val lobby = f.groupStore.find(GroupId("lobby")).shouldNotBeNull()
         readModels.get(ReadModelKind.GROUP, "lobby") shouldBe ReadModelMessages.group(lobby).toByteArray()
