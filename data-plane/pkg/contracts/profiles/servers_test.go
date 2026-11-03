@@ -119,7 +119,7 @@ func TestFillBuildsTakesTheNewestStableBuild(t *testing.T) {
 }
 
 func TestHpfxdBuildsTakesTheNewestDefaultBuild(t *testing.T) {
-	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"builds": [
 			{"build": 129, "channel": "experimental", "changes": [{"commit": "exp"}], "downloads": {"paperclip": {"sha256": "e"}}},
 			{"build": 128, "channel": "default", "changes": [{"commit": "c75e"}], "downloads": {"paperclip": {"sha256": "d288"}}},

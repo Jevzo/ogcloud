@@ -170,7 +170,7 @@ func (m ModrinthReleases) Latest(ctx context.Context, projectID string, loaders 
 	endpoint := fmt.Sprintf("%s/v2/project/%s/version?loaders=%s", m.BaseURL, url.PathEscape(projectID), url.QueryEscape(string(encoded)))
 	var versions []modrinthVersion
 	if err := getJSON(ctx, m.Client, endpoint, &versions); err != nil {
-		return Release{}, fmt.Errorf("Modrinth project %s: %w", projectID, err)
+		return Release{}, fmt.Errorf("query Modrinth project %s: %w", projectID, err)
 	}
 	for _, version := range versions {
 		if version.VersionType != "release" {
