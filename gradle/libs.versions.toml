@@ -19,9 +19,13 @@ springdoc = "3.2.0"
 webauthn4j = "0.31.11.RELEASE"
 playwright = "1.64.0"
 velocity-api = "4.3.1"
+paper-api = "26.3.build.238-stable"
+mockbukkit = "4.119.0"
 viaversion-api = "5.12.2"
 
 [libraries]
+paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
+mockbukkit = { module = "org.mockbukkit.mockbukkit:mockbukkit-v26.3", version.ref = "mockbukkit" }
 velocity-api = { module = "com.velocitypowered:velocity-api", version.ref = "velocity-api" }
 viaversion-api = { module = "com.viaversion:viaversion-api", version.ref = "viaversion-api" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

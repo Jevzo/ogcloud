@@ -12,6 +12,9 @@ dependencyResolutionManagement {
             filter {
                 includeGroup("com.velocitypowered")
                 includeGroup("io.papermc.paper")
+                // paper-api's own dependencies, published there rather than on Maven Central.
+                includeGroup("com.mojang")
+                includeGroup("net.md-5")
             }
         }
         exclusiveContent {
@@ -36,3 +39,4 @@ include(":integrations:sdk")
 include(":integrations:node-client")
 include(":integrations:node-core")
 include(":integrations:velocity")
+include(":integrations:paper")

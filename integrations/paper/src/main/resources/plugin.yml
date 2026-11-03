@@ -1,0 +1,5 @@
+name: OgCloud
+version: "${version}"
+main: io.ogwars.cloud.paper.OgCloudPaper
+description: Connects this server to OgCloud.
+api-version: "26.3"
