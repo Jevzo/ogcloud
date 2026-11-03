@@ -21,6 +21,10 @@ dependencyResolutionManagement {
             forRepository { maven("https://repo.viaversion.com/") { name = "viaversion" } }
             filter { includeGroup("com.viaversion") }
         }
+        exclusiveContent {
+            forRepository { maven("https://repo.codemc.io/repository/maven-releases/") { name = "codemc" } }
+            filter { includeGroup("com.github.retrooper") }
+        }
     }
 }
 
@@ -38,5 +42,6 @@ include(":control-plane:api")
 include(":integrations:sdk")
 include(":integrations:node-client")
 include(":integrations:node-core")
+include(":integrations:npc")
 include(":integrations:velocity")
 include(":integrations:paper")
