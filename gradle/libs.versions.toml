@@ -2,7 +2,7 @@
 [versions]
 kotlin = "2.4.21"
 spring-boot = "4.1.2"
-spotless = "8.10.4"
+spotless = "8.11.0"
 ktlint = "1.8.0"
 shadow = "9.6.1"
 junit = "6.1.3"
@@ -11,10 +11,10 @@ mockk = "1.14.11"
 protobuf = "4.36.2"
 protobuf-plugin = "0.10.0"
 grpc = "1.85.1"
-aws-sdk = "2.57.3"
+aws-sdk = "2.57.8"
 fabric8 = "8.0.0"
 springdoc = "3.2.0"
-webauthn4j = "0.31.11.RELEASE"
+webauthn4j = "0.32.0.RELEASE"
 playwright = "1.64.0"
 
 [libraries]
