@@ -10,6 +10,7 @@ import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.contracts.events.v1.TransferRequested
 import io.ogwars.cloud.contracts.node.v1.Delivery
+import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.contracts.node.v1.ResolveLoginResponse
@@ -20,6 +21,7 @@ import io.ogwars.cloud.node.core.query.FakeQueries
 import io.ogwars.cloud.node.core.routing.Route
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
@@ -124,6 +126,22 @@ class ProxyRuntimeTest {
     }
 
     @Test
+    fun `a login that never completes forgets its rank and reports nothing`() {
+        queries.login =
+            ResolveLoginResponse
+                .newBuilder()
+                .setAllowed(true)
+                .setProfile(profile(steve))
+                .build()
+        runtime.login(steve, "Steve", 47, "1.2.3.4").join()
+
+        runtime.loginAbandoned(steve)
+
+        runtime.permissions.rank(steve) shouldBe null
+        session.sent.none { it.hasPlayerActivity() } shouldBe true
+    }
+
+    @Test
     fun `a full proxy turns players away before asking anyone`() {
         repeat(MAX_PLAYERS) { platform.players += OnlinePlayer(UUID.randomUUID(), "p$it", null) }
 
@@ -220,6 +238,58 @@ class ProxyRuntimeTest {
         session.listener.broadcast(maintenance("proxy"))
 
         platform.kicks shouldContainExactly listOf(steve to messages.text(Message.KICK_GROUP_MAINTENANCE))
+    }
+
+    @Test
+    fun `a new Welcome replaces group flags learned before it and asks the gateway for every group`() {
+        session.listener.broadcast(maintenance("bedwars"))
+        queries.groups +=
+            GroupInfo
+                .newBuilder()
+                .setGroupId("arena")
+                .setGroupType(GroupType.GROUP_TYPE_DYNAMIC)
+                .setMaintenance(true)
+                .build()
+
+        // While the proxy was away, bedwars left maintenance and arena, without servers yet, entered it.
+        session.listener.welcomed(
+            Welcome
+                .newBuilder()
+                .setNetworkSettings(NetworkSettingsUpdated.newBuilder().setVersion(1).setDefaultGroupId("lobby"))
+                .addServers(server("b-1", "bedwars"))
+                .build(),
+        )
+
+        runtime.network.inMaintenance("bedwars") shouldBe false
+        runtime.network.inMaintenance("arena") shouldBe true
+    }
+
+    @Test
+    fun `ranks held before a reconnect are loaded again, as broadcasts may have been missed`() {
+        queries.login =
+            ResolveLoginResponse
+                .newBuilder()
+                .setAllowed(true)
+                .setProfile(profile(steve))
+                .build()
+        runtime.login(steve, "Steve", 47, "1.2.3.4").join()
+        queries.permissionGroups["vip"] = PermissionGroup.newBuilder().setPermissionGroupId("vip").build()
+        queries.profiles[steve] =
+            profile(steve)
+                .toBuilder()
+                .setPermissionGroupId("vip")
+                .setVersion(2)
+                .build()
+
+        session.listener.welcomed(
+            Welcome.newBuilder().setNetworkSettings(NetworkSettingsUpdated.newBuilder().setVersion(1)).build(),
+        )
+
+        runtime.permissions
+            .rank(steve)
+            ?.group
+            ?.permissionGroupId shouldBe "vip"
+        platform.rankChanges.flatten() shouldContain steve
     }
 
     @Test

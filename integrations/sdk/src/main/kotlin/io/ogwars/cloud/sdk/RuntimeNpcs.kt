@@ -38,6 +38,7 @@ interface RuntimeNpc {
 
         fun lookAtPlayers(lookAtPlayers: Boolean): Builder
 
+        /** [handler] runs on the clicking player's thread: the main thread, or the player's region on Folia. */
         fun onClick(handler: Consumer<NpcClick>): Builder
 
         fun spawn(): RuntimeNpc

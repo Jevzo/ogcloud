@@ -10,10 +10,11 @@ import java.util.UUID
 class HubRuntimeNpcsTest {
     private val hub =
         NpcHub(RecordingPackets(), mockk(), "lobby", { _, _, _ -> }, mockk(relaxed = true), Clock.systemUTC())
-    private val npcs = HubRuntimeNpcs(hub)
+    private val handedOver = mutableListOf<UUID>()
+    private val npcs = HubRuntimeNpcs(hub) { player, task -> handedOver += player.also { task.run() } }
 
     @Test
-    fun `runtime NPCs spawn, answer clicks and despawn`() {
+    fun `runtime NPCs spawn, answer clicks on the clicking player's thread and despawn`() {
         val clicks = mutableListOf<Boolean>()
         val npc =
             npcs
@@ -25,10 +26,12 @@ class HubRuntimeNpcsTest {
         hub.shownIds() shouldBe setOf(NpcHub.RUNTIME + "guide")
         npcs.find("guide").isPresent shouldBe true
 
-        hub.clicked(UUID.randomUUID(), 1_500_000_000, rightClick = true)
+        val clicker = UUID.randomUUID()
+        hub.clicked(clicker, 1_500_000_000, rightClick = true)
         npc.despawn()
 
         clicks shouldBe listOf(true)
+        handedOver shouldBe listOf(clicker)
         hub.shownIds() shouldBe emptySet()
         npcs.find("guide").isPresent shouldBe false
     }

@@ -11,6 +11,7 @@ import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.SnapshotPlayer
 import io.ogwars.cloud.contracts.events.v1.TransferRequested
 import io.ogwars.cloud.contracts.node.v1.Delivery
+import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import io.ogwars.cloud.contracts.node.v1.PlayerActivityReport
 import io.ogwars.cloud.contracts.node.v1.PlayerSnapshot
 import io.ogwars.cloud.contracts.node.v1.ResolveLoginRequest
@@ -114,6 +115,9 @@ class ProxyRuntime(
         report(player) { setDisconnected(PlayerDisconnected.getDefaultInstance()) }
     }
 
+    /** A login that ended before it completed, e.g. the player quit while it was checked; it was never reported. */
+    fun loginAbandoned(player: UUID) = permissions.unload(player)
+
     /** Routes a player as an admin or the SDK asked; the gateway applies maintenance only through this. */
     fun route(
         player: UUID,
@@ -123,8 +127,27 @@ class ProxyRuntime(
     override fun startTasks() = every(SNAPSHOT, "player snapshot", ::snapshot)
 
     override fun welcomed(welcome: Welcome) {
-        welcome.serversList.forEach { network.know(it.groupId, it.groupType, it.groupMaintenance) }
+        network.resetGroups(
+            welcome.serversList
+                .distinctBy { it.groupId }
+                .map {
+                    GroupInfo
+                        .newBuilder()
+                        .setGroupId(it.groupId)
+                        .setGroupType(it.groupType)
+                        .setMaintenance(it.groupMaintenance)
+                        .build()
+                },
+        )
         directory.reset(welcome.serversList)
+        // Groups without servers are not in the Welcome, but their maintenance decides where their first server goes.
+        queries.groups().whenComplete { groups, error ->
+            if (error != null) {
+                log.log(System.Logger.Level.WARNING, "Could not list the groups after the Welcome", error)
+            } else {
+                groups.forEach(network::know)
+            }
+        }
     }
 
     override fun lifecycle(event: ServerLifecycleChanged) {

@@ -39,7 +39,7 @@ abstract class NodeRuntime(
     private val scheduler: ScheduledExecutorService,
     sessionOf: (SessionListener) -> NodeSession,
 ) : AutoCloseable {
-    private val log = System.getLogger(javaClass.name)
+    protected val log: System.Logger = System.getLogger(javaClass.name)
     val network = NetworkState()
     val permissions = PermissionCache(queries)
     protected val session: NodeSession = sessionOf(Listener())
@@ -99,6 +99,15 @@ abstract class NodeRuntime(
     /** Deliveries only some node types get: transfers and link codes go to proxies (D-0116). */
     protected open fun deliverOther(delivery: Delivery): CompletableFuture<DeliveryOutcome> =
         CompletableFuture.completedFuture(DeliveryOutcome(false, "not for ${identity.groupType}"))
+
+    private fun reloadRanks() =
+        permissions.reloadAll().whenComplete { players, error ->
+            if (error != null) {
+                log.log(System.Logger.Level.WARNING, "Could not reload the ranks after reconnecting", error)
+            } else if (players.isNotEmpty()) {
+                platform.ranksChanged(players)
+            }
+        }
 
     private fun heartbeat() {
         val sample = platform.sample()
@@ -170,7 +179,8 @@ abstract class NodeRuntime(
             network.update(welcome.networkSettings)
             this@NodeRuntime.welcomed(welcome)
             settingsChanged(before)
-            ready.complete(Unit)
+            // A reconnect may have missed rank broadcasts, and the gateway replays none.
+            if (!ready.complete(Unit)) reloadRanks()
         }
 
         override fun lifecycle(event: ServerLifecycleChanged) = this@NodeRuntime.lifecycle(event)

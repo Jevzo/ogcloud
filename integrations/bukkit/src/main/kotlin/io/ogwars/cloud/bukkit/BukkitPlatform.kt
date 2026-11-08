@@ -10,6 +10,8 @@ import org.bukkit.ChatColor
 import org.bukkit.Server
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.logging.Level
+import java.util.logging.Logger
 
 /** node-core's view of a Paper or PandaSpigot server; [line] decides where game work runs. */
 class BukkitPlatform(
@@ -19,6 +21,7 @@ class BukkitPlatform(
     private val npcs: NpcHub,
     private val line: BukkitLine,
     private val ticks: TickSampler,
+    private val logger: Logger,
 ) : ServerPlatform {
     override fun onlinePlayers(): List<OnlinePlayer> =
         server.onlinePlayers.map {
@@ -71,8 +74,16 @@ class BukkitPlatform(
     }
 
     /** Any change to the group's NPCs reloads them from the read model (D-0104). */
-    override fun npcChanged(update: NpcUpdated) {
-        npcs.reload()
+    override fun npcChanged(update: NpcUpdated) = reloadNpcs()
+
+    // Changes made while the session was down arrive with no broadcast.
+    override fun welcomed() = reloadNpcs()
+
+    private fun reloadNpcs() {
+        npcs.reload().whenComplete { _, error ->
+            // The next NPC change or Welcome loads them again.
+            if (error != null) logger.log(Level.WARNING, "Could not load the group's NPCs", error)
+        }
     }
 
     override fun settingsChanged(settings: NetworkSettingsUpdated) =

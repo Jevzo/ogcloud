@@ -63,10 +63,17 @@ internal class VelocityListeners(
         runtime.switched(event.player.uniqueId, from, event.server.serverInfo.name)
     }
 
-    /** Only players who completed the login were reported, so only they are reported gone. */
+    /**
+     * Only players who completed the login were reported, so only they are reported gone; an abandoned login still
+     * drops the rank it loaded. A conflicting login leaves the live player with the same id alone.
+     */
     @Subscribe
     fun onDisconnect(event: DisconnectEvent) {
-        if (event.loginStatus in REPORTED_LOGINS) runtime.left(event.player.uniqueId)
+        when (event.loginStatus) {
+            in REPORTED_LOGINS -> runtime.left(event.player.uniqueId)
+            in ABANDONED_LOGINS -> runtime.loginAbandoned(event.player.uniqueId)
+            else -> Unit
+        }
     }
 
     /**
@@ -119,6 +126,12 @@ internal class VelocityListeners(
     companion object {
         private val REPORTED_LOGINS =
             setOf(DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN, DisconnectEvent.LoginStatus.PRE_SERVER_JOIN)
+        private val ABANDONED_LOGINS =
+            setOf(
+                DisconnectEvent.LoginStatus.CANCELLED_BY_USER,
+                DisconnectEvent.LoginStatus.CANCELLED_BY_USER_BEFORE_COMPLETE,
+                DisconnectEvent.LoginStatus.CANCELLED_BY_PROXY,
+            )
         private val BACKEND_COMMAND = Regex("^(ogcloud|oc)\\s+npc(\\s.*)?$", RegexOption.IGNORE_CASE)
 
         /** Whether a command line, without its slash, is a backend's `/ogcloud npc ...`. */

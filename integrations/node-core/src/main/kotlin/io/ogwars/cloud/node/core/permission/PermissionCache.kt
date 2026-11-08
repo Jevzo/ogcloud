@@ -58,6 +58,14 @@ class PermissionCache(
         }
     }
 
+    /** Loads every held rank again, e.g. after a reconnect missed broadcasts; completes with the players reloaded. */
+    fun reloadAll(): CompletableFuture<Set<UUID>> {
+        val loads = ranks.keys.map { player -> load(player).thenApply { rank -> player.takeIf { rank != null } } }
+        return CompletableFuture
+            .allOf(*loads.toTypedArray())
+            .thenApply { loads.mapNotNullTo(mutableSetOf()) { it.join() } }
+    }
+
     fun unload(player: UUID) {
         present.remove(player)
         ranks.remove(player)

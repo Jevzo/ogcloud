@@ -15,10 +15,12 @@ import io.ogwars.cloud.sdk.OgCloud
 import io.ogwars.cloud.sdk.OgCloudInternalApi
 import com.github.retrooper.packetevents.PacketEvents
 import com.github.retrooper.packetevents.event.PacketListenerPriority
+import org.bukkit.Server
 import org.bukkit.event.Listener
 import org.bukkit.plugin.Plugin
 import java.nio.file.Path
 import java.time.Clock
+import java.util.logging.Logger
 
 /**
  * Everything a Paper or PandaSpigot server runs while it is up, connected to the gateway (D-0008). The plugins bring
@@ -52,11 +54,11 @@ class BackendNode(
     val runtime: ServerRuntime =
         ServerRuntime(
             identity,
-            BukkitPlatform(server, identity.serverId, tablist, npcs, line, ticks),
+            BukkitPlatform(server, identity.serverId, tablist, npcs, line, ticks, plugin.logger),
             pod.connection.queries,
             pod.messages,
             pod.scheduler,
-            HubRuntimeNpcs(npcs),
+            HubRuntimeNpcs(npcs) { player, task -> server.getPlayer(player)?.let { line.player(it, task) } },
             pod.connection::session,
         )
 
@@ -76,7 +78,6 @@ class BackendNode(
         OgCloud.install(runtime.api)
         runtime.start()
         npcs.start()
-        runtime.api.onReady { npcs.reload() }
     }
 
     @OptIn(OgCloudInternalApi::class)
@@ -89,5 +90,23 @@ class BackendNode(
 
     private companion object {
         const val COMMAND = "ogcloud"
+    }
+}
+
+/**
+ * Runs a backend plugin's start; if it fails the server stops, because without OgCloud's handshake check it would
+ * take any forwarded login (D-0065). The error goes on to Bukkit, which logs it with the plugin.
+ */
+fun enableOrStop(
+    server: Server,
+    logger: Logger,
+    enable: () -> Unit,
+) {
+    try {
+        enable()
+    } catch (e: Throwable) {
+        logger.severe("OgCloud could not start, so the server stops instead of taking unchecked logins")
+        server.shutdown()
+        throw e
     }
 }

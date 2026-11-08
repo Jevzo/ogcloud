@@ -147,6 +147,13 @@ class ServerRuntimeTest {
     }
 
     @Test
+    fun `every Welcome lets the platform reload what the gateway does not replay, such as NPCs`() {
+        session.listener.welcomed(Welcome.getDefaultInstance())
+
+        platform.welcomes shouldBe 2
+    }
+
+    @Test
     fun `NPC updates reach the platform`() {
         session.listener.broadcast(NodeBroadcast.newBuilder().setNpc(NpcUpdated.newBuilder().setNpcId("n-1")).build())
 

@@ -3,6 +3,7 @@ package io.ogwars.cloud.node.core.state
 import io.ogwars.cloud.contracts.events.v1.GroupType
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -41,7 +42,7 @@ class NetworkStateTest {
 
     @Test
     fun `group flags follow the newest update, and a deletion forgets the group`() {
-        state.know("lobby", GroupType.GROUP_TYPE_DYNAMIC, maintenance = true)
+        state.know(info(maintenance = true))
         state.update(group(3, maintenance = false)) shouldBe true
         state.update(group(2, maintenance = true)) shouldBe false
         state.inMaintenance("lobby") shouldBe false
@@ -52,10 +53,28 @@ class NetworkStateTest {
     }
 
     @Test
-    fun `what the welcome says yields to a broadcast already held`() {
+    fun `what a query says yields to a broadcast already held`() {
         state.update(group(4, maintenance = false))
-        state.know("lobby", GroupType.GROUP_TYPE_DYNAMIC, maintenance = true)
+        state.know(info(maintenance = true))
 
         state.inMaintenance("lobby") shouldBe false
     }
+
+    @Test
+    fun `a Welcome replaces what broadcasts said before it`() {
+        state.update(group(4, maintenance = true))
+        state.resetGroups(listOf(info(maintenance = false)))
+
+        state.inMaintenance("lobby") shouldBe false
+        state.know(info(maintenance = true))
+        state.inMaintenance("lobby") shouldBe true
+    }
+
+    private fun info(maintenance: Boolean) =
+        GroupInfo
+            .newBuilder()
+            .setGroupId("lobby")
+            .setGroupType(GroupType.GROUP_TYPE_DYNAMIC)
+            .setMaintenance(maintenance)
+            .build()
 }

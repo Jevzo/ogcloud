@@ -8,9 +8,13 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
 
-/** The SDK's runtime NPCs (D-0131): created by plugin code, shown by the hub, gone when the server stops. */
+/**
+ * The SDK's runtime NPCs (D-0131): created by plugin code, shown by the hub, gone when the server stops. Clicks
+ * arrive on PacketEvents' network thread, so [onGameThread] hands each handler to the clicking player's thread.
+ */
 class HubRuntimeNpcs(
     private val hub: NpcHub,
+    private val onGameThread: (player: UUID, task: Runnable) -> Unit,
 ) : RuntimeNpcs {
     private val npcs = ConcurrentHashMap<String, RuntimeNpc>()
 
@@ -61,7 +65,7 @@ class HubRuntimeNpcs(
                     subtitle,
                     skin,
                     lookAtPlayers,
-                    { player, right -> handler.accept(Click(player, right)) },
+                    { player, right -> onGameThread(player) { handler.accept(Click(player, right)) } },
                 ),
             )
             return Handle(id).also { npcs[id] = it }

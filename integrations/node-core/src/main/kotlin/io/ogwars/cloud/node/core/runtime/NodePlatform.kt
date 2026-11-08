@@ -72,4 +72,7 @@ interface ProxyPlatform :
 interface ServerPlatform : NodePlatform {
     /** A managed NPC of this server's group changed (T-0506). */
     fun npcChanged(update: NpcUpdated) = Unit
+
+    /** The gateway session opened, also again after an outage; what the gateway does not replay, NPCs, is reloaded. */
+    fun welcomed() = Unit
 }

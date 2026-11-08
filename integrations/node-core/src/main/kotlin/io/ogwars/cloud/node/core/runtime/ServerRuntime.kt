@@ -35,7 +35,10 @@ class ServerRuntime(
     fun requestNpcChange(change: NpcChangeRequest.Builder): Boolean =
         session.send(SessionRequest.newBuilder().setNpcChange(change).build())
 
-    override fun welcomed(welcome: Welcome) = server.announceGameState()
+    override fun welcomed(welcome: Welcome) {
+        server.announceGameState()
+        platform.welcomed()
+    }
 
     override fun npcChanged(update: NpcUpdated) = platform.npcChanged(update)
 }

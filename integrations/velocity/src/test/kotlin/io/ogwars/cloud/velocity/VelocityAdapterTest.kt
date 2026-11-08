@@ -5,6 +5,7 @@ import io.ogwars.cloud.node.core.permission.Decision
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.state.Backend
+import com.velocitypowered.api.event.connection.DisconnectEvent
 import com.velocitypowered.api.event.permission.PermissionsSetupEvent
 import com.velocitypowered.api.permission.PermissionFunction
 import com.velocitypowered.api.permission.PermissionProvider
@@ -110,6 +111,18 @@ class VelocityAdapterTest {
 
         permissions.getPermissionValue("allowed") shouldBe Tristate.TRUE
         permissions.getPermissionValue("unset") shouldBe Tristate.UNDEFINED
+    }
+
+    @Test
+    fun `players gone after their login completed are reported, abandoned logins only forget their rank`() {
+        val runtime = mockk<ProxyRuntime>(relaxed = true)
+        val listeners = VelocityListeners(mockk(), runtime)
+        val player = mockk<Player> { every { uniqueId } returns steve }
+
+        DisconnectEvent.LoginStatus.entries.forEach { listeners.onDisconnect(DisconnectEvent(player, it)) }
+
+        verify(exactly = 2) { runtime.left(steve) }
+        verify(exactly = 3) { runtime.loginAbandoned(steve) }
     }
 
     @Test

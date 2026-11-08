@@ -3,6 +3,7 @@ package io.ogwars.cloud.node.core.state
 import io.ogwars.cloud.contracts.events.v1.GroupType
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -37,22 +38,35 @@ class NetworkState {
         return applied
     }
 
-    /** Group flags a proxy learns from the Welcome's server list, before any broadcast about the group. */
-    fun know(
-        groupId: String,
-        type: GroupType,
-        maintenance: Boolean,
-    ) {
-        groups.putIfAbsent(
-            groupId,
-            GroupUpdated
-                .newBuilder()
-                .setGroupId(groupId)
-                .setGroupType(type)
-                .setMaintenance(maintenance)
-                .build(),
-        )
+    /**
+     * A (re)opened session starts from the groups the Welcome names; anything learned before it may be stale.
+     * Broadcasts after the Welcome carry versions and replace these.
+     */
+    fun resetGroups(known: Collection<GroupInfo>) {
+        groups.clear()
+        known.forEach { groups[it.groupId] = unversioned(it) }
     }
+
+    /** Group flags from a query, kept only where no broadcast has said more since the Welcome. */
+    fun know(group: GroupInfo) {
+        groups.compute(group.groupId) { _, held ->
+            if (held == null ||
+                held.version == 0L
+            ) {
+                unversioned(group)
+            } else {
+                held
+            }
+        }
+    }
+
+    private fun unversioned(group: GroupInfo): GroupUpdated =
+        GroupUpdated
+            .newBuilder()
+            .setGroupId(group.groupId)
+            .setGroupType(group.groupType)
+            .setMaintenance(group.maintenance)
+            .build()
 
     fun inMaintenance(groupId: String): Boolean = groups[groupId]?.maintenance ?: false
 

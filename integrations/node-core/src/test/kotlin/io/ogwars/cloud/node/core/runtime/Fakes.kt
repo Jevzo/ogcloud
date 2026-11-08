@@ -150,8 +150,13 @@ class FakeServerPlatform :
     FakePlatform(),
     ServerPlatform {
     val npcUpdates = mutableListOf<NpcUpdated>()
+    var welcomes = 0
 
     override fun npcChanged(update: NpcUpdated) {
         npcUpdates += update
+    }
+
+    override fun welcomed() {
+        welcomes++
     }
 }

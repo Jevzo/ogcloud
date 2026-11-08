@@ -44,7 +44,7 @@ interface OgCloudNode {
 
     val liveChannels: LiveChannels
 
-    /** Runs [action] once the gateway welcomed this server, at once if it already has. */
+    /** Runs [action] off the server thread once the gateway welcomed this server, at once if it already has. */
     fun onReady(action: Runnable)
 }
 
