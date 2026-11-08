@@ -32,7 +32,7 @@ class ShownNpc(
     val bodyId: Int,
     /** The fake player's profile; its name stays hidden through [NpcPackets.TEAM]. */
     val profile: UserProfile,
-    /** Entity ids of the title and subtitle lines. */
+    /** Entity ids of its non-blank text lines, top first. */
     val lineIds: List<Int>,
 )
 

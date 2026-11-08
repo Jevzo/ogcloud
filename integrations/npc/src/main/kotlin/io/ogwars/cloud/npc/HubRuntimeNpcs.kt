@@ -75,9 +75,9 @@ class HubRuntimeNpcs(
     private inner class Handle(
         override val id: String,
     ) : RuntimeNpc {
+        // A handle replaced by a newer spawn of the same id leaves the newer NPC alone.
         override fun despawn() {
-            npcs.remove(id, this)
-            hub.remove(NpcHub.RUNTIME + id)
+            if (npcs.remove(id, this)) hub.remove(NpcHub.RUNTIME + id)
         }
     }
 

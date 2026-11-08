@@ -37,6 +37,25 @@ class HubRuntimeNpcsTest {
     }
 
     @Test
+    fun `an old handle cannot despawn the NPC that replaced it`() {
+        val spawn = { title: String ->
+            npcs
+                .create("shop")
+                .location("world", 0.0, 64.0, 0.0, 0f, 0f)
+                .title(title)
+                .spawn()
+        }
+        val old = spawn("Old")
+        val current = spawn("New")
+
+        old.despawn()
+
+        hub.shownIds() shouldBe setOf(NpcHub.RUNTIME + "shop")
+        current.despawn()
+        hub.shownIds() shouldBe emptySet()
+    }
+
+    @Test
     fun `a runtime NPC needs a location`() {
         shouldThrow<IllegalStateException> { npcs.create("lost").spawn() }
     }

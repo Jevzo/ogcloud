@@ -4,6 +4,7 @@ import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.sdk.RoutingStrategy
 import com.github.retrooper.packetevents.protocol.player.UserProfile
+import java.lang.System.Logger.Level.WARNING
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -31,9 +32,8 @@ fun interface GroupTransfer {
 }
 
 /**
- * Every NPC on this server (D-0136): the group's managed NPCs from the read model, and runtime NPCs that plugins
- * create. Each shows to the players near it, turns to players who come close if it should, and runs its clicks.
- * Safe to call from any thread; PacketEvents sends from any thread.
+ * Every NPC on this server (D-0136): the group's managed NPCs and plugins' runtime NPCs, shown to players near them,
+ * turning to those close by and running clicks. Safe from any thread: changes and moves take one lock.
  */
 class NpcHub(
     private val packets: NpcPackets,
@@ -49,6 +49,13 @@ class NpcHub(
     private val counts = ConcurrentHashMap<String, Pair<Int, Int>>()
     private val lastClick = ConcurrentHashMap<UUID, Instant>()
     private val entityIds = AtomicInteger(FIRST_ENTITY_ID)
+    private val log = System.getLogger(NpcHub::class.java.name)
+
+    // Spawns and despawns for a viewer must follow the order of the changes, or a removed NPC could reappear.
+    private val lock = Any()
+
+    // Each reload asks after the previous one applied, so an older answer never lands last.
+    private var lastReload: CompletableFuture<Unit> = CompletableFuture.completedFuture(Unit)
 
     /** What one player sees. */
     private class Viewing(
@@ -86,30 +93,30 @@ class NpcHub(
             ?.first
     }
 
-    /** Loads the group's managed NPCs, at start and after any NPC update (D-0104). */
+    /** Loads the group's managed NPCs, on every Welcome and after any NPC update (D-0104). */
     fun reload(): CompletableFuture<Unit> =
-        queries.npcs(groupId).thenApply { npcs ->
-            val now = npcs.associateBy { it.npcId }
-            (managed.keys - now.keys).forEach { id ->
-                managed.remove(id)
-                remove(MANAGED + id)
-            }
-            now.values.filter { managed[it.npcId] != it }.forEach { npc ->
-                managed[npc.npcId] = npc
-                put(managedSpec(npc))
-            }
+        synchronized(lock) {
+            lastReload =
+                lastReload
+                    .handle { _, _ -> }
+                    .thenCompose { queries.npcs(groupId) }
+                    .thenApply(::applyManaged)
+            lastReload
         }
 
-    /** Starts refreshing the live counts the NPCs' text shows. */
+    /** Starts refreshing the live counts the NPCs' text shows; a failed round is logged and the next one runs. */
     fun start() {
-        scheduler.scheduleAtFixedRate({ refreshCounts() }, 0, COUNTS_EVERY.toMillis(), TimeUnit.MILLISECONDS)
+        val refresh =
+            Runnable { runCatching(::refreshCounts).onFailure { log.log(WARNING, "Refreshing NPC counts failed", it) } }
+        scheduler.scheduleAtFixedRate(refresh, 0, COUNTS_EVERY.toMillis(), TimeUnit.MILLISECONDS)
     }
 
     /** A player joined, moved or changed world. */
-    fun moved(viewer: NpcViewer) {
-        val viewing = viewers.computeIfAbsent(viewer.uuid) { Viewing(viewer) }.also { it.viewer = viewer }
-        shown.values.forEach { npc -> sync(viewing, npc) }
-    }
+    fun moved(viewer: NpcViewer) =
+        synchronized(lock) {
+            val viewing = viewers.computeIfAbsent(viewer.uuid) { Viewing(viewer) }.also { it.viewer = viewer }
+            shown.values.forEach { npc -> sync(viewing, npc) }
+        }
 
     fun left(player: UUID) {
         viewers.remove(player)
@@ -130,24 +137,27 @@ class NpcHub(
     }
 
     /** Shows or replaces an NPC; runtime NPCs come through here too. */
-    fun put(spec: NpcSpec) {
-        val previous = shown[spec.id]
-        val bodyId = previous?.bodyId ?: entityIds.getAndIncrement()
-        // The profile name only has to be unique and at most 16 characters; the team hides it (NpcPackets.TEAM).
-        val name = previous?.profile?.name ?: (PROFILE_PREFIX + bodyId.toString(Character.MAX_RADIX))
-        val profile = UserProfile(previous?.profile?.uuid ?: UUID.randomUUID(), name, NpcPackets.skin(spec))
-        val lineIds = lines(spec).indices.map { previous?.lineIds?.getOrNull(it) ?: entityIds.getAndIncrement() }
-        val current = ShownNpc(spec, bodyId, profile, lineIds)
-        shown[spec.id] = current
-        viewers.values.forEach { viewing ->
-            if (previous != null && viewing.npcs.remove(spec.id)) packets.despawn(viewing.viewer.user, previous)
-            sync(viewing, current)
+    fun put(spec: NpcSpec): Unit =
+        synchronized(lock) {
+            val previous = shown[spec.id]
+            val bodyId = previous?.bodyId ?: entityIds.getAndIncrement()
+            // The profile name only has to be unique and at most 16 characters; the team hides it (NpcPackets.TEAM).
+            val name = previous?.profile?.name ?: (PROFILE_PREFIX + bodyId.toString(Character.MAX_RADIX))
+            val profile = UserProfile(previous?.profile?.uuid ?: UUID.randomUUID(), name, NpcPackets.skin(spec))
+            val lineIds = lines(spec).indices.map { previous?.lineIds?.getOrNull(it) ?: entityIds.getAndIncrement() }
+            val current = ShownNpc(spec, bodyId, profile, lineIds)
+            shown[spec.id] = current
+            viewers.values.forEach { viewing ->
+                if (previous != null && viewing.npcs.remove(spec.id)) packets.despawn(viewing.viewer.user, previous)
+                sync(viewing, current)
+            }
         }
-    }
 
     fun remove(id: String) {
-        val npc = shown.remove(id) ?: return
-        viewers.values.filter { it.npcs.remove(id) }.forEach { packets.despawn(it.viewer.user, npc) }
+        synchronized(lock) {
+            val npc = shown.remove(id) ?: return
+            viewers.values.filter { it.npcs.remove(id) }.forEach { packets.despawn(it.viewer.user, npc) }
+        }
     }
 
     fun shownIds(): Set<String> = shown.keys.toSet()
@@ -185,24 +195,42 @@ class NpcHub(
         scheduler.schedule({ packets.unlist(user, npc) }, UNLIST_AFTER.toMillis(), TimeUnit.MILLISECONDS)
     }
 
+    private fun applyManaged(npcs: List<ManagedNpc>) =
+        synchronized(lock) {
+            val now = npcs.associateBy { it.npcId }
+            (managed.keys - now.keys).forEach { id ->
+                managed.remove(id)
+                remove(MANAGED + id)
+            }
+            now.values.filter { managed[it.npcId] != it }.forEach { npc ->
+                managed[npc.npcId] = npc
+                put(managedSpec(npc))
+            }
+        }
+
     private fun refreshCounts() {
         shown.values.mapNotNull { it.spec.countsOf }.toSet().forEach { group ->
-            queries.servers(group).thenAccept { servers ->
-                val running = servers.filter { it.state == ServerState.SERVER_STATE_RUNNING }
-                val now = running.sumOf { it.players } to running.size
-                if (counts.put(group, now) != now) rename(group)
-            }
+            queries
+                .servers(group)
+                .thenAccept { servers ->
+                    val running = servers.filter { it.state == ServerState.SERVER_STATE_RUNNING }
+                    val now = running.sumOf { it.players } to running.size
+                    if (counts.put(group, now) != now) rename(group)
+                }.whenComplete { _, error ->
+                    if (error != null) log.log(WARNING, "Could not count the servers of $group for NPCs", error)
+                }
         }
     }
 
-    private fun rename(group: String) {
-        shown.values.filter { it.spec.countsOf == group }.forEach { npc ->
-            val texts = lines(npc.spec)
-            viewers.values.filter { npc.spec.id in it.npcs }.forEach { viewing ->
-                npc.lineIds.zip(texts).forEach { (id, text) -> packets.rename(viewing.viewer.user, id, text) }
+    private fun rename(group: String) =
+        synchronized(lock) {
+            shown.values.filter { it.spec.countsOf == group }.forEach { npc ->
+                val texts = lines(npc.spec)
+                viewers.values.filter { npc.spec.id in it.npcs }.forEach { viewing ->
+                    npc.lineIds.zip(texts).forEach { (id, text) -> packets.rename(viewing.viewer.user, id, text) }
+                }
             }
         }
-    }
 
     /** The NPC's non-blank lines with the live counts filled in. */
     private fun lines(spec: NpcSpec): List<String> {
@@ -238,18 +266,18 @@ class NpcHub(
         action: ManagedAction,
     ) {
         if (!action.hasTransfer()) return
-        val strategy =
-            action.transfer.routingStrategy.takeIf {
-                it != ProtoRoutingStrategy.ROUTING_STRATEGY_UNSPECIFIED
-            }
-        transfers.transfer(
-            player,
-            action.transfer.groupId,
-            strategy?.let {
-                RoutingStrategy.valueOf(it.name.removePrefix("ROUTING_STRATEGY_"))
-            },
-        )
+        transfers.transfer(player, action.transfer.groupId, action.transfer.routingStrategy.toSdk())
     }
+
+    /** Null leaves the choice to the network, also for a strategy this version does not know. */
+    private fun ProtoRoutingStrategy.toSdk(): RoutingStrategy? =
+        when (this) {
+            ProtoRoutingStrategy.ROUTING_STRATEGY_LEAST_FILLED -> RoutingStrategy.LEAST_FILLED
+            ProtoRoutingStrategy.ROUTING_STRATEGY_MOST_FILLED -> RoutingStrategy.MOST_FILLED
+            ProtoRoutingStrategy.ROUTING_STRATEGY_BALANCED -> RoutingStrategy.BALANCED
+            ProtoRoutingStrategy.ROUTING_STRATEGY_ROUND_ROBIN -> RoutingStrategy.ROUND_ROBIN
+            ProtoRoutingStrategy.ROUTING_STRATEGY_UNSPECIFIED, ProtoRoutingStrategy.UNRECOGNIZED -> null
+        }
 
     private fun actionGroup(action: ManagedAction): String? = action.takeIf { it.hasTransfer() }?.transfer?.groupId
 
