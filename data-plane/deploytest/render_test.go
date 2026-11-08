@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -42,6 +44,7 @@ func valueSets(t *testing.T) []string {
 // render runs helm template with the given value files and decodes every document.
 func render(t *testing.T, values ...string) rendered {
 	t.Helper()
+	trackChart(t)
 	args := []string{"template", "ogcloud", chartDir, "--namespace", namespace}
 	for _, file := range values {
 		args = append(args, "-f", file)
@@ -68,6 +71,21 @@ func render(t *testing.T, values ...string) rendered {
 		if doc != nil {
 			objects = append(objects, object(doc))
 		}
+	}
+}
+
+// trackChart reads every chart file, so Go's test cache sees chart changes that only helm reads otherwise.
+func trackChart(t *testing.T) {
+	t.Helper()
+	err := filepath.WalkDir(chartDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+		_, err = os.ReadFile(path) //nolint:gosec // G304: test reads its own repository's chart.
+		return err
+	})
+	if err != nil {
+		t.Fatalf("read the chart: %v", err)
 	}
 }
 

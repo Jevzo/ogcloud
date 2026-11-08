@@ -57,9 +57,24 @@ postgres:
   port: 5432
   database: ogcloud
 kafka:
+  # On Strimzi in the cluster (D-0021), or an external Kafka at bootstrapServers.
+  inCluster: true
   clusterName: ogcloud
+  # The newest Kafka Strimzi 1.3 runs, as the tests use (D-0113).
+  version: 4.3.2
   bootstrapServers: ogcloud-kafka-bootstrap:9093
   replicationFactor: 3
+  # KRaft nodes, each controller and broker.
+  nodes:
+    replicas: 3
+    storage: 20Gi
+    storageClass: ""
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        memory: 2Gi
 valkey:
   # host:port of the server, or of the Sentinels when sentinelMaster is set (D-0048).
   addresses:

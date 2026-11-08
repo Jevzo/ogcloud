@@ -67,6 +67,8 @@ func deadLettered(topics []Topic) []string {
 func RenderStrimzi(topics []Topic) []byte {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n", generatedHeader)
+	// An external Kafka has no Strimzi to read these (D-0021).
+	b.WriteString("{{- if .Values.kafka.inCluster }}\n")
 	for _, topic := range topics {
 		fmt.Fprintf(&b, `---
 apiVersion: kafka.strimzi.io/v1
@@ -86,6 +88,7 @@ spec:
 	for _, service := range services(topics) {
 		writeUser(&b, service, topics)
 	}
+	b.WriteString("{{- end }}\n")
 	return []byte(b.String())
 }
 

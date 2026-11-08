@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/jevzo/ogcloud/data-plane/bootstrap"
@@ -80,6 +81,29 @@ func secretsTheChartAccountsFor(objects rendered) []string {
 		names = append(names, secret.name())
 	}
 	return names
+}
+
+func TestKafkaUsersTakeTheirPasswordsFromSyncedSecrets(t *testing.T) {
+	objects := render(t, minikubeValues)
+	known := secretsTheChartAccountsFor(objects)
+	users := objects.all("KafkaUser")
+	if len(users) == 0 {
+		t.Fatal("no KafkaUsers rendered")
+	}
+	for _, user := range users {
+		secret := str(user, "spec", "authentication", "password", "valueFrom", "secretKeyRef", "name")
+		if !slices.Contains(known, secret) {
+			t.Errorf("KafkaUser %s reads its password from %s, which nothing syncs", user.name(), secret)
+		}
+	}
+}
+
+func TestAnExternalKafkaGetsNoStrimziResources(t *testing.T) {
+	for _, o := range render(t, chartDir+"/ci/external.yaml") {
+		if strings.HasPrefix(str(o, "apiVersion"), "kafka.strimzi.io/") {
+			t.Errorf("%s %s rendered for an external Kafka", o.kind(), o.name())
+		}
+	}
 }
 
 func TestPodsMountOnlySecretsTheReleaseCreates(t *testing.T) {

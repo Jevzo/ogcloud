@@ -10,6 +10,15 @@ servers:
     persistentvolumeclaims: "10"
 kafka:
   replicationFactor: 1
+  nodes:
+    replicas: 1
+    storage: 5Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        memory: 1Gi
 api:
   replicas: 1
   # minikube's pod network.

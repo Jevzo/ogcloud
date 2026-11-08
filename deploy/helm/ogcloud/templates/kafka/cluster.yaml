@@ -1,0 +1,97 @@
+{{- /*
+Kafka on Strimzi (D-0021): KRaft nodes that are controllers and brokers. Clients use the TLS listener with SCRAM
+users (generated in topics.gen.yaml); its certificate comes from the internal CA (D-0041), while brokers among
+themselves keep Strimzi's own CA.
+*/}}
+{{- if .Values.kafka.inCluster }}
+{{- $kafka := .Values.kafka }}
+{{- $brokers := printf "%s-kafka-brokers.%s.svc" $kafka.clusterName .Release.Namespace }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-kafka-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "kafka") | nindent 4 }}
+spec:
+  secretName: ogcloud-kafka-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - {{ $kafka.clusterName }}-kafka-bootstrap
+    - {{ $kafka.clusterName }}-kafka-bootstrap.{{ .Release.Namespace }}.svc
+    - {{ $kafka.clusterName }}-kafka-bootstrap.{{ .Release.Namespace }}.svc.cluster.local
+    - "*.{{ $brokers }}"
+    - "*.{{ $brokers }}.cluster.local"
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-internal
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: nodes
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "kafka") | nindent 4 }}
+    strimzi.io/cluster: {{ $kafka.clusterName }}
+spec:
+  replicas: {{ $kafka.nodes.replicas }}
+  roles: [controller, broker]
+  storage:
+    type: persistent-claim
+    size: {{ $kafka.nodes.storage }}
+    {{- with $kafka.nodes.storageClass }}
+    class: {{ . }}
+    {{- end }}
+    deleteClaim: false
+  resources:
+    {{- toYaml $kafka.nodes.resources | nindent 4 }}
+  template:
+    pod:
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: {{ $kafka.clusterName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "kafka") | nindent 4 }}
+spec:
+  kafka:
+    version: {{ $kafka.version }}
+    listeners:
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: scram-sha-512
+        configuration:
+          brokerCertChainAndKey:
+            secretName: ogcloud-kafka-tls
+            certificate: tls.crt
+            key: tls.key
+    authorization:
+      type: simple
+    config:
+      {{- $isr := min 2 $kafka.replicationFactor }}
+      default.replication.factor: {{ $kafka.replicationFactor }}
+      min.insync.replicas: {{ $isr }}
+      offsets.topic.replication.factor: {{ $kafka.replicationFactor }}
+      transaction.state.log.replication.factor: {{ $kafka.replicationFactor }}
+      transaction.state.log.min.isr: {{ $isr }}
+      # Topics come only from topics.yaml (D-0011).
+      auto.create.topics.enable: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+    template:
+      pod:
+        priorityClassName: {{ .Values.priorityClasses.platform.name }}
+{{- end }}

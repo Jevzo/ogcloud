@@ -1,0 +1,11 @@
+# Every dependency outside the cluster (D-0021): no Strimzi, CloudNativePG, Valkey or SeaweedFS from this chart.
+publicOrigin: https://cloud.example.com
+minecraft:
+  eulaAccepted: true
+kafka:
+  inCluster: false
+  bootstrapServers: kafka.example.com:9093
+edge:
+  tls:
+    issuer:
+      name: letsencrypt
