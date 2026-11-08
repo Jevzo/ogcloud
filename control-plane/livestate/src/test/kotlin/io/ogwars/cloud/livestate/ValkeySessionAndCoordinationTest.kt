@@ -46,6 +46,15 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
     }
 
     @Test
+    fun `a create-only write never replaces a session`() {
+        sessions.createIfAbsent(session(alice, "Alice")) shouldBe true
+        sessions.createIfAbsent(session(alice, "Alice").copy(proxyId = UUID(2, 2))) shouldBe false
+
+        sessions.get(alice)?.value?.proxyId shouldBe UUID(2, 1)
+        sessions.findByName("alice")?.value?.playerUuid shouldBe alice
+    }
+
+    @Test
     fun `session updates use compare-and-set`() {
         sessions.put(session(alice, "Alice"))
         val current = sessions.get(alice).shouldNotBeNull()

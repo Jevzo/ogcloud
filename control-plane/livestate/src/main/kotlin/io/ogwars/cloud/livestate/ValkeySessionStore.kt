@@ -9,6 +9,15 @@ class ValkeySessionStore(
     private val valkey: ValkeyConnection,
 ) : SessionStore {
     override fun put(session: PlayerSession) {
+        write(session, onlyCreate = false)
+    }
+
+    override fun createIfAbsent(session: PlayerSession): Boolean = write(session, onlyCreate = true)
+
+    private fun write(
+        session: PlayerSession,
+        onlyCreate: Boolean,
+    ): Boolean =
         valkey.evalLong(
             LuaScripts.PUT_SESSION,
             listOf(
@@ -19,8 +28,8 @@ class ValkeySessionStore(
             RecordCodec.encode(session),
             ValkeyKeys.SESSION_TTL.millisArg(),
             session.playerUuid.toString().utf8(),
-        )
-    }
+            (if (onlyCreate) "1" else "0").utf8(),
+        ) != 0L
 
     override fun get(playerUuid: UUID): Revisioned<PlayerSession>? =
         valkey.readRecords(listOf(ValkeyKeys.session(playerUuid))).single()?.let { (revision, data) ->

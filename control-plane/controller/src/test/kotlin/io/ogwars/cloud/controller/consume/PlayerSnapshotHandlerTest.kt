@@ -75,6 +75,25 @@ class PlayerSnapshotHandlerTest {
     }
 
     @Test
+    fun `a restore leaves alone the session a login created since the snapshot read none`() {
+        val player = UUID.randomUUID()
+        sessions.put(PlayerSession(player, "Steve", otherProxy, null, "default", 0, takenAt))
+
+        logins.restore(player, "Steve", proxy, null, takenAt) shouldBe false
+
+        sessions.get(player)?.value?.proxyId shouldBe otherProxy
+    }
+
+    @Test
+    fun `stale sessions beyond the first page are dropped too`() {
+        val stale = List(STALE_PAGES) { session(proxy, takenAt.minus(Duration.ofMinutes(5))) }
+
+        handler.handle(snapshot())
+
+        stale.count { sessions.get(it) != null } shouldBe 0
+    }
+
+    @Test
     fun `a session whose login is still being completed is kept, though the snapshot does not list it yet`() {
         // The controller writes the session while the proxy still holds the login, before the proxy counts the player.
         val loggingIn = session(proxy, takenAt.minusSeconds(10))
@@ -105,5 +124,10 @@ class PlayerSnapshotHandlerTest {
         sessions.get(joinedSince) shouldNotBe null
         sessions.get(elsewhere) shouldNotBe null
         sessions.get(listed) shouldNotBe null
+    }
+
+    private companion object {
+        // More than two of the handler's pages of 500.
+        const val STALE_PAGES = 1_001
     }
 }

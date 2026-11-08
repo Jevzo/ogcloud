@@ -41,7 +41,7 @@ class LoginResolver(
         val now = clock.instant()
         val settings = network.load().value
         val (player, group) = rank(playerUuid, name, now)
-        // With the permission system off, the proxy checks bypass with its own permission plugin (T-0504).
+        // With the permission system off, the proxy asks its own permission plugin for the bypass (ProxyRuntime.login).
         if (settings.maintenance && settings.permissionSystemEnabled &&
             !group.grants(PermissionNodes.MAINTENANCE_BYPASS)
         ) {
@@ -54,13 +54,14 @@ class LoginResolver(
         return ResolveLoginResponse
             .newBuilder()
             .setAllowed(true)
-            .setProfile(open(player, group, proxyId, serverId = null, now))
+            .setProfile(checkNotNull(open(player, group, proxyId, serverId = null, now, replace = true)))
             .build()
     }
 
     /**
      * Reopens the session of a player a proxy reports online although none is stored, e.g. after a lost login
-     * or a Valkey failover (D-0130). The player is already in, so maintenance does not apply.
+     * or a Valkey failover (D-0130). The player is already in, so maintenance does not apply. False when a login
+     * created a session meanwhile, which then stays.
      */
     fun restore(
         playerUuid: UUID,
@@ -68,9 +69,9 @@ class LoginResolver(
         proxyId: UUID,
         serverId: UUID?,
         connectedAt: Instant,
-    ) {
+    ): Boolean {
         val (player, group) = rank(playerUuid, name, clock.instant())
-        open(player, group, proxyId, serverId, connectedAt)
+        return open(player, group, proxyId, serverId, connectedAt, replace = false) != null
     }
 
     /** Records the player and resolves the rank that applies now. */
@@ -94,16 +95,22 @@ class LoginResolver(
         return player to (permissionGroups.find(player.rank.groupId)?.value ?: defaultGroup)
     }
 
+    /** Writes the session and profile; null when only creating ([replace] false) and a session exists. */
     private fun open(
         player: Player,
         group: PermissionGroup,
         proxyId: UUID,
         serverId: UUID?,
         connectedAt: Instant,
-    ): PlayerProfile {
-        sessions.put(
-            PlayerSession(player.uuid, player.name, proxyId, serverId, group.id, player.rankVersion, connectedAt),
-        )
+        replace: Boolean,
+    ): PlayerProfile? {
+        val session =
+            PlayerSession(player.uuid, player.name, proxyId, serverId, group.id, player.rankVersion, connectedAt)
+        if (replace) {
+            sessions.put(session)
+        } else if (!sessions.createIfAbsent(session)) {
+            return null
+        }
         val profile = ReadModelMessages.playerProfile(player.copy(rank = player.rank.copy(groupId = group.id)))
         readModels.put(ReadModelKind.PLAYER_PROFILE, player.uuid.toString(), profile.toByteArray())
         return profile

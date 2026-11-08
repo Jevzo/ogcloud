@@ -41,6 +41,9 @@ interface SessionStore {
     /** Creates or replaces the session at login. */
     fun put(session: PlayerSession)
 
+    /** Creates the session only if the player has none, e.g. when a snapshot restores it; false if one exists. */
+    fun createIfAbsent(session: PlayerSession): Boolean
+
     fun get(playerUuid: UUID): Revisioned<PlayerSession>?
 
     fun findByName(name: String): Revisioned<PlayerSession>?

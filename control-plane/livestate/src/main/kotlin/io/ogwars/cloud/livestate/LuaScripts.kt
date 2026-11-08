@@ -32,9 +32,13 @@ internal object LuaScripts {
         return 1
     """
 
-    /** KEYS: session, name index, online set. ARGV: data, ttl ms, uuid. Creates or replaces. */
+    /**
+     * KEYS: session, name index, online set. ARGV: data, ttl ms, uuid, "1" to only create. Creates or replaces;
+     * returns the new revision, or 0 when only creating and a session exists.
+     */
     const val PUT_SESSION = """
         local rev = redis.call('HGET', KEYS[1], 'rev')
+        if rev and ARGV[4] == '1' then return 0 end
         local next = 1
         if rev then next = tonumber(rev) + 1 end
         redis.call('HSET', KEYS[1], 'rev', next, 'data', ARGV[1])

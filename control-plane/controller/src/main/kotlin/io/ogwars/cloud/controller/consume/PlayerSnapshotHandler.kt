@@ -11,9 +11,8 @@ import java.time.Duration
 import java.util.UUID
 
 /**
- * `ogcloud.player.snapshot`: a proxy's online players every 60 seconds (D-0130). A player it holds without a
- * session gets one back; a session of that proxy for a player it no longer lists is dropped once it is older than
- * the snapshot by [LOGIN_GRACE], so a lost join or leave heals within a minute.
+ * `ogcloud.player.snapshot`, every 60 s (D-0130): a listed player without a session gets one back; an unlisted
+ * session of that proxy older than the snapshot by [LOGIN_GRACE] is dropped, so lost joins and leaves heal.
  */
 @Component
 class PlayerSnapshotHandler(
@@ -28,16 +27,16 @@ class PlayerSnapshotHandler(
         val cutoff = takenAt.minus(LOGIN_GRACE)
         val listed = snapshot.playersList.associateBy { it.playerUuid.toUuid("player_uuid") }
         listed.forEach { (player, entry) ->
-            if (sessions.get(player) == null) {
-                log.info("Restoring the lost session of {} on proxy {}", player, proxy)
-                logins.restore(
-                    player,
-                    entry.playerName,
-                    proxy,
-                    entry.serverId.takeIf(String::isNotEmpty)?.toUuid("server_id"),
-                    takenAt,
-                )
-            }
+            val restored =
+                sessions.get(player) == null &&
+                    logins.restore(
+                        player,
+                        entry.playerName,
+                        proxy,
+                        entry.serverId.takeIf(String::isNotEmpty)?.toUuid("server_id"),
+                        takenAt,
+                    )
+            if (restored) log.info("Restored the lost session of {} on proxy {}", player, proxy)
         }
         var after: UUID? = null
         do {
@@ -61,7 +60,7 @@ class PlayerSnapshotHandler(
 
         /**
          * A session is written while the proxy still holds the login, before the proxy lists the player; logins
-         * resolve within the gateway's 5-second query deadline, and the next snapshot comes after 60 seconds.
+         * resolve within the proxy's 5-second query deadline, and the next snapshot comes after 60 seconds.
          */
         val LOGIN_GRACE: Duration = Duration.ofSeconds(30)
     }
