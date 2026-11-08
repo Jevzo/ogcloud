@@ -1,0 +1,32 @@
+{{- /* Game servers and proxies run here (D-0056); the namespace outlives an uninstall, as STATIC volumes do. */}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ogcloud-servers
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  hard:
+    {{- toYaml .Values.servers.quota | nindent 4 }}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ogcloud-servers
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  limits:
+    - type: Container
+      {{- toYaml .Values.servers.containerDefaults | nindent 6 }}

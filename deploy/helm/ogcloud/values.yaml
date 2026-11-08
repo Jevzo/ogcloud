@@ -1,0 +1,42 @@
+# OgCloud's chart (D-0019). Each install target sets what differs: deploy/dev for minikube, Terraform for Hetzner;
+# ci/ holds the value sets `mise run check:chart` renders and validates.
+
+# OgCloud's images (D-0128) are <registry>/<name>:<tag>; the tag defaults to the chart's appVersion (D-0029).
+image:
+  registry: ghcr.io/jevzo/ogcloud
+  tag: ""
+  pullPolicy: IfNotPresent
+
+namespaces:
+  # Game servers and proxies (D-0056); the platform runs in the release namespace.
+  servers: ogcloud-servers
+
+# Ordered platform > proxies > default group > game (D-0056).
+priorityClasses:
+  platform:
+    name: ogcloud-platform
+    value: 1000000
+  proxy:
+    name: ogcloud-proxy
+    value: 100000
+  defaultGroup:
+    name: ogcloud-default-group
+    value: 10000
+  game:
+    name: ogcloud-game
+    value: 1000
+
+servers:
+  # Caps the game namespace: D-0053's 300 servers and 20 proxies with 2x headroom, plus volumes for STATIC groups.
+  quota:
+    pods: "700"
+    requests.cpu: "800"
+    requests.memory: 2000Gi
+    persistentvolumeclaims: "100"
+  # For containers that name no resources; the controller sets them on every game pod.
+  containerDefaults:
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    default:
+      memory: 512Mi

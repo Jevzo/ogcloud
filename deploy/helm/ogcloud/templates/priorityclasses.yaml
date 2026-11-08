@@ -1,0 +1,13 @@
+{{- /* Ordered platform > proxies > default group > game (D-0056); the controller names the last three per pod. */}}
+{{- range $role, $class := .Values.priorityClasses }}
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ $class.name }}
+  labels:
+    {{- include "ogcloud.labels" $ | nindent 4 }}
+value: {{ $class.value | int }}
+globalDefault: false
+description: OgCloud {{ $role }} workloads (D-0056).
+{{- end }}

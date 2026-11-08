@@ -15,6 +15,7 @@ buf = "1.75.0"
 golangci-lint = "2.15.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
+kubeconform = "0.8.0"
 gitleaks = "8.30.1"
 trivy = "0.76.2"
 protoc-gen-go = "1.36.12"
@@ -25,7 +26,7 @@ protoc-gen-go-grpc = "1.6.2"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -86,6 +87,25 @@ description = "Format Kotlin sources and Gradle scripts"
 run = "./gradlew spotlessApply"
 
 # go.work modules are listed by `go list -m`; `./...` does not span workspace modules.
+# Lints the chart and validates every value set in its ci/ folder (D-0148); the Go render tests in
+# data-plane/deploytest run with check:go. Schemas come from pinned commits, so a run is reproducible.
+[tasks."check:chart"]
+description = "helm lint and kubeconform for every value set of the OgCloud chart"
+shell = "bash -c"
+run = """
+set -euo pipefail
+chart=deploy/helm/ogcloud
+kubernetes_schemas="https://raw.githubusercontent.com/yannh/kubernetes-json-schema/c416d7b0da0751bd8ebe5be4fa4c8e8274e3bbe2/{{ '{{' }}.NormalizedKubernetesVersion{{ '}}' }}-standalone{{ '{{' }}.StrictSuffix{{ '}}' }}/{{ '{{' }}.ResourceKind{{ '}}' }}{{ '{{' }}.KindSuffix{{ '}}' }}.json"
+crd_schemas="https://raw.githubusercontent.com/datreeio/CRDs-catalog/49729e49e8f062933e3716a26540d41b0cd0856c/{{ '{{' }}.Group{{ '}}' }}/{{ '{{' }}.ResourceKind{{ '}}' }}_{{ '{{' }}.ResourceAPIVersion{{ '}}' }}.json"
+for values in "$chart"/ci/*.yaml; do
+  echo "== $values"
+  helm lint --strict "$chart" -f "$values"
+  helm template ogcloud "$chart" --namespace ogcloud -f "$values" \
+    | kubeconform -strict -summary -kubernetes-version 1.37.0 \
+        -schema-location "$kubernetes_schemas" -schema-location "$crd_schemas"
+done
+"""
+
 [tasks."check:go"]
 description = "go vet, tests with -race, golangci-lint and tidy check for every Go module"
 shell = "bash -c"

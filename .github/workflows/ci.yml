@@ -19,6 +19,7 @@ jobs:
       jvm: ${{ steps.filter.outputs.jvm }}
       go: ${{ steps.filter.outputs.go }}
       ts: ${{ steps.filter.outputs.ts }}
+      chart: ${{ steps.filter.outputs.chart }}
       images: ${{ steps.filter.outputs.images }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,6 +49,8 @@ jobs:
               - "**/go.sum"
               - go.work
               - .golangci.yml
+              # The chart's render tests live in data-plane/deploytest.
+              - deploy/**
             ts:
               - *shared
               - "**/*.ts"
@@ -57,6 +60,9 @@ jobs:
               - package.json
               - pnpm-lock.yaml
               - pnpm-workspace.yaml
+            chart:
+              - *shared
+              - deploy/**
             images:
               - *shared
               - images/**
@@ -114,6 +120,18 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
       - run: mise run check:go
+
+  # helm lint and kubeconform for every value set of the chart (D-0148).
+  chart:
+    needs: changes
+    if: needs.changes.outputs.chart == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+      - run: mise run check:chart
 
   ts:
     needs: changes

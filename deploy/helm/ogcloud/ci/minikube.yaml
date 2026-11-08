@@ -1,0 +1,7 @@
+# minikube (D-0019): small quotas, as `mise run dev` starts it.
+servers:
+  quota:
+    pods: "60"
+    requests.cpu: "6"
+    requests.memory: 14Gi
+    persistentvolumeclaims: "10"

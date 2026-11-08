@@ -1,0 +1,8 @@
+apiVersion: v2
+name: ogcloud
+description: OgCloud, a Kubernetes-native Minecraft network (D-0019); one chart for minikube, Hetzner and any cluster.
+type: application
+# One platform version for everything (D-0029); release-please sets both on release (T-0611).
+version: 0.0.0-dev
+appVersion: 0.0.0-dev
+home: https://github.com/Jevzo/ogcloud
