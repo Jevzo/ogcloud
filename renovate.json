@@ -65,7 +65,9 @@
       "description": "Third-party charts in deploy/platform-deps.yaml (D-0021); the sha256-pinned manifests are bumped by hand",
       "customType": "regex",
       "managerFilePatterns": ["/^deploy/platform-deps\\.yaml$/"],
-      "matchStrings": ["repository: (?<registryUrl>\\S+)\\n\\s+chart: (?<depName>\\S+)\\n\\s+version: (?<currentValue>\\S+)"],
+      "matchStrings": [
+        "repository: (?<registryUrl>\\S+)\\n\\s+chart: (?<depName>\\S+)\\n\\s+version: (?<currentValue>\\S+)"
+      ],
       "datasourceTemplate": "helm"
     },
     {
