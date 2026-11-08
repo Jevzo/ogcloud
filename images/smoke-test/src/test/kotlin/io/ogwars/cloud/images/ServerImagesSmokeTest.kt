@@ -4,6 +4,7 @@ import io.ogwars.cloud.contracts.PodEnv
 import io.ogwars.cloud.domain.runtime.Platform
 import io.ogwars.cloud.domain.runtime.RuntimeProfile
 import io.ogwars.cloud.domain.runtime.RuntimeProfiles
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Named
@@ -43,6 +44,10 @@ class ServerImagesSmokeTest {
             val logs = server.logs
             logs shouldContain checks.enabled
             checks.failures.forEach { logs shouldNotContain it }
+            if (profile.platform == Platform.VELOCITY) {
+                // The proxy forwards with the newest token (D-0065).
+                server.execInContainer("cat", VELOCITY_SECRET).stdout shouldBe "smoke-forwarding"
+            }
         }
     }
 
@@ -69,7 +74,7 @@ class ServerImagesSmokeTest {
         server
             .withCopyFileToContainer(MountableFile.forClasspathResource("smoke-ca.crt"), "$SECRETS/ca.crt")
             .withCopyToContainer(Transferable.of("smoke-token\n"), "$SECRETS/token")
-            .withCopyToContainer(Transferable.of("smoke-forwarding\n"), "$SECRETS/forwarding")
+            .withCopyToContainer(Transferable.of("old-forwarding\nsmoke-forwarding\n\n"), "$SECRETS/forwarding")
     }
 
     private fun environment(profile: RuntimeProfile) =
@@ -83,7 +88,14 @@ class ServerImagesSmokeTest {
             PodEnv.GATEWAY_CA_FILE to "$SECRETS/ca.crt",
             PodEnv.FORWARDING_TOKENS_FILE to "$SECRETS/forwarding",
             PodEnv.PROFILE_ID to profile.id,
-        )
+        ) +
+            if (profile.platform ==
+                Platform.VELOCITY
+            ) {
+                mapOf(PodEnv.FORWARDING_SECRET_FILE to VELOCITY_SECRET)
+            } else {
+                emptyMap()
+            }
 
     private fun imageOf(profile: RuntimeProfile) =
         "${property("registry")}/${profile.platform.name.lowercase()}:${profile.version}-${property("version")}"
@@ -92,6 +104,9 @@ class ServerImagesSmokeTest {
         private const val SEED = "/seed"
         private const val SECRETS = "/seed-secrets"
         private const val ENTRYPOINT = "/opt/ogcloud/start.sh"
+
+        // Velocity's default config, which the smoke test keeps, reads its secret from here.
+        private const val VELOCITY_SECRET = "/data/forwarding.secret"
         private const val DONE = ".*Done \\(.*"
         private val STARTUP = Duration.ofMinutes(3)
 

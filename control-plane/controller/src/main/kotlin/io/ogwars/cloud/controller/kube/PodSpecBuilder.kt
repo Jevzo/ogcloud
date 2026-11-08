@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.kube
 
 import io.ogwars.cloud.contracts.PodEnv
 import io.ogwars.cloud.controller.config.PodProperties
+import io.ogwars.cloud.controller.runtime.GeneratedConfigs
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
@@ -167,7 +168,7 @@ class PodSpecBuilder(
                         PodEnv.FORWARDING_TOKENS_FILE,
                         "$FORWARDING_PATH/${FabricForwardingSecretReader.TOKENS_KEY}",
                         null,
-                    ),
+                    ) + proxyEnv(group),
             ).addNewPort()
             .withName(MINECRAFT_PORT_NAME)
             .withContainerPort(MINECRAFT_PORT)
@@ -188,6 +189,14 @@ class PodSpecBuilder(
                 mount(GATEWAY_TOKEN_VOLUME, GATEWAY_TOKEN_PATH, readOnly = true),
                 mount(FORWARDING_VOLUME, FORWARDING_PATH, readOnly = true),
             ).build()
+
+    // Velocity's config names one secret file, which the entrypoint fills with the newest token (D-0065).
+    private fun proxyEnv(group: Group): List<EnvVar> =
+        if (group.type == GroupType.PROXY) {
+            listOf(EnvVar(PodEnv.FORWARDING_SECRET_FILE, GeneratedConfigs.FORWARDING_SECRET_FILE, null))
+        } else {
+            emptyList()
+        }
 
     private fun templateLoader(
         server: Server,

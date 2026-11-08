@@ -9,8 +9,8 @@ import io.ogwars.cloud.domain.runtime.RuntimeProfiles
  */
 object GeneratedConfigs {
     /**
-     * Velocity 4.3.0's config format. The Velocity image's entrypoint writes the last mounted forwarding token to
-     * [FORWARDING_SECRET_FILE] (T-0508), which is the token proxies use (D-0065, D-0078).
+     * Velocity 4.3.0's config format. The server image's entrypoint writes the last mounted forwarding token to
+     * [FORWARDING_SECRET_FILE], named in the proxy's `OGCLOUD_FORWARDING_SECRET_FILE` (D-0065, D-0078).
      */
     fun velocityToml(): String =
         """

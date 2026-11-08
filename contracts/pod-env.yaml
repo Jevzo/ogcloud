@@ -16,6 +16,9 @@ constants:
   - name: forwardingTokensFile
     value: OGCLOUD_FORWARDING_TOKENS_FILE
     doc: The BungeeGuard tokens, one per line; proxies use the last, backends accept all (D-0065).
+  - name: forwardingSecretFile
+    value: OGCLOUD_FORWARDING_SECRET_FILE
+    doc: Proxies only; the entrypoint writes the last forwarding token here for Velocity's config (D-0065).
   - name: gatewayAddress
     value: OGCLOUD_GATEWAY_ADDRESS
   - name: gatewayTokenFile

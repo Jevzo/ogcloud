@@ -11,6 +11,8 @@ object PodEnv {
     const val MAX_PLAYERS = "OGCLOUD_MAX_PLAYERS"
     /** The BungeeGuard tokens, one per line; proxies use the last, backends accept all (D-0065). */
     const val FORWARDING_TOKENS_FILE = "OGCLOUD_FORWARDING_TOKENS_FILE"
+    /** Proxies only; the entrypoint writes the last forwarding token here for Velocity's config (D-0065). */
+    const val FORWARDING_SECRET_FILE = "OGCLOUD_FORWARDING_SECRET_FILE"
     const val GATEWAY_ADDRESS = "OGCLOUD_GATEWAY_ADDRESS"
     /** The pod's projected token for the gateway (D-0013). */
     const val GATEWAY_TOKEN_FILE = "OGCLOUD_GATEWAY_TOKEN_FILE"
