@@ -100,7 +100,7 @@ func (x *NpcChangeRequested) GetCreate() *v11.Npc {
 	return nil
 }
 
-func (x *NpcChangeRequested) GetUpdate() *v11.Npc {
+func (x *NpcChangeRequested) GetUpdate() *v11.NpcPatch {
 	if x != nil {
 		if x, ok := x.Change.(*NpcChangeRequested_Update); ok {
 			return x.Update
@@ -128,8 +128,8 @@ type NpcChangeRequested_Create struct {
 }
 
 type NpcChangeRequested_Update struct {
-	// Only an NPC of group_id.
-	Update *v11.Npc `protobuf:"bytes,4,opt,name=update,proto3,oneof"`
+	// Only an NPC of group_id; applied to the stored NPC (D-0140).
+	Update *v11.NpcPatch `protobuf:"bytes,4,opt,name=update,proto3,oneof"`
 }
 
 type NpcChangeRequested_DeleteNpcId struct {
@@ -146,12 +146,12 @@ var File_ogcloud_internal_v1_npc_proto protoreflect.FileDescriptor
 
 const file_ogcloud_internal_v1_npc_proto_rawDesc = "" +
 	"\n" +
-	"\x1dogcloud/internal/v1/npc.proto\x12\x13ogcloud.internal.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1bogcloud/node/v1/query.proto\"\xfd\x01\n" +
+	"\x1dogcloud/internal/v1/npc.proto\x12\x13ogcloud.internal.v1\x1a\x1eogcloud/events/v1/common.proto\x1a\x1bogcloud/node/v1/query.proto\"\x82\x02\n" +
 	"\x12NpcChangeRequested\x12<\n" +
 	"\bmetadata\x18\x01 \x01(\v2 .ogcloud.events.v1.EventMetadataR\bmetadata\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12.\n" +
-	"\x06create\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06create\x12.\n" +
-	"\x06update\x18\x04 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06update\x12$\n" +
+	"\x06create\x18\x03 \x01(\v2\x14.ogcloud.node.v1.NpcH\x00R\x06create\x123\n" +
+	"\x06update\x18\x04 \x01(\v2\x19.ogcloud.node.v1.NpcPatchH\x00R\x06update\x12$\n" +
 	"\rdelete_npc_id\x18\x05 \x01(\tH\x00R\vdeleteNpcIdB\b\n" +
 	"\x06changeB\xe6\x01\n" +
 	"\x17com.ogcloud.internal.v1B\bNpcProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
@@ -173,11 +173,12 @@ var file_ogcloud_internal_v1_npc_proto_goTypes = []any{
 	(*NpcChangeRequested)(nil), // 0: ogcloud.internal.v1.NpcChangeRequested
 	(*v1.EventMetadata)(nil),   // 1: ogcloud.events.v1.EventMetadata
 	(*v11.Npc)(nil),            // 2: ogcloud.node.v1.Npc
+	(*v11.NpcPatch)(nil),       // 3: ogcloud.node.v1.NpcPatch
 }
 var file_ogcloud_internal_v1_npc_proto_depIdxs = []int32{
 	1, // 0: ogcloud.internal.v1.NpcChangeRequested.metadata:type_name -> ogcloud.events.v1.EventMetadata
 	2, // 1: ogcloud.internal.v1.NpcChangeRequested.create:type_name -> ogcloud.node.v1.Npc
-	2, // 2: ogcloud.internal.v1.NpcChangeRequested.update:type_name -> ogcloud.node.v1.Npc
+	3, // 2: ogcloud.internal.v1.NpcChangeRequested.update:type_name -> ogcloud.node.v1.NpcPatch
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

@@ -121,6 +121,8 @@ enum class Message(
     NPC_SKIN_CUSTOM("npc.skin.custom"),
     NPC_CHANGE_SENT("npc.change.sent"),
     NPC_TELEPORTED("npc.teleported", "npc"),
+    NPC_WORLD_MISSING("npc.world-missing", "world"),
+    NPC_POSITION_UNKNOWN("npc.position-unknown"),
     NPC_STRATEGY_INVALID("npc.strategy.invalid", "strategy"),
     NPC_ACTION_INVALID("npc.action.invalid"),
     ;

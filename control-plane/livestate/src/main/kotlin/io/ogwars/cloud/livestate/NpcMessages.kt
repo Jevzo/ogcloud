@@ -10,6 +10,7 @@ import java.util.UUID
 import io.ogwars.cloud.contracts.node.v1.Location as LocationMessage
 import io.ogwars.cloud.contracts.node.v1.Npc as NpcMessage
 import io.ogwars.cloud.contracts.node.v1.NpcAction as NpcActionMessage
+import io.ogwars.cloud.contracts.node.v1.NpcPatch as NpcPatchMessage
 
 // Managed NPCs as nodes receive them (D-0077) and as in-game edits send them (D-0129).
 
@@ -42,7 +43,7 @@ fun NpcMessage.toDomain(): Npc =
     Npc(
         UUID.fromString(npcId),
         GroupId(groupId),
-        Location(location.world, location.x, location.y, location.z, location.yaw, location.pitch),
+        location.toDomain(),
         title,
         subtitle,
         skinTexture.takeIf(String::isNotEmpty)?.let { NpcSkin(it, skinSignature) },
@@ -50,6 +51,28 @@ fun NpcMessage.toDomain(): Npc =
         leftClick.takeIf { hasLeftClick() }?.toDomain(),
         rightClick.takeIf { hasRightClick() }?.toDomain(),
     )
+
+/** [npc] with the fields this patch names (D-0140); the rest stay as stored. */
+fun NpcPatchMessage.applyTo(npc: Npc): Npc =
+    npc.copy(
+        location = if (hasLocation()) location.toDomain() else npc.location,
+        title = if (hasTitle()) title else npc.title,
+        subtitle = if (hasSubtitle()) subtitle else npc.subtitle,
+        skin =
+            if (hasSkinTexture()) {
+                skinTexture
+                    .takeIf(
+                        String::isNotEmpty,
+                    )?.let { NpcSkin(it, skinSignature) }
+            } else {
+                npc.skin
+            },
+        lookAtPlayers = if (hasLookAtPlayers()) lookAtPlayers else npc.lookAtPlayers,
+        leftClick = if (hasLeftClick()) leftClick.toDomain() else npc.leftClick,
+        rightClick = if (hasRightClick()) rightClick.toDomain() else npc.rightClick,
+    )
+
+private fun LocationMessage.toDomain() = Location(world, x, y, z, yaw, pitch)
 
 private fun NpcAction.toProto(): NpcActionMessage =
     when (this) {

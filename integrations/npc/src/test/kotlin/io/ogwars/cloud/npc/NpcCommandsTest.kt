@@ -37,7 +37,14 @@ class NpcCommandsTest {
             .setNpcId("0192d2c1-0003-7000-8000-9f8e7d6c5b4a")
             .setTitle("&eGuide")
             .build()
-    private val queries = mockk<NodeQueries> { every { npcs("lobby") } returns completedFuture(listOf(shop, guide)) }
+    private val portal =
+        shop
+            .toBuilder()
+            .setNpcId("0192d2c1-0004-7000-8000-000011112222")
+            .setLocation(Location.newBuilder().setWorld("void"))
+            .build()
+    private val queries =
+        mockk<NodeQueries> { every { npcs("lobby") } returns completedFuture(listOf(shop, guide, portal)) }
     private val hub =
         NpcHub(RecordingPackets(), queries, "lobby", { _, _, _ -> }, mockk(relaxed = true), Clock.systemUTC())
     private val here = NpcLocation("world", 10.5, 70.0, -3.0, 90f, 0f)
@@ -54,9 +61,7 @@ class NpcCommandsTest {
                 override fun teleport(
                     player: UUID,
                     location: NpcLocation,
-                ) {
-                    teleports += location
-                }
+                ) = (location.world == "world").also { if (it) teleports += location }
             },
         ) { sent.add(it.build()) }
     private val tree = CommandTree(messages, commands.subcommands, Message.INFO)
@@ -92,14 +97,15 @@ class NpcCommandsTest {
     }
 
     @Test
-    fun `changes edit a copy of the NPC found by the end of its id`() {
+    fun `changes patch only what they change, on the NPC found by the end of its id`() {
         run("npc title 2c3d4e5f off")
         run("npc rightaction 2c3d4e5f transfer bedwars least_filled")
         run("npc movehere 2c3d4e5f")
 
-        sent[0].update.title shouldBe ""
+        sent[0].update.let { (it.hasTitle() to it.title to it.hasSubtitle()) } shouldBe (true to "" to false)
         sent[1]
             .update.rightClick.transfer.routingStrategy shouldBe RoutingStrategy.ROUTING_STRATEGY_LEAST_FILLED
+        sent[1].update.hasTitle() shouldBe false
         sent[2].update.location.yaw shouldBe 90f
         sent.map { it.update.npcId }.toSet() shouldBe setOf(shop.npcId)
     }
@@ -132,6 +138,15 @@ class NpcCommandsTest {
 
         teleports.single().y shouldBe 64.0
         sent shouldBe emptyList()
+        admin.replies shouldContain prefixed(Message.NPC_TELEPORTED, "npc" to "2c3d4e5f")
+    }
+
+    @Test
+    fun `a teleport into a world this server lacks says so`() {
+        run("npc teleport 11112222")
+
+        teleports shouldBe emptyList()
+        admin.replies shouldContain prefixed(Message.NPC_WORLD_MISSING, "world" to "void")
     }
 
     private fun prefixed(

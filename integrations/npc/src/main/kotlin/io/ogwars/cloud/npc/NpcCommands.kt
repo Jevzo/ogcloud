@@ -4,6 +4,7 @@ import io.ogwars.cloud.contracts.PermissionNodes
 import io.ogwars.cloud.contracts.node.v1.Location
 import io.ogwars.cloud.contracts.node.v1.NpcAction
 import io.ogwars.cloud.contracts.node.v1.NpcChangeRequest
+import io.ogwars.cloud.contracts.node.v1.NpcPatch
 import io.ogwars.cloud.contracts.node.v1.NpcTransfer
 import io.ogwars.cloud.node.core.command.Argument
 import io.ogwars.cloud.node.core.command.Invocation
@@ -20,15 +21,16 @@ import io.ogwars.cloud.contracts.node.v1.Npc as ManagedNpc
 interface NpcPlaces {
     fun location(player: UUID): NpcLocation?
 
+    /** False when the player or the location's world is not on this server. */
     fun teleport(
         player: UUID,
         location: NpcLocation,
-    )
+    ): Boolean
 }
 
 /**
  * `/ogcloud npc ...` on a backend (D-0129, v1's NPC command): changes go to the API through the gateway with the
- * player as actor and arrive back as the usual NPC update. NPCs are named by their id or a unique end of it.
+ * player as actor, as patches of what they change (D-0140). NPCs are named by their id or a unique end of it.
  */
 class NpcCommands(
     private val hub: NpcHub,
@@ -48,13 +50,16 @@ class NpcCommands(
                 withNpc(call) { send(call, NpcChangeRequest.newBuilder().setDeleteNpcId(it.npcId)) }
             },
             change(listOf("movehere"), listOf(npc)) { call ->
-                val here = places.location(call.player) ?: return@change
+                val here = places.location(call.player) ?: return@change positionUnknown(call)
                 update(call) { setLocation(here.toProto()) }
             },
             change(listOf("teleport"), listOf(npc)) { call ->
                 withNpc(call) { target ->
-                    places.teleport(call.player, target.location.toNpcLocation())
-                    call.sender.say(messages, Message.NPC_TELEPORTED, "npc" to short(target.npcId))
+                    if (places.teleport(call.player, target.location.toNpcLocation())) {
+                        call.sender.say(messages, Message.NPC_TELEPORTED, "npc" to short(target.npcId))
+                    } else {
+                        call.sender.say(messages, Message.NPC_WORLD_MISSING, "world" to target.location.world)
+                    }
                 }
             },
             change(listOf("title"), listOf(npc, Argument("text", Argument.Kind.REST))) { call ->
@@ -65,7 +70,7 @@ class NpcCommands(
             },
             change(listOf("skin"), listOf(npc, Argument("clear"))) { call ->
                 if (!call.word("clear").equals(CLEAR, ignoreCase = true)) return@change usage(call, "skin <npc> $CLEAR")
-                update(call) { clearSkinTexture().clearSkinSignature() }
+                update(call) { setSkinTexture("").setSkinSignature("") }
             },
             change(listOf("lookat"), listOf(npc, Argument("enabled", Argument.Kind.BOOLEAN))) { call ->
                 update(call) { setLookAtPlayers(call.bool("enabled")) }
@@ -89,7 +94,7 @@ class NpcCommands(
     /** `leftaction|rightaction <npc> none` or `... transfer <group> [strategy]`. */
     private fun action(
         name: String,
-        set: ManagedNpc.Builder.(NpcAction) -> ManagedNpc.Builder,
+        set: NpcPatch.Builder.(NpcAction) -> NpcPatch.Builder,
     ) = change(
         listOf(name),
         listOf(npc, Argument("action"), Argument("group", optional = true), Argument("strategy", optional = true)),
@@ -172,7 +177,7 @@ class NpcCommands(
 
     /** A new NPC of this server's group where the player stands; the gateway gives it its id (D-0129). */
     private fun create(call: Invocation) {
-        val here = places.location(call.player) ?: return
+        val here = places.location(call.player) ?: return positionUnknown(call)
         val npc =
             ManagedNpc
                 .newBuilder()
@@ -183,10 +188,15 @@ class NpcCommands(
         send(call, NpcChangeRequest.newBuilder().setCreate(npc))
     }
 
+    /** Sends only the fields [edit] sets, so edits made meanwhile elsewhere stay (D-0140). */
     private fun update(
         call: Invocation,
-        edit: ManagedNpc.Builder.() -> ManagedNpc.Builder,
-    ) = withNpc(call) { send(call, NpcChangeRequest.newBuilder().setUpdate(it.toBuilder().edit())) }
+        edit: NpcPatch.Builder.() -> NpcPatch.Builder,
+    ) = withNpc(call) {
+        send(call, NpcChangeRequest.newBuilder().setUpdate(NpcPatch.newBuilder().setNpcId(it.npcId).edit()))
+    }
+
+    private fun positionUnknown(call: Invocation) = call.sender.say(messages, Message.NPC_POSITION_UNKNOWN)
 
     private fun withNpc(
         call: Invocation,

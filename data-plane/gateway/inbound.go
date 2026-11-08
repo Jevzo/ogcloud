@@ -277,7 +277,8 @@ func (s *Service) npcChangeOf(session *Session, request *nodev1.NpcChangeRequest
 		npc.NpcId = id
 		change.Change = &internalv1.NpcChangeRequested_Create{Create: npc}
 	case *nodev1.NpcChangeRequest_Update:
-		if requested.Update.GetGroupId() != session.Peer.GroupID || !uuidText.MatchString(requested.Update.GetNpcId()) {
+		// The API checks that the stored NPC belongs to the sender's group (group_id).
+		if !uuidText.MatchString(requested.Update.GetNpcId()) {
 			return nil, errInvalid
 		}
 		change.Change = &internalv1.NpcChangeRequested_Update{Update: requested.Update}

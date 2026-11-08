@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
@@ -230,7 +231,7 @@ func TestInGameNpcEditsNeedAnAdminOnTheBackend(t *testing.T) {
 		return &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_Create{Create: &nodev1.Npc{NpcId: shop, GroupId: group, Title: "Shop"}}}
 	}
 	update := func(id string) *nodev1.NpcChangeRequest {
-		return &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_Update{Update: &nodev1.Npc{NpcId: id, GroupId: "lobby"}}}
+		return &nodev1.NpcChangeRequest{Change: &nodev1.NpcChangeRequest_Update{Update: &nodev1.NpcPatch{NpcId: id, Title: proto.String("Shop")}}}
 	}
 
 	send(t, backend, change(adminUUID, create("lobby")))

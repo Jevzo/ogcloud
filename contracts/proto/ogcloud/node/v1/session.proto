@@ -159,7 +159,7 @@ message NpcChangeRequest {
   oneof change {
     // A new NPC; the gateway assigns its id.
     Npc create = 2;
-    Npc update = 3;
+    NpcPatch update = 3;
     string delete_npc_id = 4;
   }
 }
@@ -177,7 +177,7 @@ message AdminRequest {
   }
 }
 
-// The gateway's answer to one AdminRequest; the API applies an accepted change shortly after.
+// The gateway's answer to one AdminRequest. Accepted means published; the API may still refuse it.
 message AdminRequestResult {
   string request_id = 1;
   // Empty when the change was accepted; otherwise why it was rejected.

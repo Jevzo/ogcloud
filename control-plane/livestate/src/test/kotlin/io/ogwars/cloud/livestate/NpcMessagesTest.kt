@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.contracts.node.v1.NpcPatch
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.network.RoutingStrategy
 import io.ogwars.cloud.domain.npc.Location
@@ -10,6 +11,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.util.UUID
+import io.ogwars.cloud.contracts.node.v1.NpcAction as NpcActionMessage
 
 class NpcMessagesTest {
     @Test
@@ -30,6 +32,38 @@ class NpcMessagesTest {
 
         full.toProto().toDomain() shouldBe full
         bare.toProto().toDomain() shouldBe bare
+    }
+
+    @Test
+    fun `a patch changes what it names and keeps the rest`() {
+        val stored =
+            Npc(
+                UUID.randomUUID(),
+                GroupId("lobby"),
+                Location("world", 0.0, 0.0, 0.0),
+                "Shop",
+                "Open",
+                NpcSkin("texture", "signature"),
+                leftClick = NpcAction.Transfer(GroupId("bedwars"), routingStrategy = null),
+            )
+
+        val retitled =
+            NpcPatch
+                .newBuilder()
+                .setTitle("Shop 2")
+                .build()
+                .applyTo(stored)
+        val cleared =
+            NpcPatch
+                .newBuilder()
+                .setSkinTexture("")
+                .setLeftClick(NpcActionMessage.getDefaultInstance())
+                .setLookAtPlayers(false)
+                .build()
+                .applyTo(stored)
+
+        retitled shouldBe stored.copy(title = "Shop 2")
+        cleared shouldBe stored.copy(skin = null, leftClick = null, lookAtPlayers = false)
     }
 
     @Test

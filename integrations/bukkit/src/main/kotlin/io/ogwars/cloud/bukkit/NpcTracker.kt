@@ -48,10 +48,11 @@ class NpcTracker(
     override fun teleport(
         player: UUID,
         location: NpcLocation,
-    ) {
-        val online = server.getPlayer(player) ?: return
-        val world = server.getWorld(location.world) ?: return
+    ): Boolean {
+        val online = server.getPlayer(player) ?: return false
+        val world = server.getWorld(location.world) ?: return false
         line.teleport(online, Location(world, location.x, location.y, location.z, location.yaw, location.pitch))
+        return true
     }
 
     private fun show(

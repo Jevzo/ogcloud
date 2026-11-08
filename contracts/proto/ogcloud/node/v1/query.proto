@@ -125,6 +125,21 @@ message Npc {
   NpcAction right_click = 10;
 }
 
+// An NPC update naming only what changes (D-0140); fields left unset keep their stored values.
+message NpcPatch {
+  string npc_id = 1;
+  Location location = 2;
+  optional string title = 3;
+  optional string subtitle = 4;
+  // Both together; an empty texture goes back to the default skin.
+  optional string skin_texture = 5;
+  optional string skin_signature = 6;
+  optional bool look_at_players = 7;
+  // An empty action clears it.
+  NpcAction left_click = 8;
+  NpcAction right_click = 9;
+}
+
 message Location {
   string world = 1;
   double x = 2;

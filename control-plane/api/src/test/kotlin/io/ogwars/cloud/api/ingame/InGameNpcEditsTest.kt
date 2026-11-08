@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.ingame
 import io.ogwars.cloud.api.npcs.NPCS_PATH
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.contracts.internal.v1.NpcChangeRequested
+import io.ogwars.cloud.contracts.node.v1.NpcPatch
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.group.GroupId
@@ -42,10 +43,15 @@ class InGameNpcEditsTest(
     fun `an in-game admin's edits land like dashboard edits, audited as the player`() {
         val id = UUID.randomUUID()
 
-        publish(hub, id) { setCreate(npc(id, hub, "Shop")) }
+        publish(hub, id) { setCreate(npc(id, hub, "Shop").toBuilder().setSubtitle("Open")) }
         runBlocking { eventually(WAIT) { npcs.find(id)?.title shouldBe "Shop" } }
-        publish(hub, id) { setUpdate(npc(id, hub, "Shop 2")) }
-        runBlocking { eventually(WAIT) { npcs.find(id)?.title shouldBe "Shop 2" } }
+        publish(hub, id) { setUpdate(patch(id, "Shop 2")) }
+        // A patch changes only what it names (D-0140).
+        runBlocking {
+            eventually(
+                WAIT,
+            ) { npcs.find(id)?.let { it.title to it.subtitle } shouldBe ("Shop 2" to "Open") }
+        }
         publish(hub, id) { setDeleteNpcId(id.toString()) }
         runBlocking {
             eventually(WAIT) {
@@ -62,10 +68,10 @@ class InGameNpcEditsTest(
         val id = UUID.randomUUID()
 
         publish(hub, id) { setCreate(npc(id, hub, "Shop")) }
-        publish(arena, id) { setUpdate(npc(id, arena, "Taken")) }
+        publish(arena, id) { setUpdate(patch(id, "Taken")) }
         publish(arena, id) { setDeleteNpcId(id.toString()) }
         // Same key, same partition: once this edit shows, the refused ones were handled before it.
-        publish(hub, id) { setUpdate(npc(id, hub, "Last")) }
+        publish(hub, id) { setUpdate(patch(id, "Last")) }
 
         runBlocking { eventually(WAIT) { npcs.find(id)?.title shouldBe "Last" } }
         npcs.find(id)?.groupId shouldBe GroupId(hub)
@@ -91,6 +97,14 @@ class InGameNpcEditsTest(
         group: String,
         title: String,
     ) = Npc(id, GroupId(group), Location("world", 0.5, 64.0, 0.5), title).toProto()
+
+    private fun patch(
+        id: UUID,
+        title: String,
+    ) = NpcPatch
+        .newBuilder()
+        .setNpcId(id.toString())
+        .setTitle(title)
 
     private fun newGroup(): String {
         val id = "npc-${UUID.randomUUID().toString().take(SUFFIX)}"

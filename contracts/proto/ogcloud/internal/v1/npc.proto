@@ -17,8 +17,8 @@ message NpcChangeRequested {
   oneof change {
     // A new NPC under the id the gateway assigned.
     ogcloud.node.v1.Npc create = 3;
-    // Only an NPC of group_id.
-    ogcloud.node.v1.Npc update = 4;
+    // Only an NPC of group_id; applied to the stored NPC (D-0140).
+    ogcloud.node.v1.NpcPatch update = 4;
     string delete_npc_id = 5;
   }
 }

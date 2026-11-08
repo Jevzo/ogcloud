@@ -8,6 +8,7 @@ import io.ogwars.cloud.contracts.internal.v1.NpcChangeRequested.ChangeCase
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.npc.Npc
+import io.ogwars.cloud.livestate.applyTo
 import io.ogwars.cloud.livestate.toDomain
 import io.ogwars.cloud.messaging.KafkaComponents
 import io.ogwars.cloud.messaging.KafkaTopics
@@ -49,10 +50,9 @@ class InGameNpcEdits(
                 }
 
                 ChangeCase.UPDATE -> {
-                    val npc = change.update.toDomain().inGroup(group)
-                    npcs.get(npc.id).inGroup(group)
-                    npcs.update(actor, npc)
-                    audit(actor, "PUT $NPCS_PATH/{id}", npc.id)
+                    val stored = npcs.get(UUID.fromString(change.update.npcId)).inGroup(group)
+                    npcs.update(actor, change.update.applyTo(stored))
+                    audit(actor, "PUT $NPCS_PATH/{id}", stored.id)
                 }
 
                 ChangeCase.DELETE_NPC_ID -> {
