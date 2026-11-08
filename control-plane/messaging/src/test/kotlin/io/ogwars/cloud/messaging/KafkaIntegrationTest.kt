@@ -5,6 +5,8 @@ import io.ogwars.cloud.contracts.events.v1.ServerCommand
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -80,14 +82,21 @@ class KafkaIntegrationTest {
         )
         containers.add(container)
         container.start()
-        // Records sent before the partitions are assigned would be skipped as old ones.
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(WAIT_SECONDS)
+        // A fresh broker's first group join also creates its offsets topic, which can take a while.
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(JOIN_SECONDS)
         while (container.assignedPartitions.isEmpty() && System.nanoTime() < deadline) Thread.onSpinWait()
+        container.assignedPartitions.shouldNotBeEmpty()
 
-        template.send(topic, "broken", byteArrayOf()).get()
-        template.send(topic, "new", byteArrayOf()).get()
+        // The listener's position is fixed at its first poll after the assignment, so pairs are sent until one arrives.
+        val first =
+            generateSequence {
+                template.send(topic, "broken", byteArrayOf()).get()
+                template.send(topic, "new", byteArrayOf()).get()
+                received.poll(1, TimeUnit.SECONDS)
+            }.take(WAIT_SECONDS.toInt()).firstNotNullOfOrNull { it }
 
-        received.poll(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe "new"
+        first shouldBe "new"
+        received shouldNotContain "old"
     }
 
     @Test
@@ -206,5 +215,6 @@ class KafkaIntegrationTest {
     private companion object {
         const val WAIT_SECONDS = 30L
         const val POLL_MILLIS = 250L
+        const val JOIN_SECONDS = 90L
     }
 }

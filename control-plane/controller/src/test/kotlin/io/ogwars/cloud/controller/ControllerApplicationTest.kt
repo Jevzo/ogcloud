@@ -87,8 +87,13 @@ class ControllerApplicationTest(
     @Test
     fun `serves gRPC over TLS only`() {
         withChannel { channel ->
-            HealthGrpc.newBlockingStub(channel).check(HealthCheckRequest.getDefaultInstance()).status shouldBe
-                HealthCheckResponse.ServingStatus.SERVING
+            // Spring gRPC copies the actuator's health on a schedule, so SERVING follows readiness a little later.
+            runBlocking {
+                eventually(30.seconds) {
+                    HealthGrpc.newBlockingStub(channel).check(HealthCheckRequest.getDefaultInstance()).status shouldBe
+                        HealthCheckResponse.ServingStatus.SERVING
+                }
+            }
         }
     }
 

@@ -52,6 +52,12 @@
       "matchFileNames": ["testing/images.properties"],
       "semanticCommitType": "test",
       "semanticCommitScope": "images"
+    },
+    {
+      "description": "The test broker follows the Kafka line Strimzi 1.3 runs (D-0021, D-0113); raise it with Strimzi",
+      "matchFileNames": ["testing/images.properties"],
+      "matchDepNames": ["apache/kafka"],
+      "allowedVersions": "<4.4"
     }
   ],
   "customManagers": [
