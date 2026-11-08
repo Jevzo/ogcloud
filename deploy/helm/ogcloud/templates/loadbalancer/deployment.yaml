@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ogcloud-loadbalancer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "loadbalancer") | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ogcloud-loadbalancer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "loadbalancer") | nindent 4 }}
+spec:
+  replicas: {{ .Values.loadbalancer.replicas }}
+  selector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 8 }}
+    spec:
+      serviceAccountName: ogcloud-loadbalancer
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      containers:
+        - name: loadbalancer
+          image: {{ include "ogcloud.image" (dict "root" . "name" "loadbalancer") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: OGCLOUD_LB_LISTEN
+              value: ":25565"
+            - name: OGCLOUD_LB_TRUSTED_PROXIES
+              value: {{ join "," .Values.loadbalancer.trustedProxies | quote }}
+            {{- include "ogcloud.goDependencies" (dict "root" . "user" "loadbalancer") | nindent 12 }}
+          ports:
+            - name: minecraft
+              containerPort: 25565
+            - name: admin
+              containerPort: 8081
+          {{- include "ogcloud.goProbes" . | nindent 10 }}
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.loadbalancer.resources | nindent 12 }}
+          volumeMounts:
+            {{- include "ogcloud.commonMounts" . | nindent 12 }}
+            - name: secrets
+              mountPath: /var/run/secrets/ogcloud/secrets
+              readOnly: true
+      volumes:
+        {{- include "ogcloud.commonVolumes" . | nindent 8 }}
+        - name: secrets
+          secret:
+            secretName: ogcloud-loadbalancer-secrets
+---
+{{- /* The players' entry; on Hetzner the cloud controller adopts the load balancer Terraform created (T-0701). */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ogcloud-loadbalancer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "loadbalancer") | nindent 4 }}
+  {{- with .Values.loadbalancer.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.loadbalancer.service.type }}
+  selector:
+    {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 4 }}
+  ports:
+    - name: minecraft
+      port: 25565
+      targetPort: minecraft

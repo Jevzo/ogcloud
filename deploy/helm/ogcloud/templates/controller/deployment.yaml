@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ogcloud-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+spec:
+  replicas: {{ .Values.controller.replicas }}
+  selector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "controller") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" . "component" "controller") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include "ogcloud.controllerConfig" . | sha256sum }}
+    spec:
+      serviceAccountName: ogcloud-controller
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      containers:
+        - name: controller
+          image: {{ include "ogcloud.image" (dict "root" . "name" "controller") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: file:/etc/ogcloud/config/
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 9090
+          {{- include "ogcloud.springProbes" . | nindent 10 }}
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.controller.resources | nindent 12 }}
+          volumeMounts:
+            {{- include "ogcloud.commonMounts" . | nindent 12 }}
+            - name: config
+              mountPath: /etc/ogcloud/config
+              readOnly: true
+            - name: secrets
+              mountPath: /var/run/secrets/ogcloud
+              readOnly: true
+            - name: tls
+              mountPath: /var/run/secrets/ogcloud-tls
+              readOnly: true
+            - name: kubernetes
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+      volumes:
+        {{- include "ogcloud.commonVolumes" . | nindent 8 }}
+        - name: config
+          configMap:
+            name: ogcloud-controller
+        - name: secrets
+          secret:
+            secretName: ogcloud-controller-config
+        - name: tls
+          secret:
+            secretName: ogcloud-controller-tls
+        - name: kubernetes
+          {{- include "ogcloud.apiServerAccess" (dict "audience" "") | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ogcloud-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ogcloud.selector" (dict "root" . "component" "controller") | nindent 4 }}
+  ports:
+    - name: grpc
+      port: 9090
+      targetPort: grpc

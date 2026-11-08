@@ -1,0 +1,102 @@
+{{- /* Exactly what the controller touches: game pods and STATIC volumes, the forwarding tokens, its Lease, nodes. */}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ogcloud-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ogcloud-controller
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch, create, delete]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [get, list, watch, create, patch, delete]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [ogcloud-forwarding]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ogcloud-controller
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ogcloud-controller
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-controller
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ogcloud-controller-leader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, create, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ogcloud-controller-leader
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ogcloud-controller-leader
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-controller
+    namespace: {{ .Release.Namespace }}
+---
+{{- /* Cordoned nodes drain their servers (T-0203); internal gRPC callers are reviewed with TokenReview (D-0013). */}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ogcloud-controller
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get, list, watch]
+  - apiGroups: [authentication.k8s.io]
+    resources: [tokenreviews]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ogcloud-controller
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ogcloud-controller
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-controller
+    namespace: {{ .Release.Namespace }}

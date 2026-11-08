@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ogcloud-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
+data:
+  application.yaml: |
+    {{- include "ogcloud.controllerConfig" . | nindent 4 }}

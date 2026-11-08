@@ -1,0 +1,76 @@
+{{- /*
+The two bootstrap stages (D-0044): `root` runs before anything else and never waits; `infisical` runs after
+the release is applied and retries until Infisical answers (D-0112).
+*/}}
+{{- range $stage := list "root" "infisical" }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ogcloud-bootstrap-{{ $stage }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" $ "component" "bootstrap") | nindent 4 }}
+  annotations:
+    {{- if eq $stage "root" }}
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    {{- else }}
+    helm.sh/hook: post-install,post-upgrade
+    {{- end }}
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ ternary 3 30 (eq $stage "root") }}
+  ttlSecondsAfterFinished: {{ $.Values.retention.jobTtlSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" $ "component" "bootstrap") | nindent 8 }}
+    spec:
+      serviceAccountName: ogcloud-bootstrap
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      priorityClassName: {{ $.Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" $ | nindent 8 }}
+      containers:
+        - name: bootstrap
+          image: {{ include "ogcloud.image" (dict "root" $ "name" "bootstrap") }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: [{{ $stage }}, -config, /etc/ogcloud/bootstrap.yaml]
+          securityContext:
+            {{- include "ogcloud.containerSecurity" $ | nindent 12 }}
+          resources:
+            {{- toYaml $.Values.bootstrap.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/ogcloud
+              readOnly: true
+            - name: kubernetes
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+            {{- if eq $stage "infisical" }}
+            - name: bootstrap-token
+              mountPath: /var/run/secrets/ogcloud/bootstrap
+              readOnly: true
+            - name: reviewer
+              mountPath: /var/run/secrets/ogcloud/reviewer
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: ogcloud-bootstrap
+        - name: kubernetes
+          {{- include "ogcloud.apiServerAccess" (dict "audience" "") | nindent 10 }}
+        {{- if eq $stage "infisical" }}
+        - name: bootstrap-token
+          {{- include "ogcloud.apiServerAccess" (dict "audience" "") | nindent 10 }}
+        - name: reviewer
+          secret:
+            secretName: ogcloud-infisical-reviewer
+            items:
+              - key: token
+                path: token
+        {{- end }}
+{{- end }}

@@ -1,0 +1,52 @@
+{{- /* Node tokens are checked with TokenReview (D-0013) and bound to live pods of the game namespace. */}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ogcloud-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "gateway") | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ogcloud-gateway-auth-delegator
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "gateway") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-gateway
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ogcloud-gateway
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "gateway") | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ogcloud-gateway
+  namespace: {{ include "ogcloud.serversNamespace" . }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "gateway") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ogcloud-gateway
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-gateway
+    namespace: {{ .Release.Namespace }}

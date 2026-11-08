@@ -28,3 +28,163 @@ app.kubernetes.io/component: {{ .component }}
 {{- define "ogcloud.serversNamespace" -}}
 {{- .Values.namespaces.servers -}}
 {{- end -}}
+
+{{/* Pods run as uid 1000 with the restricted profile (D-0128, T-0603). */}}
+{{- define "ogcloud.podSecurity" -}}
+runAsNonRoot: true
+runAsUser: 1000
+runAsGroup: 1000
+fsGroup: 1000
+seccompProfile:
+  type: RuntimeDefault
+{{- end -}}
+
+{{- define "ogcloud.containerSecurity" -}}
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: true
+capabilities:
+  drop: [ALL]
+{{- end -}}
+
+{{/*
+A projected service-account token with the cluster CA, in place of the automounted one; a non-empty audience
+binds the token to that service (D-0013).
+*/}}
+{{- define "ogcloud.apiServerAccess" -}}
+projected:
+  sources:
+    - serviceAccountToken:
+        path: token
+        expirationSeconds: 3600
+        {{- with .audience }}
+        audience: {{ . }}
+        {{- end }}
+    - configMap:
+        name: kube-root-ca.crt
+        items:
+          - key: ca.crt
+            path: ca.crt
+{{- end -}}
+
+{{/* JDBC URL of the database, verified against the internal CA (D-0041). */}}
+{{- define "ogcloud.jdbcUrl" -}}
+{{- printf "jdbc:postgresql://%s:%v/%s?sslmode=verify-full&sslrootcert=/etc/ogcloud/ca/ca.crt" .Values.postgres.host .Values.postgres.port .Values.postgres.database -}}
+{{- end -}}
+
+{{/* Spring settings both Kotlin services share, for one dependency user: (dict "root" $ "user" "api"). */}}
+{{- define "ogcloud.springDependencies" -}}
+{{- $v := .root.Values -}}
+valkey:
+  {{- if $v.valkey.sentinelMaster }}
+  sentinel:
+    master: {{ $v.valkey.sentinelMaster }}
+    nodes: {{ toJson $v.valkey.addresses }}
+  {{- else }}
+  host: {{ (splitList ":" (first $v.valkey.addresses)) | first }}
+  port: {{ (splitList ":" (first $v.valkey.addresses)) | last }}
+  {{- end }}
+  username: ogcloud-{{ .user }}
+  tls: true
+kafka:
+  bootstrap-servers: {{ $v.kafka.bootstrapServers }}
+  scram:
+    username: ogcloud-{{ .user }}
+  tls:
+    ca-certificate-path: /etc/ogcloud/ca/ca.crt
+s3:
+  endpoint: {{ $v.s3.endpoint }}
+  region: {{ $v.s3.region }}
+  bucket: {{ $v.s3.bucket }}
+  path-style: {{ $v.s3.pathStyle }}
+{{- end -}}
+
+{{/* Environment of the Go services for one dependency user: (dict "root" $ "user" "gateway" "s3" true). */}}
+{{- define "ogcloud.goDependencies" -}}
+{{- $v := .root.Values -}}
+- name: OGCLOUD_TLS_CA_FILE
+  value: /etc/ogcloud/ca/ca.crt
+- name: OGCLOUD_KAFKA_BROKERS
+  value: {{ $v.kafka.bootstrapServers | quote }}
+- name: OGCLOUD_KAFKA_USERNAME
+  value: ogcloud-{{ .user }}
+- name: OGCLOUD_KAFKA_PASSWORD_FILE
+  value: /var/run/secrets/ogcloud/secrets/kafka-password
+- name: OGCLOUD_VALKEY_ADDRESSES
+  value: {{ join "," $v.valkey.addresses | quote }}
+- name: OGCLOUD_VALKEY_SENTINEL_MASTER
+  value: {{ $v.valkey.sentinelMaster | quote }}
+- name: OGCLOUD_VALKEY_USERNAME
+  value: ogcloud-{{ .user }}
+- name: OGCLOUD_VALKEY_PASSWORD_FILE
+  value: /var/run/secrets/ogcloud/secrets/valkey-password
+{{- if .s3 }}
+- name: OGCLOUD_S3_ENDPOINT
+  value: {{ $v.s3.endpoint | quote }}
+- name: OGCLOUD_S3_REGION
+  value: {{ $v.s3.region | quote }}
+- name: OGCLOUD_S3_BUCKET
+  value: {{ $v.s3.bucket | quote }}
+- name: OGCLOUD_S3_PATH_STYLE
+  value: {{ $v.s3.pathStyle | quote }}
+- name: OGCLOUD_S3_ACCESS_KEY_FILE
+  value: /var/run/secrets/ogcloud/secrets/s3-access-key
+- name: OGCLOUD_S3_SECRET_KEY_FILE
+  value: /var/run/secrets/ogcloud/secrets/s3-secret-key
+{{- end }}
+{{- end -}}
+
+{{/* Probes of the Spring services' actuator; the JVM gets 150 s to start. */}}
+{{- define "ogcloud.springProbes" -}}
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 5
+  failureThreshold: 30
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  periodSeconds: 5
+{{- end -}}
+
+{{/* Probes of the Go services' admin port (pkg/service). */}}
+{{- define "ogcloud.goProbes" -}}
+livenessProbe:
+  httpGet:
+    path: /healthz/live
+    port: admin
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /healthz/ready
+    port: admin
+  periodSeconds: 5
+{{- end -}}
+
+{{/* The internal CA and a writable /tmp, which every platform pod mounts. */}}
+{{- define "ogcloud.commonVolumes" -}}
+- name: ca
+  configMap:
+    name: ogcloud-internal-ca
+- name: tmp
+  emptyDir: {}
+{{- end -}}
+
+{{- define "ogcloud.commonMounts" -}}
+- name: ca
+  mountPath: /etc/ogcloud/ca
+  readOnly: true
+- name: tmp
+  mountPath: /tmp
+{{- end -}}
+
+{{/* The public host, from publicOrigin. */}}
+{{- define "ogcloud.publicHost" -}}
+{{- (urlParse (required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin)).host -}}
+{{- end -}}

@@ -1,0 +1,20 @@
+{{- /*
+The operator's seed (D-0114): created as a hook on every install and upgrade that carries values, imported when
+its hash changed, then deleted by bootstrap; Terraform state keeps the values (documented in T-1103).
+*/}}
+{{- with .Values.bootstrap.seed }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ogcloud-seed
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" $ "component" "bootstrap") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation
+type: Opaque
+stringData:
+  {{- toYaml . | nindent 2 }}
+{{- end }}

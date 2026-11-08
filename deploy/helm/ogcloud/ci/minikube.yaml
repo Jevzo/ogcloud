@@ -1,7 +1,28 @@
-# minikube (D-0019): small quotas, as `mise run dev` starts it.
+# minikube (D-0019): small quotas and one replica each, as `mise run dev` starts it.
+publicOrigin: https://ogcloud.localhost
+minecraft:
+  eulaAccepted: true
 servers:
   quota:
     pods: "60"
     requests.cpu: "6"
     requests.memory: 14Gi
     persistentvolumeclaims: "10"
+kafka:
+  replicationFactor: 1
+api:
+  replicas: 1
+  # minikube's pod network.
+  trustedProxies: '10\.244\.\d{1,3}\.\d{1,3}'
+controller:
+  replicas: 1
+gateway:
+  replicas: 1
+loadbalancer:
+  replicas: 1
+  service:
+    type: NodePort
+edge:
+  tls:
+    issuer:
+      name: ogcloud-internal

@@ -1,0 +1,11 @@
+{{- /* The API's settings next to its own application.yaml; secrets arrive separately as a config tree. */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ogcloud-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "api") | nindent 4 }}
+data:
+  application.yaml: |
+    {{- include "ogcloud.apiConfig" . | nindent 4 }}

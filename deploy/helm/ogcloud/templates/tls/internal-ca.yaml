@@ -1,0 +1,63 @@
+{{- /*
+Internal TLS (D-0041): a self-signed root issues the CA, whose ClusterIssuer signs every in-cluster certificate.
+The CA lives in cert-manager's namespace, which ClusterIssuers and trust-manager's Bundle read from (D-0147).
+*/}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ogcloud-selfsigned
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-internal-ca
+  namespace: {{ .Values.certManager.namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  isCA: true
+  commonName: OgCloud internal CA
+  secretName: ogcloud-internal-ca
+  duration: 87600h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ogcloud-internal
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: ogcloud-internal-ca
+---
+{{- /* The CA as ConfigMap ogcloud-internal-ca for platform and game pods (D-0147); the controller names it in every pod. */}}
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: ogcloud-internal-ca
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  sources:
+    - secret:
+        name: ogcloud-internal-ca
+        key: ca.crt
+  target:
+    configMap:
+      key: ca.crt
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [{{ .Release.Namespace }}, {{ include "ogcloud.serversNamespace" . }}]

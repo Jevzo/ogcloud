@@ -1,2 +1,24 @@
-# Hetzner as Terraform installs it (D-0003): the defaults, sized for D-0053.
-{}
+# Hetzner as Terraform installs it (D-0003): sized for D-0053, behind the Hetzner load balancer.
+publicOrigin: https://cloud.example.com
+minecraft:
+  eulaAccepted: true
+allowedImagePrefixes:
+  - ghcr.io/example/
+controller:
+  pods:
+    gamePool:
+      nodeLabel: ogcloud.io/pool
+      nodeLabelValue: game
+      taintKey: ogcloud.io/pool
+      taintValue: game
+loadbalancer:
+  service:
+    annotations:
+      load-balancer.hetzner.cloud/name: ogcloud-minecraft
+      load-balancer.hetzner.cloud/use-private-ip: "true"
+  trustedProxies:
+    - 10.0.0.0/16
+edge:
+  tls:
+    issuer:
+      name: letsencrypt-cloudflare

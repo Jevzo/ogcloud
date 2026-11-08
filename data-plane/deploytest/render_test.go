@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.yaml.in/yaml/v3"
@@ -14,6 +15,8 @@ import (
 const (
 	chartDir  = "../../deploy/helm/ogcloud"
 	namespace = "ogcloud"
+	// The chart needs an install target's values; minikube's serves tests about any target.
+	minikubeValues = chartDir + "/ci/minikube.yaml"
 )
 
 // object is one rendered manifest.
@@ -98,4 +101,13 @@ func get(value any, path ...string) any {
 func str(value any, path ...string) string {
 	s, _ := get(value, path...).(string)
 	return s
+}
+
+func containsLine(text, line string) bool {
+	for _, candidate := range strings.Split(text, "\n") {
+		if strings.TrimSpace(candidate) == line {
+			return true
+		}
+	}
+	return false
 }

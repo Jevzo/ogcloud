@@ -1,0 +1,85 @@
+{{- /* The bootstrap stages' identity: root Secrets, its state ConfigMap, the identities Secret and the seed. */}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ogcloud-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ogcloud-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation
+rules:
+  - apiGroups: [""]
+    resources: [secrets, configmaps]
+    verbs: [get, create, update, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ogcloud-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-20"
+    helm.sh/hook-delete-policy: before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ogcloud-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-bootstrap
+    namespace: {{ .Release.Namespace }}
+---
+{{- /* Infisical reviews service-account tokens with this account's long-lived token (D-0044). */}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ogcloud-infisical-reviewer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ogcloud-infisical-reviewer
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+  annotations:
+    kubernetes.io/service-account.name: ogcloud-infisical-reviewer
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ogcloud-infisical-reviewer
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: ogcloud-infisical-reviewer
+    namespace: {{ .Release.Namespace }}
