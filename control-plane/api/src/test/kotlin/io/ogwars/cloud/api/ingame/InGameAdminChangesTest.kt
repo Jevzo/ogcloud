@@ -23,6 +23,7 @@ import io.ogwars.cloud.messaging.EventPublisher
 import io.ogwars.cloud.messaging.KafkaTopics
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
+import io.kotest.matchers.comparables.shouldBeBetween
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
@@ -50,7 +51,15 @@ class InGameAdminChangesTest(
         val lobby = "admin-${UUID.randomUUID().toString().take(SUFFIX)}"
         groups.create(group(id = lobby))
         val player = UUID.randomUUID()
+        val forever = UUID.randomUUID()
         players.recordSeen(player, "Steve", Instant.now(), PlayerRank(player, DEFAULT_GROUP, null))
+        players.recordSeen(
+            forever,
+            "Alex",
+            Instant.now(),
+            PlayerRank(forever, DEFAULT_GROUP, Instant.now().plus(Duration.ofDays(1))),
+        )
+        val sent = Instant.now()
 
         publish(lobby) { setGroupMaintenance(GroupMaintenanceChange.newBuilder().setGroupId(lobby).setEnabled(true)) }
         publish(player.toString()) {
@@ -62,6 +71,10 @@ class InGameAdminChangesTest(
                     .setDuration(Duration.ofHours(1).toProtoDuration()),
             )
         }
+        // Without a duration the rank is permanent, even for a player whose rank had an end.
+        publish(forever.toString()) {
+            setRank(RankChange.newBuilder().setPlayerUuid(forever.toString()).setPermissionGroupId(DEFAULT_GROUP))
+        }
         publish(NETWORK) { setNetworkMaintenance(NetworkMaintenanceChange.newBuilder().setEnabled(true)) }
         runBlocking { eventually(WAIT) { network.load().value.maintenance shouldBe true } }
         publish(NETWORK) { setNetworkMaintenance(NetworkMaintenanceChange.newBuilder().setEnabled(false)) }
@@ -70,14 +83,23 @@ class InGameAdminChangesTest(
             eventually(WAIT) {
                 network.load().value.maintenance shouldBe false
                 groups.find(GroupId(lobby))?.value?.maintenance shouldBe true
-                players
-                    .find(player)
-                    ?.rank
-                    ?.expiresAt
-                    .shouldNotBeNull()
+                val expiresAt =
+                    players
+                        .find(player)
+                        ?.rank
+                        ?.expiresAt
+                        .shouldNotBeNull()
+                expiresAt.shouldBeBetween(sent.plus(Duration.ofHours(1)), Instant.now().plus(Duration.ofHours(1)))
+                players.find(forever)?.rank?.expiresAt shouldBe null
                 // Audited right after each change, so wait for the entries too.
                 audit.about(admin.toString()).map { it.action } shouldContainExactlyInAnyOrder
-                    listOf("PUT $GROUPS_PATH/{id}", "PUT $RANK_PATH", "PUT $NETWORK_PATH", "PUT $NETWORK_PATH")
+                    listOf(
+                        "PUT $GROUPS_PATH/{id}",
+                        "PUT $RANK_PATH",
+                        "PUT $RANK_PATH",
+                        "PUT $NETWORK_PATH",
+                        "PUT $NETWORK_PATH",
+                    )
             }
         }
     }

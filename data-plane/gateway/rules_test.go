@@ -284,9 +284,9 @@ func TestInGameAdminChangesNeedTheirAdminNodeAndAKnownTarget(t *testing.T) {
 	maintenance := func(group string) *nodev1.AdminRequest {
 		return &nodev1.AdminRequest{Change: &nodev1.AdminRequest_GroupMaintenance{GroupMaintenance: &nodev1.GroupMaintenanceChange{GroupId: group, Enabled: true}}}
 	}
-	rank := func(group string, duration time.Duration) *nodev1.AdminRequest {
+	rank := func(group string, duration *durationpb.Duration) *nodev1.AdminRequest {
 		return &nodev1.AdminRequest{Change: &nodev1.AdminRequest_Rank{Rank: &nodev1.RankChange{
-			PlayerUuid: visitorUUID, PermissionGroupId: group, Duration: durationpb.New(duration),
+			PlayerUuid: visitorUUID, PermissionGroupId: group, Duration: duration,
 		}}}
 	}
 	cases := []struct {
@@ -297,9 +297,10 @@ func TestInGameAdminChangesNeedTheirAdminNodeAndAKnownTarget(t *testing.T) {
 		{"lobby", maintenance("lobby"), ""},
 		{"bedwars", maintenance("bedwars"), errUnknownGroup.Error()},
 		{"network", &nodev1.AdminRequest{Change: &nodev1.AdminRequest_NetworkMaintenance{NetworkMaintenance: &nodev1.NetworkMaintenanceChange{}}}, errNotPermitted.Error()},
-		{"rank", rank("vip", time.Hour), ""},
-		{"ghost", rank("ghost", time.Hour), errUnknownPermissionGroup.Error()},
-		{"negative", rank("vip", -time.Hour), rejectInvalid},
+		{"rank", rank("vip", durationpb.New(time.Hour)), ""},
+		{"permanent", rank("vip", nil), ""},
+		{"ghost", rank("ghost", durationpb.New(time.Hour)), errUnknownPermissionGroup.Error()},
+		{"negative", rank("vip", durationpb.New(-time.Hour)), rejectInvalid},
 	}
 
 	for _, c := range cases {
@@ -311,10 +312,14 @@ func TestInGameAdminChangesNeedTheirAdminNodeAndAKnownTarget(t *testing.T) {
 	}
 
 	published := h.settle(t, proxy)
-	if len(published) != 2 || published[0].topic != kafkatopics.AdminChange || published[0].key != "lobby" || published[1].key != visitorUUID {
+	if len(published) != 3 || published[0].topic != kafkatopics.AdminChange || published[0].key != "lobby" || published[1].key != visitorUUID {
 		t.Fatalf("published %+v", published)
 	}
-	if actor := published[1].event.(*internalv1.AdminChangeRequested).GetMetadata().GetActor().GetPlayerUuid(); actor != adminUUID {
+	timed, permanent := published[1].event.(*internalv1.AdminChangeRequested), published[2].event.(*internalv1.AdminChangeRequested)
+	if actor := timed.GetMetadata().GetActor().GetPlayerUuid(); actor != adminUUID {
 		t.Errorf("actor %s", actor)
+	}
+	if timed.GetRank().GetDuration().AsDuration() != time.Hour || permanent.GetRank().GetDuration() != nil {
+		t.Errorf("durations %v and %v, want 1h and permanent", timed.GetRank().GetDuration(), permanent.GetRank().GetDuration())
 	}
 }

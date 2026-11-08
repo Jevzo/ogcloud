@@ -70,12 +70,18 @@ func TestNodesMaySendOnlyWhatTheirNodeTypeAllows(t *testing.T) {
 		PlayerUuid: visitorUUID, Activity: &nodev1.PlayerActivityReport_Disconnected{Disconnected: &eventsv1.PlayerDisconnected{}},
 	}}})
 	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NodeCommand{NodeCommand: &nodev1.NodeCommandRequest{}}})
+	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_AdminRequest{AdminRequest: &nodev1.AdminRequest{
+		ActingPlayerUuid: adminUUID, Change: &nodev1.AdminRequest_NetworkMaintenance{NetworkMaintenance: &nodev1.NetworkMaintenanceChange{Enabled: true}},
+	}}})
 	send(t, proxy, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_GameState{GameState: &nodev1.GameStateUpdate{}}})
+	send(t, proxy, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_NpcChange{NpcChange: &nodev1.NpcChangeRequest{
+		ActingPlayerUuid: adminUUID, Change: &nodev1.NpcChangeRequest_Create{Create: &nodev1.Npc{GroupId: "lobby"}},
+	}}})
 
 	if published := append(h.settle(t, backend), h.settle(t, proxy)...); len(published) != 0 {
 		t.Errorf("published %v", published)
 	}
-	for _, message := range []string{messagePlayerActivity, messageNodeCommand, messageGameState} {
+	for _, message := range []string{messagePlayerActivity, messageNodeCommand, messageGameState, messageAdminRequest, messageNpcChange} {
 		if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(message, rejectNodeType)) != 1 {
 			t.Errorf("%s was not rejected", message)
 		}
