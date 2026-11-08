@@ -35,4 +35,13 @@ class TickSamplerTest {
         repeat(200) { tick(10, 5.0) }
         sampler.tps() shouldBe 20.0
     }
+
+    @Test
+    fun `a main thread that stopped ticking shows as falling TPS`() {
+        repeat(10) { tick(50, 12.0) }
+
+        now += 5_000_000_000
+
+        sampler.tps() shouldBe (9 / 5.45 plusOrMinus 0.001)
+    }
 }

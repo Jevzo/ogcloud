@@ -28,12 +28,12 @@ class TickSampler(
         if (count < WINDOW) count++
     }
 
+    /** Measured up to now, not the last tick, so a hung main thread shows as falling TPS in the heartbeats. */
     @Synchronized
     fun tps(): Double {
         if (count < 2) return MAX_TPS
-        val newest = ends[(next - 1 + WINDOW) % WINDOW]
         val oldest = ends[if (count < WINDOW) 0 else next]
-        val seconds = (newest - oldest) / NANOS_PER_SECOND
+        val seconds = (nanoTime() - oldest) / NANOS_PER_SECOND
         return if (seconds <= 0) MAX_TPS else minOf(MAX_TPS, (count - 1) / seconds)
     }
 

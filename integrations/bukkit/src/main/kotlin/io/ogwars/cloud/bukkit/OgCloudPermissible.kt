@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * As v1, a player holds OgCloud's nodes on top of whatever decided their permissions before, such as op defaults or
- * another permission plugin; everything else, attachments included, stays with that [wrapped] permissible.
+ * another permission plugin. OgCloud only grants: a DENY, like everything else, is left to that [wrapped] permissible.
  */
 class OgCloudPermissible(
     private val player: Player,
@@ -31,10 +31,10 @@ class OgCloudPermissible(
         decide(player, permission.name) == Decision.ALLOW || previous.hasPermission(permission)
 
     override fun isPermissionSet(name: String): Boolean =
-        decide(player, name) != Decision.DEFAULT || previous.isPermissionSet(name)
+        decide(player, name) == Decision.ALLOW || previous.isPermissionSet(name)
 
     override fun isPermissionSet(permission: Permission): Boolean =
-        decide(player, permission.name) != Decision.DEFAULT || previous.isPermissionSet(permission)
+        decide(player, permission.name) == Decision.ALLOW || previous.isPermissionSet(permission)
 
     override fun isOp(): Boolean = previous.isOp
 

@@ -114,13 +114,16 @@ class BackendListenersTest {
         // Another permission plugin's grant, made before OgCloud injects at join.
         steve.addAttachment(plugin, "other.plugin", true)
 
-        PermissionInjector.inject(steve) { _, node -> if (node == "vip.fly") Decision.ALLOW else Decision.DEFAULT }
+        PermissionInjector.inject(steve) { _, node -> if (node == "vip.fly") Decision.ALLOW else Decision.DENY }
         steve.addAttachment(plugin, "later.grant", true)
 
         steve.hasPermission("vip.fly") shouldBe true
         steve.hasPermission("other.plugin") shouldBe true
         steve.hasPermission("later.grant") shouldBe true
         steve.hasPermission("nobody.granted") shouldBe false
+        // OgCloud only grants, so its DENY sets nothing of its own.
+        steve.isPermissionSet("vip.fly") shouldBe true
+        steve.isPermissionSet("nobody.granted") shouldBe false
     }
 
     @Test

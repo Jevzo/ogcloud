@@ -27,9 +27,8 @@ sealed interface HandshakeVerdict {
 }
 
 /**
- * BungeeGuard forwarding (D-0065): the proxy sends `host\0address\0uuid\0properties` and puts its token among the
- * properties. A backend takes the login only with exactly one token it knows, so nothing but OgCloud's proxies can
- * claim to be a player.
+ * BungeeGuard forwarding (D-0065): the proxy sends `host\0address\0uuid\0properties` with its token among the
+ * properties; only a login with exactly one known token is taken, so only OgCloud's proxies can claim a player.
  */
 object ForwardingHandshake {
     private const val TOKEN_PROPERTY = "bungeeguard-token"

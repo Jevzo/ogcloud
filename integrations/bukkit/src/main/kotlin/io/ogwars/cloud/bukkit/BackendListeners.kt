@@ -20,8 +20,8 @@ class BackendListeners(
     /** Only OgCloud's proxies may forward players here (D-0065); first, so no other plugin sees a forged login. */
     @EventHandler(priority = EventPriority.LOWEST)
     fun onHandshake(event: PlayerHandshakeEvent) {
-        // The server takes the event's outcome only while it is not cancelled; a cancelled event falls back to plain
-        // BungeeCord forwarding, which accepts any login and keeps the token in the player's profile.
+        // Paper fires this cancelled while settings.bungeecord is on (D-0119) and then parses the raw handshake itself,
+        // which accepts any login and keeps the token in the profile; uncancelled, it takes our outcome.
         event.isCancelled = false
         val verdict =
             try {

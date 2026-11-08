@@ -76,7 +76,6 @@ class BukkitPlatform(
     /** Any change to the group's NPCs reloads them from the read model (D-0104). */
     override fun npcChanged(update: NpcUpdated) = reloadNpcs()
 
-    // Changes made while the session was down arrive with no broadcast.
     override fun welcomed() = reloadNpcs()
 
     private fun reloadNpcs() {
