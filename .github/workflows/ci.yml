@@ -124,7 +124,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: mise run check:ts
 
-  # Builds every image, boots the server images with OgCloud's plugin (D-0139) and scans the platform images.
+  # Builds every image, boots the server images with OgCloud's plugin (D-0139), starts the platform images, runs the
+  # node client against the gateway image (T-0510) and scans the platform images.
   images:
     needs: changes
     if: needs.changes.outputs.images == 'true'

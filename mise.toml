@@ -39,7 +39,7 @@ run = [
 description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
 run = "./gradlew check"
 
-# Artifacts are built here with mise's toolchains and staged in build/images; the Dockerfiles only copy them.
+# Artifacts are built here with mise's toolchains and staged in build/images; the platform Dockerfile only copies them.
 [tasks."images:build"]
 description = "Build every server and platform image into the local Docker store (REGISTRY and VERSION tag them)"
 shell = "bash -c"
@@ -66,10 +66,10 @@ build -tags contracttest -o "../$out/linux-$arch/gateway-contracttest" ./cmd/gat
 docker buildx bake -f images/docker-bake.json -f images/docker-bake.hcl --load default platform test
 """
 
-# Not part of `check`: it builds every image, boots the server images with OgCloud's plugins and scans the platform
-# images, which needs Docker and the network (D-0139).
+# Not part of `check`: it builds every image, boots the server images with OgCloud's plugins, starts the platform
+# images, runs the gateway contract test (T-0510) and scans them, which needs Docker and the network (D-0139).
 [tasks."check:images"]
-description = "Build every image, smoke-test the server images, and fail on critical CVEs in the platform images"
+description = "Build every image, smoke- and contract-test them, and fail on critical CVEs in the platform images"
 shell = "bash -c"
 env = { REGISTRY = "ogcloud-local", VERSION = "dev" }
 run = """
@@ -98,11 +98,16 @@ for module in $(go list -m -f '{% raw %}{{.Dir}}{% endraw %}'); do
   if [ -z "$(go list ./... 2>/dev/null)" ]; then
     echo "no packages yet, skipping"
   else
-    go vet ./... && go test -race ./... && golangci-lint run ./...
+    # One command per line: set -e ignores a failure inside an && list.
+    go vet ./...
+    go test -race ./...
+    golangci-lint run ./...
   fi
 done
 # The gateway's contract-test variant (T-0510) only compiles with its build tag.
-(cd "{{config_root}}/data-plane" && go vet -tags contracttest ./cmd/gateway && golangci-lint run --build-tags contracttest ./cmd/gateway/...)
+cd "{{config_root}}/data-plane"
+go vet -tags contracttest ./cmd/gateway
+golangci-lint run --build-tags contracttest ./cmd/gateway/...
 """
 
 [tasks."fmt:go"]
