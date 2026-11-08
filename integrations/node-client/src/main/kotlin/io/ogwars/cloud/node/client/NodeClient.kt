@@ -29,9 +29,8 @@ data class Backoff(
 )
 
 /**
- * A node's connection to the gateway (D-0008): one session stream with Hello and Welcome, acknowledged deliveries,
- * server commands answered with results (D-0068) and live channels. It reconnects on its own and
- * renews its live subscriptions on every Welcome.
+ * A node's gateway session (D-0008): Hello and Welcome, acknowledged deliveries, correlated server commands (D-0068)
+ * and live channels; it reconnects with backoff and resubscribes on every Welcome.
  */
 class NodeClient(
     private val settings: NodeSettings,
@@ -84,12 +83,11 @@ class NodeClient(
     }
 
     override fun close() {
-        val open =
-            synchronized(lock) {
-                closed = true
-                stream.also { stream = null }
-            }
-        open?.onCompleted()
+        synchronized(lock) {
+            closed = true
+            stream?.onCompleted()
+            stream = null
+        }
         failPending(NotConnectedException())
     }
 
@@ -146,8 +144,8 @@ class NodeClient(
     }
 
     private fun deliver(delivery: Delivery) {
-        listener
-            .deliver(delivery)
+        runCatching { listener.deliver(delivery) }
+            .getOrElse { CompletableFuture.failedFuture(it) }
             .exceptionally { error -> DeliveryOutcome(false, error.message ?: error.javaClass.simpleName) }
             .thenAccept { outcome ->
                 val result =
@@ -186,7 +184,14 @@ class NodeClient(
     private inner class Responses : StreamObserver<SessionResponse> {
         lateinit var requests: StreamObserver<SessionRequest>
 
+        // A listener that throws must not end the session: gRPC would cancel the call and reconnect.
         override fun onNext(response: SessionResponse) {
+            runCatching { dispatch(response) }.onFailure {
+                log.log(System.Logger.Level.WARNING, "Handling a ${response.messageCase} session message failed", it)
+            }
+        }
+
+        private fun dispatch(response: SessionResponse) {
             when (response.messageCase) {
                 SessionResponse.MessageCase.WELCOME -> {
                     welcome(response)

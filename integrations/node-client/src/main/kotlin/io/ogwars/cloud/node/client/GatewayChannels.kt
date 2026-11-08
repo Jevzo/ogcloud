@@ -14,7 +14,6 @@ object GatewayChannels {
                 .newBuilder()
                 .trustManager(settings.caFile.toFile())
                 .build()
-        // Pings find a dead gateway or link in seconds; without them a half-open session lasts until TCP gives up.
         return Grpc
             .newChannelBuilder(settings.gatewayAddress, credentials)
             .keepAliveTime(SessionKeepalive.PING_SECONDS.toLong(), TimeUnit.SECONDS)

@@ -30,6 +30,10 @@ class FakeGateway : AutoCloseable {
     }
 
     val sessions = LinkedBlockingQueue<Session>()
+
+    /** False makes new sessions wait for the test instead of being welcomed. */
+    @Volatile
+    var welcomes = true
     private val name = InProcessServerBuilder.generateName()
     private val authorization = io.grpc.Context.key<String?>("authorization")
 
@@ -41,7 +45,7 @@ class FakeGateway : AutoCloseable {
                     override fun onNext(request: SessionRequest) {
                         session.requests += request
                         if (request.hasHello()) {
-                            responses.onNext(WELCOME)
+                            if (welcomes) responses.onNext(WELCOME)
                             sessions += session
                         }
                     }

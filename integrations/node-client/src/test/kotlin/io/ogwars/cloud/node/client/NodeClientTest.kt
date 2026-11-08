@@ -26,14 +26,29 @@ import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+/** Records each reconnect delay and reconnects at once, so tests see the backoff without waiting for it. */
+private class RecordingScheduler : ScheduledThreadPoolExecutor(1) {
+    val delays = LinkedBlockingQueue<Long>()
+
+    override fun schedule(
+        command: Runnable,
+        delay: Long,
+        unit: TimeUnit,
+    ): ScheduledFuture<*> {
+        delays += unit.toMillis(delay)
+        return super.schedule(command, 0, unit)
+    }
+}
+
 class NodeClientTest {
     private val gateway = FakeGateway()
-    private val scheduler = Executors.newSingleThreadScheduledExecutor()
+    private val scheduler = RecordingScheduler()
     private val welcomes = LinkedBlockingQueue<Welcome>()
     private var outcome: CompletableFuture<DeliveryOutcome> =
         CompletableFuture.completedFuture(
@@ -173,6 +188,62 @@ class NodeClientTest {
 
         second.next().hasHello() shouldBe true
         second.next().liveSubscription.let { (it.channel to it.subscribed) shouldBe ("party" to true) }
+    }
+
+    @Test
+    fun `reconnects back off, doubling up to the cap, and start over after a Welcome`() {
+        val unavailable = Status.UNAVAILABLE.asRuntimeException()
+        gateway.welcomes = false
+        client.start()
+        repeat(5) { gateway.nextSession().responses.onError(unavailable) }
+        val sixth = gateway.nextSession()
+        gateway.welcomes = true
+        sixth.responses.onError(unavailable)
+        val welcomed = welcomed()
+
+        welcomed.responses.onError(unavailable)
+        welcomed()
+
+        List(7) { scheduler.delays.take() } shouldBe listOf(10L, 20L, 40L, 50L, 50L, 50L, 10L)
+    }
+
+    @Test
+    fun `a closed client never reconnects when the gateway then ends the stream`() {
+        client.start()
+        welcomed()
+
+        // The fake gateway answers the client's completion by completing its side too.
+        client.close()
+
+        scheduler.delays shouldBe emptyList()
+    }
+
+    @Test
+    fun `a listener that throws costs only its message, not the session`() {
+        val failing =
+            NodeClient(
+                NodeSettings("unused", tokenFile, Path.of("unused"), NodeType.NODE_TYPE_BACKEND, "2.0.0", listOf()),
+                gateway.channel,
+                TokenCredentials(tokenFile, Clock.systemUTC()),
+                object : SessionListener by listener {
+                    override fun deliver(delivery: Delivery) = error("bad delivery")
+
+                    override fun broadcast(event: NodeBroadcast) = error("bad broadcast")
+                },
+                scheduler,
+                { "r-${ids.incrementAndGet()}" },
+            )
+        failing.start()
+        val session = welcomed()
+        session.next()
+
+        session.send(SessionResponse.newBuilder().setBroadcast(NodeBroadcast.getDefaultInstance()).build())
+        session.send(SessionResponse.newBuilder().setDelivery(Delivery.newBuilder().setDeliveryId("d-1")).build())
+
+        session.next().deliveryResult.let { (it.deliveryId to it.success to it.message) } shouldBe
+            ("d-1" to false to "bad delivery")
+        scheduler.delays shouldBe emptyList()
+        failing.close()
     }
 
     @Test

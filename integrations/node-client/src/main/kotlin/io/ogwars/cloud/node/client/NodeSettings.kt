@@ -15,7 +15,6 @@ data class NodeSettings(
     val capabilities: List<String> = emptyList(),
 ) {
     companion object {
-        /** Reads what the controller put into the pod's environment. */
         fun fromEnvironment(
             environment: Map<String, String>,
             nodeType: NodeType,
