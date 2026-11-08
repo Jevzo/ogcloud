@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -19,10 +20,14 @@ import (
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/ids"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
+	"github.com/jevzo/ogcloud/data-plane/pkg/sessionkeepalive"
 	"github.com/jevzo/ogcloud/data-plane/pkg/valkeykeys"
 )
 
 const component = "gateway"
+
+// serverPingFactor makes the gateway's own pings rarer than the nodes', so a live node is never pinged by both.
+const serverPingFactor = 3
 
 // Reasons a session ends, for metrics.
 const (
@@ -117,6 +122,15 @@ func NewService(dependencies Dependencies, options Options) (*Service, error) {
 // NewServer serves the gateway's services with every call authenticated (D-0013); opts add e.g. TLS.
 func NewServer(auth *Authenticator, service *Service, agents *AgentService, opts ...grpc.ServerOption) *grpc.Server {
 	server := grpc.NewServer(append(opts,
+		// Nodes ping every few seconds (sessionkeepalive); the gateway also pings quiet nodes to find dead ones.
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             sessionkeepalive.MinimumPingSeconds * time.Second,
+			PermitWithoutStream: true,
+		}),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    serverPingFactor * sessionkeepalive.PingSeconds * time.Second,
+			Timeout: sessionkeepalive.PongTimeoutSeconds * time.Second,
+		}),
 		grpc.UnaryInterceptor(auth.UnaryInterceptor()),
 		grpc.StreamInterceptor(auth.StreamInterceptor()), //nolint:contextcheck // a stream's handler uses the stream's own context.
 	)...)

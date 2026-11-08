@@ -142,7 +142,7 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects", "gen:pod-env", "gen:live-channels", "gen:node-errors"]
+depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects", "gen:pod-env", "gen:live-channels", "gen:node-errors", "gen:session-keepalive"]
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -188,6 +188,10 @@ run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/storage/templ
 description = "Generate the game pods' environment variable names for Go and Kotlin from contracts/pod-env.yaml"
 run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/pod-env.yaml -go-package podenv -go-out data-plane/pkg/podenv/env.gen.go -kotlin-package io.ogwars.cloud.contracts -kotlin-out contracts/src/generated/kotlin/io/ogwars/cloud/contracts/PodEnv.kt"
 
+[tasks."gen:session-keepalive"]
+description = "Generate the node session keepalive timing for Go and Kotlin from contracts/session-keepalive.yaml"
+run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/session-keepalive.yaml -go-package sessionkeepalive -go-out data-plane/pkg/sessionkeepalive/keepalive.gen.go -kotlin-package io.ogwars.cloud.contracts -kotlin-out contracts/src/generated/kotlin/io/ogwars/cloud/contracts/SessionKeepalive.kt"
+
 [tasks."gen:live-channels"]
 description = "Generate the live-channel limits for Go and Kotlin from contracts/live-channels.yaml"
 run = "go run ./data-plane/pkg/cmd/codegen constants -in contracts/live-channels.yaml -go-package livechannels -go-out data-plane/pkg/livechannels/limits.gen.go -kotlin-package io.ogwars.cloud.contracts -kotlin-out contracts/src/generated/kotlin/io/ogwars/cloud/contracts/LiveChannelLimits.kt"
@@ -203,7 +207,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go images/docker-bake.json data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go images/docker-bake.json data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors data-plane/pkg/sessionkeepalive contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
