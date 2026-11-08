@@ -88,6 +88,7 @@ jobs:
       - run: mise run check:secrets
       - run: mise run check:commits
       - run: mise run check:actions
+      - run: mise run check:shell
       - run: mise run check:duplication
       - run: mise run check:proto
       - run: mise run check:generated

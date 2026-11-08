@@ -26,7 +26,7 @@ protoc-gen-go-grpc = "1.6.2"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:shell", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -87,6 +87,14 @@ description = "Format Kotlin sources and Gradle scripts"
 run = "./gradlew spotlessApply"
 
 # go.work modules are listed by `go list -m`; `./...` does not span workspace modules.
+[tasks."check:shell"]
+description = "shellcheck every tracked shell script"
+shell = "bash -c"
+run = """
+set -euo pipefail
+git ls-files -z '*.sh' | xargs -0 shellcheck
+"""
+
 # Lints the chart and validates every value set in its ci/ folder (D-0148); the Go render tests in
 # data-plane/deploytest run with check:go. Schemas come from pinned commits, so a run is reproducible.
 [tasks."check:chart"]
