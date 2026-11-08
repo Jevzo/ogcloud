@@ -8,6 +8,10 @@ servers:
     requests.cpu: "6"
     requests.memory: 14Gi
     persistentvolumeclaims: "10"
+postgres:
+  instances: 1
+  storage:
+    size: 5Gi
 kafka:
   replicationFactor: 1
   nodes:

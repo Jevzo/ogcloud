@@ -1,0 +1,82 @@
+{{- /*
+PostgreSQL on CloudNativePG (D-0009). initdb creates only Infisical's database, whose owner comes from the
+bootstrap root stage: OgCloud's own roles need Infisical first (D-0044), so they are managed roles that appear
+once their synced Secrets exist, with the ogcloud database owned by the API's role (D-0009).
+*/}}
+{{- if .Values.postgres.inCluster }}
+{{- $pg := .Values.postgres }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-postgres-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  secretName: ogcloud-postgres-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    {{- range $service := list "rw" "ro" "r" }}
+    - ogcloud-postgres-{{ $service }}
+    - ogcloud-postgres-{{ $service }}.{{ $.Release.Namespace }}.svc
+    - ogcloud-postgres-{{ $service }}.{{ $.Release.Namespace }}.svc.cluster.local
+    {{- end }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-internal
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ogcloud-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  instances: {{ $pg.instances }}
+  imageName: {{ $pg.image }}
+  priorityClassName: {{ .Values.priorityClasses.platform.name }}
+  storage:
+    size: {{ $pg.storage.size }}
+    {{- with $pg.storage.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+  resources:
+    {{- toYaml $pg.resources | nindent 4 }}
+  certificates:
+    serverTLSSecret: ogcloud-postgres-tls
+    serverCASecret: ogcloud-postgres-tls
+  bootstrap:
+    initdb:
+      database: infisical
+      owner: infisical
+      secret:
+        name: ogcloud-postgres-infisical
+  managed:
+    roles:
+      {{- range $service := list "api" "controller" }}
+      - name: ogcloud_{{ $service }}
+        ensure: present
+        login: true
+        passwordSecret:
+          name: ogcloud-postgres-{{ $service }}
+      {{- end }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: ogcloud
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  name: {{ $pg.database }}
+  owner: ogcloud_api
+  cluster:
+    name: ogcloud-postgres
+{{- end }}

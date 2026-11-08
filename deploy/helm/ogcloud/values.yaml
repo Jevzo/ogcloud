@@ -53,9 +53,23 @@ allowedImagePrefixes: []
 
 # The dependencies; this chart runs them in the cluster (T-0602) unless they point elsewhere.
 postgres:
+  # On CloudNativePG in the cluster (D-0009, D-0021), or an external server at host and port.
+  inCluster: true
   host: ogcloud-postgres-rw
   port: 5432
   database: ogcloud
+  # PostgreSQL 18 (D-0067), pinned by digest.
+  image: ghcr.io/cloudnative-pg/postgresql:18.6-minimal-trixie@sha256:26d15a12723510b0b416e8aec2bc65f2da7ac9b77ef3182a0911e4b8b991420a
+  instances: 3
+  storage:
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      memory: 1Gi
 kafka:
   # On Strimzi in the cluster (D-0021), or an external Kafka at bootstrapServers.
   inCluster: true

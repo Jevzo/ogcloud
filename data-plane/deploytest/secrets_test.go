@@ -65,9 +65,13 @@ func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 }
 
 // secretsTheChartAccountsFor are the Secrets something in the release creates: Infisical syncs, cert-manager
-// certificates and the reviewer's token.
-func secretsTheChartAccountsFor(objects rendered) []string {
+// certificates, the bootstrap root stage and plain Secrets such as the reviewer's token.
+func secretsTheChartAccountsFor(t *testing.T, objects rendered) []string {
+	t.Helper()
 	var names []string
+	for _, root := range bootstrapConfig(t, objects).RootSecrets {
+		names = append(names, root.Name)
+	}
 	for _, sync := range objects.all("InfisicalStaticSecret") {
 		targets, _ := get(sync, "spec", "targets").([]any)
 		for _, target := range targets {
@@ -85,7 +89,7 @@ func secretsTheChartAccountsFor(objects rendered) []string {
 
 func TestKafkaUsersTakeTheirPasswordsFromSyncedSecrets(t *testing.T) {
 	objects := render(t, minikubeValues)
-	known := secretsTheChartAccountsFor(objects)
+	known := secretsTheChartAccountsFor(t, objects)
 	users := objects.all("KafkaUser")
 	if len(users) == 0 {
 		t.Fatal("no KafkaUsers rendered")
@@ -94,6 +98,25 @@ func TestKafkaUsersTakeTheirPasswordsFromSyncedSecrets(t *testing.T) {
 		secret := str(user, "spec", "authentication", "password", "valueFrom", "secretKeyRef", "name")
 		if !slices.Contains(known, secret) {
 			t.Errorf("KafkaUser %s reads its password from %s, which nothing syncs", user.name(), secret)
+		}
+	}
+}
+
+func TestPostgresReadsOnlySecretsTheReleaseCreates(t *testing.T) {
+	objects := render(t, minikubeValues)
+	known := secretsTheChartAccountsFor(t, objects)
+	cluster := objects.find(t, "Cluster", "ogcloud-postgres")
+	used := []string{
+		str(cluster, "spec", "bootstrap", "initdb", "secret", "name"),
+		str(cluster, "spec", "certificates", "serverTLSSecret"),
+	}
+	roles, _ := get(cluster, "spec", "managed", "roles").([]any)
+	for _, role := range roles {
+		used = append(used, str(role, "passwordSecret", "name"))
+	}
+	for _, secret := range used {
+		if !slices.Contains(known, secret) {
+			t.Errorf("the PostgreSQL cluster reads Secret %q, which nothing in the release creates", secret)
 		}
 	}
 }
@@ -110,7 +133,7 @@ func TestPodsMountOnlySecretsTheReleaseCreates(t *testing.T) {
 	for _, values := range valueSets(t) {
 		t.Run(values, func(t *testing.T) {
 			objects := render(t, values)
-			known := secretsTheChartAccountsFor(objects)
+			known := secretsTheChartAccountsFor(t, objects)
 			for _, workload := range objects.workloads() {
 				volumes, _ := get(workload.podSpec(), "volumes").([]any)
 				for _, volume := range volumes {

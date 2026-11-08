@@ -2,6 +2,9 @@
 publicOrigin: https://cloud.example.com
 minecraft:
   eulaAccepted: true
+postgres:
+  inCluster: false
+  host: postgres.example.com
 kafka:
   inCluster: false
   bootstrapServers: kafka.example.com:9093

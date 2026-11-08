@@ -6,8 +6,13 @@ rootSecrets:
     keys:
       ENCRYPTION_KEY: {generate: hex, bytes: 16}
       AUTH_SECRET: {generate: base64, bytes: 32}
-      DB_PASSWORD: {generate: alnum, length: 40}
       VALKEY_PASSWORD: {generate: alnum, length: 40}
+  # Infisical's database owner, which CloudNativePG's initdb creates before Infisical can sync anything.
+  - name: ogcloud-postgres-infisical
+    type: kubernetes.io/basic-auth
+    keys:
+      username: {value: infisical}
+      password: {generate: alnum, length: 40}
 infisical:
   url: {{ .Values.infisical.url }}
   organization: {{ .Values.infisical.organization }}
