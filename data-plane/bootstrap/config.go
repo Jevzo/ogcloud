@@ -45,6 +45,9 @@ type InfisicalSetup struct {
 	Environment  string `yaml:"environment"`
 	// Holds non-secret ids between runs, such as the bootstrap identity's.
 	StateConfigMap string `yaml:"stateConfigMap"`
+	// Optional Secret that receives each identity's id under its name, for the Secrets Operator's
+	// InfisicalAuth resources, which read identity ids only from Secrets.
+	IdentitiesSecret string `yaml:"identitiesSecret"`
 	// The bootstrap Job's own projected token, for Kubernetes auth.
 	ServiceAccountTokenFile string            `yaml:"serviceAccountTokenFile"`
 	Kubernetes              KubernetesAuth    `yaml:"kubernetes"`

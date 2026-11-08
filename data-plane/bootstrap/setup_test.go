@@ -27,9 +27,10 @@ import (
 )
 
 const (
-	namespace = "ogcloud"
-	seedName  = "ogcloud-seed"
-	stateName = "ogcloud-infisical-state"
+	namespace      = "ogcloud"
+	seedName       = "ogcloud-seed"
+	stateName      = "ogcloud-infisical-state"
+	identitiesName = "ogcloud-infisical-identities"
 )
 
 // fixture is a cluster and an Infisical wired for Kubernetes auth, with token files on disk.
@@ -92,6 +93,10 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	}
 	if _, err := f.api.KubernetesLogin(ctx, operatorID, testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil)); err == nil {
 		t.Error("another service account logged in as the operator")
+	}
+	published, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, identitiesName, metav1.GetOptions{})
+	if err != nil || string(published.Data["ogcloud-secrets-operator"]) != operatorID {
+		t.Errorf("the operator's identity id was not published for InfisicalAuth: %v", err)
 	}
 
 	// An edit in Infisical survives a rerun with the same seed; a changed seed is imported.
@@ -163,6 +168,7 @@ func newFixture(t *testing.T) *fixture {
 		Infisical: InfisicalSetup{
 			URL: env.URL, Organization: "OgCloud", Project: "ogcloud", Environment: "prod",
 			StateConfigMap:          stateName,
+			IdentitiesSecret:        identitiesName,
 			ServiceAccountTokenFile: filepath.Join(dir, "bootstrap"),
 			Kubernetes: KubernetesAuth{
 				Host: testinfisical.KubernetesHost, CAFile: filepath.Join(dir, "ca.crt"), ReviewerTokenFile: filepath.Join(dir, "reviewer"),

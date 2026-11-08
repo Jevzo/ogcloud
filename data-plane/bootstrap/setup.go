@@ -80,10 +80,16 @@ func (s *Setup) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	ids := make(map[string]string, len(s.Config.Infisical.Identities))
 	for _, spec := range s.Config.Infisical.Identities {
-		if err := s.ensureIdentity(ctx, api, current.organizationID, project.ID, spec); err != nil {
+		id, err := s.ensureIdentity(ctx, api, current.organizationID, project.ID, spec)
+		if err != nil {
 			return fmt.Errorf("identity %s: %w", spec.Name, err)
 		}
+		ids[spec.Name] = id
+	}
+	if err := s.publishIdentities(ctx, ids); err != nil {
+		return err
 	}
 	for _, secret := range s.Config.Infisical.Secrets {
 		if err := s.ensureSecret(ctx, api, project.ID, secret); err != nil {
@@ -207,15 +213,36 @@ func (s *Setup) ensureProject(ctx context.Context, api *infisical.Client) (infis
 	return project, nil
 }
 
-func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organizationID, projectID string, spec IdentitySpec) error {
+func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organizationID, projectID string, spec IdentitySpec) (string, error) {
 	id, err := s.identity(ctx, api, organizationID, spec.Name, organizationNoAccess)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := s.setKubernetesAuth(ctx, api, id, spec); err != nil {
-		return err
+		return "", err
 	}
-	return api.SetProjectMember(ctx, projectID, id, spec.Role)
+	return id, api.SetProjectMember(ctx, projectID, id, spec.Role)
+}
+
+// publishIdentities writes the identities' ids into the configured Secret, replacing what it held.
+func (s *Setup) publishIdentities(ctx context.Context, ids map[string]string) error {
+	name := s.Config.Infisical.IdentitiesSecret
+	if name == "" {
+		return nil
+	}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{managedByLabel: managedBy}},
+		StringData: ids,
+	}
+	secrets := s.Kube.CoreV1().Secrets(s.Config.Namespace)
+	_, err := secrets.Create(ctx, secret, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		_, err = secrets.Update(ctx, secret, metav1.UpdateOptions{})
+	}
+	if err != nil {
+		return fmt.Errorf("publish the identity ids in Secret %s: %w", name, err)
+	}
+	return nil
 }
 
 // identity finds the identity by name, or creates it; names are not unique in Infisical, so the first wins.
