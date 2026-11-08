@@ -6,10 +6,10 @@ package livechannels
 const (
 	// ChannelPattern Valid channel names.
 	ChannelPattern = "^[a-z0-9._:-]{1,64}$"
-	// MaxSubscriptions Channels one session may subscribe to.
+	// MaxSubscriptions The most channels one session may subscribe to.
 	MaxSubscriptions = 64
 	MaxPayloadBytes  = 65536
 	MaxTypeIdLength  = 256
-	// PublishesPerSecond Publishes one session may send per second.
+	// PublishesPerSecond The most publishes one session may send per second.
 	PublishesPerSecond = 200
 )

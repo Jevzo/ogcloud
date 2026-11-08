@@ -1,5 +1,5 @@
-# Keepalive on node sessions: nodes ping the gateway, so a dead gateway or link is noticed in seconds instead of
-# when TCP gives up. Regenerate with `mise run gen` after editing.
+# Keepalive on node sessions: nodes ping the gateway, so a dead gateway or link is noticed within about 30 seconds
+# (a ping plus its timeout) instead of when TCP gives up. Regenerate with `mise run gen` after editing.
 object: SessionKeepalive
 doc: Keepalive timing of node sessions, shared by the node client and the gateway.
 constants:

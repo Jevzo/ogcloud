@@ -18,7 +18,7 @@ FROM spring AS controller
 # OgCloud's own plugins, which the controller puts into the runtime bundles (D-0079).
 COPY --from=artifacts plugins/ /opt/ogcloud/plugins/
 
-# Go services: static binaries (D-0110).
+# Go services: static binaries on distroless static (D-0128).
 FROM gcr.io/distroless/static-debian13@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f AS go
 ARG BINARY
 ARG TARGETARCH

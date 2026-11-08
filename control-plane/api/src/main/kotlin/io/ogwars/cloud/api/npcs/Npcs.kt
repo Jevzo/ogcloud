@@ -122,7 +122,7 @@ class NpcManagement(
         settings: NpcSettings,
     ): Npc = create(actor, settings.toDomain(ids.next()))
 
-    /** Saves [npc] under its own id, so saving it again (a redelivered in-game create) changes nothing. */
+    /** Saves [npc] under its own id, so a redelivered in-game create cannot add a second NPC. */
     fun create(
         actor: Actor,
         npc: Npc,

@@ -224,7 +224,7 @@ func (s *Service) nodeCommand(ctx context.Context, session *Session, request *no
 		})
 }
 
-// playerSnapshot forwards a proxy's online players, named as the reporting pod's (D-0130).
+// playerSnapshot forwards a proxy's online players, keyed by and stamped with the sending proxy's id (D-0130).
 func (s *Service) playerSnapshot(ctx context.Context, session *Session, snapshot *nodev1.PlayerSnapshot) {
 	for _, player := range snapshot.GetPlayers() {
 		if !uuidText.MatchString(player.GetPlayerUuid()) {

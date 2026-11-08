@@ -7,7 +7,7 @@ dependencies {
     // PandaSpigot provides its API at runtime; the PacketEvents plugin provides its API (D-0137).
     compileOnly(libs.pandaspigot.api)
     compileOnly(libs.packetevents.api)
-    // PandaSpigot gets smoke tests only (D-0126); its own rules are unit-tested against the API with MockK.
+    // No MockBukkit for 1.8 (D-0126): these rules are unit-tested with MockK, the rest by the smoke test.
     testImplementation(libs.pandaspigot.api)
 }
 

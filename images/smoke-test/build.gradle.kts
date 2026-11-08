@@ -4,9 +4,8 @@ plugins {
     id("ogcloud.kotlin-library")
 }
 
-// Boots every image (D-0139) and runs the JVM node client against the gateway image (T-0510). `mise run
-// check:images` builds the images and the artifacts in build/images first and passes -Pogcloud.smoke; `check`
-// skips these tests.
+// Boots every image (D-0139) and runs the node client against the gateway image (T-0510). Only `mise run
+// check:images`, which builds the images and artifacts first, passes -Pogcloud.smoke; `check` skips these tests.
 val smoke: Provider<Boolean> = providers.gradleProperty("ogcloud.smoke").map { true }.orElse(false)
 
 dependencies {

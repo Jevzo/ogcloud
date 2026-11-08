@@ -19,8 +19,8 @@ var (
 	errNotPermitted    = errors.New(nodeerrors.NotPermitted)
 )
 
-// actingAdmin checks an in-game admin command (D-0115, D-0129): the player must be connected through the
-// proxy, or play on the backend, that sent it and hold permission.
+// actingAdmin checks an in-game admin command (D-0115, D-0117, D-0129, D-0132): the player must be connected
+// through the proxy, or play on the backend, that sent it and hold permission.
 func (s *Service) actingAdmin(ctx context.Context, sender *Session, playerUUID, permission string) error {
 	player, err := s.State.Session(ctx, playerUUID)
 	if err != nil {

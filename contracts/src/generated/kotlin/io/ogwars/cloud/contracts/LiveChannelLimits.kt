@@ -5,10 +5,10 @@ package io.ogwars.cloud.contracts
 object LiveChannelLimits {
     /** Valid channel names. */
     const val CHANNEL_PATTERN = "^[a-z0-9._:-]{1,64}$"
-    /** Channels one session may subscribe to. */
+    /** The most channels one session may subscribe to. */
     const val MAX_SUBSCRIPTIONS = 64
     const val MAX_PAYLOAD_BYTES = 65536
     const val MAX_TYPE_ID_LENGTH = 256
-    /** Publishes one session may send per second. */
+    /** The most publishes one session may send per second. */
     const val PUBLISHES_PER_SECOND = 200
 }

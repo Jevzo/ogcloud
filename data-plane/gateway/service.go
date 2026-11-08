@@ -122,7 +122,7 @@ func NewService(dependencies Dependencies, options Options) (*Service, error) {
 // NewServer serves the gateway's services with every call authenticated (D-0013); opts add e.g. TLS.
 func NewServer(auth *Authenticator, service *Service, agents *AgentService, opts ...grpc.ServerOption) *grpc.Server {
 	server := grpc.NewServer(append(opts,
-		// Nodes ping every few seconds (sessionkeepalive); the gateway also pings quiet nodes to find dead ones.
+		// Nodes ping every PingSeconds when quiet (sessionkeepalive); the gateway pings quiet nodes too.
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 			MinTime:             sessionkeepalive.MinimumPingSeconds * time.Second,
 			PermitWithoutStream: true,

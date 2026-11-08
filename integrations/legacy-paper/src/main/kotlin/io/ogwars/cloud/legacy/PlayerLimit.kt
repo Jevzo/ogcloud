@@ -25,7 +25,7 @@ internal class PlayerLimit(
                 )
             }
 
-            // The server's own limit comes from server.properties, which OgCloud does not manage.
+            // The server's own max-players is not the group's limit, so its full verdict is lifted.
             event.result == PlayerLoginEvent.Result.KICK_FULL -> {
                 event.allow()
             }

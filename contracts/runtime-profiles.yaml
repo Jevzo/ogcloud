@@ -12,9 +12,8 @@ clientProtocols:
 # The port every server and proxy listens on inside its pod.
 serverPort: 25565
 
-# JVM flags every server of a platform starts with, baked into its image; a group's own flags come after them,
-# so they win (D-0139). Backends get Aikar's G1 flags without AlwaysPreTouch, so autoscaled servers start fast;
-# proxies get Velocity's recommended flags and leave more memory to Netty's direct buffers.
+# JVM flags every server of a platform starts with, baked into its image; a group's own come after and win (D-0139).
+# Backends get Aikar's G1 flags without AlwaysPreTouch (fast autoscaled starts), proxies Velocity's recommended ones.
 jvmFlags:
   paper: &backend
     - -XX:InitialRAMPercentage=75
@@ -79,8 +78,8 @@ profiles:
       sha256: 85be73b90f295acd8d5d45a00ad10bac791d4b72b7554172612a89565ebaaa8f
       source: https://github.com/PaperMC/Velocity/commit/4d93ece85bb38b80d82aaf5b03bb33c1355bd6b4
 
-# Third-party plugins in the runtime bundles (D-0079): downloaded by the controller from Modrinth
-# and checked against the pinned SHA-512. Renovate bumps version, url and hash together.
+# Third-party plugins in the runtime bundles (D-0079): downloaded by the controller from Modrinth and checked against
+# the pinned SHA-512. `codegen plugins` bumps version, url and sha512 together in the weekly pin PR (D-0082).
 plugins:
   - id: viaversion
     platforms: [velocity]

@@ -27,11 +27,8 @@ import (
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 )
 
-// The contract-test build (T-0510) lets the JVM node client talk to this gateway without Kubernetes. Pods come
-// from a JSON file and a token is the name of the pod it stands for, so every call is still bound to a pod's
-// labels by the real authenticator. Kafka and Valkey are plaintext and the server certificate is self-signed.
-// Only the gateway-contracttest test image is built with this tag; it is never published.
-
+// security of the contract-test build (T-0510), only in the never-published gateway-contracttest image: pods from
+// a JSON file (a token names its pod, still checked by the real authenticator), plaintext deps, a self-signed cert.
 type security struct {
 	caOut, podsFile string
 }

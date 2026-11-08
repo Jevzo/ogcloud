@@ -26,7 +26,7 @@ internal class LegacyLine(
         to: Location,
     ) = global { player.teleport(to) }
 
-    /** The name colour goes last, so it colours the name; 1.8 cuts prefixes after 16 characters. */
+    /** The name colour goes last, so it colours the name; prefixes are cut to the 16 characters 1.8 clients take. */
     override fun styleTeam(
         team: Team,
         group: PermissionGroup,

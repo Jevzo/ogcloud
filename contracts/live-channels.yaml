@@ -9,7 +9,7 @@ constants:
   - name: maxSubscriptions
     type: int
     value: "64"
-    doc: Channels one session may subscribe to.
+    doc: The most channels one session may subscribe to.
   - name: maxPayloadBytes
     type: int
     value: "65536"
@@ -19,4 +19,4 @@ constants:
   - name: publishesPerSecond
     type: int
     value: "200"
-    doc: Publishes one session may send per second.
+    doc: The most publishes one session may send per second.

@@ -30,7 +30,7 @@ internal class PaperLine(
 
     override fun refreshCommands(player: Player) = player.updateCommands()
 
-    /** Current clients colour names by the team, so the team colour comes next to the prefix. */
+    /** Current clients colour the name with the team colour, not the prefix's last code, so both are set. */
     override fun styleTeam(
         team: Team,
         group: PermissionGroup,
