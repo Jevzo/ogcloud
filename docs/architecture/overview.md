@@ -125,7 +125,21 @@ backups, orphaned objects).
 
 ## Deployment
 
-- **One Helm chart** installs OgCloud and is reused everywhere.
+- **One Helm chart** (`deploy/helm/ogcloud`) installs OgCloud and is reused everywhere (D-0019). Cluster-wide
+  operators are separate releases pinned in `deploy/platform-deps.yaml`; Infisical and SeaweedFS are subcharts, so
+  the secrets install graph runs in one release (D-0146):
+  - `bootstrap root` (pre-install hook) writes Infisical's root; `bootstrap infisical` (post-install Job) creates
+    the project, the `ogcloud-secrets-sync` identity, every generated secret, and publishes the identity ids.
+  - The Secrets Operator logs in as that identity and syncs one Secret per workload from the chart's secret
+    inventory: config trees for the Spring services, key files for the Go services, the Kafka and PostgreSQL user
+    passwords, and `ogcloud-forwarding` in the game namespace.
+  - cert-manager's private CA (a ClusterIssuer, D-0041) signs the gateway's and controller's certificates;
+    trust-manager publishes the CA as ConfigMap `ogcloud-internal-ca` in both namespaces (D-0147).
+  - api, controller, gateway and load balancer run restricted (uid 1000, read-only root, no automounted token)
+    with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
+    `/webauthn` to the API (D-0098).
+  - `mise run check:chart` lints every value set in `ci/` and validates it with kubeconform against pinned
+    schemas; Go render tests in `data-plane/deploytest` check the invariants (D-0148).
 - **Images:** `mise run images:build` builds the artifacts with mise's toolchains (Spring boot jars unpacked into
   their layers, static Go binaries, the plugin jars) into `build/images`, then bakes every image from
   `images/docker-bake.json` (server images, generated from the catalog) and `images/docker-bake.hcl` (platform images).
