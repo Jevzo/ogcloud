@@ -37,6 +37,13 @@
       "semanticCommitScope": "tools"
     },
     {
+      "description": "protoc-gen-go-grpc lives in grpc-go, whose own release tags are not its versions (D-0061)",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["protoc-gen-go-grpc"],
+      "overrideDatasource": "go",
+      "overridePackageName": "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+    },
+    {
       "matchManagers": ["github-actions"],
       "semanticCommitType": "ci",
       "semanticCommitScope": "actions"

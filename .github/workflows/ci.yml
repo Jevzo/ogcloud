@@ -31,6 +31,9 @@ jobs:
             shared: &shared
               - mise.toml
               - .github/workflows/ci.yml
+              # Contracts generate code for both languages; the test images serve both test suites (D-0113).
+              - contracts/**
+              - testing/**
             jvm:
               - *shared
               - "**/*.kt"
