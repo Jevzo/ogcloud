@@ -15,7 +15,7 @@ server, and ships the network features owners otherwise assemble from plugins.
 | `control-plane/` | Kotlin: API and controller plus shared domain and adapter modules |
 | `data-plane/` | Go: node gateway, load balancer, template loader, bootstrap |
 | `integrations/` | JVM plugins and mods (Velocity, Paper and Folia, PandaSpigot, Fabric, NeoForge) and the SDK |
-| `apps/`, `packages/` | Web, desktop and mobile apps and shared TypeScript packages |
+| `apps/`, `packages/` | Web and desktop apps (mobile later, optional) and shared TypeScript packages |
 | `images/` | Server and platform container images, their bake files and smoke tests (`mise run images:build`, `mise run check:images`) |
 | `deploy/` | Helm chart, Terraform modules and local development config |
 | `docs/` | Architecture, runbooks and the docs site |

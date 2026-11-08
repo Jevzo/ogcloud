@@ -56,7 +56,7 @@ Admin ─WireGuard (optional)─▶ internal Gateway ─▶ Infisical, Grafana  
 | `template-loader` | Go | Pod init container that pulls a template and the runtime bundle, plus a push agent that uploads new template versions. |
 | `bootstrap` | Go | Install and upgrade jobs that create the secrets root and set up Infisical. |
 | Integrations | Kotlin/JVM | MIT-licensed SDK, a shaded gRPC node client, platform-neutral `node-core`, and thin adapters for Velocity, Paper (also on Folia, D-0135), PandaSpigot, Fabric and NeoForge. |
-| Apps | TypeScript | Web dashboard (Vite, React, TanStack), Electron desktop app, Expo mobile app. |
+| Apps | TypeScript | Web dashboard (Vite, React, TanStack) and Electron desktop app; an Expo mobile app is an optional goal after 2.0 (D-0145). |
 
 ## Game server pods
 
