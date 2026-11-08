@@ -90,5 +90,16 @@ data class Group(
     init {
         require(type != GroupType.STATIC || scaling.maxInstances <= 1) { "A STATIC group runs at most one server" }
         require(!drainTimeout.isNegative) { "drainTimeout must not be negative" }
+        // The entrypoint splits the flags into words, so each must be one plain flag, as in the catalog (D-0143).
+        require(jvmFlags.split(WHITESPACE).filter(String::isNotEmpty).all(::isPlainFlag)) {
+            "jvmFlags must be flags starting with -, separated by spaces, without quotes, \$, ` or \\"
+        }
+    }
+
+    private companion object {
+        val WHITESPACE = Regex("\\s+")
+        const val UNSAFE = "'\"$`\\"
+
+        fun isPlainFlag(flag: String) = flag.startsWith("-") && flag.none { it in UNSAFE }
     }
 }

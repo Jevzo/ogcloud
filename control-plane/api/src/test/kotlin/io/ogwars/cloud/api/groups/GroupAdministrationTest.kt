@@ -60,6 +60,13 @@ class GroupAdministrationTest(
         oauth.call("POST", GROUPS, admin, create("Not A Label")).statusCode() shouldBe BAD_REQUEST
         val foreignImage = create(groupId(), image = "docker.io/evil/paper:latest")
         oauth.call("POST", GROUPS, admin, foreignImage).statusCode() shouldBe BAD_REQUEST
+        val quotedFlags =
+            mapOf(
+                "id" to groupId(),
+                "type" to "DYNAMIC",
+                "settings" to settings() + ("jvmFlags" to "-Dmotd='hello world'"),
+            )
+        oauth.call("POST", GROUPS, admin, quotedFlags).statusCode() shouldBe BAD_REQUEST
     }
 
     @Test
