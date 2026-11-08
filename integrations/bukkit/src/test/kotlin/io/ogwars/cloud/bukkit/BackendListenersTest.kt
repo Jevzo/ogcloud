@@ -67,10 +67,34 @@ class BackendListenersTest {
         listeners.onHandshake(accepted)
         listeners.onHandshake(forged)
 
-        accepted.isCancelled shouldBe true
+        // The server uses the event's data only while it is not cancelled; otherwise it parses the raw
+        // handshake itself, token included.
+        accepted.isCancelled shouldBe false
+        accepted.isFailed shouldBe false
         accepted.uniqueId shouldBe player
         accepted.socketAddressHostname shouldBe "203.0.113.7"
         forged.isFailed shouldBe true
+    }
+
+    @Test
+    fun `a handshake that cannot be checked fails instead of passing unchecked`() {
+        val player = UUID.randomUUID()
+        val nullName =
+            PlayerHandshakeEvent(handshake(player, "known").replace("\"bungeeguard-token\"", "null"), "10.0.0.5", false)
+        val unreadable =
+            BackendListeners(
+                runtime,
+                ForwardingTokens(Path.of("tokens"), Clock.systemUTC()) { throw java.io.IOException("not mounted") },
+                tablist,
+                Logger.getAnonymousLogger(),
+            )
+        val noTokens = PlayerHandshakeEvent(handshake(player, "known"), "10.0.0.5", false)
+
+        listeners.onHandshake(nullName)
+        unreadable.onHandshake(noTokens)
+
+        nullName.isFailed shouldBe true
+        noTokens.isFailed shouldBe true
     }
 
     @Test
@@ -82,6 +106,21 @@ class BackendListenersTest {
         steve.hasPermission("vip.fly") shouldBe true
         steve.hasPermission("vip.build") shouldBe false
         verify { runtime.joined(steve.uniqueId) }
+    }
+
+    @Test
+    fun `what decided a player's permissions before OgCloud still does, including later attachments`() {
+        val plugin = MockBukkit.createMockPlugin()
+        // Another permission plugin's grant, made before OgCloud injects at join.
+        steve.addAttachment(plugin, "other.plugin", true)
+
+        PermissionInjector.inject(steve) { _, node -> if (node == "vip.fly") Decision.ALLOW else Decision.DEFAULT }
+        steve.addAttachment(plugin, "later.grant", true)
+
+        steve.hasPermission("vip.fly") shouldBe true
+        steve.hasPermission("other.plugin") shouldBe true
+        steve.hasPermission("later.grant") shouldBe true
+        steve.hasPermission("nobody.granted") shouldBe false
     }
 
     @Test

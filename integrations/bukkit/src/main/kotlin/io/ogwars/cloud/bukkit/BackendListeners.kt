@@ -20,14 +20,23 @@ class BackendListeners(
     /** Only OgCloud's proxies may forward players here (D-0065); first, so no other plugin sees a forged login. */
     @EventHandler(priority = EventPriority.LOWEST)
     fun onHandshake(event: PlayerHandshakeEvent) {
-        when (val verdict = ForwardingHandshake.verify(event.originalHandshake, tokens.current())) {
+        // The server takes the event's outcome only while it is not cancelled; a cancelled event falls back to plain
+        // BungeeCord forwarding, which accepts any login and keeps the token in the player's profile.
+        event.isCancelled = false
+        val verdict =
+            try {
+                ForwardingHandshake.verify(event.originalHandshake, tokens.current())
+            } catch (e: Exception) {
+                // An unreadable token file or handshake must not let a login through unchecked.
+                HandshakeVerdict.Refused("could not check the handshake: $e")
+            }
+        when (verdict) {
             is HandshakeVerdict.Accepted -> {
                 val login = verdict.login
                 event.serverHostname = login.serverHostname
                 event.socketAddressHostname = login.address
                 event.uniqueId = login.uuid
                 event.propertiesJson = login.propertiesJson
-                event.isCancelled = true
             }
 
             is HandshakeVerdict.Refused -> {

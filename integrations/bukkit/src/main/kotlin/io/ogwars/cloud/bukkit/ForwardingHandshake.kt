@@ -1,6 +1,7 @@
 package io.ogwars.cloud.bukkit
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.UUID
@@ -43,9 +44,17 @@ object ForwardingHandshake {
         val (host, address, rawUuid, rawProperties) = parts
         val uuid = parseUuid(rawUuid) ?: return HandshakeVerdict.Refused("malformed player id")
         val properties = parseProperties(rawProperties) ?: return HandshakeVerdict.Refused("malformed properties")
-        val sent = properties.filter { it.asJsonObject["name"]?.asString == TOKEN_PROPERTY }
+        if (properties.any {
+                it.asJsonObject.text(
+                    "name",
+                ) == null
+            }
+        ) {
+            return HandshakeVerdict.Refused("a property has no name")
+        }
+        val sent = properties.filter { it.asJsonObject.text("name") == TOKEN_PROPERTY }
         if (sent.size != 1) return HandshakeVerdict.Refused("expected one forwarding token, got ${sent.size}")
-        if (sent.single().asJsonObject["value"]?.asString !in
+        if (sent.single().asJsonObject.text("value") !in
             tokens
         ) {
             return HandshakeVerdict.Refused("unknown forwarding token")
@@ -53,6 +62,14 @@ object ForwardingHandshake {
         val kept = JsonArray().apply { properties.filterNot { it in sent }.forEach(::add) }
         return HandshakeVerdict.Accepted(ForwardedLogin(host, address, uuid, kept.toString()))
     }
+
+    /** A string member, or null for anything else, e.g. JSON null, which Gson cannot read as a string. */
+    private fun JsonObject.text(key: String): String? =
+        get(key)
+            ?.takeIf {
+                it.isJsonPrimitive &&
+                    it.asJsonPrimitive.isString
+            }?.asString
 
     /** Forwarding sends the id without dashes. */
     private fun parseUuid(raw: String): UUID? =
