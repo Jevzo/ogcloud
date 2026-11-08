@@ -15,8 +15,8 @@ import org.testcontainers.DockerClientFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * The platform images start their service as uid 1000 (T-0509). Without configuration each one stops at once with
- * its own error, which proves the binary or the Spring layers run on the image; the full start is the chart's job.
+ * The platform images start their service (T-0509). Without configuration each one stops with its own error, which
+ * proves the binary, or the Spring context up to its database, runs on the image; the full start is the chart's job.
  */
 class PlatformImagesSmokeTest {
     private val docker: DockerClient = DockerClientFactory.instance().client()
@@ -32,10 +32,22 @@ class PlatformImagesSmokeTest {
 
     @ParameterizedTest
     @ValueSource(strings = ["api", "controller"])
-    fun `a Spring service boots its application`(service: String) {
-        val (_, logs) = run(service)
+    fun `a Spring service wires its context up to the missing database`(service: String) {
+        val (exitCode, logs) = run(service)
 
+        exitCode shouldBe SPRING_START_FAILED
         logs shouldContain "Starting ${service.replaceFirstChar(Char::uppercase)}Application"
+        logs shouldContain "Failed to configure a DataSource"
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["api", "controller", "gateway", "loadbalancer", "template-loader", "bootstrap"])
+    fun `every platform image runs as uid 1000`(image: String) {
+        docker
+            .inspectImageCmd(imageOf(image))
+            .exec()
+            .config
+            ?.user shouldBe "1000:1000"
     }
 
     @Test
@@ -91,6 +103,7 @@ class PlatformImagesSmokeTest {
 
     private companion object {
         const val GO_CONFIG_ERROR = 1
+        const val SPRING_START_FAILED = 1
         const val RUN_SECONDS = 60L
         const val PLUGINS = "/opt/ogcloud/plugins"
     }
