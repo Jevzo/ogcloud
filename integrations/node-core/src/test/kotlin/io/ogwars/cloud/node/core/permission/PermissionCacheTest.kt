@@ -9,6 +9,7 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 class PermissionCacheTest {
     private val queries = FakeQueries()
@@ -86,14 +87,31 @@ class PermissionCacheTest {
 
     @Test
     fun `a rank that loads after its player left is dropped`() {
-        queries.profiles[steve] = profile("default", 1)
+        val answer = CompletableFuture<PlayerProfile?>()
+        queries.pendingProfiles[steve] = answer
         val loading = cache.load(steve)
         cache.unload(steve)
+        answer.complete(profile("default", 1))
         loading.join()
 
         cache.rank(steve) shouldBe null
+        queries.profiles[steve] = profile("default", 1)
         cache.load(steve).join()
         cache.rank(steve)?.group?.permissionGroupId shouldBe "default"
+    }
+
+    @Test
+    fun `a rank change racing the player's quit does not bring the rank back`() {
+        cache.load(steve, profile("default", 1)).join()
+        val answer = CompletableFuture<PlayerProfile?>()
+        queries.pendingProfiles[steve] = answer
+        val refreshing = cache.refresh(update(version = 2))
+        cache.unload(steve)
+        answer.complete(profile("admin", 2))
+
+        refreshing.join() shouldBe null
+        cache.rank(steve) shouldBe null
+        cache.reloadAll().join() shouldBe emptySet()
     }
 
     private fun update(version: Long) =

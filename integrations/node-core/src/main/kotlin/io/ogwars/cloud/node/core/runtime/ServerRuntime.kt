@@ -12,6 +12,7 @@ import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.sdk.OgCloudServer
 import io.ogwars.cloud.sdk.RuntimeNpcs
 import java.util.UUID
+import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 
 /** A Paper or PandaSpigot server's runtime: ranks of the players here, game state, and NPC updates. */
@@ -21,10 +22,11 @@ class ServerRuntime(
     queries: NodeQueries,
     messages: Messages,
     scheduler: ScheduledExecutorService,
+    callbacks: Executor,
     npcs: RuntimeNpcs,
     sessionOf: (SessionListener) -> NodeSession,
-) : NodeRuntime(identity, platform, queries, messages, scheduler, sessionOf) {
-    private val server = ServerApi(identity, queries, session, messages, live, ready, npcs)
+) : NodeRuntime(identity, platform, queries, messages, scheduler, callbacks, sessionOf) {
+    private val server = ServerApi(identity, queries, session, messages, live, ready, callbacks, npcs)
     override val api: OgCloudServer = server
 
     fun joined(player: UUID) = loadRank(player)

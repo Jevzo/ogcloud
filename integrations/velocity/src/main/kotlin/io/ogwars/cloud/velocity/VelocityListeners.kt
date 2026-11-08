@@ -1,5 +1,6 @@
 package io.ogwars.cloud.velocity
 
+import io.ogwars.cloud.contracts.PermissionNodes
 import io.ogwars.cloud.node.core.permission.Decision
 import io.ogwars.cloud.node.core.routing.Route
 import io.ogwars.cloud.node.core.runtime.LoginDecision
@@ -27,13 +28,16 @@ internal class VelocityListeners(
     private val proxy: ProxyServer,
     private val runtime: ProxyRuntime,
 ) {
-    /** Waits for the controller's answer (maintenance, D-0100) without holding a Velocity thread. */
+    /** Waits for the controller's verdict (maintenance, rank) without holding a Velocity thread. */
     @Subscribe
     fun onLogin(event: LoginEvent): EventTask? {
         if (!event.result.isAllowed) return null
         val player = event.player
         val address = player.remoteAddress.address.hostAddress
-        val login = runtime.login(player.uniqueId, player.username, player.protocolVersion.protocol, address)
+        val login =
+            runtime.login(player.uniqueId, player.username, player.protocolVersion.protocol, address) {
+                player.hasPermission(PermissionNodes.MAINTENANCE_BYPASS)
+            }
         val decided =
             login.thenAccept { decision ->
                 if (decision is LoginDecision.Denied) {

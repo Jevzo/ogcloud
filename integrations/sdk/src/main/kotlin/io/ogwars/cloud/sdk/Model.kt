@@ -1,5 +1,6 @@
 package io.ogwars.cloud.sdk
 
+import java.util.Optional
 import java.util.UUID
 
 interface ServerInfo {
@@ -26,7 +27,7 @@ interface PlayerLocation {
     val proxyId: String
 
     /** Empty until the player reached a server. */
-    val serverId: String
+    val serverId: Optional<String>
 }
 
 enum class GroupType { DYNAMIC, STATIC, PROXY }

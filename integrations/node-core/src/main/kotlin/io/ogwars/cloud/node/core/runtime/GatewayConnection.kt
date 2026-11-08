@@ -12,6 +12,7 @@ import io.ogwars.cloud.node.core.query.NodeQueries
 import java.time.Clock
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The pod's link to the gateway: one TLS channel with the pod's token (D-0013, D-0041) for the session and the
- * queries. Adapters build a runtime from it, e.g. `ProxyRuntime(..., connection.queries, ..., connection::session)`.
+ * queries. Adapters build a runtime from it, e.g. `ProxyRuntime(..., connection.callbacks, ..., connection::session)`.
  */
 class GatewayConnection(
     private val settings: NodeSettings,
@@ -28,14 +29,15 @@ class GatewayConnection(
     private val channel = GatewayChannels.open(settings)
     private val credentials = TokenCredentials(settings.tokenFile, Clock.systemUTC())
 
-    // Query answers run on virtual threads, so a slow callback never holds up gRPC's own threads.
-    private val callbacks: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
+    // Query answers and plugin callbacks run on virtual threads, so a slow one never holds up gRPC's own threads.
+    private val virtualThreads: ExecutorService = Executors.newVirtualThreadPerTaskExecutor()
+    val callbacks: Executor = virtualThreads
 
     val queries: NodeQueries =
         GrpcNodeQueries(
             GatewayServiceGrpc.newFutureStub(channel).withCallCredentials(credentials),
             QUERY_DEADLINE,
-            callbacks,
+            virtualThreads,
         )
 
     fun session(listener: SessionListener): NodeSession =
@@ -43,7 +45,7 @@ class GatewayConnection(
 
     override fun close() {
         channel.shutdown()
-        callbacks.shutdown()
+        virtualThreads.shutdown()
         if (!channel.awaitTermination(SHUTDOWN.toMillis(), TimeUnit.MILLISECONDS)) channel.shutdownNow()
     }
 

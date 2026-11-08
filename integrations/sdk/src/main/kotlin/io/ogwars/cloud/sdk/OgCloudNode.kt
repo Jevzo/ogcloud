@@ -6,10 +6,10 @@ import java.util.concurrent.CompletableFuture
 
 /**
  * What every server and proxy can do. Lookups ask the gateway and complete off the server thread; switch to the
- * main thread before touching the game.
+ * game's thread (the main thread, or the region on Folia) before touching the game.
  */
 interface OgCloudNode {
-    /** This server's id. */
+    /** This node's id; proxies have one too. */
     val serverId: String
     val groupId: String
     val groupType: GroupType
@@ -26,31 +26,34 @@ interface OgCloudNode {
 
     fun findPlayer(name: String): CompletableFuture<Optional<PlayerLocation>>
 
-    /** Starts a server of the group and completes with its id; fails with [OgCloudException] when refused. */
+    /** Starts a server of the group and completes with its id; fails with [OgCloudException] when refused or offline. */
     fun requestServer(groupId: String): CompletableFuture<String>
 
-    /** Moves a player to a server; the player's proxy performs it. */
+    /**
+     * Moves a player to a server; the player's proxy performs it. Completes once sent, and fails with
+     * [OgCloudException] while this node is not connected.
+     */
     fun transferPlayer(
         player: UUID,
         serverId: String,
-    )
+    ): CompletableFuture<Void>
 
-    /** Moves a player into a group, picking the server by [strategy], or the network's when null. */
+    /** As [transferPlayer], into a group: the server is picked by [strategy], or the network's when null. */
     fun transferPlayerToGroup(
         player: UUID,
         groupId: String,
         strategy: RoutingStrategy?,
-    )
+    ): CompletableFuture<Void>
 
     val liveChannels: LiveChannels
 
-    /** Runs [action] off the server thread once the gateway welcomed this server, at once if it already has. */
+    /** Runs [action] off the server thread once the gateway first welcomed this node, or soon if it already has. */
     fun onReady(action: Runnable)
 }
 
 /** A Paper or PandaSpigot server. */
 interface OgCloudServer : OgCloudNode {
-    /** What the server is doing; ENDING moves its players away and drains it. */
+    /** What the server is doing; on DYNAMIC servers, ENDING moves the players away and drains the server. */
     var gameState: GameState
 
     /**
@@ -69,7 +72,10 @@ interface OgCloudServer : OgCloudNode {
 /** A Velocity proxy. */
 interface OgCloudProxy : OgCloudNode
 
-/** Thrown when the network refuses a request; [message] says why. */
-class OgCloudException(
-    message: String,
-) : RuntimeException(message)
+/** Thrown when the network refuses a request or cannot be reached; [message] says why. */
+class OgCloudException
+    @JvmOverloads
+    constructor(
+        message: String,
+        cause: Throwable? = null,
+    ) : RuntimeException(message, cause)

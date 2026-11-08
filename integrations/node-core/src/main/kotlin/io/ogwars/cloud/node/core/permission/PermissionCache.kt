@@ -25,7 +25,7 @@ enum class Decision { ALLOW, DENY, DEFAULT }
 
 /**
  * Ranks of the players on this node, loaded from the gateway's read models on join and refreshed by broadcasts.
- * Updates older than the held version are ignored.
+ * Updates older than the held version are ignored; loads that failed are tried again by [reloadPending].
  */
 class PermissionCache(
     private val queries: NodeQueries,
@@ -34,6 +34,9 @@ class PermissionCache(
 
     // A rank that finishes loading after its player left is dropped instead of kept forever.
     private val present = ConcurrentHashMap.newKeySet<UUID>()
+
+    // Present players whose rank could not be loaded or refreshed, e.g. while the gateway was unreachable.
+    private val pending = ConcurrentHashMap.newKeySet<UUID>()
 
     fun rank(player: UUID): Rank? = ranks[player]
 
@@ -46,28 +49,18 @@ class PermissionCache(
         profile: PlayerProfile? = null,
     ): CompletableFuture<Rank?> {
         present.add(player)
-        val loading = profile?.let { CompletableFuture.completedFuture(it) } ?: queries.profile(player)
-        return loading.thenCompose { loaded ->
-            if (loaded ==
-                null
-            ) {
-                CompletableFuture.completedFuture(null)
-            } else {
-                rankOf(loaded).thenApply { store(player, it) }
-            }
-        }
+        return fetch(player, profile)
     }
 
-    /** Loads every held rank again, e.g. after a reconnect missed broadcasts; completes with the players reloaded. */
-    fun reloadAll(): CompletableFuture<Set<UUID>> {
-        val loads = ranks.keys.map { player -> load(player).thenApply { rank -> player.takeIf { rank != null } } }
-        return CompletableFuture
-            .allOf(*loads.toTypedArray())
-            .thenApply { loads.mapNotNullTo(mutableSetOf()) { it.join() } }
-    }
+    /** Loads every player's rank again, e.g. after a reconnect missed broadcasts; completes with those reloaded. */
+    fun reloadAll(): CompletableFuture<Set<UUID>> = reload(present.toSet())
+
+    /** Tries the ranks again that failed to load or refresh, or are missing; completes with those now loaded. */
+    fun reloadPending(): CompletableFuture<Set<UUID>> = reload(pending + (present - ranks.keys))
 
     fun unload(player: UUID) {
         present.remove(player)
+        pending.remove(player)
         ranks.remove(player)
     }
 
@@ -86,16 +79,18 @@ class PermissionCache(
         val player = UUID.fromString(update.playerUuid)
         val held = ranks[player] ?: return CompletableFuture.completedFuture(null)
         if (update.version < held.profile.version) return CompletableFuture.completedFuture(null)
-        return load(player)
+        return fetch(player)
     }
 
     /** A permission group changed or went; completes with the players whose rank it changed. */
     fun refresh(update: PermissionGroupUpdated): CompletableFuture<Set<UUID>> {
         val holders = ranks.filterValues { it.group.permissionGroupId == update.permissionGroupId }.keys
         if (holders.isEmpty() || update.deleted) return CompletableFuture.completedFuture(emptySet())
-        return queries.permissionGroup(update.permissionGroupId).thenApply { group ->
-            if (group == null) emptySet() else holders.filterTo(mutableSetOf()) { replaceGroup(it, group) }
-        }
+        return queries
+            .permissionGroup(update.permissionGroupId)
+            .thenApply { group ->
+                if (group == null) emptySet() else holders.filterTo(mutableSetOf()) { replaceGroup(it, group) }
+            }.whenComplete { _, error -> if (error != null) pending += holders }
     }
 
     /** True when [player] still held the group and [group] is not older than their copy. */
@@ -109,6 +104,33 @@ class PermissionCache(
             if (replaced) rank.copy(group = group) else rank
         }
         return replaced
+    }
+
+    private fun reload(players: Set<UUID>): CompletableFuture<Set<UUID>> {
+        val loads = players.map { player -> fetch(player).thenApply { rank -> player.takeIf { rank != null } } }
+        return CompletableFuture
+            .allOf(*loads.toTypedArray())
+            .thenApply { loads.mapNotNullTo(mutableSetOf()) { it.join() } }
+    }
+
+    // Only a join marks a player present, so a reload racing their quit cannot bring their rank back.
+    private fun fetch(
+        player: UUID,
+        profile: PlayerProfile? = null,
+    ): CompletableFuture<Rank?> {
+        val loading = profile?.let { CompletableFuture.completedFuture(it) } ?: queries.profile(player)
+        return loading
+            .thenCompose { loaded ->
+                if (loaded ==
+                    null
+                ) {
+                    CompletableFuture.completedFuture(null)
+                } else {
+                    rankOf(loaded).thenApply { store(player, it) }
+                }
+            }.whenComplete { rank, error ->
+                if (player in present && (error != null || rank == null)) pending += player else pending -= player
+            }
     }
 
     private fun rankOf(profile: PlayerProfile): CompletableFuture<Rank?> =

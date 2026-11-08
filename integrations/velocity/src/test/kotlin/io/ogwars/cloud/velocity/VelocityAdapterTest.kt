@@ -1,12 +1,21 @@
 package io.ogwars.cloud.velocity
 
+import io.ogwars.cloud.contracts.PermissionNodes
 import io.ogwars.cloud.contracts.events.v1.GroupType
 import io.ogwars.cloud.node.core.permission.Decision
+import io.ogwars.cloud.node.core.routing.Route
+import io.ogwars.cloud.node.core.runtime.LoginDecision
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.state.Backend
+import io.ogwars.cloud.node.core.text.Message
+import io.ogwars.cloud.node.core.text.Messages
+import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.connection.DisconnectEvent
+import com.velocitypowered.api.event.connection.LoginEvent
 import com.velocitypowered.api.event.permission.PermissionsSetupEvent
+import com.velocitypowered.api.event.player.KickedFromServerEvent
+import com.velocitypowered.api.network.ProtocolVersion
 import com.velocitypowered.api.permission.PermissionFunction
 import com.velocitypowered.api.permission.PermissionProvider
 import com.velocitypowered.api.permission.Tristate
@@ -18,14 +27,19 @@ import com.velocitypowered.api.proxy.server.RegisteredServer
 import com.velocitypowered.api.proxy.server.ServerInfo
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress
 import java.util.Optional
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 class VelocityAdapterTest {
     private val steve = UUID.randomUUID()
@@ -126,6 +140,61 @@ class VelocityAdapterTest {
     }
 
     @Test
+    fun `a denied login is refused with the controller's text, and one refused already is left alone`() {
+        val runtime = mockk<ProxyRuntime>()
+        val bypass = slot<() -> Boolean>()
+        every { runtime.login(steve, "Steve", 47, "1.2.3.4", capture(bypass)) } returns
+            CompletableFuture.completedFuture(LoginDecision.Denied("&cMaintenance"))
+        val listeners = VelocityListeners(mockk(), runtime)
+        val player = player(currentServer = null)
+        val event = LoginEvent(player, "")
+
+        listeners.onLogin(event)
+        every { player.hasPermission(PermissionNodes.MAINTENANCE_BYPASS) } returns true
+
+        event.result.isAllowed shouldBe false
+        event.result.reasonComponent.map { plain(it) } shouldBe Optional.of("Maintenance")
+        bypass.captured() shouldBe true
+        val refused =
+            LoginEvent(
+                player,
+                "",
+            ).apply { result = ResultedEvent.ComponentResult.denied(Component.text("x")) }
+        listeners.onLogin(refused) shouldBe null
+        verify(exactly = 1) { runtime.login(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed backend sends a joining player elsewhere, never back to it, and tells one already playing`() {
+        val runtime = mockk<ProxyRuntime> { every { messages } returns Messages.load() }
+        val failed = registered(backend.id)
+        val other = registered("other")
+        val proxy = mockk<ProxyServer> { every { getServer("other") } returns Optional.of(other) }
+        val listeners = VelocityListeners(proxy, runtime)
+
+        fun kicked(
+            player: Player,
+            reason: Component? = null,
+        ) = KickedFromServerEvent(player, failed, reason, true, KickedFromServerEvent.Notify.create(Component.empty()))
+        val joining = player(currentServer = null)
+        val playing = player(currentServer = mockk())
+
+        val banned = kicked(joining, Component.text("banned")).also(listeners::onKickedFromServer)
+        val elsewhere = kicked(playing).also(listeners::onKickedFromServer)
+        every { runtime.initialServer(steve) } returns Route.To(backend.copy(id = "other"))
+        val redirected = kicked(joining).also(listeners::onKickedFromServer)
+        every { runtime.initialServer(steve) } returns Route.To(backend)
+        val stranded = kicked(joining).also(listeners::onKickedFromServer)
+
+        (banned.result as KickedFromServerEvent.Notify).messageComponent shouldBe Component.empty()
+        plain((elsewhere.result as KickedFromServerEvent.Notify).messageComponent) shouldBe
+            plain(legacyText(Messages.load().text(Message.KICK_SERVER_DOWN)))
+        (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
+        redirected.result.shouldBeInstanceOf<KickedFromServerEvent.RedirectPlayer>()
+        stranded.result.shouldBeInstanceOf<KickedFromServerEvent.DisconnectPlayer>()
+    }
+
+    @Test
     fun `only the backend's npc command passes through the proxy (v1 bug 4)`() {
         VelocityListeners.isBackendCommand("ogcloud npc list") shouldBe true
         VelocityListeners.isBackendCommand("OC npc") shouldBe true
@@ -143,6 +212,13 @@ class VelocityAdapterTest {
         mockk<Player>(relaxed = true) {
             every { uniqueId } returns steve
             every { username } returns "Steve"
+            every { protocolVersion } returns ProtocolVersion.MINECRAFT_1_8
+            every { remoteAddress } returns InetSocketAddress("1.2.3.4", 1)
             every { this@mockk.currentServer } returns Optional.ofNullable(currentServer)
         }
+
+    private fun registered(name: String) =
+        mockk<RegisteredServer> { every { serverInfo } returns ServerInfo(name, InetSocketAddress(0)) }
+
+    private fun plain(text: Component) = PlainTextComponentSerializer.plainText().serialize(text)
 }

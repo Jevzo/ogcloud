@@ -15,14 +15,17 @@ import io.ogwars.cloud.node.client.DeliveryOutcome
 import io.ogwars.cloud.node.client.NodeSession
 import io.ogwars.cloud.node.client.SessionListener
 import io.ogwars.cloud.node.core.permission.PermissionCache
+import io.ogwars.cloud.node.core.permission.Rank
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.node.core.sdk.LiveChannelHub
+import io.ogwars.cloud.node.core.sdk.SerialExecutor
 import io.ogwars.cloud.node.core.state.NetworkState
 import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.sdk.OgCloudNode
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -30,6 +33,7 @@ import java.util.concurrent.TimeUnit
 /**
  * node-core's side of a server or proxy: the gateway session and what it learned (settings, groups, ranks), the
  * heartbeat, deliveries and the SDK. Platform adapters create [ProxyRuntime] or [ServerRuntime] and call [start].
+ * Plugin callbacks of the SDK run on [callbacks].
  */
 abstract class NodeRuntime(
     val identity: NodeIdentity,
@@ -37,13 +41,14 @@ abstract class NodeRuntime(
     val queries: NodeQueries,
     val messages: Messages,
     private val scheduler: ScheduledExecutorService,
+    protected val callbacks: Executor,
     sessionOf: (SessionListener) -> NodeSession,
 ) : AutoCloseable {
     protected val log: System.Logger = System.getLogger(javaClass.name)
     val network = NetworkState()
     val permissions = PermissionCache(queries)
     protected val session: NodeSession = sessionOf(Listener())
-    internal val live = LiveChannelHub(session)
+    internal val live = LiveChannelHub(session, SerialExecutor(callbacks))
 
     /** Completes on the first Welcome; the SDK's onReady waits for it. */
     protected val ready = CompletableFuture<Unit>()
@@ -55,6 +60,7 @@ abstract class NodeRuntime(
     fun start() {
         session.start()
         every(HEARTBEAT, "heartbeat", ::heartbeat)
+        every(RANK_RETRY, "rank retry") { permissions.reloadPending().whenComplete(::reloaded) }
         startTasks()
     }
 
@@ -67,7 +73,26 @@ abstract class NodeRuntime(
     protected fun loadRank(
         player: UUID,
         profile: PlayerProfile? = null,
-    ) = permissions.load(player, profile).thenAccept { rank -> if (rank != null) platform.ranksChanged(setOf(player)) }
+    ): CompletableFuture<Rank?> =
+        permissions.load(player, profile).whenComplete { rank, error ->
+            when {
+                error != null -> {
+                    log.log(
+                        System.Logger.Level.WARNING,
+                        "Could not load the rank of $player; retrying",
+                        error,
+                    )
+                }
+
+                rank == null -> {
+                    log.log(System.Logger.Level.WARNING, "$player has no rank yet; retrying")
+                }
+
+                else -> {
+                    platform.ranksChanged(setOf(player))
+                }
+            }
+        }
 
     /** Runs [task] every [interval]; a failure is logged and the next run still happens. */
     protected fun every(
@@ -100,14 +125,16 @@ abstract class NodeRuntime(
     protected open fun deliverOther(delivery: Delivery): CompletableFuture<DeliveryOutcome> =
         CompletableFuture.completedFuture(DeliveryOutcome(false, "not for ${identity.groupType}"))
 
-    private fun reloadRanks() =
-        permissions.reloadAll().whenComplete { players, error ->
-            if (error != null) {
-                log.log(System.Logger.Level.WARNING, "Could not reload the ranks after reconnecting", error)
-            } else if (players.isNotEmpty()) {
-                platform.ranksChanged(players)
-            }
+    private fun reloaded(
+        players: Set<UUID>?,
+        error: Throwable?,
+    ) {
+        if (error != null) {
+            log.log(System.Logger.Level.WARNING, "Could not reload ranks", error)
+        } else if (!players.isNullOrEmpty()) {
+            platform.ranksChanged(players)
         }
+    }
 
     private fun heartbeat() {
         val sample = platform.sample()
@@ -136,17 +163,13 @@ abstract class NodeRuntime(
             }
 
             NodeBroadcast.UpdateCase.PERMISSION_GROUP -> {
-                permissions.refresh(event.permissionGroup).thenAccept { if (it.isNotEmpty()) platform.ranksChanged(it) }
+                permissions.refresh(event.permissionGroup).whenComplete(::reloaded)
             }
 
             NodeBroadcast.UpdateCase.PLAYER_PERMISSIONS -> {
                 val player = UUID.fromString(event.playerPermissions.playerUuid)
-                permissions.refresh(event.playerPermissions).thenAccept {
-                    if (it !=
-                        null
-                    ) {
-                        platform.ranksChanged(setOf(player))
-                    }
+                permissions.refresh(event.playerPermissions).whenComplete { rank, error ->
+                    reloaded(setOfNotNull(player.takeIf { rank != null }), error)
                 }
             }
 
@@ -180,7 +203,7 @@ abstract class NodeRuntime(
             this@NodeRuntime.welcomed(welcome)
             settingsChanged(before)
             // A reconnect may have missed rank broadcasts, and the gateway replays none.
-            if (!ready.complete(Unit)) reloadRanks()
+            if (!ready.complete(Unit)) permissions.reloadAll().whenComplete(::reloaded)
         }
 
         override fun lifecycle(event: ServerLifecycleChanged) = this@NodeRuntime.lifecycle(event)
@@ -198,5 +221,6 @@ abstract class NodeRuntime(
 
     private companion object {
         val HEARTBEAT: Duration = Duration.ofSeconds(5)
+        val RANK_RETRY: Duration = Duration.ofSeconds(30)
     }
 }

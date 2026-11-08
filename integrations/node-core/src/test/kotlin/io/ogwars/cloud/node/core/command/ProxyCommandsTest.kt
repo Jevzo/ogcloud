@@ -41,6 +41,7 @@ class ProxyCommandsTest {
             queries,
             messages,
             ManualScheduler().executor,
+            Runnable::run,
             Clock.fixed(now, ZoneOffset.UTC),
         ) { listener -> FakeSession(listener).also { session = it } }
     private val steve = UUID.randomUUID()
@@ -137,11 +138,13 @@ class ProxyCommandsTest {
     fun `ranks are set with v1 durations, checked before they leave`() {
         run("perm player set Steve vip 1x")
         run("perm player set Steve vip 1d 12h")
+        run("perm player set Steve vip -1")
 
         admin.replies shouldContain said(Message.PERM_DURATION_INVALID, "duration" to "1x")
-        val rank = session.adminRequests.single().rank
-        rank.playerUuid shouldBe steve.toString()
-        rank.duration.seconds shouldBe Duration.ofHours(36).seconds
+        val (timed, permanent) = session.adminRequests.map { it.rank }
+        timed.playerUuid shouldBe steve.toString()
+        timed.duration.seconds shouldBe Duration.ofHours(36).seconds
+        permanent.hasDuration() shouldBe false
     }
 
     @Test

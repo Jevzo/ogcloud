@@ -1,8 +1,8 @@
 package io.ogwars.cloud.sdk
 
 /**
- * Entry point for plugins: `OgCloud.server()` on Paper and PandaSpigot, `OgCloud.proxy()` on Velocity. OgCloud's
- * own plugin installs the implementation when it enables, so call these from your plugin's enable or later.
+ * Entry point for plugins: `OgCloud.server()` on Paper and PandaSpigot, `OgCloud.proxy()` on Velocity. Depend on
+ * OgCloud (`depend: [OgCloud]`, on Velocity `ogcloud`) and call these from your plugin's enable or later.
  */
 object OgCloud {
     @Volatile

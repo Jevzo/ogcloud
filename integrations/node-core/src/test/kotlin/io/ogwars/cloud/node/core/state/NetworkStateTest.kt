@@ -53,6 +53,19 @@ class NetworkStateTest {
     }
 
     @Test
+    fun `a deleted group stays deleted until something newer than it arrives`() {
+        state.update(group(3, maintenance = true))
+        state.update(group(0, maintenance = false, deleted = true))
+
+        state.update(group(3, maintenance = true)) shouldBe false
+        state.know(info(maintenance = true))
+        state.groupType("lobby") shouldBe null
+
+        state.update(group(4, maintenance = true)) shouldBe true
+        state.inMaintenance("lobby") shouldBe true
+    }
+
+    @Test
     fun `what a query says yields to a broadcast already held`() {
         state.update(group(4, maintenance = false))
         state.know(info(maintenance = true))

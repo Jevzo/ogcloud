@@ -35,6 +35,7 @@ import java.time.Clock
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 
 /** Whether a joining player may log in, and with what message they are turned away. */
@@ -56,25 +57,38 @@ class ProxyRuntime(
     queries: NodeQueries,
     messages: Messages,
     scheduler: ScheduledExecutorService,
+    callbacks: Executor,
     clock: Clock,
     sessionOf: (SessionListener) -> NodeSession,
-) : NodeRuntime(identity, platform, queries, messages, scheduler, sessionOf) {
+) : NodeRuntime(identity, platform, queries, messages, scheduler, callbacks, sessionOf) {
     val directory = ServerDirectory(platform)
     val router = Router(directory, network)
-    override val api: OgCloudProxy = ProxyApi(identity, queries, session, messages, live, ready)
+    override val api: OgCloudProxy = ProxyApi(identity, queries, session, messages, live, ready, callbacks)
+
+    // Players per backend across the network, from the backends' heartbeats (D-0142).
+    @Volatile
+    private var networkPlayers: Map<String, Int> = emptyMap()
 
     /** `/ogcloud`, for the adapter to register. */
     val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
 
-    /** Refuses players while this proxy is full (D-0134), else asks the controller and loads the rank. */
+    /**
+     * Refuses players while this proxy is full (D-0134), else asks the controller and loads the rank. With the
+     * permission system off the controller cannot see the bypass, so [bypass] asks the proxy's permission plugin.
+     */
     fun login(
         player: UUID,
         name: String,
         protocol: Int,
         remoteAddress: String,
+        bypass: () -> Boolean,
     ): CompletableFuture<LoginDecision> {
         if (platform.onlinePlayers().size >= identity.maxPlayers) {
             return CompletableFuture.completedFuture(LoginDecision.Denied(messages.text(Message.KICK_PROXY_FULL)))
+        }
+        val settings = network.settings
+        if (settings.maintenance && !settings.permissionSystemEnabled && !bypass()) {
+            return CompletableFuture.completedFuture(LoginDecision.Denied(settings.maintenanceKickMessage))
         }
         val request =
             ResolveLoginRequest
@@ -92,7 +106,10 @@ class ProxyRuntime(
                 } else {
                     loadRank(player, response.profile).thenApply { LoginDecision.Allowed }
                 }
-            }.exceptionally { LoginDecision.Denied(messages.text(Message.KICK_LOGIN_FAILED)) }
+            }.exceptionally { error ->
+                log.log(System.Logger.Level.WARNING, "The login of $name ($player) failed", error)
+                LoginDecision.Denied(messages.text(Message.KICK_LOGIN_FAILED))
+            }
     }
 
     /** The first backend for a player who just logged in. */
@@ -118,13 +135,16 @@ class ProxyRuntime(
     /** A login that ended before it completed, e.g. the player quit while it was checked; it was never reported. */
     fun loginAbandoned(player: UUID) = permissions.unload(player)
 
-    /** Routes a player as an admin or the SDK asked; the gateway applies maintenance only through this. */
+    /** Routes a transferred player (admin, API or SDK); maintenance for transfers is enforced here, not by the gateway. */
     fun route(
         player: UUID,
         destination: Destination,
     ): Route = router.route(destination, bypass(player), ::playersOn)
 
-    override fun startTasks() = every(SNAPSHOT, "player snapshot", ::snapshot)
+    override fun startTasks() {
+        every(SNAPSHOT, "player snapshot", ::snapshot)
+        every(PLAYER_COUNTS, "player count refresh", ::refreshPlayerCounts)
+    }
 
     override fun welcomed(welcome: Welcome) {
         network.resetGroups(
@@ -140,7 +160,8 @@ class ProxyRuntime(
                 },
         )
         directory.reset(welcome.serversList)
-        // Groups without servers are not in the Welcome, but their maintenance decides where their first server goes.
+        networkPlayers = welcome.serversList.associate { it.serverId to it.players }
+        // The Welcome lacks groups without servers; their maintenance flag matters once one starts.
         queries.groups().whenComplete { groups, error ->
             if (error != null) {
                 log.log(System.Logger.Level.WARNING, "Could not list the groups after the Welcome", error)
@@ -306,12 +327,26 @@ class ProxyRuntime(
 
     private fun bypass(player: UUID) = platform.hasPermission(player, PermissionNodes.MAINTENANCE_BYPASS)
 
-    private fun playersOn(backend: Backend): Int = platform.onlinePlayers().count { it.serverId == backend.id }
+    private fun refreshPlayerCounts() {
+        queries.servers().whenComplete { servers, error ->
+            if (error != null) {
+                // Stale counts only make routing less even until the next refresh.
+                log.log(System.Logger.Level.DEBUG, "Could not refresh the player counts", error)
+            } else {
+                networkPlayers = servers.associate { it.serverId to it.players }
+            }
+        }
+    }
+
+    // The network's count lags by a heartbeat, so the players this proxy just sent there count too.
+    private fun playersOn(backend: Backend): Int =
+        maxOf(platform.onlinePlayers().count { it.serverId == backend.id }, networkPlayers[backend.id] ?: 0)
 
     private fun status(enabled: Boolean) =
         messages.text(if (enabled) Message.STATUS_ENABLED else Message.STATUS_DISABLED)
 
     private companion object {
         val SNAPSHOT: Duration = Duration.ofSeconds(60)
+        val PLAYER_COUNTS: Duration = Duration.ofSeconds(5)
     }
 }

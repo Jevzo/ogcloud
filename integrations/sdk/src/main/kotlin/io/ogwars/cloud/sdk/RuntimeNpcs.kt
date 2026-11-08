@@ -4,7 +4,7 @@ import java.util.Optional
 import java.util.UUID
 import java.util.function.Consumer
 
-/** NPCs created by code; they are not stored and vanish when the server stops. Use them on the main thread. */
+/** NPCs created by code; they are not stored and vanish when the server stops. Safe to use from any thread. */
 interface RuntimeNpcs {
     fun create(id: String): RuntimeNpc.Builder
 

@@ -4,16 +4,18 @@ import io.ogwars.cloud.contracts.events.v1.GroupType
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.node.v1.GroupInfo
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The network settings and group flags the gateway sent, from the Welcome and later broadcasts. An update older than
- * what the node holds is ignored, so a late broadcast cannot undo a newer one (D-0077).
+ * what the node holds is ignored, so a late broadcast cannot undo a newer one (D-0077); a deleted group is kept as a
+ * tombstone, so a late update cannot bring it back.
  */
 class NetworkState {
     private val current = AtomicReference(NetworkSettingsUpdated.getDefaultInstance())
-    private val groups = ConcurrentHashMap<String, GroupUpdated>()
+
+    // Replaced as a whole, so a reset is never seen half done.
+    private val groups = AtomicReference<Map<String, GroupUpdated>>(emptyMap())
 
     val settings: NetworkSettingsUpdated get() = current.get()
 
@@ -29,13 +31,20 @@ class NetworkState {
 
     /** True when [update] changed what the node knows about the group; a deletion always applies. */
     fun update(update: GroupUpdated): Boolean {
-        if (update.deleted) return groups.remove(update.groupId) != null
-        var applied = false
-        groups.compute(update.groupId) { _, held ->
-            applied = held == null || update.version >= held.version
-            if (applied) update else held
+        var changed = false
+        groups.updateAndGet { held ->
+            val known = held[update.groupId]
+            val next =
+                when {
+                    update.deleted -> tombstone(update, known)
+                    known == null -> update
+                    known.deleted -> update.takeIf { it.version > known.version }
+                    else -> update.takeIf { it.version >= known.version }
+                }
+            changed = next != null && (!update.deleted || (known != null && !known.deleted))
+            if (next == null) held else held + (update.groupId to next)
         }
-        return applied
+        return changed
     }
 
     /**
@@ -43,22 +52,28 @@ class NetworkState {
      * Broadcasts after the Welcome carry versions and replace these.
      */
     fun resetGroups(known: Collection<GroupInfo>) {
-        groups.clear()
-        known.forEach { groups[it.groupId] = unversioned(it) }
+        groups.set(known.associate { it.groupId to unversioned(it) })
     }
 
     /** Group flags from a query, kept only where no broadcast has said more since the Welcome. */
     fun know(group: GroupInfo) {
-        groups.compute(group.groupId) { _, held ->
-            if (held == null ||
-                held.version == 0L
+        groups.updateAndGet { held ->
+            val known = held[group.groupId]
+            if (known == null ||
+                (known.version == 0L && !known.deleted)
             ) {
-                unversioned(group)
+                held + (group.groupId to unversioned(group))
             } else {
                 held
             }
         }
     }
+
+    // Only a newer update brings a deleted group back, also when the deletion itself carried no version.
+    private fun tombstone(
+        deletion: GroupUpdated,
+        known: GroupUpdated?,
+    ): GroupUpdated = deletion.toBuilder().setVersion(maxOf(deletion.version, known?.version ?: 0)).build()
 
     private fun unversioned(group: GroupInfo): GroupUpdated =
         GroupUpdated
@@ -68,7 +83,9 @@ class NetworkState {
             .setMaintenance(group.maintenance)
             .build()
 
-    fun inMaintenance(groupId: String): Boolean = groups[groupId]?.maintenance ?: false
+    fun inMaintenance(groupId: String): Boolean = live(groupId)?.maintenance ?: false
 
-    fun groupType(groupId: String): GroupType? = groups[groupId]?.groupType
+    fun groupType(groupId: String): GroupType? = live(groupId)?.groupType
+
+    private fun live(groupId: String): GroupUpdated? = groups.get()[groupId]?.takeUnless { it.deleted }
 }

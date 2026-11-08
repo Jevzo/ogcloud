@@ -20,7 +20,6 @@ fun CommandSender.say(
     vararg values: Pair<String, Any?>,
 ) = reply(messages.text(Message.PREFIX) + " " + messages.text(message, *values))
 
-/** One argument of a subcommand. */
 class Argument(
     val name: String,
     val kind: Kind = Kind.WORD,

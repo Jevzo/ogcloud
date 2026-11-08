@@ -35,7 +35,8 @@ sealed interface Route {
 
 /**
  * Picks backends for players on a proxy, as v1: a group in maintenance takes only players with the bypass, others go
- * to the default group or are kicked; full and draining backends take nobody; STATIC groups have one server.
+ * to the default group or are kicked; full and draining backends take nobody from a group route, while a server
+ * named explicitly is taken as asked and its own limit decides; STATIC groups have one server.
  */
 class Router(
     private val directory: ServerDirectory,
@@ -45,7 +46,7 @@ class Router(
 
     /**
      * Routes a player to [destination]. [bypass] is whether they may enter groups in maintenance; [players] counts a
-     * backend's players as this proxy sees them.
+     * backend's players across the network (D-0142).
      */
     fun route(
         destination: Destination,
@@ -109,7 +110,7 @@ class Router(
                 open[Math.floorMod(turns.computeIfAbsent(groupId) { AtomicInteger() }.getAndIncrement(), open.size)]
             }
 
-            // Unset strategies balance by load, v1's default.
+            // BALANCED, and an unset strategy as in v1, balance by load.
             else -> {
                 open.minBy { load(it, players) }
             }

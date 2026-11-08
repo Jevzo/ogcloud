@@ -17,6 +17,9 @@ class FakeQueries : NodeQueries {
     val servers = mutableListOf<ServerInfo>()
     val players = mutableListOf<PlayerLocation>()
     val profiles = mutableMapOf<UUID, PlayerProfile>()
+
+    /** Profile answers the test completes itself; they win over [profiles]. */
+    val pendingProfiles = mutableMapOf<UUID, CompletableFuture<PlayerProfile?>>()
     val permissionGroups = mutableMapOf<String, PermissionGroup>()
     val groups = mutableListOf<GroupInfo>()
     val npcs = mutableListOf<Npc>()
@@ -44,7 +47,8 @@ class FakeQueries : NodeQueries {
     override fun players(serverId: String): CompletableFuture<List<PlayerLocation>> =
         completedFuture(players.filter { it.serverId == serverId || it.proxyId == serverId })
 
-    override fun profile(player: UUID): CompletableFuture<PlayerProfile?> = completedFuture(profiles[player])
+    override fun profile(player: UUID): CompletableFuture<PlayerProfile?> =
+        pendingProfiles.remove(player) ?: completedFuture(profiles[player])
 
     override fun permissionGroup(id: String): CompletableFuture<PermissionGroup?> =
         completedFuture(permissionGroups[id])

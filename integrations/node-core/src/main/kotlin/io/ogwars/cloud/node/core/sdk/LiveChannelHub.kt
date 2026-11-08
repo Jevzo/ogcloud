@@ -11,14 +11,16 @@ import io.ogwars.cloud.sdk.Subscription
 import com.google.protobuf.ByteString
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executor
 import java.util.function.Consumer
 
 /**
  * Live channels over the gateway session (D-0116): at most once, so a publish while reconnecting is dropped. The
- * gateway's limits are checked here first, so plugin authors see a mistake at once.
+ * gateway's limits are checked here first, so plugin authors see a mistake at once. Listeners run on [deliveries].
  */
 internal class LiveChannelHub(
     private val session: NodeSession,
+    private val deliveries: Executor,
 ) : LiveChannels {
     private val log = System.getLogger(LiveChannelHub::class.java.name)
     private val listeners = ConcurrentHashMap<String, CopyOnWriteArrayList<Consumer<LiveMessage>>>()
@@ -51,24 +53,26 @@ internal class LiveChannelHub(
         listener: Consumer<LiveMessage>,
     ): Subscription {
         checkChannel(channel)
-        var first = false
+        // The session is told inside compute, so a racing last unsubscribe cannot undo this subscribe.
         listeners.compute(channel) { _, held ->
-            first = held == null
-            check(!first || listeners.size < LiveChannelLimits.MAX_SUBSCRIPTIONS) {
+            check(held != null || listeners.size < LiveChannelLimits.MAX_SUBSCRIPTIONS) {
                 "A server subscribes to at most ${LiveChannelLimits.MAX_SUBSCRIPTIONS} channels"
             }
+            if (held == null) session.subscribe(channel)
             (held ?: CopyOnWriteArrayList()).apply { add(listener) }
         }
-        if (first) session.subscribe(channel)
         return Subscription { unsubscribe(channel, listener) }
     }
 
     /** Hands a message to the channel's listeners; one listener's failure does not stop the others. */
     fun deliver(message: LiveChannelDelivery) {
-        val view = MessageView(message.channel, message.senderServerId, message.typeId, message.payload.toByteArray())
-        listeners[message.channel]?.forEach { listener ->
-            runCatching { listener.accept(view) }.onFailure {
-                log.log(System.Logger.Level.WARNING, "A live-channel listener on ${message.channel} failed", it)
+        val held = listeners[message.channel] ?: return
+        val view = MessageView(message.channel, message.senderServerId, message.typeId, message.payload)
+        deliveries.execute {
+            held.forEach { listener ->
+                runCatching { listener.accept(view) }.onFailure {
+                    log.log(System.Logger.Level.WARNING, "A live-channel listener on ${message.channel} failed", it)
+                }
             }
         }
     }
@@ -77,13 +81,15 @@ internal class LiveChannelHub(
         channel: String,
         listener: Consumer<LiveMessage>,
     ) {
-        var last = false
         listeners.computeIfPresent(channel) { _, held ->
             held.remove(listener)
-            last = held.isEmpty()
-            if (last) null else held
+            if (held.isEmpty()) {
+                session.unsubscribe(channel)
+                null
+            } else {
+                held
+            }
         }
-        if (last) session.unsubscribe(channel)
     }
 
     private fun checkChannel(channel: String) =
@@ -93,8 +99,10 @@ internal class LiveChannelHub(
         override val channel: String,
         override val senderServerId: String,
         override val typeId: String,
-        override val payload: ByteArray,
-    ) : LiveMessage
+        private val bytes: ByteString,
+    ) : LiveMessage {
+        override fun payload(): ByteArray = bytes.toByteArray()
+    }
 
     private companion object {
         val CHANNEL = Regex(LiveChannelLimits.CHANNEL_PATTERN)

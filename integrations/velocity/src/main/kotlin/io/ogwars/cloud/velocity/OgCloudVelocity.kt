@@ -20,9 +20,11 @@ class OgCloudVelocity
     constructor(
         private val proxy: ProxyServer,
     ) {
+        private val log = System.getLogger(OgCloudVelocity::class.java.name)
         private var node: Node? = null
 
-        // Velocity picks the event by the parameter's type, so the parameter stays though it is unused.
+        // Velocity picks the event by the parameter's type, so the parameter stays though it is unused. If OgCloud
+        // cannot start the proxy stops: it would route nobody, and the controller would only see a missing heartbeat.
         @Subscribe
         fun onInitialize(
             @Suppress("UNUSED_PARAMETER") event: ProxyInitializeEvent,
@@ -32,10 +34,16 @@ class OgCloudVelocity
                     .ensurePluginContainer(this)
                     .description.version
                     .orElse(UNKNOWN_VERSION)
-            node = Node(version).also { it.start() }
+            node =
+                try {
+                    Node(version).also { it.start() }
+                } catch (e: Exception) {
+                    log.log(System.Logger.Level.ERROR, "OgCloud could not start, so the proxy stops", e)
+                    proxy.shutdown()
+                    throw e
+                }
         }
 
-        // As above, the parameter only names the event.
         @Subscribe
         fun onShutdown(
             @Suppress("UNUSED_PARAMETER") event: ProxyShutdownEvent,
@@ -57,6 +65,7 @@ class OgCloudVelocity
                     pod.connection.queries,
                     pod.messages,
                     pod.scheduler,
+                    pod.connection.callbacks,
                     Clock.systemUTC(),
                     pod.connection::session,
                 )
@@ -84,10 +93,11 @@ class OgCloudVelocity
                         .schedule()
                 runtime.start()
                 runtime.api.onReady {
-                    runtime.queries.server(identity.serverId).thenAccept { info ->
-                        info?.let {
-                            displayName =
-                                it.displayName
+                    runtime.queries.server(identity.serverId).whenComplete { info, error ->
+                        if (error != null) {
+                            log.log(System.Logger.Level.WARNING, "Could not look up this proxy's display name", error)
+                        } else if (info != null) {
+                            displayName = info.displayName
                         }
                     }
                 }

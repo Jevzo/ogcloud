@@ -27,10 +27,14 @@ import io.ogwars.cloud.sdk.ServerInfo
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 import io.ogwars.cloud.contracts.node.v1.PlayerLocation as ProtoPlayerLocation
 import io.ogwars.cloud.contracts.node.v1.ServerInfo as ProtoServerInfo
 
-/** The SDK (D-0131) over node-core: lookups ask the gateway, commands go through the session. */
+/**
+ * The SDK (D-0131) over node-core: lookups ask the gateway, commands go through the session. Plugin callbacks run on
+ * [callbacks], never on the session's gRPC thread, so a slow plugin cannot stall the session.
+ */
 internal open class NodeApi(
     private val identity: NodeIdentity,
     private val queries: NodeQueries,
@@ -38,16 +42,19 @@ internal open class NodeApi(
     private val messages: Messages,
     override val liveChannels: LiveChannels,
     private val ready: CompletableFuture<Unit>,
+    private val callbacks: Executor,
 ) : OgCloudNode {
+    private val log = System.getLogger(NodeApi::class.java.name)
+
     override val serverId: String get() = identity.serverId
     override val groupId: String get() = identity.groupId
     override val groupType get() = identity.groupType
 
     override fun servers(): CompletableFuture<List<ServerInfo>> =
-        queries.servers().thenApply { it.map(ProtoServerInfo::toSdk) }
+        queries.servers().thenApply { it.mapNotNull(ProtoServerInfo::toSdk) }
 
     override fun servers(groupId: String): CompletableFuture<List<ServerInfo>> =
-        queries.servers(groupId).thenApply { it.map(ProtoServerInfo::toSdk) }
+        queries.servers(groupId).thenApply { it.mapNotNull(ProtoServerInfo::toSdk) }
 
     override fun server(serverId: String): CompletableFuture<Optional<ServerInfo>> =
         queries.server(serverId).thenApply { Optional.ofNullable(it?.toSdk()) }
@@ -80,25 +87,28 @@ internal open class NodeApi(
     )
 
     override fun onReady(action: Runnable) {
-        ready.thenRun(action)
+        ready.thenRunAsync(action, callbacks).exceptionally { error ->
+            log.log(System.Logger.Level.WARNING, "A plugin's onReady action failed", error)
+            null
+        }
     }
 
     /** Sends a server command; a refusal fails the future with an [OgCloudException] in the catalog's words. */
     protected fun command(request: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> =
-        session.serverCommand(request).handle { result, error ->
+        session.serverCommand(request).handleAsync({ result, error ->
             when {
-                error != null -> throw OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED))
+                error != null -> throw OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED), error)
                 result.error.isNotEmpty() -> throw OgCloudException(messages.reason(result.error))
                 else -> result
             }
+        }, callbacks)
+
+    private fun transfer(request: TransferRequested.Builder): CompletableFuture<Void> =
+        if (session.send(SessionRequest.newBuilder().setTransfer(request).build())) {
+            CompletableFuture.completedFuture(null)
+        } else {
+            CompletableFuture.failedFuture(OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED)))
         }
-
-    protected fun send(request: SessionRequest) {
-        if (!session.send(request)) throw OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED))
-    }
-
-    private fun transfer(request: TransferRequested.Builder) =
-        send(SessionRequest.newBuilder().setTransfer(request).build())
 }
 
 /** A Paper or PandaSpigot server's SDK; the platform adapter brings the runtime NPCs. */
@@ -109,8 +119,9 @@ internal class ServerApi(
     messages: Messages,
     liveChannels: LiveChannels,
     ready: CompletableFuture<Unit>,
+    callbacks: Executor,
     override val npcs: RuntimeNpcs,
-) : NodeApi(identity, queries, session, messages, liveChannels, ready),
+) : NodeApi(identity, queries, session, messages, liveChannels, ready, callbacks),
     OgCloudServer {
     @Volatile
     private var state = GameState.LOBBY
@@ -147,5 +158,6 @@ internal class ProxyApi(
     messages: Messages,
     liveChannels: LiveChannels,
     ready: CompletableFuture<Unit>,
-) : NodeApi(identity, queries, session, messages, liveChannels, ready),
+    callbacks: Executor,
+) : NodeApi(identity, queries, session, messages, liveChannels, ready, callbacks),
     OgCloudProxy

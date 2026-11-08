@@ -46,6 +46,7 @@ class ProxyRuntimeTest {
             queries,
             messages,
             scheduler.executor,
+            Runnable::run,
             Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZoneOffset.UTC),
         ) { listener -> FakeSession(listener).also { session = it } }
     private val steve = UUID.randomUUID()
@@ -106,7 +107,7 @@ class ProxyRuntimeTest {
                 .setAllowed(true)
                 .setProfile(profile(steve))
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4").join() shouldBe LoginDecision.Allowed
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe LoginDecision.Allowed
         runtime.permissions
             .rank(steve)
             ?.group
@@ -118,10 +119,10 @@ class ProxyRuntimeTest {
                 .setAllowed(false)
                 .setKickMessage("&cMaintenance")
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4").join() shouldBe LoginDecision.Denied("&cMaintenance")
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe LoginDecision.Denied("&cMaintenance")
 
         queries.login = null
-        runtime.login(steve, "Steve", 47, "1.2.3.4").join() shouldBe
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
             LoginDecision.Denied(messages.text(Message.KICK_LOGIN_FAILED))
     }
 
@@ -133,7 +134,7 @@ class ProxyRuntimeTest {
                 .setAllowed(true)
                 .setProfile(profile(steve))
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4").join()
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join()
 
         runtime.loginAbandoned(steve)
 
@@ -142,10 +143,86 @@ class ProxyRuntimeTest {
     }
 
     @Test
+    fun `with the permission system off, network maintenance asks the proxy's own permissions for the bypass`() {
+        session.listener.broadcast(
+            NodeBroadcast
+                .newBuilder()
+                .setNetworkSettings(
+                    NetworkSettingsUpdated
+                        .newBuilder()
+                        .setVersion(2)
+                        .setDefaultGroupId("lobby")
+                        .setMaintenance(true)
+                        .setMaintenanceKickMessage("&cMaintenance")
+                        .setPermissionSystemEnabled(false),
+                ).build(),
+        )
+        queries.login =
+            ResolveLoginResponse
+                .newBuilder()
+                .setAllowed(true)
+                .setProfile(profile(steve))
+                .build()
+
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe LoginDecision.Denied("&cMaintenance")
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { true }.join() shouldBe LoginDecision.Allowed
+    }
+
+    @Test
+    fun `routing counts the network's players, so a backend other proxies filled takes nobody`() {
+        session.listener.welcomed(
+            Welcome
+                .newBuilder()
+                .setNetworkSettings(NetworkSettingsUpdated.newBuilder().setVersion(1).setDefaultGroupId("lobby"))
+                .addServers(server("l-1", "lobby").toBuilder().setPlayers(50))
+                .addServers(server("l-2", "lobby"))
+                .build(),
+        )
+
+        runtime
+            .initialServer(steve)
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-2"
+
+        queries.servers += server("l-1", "lobby")
+        queries.servers += server("l-2", "lobby").toBuilder().setPlayers(50).build()
+        scheduler.runAll()
+
+        runtime
+            .initialServer(steve)
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-1"
+    }
+
+    @Test
+    fun `a transfer to a named server goes there, unless its group is in maintenance`() {
+        val toBedwars = transfer { setPlayerUuid(admin.toString()).setServerId("b-1") }
+        val toNowhere = transfer { setPlayerUuid(admin.toString()).setServerId("gone") }
+        val steveToBedwars = transfer { setPlayerUuid(steve.toString()).setServerId("b-1") }
+
+        session.listener
+            .deliver(toBedwars)
+            .join()
+            .success shouldBe true
+        session.listener
+            .deliver(toNowhere)
+            .join()
+            .let { it.success to it.message } shouldBe (false to "unknown server")
+        session.listener.broadcast(maintenance("bedwars"))
+        platform.connects.clear()
+        session.listener
+            .deliver(steveToBedwars)
+            .join()
+            .success shouldBe true
+
+        platform.connects shouldContainExactly listOf(steve to "l-1")
+    }
+
+    @Test
     fun `a full proxy turns players away before asking anyone`() {
         repeat(MAX_PLAYERS) { platform.players += OnlinePlayer(UUID.randomUUID(), "p$it", null) }
 
-        runtime.login(UUID.randomUUID(), "Late", 47, "1.2.3.4").join() shouldBe
+        runtime.login(UUID.randomUUID(), "Late", 47, "1.2.3.4") { false }.join() shouldBe
             LoginDecision.Denied(messages.text(Message.KICK_PROXY_FULL))
     }
 
@@ -272,7 +349,7 @@ class ProxyRuntimeTest {
                 .setAllowed(true)
                 .setProfile(profile(steve))
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4").join()
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join()
         queries.permissionGroups["vip"] = PermissionGroup.newBuilder().setPermissionGroupId("vip").build()
         queries.profiles[steve] =
             profile(steve)

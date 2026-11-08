@@ -43,6 +43,7 @@ class ServerRuntimeTest {
             queries,
             messages,
             scheduler.executor,
+            Runnable::run,
             mockk(),
         ) { listener -> FakeSession(listener).also { session = it } }
     private val api = runtime.api
@@ -101,13 +102,15 @@ class ServerRuntimeTest {
 
     @Test
     fun `transfers go out on the session and fail while disconnected`() {
-        api.transferPlayerToGroup(steve, "bedwars", RoutingStrategy.MOST_FILLED)
+        api.transferPlayerToGroup(steve, "bedwars", RoutingStrategy.MOST_FILLED).join()
         session.sent
             .last()
             .transfer.routingStrategy.name shouldBe "ROUTING_STRATEGY_MOST_FILLED"
 
         session.connected = false
-        shouldThrow<OgCloudException> { api.transferPlayer(steve, "s-2") }
+        shouldThrow<CompletionException> { api.transferPlayer(steve, "s-2").join() }
+            .cause
+            .shouldBeInstanceOf<OgCloudException>()
     }
 
     @Test
@@ -163,7 +166,7 @@ class ServerRuntimeTest {
     @Test
     fun `live channels subscribe once per channel and deliver to every listener`() {
         val received = mutableListOf<String>()
-        val first = api.liveChannels.subscribe("party") { received += "first:" + String(it.payload) }
+        val first = api.liveChannels.subscribe("party") { received += "first:" + String(it.payload()) }
         val second = api.liveChannels.subscribe("party") { _: LiveMessage -> error("a broken listener") }
         api.liveChannels.subscribe("party") { received += "third:" + it.typeId }
         session.listener.liveMessage(
@@ -179,6 +182,35 @@ class ServerRuntimeTest {
 
         received shouldContainExactly listOf("first:hi", "third:invite")
         session.subscriptions shouldContainExactly listOf("+party")
+    }
+
+    @Test
+    fun `the last listener to leave unsubscribes, and a new one subscribes again`() {
+        val first = api.liveChannels.subscribe("party") { }
+        val second = api.liveChannels.subscribe("party") { }
+
+        first.close()
+        second.close()
+        api.liveChannels.subscribe("party") { }
+
+        session.subscriptions shouldContainExactly listOf("+party", "-party", "+party")
+    }
+
+    @Test
+    fun `every listener gets its own copy of the payload`() {
+        val seen = mutableListOf<String>()
+        api.liveChannels.subscribe("party") { it.payload().fill(0) }
+        api.liveChannels.subscribe("party") { seen += String(it.payload()) }
+
+        session.listener.liveMessage(
+            LiveChannelDelivery
+                .newBuilder()
+                .setChannel("party")
+                .setPayload(ByteString.copyFromUtf8("hi"))
+                .build(),
+        )
+
+        seen shouldContainExactly listOf("hi")
     }
 
     @Test

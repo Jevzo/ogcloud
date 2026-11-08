@@ -33,8 +33,8 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 /**
- * The proxy's `/ogcloud` command with every v1 subcommand (D-0132). Reads ask the gateway; changes carry the acting
- * player so the gateway checks their admin node (D-0115, D-0117, D-0132), which is why the console only reads.
+ * The proxy's `/ogcloud` command with every v1 subcommand (D-0132). Reads ask the gateway; gateway-checked changes
+ * carry the acting player (D-0115, D-0117, D-0132), so only players run them. Transfers are checked here only.
  */
 class ProxyCommands(
     private val messages: Messages,
@@ -45,6 +45,7 @@ class ProxyCommands(
     private val onlinePlayers: () -> List<OnlinePlayer>,
     private val clock: Clock,
 ) {
+    private val log = System.getLogger(ProxyCommands::class.java.name)
     private val servers = Argument("server", suggestions = { directory.all().map { it.displayName } })
     private val players = Argument("player", suggestions = { onlinePlayers().map { it.name } })
 
@@ -471,7 +472,11 @@ class ProxyCommands(
         then: (T) -> Unit,
     ) {
         future.whenComplete { value, error ->
-            if (error != null) failed(call, messages.text(Message.ERROR_UNAVAILABLE)) else then(value)
+            val failure = error ?: runCatching { then(value) }.exceptionOrNull()
+            if (failure != null) {
+                log.log(System.Logger.Level.WARNING, "An /ogcloud command failed", failure)
+                failed(call, messages.text(Message.ERROR_UNAVAILABLE))
+            }
         }
     }
 

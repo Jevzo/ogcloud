@@ -58,6 +58,7 @@ class BackendNode(
             pod.connection.queries,
             pod.messages,
             pod.scheduler,
+            pod.connection.callbacks,
             HubRuntimeNpcs(npcs) { player, task -> server.getPlayer(player)?.let { line.player(it, task) } },
             pod.connection::session,
         )
