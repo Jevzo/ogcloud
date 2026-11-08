@@ -75,6 +75,16 @@ class PlayerSnapshotHandlerTest {
     }
 
     @Test
+    fun `a session whose login is still being completed is kept, though the snapshot does not list it yet`() {
+        // The controller writes the session while the proxy still holds the login, before the proxy counts the player.
+        val loggingIn = session(proxy, takenAt.minusSeconds(10))
+
+        handler.handle(snapshot())
+
+        sessions.get(loggingIn) shouldNotBe null
+    }
+
+    @Test
     fun `only this proxy's older sessions it no longer lists are dropped`() {
         val stale = session(proxy, takenAt.minus(Duration.ofMinutes(5)))
         val joinedSince = session(proxy, takenAt.plusSeconds(1))
