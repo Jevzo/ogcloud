@@ -21,6 +21,10 @@ func rootConfig() *Config {
 				"AUTH_SECRET":    {Generate: "base64", Bytes: 32},
 				"DB_USER":        {Value: "infisical"},
 			},
+		}, {
+			Name: "ogcloud-postgres-infisical",
+			Type: corev1.SecretTypeBasicAuth,
+			Keys: map[string]Generator{"username": {Value: "infisical"}, "password": {Generate: "alnum", Length: 40}},
 		}},
 	}
 }
@@ -51,6 +55,13 @@ func TestRootSecretsAreCreatedOnceAndKeptOnUninstall(t *testing.T) {
 	}
 	if first.Annotations[keepAnnotation] != keep {
 		t.Error("the Secret is not kept on uninstall")
+	}
+	if first.Type != "" && first.Type != corev1.SecretTypeOpaque {
+		t.Errorf("an untyped root Secret got type %s", first.Type)
+	}
+	database, err := client.CoreV1().Secrets("ogcloud").Get(ctx, "ogcloud-postgres-infisical", metav1.GetOptions{})
+	if err != nil || database.Type != corev1.SecretTypeBasicAuth {
+		t.Errorf("the database credentials are not a basic-auth Secret: %v", err)
 	}
 }
 

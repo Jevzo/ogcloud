@@ -38,6 +38,7 @@ func EnsureRootSecrets(ctx context.Context, client kubernetes.Interface, config 
 					Labels:      map[string]string{managedByLabel: managedBy},
 					Annotations: map[string]string{keepAnnotation: keep},
 				},
+				Type: spec.Type,
 				Data: data,
 			}, metav1.CreateOptions{}); err != nil {
 				return fmt.Errorf("create secret %s: %w", spec.Name, err)

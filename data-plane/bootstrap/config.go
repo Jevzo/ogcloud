@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/jevzo/ogcloud/data-plane/pkg/strictyaml"
 )
 
@@ -21,7 +23,9 @@ type Config struct {
 
 // RootSecret is a Kubernetes Secret created before Infisical exists, e.g. its own encryption key.
 type RootSecret struct {
-	Name string               `yaml:"name"`
+	Name string `yaml:"name"`
+	// Optional Secret type, e.g. kubernetes.io/basic-auth for CloudNativePG; Opaque when empty.
+	Type corev1.SecretType    `yaml:"type"`
 	Keys map[string]Generator `yaml:"keys"`
 }
 
