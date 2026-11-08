@@ -28,7 +28,7 @@ interface NpcPlaces {
 
 /**
  * `/ogcloud npc ...` on a backend (D-0129, v1's NPC command): changes go to the API through the gateway with the
- * player as actor and arrive back as the usual NPC update. NPCs are named by their id or a unique start of it.
+ * player as actor and arrive back as the usual NPC update. NPCs are named by their id or a unique end of it.
  */
 class NpcCommands(
     private val hub: NpcHub,
@@ -230,7 +230,8 @@ class NpcCommands(
             messages.text(Message.NPC_ACTION_TRANSFER, "group" to action.transfer.groupId, "strategy" to strategy)
         }
 
-    private fun short(id: String) = id.take(SHORT_ID)
+    /** The id's random tail, as UUIDv7s made in the same minute share their start. */
+    private fun short(id: String) = id.takeLast(SHORT_ID)
 
     private fun round(value: Double) = "%.1f".format(Locale.ROOT, value)
 

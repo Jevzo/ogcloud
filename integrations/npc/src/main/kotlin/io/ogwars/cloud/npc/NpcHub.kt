@@ -62,9 +62,9 @@ class NpcHub(
     /** The group's managed NPCs, as the commands list them. */
     fun managed(): List<ManagedNpc> = managed.values.sortedBy { it.npcId }
 
-    /** A managed NPC by its id or a unique start of it. */
+    /** A managed NPC by its id or a unique end of it, which `/ogcloud npc` shows as its name. */
     fun findManaged(reference: String): ManagedNpc? =
-        managed[reference] ?: managed.values.filter { it.npcId.startsWith(reference, ignoreCase = true) }.singleOrNull()
+        managed[reference] ?: managed.values.filter { it.npcId.endsWith(reference, ignoreCase = true) }.singleOrNull()
 
     /** The managed NPC [from] looks at, within reach. */
     fun lookedAt(from: NpcLocation): ManagedNpc? {

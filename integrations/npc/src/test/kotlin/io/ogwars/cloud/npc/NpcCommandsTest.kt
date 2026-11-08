@@ -10,6 +10,7 @@ import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test
@@ -23,12 +24,20 @@ class NpcCommandsTest {
     private val shop =
         ManagedNpc
             .newBuilder()
-            .setNpcId("0192d2c1-0000-7000-8000-00000000000a")
+            .setNpcId("0192d2c1-0000-7000-8000-4a1b2c3d4e5f")
             .setGroupId("lobby")
             .setLocation(Location.newBuilder().setWorld("world").setY(64.0))
             .setTitle("&aShop")
             .build()
-    private val queries = mockk<NodeQueries> { every { npcs("lobby") } returns completedFuture(listOf(shop)) }
+
+    // Created in the same minute, so both ids start with the same timestamp.
+    private val guide =
+        shop
+            .toBuilder()
+            .setNpcId("0192d2c1-0003-7000-8000-9f8e7d6c5b4a")
+            .setTitle("&eGuide")
+            .build()
+    private val queries = mockk<NodeQueries> { every { npcs("lobby") } returns completedFuture(listOf(shop, guide)) }
     private val hub =
         NpcHub(RecordingPackets(), queries, "lobby", { _, _, _ -> }, mockk(relaxed = true), Clock.systemUTC())
     private val here = NpcLocation("world", 10.5, 70.0, -3.0, 90f, 0f)
@@ -83,10 +92,10 @@ class NpcCommandsTest {
     }
 
     @Test
-    fun `changes edit a copy of the NPC found by the start of its id`() {
-        run("npc title 0192d2c1 off")
-        run("npc rightaction 0192d2c1 transfer bedwars least_filled")
-        run("npc movehere 0192d2c1")
+    fun `changes edit a copy of the NPC found by the end of its id`() {
+        run("npc title 2c3d4e5f off")
+        run("npc rightaction 2c3d4e5f transfer bedwars least_filled")
+        run("npc movehere 2c3d4e5f")
 
         sent[0].update.title shouldBe ""
         sent[1]
@@ -96,8 +105,20 @@ class NpcCommandsTest {
     }
 
     @Test
+    fun `NPCs made in the same minute get names of their own`() {
+        run("npc list")
+        run("npc delete 7d6c5b4a")
+
+        admin.replies.joinToString("\n").let {
+            it shouldContain "2c3d4e5f"
+            it shouldContain "7d6c5b4a"
+        }
+        sent.single().deleteNpcId shouldBe guide.npcId
+    }
+
+    @Test
     fun `mistakes are explained instead of sent`() {
-        run("npc rightaction 0192d2c1 transfer bedwars sideways")
+        run("npc rightaction 2c3d4e5f transfer bedwars sideways")
         run("npc delete nothing")
 
         sent shouldBe emptyList()
@@ -107,7 +128,7 @@ class NpcCommandsTest {
 
     @Test
     fun `teleport takes the admin to the NPC without asking anyone`() {
-        run("npc teleport 0192d2c1")
+        run("npc teleport 2c3d4e5f")
 
         teleports.single().y shouldBe 64.0
         sent shouldBe emptyList()

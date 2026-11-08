@@ -217,6 +217,6 @@ class NpcHubTest {
         hub.reload().join()
         hub.lookedAt(NpcLocation("world", 0.0, 64.0, -4.0, yaw = 0f, pitch = 0f))?.npcId shouldBe shop.npcId
         hub.lookedAt(NpcLocation("world", 0.0, 64.0, -4.0, yaw = 180f, pitch = 0f)) shouldBe null
-        hub.findManaged("0192D2C1") shouldBe shop
+        hub.findManaged("0000000A") shouldBe shop
     }
 }
