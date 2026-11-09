@@ -2,8 +2,13 @@ import { type Bot, createBot } from "mineflayer";
 import type { Target } from "./target.ts";
 import { eventually } from "./wait.ts";
 
-/** The versions bots join with: the newest mineflayer speaks, and 1.8 through the Via plugins on the proxy (D-0079). */
+/**
+ * The versions bots join with, all through the Via plugins on the proxy (D-0079): the newest mineflayer speaks, a
+ * steady one for scenarios that stay online (mineflayer's 1.21.2+ bots are kicked for invalid_player_movement within
+ * seconds, even standing still), and 1.8.
+ */
 export const CURRENT_VERSION = "26.1";
+export const STEADY_VERSION = "1.20.4";
 export const LEGACY_VERSION = "1.8.8";
 
 /** A bot and what happened to it: chat in arrival order, and why it was disconnected. */
@@ -20,7 +25,7 @@ const SPAWN_TIMEOUT_MS = 90_000;
 export async function join(
   target: Target,
   name: string,
-  version = CURRENT_VERSION,
+  version = STEADY_VERSION,
 ): Promise<Player> {
   const player = connect(target, name, version);
   await new Promise<void>((resolve, reject) => {
@@ -40,7 +45,9 @@ export async function join(
       resolve();
     });
     player.bot.once("kicked", (reason) => fail(`kicked: ${text(reason)}`));
-    player.bot.once("error", (error) => fail(error.message));
+    player.bot.once("error", (error: NodeJS.ErrnoException) =>
+      fail(error.message || error.code || "connection error"),
+    );
   });
   return player;
 }
@@ -49,7 +56,7 @@ export async function join(
 export function connect(
   target: Target,
   name: string,
-  version = CURRENT_VERSION,
+  version = STEADY_VERSION,
 ): Player {
   const bot = createBot({
     host: target.minecraftHost,
@@ -58,6 +65,8 @@ export function connect(
     version,
     auth: "offline",
     hideErrors: true,
+    // Bots stand still: simulated movement translated across versions gets kicked as invalid_player_movement.
+    physicsEnabled: false,
   });
   const messages: string[] = [];
   let kickReason: string | undefined;
