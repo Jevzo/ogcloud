@@ -8,6 +8,11 @@ ogcloud:
     trusted-proxies: {{ .Values.api.trustedProxies | squote }}
   auth:
     issuer: {{ required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin }}
+    {{- if include "ogcloud.grafanaSso" . }}
+    clients:
+      grafana:
+        redirect-uri: {{ include "ogcloud.grafanaUrl" . }}/login/generic_oauth
+    {{- end }}
     signing:
       active-key-id: k1
     totp:

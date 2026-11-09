@@ -17,6 +17,9 @@ recursive source per project serves every target. The forwarding tokens have a p
 {{- end }}
 - {path: /, name: S3_ACCESS_KEY, generate: alnum, length: 20}
 - {path: /, name: S3_SECRET_KEY, generate: alnum, length: 40}
+{{- if include "ogcloud.grafanaSso" . }}
+- {path: /, name: GRAFANA_CLIENT_SECRET, generate: alnum, length: 48}
+{{- end }}
 - {project: {{ .Values.infisical.forwardingProject }}, path: /, name: TOKENS, generate: alnum, length: 48}
 {{- end -}}
 
@@ -36,6 +39,9 @@ config tree, so their keys are property names.
 ogcloud-api-config:
   namespace: {{ .Release.Namespace }}
   keys:
+    {{- if include "ogcloud.grafanaSso" . }}
+    ogcloud.auth.clients.grafana.client-secret: GRAFANA_CLIENT_SECRET
+    {{- end }}
     ogcloud.auth.setup-token: API_SETUP_TOKEN
     ogcloud.privacy.pseudonym-key: API_PSEUDONYM_KEY
     ogcloud.auth.totp.keys.k1: API_TOTP_KEY
@@ -96,6 +102,31 @@ ogcloud-valkey-users:
       {{- range $service := include "ogcloud.dependencyUsers" . | fromYamlArray }}
       user ogcloud-{{ $service }} on >{{ printf "{{ .VALKEY_%s_PASSWORD.Value }}" (upper $service) }} {{ include "ogcloud.valkeyRules" $service }}
       {{- end }}
+{{- end }}
+{{- if include "ogcloud.grafanaSso" . }}
+{{- /* Grafana's sign-in through OgCloud (D-0153), as the environment its chart loads (deploy/platform-deps.yaml). */}}
+{{- $origin := .Values.publicOrigin }}
+ogcloud-grafana-oauth:
+  namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
+  literals:
+    GF_SERVER_ROOT_URL: {{ include "ogcloud.grafanaUrl" . }}
+    GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+    GF_AUTH_GENERIC_OAUTH_NAME: OgCloud
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ogcloud-grafana
+    GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
+    GF_AUTH_GENERIC_OAUTH_AUTH_URL: {{ $origin }}/oauth2/authorize
+    GF_AUTH_GENERIC_OAUTH_TOKEN_URL: {{ $origin }}/oauth2/token
+    GF_AUTH_GENERIC_OAUTH_API_URL: {{ $origin }}/oauth2/userinfo
+    GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
+    GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: "true"
+    GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+    GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
+    GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH: email
+    # Owners and admins administer Grafana, overview:read lets one look; everyone else is refused.
+    GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(['owner', 'admin'], role) && 'Admin' || contains(permissions, 'overview:read') && 'Viewer' || ''"
+    GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
+  keys:
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: GRAFANA_CLIENT_SECRET
 {{- end }}
 {{- if .Values.s3.inCluster }}
 {{- /* SeaweedFS's S3 users: OgCloud's identity may use its bucket and nothing else. */}}

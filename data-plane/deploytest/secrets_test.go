@@ -38,7 +38,13 @@ func TestTheBootstrapConfigPassesBootstrapsOwnValidation(t *testing.T) {
 var infisicalKey = regexp.MustCompile(`\{\{ \.([A-Z0-9_]+)\.Value \}\}`)
 
 func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
-	objects := render(t, valueSets(t)[0])
+	for _, values := range valueSets(t) {
+		t.Run(values, func(t *testing.T) { syncedKeysAreGenerated(t, render(t, values)) })
+	}
+}
+
+func syncedKeysAreGenerated(t *testing.T, objects rendered) {
+	t.Helper()
 	setup := bootstrapConfig(t, objects).Infisical
 	// By project slug: each sync reads one project (D-0152).
 	generated := map[string][]string{}

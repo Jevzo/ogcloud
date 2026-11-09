@@ -119,11 +119,15 @@ charts:
           serviceMonitorSelectorNilUsesHelmValues: false
           podMonitorSelectorNilUsesHelmValues: false
           retention: 15d
-      # Grafana loads every namespace's dashboard ConfigMaps, OgCloud's included.
+      # Grafana loads every namespace's dashboard ConfigMaps, OgCloud's included, and signs in through OgCloud
+      # with the environment OgCloud's chart syncs into this namespace (D-0153); without it, its own login.
       grafana:
         sidecar:
           dashboards:
             searchNamespace: ALL
+        envFromSecrets:
+          - name: ogcloud-grafana-oauth
+            optional: true
 
   - name: loki
     when: monitoring

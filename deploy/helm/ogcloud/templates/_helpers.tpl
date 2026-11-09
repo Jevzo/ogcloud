@@ -112,6 +112,15 @@ https://{{ required "admin.gateway.infisicalHost is required" .Values.admin.gate
 {{- end -}}
 {{- end -}}
 
+{{/* Grafana signs in through OgCloud (D-0153) where it has a real URL: on the internal Gateway, with monitoring. */}}
+{{- define "ogcloud.grafanaSso" -}}
+{{- if and .Values.monitoring.enabled .Values.admin.gateway.enabled }}true{{ end -}}
+{{- end -}}
+
+{{- define "ogcloud.grafanaUrl" -}}
+https://{{ required "admin.gateway.grafanaHost is required with monitoring" .Values.admin.gateway.grafanaHost }}
+{{- end -}}
+
 {{/* The audience of tokens the controller shows Infisical, which the API server refuses. */}}
 {{- define "ogcloud.infisicalAudience" -}}
 ogcloud-infisical
