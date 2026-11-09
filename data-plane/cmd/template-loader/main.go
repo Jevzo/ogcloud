@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/jevzo/ogcloud/data-plane/pkg/command"
 	"github.com/jevzo/ogcloud/data-plane/pkg/config"
 	nodev1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/node/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
@@ -38,15 +38,13 @@ const (
 var version = "dev"
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, component+":", err)
-		os.Exit(1)
-	}
+	command.Main(component, run)
 }
 
 func run(args []string) error {
-	if len(args) != 1 || args[0] != "load" && args[0] != "agent" {
-		return errors.New("usage: template-loader <load|agent>")
+	subcommand, err := command.Subcommand(component, args, "load", "agent")
+	if err != nil {
+		return err
 	}
 	env := config.FromEnvironment()
 	address := env.Required(podenv.GatewayAddress)
@@ -79,7 +77,7 @@ func run(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
-	if args[0] == "load" {
+	if subcommand == "load" {
 		profile, ok := runtimeprofiles.Find(profileID)
 		if !ok {
 			return fmt.Errorf("OGCLOUD_PROFILE_ID: unknown profile %q", profileID)

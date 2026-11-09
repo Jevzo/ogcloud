@@ -18,6 +18,7 @@ import (
 
 	"github.com/jevzo/ogcloud/data-plane/bootstrap"
 	"github.com/jevzo/ogcloud/data-plane/bootstrap/infisical"
+	"github.com/jevzo/ogcloud/data-plane/pkg/command"
 	"github.com/jevzo/ogcloud/data-plane/pkg/config"
 	"github.com/jevzo/ogcloud/data-plane/pkg/kube"
 	"github.com/jevzo/ogcloud/data-plane/pkg/logging"
@@ -31,10 +32,7 @@ const (
 )
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "bootstrap:", err)
-		os.Exit(1)
-	}
+	command.Main("bootstrap", run)
 }
 
 func run(args []string) error {
