@@ -37,6 +37,9 @@ func TestTheBootstrapConfigPassesBootstrapsOwnValidation(t *testing.T) {
 
 var infisicalKey = regexp.MustCompile(`\{\{ \.([A-Z0-9_]+)\.Value \}\}`)
 
+// Keys the operator brings in the bootstrap seed, which bootstrap imports into the main project (D-0114).
+var seededKeys = []string{"CLOUDFLARE_API_TOKEN"}
+
 func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 	for _, values := range valueSets(t) {
 		t.Run(values, func(t *testing.T) { syncedKeysAreGenerated(t, render(t, values)) })
@@ -55,6 +58,7 @@ func syncedKeysAreGenerated(t *testing.T, objects rendered) {
 		}
 		generated[project] = append(generated[project], secret.Name)
 	}
+	generated[setup.Project] = append(generated[setup.Project], seededKeys...)
 	syncs := objects.all("InfisicalStaticSecret")
 	if len(syncs) == 0 {
 		t.Fatal("nothing is synced from Infisical")
@@ -71,7 +75,7 @@ func syncedKeysAreGenerated(t *testing.T, objects rendered) {
 			for key, value := range data {
 				for _, match := range infisicalKey.FindAllStringSubmatch(value.(string), -1) {
 					if !slices.Contains(generated[project], match[1]) {
-						t.Errorf("%s key %s reads %s, which bootstrap never generates in project %s", sync.name(), key, match[1], project)
+						t.Errorf("%s key %s reads %s, which bootstrap neither generates nor seeds in project %s", sync.name(), key, match[1], project)
 					}
 				}
 			}

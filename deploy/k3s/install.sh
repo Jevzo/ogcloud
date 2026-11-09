@@ -2,7 +2,8 @@
 # Installs OgCloud from this checkout on a single-node k3s cluster that Terraform does not provision (D-0156, D-0157):
 # every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the cluster, which
 # holds no OgCloud yet (an earlier install's finished jobs would pass the wait) and already has the images tagged
-# OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin.
+# OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, and OGCLOUD_CLOUDFLARE_API_TOKEN gets its
+# certificate from Let's Encrypt (D-0160).
 set -euo pipefail
 
 tag=${OGCLOUD_TAG:?OGCLOUD_TAG names the images to install}
@@ -52,10 +53,15 @@ if [ ! -f "$work/seed.yaml" ]; then
     "$(openssl rand -hex 24)" > "$work/seed.yaml"
 fi
 
-values_files="[\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/images.yaml\",\"$PWD/$work/seed.yaml\"]"
+values_files="\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/images.yaml\",\"$PWD/$work/seed.yaml\""
+if [ -n "${OGCLOUD_CLOUDFLARE_API_TOKEN:-}" ]; then
+  printf 'edge:\n  tls:\n    letsEncrypt:\n      enabled: true\nbootstrap:\n  seed:\n    CLOUDFLARE_API_TOKEN: %s\n' \
+    "$OGCLOUD_CLOUDFLARE_API_TOKEN" > "$work/letsencrypt.yaml"
+  values_files="$values_files,\"$PWD/$work/letsencrypt.yaml\""
+fi
 terraform -chdir=deploy/terraform/render init -input=false >/dev/null
 terraform -chdir=deploy/terraform/render apply -input=false -auto-approve -state="$PWD/$work/render.tfstate" \
-  -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=$values_files" >/dev/null
+  -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=[$values_files]" >/dev/null
 terraform -chdir=deploy/terraform/render output -state="$PWD/$work/render.tfstate" -raw manifest > "$work/manifest.yaml"
 
 start=$(date +%s)

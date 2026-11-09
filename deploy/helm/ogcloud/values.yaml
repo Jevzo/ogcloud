@@ -318,10 +318,17 @@ edge:
     http: 8000
     https: 8443
   tls:
-    # A cert-manager issuer for the public certificate, e.g. a Let's Encrypt ClusterIssuer with Cloudflare DNS-01.
+    # A cert-manager issuer for the public certificate, unless letsEncrypt is on.
     issuer:
       kind: ClusterIssuer
       name: ""
+    # The chart's own Let's Encrypt ClusterIssuer, solving DNS-01 through Cloudflare (D-0160). Its API token is the
+    # bootstrap seed's CLOUDFLARE_API_TOKEN, which needs DNS edit rights on the public host's zone.
+    letsEncrypt:
+      enabled: false
+      server: https://acme-v02.api.letsencrypt.org/directory
+      # Optional; Let's Encrypt no longer mails expiry notices.
+      email: ""
 
 # Admin surfaces (D-0045): Infisical's and Grafana's UIs, never on the public Gateway. With the VPN they get the
 # internal Gateway behind Traefik's private load balancer; without it, a port-forward.

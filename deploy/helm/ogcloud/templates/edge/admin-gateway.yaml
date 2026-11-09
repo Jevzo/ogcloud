@@ -26,8 +26,7 @@ spec:
     - {{ $host }}
     {{- end }}
   issuerRef:
-    kind: {{ .Values.edge.tls.issuer.kind }}
-    name: {{ required "edge.tls.issuer.name is required" .Values.edge.tls.issuer.name }}
+    {{- include "ogcloud.publicIssuerRef" . | nindent 4 }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway

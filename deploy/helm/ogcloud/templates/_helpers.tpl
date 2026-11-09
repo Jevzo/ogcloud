@@ -306,3 +306,14 @@ file Valkey reads.
 - name: tmp
   mountPath: /tmp
 {{- end -}}
+
+{{/* The public certificates' issuer: the chart's Let's Encrypt ClusterIssuer (D-0160), or the one edge.tls.issuer names. */}}
+{{- define "ogcloud.publicIssuerRef" -}}
+{{- if .Values.edge.tls.letsEncrypt.enabled -}}
+kind: ClusterIssuer
+name: ogcloud-letsencrypt
+{{- else -}}
+kind: {{ .Values.edge.tls.issuer.kind }}
+name: {{ required "edge.tls.issuer.name is required" .Values.edge.tls.issuer.name }}
+{{- end -}}
+{{- end -}}

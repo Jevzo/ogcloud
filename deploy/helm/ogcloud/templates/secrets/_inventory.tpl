@@ -131,6 +131,13 @@ ogcloud-grafana-oauth:
   keys:
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: GRAFANA_CLIENT_SECRET
 {{- end }}
+{{- if .Values.edge.tls.letsEncrypt.enabled }}
+{{- /* Let's Encrypt's DNS-01 token (D-0160), imported from the seed; a ClusterIssuer reads cert-manager's namespace. */}}
+ogcloud-cloudflare-dns:
+  namespace: {{ .Values.certManager.namespace }}
+  keys:
+    api-token: CLOUDFLARE_API_TOKEN
+{{- end }}
 {{- if .Values.s3.inCluster }}
 {{- /* SeaweedFS's S3 users: OgCloud's identity may use its bucket and nothing else. */}}
 ogcloud-seaweedfs-s3:

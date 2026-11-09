@@ -58,3 +58,37 @@ func TestThePublicGatewayServesThePublicOriginsHost(t *testing.T) {
 		}
 	}
 }
+
+// Let's Encrypt solves DNS-01 with the Cloudflare token the operator seeds, synced into the namespace a ClusterIssuer
+// reads its Secrets from; both Gateways' certificates come from it (D-0160).
+func TestLetsEncryptSolvesDNS01WithTheSeededToken(t *testing.T) {
+	objects := render(t, hetznerValues)
+	solvers, _ := get(objects.find(t, "ClusterIssuer", "ogcloud-letsencrypt"), "spec", "acme", "solvers").([]any)
+	if len(solvers) != 1 {
+		t.Fatalf("Let's Encrypt has %d solvers, want 1", len(solvers))
+	}
+	ref := get(solvers[0], "dns01", "cloudflare", "apiTokenSecretRef")
+	targets, _ := get(objects.find(t, "InfisicalStaticSecret", str(ref, "name")), "spec", "targets").([]any)
+	if len(targets) != 1 {
+		t.Fatalf("the Cloudflare token goes to %d Secrets, want 1", len(targets))
+	}
+	if got := str(targets[0], "namespace"); got != "cert-manager" {
+		t.Errorf("the Cloudflare token lands in %q, want cert-manager's namespace", got)
+	}
+	if got := str(targets[0], "template", "data", str(ref, "key")); got != "{{ .CLOUDFLARE_API_TOKEN.Value }}" {
+		t.Errorf("the solver's key holds %q, want the seeded CLOUDFLARE_API_TOKEN", got)
+	}
+	for _, certificate := range []string{"ogcloud-public", "ogcloud-admin"} {
+		if got := str(objects.find(t, "Certificate", certificate), "spec", "issuerRef", "name"); got != "ogcloud-letsencrypt" {
+			t.Errorf("Certificate %s is issued by %q, want ogcloud-letsencrypt", certificate, got)
+		}
+	}
+}
+
+func TestLetsEncryptStaysOffUnlessEnabled(t *testing.T) {
+	for _, issuer := range render(t, minikubeValues).all("ClusterIssuer") {
+		if issuer.name() == "ogcloud-letsencrypt" {
+			t.Error("minikube got the Let's Encrypt issuer")
+		}
+	}
+}

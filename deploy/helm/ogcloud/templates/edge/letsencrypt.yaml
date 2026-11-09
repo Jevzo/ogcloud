@@ -1,0 +1,28 @@
+{{- /*
+Let's Encrypt for the public certificates (D-0024, D-0160): DNS-01 through Cloudflare, with the token the Secrets
+Operator syncs from Infisical into cert-manager's namespace.
+*/}}
+{{- with .Values.edge.tls.letsEncrypt }}
+{{- if .enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ogcloud-letsencrypt
+  labels:
+    {{- include "ogcloud.labels" $ | nindent 4 }}
+spec:
+  acme:
+    server: {{ .server }}
+    {{- with .email }}
+    email: {{ . }}
+    {{- end }}
+    privateKeySecretRef:
+      name: ogcloud-letsencrypt-account
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: ogcloud-cloudflare-dns
+              key: api-token
+{{- end }}
+{{- end }}
