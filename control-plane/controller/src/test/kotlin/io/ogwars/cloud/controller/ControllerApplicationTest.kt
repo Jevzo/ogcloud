@@ -8,6 +8,7 @@ import io.ogwars.cloud.livestate.ValkeyContainerConfiguration
 import io.ogwars.cloud.messaging.KafkaContainerConfiguration
 import io.ogwars.cloud.persistence.PostgresContainerConfiguration
 import io.ogwars.cloud.persistence.migrate
+import io.ogwars.cloud.service.TestTls
 import io.fabric8.kubernetes.api.model.ServiceAccountBuilder
 import io.fabric8.kubernetes.api.model.authentication.TokenRequestBuilder
 import io.fabric8.kubernetes.client.Config

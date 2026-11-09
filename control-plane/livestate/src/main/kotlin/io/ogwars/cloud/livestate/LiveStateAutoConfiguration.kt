@@ -20,8 +20,7 @@ import org.springframework.context.annotation.Bean
 @EnableConfigurationProperties(ValkeyProperties::class)
 class LiveStateAutoConfiguration {
     @Bean(destroyMethod = "shutdown")
-    fun valkeyClient(properties: ValkeyProperties): RedisClient =
-        RedisClient.create(ValkeyConnections.uri(properties.toSettings()))
+    fun valkeyClient(properties: ValkeyProperties): RedisClient = ValkeyConnections.client(properties.toSettings())
 
     @Bean(destroyMethod = "close")
     fun valkeyConnection(client: RedisClient): ValkeyConnection = ValkeyConnections.open(client)

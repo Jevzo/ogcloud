@@ -5,6 +5,7 @@ import io.ogwars.cloud.livestate.ValkeyKeys
 import io.ogwars.cloud.livestate.ValkeyProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.connection.RedisSentinelConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.security.core.session.SessionRegistry
@@ -25,12 +26,13 @@ class SessionConfiguration {
             LettuceClientConfiguration
                 .builder()
                 .commandTimeout(settings.timeout)
-                .apply { if (settings.tls) useSsl() }
+                .clientOptions(ValkeyConnections.clientOptions(settings))
+                .apply { if (settings.tls != null) useSsl() }
                 .build()
-        return LettuceConnectionFactory(
-            LettuceConnectionFactory.createRedisConfiguration(ValkeyConnections.uri(settings)),
-            client,
-        )
+        val configuration = LettuceConnectionFactory.createRedisConfiguration(ValkeyConnections.uri(settings))
+        // Spring takes only the Sentinels' password from the URI; they refuse the default user, so it needs ours too.
+        if (configuration is RedisSentinelConfiguration) configuration.sentinelUsername = settings.username
+        return LettuceConnectionFactory(configuration, client)
     }
 
     @Bean

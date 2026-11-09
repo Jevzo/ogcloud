@@ -11,7 +11,8 @@ data class ValkeyProperties(
     val sentinel: Sentinel? = null,
     val username: String? = null,
     val password: String? = null,
-    val tls: Boolean = false,
+    /** `tls.ca-certificate-path`; null for plaintext. */
+    val tls: ValkeyTls? = null,
     val timeout: Duration = Duration.ofSeconds(5),
 ) {
     init {

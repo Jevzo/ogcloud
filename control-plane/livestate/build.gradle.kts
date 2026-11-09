@@ -20,6 +20,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api")
 
     testImplementation("org.springframework.boot:spring-boot-test")
+    testImplementation(testFixtures(project(":control-plane:service-support")))
 
     testFixturesImplementation(platform(SpringBootPlugin.BOM_COORDINATES))
     testFixturesApi("org.springframework.boot:spring-boot-test")
