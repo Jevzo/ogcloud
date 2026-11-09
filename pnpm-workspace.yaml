@@ -8,6 +8,7 @@ catalog:
   i18next: 26.7.2
   i18next-cli: 1.85.1
   jscpd: 5.4.2
+  orval: 8.46.0
   typescript: 7.0.2
 
 minimumReleaseAgeExclude:
@@ -17,3 +18,4 @@ minimumReleaseAgeExclude:
 # Native binaries arrive as optional dependencies; their install scripts are not needed.
 allowBuilds:
   "@swc/core": false
+  esbuild: false

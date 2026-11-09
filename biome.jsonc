@@ -7,10 +7,12 @@
   },
   "files": {
     "ignoreUnknown": true,
-    // images/docker-bake.json is generated from the runtime profile catalog and drift-checked (D-0139).
+    // Generated and drift-checked: the bake file from the runtime profile catalog (D-0139), the API client from the
+    // OpenAPI contract (D-0163).
     "includes": [
       "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,jsonc}",
-      "!images/docker-bake.json"
+      "!images/docker-bake.json",
+      "!packages/api-client/src/generated"
     ]
   },
   "formatter": {

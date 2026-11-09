@@ -216,7 +216,11 @@ buf format --diff --exit-code
 
 [tasks.gen]
 description = "Regenerate every generated source from contracts/"
-depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects", "gen:pod-env", "gen:live-channels", "gen:node-errors", "gen:session-keepalive"]
+depends = ["gen:proto", "gen:profiles", "gen:topics", "gen:livestate", "gen:pod-labels", "gen:permission-nodes", "gen:kafka-keys", "gen:template-objects", "gen:pod-env", "gen:live-channels", "gen:node-errors", "gen:session-keepalive", "gen:api-client"]
+
+[tasks."gen:api-client"]
+description = "Generate the TypeScript API client from contracts/openapi/openapi.yaml (D-0163)"
+run = "pnpm --filter @ogcloud/api-client run generate"
 
 [tasks."gen:proto"]
 description = "Generate Go code from contracts/proto"
@@ -281,7 +285,7 @@ depends = ["gen"]
 shell = "bash -c"
 run = """
 set -euo pipefail
-generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go images/docker-bake.json deploy/helm/ogcloud/templates/kafka/topics.gen.yaml data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors data-plane/pkg/sessionkeepalive contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated)
+generated=(data-plane/pkg/gen data-plane/pkg/runtimeprofiles/catalog.gen.go images/docker-bake.json deploy/helm/ogcloud/templates/kafka/topics.gen.yaml data-plane/pkg/kafkatopics data-plane/pkg/valkeykeys data-plane/pkg/podlabels data-plane/pkg/permissionnodes data-plane/pkg/kafkakeys data-plane/pkg/templateobjects data-plane/pkg/podenv data-plane/pkg/livechannels data-plane/pkg/nodeerrors data-plane/pkg/sessionkeepalive contracts/src/generated control-plane/domain/src/generated control-plane/messaging/src/generated control-plane/livestate/src/generated control-plane/controller/src/generated packages/api-client/src/generated)
 if [ -n "$(git status --porcelain --untracked-files=all -- "${generated[@]}")" ]; then
   git status --short -- "${generated[@]}"
   echo "Generated sources are out of date: run 'mise run gen' and commit the result." >&2
