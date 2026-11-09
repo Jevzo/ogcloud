@@ -114,6 +114,9 @@ backups, orphaned objects).
 - Workloads authenticate with projected Kubernetes service-account tokens; game pods hold no
   infrastructure credentials.
 - In-cluster traffic uses TLS from a cert-manager private CA.
+- NetworkPolicies deny everything in both namespaces and let each workload reach only what it uses (D-0154):
+  backends reach the gateway, S3 and DNS, and only proxies reach them; proxies also reach public :443 for
+  Mojang; only Traefik reaches the API. The game namespace enforces the restricted Pod Security standard.
 - Secrets live in Infisical and are synced into Kubernetes Secrets by its operator.
 - People and machines use the API's built-in OIDC provider. Access tokens are short-lived JWTs
   whose permissions come from one role per user (or a machine client's scopes); refresh tokens

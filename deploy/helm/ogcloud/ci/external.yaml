@@ -12,6 +12,8 @@ valkey:
 s3:
   inCluster: false
   endpoint: https://s3.example.com
+networkPolicies:
+  externalS3Cidrs: [198.51.100.20/32]
 kafka:
   inCluster: false
   bootstrapServers: kafka.example.com:9093

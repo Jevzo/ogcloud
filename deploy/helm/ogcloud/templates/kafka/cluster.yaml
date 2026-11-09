@@ -72,6 +72,11 @@ spec:
         tls: true
         authentication:
           type: scram-sha-512
+        # Strimzi's NetworkPolicy opens the listener to these alone (D-0154).
+        networkPolicyPeers:
+          {{- range $component := include "ogcloud.dependencyUsers" . | fromYamlArray }}
+          {{- include "ogcloud.np.component" (dict "root" $ "component" $component) | nindent 10 }}
+          {{- end }}
         configuration:
           brokerCertChainAndKey:
             secretName: ogcloud-kafka-tls

@@ -5,6 +5,10 @@ metadata:
   name: {{ include "ogcloud.serversNamespace" . }}
   labels:
     {{- include "ogcloud.labels" . | nindent 4 }}
+    # Game pods run third-party plugins; the controller builds them to the restricted standard.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
   annotations:
     helm.sh/resource-policy: keep
 ---

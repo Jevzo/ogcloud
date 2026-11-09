@@ -1,0 +1,435 @@
+{{- /*
+NetworkPolicies (D-0154): both namespaces deny everything, then each workload may reach what it uses and be
+reached by what uses it. NetworkPolicy matches addresses, so the internet is "public" (never private ranges) and
+the API server is apiServer.cidrs. Kafka's listener is opened by Strimzi from networkPolicyPeers.
+*/}}
+{{- $ns := .Release.Namespace }}
+{{- $servers := include "ogcloud.serversNamespace" . }}
+{{- $np := .Values.networkPolicies }}
+{{- $c := dict "root" . }}
+{{- range $namespace := list $ns $servers }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-deny-all
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "ogcloud.labels" $ | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+{{- end }}
+---
+{{- /* The API: only Traefik reaches it (D-0108). */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-api
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "api") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.namespace" $np.namespaces.traefik | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8080}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8080) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.postgres" . | nindent 4 }}
+    {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
+    {{- include "ogcloud.np.s3" . | nindent 4 }}
+---
+{{- /* The controller: the gateway calls it; it reaches the API server, Infisical and Modrinth (D-0079). */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-controller
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "controller") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "gateway") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 9090}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8080) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    {{- include "ogcloud.np.postgres" . | nindent 4 }}
+    {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
+    {{- include "ogcloud.np.s3" . | nindent 4 }}
+    - to:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "infisical") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8443}
+    - to:
+        {{- include "ogcloud.np.public" . | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 443}
+---
+{{- /* The gateway: every game pod connects; it reviews tokens and watches pods through the API server. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-gateway
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "gateway") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.namespace" $servers | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 9443}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8081) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
+    - to:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "controller") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 9090}
+---
+{{- /* The load balancer: players connect from anywhere; it forwards to proxies only. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-loadbalancer
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports:
+        - {protocol: TCP, port: 25565}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8081) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $servers }}
+          podSelector:
+            matchLabels:
+              cloud.ogwars.io/role: proxy
+      ports:
+        - {protocol: TCP, port: 25565}
+---
+{{- /* Both bootstrap stages: the API server, and Infisical in the second. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-bootstrap
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "bootstrap") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    - to:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "infisical") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8443}
+---
+{{- /* Infisical: bootstrap, the controller, the Secrets Operator and the internal Gateway (D-0045) reach it. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-infisical
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "infisical") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "bootstrap") | nindent 8 }}
+        {{- include "ogcloud.np.component" (dict "root" . "component" "controller") | nindent 8 }}
+        {{- include "ogcloud.np.namespace" $np.namespaces.secretsOperator | nindent 8 }}
+        {{- include "ogcloud.np.namespace" $np.namespaces.traefik | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8443}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- /* Kubernetes auth reviews tokens with TokenReview. */}}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    {{- include "ogcloud.np.postgres" . | nindent 4 }}
+    - to:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "infisical-valkey") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 6379}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-infisical-valkey
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "infisical-valkey") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "infisical") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 6379}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+{{- if .Values.valkey.inCluster }}
+---
+{{- /* The app Valkey: its clients, and its own pods replicating and running Sentinel (D-0048). */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-valkey
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "valkey") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- range $component := list "api" "controller" "gateway" "loadbalancer" "valkey" }}
+        {{- include "ogcloud.np.component" (dict "root" $ "component" $component) | nindent 8 }}
+        {{- end }}
+      ports:
+        - {protocol: TCP, port: 6379}
+        - {protocol: TCP, port: 26379}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    - to:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "valkey") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 6379}
+        - {protocol: TCP, port: 26379}
+{{- end }}
+{{- if .Values.postgres.inCluster }}
+---
+{{- /* PostgreSQL's instances: their clients, each other, and CloudNativePG's operator. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-postgres
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: ogcloud-postgres
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- range $component := list "api" "controller" "infisical" }}
+        {{- include "ogcloud.np.component" (dict "root" $ "component" $component) | nindent 8 }}
+        {{- end }}
+      ports:
+        - {protocol: TCP, port: 5432}
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: ogcloud-postgres
+        {{- include "ogcloud.np.namespace" $np.namespaces.cloudnativePg | nindent 8 }}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 9187) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: ogcloud-postgres
+{{- end }}
+{{- if .Values.kafka.inCluster }}
+---
+{{- /* Kafka's pods among themselves and the entity operator to the API server; Strimzi opens the listeners. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-kafka
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      strimzi.io/cluster: {{ .Values.kafka.clusterName }}
+  policyTypes: [Egress]
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.apiServer" . | nindent 4 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              strimzi.io/cluster: {{ .Values.kafka.clusterName }}
+{{- end }}
+{{- if .Values.s3.inCluster }}
+---
+{{- /* SeaweedFS: S3 for OgCloud and the game pods' presigned URLs; its own ports for the bucket Job. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-seaweedfs
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: seaweedfs
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "api") | nindent 8 }}
+        {{- include "ogcloud.np.component" (dict "root" . "component" "controller") | nindent 8 }}
+        {{- include "ogcloud.np.namespace" $servers | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8333}
+    - from:
+        {{- include "ogcloud.np.component" (dict "root" . "component" "seaweedfs-bucket") | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 9333}
+        - {protocol: TCP, port: 19333}
+        - {protocol: TCP, port: 8888}
+        - {protocol: TCP, port: 18888}
+    {{- /* Master, volume and filer run in one pod but talk over its address. */}}
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: seaweedfs
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 9324) | nindent 4 }}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: seaweedfs
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-seaweedfs-bucket
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "seaweedfs-bucket") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: seaweedfs
+      ports:
+        - {protocol: TCP, port: 9333}
+        - {protocol: TCP, port: 19333}
+        - {protocol: TCP, port: 8888}
+        - {protocol: TCP, port: 18888}
+{{- end }}
+---
+{{- /*
+Game backends run third-party plugins: only proxies reach them, since the forwarding token travels in the
+handshake (D-0065), and they reach only the gateway, S3 and DNS.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-backends
+  namespace: {{ $servers }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      cloud.ogwars.io/role: backend
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              cloud.ogwars.io/role: proxy
+      ports:
+        - {protocol: TCP, port: 25565}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.gateway" . | nindent 4 }}
+    {{- include "ogcloud.np.s3" . | nindent 4 }}
+---
+{{- /* Proxies: players arrive through the load balancer; online mode needs Mojang's session servers. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-proxies
+  namespace: {{ $servers }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      cloud.ogwars.io/role: proxy
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $ns }}
+          podSelector:
+            matchLabels:
+              {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 14 }}
+      ports:
+        - {protocol: TCP, port: 25565}
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.gateway" . | nindent 4 }}
+    {{- include "ogcloud.np.s3" . | nindent 4 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              cloud.ogwars.io/role: backend
+      ports:
+        - {protocol: TCP, port: 25565}
+    {{- if $np.mojang }}
+    - to:
+        {{- include "ogcloud.np.public" . | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 443}
+    {{- end }}

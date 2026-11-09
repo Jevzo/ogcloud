@@ -1,0 +1,277 @@
+package deploytest
+
+import (
+	"fmt"
+	"net/netip"
+	"testing"
+)
+
+// The rendered NetworkPolicies, evaluated as Kubernetes does, against the flows D-0154 allows and denies. Strimzi
+// writes the Kafka listener's own policy, so Kafka is checked through its networkPolicyPeers instead.
+
+// endpoint is a pod (namespace set) or an address outside the cluster.
+type endpoint struct {
+	namespace string
+	labels    map[string]string
+	ip        string
+}
+
+func component(name string) endpoint {
+	return endpoint{namespace: namespace, labels: map[string]string{
+		"app.kubernetes.io/name": "ogcloud", "app.kubernetes.io/instance": "ogcloud", "app.kubernetes.io/component": name,
+	}}
+}
+
+func pod(ns string, labels ...string) endpoint {
+	e := endpoint{namespace: ns, labels: map[string]string{}}
+	for i := 0; i+1 < len(labels); i += 2 {
+		e.labels[labels[i]] = labels[i+1]
+	}
+	return e
+}
+
+var (
+	api             = component("api")
+	controller      = component("controller")
+	gateway         = component("gateway")
+	loadbalancer    = component("loadbalancer")
+	infisicalPod    = component("infisical")
+	infisicalValkey = component("infisical-valkey")
+	appValkey       = component("valkey")
+	seaweed         = pod(namespace, "app.kubernetes.io/name", "seaweedfs")
+	postgresPod     = pod(namespace, "cnpg.io/cluster", "ogcloud-postgres")
+	backend         = pod("ogcloud-servers", "cloud.ogwars.io/role", "backend")
+	proxy           = pod("ogcloud-servers", "cloud.ogwars.io/role", "proxy")
+	traefik         = pod("traefik", "app.kubernetes.io/name", "traefik")
+	prometheus      = pod("monitoring", "app.kubernetes.io/name", "prometheus")
+	tempo           = pod("monitoring", "app.kubernetes.io/name", "tempo")
+	secretsOperator = pod("infisical-operator", "control-plane", "controller-manager")
+	coreDNS         = pod("kube-system", "k8s-app", "kube-dns")
+	intruder        = pod("default", "app", "anything")
+	internet        = endpoint{ip: "142.250.74.14"}
+	privateHost     = endpoint{ip: "10.20.30.40"}
+	// externalS3Cidrs in ci/hetzner.yaml.
+	objectStorage = endpoint{ip: "203.0.113.10"}
+)
+
+type flow struct {
+	from, to endpoint
+	port     int
+	protocol string
+	allowed  bool
+	why      string
+}
+
+func tcp(from, to endpoint, port int, allowed bool, why string) flow {
+	return flow{from, to, port, "TCP", allowed, why}
+}
+
+func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
+	flows := []flow{
+		tcp(traefik, api, 8080, true, "Traefik serves the API (D-0108)"),
+		tcp(intruder, api, 8080, false, "nothing else reaches the API"),
+		tcp(backend, api, 8080, false, "game pods never reach the API"),
+		tcp(proxy, backend, 25565, true, "proxies forward players to backends"),
+		tcp(backend, backend, 25565, false, "backends never reach each other: the forwarding token is in the handshake (D-0065)"),
+		tcp(intruder, backend, 25565, false, "only proxies reach backends"),
+		tcp(loadbalancer, proxy, 25565, true, "the load balancer forwards players"),
+		tcp(internet, loadbalancer, 25565, true, "players connect from anywhere"),
+		tcp(backend, gateway, 9443, true, "game pods hold sessions with the gateway"),
+		tcp(proxy, gateway, 9443, true, "game pods hold sessions with the gateway"),
+		tcp(backend, internet, 443, false, "backends run third-party plugins and get no internet"),
+		tcp(proxy, internet, 443, true, "online mode asks Mojang's session servers"),
+		tcp(proxy, privateHost, 443, false, "the public egress excludes private ranges"),
+		tcp(backend, seaweed, 8333, true, "presigned template downloads"),
+		tcp(backend, appValkey, 6379, false, "game pods hold no infrastructure access (D-0008)"),
+		tcp(backend, postgresPod, 5432, false, "game pods hold no infrastructure access (D-0008)"),
+		{backend, coreDNS, 53, "UDP", true, "every pod resolves names"},
+		tcp(api, internet, 443, false, "the API calls nothing outside"),
+		tcp(controller, internet, 443, true, "the controller downloads bundle plugins from Modrinth (D-0079)"),
+		tcp(controller, infisicalPod, 8443, true, "the controller rotates the forwarding tokens (D-0152)"),
+		tcp(api, infisicalPod, 8443, false, "the API reads its secrets from files, not Infisical"),
+		tcp(secretsOperator, infisicalPod, 8443, true, "the Secrets Operator syncs from Infisical"),
+		tcp(gateway, controller, 9090, true, "the gateway resolves logins at the controller"),
+		tcp(api, controller, 9090, false, "only the gateway calls the controller"),
+		tcp(api, postgresPod, 5432, true, "the API owns the schema"),
+		tcp(gateway, postgresPod, 5432, false, "the gateway reads Valkey only"),
+		tcp(infisicalPod, infisicalValkey, 6379, true, "Infisical's own Valkey (D-0151)"),
+		tcp(api, infisicalValkey, 6379, false, "only Infisical uses its Valkey"),
+		tcp(infisicalPod, appValkey, 6379, false, "Infisical has left the app Valkey (D-0151)"),
+		tcp(gateway, appValkey, 26379, true, "Sentinel discovery"),
+		tcp(intruder, appValkey, 6379, false, "nothing else reaches Valkey"),
+		tcp(gateway, privateHost, 6443, true, "the gateway reviews tokens at the API server"),
+		tcp(api, privateHost, 6443, false, "the API never talks to Kubernetes"),
+		tcp(prometheus, api, 8080, false, "no scraping without monitoring"),
+		tcp(api, tempo, 4318, false, "no traces without monitoring"),
+	}
+	objects := render(t, minikubeValues)
+	for _, f := range flows {
+		if got := objects.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
+			t.Errorf("%s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)
+		}
+	}
+
+	monitored := render(t, hetznerValues)
+	for _, f := range []flow{
+		tcp(prometheus, api, 8080, true, "Prometheus scrapes the API"),
+		tcp(prometheus, gateway, 8081, true, "Prometheus scrapes the gateway"),
+		tcp(api, tempo, 4318, true, "traces go to Tempo"),
+		tcp(backend, objectStorage, 443, true, "backends download templates from Hetzner Object Storage"),
+		tcp(backend, internet, 443, false, "S3's addresses, not the internet (D-0154)"),
+	} {
+		if got := monitored.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
+			t.Errorf("hetzner: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)
+		}
+	}
+}
+
+func TestOnlyOgCloudsServicesReachKafkasListener(t *testing.T) {
+	kafka := render(t, minikubeValues).find(t, "Kafka", "ogcloud")
+	listeners, _ := get(kafka, "spec", "kafka", "listeners").([]any)
+	if len(listeners) != 1 {
+		t.Fatalf("Kafka has %d listeners, want 1", len(listeners))
+	}
+	peers, _ := get(listeners[0], "networkPolicyPeers").([]any)
+	allowed := func(e endpoint) bool {
+		for _, peer := range peers {
+			if peerMatches(t, peer, namespace, e) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, client := range []endpoint{api, controller, gateway, loadbalancer} {
+		if !allowed(client) {
+			t.Errorf("%s cannot reach Kafka", describe(client))
+		}
+	}
+	for _, other := range []endpoint{infisicalPod, backend, proxy, intruder} {
+		if allowed(other) {
+			t.Errorf("%s reaches Kafka", describe(other))
+		}
+	}
+	if len(peers) == 0 {
+		t.Error("without networkPolicyPeers Strimzi opens the listener to every pod")
+	}
+}
+
+// allows decides one connection as Kubernetes does: the source's egress policies and the destination's ingress
+// policies must each allow it, where a pod no policy selects for a direction is open in that direction.
+func (r rendered) allows(t *testing.T, from, to endpoint, port int, protocol string) bool {
+	t.Helper()
+	return r.direction(t, from, "Egress", "egress", "to", to, port, protocol) &&
+		r.direction(t, to, "Ingress", "ingress", "from", from, port, protocol)
+}
+
+func (r rendered) direction(t *testing.T, subject endpoint, policyType, rulesKey, peersKey string, other endpoint, port int, protocol string) bool {
+	t.Helper()
+	if subject.namespace == "" {
+		return true
+	}
+	selected := false
+	for _, policy := range r.all("NetworkPolicy") {
+		ns := str(policy, "metadata", "namespace")
+		if ns != subject.namespace || !labelsMatch(get(policy, "spec", "podSelector", "matchLabels"), subject.labels) {
+			continue
+		}
+		types, _ := get(policy, "spec", "policyTypes").([]any)
+		if !contains(types, policyType) {
+			continue
+		}
+		selected = true
+		rules, _ := get(policy, "spec", rulesKey).([]any)
+		for _, rule := range rules {
+			if ruleMatches(t, rule, peersKey, ns, other, port, protocol) {
+				return true
+			}
+		}
+	}
+	return !selected
+}
+
+func ruleMatches(t *testing.T, rule any, peersKey, policyNamespace string, other endpoint, port int, protocol string) bool {
+	t.Helper()
+	ports, _ := get(rule, "ports").([]any)
+	portMatches := len(ports) == 0
+	for _, p := range ports {
+		want := str(p, "protocol")
+		if want == "" {
+			want = "TCP"
+		}
+		number, _ := get(p, "port").(int)
+		portMatches = portMatches || (want == protocol && number == port)
+	}
+	if !portMatches {
+		return false
+	}
+	peers, present := get(rule, peersKey).([]any)
+	if !present || len(peers) == 0 {
+		return true
+	}
+	for _, peer := range peers {
+		if peerMatches(t, peer, policyNamespace, other) {
+			return true
+		}
+	}
+	return false
+}
+
+// peerMatches matches pods by namespace and pod selectors, and addresses outside the cluster by ipBlock.
+func peerMatches(t *testing.T, peer any, policyNamespace string, e endpoint) bool {
+	t.Helper()
+	if block := get(peer, "ipBlock"); block != nil {
+		if e.namespace != "" {
+			return false
+		}
+		address := netip.MustParseAddr(e.ip)
+		if !netip.MustParsePrefix(str(block, "cidr")).Contains(address) {
+			return false
+		}
+		excepts, _ := get(block, "except").([]any)
+		for _, except := range excepts {
+			if netip.MustParsePrefix(except.(string)).Contains(address) {
+				return false
+			}
+		}
+		return true
+	}
+	if e.namespace == "" {
+		return false
+	}
+	namespaceSelector, podSelector := get(peer, "namespaceSelector"), get(peer, "podSelector")
+	if namespaceSelector == nil && e.namespace != policyNamespace {
+		return false
+	}
+	if namespaceSelector != nil {
+		if !labelsMatch(get(namespaceSelector, "matchLabels"), map[string]string{"kubernetes.io/metadata.name": e.namespace}) {
+			return false
+		}
+	}
+	return podSelector == nil || labelsMatch(get(podSelector, "matchLabels"), e.labels)
+}
+
+func labelsMatch(selector any, labels map[string]string) bool {
+	want, _ := selector.(map[string]any)
+	for key, value := range want {
+		if labels[key] != value {
+			return false
+		}
+	}
+	return true
+}
+
+func contains(values []any, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func describe(e endpoint) string {
+	if e.namespace == "" {
+		return e.ip
+	}
+	return fmt.Sprintf("%s%v", e.namespace, e.labels)
+}

@@ -43,6 +43,21 @@
     },
     "global": { "type": "object" },
     "seaweedfs": { "type": "object" },
+    "networkPolicies": {
+      "type": "object",
+      "properties": {
+        "apiServer": {
+          "type": "object",
+          "properties": {
+            "cidrs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "ports": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
+          }
+        },
+        "externalCidrs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "externalS3Cidrs": { "type": "array", "items": { "type": "string" } },
+        "mojang": { "type": "boolean" }
+      }
+    },
     "monitoring": {
       "type": "object",
       "additionalProperties": false,
