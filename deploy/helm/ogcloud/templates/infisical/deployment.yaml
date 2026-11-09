@@ -78,7 +78,7 @@ spec:
             - name: PORT
               value: "8080"
             - name: SITE_URL
-              value: {{ $i.siteUrl | default (include "ogcloud.infisicalUrl" .) | quote }}
+              value: {{ $i.siteUrl | default (include "ogcloud.infisicalSiteUrl" .) | quote }}
             - name: TELEMETRY_ENABLED
               value: "false"
             # Kubernetes auth reviews tokens against the API server, a private address (T-0402).

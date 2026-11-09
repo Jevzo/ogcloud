@@ -78,7 +78,21 @@
     "loadbalancer": { "type": "object" },
     "retention": { "type": "object" },
     "edge": { "type": "object" },
-    "bootstrap": { "type": "object" }
+    "bootstrap": { "type": "object" },
+    "admin": {
+      "type": "object",
+      "properties": {
+        "gateway": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "port": { "type": "integer" },
+            "infisicalHost": { "type": "string" },
+            "grafanaHost": { "type": "string" }
+          }
+        }
+      }
+    }
   },
   "definitions": {
     "dependency": {

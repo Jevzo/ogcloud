@@ -56,6 +56,19 @@ charts:
           port: 8000
         websecure:
           port: 8443
+        # The internal Gateway's admin UIs (D-0045), exposed only by the private "admin" Service.
+        admin:
+          port: 9443
+          exposedPort: 443
+          protocol: TCP
+          expose:
+            default: false
+            admin: true
+      service:
+        additionalServices:
+          admin:
+            spec:
+              type: ClusterIP
     targets:
       hetzner:
         service:
@@ -63,6 +76,15 @@ charts:
             load-balancer.hetzner.cloud/name: ogcloud-https
             load-balancer.hetzner.cloud/use-private-ip: "true"
             load-balancer.hetzner.cloud/uses-proxyprotocol: "true"
+          # A load balancer in the private network only, which the VPN box forwards to (D-0045).
+          additionalServices:
+            admin:
+              spec:
+                type: LoadBalancer
+              annotations:
+                load-balancer.hetzner.cloud/name: ogcloud-admin
+                load-balancer.hetzner.cloud/disable-public-network: "true"
+                load-balancer.hetzner.cloud/use-private-ip: "true"
 
   - name: strimzi
     namespace: strimzi

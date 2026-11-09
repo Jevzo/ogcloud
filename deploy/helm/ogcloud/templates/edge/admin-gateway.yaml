@@ -1,0 +1,127 @@
+{{- /*
+The internal Gateway (D-0045) for the admin UIs, on Traefik's admin entrypoint, which only a private load balancer
+reaches: the VPN box forwards to it. Infisical is reached over its TLS sidecar, verified against the internal CA
+(D-0149); Grafana lives in the monitoring namespace, which grants this route its Service.
+*/}}
+{{- $admin := .Values.admin }}
+{{- if $admin.gateway.enabled }}
+{{- $hosts := dict "infisical" (required "admin.gateway.infisicalHost is required" $admin.gateway.infisicalHost) }}
+{{- if .Values.monitoring.enabled }}
+{{- $_ := set $hosts "grafana" (required "admin.gateway.grafanaHost is required with monitoring" $admin.gateway.grafanaHost) }}
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  secretName: ogcloud-admin-tls
+  dnsNames:
+    {{- range $name, $host := $hosts }}
+    - {{ $host }}
+    {{- end }}
+  issuerRef:
+    kind: {{ .Values.edge.tls.issuer.kind }}
+    name: {{ required "edge.tls.issuer.name is required" .Values.edge.tls.issuer.name }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ogcloud-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: {{ .Values.edge.gatewayClassName }}
+  listeners:
+    {{- range $name, $host := $hosts }}
+    - name: {{ $name }}
+      protocol: HTTPS
+      port: {{ $admin.gateway.port }}
+      hostname: {{ $host }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: ogcloud-admin-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- end }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ogcloud-infisical
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: ogcloud-admin
+      sectionName: infisical
+  hostnames:
+    - {{ $hosts.infisical }}
+  rules:
+    - backendRefs:
+        - name: ogcloud-infisical
+          port: 8443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: ogcloud-infisical
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: ogcloud-infisical
+  validation:
+    hostname: ogcloud-infisical.{{ .Release.Namespace }}.svc
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: ogcloud-internal-ca
+{{- if .Values.monitoring.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ogcloud-grafana
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: ogcloud-admin
+      sectionName: grafana
+  hostnames:
+    - {{ $hosts.grafana }}
+  rules:
+    - backendRefs:
+        - name: {{ $admin.grafana.service }}
+          namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
+          port: {{ $admin.grafana.port }}
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: ogcloud-grafana
+  namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: {{ .Release.Namespace }}
+  to:
+    - group: ""
+      kind: Service
+      name: {{ $admin.grafana.service }}
+{{- end }}
+{{- end }}

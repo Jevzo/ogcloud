@@ -17,6 +17,12 @@ infisical:
   replicas: 2
 monitoring:
   enabled: true
+# The VPN's internal Gateway (D-0045); Terraform points these names at the tunnel.
+admin:
+  gateway:
+    enabled: true
+    infisicalHost: infisical.internal.example.com
+    grafanaHost: grafana.internal.example.com
 # Hetzner Object Storage (D-0010); Terraform creates the bucket (T-0702).
 s3:
   inCluster: false

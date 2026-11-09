@@ -323,6 +323,20 @@ edge:
       kind: ClusterIssuer
       name: ""
 
+# Admin surfaces (D-0045): Infisical's and Grafana's UIs, never on the public Gateway. With the VPN they get the
+# internal Gateway behind Traefik's private load balancer; without it, a port-forward.
+admin:
+  gateway:
+    enabled: false
+    # Traefik's admin entrypoint (deploy/platform-deps.yaml), which only its private Service exposes.
+    port: 9443
+    infisicalHost: ""
+    grafanaHost: ""
+  # Grafana's Service, from kube-prometheus-stack's release in deploy/platform-deps.yaml.
+  grafana:
+    service: kube-prometheus-stack-grafana
+    port: 80
+
 bootstrap:
   resources:
     requests:

@@ -103,6 +103,15 @@ http://{{ include "ogcloud.seaweedfsService" . }}:8333
 https://ogcloud-infisical.{{ .Release.Namespace }}.svc:8443
 {{- end -}}
 
+{{/* Where people open Infisical's UI: the internal Gateway when there is one (D-0045), else the Service. */}}
+{{- define "ogcloud.infisicalSiteUrl" -}}
+{{- if .Values.admin.gateway.enabled -}}
+https://{{ required "admin.gateway.infisicalHost is required" .Values.admin.gateway.infisicalHost }}
+{{- else -}}
+{{ include "ogcloud.infisicalUrl" . }}
+{{- end -}}
+{{- end -}}
+
 {{/* The audience of tokens the controller shows Infisical, which the API server refuses. */}}
 {{- define "ogcloud.infisicalAudience" -}}
 ogcloud-infisical
