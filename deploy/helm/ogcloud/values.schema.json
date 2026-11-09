@@ -26,7 +26,10 @@
         }
       }
     },
-    "allowedImagePrefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "allowedImagePrefixes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
     "postgres": { "$ref": "#/definitions/dependency" },
     "kafka": { "$ref": "#/definitions/dependency" },
     "valkey": {
@@ -38,7 +41,12 @@
     "s3": {
       "allOf": [
         { "$ref": "#/definitions/dependency" },
-        { "properties": { "pathStyle": { "type": "boolean" }, "bucket": { "type": "string", "minLength": 3 } } }
+        {
+          "properties": {
+            "pathStyle": { "type": "boolean" },
+            "bucket": { "type": "string", "minLength": 3 }
+          }
+        }
       ]
     },
     "global": { "type": "object" },
@@ -49,11 +57,23 @@
         "apiServer": {
           "type": "object",
           "properties": {
-            "cidrs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
-            "ports": { "type": "array", "minItems": 1, "items": { "type": "integer" } }
+            "cidrs": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "ports": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "integer" }
+            }
           }
         },
-        "externalCidrs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "externalCidrs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
         "externalS3Cidrs": { "type": "array", "items": { "type": "string" } },
         "mojang": { "type": "boolean" }
       }

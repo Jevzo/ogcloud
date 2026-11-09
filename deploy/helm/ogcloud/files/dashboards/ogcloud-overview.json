@@ -2,9 +2,7 @@
   "uid": "ogcloud-overview",
   "title": "OgCloud",
   "description": "Players, servers and the data plane, from the gateway's and load balancer's metrics (D-0025).",
-  "tags": [
-    "ogcloud"
-  ],
+  "tags": ["ogcloud"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -64,9 +62,7 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -112,9 +108,7 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -160,9 +154,7 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -208,9 +200,7 @@
       },
       "options": {
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
