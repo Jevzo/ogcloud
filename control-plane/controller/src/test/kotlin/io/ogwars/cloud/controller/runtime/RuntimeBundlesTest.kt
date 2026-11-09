@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import java.net.URI
 import java.nio.file.Files
 import java.security.MessageDigest
+import java.time.Duration
 import java.util.HexFormat
 import java.util.UUID
 
@@ -166,6 +167,12 @@ class RuntimeBundlesTest {
         toml shouldContain "login-ratelimit = 0"
         toml shouldContain "forwarding-secret-file = \"${GeneratedConfigs.FORWARDING_SECRET_FILE}\""
         GeneratedConfigs.viaVersionConfig() shouldContain "block-protocols: [\"<47\"]"
+    }
+
+    @Test
+    fun `a sync that failed before the bucket existed is retried within a minute`() {
+        // Pods wait for their bundle; on a fresh cluster the first sync may run before object storage is ready.
+        RuntimeProperties().syncInterval shouldBe Duration.ofMinutes(1)
     }
 
     @Test
