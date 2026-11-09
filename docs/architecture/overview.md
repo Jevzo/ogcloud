@@ -172,7 +172,10 @@ backups, orphaned objects).
   The api and controller run on distroless Java 25, the Go services on distroless static, all as uid 1000 (D-0128);
   the controller image carries `ogcloud-<platform>.jar` in `/opt/ogcloud/plugins` (D-0079). Tags are
   `<registry>/<name>:<platform-version>`, as the controller expects.
-- **Local development:** minikube driven by Tilt (`mise run dev`).
+- **Local development:** `mise run dev` starts the minikube profile `ogcloud` (Calico, the Docker runtime, D-0155)
+  and Tilt. The `Tiltfile` installs `deploy/platform-deps.yaml` in order, builds the images into minikube's Docker
+  and installs the chart with `deploy/dev/values.yaml`; the dashboard origin is `https://ogcloud.localhost:8443`
+  through Traefik's port-forward. `mise run dev:ci` is `tilt ci`; `mise run dev:clean` deletes the profile.
 - **Hetzner:** Terraform with the kube-hetzner module provisions the cluster and installs
   OgCloud through k3s HelmChart resources; an optional WireGuard box guards admin access.
 - Game servers run in their own namespace on a dedicated, autoscaled node pool.
