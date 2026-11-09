@@ -27,6 +27,7 @@ spec:
   privateKey:
     algorithm: ECDSA
     size: 256
+    encoding: PKCS8
   issuerRef:
     kind: ClusterIssuer
     name: ogcloud-selfsigned

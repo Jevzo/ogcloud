@@ -1,4 +1,4 @@
-# What OgCloud's chart runs on (D-0021, D-0146): cluster-wide operators and charts, each pinned exactly. Tilt
+# What OgCloud's chart runs on (D-0021, D-0150): cluster-wide operators and charts, each pinned exactly. Tilt
 # (T-0604) and Terraform (T-0702) install them in this order; on k3s every one is applied at once and converges
 # by retries (D-0020). Renovate keeps the versions current (D-0052).
 #

@@ -21,6 +21,8 @@ spec:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
+    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
+    encoding: PKCS8
   dnsNames:
     - {{ $kafka.clusterName }}-kafka-bootstrap
     - {{ $kafka.clusterName }}-kafka-bootstrap.{{ .Release.Namespace }}.svc

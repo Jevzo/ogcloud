@@ -24,6 +24,8 @@ spec:
         {{- include "ogcloud.selector" (dict "root" . "component" "seaweedfs-bucket") | nindent 8 }}
     spec:
       automountServiceAccountToken: false
+      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
+      enableServiceLinks: false
       restartPolicy: OnFailure
       priorityClassName: {{ .Values.priorityClasses.platform.name }}
       securityContext:

@@ -1,6 +1,7 @@
 package deploytest
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -30,5 +31,20 @@ func TestTheGameNamespaceSurvivesAnUninstall(t *testing.T) {
 	servers := render(t, minikubeValues).find(t, "Namespace", "ogcloud-servers")
 	if str(servers, "metadata", "annotations", "helm.sh/resource-policy") != "keep" {
 		t.Error("deleting the game namespace on uninstall would delete STATIC volumes")
+	}
+}
+
+// Every namespaced object names its namespace, so it lands in the release's however it is applied: Tilt and
+// kubectl read the manifest back, and k3s HelmCharts apply it as Helm does (D-0020).
+func TestEveryNamespacedObjectNamesItsNamespace(t *testing.T) {
+	clusterScoped := []string{
+		"Namespace", "PriorityClass", "ClusterRole", "ClusterRoleBinding", "ClusterIssuer", "Bundle",
+	}
+	for _, values := range valueSets(t) {
+		for _, o := range render(t, values) {
+			if !slices.Contains(clusterScoped, o.kind()) && str(o, "metadata", "namespace") == "" {
+				t.Errorf("%s: %s %s names no namespace", values, o.kind(), o.name())
+			}
+		}
 	}
 }

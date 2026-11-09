@@ -11,6 +11,9 @@ metadata:
     {{- include "ogcloud.labels" . | nindent 4 }}
 spec:
   secretName: ogcloud-public-tls
+  # Like every certificate here, PKCS#8 (see the internal certificates).
+  privateKey:
+    encoding: PKCS8
   dnsNames:
     - {{ include "ogcloud.publicHost" . }}
   issuerRef:

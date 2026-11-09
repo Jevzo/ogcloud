@@ -84,6 +84,9 @@ ogcloud-kafka-{{ $service }}:
 ogcloud-postgres-{{ $service }}:
   namespace: {{ $.Release.Namespace }}
   type: kubernetes.io/basic-auth
+  # CloudNativePG retries a managed role only when its labelled Secret appears or changes.
+  labels:
+    cnpg.io/reload: "true"
   literals:
     username: ogcloud_{{ $service }}
   keys:

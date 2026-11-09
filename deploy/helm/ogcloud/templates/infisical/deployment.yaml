@@ -20,6 +20,8 @@ spec:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
+    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
+    encoding: PKCS8
   dnsNames:
     - ogcloud-infisical
     - ogcloud-infisical.{{ .Release.Namespace }}.svc
@@ -61,6 +63,8 @@ spec:
         {{- include "ogcloud.selector" $labels | nindent 8 }}
     spec:
       automountServiceAccountToken: false
+      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
+      enableServiceLinks: false
       priorityClassName: {{ .Values.priorityClasses.platform.name }}
       securityContext:
         {{- include "ogcloud.podSecurity" . | nindent 8 }}
@@ -122,11 +126,11 @@ spec:
                   key: INFISICAL_PASSWORD
             - name: REDIS_URL
               value: rediss://infisical:$(REDIS_PASSWORD)@ogcloud-infisical-valkey.{{ .Release.Namespace }}.svc:6379
-          # Through ghostunnel, so the probes check both.
+          # Through ghostunnel, so the probes check both; by number, since the port is the sidecar's.
           startupProbe:
             httpGet:
               path: /api/status
-              port: https
+              port: 8443
               scheme: HTTPS
             periodSeconds: 10
             # Database migrations run before Infisical listens.
@@ -134,13 +138,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /api/status
-              port: https
+              port: 8443
               scheme: HTTPS
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/status
-              port: https
+              port: 8443
               scheme: HTTPS
             periodSeconds: 30
             failureThreshold: 5
@@ -164,14 +168,17 @@ spec:
           ports:
             - name: https
               containerPort: 8443
+          # A full request, since a bare TCP probe leaves ghostunnel a half-made handshake to log.
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /api/status
               port: https
+              scheme: HTTPS
             periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: https
-            periodSeconds: 30
+            periodSeconds: 60
           securityContext:
             {{- include "ogcloud.containerSecurity" . | nindent 12 }}
           resources:

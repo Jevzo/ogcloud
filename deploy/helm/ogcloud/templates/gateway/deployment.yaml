@@ -17,6 +17,8 @@ spec:
     spec:
       serviceAccountName: ogcloud-gateway
       automountServiceAccountToken: false
+      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
+      enableServiceLinks: false
       priorityClassName: {{ .Values.priorityClasses.platform.name }}
       securityContext:
         {{- include "ogcloud.podSecurity" . | nindent 8 }}

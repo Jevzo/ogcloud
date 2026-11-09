@@ -43,3 +43,18 @@ func TestAdminSurfacesNeverAttachToThePublicGateway(t *testing.T) {
 		})
 	}
 }
+
+// The public Gateway answers for publicOrigin's host, also when the origin names a port, as minikube's does.
+func TestThePublicGatewayServesThePublicOriginsHost(t *testing.T) {
+	for host, values := range map[string][]string{
+		"cloud.example.com": {hetznerValues},
+		"ogcloud.localhost": {minikubeValues, "../../deploy/dev/values.yaml"},
+	} {
+		listeners, _ := get(render(t, values...).find(t, "Gateway", "ogcloud-public"), "spec", "listeners").([]any)
+		for _, listener := range listeners {
+			if got := str(listener, "hostname"); got != host {
+				t.Errorf("%v: listener %s answers for %q, want %q", values, str(listener, "name"), got, host)
+			}
+		}
+	}
+}

@@ -276,9 +276,10 @@ readinessProbe:
   mountPath: /tmp
 {{- end -}}
 
-{{/* The public host, from publicOrigin. */}}
+{{/* The public host, from publicOrigin, without a port such as minikube's port-forward adds. */}}
 {{- define "ogcloud.publicHost" -}}
-{{- (urlParse (required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin)).host -}}
+{{- $host := (urlParse (required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin)).host -}}
+{{- regexReplaceAll ":[0-9]+$" $host "" -}}
 {{- end -}}
 
 {{/*

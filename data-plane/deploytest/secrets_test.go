@@ -175,3 +175,22 @@ func TestPodsReadOnlySecretsTheReleaseCreates(t *testing.T) {
 		})
 	}
 }
+
+// The Secrets Operator syncs role passwords after CloudNativePG first tried them; it retries only for Secrets
+// labelled cnpg.io/reload, so without the label the roles never get their passwords.
+func TestManagedRolePasswordsReloadInCloudNativePG(t *testing.T) {
+	objects := render(t, minikubeValues)
+	roles, _ := get(objects.find(t, "Cluster", "ogcloud-postgres"), "spec", "managed", "roles").([]any)
+	if len(roles) == 0 {
+		t.Fatal("PostgreSQL manages no roles")
+	}
+	for _, role := range roles {
+		secret := str(role, "passwordSecret", "name")
+		targets, _ := get(objects.find(t, "InfisicalStaticSecret", secret), "spec", "targets").([]any)
+		for _, target := range targets {
+			if str(target, "metadata", "labels", "cnpg.io/reload") != "true" {
+				t.Errorf("role %s reads Secret %s, which is not labelled cnpg.io/reload", str(role, "name"), secret)
+			}
+		}
+	}
+}

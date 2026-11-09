@@ -99,8 +99,8 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(infisicalPod, appValkey, 6379, false, "Infisical has left the app Valkey (D-0151)"),
 		tcp(gateway, appValkey, 26379, true, "Sentinel discovery"),
 		tcp(intruder, appValkey, 6379, false, "nothing else reaches Valkey"),
-		tcp(gateway, privateHost, 6443, true, "the gateway reviews tokens at the API server"),
-		tcp(api, privateHost, 6443, false, "the API never talks to Kubernetes"),
+		tcp(gateway, privateHost, 443, true, "the gateway reviews tokens at the API server"),
+		tcp(api, privateHost, 443, false, "the API never talks to Kubernetes"),
 		tcp(prometheus, api, 8080, false, "no scraping without monitoring"),
 		tcp(api, tempo, 4318, false, "no traces without monitoring"),
 	}

@@ -39,3 +39,8 @@ edge:
   tls:
     issuer:
       name: ogcloud-internal
+networkPolicies:
+  # minikube's API server listens on 8443 behind the kubernetes Service; Calico matches the translated port.
+  apiServer:
+    cidrs: [0.0.0.0/0]
+    ports: [443, 8443]

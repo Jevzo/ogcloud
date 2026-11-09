@@ -29,8 +29,13 @@ spec:
     spec:
       serviceAccountName: ogcloud-bootstrap
       automountServiceAccountToken: false
+      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
+      enableServiceLinks: false
       restartPolicy: OnFailure
+      {{- /* The root stage runs before the release's PriorityClasses exist. */}}
+      {{- if ne $stage "root" }}
       priorityClassName: {{ $.Values.priorityClasses.platform.name }}
+      {{- end }}
       securityContext:
         {{- include "ogcloud.podSecurity" $ | nindent 8 }}
       containers:

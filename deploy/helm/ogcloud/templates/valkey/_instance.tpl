@@ -24,6 +24,8 @@ spec:
     algorithm: ECDSA
     size: 256
     rotationPolicy: Always
+    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
+    encoding: PKCS8
   dnsNames:
     - localhost
     - {{ $name }}
@@ -91,6 +93,8 @@ spec:
         checksum/scripts: {{ ($root.Files.Glob "files/valkey/*.sh").AsConfig | sha256sum }}
     spec:
       automountServiceAccountToken: false
+      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
+      enableServiceLinks: false
       priorityClassName: {{ $root.Values.priorityClasses.platform.name }}
       securityContext:
         {{- include "ogcloud.podSecurity" $root | nindent 8 }}
