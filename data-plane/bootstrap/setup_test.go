@@ -31,6 +31,9 @@ const (
 	seedName       = "ogcloud-seed"
 	stateName      = "ogcloud-infisical-state"
 	identitiesName = "ogcloud-infisical-identities"
+	// Holds only the forwarding tokens (D-0152).
+	forwardingProject  = "ogcloud-forwarding"
+	controllerAudience = "ogcloud-infisical"
 )
 
 // fixture is a cluster and an Infisical wired for Kubernetes auth, with token files on disk.
@@ -94,6 +97,32 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	if _, err := f.api.KubernetesLogin(ctx, operatorID, testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil)); err == nil {
 		t.Error("another service account logged in as the operator")
 	}
+	// The controller rotates the forwarding tokens in their own project and reads nothing else (D-0152), with a
+	// token only Infisical accepts.
+	controllerID := f.identityID(t, api, "ogcloud-controller")
+	if _, err := f.api.KubernetesLogin(ctx, controllerID, testk3s.Token(t, f.kube, namespace, "ogcloud-controller", "", nil)); err == nil {
+		t.Error("the controller logged in with a token for the API server")
+	}
+	token, err := f.api.KubernetesLogin(ctx, controllerID, testk3s.Token(t, f.kube, namespace, "ogcloud-controller", controllerAudience, nil))
+	if err != nil {
+		t.Fatalf("the controller cannot log in with its Infisical token: %v", err)
+	}
+	controller := f.api.WithToken(token)
+	forwarding, err := controller.ProjectBySlug(ctx, forwardingProject)
+	if err != nil {
+		t.Fatalf("the controller cannot find its project: %v", err)
+	}
+	tokens := infisical.SecretRef{ProjectID: forwarding.ID, Environment: "prod", Path: "/", Name: "TOKENS"}
+	if current := f.value(t, controller, forwarding.ID, "/", "TOKENS"); len(current) != 48 {
+		t.Errorf("forwarding token = %q", current)
+	}
+	must(t, controller.PutSecret(ctx, tokens, "old\nnew", true))
+	if got := f.value(t, operator, forwarding.ID, "/", "TOKENS"); got != "old\nnew" {
+		t.Errorf("the operator syncs %q", got)
+	}
+	if _, _, err := controller.Secret(ctx, infisical.SecretRef{ProjectID: project.ID, Environment: "prod", Path: "/api", Name: "OGCLOUD_AUTH_SETUP_TOKEN"}); err == nil {
+		t.Error("the controller reads the main project")
+	}
 	published, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, identitiesName, metav1.GetOptions{})
 	if err != nil || string(published.Data["ogcloud-secrets-operator"]) != operatorID {
 		t.Errorf("the operator's identity id was not published for InfisicalAuth: %v", err)
@@ -110,7 +139,7 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	f.assertSeedGone(t)
 
 	// A changed role in the config reaches the identity.
-	f.config.Infisical.Identities[0].Role = "member"
+	f.config.Infisical.Identities[0].Roles["ogcloud"] = "member"
 	f.run(t)
 	if role, err := api.ProjectMemberRole(ctx, project.ID, operatorID); err != nil || role != "member" {
 		t.Errorf("operator role = %q, %v", role, err)
@@ -139,7 +168,7 @@ func newFixture(t *testing.T) *fixture {
 	kube := env.Cluster.Client
 	dir := t.TempDir()
 	must(t, create(ctx, kube.CoreV1().Namespaces(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}))
-	for _, account := range []string{"infisical-reviewer", "ogcloud-bootstrap", "infisical-secrets-operator"} {
+	for _, account := range []string{"infisical-reviewer", "ogcloud-bootstrap", "infisical-secrets-operator", "ogcloud-controller"} {
 		must(t, create(ctx, kube.CoreV1().ServiceAccounts(namespace), &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: account}}))
 	}
 	must(t, create(ctx, kube.RbacV1().ClusterRoleBindings(), &rbacv1.ClusterRoleBinding{
@@ -166,7 +195,7 @@ func newFixture(t *testing.T) *fixture {
 	f.config = &Config{
 		Namespace: namespace,
 		Infisical: InfisicalSetup{
-			URL: env.URL, Organization: "OgCloud", Project: "ogcloud", Environment: "prod",
+			URL: env.URL, Organization: "OgCloud", Project: "ogcloud", Projects: []string{forwardingProject}, Environment: "prod",
 			StateConfigMap:          stateName,
 			IdentitiesSecret:        identitiesName,
 			ServiceAccountTokenFile: filepath.Join(dir, "bootstrap"),
@@ -175,11 +204,19 @@ func newFixture(t *testing.T) *fixture {
 			},
 			BootstrapIdentity: IdentitySpec{Name: "ogcloud-bootstrap", ServiceAccounts: []string{"ogcloud/ogcloud-bootstrap"}},
 			Identities: []IdentitySpec{
-				{Name: "ogcloud-secrets-operator", ServiceAccounts: []string{"ogcloud/infisical-secrets-operator"}, Role: "viewer"},
+				{
+					Name: "ogcloud-secrets-operator", ServiceAccounts: []string{"ogcloud/infisical-secrets-operator"},
+					Roles: map[string]string{"ogcloud": "viewer", forwardingProject: "viewer"},
+				},
+				{
+					Name: "ogcloud-controller", ServiceAccounts: []string{"ogcloud/ogcloud-controller"},
+					Roles: map[string]string{forwardingProject: "member"}, Audience: controllerAudience,
+				},
 			},
 			Secrets: []GeneratedSecret{
 				{Path: "/api", Name: "OGCLOUD_AUTH_SETUP_TOKEN", Generator: Generator{Generate: "base64url", Bytes: 32}},
 				{Path: "/api/signing", Name: "KEY_1", Generator: Generator{Generate: "rsa", Bits: 2048}},
+				{Project: forwardingProject, Path: "/", Name: "TOKENS", Generator: Generator{Generate: "alnum", Length: 48}},
 			},
 			Seed: Seed{Secret: seedName, Path: "/seed", AdminEmailKey: "INFISICAL_ADMIN_EMAIL", AdminPasswordKey: "INFISICAL_ADMIN_PASSWORD"},
 		},

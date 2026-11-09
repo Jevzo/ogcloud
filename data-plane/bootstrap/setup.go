@@ -76,13 +76,18 @@ func (s *Setup) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	project, err := s.ensureProject(ctx, api)
-	if err != nil {
-		return err
+	setup := s.Config.Infisical
+	projects := map[string]string{}
+	for _, slug := range setup.ProjectSlugs() {
+		project, err := s.ensureProject(ctx, api, slug)
+		if err != nil {
+			return err
+		}
+		projects[slug] = project.ID
 	}
-	ids := make(map[string]string, len(s.Config.Infisical.Identities))
-	for _, spec := range s.Config.Infisical.Identities {
-		id, err := s.ensureIdentity(ctx, api, current.organizationID, project.ID, spec)
+	ids := make(map[string]string, len(setup.Identities))
+	for _, spec := range setup.Identities {
+		id, err := s.ensureIdentity(ctx, api, current.organizationID, projects, spec)
 		if err != nil {
 			return fmt.Errorf("identity %s: %w", spec.Name, err)
 		}
@@ -91,12 +96,12 @@ func (s *Setup) Run(ctx context.Context) error {
 	if err := s.publishIdentities(ctx, ids); err != nil {
 		return err
 	}
-	for _, secret := range s.Config.Infisical.Secrets {
-		if err := s.ensureSecret(ctx, api, project.ID, secret); err != nil {
+	for _, secret := range setup.Secrets {
+		if err := s.ensureSecret(ctx, api, projects[secret.project(setup)], secret); err != nil {
 			return fmt.Errorf("secret %s%s: %w", secret.Path, secret.Name, err)
 		}
 	}
-	return s.importSeed(ctx, api, project.ID)
+	return s.importSeed(ctx, api, projects[setup.Project])
 }
 
 // bootstrapInstance runs once per installation: the admin token creates the organization-scoped identity
@@ -195,25 +200,25 @@ func (s *Setup) login(ctx context.Context, identityID string) (*infisical.Client
 	return s.API.WithToken(accessToken), nil
 }
 
-func (s *Setup) ensureProject(ctx context.Context, api *infisical.Client) (infisical.Project, error) {
-	setup := s.Config.Infisical
-	project, err := api.ProjectBySlug(ctx, setup.Project)
+func (s *Setup) ensureProject(ctx context.Context, api *infisical.Client, slug string) (infisical.Project, error) {
+	project, err := api.ProjectBySlug(ctx, slug)
 	if infisical.IsNotFound(err) {
-		if err := api.CreateProject(ctx, setup.Project, setup.Project); err != nil {
-			return infisical.Project{}, fmt.Errorf("create project %s: %w", setup.Project, err)
+		if err := api.CreateProject(ctx, slug, slug); err != nil {
+			return infisical.Project{}, fmt.Errorf("create project %s: %w", slug, err)
 		}
-		project, err = api.ProjectBySlug(ctx, setup.Project)
+		project, err = api.ProjectBySlug(ctx, slug)
 	}
 	if err != nil {
-		return infisical.Project{}, fmt.Errorf("project %s: %w", setup.Project, err)
+		return infisical.Project{}, fmt.Errorf("project %s: %w", slug, err)
 	}
-	if !slices.Contains(project.Environments, setup.Environment) {
-		return infisical.Project{}, fmt.Errorf("project %s has no environment %s", setup.Project, setup.Environment)
+	if environment := s.Config.Infisical.Environment; !slices.Contains(project.Environments, environment) {
+		return infisical.Project{}, fmt.Errorf("project %s has no environment %s", slug, environment)
 	}
 	return project, nil
 }
 
-func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organizationID, projectID string, spec IdentitySpec) (string, error) {
+// ensureIdentity makes the identity a member of each project it has a role in; projects maps slugs to ids.
+func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organizationID string, projects map[string]string, spec IdentitySpec) (string, error) {
 	id, err := s.identity(ctx, api, organizationID, spec.Name, organizationNoAccess)
 	if err != nil {
 		return "", err
@@ -221,7 +226,12 @@ func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organ
 	if err := s.setKubernetesAuth(ctx, api, id, spec); err != nil {
 		return "", err
 	}
-	return id, api.SetProjectMember(ctx, projectID, id, spec.Role)
+	for _, slug := range sortedKeys(spec.Roles) {
+		if err := api.SetProjectMember(ctx, projects[slug], id, spec.Roles[slug]); err != nil {
+			return "", fmt.Errorf("role in project %s: %w", slug, err)
+		}
+	}
+	return id, nil
 }
 
 // publishIdentities writes the identities' ids into the configured Secret, replacing what it held.
@@ -288,7 +298,9 @@ func (s *Setup) kubernetesAuth(spec IdentitySpec) (infisical.KubernetesAuth, err
 			return infisical.KubernetesAuth{}, fmt.Errorf("read the Kubernetes CA: %w", err)
 		}
 	}
-	auth := infisical.KubernetesAuth{Host: kube.Host, CACert: string(caCert), ReviewerJWT: strings.TrimSpace(string(reviewer))}
+	auth := infisical.KubernetesAuth{
+		Host: kube.Host, CACert: string(caCert), ReviewerJWT: strings.TrimSpace(string(reviewer)), Audience: spec.Audience,
+	}
 	for _, account := range spec.ServiceAccounts {
 		namespace, name, _ := strings.Cut(account, "/")
 		auth.Namespaces = appendUnique(auth.Namespaces, namespace)
@@ -413,7 +425,7 @@ func seedHash(data map[string][]byte) string {
 	return hex.EncodeToString(digest.Sum(nil))
 }
 
-func sortedKeys(data map[string][]byte) []string {
+func sortedKeys[V any](data map[string]V) []string {
 	keys := make([]string, 0, len(data))
 	for key := range data {
 		keys = append(keys, key)

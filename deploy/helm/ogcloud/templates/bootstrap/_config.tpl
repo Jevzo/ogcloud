@@ -30,6 +30,7 @@ infisical:
   caFile: /etc/ogcloud/ca/ca.crt
   organization: {{ .Values.infisical.organization }}
   project: {{ .Values.infisical.project }}
+  projects: [{{ .Values.infisical.forwardingProject }}]
   environment: {{ .Values.infisical.environment }}
   stateConfigMap: ogcloud-infisical-state
   identitiesSecret: ogcloud-infisical-identities
@@ -44,7 +45,15 @@ infisical:
   identities:
     - name: ogcloud-secrets-sync
       serviceAccounts: [{{ .Release.Namespace }}/ogcloud-secrets-sync]
-      role: viewer
+      roles:
+        {{ .Values.infisical.project }}: viewer
+        {{ .Values.infisical.forwardingProject }}: viewer
+    # Rotates the forwarding tokens (D-0078) and sees nothing else (D-0152).
+    - name: ogcloud-controller
+      serviceAccounts: [{{ .Release.Namespace }}/ogcloud-controller]
+      roles:
+        {{ .Values.infisical.forwardingProject }}: member
+      audience: {{ include "ogcloud.infisicalAudience" . }}
   secrets:
     {{- include "ogcloud.generatedSecrets" . | nindent 4 }}
   seed:

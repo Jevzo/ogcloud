@@ -66,16 +66,20 @@ infisical:
 }
 
 func TestTheInfisicalStageNeedsEverythingBeforeSpendingTheAdminToken(t *testing.T) {
+	viewer := map[string]string{"ogcloud": "viewer"}
 	config := Config{Namespace: "ogcloud", Infisical: InfisicalSetup{
+		Project:           "ogcloud",
 		BootstrapIdentity: IdentitySpec{Name: "bootstrap", ServiceAccounts: []string{"ogcloud/bootstrap"}},
 		Identities: []IdentitySpec{
-			{Name: "bootstrap", Role: "viewer", ServiceAccounts: []string{"ogcloud/api"}},
-			{Name: "operator", Role: "viewer", ServiceAccounts: []string{"no-slash"}},
-			{Name: "spread", Role: "viewer", ServiceAccounts: []string{"ogcloud/api", "ogcloud-servers/game"}},
-			{Name: "anyone", Role: "viewer"},
+			{Name: "bootstrap", Roles: viewer, ServiceAccounts: []string{"ogcloud/api"}},
+			{Name: "operator", Roles: viewer, ServiceAccounts: []string{"no-slash"}},
+			{Name: "spread", Roles: viewer, ServiceAccounts: []string{"ogcloud/api", "ogcloud-servers/game"}},
+			{Name: "anyone", Roles: viewer},
 			{Name: "roleless", ServiceAccounts: []string{"ogcloud/x"}},
+			{Name: "stray", Roles: map[string]string{"elsewhere": "member"}, ServiceAccounts: []string{"ogcloud/y"}},
 		},
-		Seed: Seed{Path: "relative"},
+		Secrets: []GeneratedSecret{{Project: "elsewhere", Path: "/", Name: "LOST", Generator: Generator{Value: "x"}}},
+		Seed:    Seed{Path: "relative"},
 	}}
 
 	err := config.ValidateInfisical()
@@ -83,7 +87,8 @@ func TestTheInfisicalStageNeedsEverythingBeforeSpendingTheAdminToken(t *testing.
 	for _, want := range []string{
 		"infisical.url is required", "infisical.kubernetes.reviewerTokenFile is required", "infisical.seed.adminPasswordKey is required",
 		"seed.path must be absolute", `identity name "bootstrap" is used twice`, "not namespace/name", "share one namespace",
-		"an empty list would admit any", "roleless needs a project role",
+		"an empty list would admit any", "roleless needs a project role", `stray: role "member" in project "elsewhere"`,
+		"secret /LOST: project elsewhere is not configured",
 	} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("missing %q in %v", want, err)

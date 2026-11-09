@@ -157,6 +157,8 @@ type KubernetesAuth struct {
 	ReviewerJWT string
 	Namespaces  []string
 	Names       []string
+	// Empty to accept the API server's own audience.
+	Audience string
 }
 
 // SetKubernetesAuth attaches Kubernetes auth to the identity, or updates it when attached already.
@@ -168,6 +170,7 @@ func (c *Client) SetKubernetesAuth(ctx context.Context, identityID string, auth 
 		"tokenReviewerJwt":  auth.ReviewerJWT,
 		"allowedNamespaces": strings.Join(auth.Namespaces, ","),
 		"allowedNames":      strings.Join(auth.Names, ","),
+		"allowedAudience":   auth.Audience,
 	}
 	err := c.do(ctx, http.MethodGet, path, nil, nil, nil)
 	if IsNotFound(err) {

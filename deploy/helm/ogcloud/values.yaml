@@ -205,6 +205,8 @@ infisical:
   kubernetesHost: https://kubernetes.default.svc
   organization: OgCloud
   project: ogcloud
+  # Holds only the forwarding tokens, so the controller can rotate them and read nothing else (D-0152).
+  forwardingProject: ogcloud-forwarding
   environment: prod
   # How often the Secrets Operator copies changes into the cluster's Secrets.
   refreshInterval: 1m

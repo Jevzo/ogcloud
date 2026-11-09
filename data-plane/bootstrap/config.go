@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,14 +40,17 @@ type Generator struct {
 	Value    string `yaml:"value"`
 }
 
-// InfisicalSetup is the project, its identities and the secrets to generate in it.
+// InfisicalSetup is the projects, their identities and the secrets to generate in them.
 type InfisicalSetup struct {
 	URL string `yaml:"url"`
 	// Optional CA for Infisical's internal TLS (D-0041).
 	CAFile       string `yaml:"caFile"`
 	Organization string `yaml:"organization"`
-	Project      string `yaml:"project"`
-	Environment  string `yaml:"environment"`
+	// The default project, by slug: the seed lands in it, and so does every secret that names no other.
+	Project string `yaml:"project"`
+	// Further projects, e.g. one that holds only the forwarding tokens (D-0152).
+	Projects    []string `yaml:"projects"`
+	Environment string   `yaml:"environment"`
 	// Holds non-secret ids between runs, such as the bootstrap identity's.
 	StateConfigMap string `yaml:"stateConfigMap"`
 	// Optional Secret that receives each identity's id under its name, for the Secrets Operator's
@@ -74,15 +78,36 @@ type IdentitySpec struct {
 	Name string `yaml:"name"`
 	// namespace/name of each service account allowed to log in.
 	ServiceAccounts []string `yaml:"serviceAccounts"`
-	// Project role, e.g. viewer; the bootstrap identity is an organization admin instead.
-	Role string `yaml:"role"`
+	// Role by project slug, e.g. viewer; the bootstrap identity is an organization admin instead.
+	Roles map[string]string `yaml:"roles"`
+	// Optional token audience Infisical requires, so the token it sees is good for nothing else.
+	Audience string `yaml:"audience"`
 }
 
 // GeneratedSecret is created once in Infisical and never overwritten.
 type GeneratedSecret struct {
+	// Project slug; empty for the default project.
+	Project   string `yaml:"project"`
 	Path      string `yaml:"path"`
 	Name      string `yaml:"name"`
 	Generator `yaml:",inline"`
+}
+
+// ProjectSlugs lists the default project and the further ones, each once.
+func (s InfisicalSetup) ProjectSlugs() []string {
+	slugs := []string{s.Project}
+	for _, slug := range s.Projects {
+		slugs = appendUnique(slugs, slug)
+	}
+	return slugs
+}
+
+// project is the secret's project slug.
+func (s GeneratedSecret) project(setup InfisicalSetup) string {
+	if s.Project == "" {
+		return setup.Project
+	}
+	return s.Project
 }
 
 // Seed is the operator's Secret, imported when its content changed and then deleted.
@@ -156,10 +181,16 @@ func (c *Config) ValidateInfisical() error {
 	if !strings.HasPrefix(setup.Seed.Path, "/") {
 		problems = append(problems, errors.New("infisical.seed.path must be absolute"))
 	}
+	projects := setup.ProjectSlugs()
+	for _, secret := range setup.Secrets {
+		if !slices.Contains(projects, secret.project(setup)) {
+			problems = append(problems, fmt.Errorf("secret %s%s: project %s is not configured", secret.Path, secret.Name, secret.Project))
+		}
+	}
 	names := map[string]bool{}
 	for i, identity := range append([]IdentitySpec{setup.BootstrapIdentity}, setup.Identities...) {
 		bootstrapIdentity := i == 0
-		if err := identity.validate(bootstrapIdentity); err != nil {
+		if err := identity.validate(bootstrapIdentity, projects); err != nil {
 			problems = append(problems, err)
 		}
 		// Identities are found by name, so a clash would point one at another's service accounts.
@@ -173,13 +204,18 @@ func (c *Config) ValidateInfisical() error {
 
 // validate checks an identity. Infisical allows every listed namespace with every listed name, so one
 // identity may only name service accounts of a single namespace.
-func (spec IdentitySpec) validate(bootstrapIdentity bool) error {
+func (spec IdentitySpec) validate(bootstrapIdentity bool, projects []string) error {
 	var problems []error
 	if spec.Name == "" {
 		problems = append(problems, errors.New("every identity needs a name"))
 	}
-	if !bootstrapIdentity && spec.Role == "" {
+	if !bootstrapIdentity && len(spec.Roles) == 0 {
 		problems = append(problems, fmt.Errorf("identity %s needs a project role", spec.Name))
+	}
+	for project, role := range spec.Roles {
+		if !slices.Contains(projects, project) || role == "" {
+			problems = append(problems, fmt.Errorf("identity %s: role %q in project %q, which is not configured", spec.Name, role, project))
+		}
 	}
 	if len(spec.ServiceAccounts) == 0 {
 		problems = append(problems, fmt.Errorf("identity %s needs service accounts; an empty list would admit any", spec.Name))

@@ -1,7 +1,7 @@
 {{/*
 Every secret OgCloud keeps in Infisical (D-0044), defined once: bootstrap generates them (D-0114) and the
 Secrets Operator copies them into the Secrets each workload mounts. Keys are unique across folders, so one
-recursive source serves every target.
+recursive source per project serves every target. The forwarding tokens have a project of their own (D-0152).
 */}}
 {{- define "ogcloud.generatedSecrets" -}}
 - {path: /, name: API_SETUP_TOKEN, generate: base64url, bytes: 32}
@@ -17,7 +17,7 @@ recursive source serves every target.
 {{- end }}
 - {path: /, name: S3_ACCESS_KEY, generate: alnum, length: 20}
 - {path: /, name: S3_SECRET_KEY, generate: alnum, length: 40}
-- {path: /forwarding, name: TOKENS, generate: alnum, length: 48}
+- {project: {{ .Values.infisical.forwardingProject }}, path: /, name: TOKENS, generate: alnum, length: 48}
 {{- end -}}
 
 {{/* Services with their own Valkey and Kafka users; names match the generated KafkaUsers (ogcloud-<service>). */}}
@@ -85,6 +85,7 @@ ogcloud-postgres-{{ $service }}:
 {{- end }}
 ogcloud-forwarding:
   namespace: {{ include "ogcloud.serversNamespace" . }}
+  project: {{ .Values.infisical.forwardingProject }}
   keys:
     tokens: TOKENS
 {{- if .Values.valkey.inCluster }}

@@ -103,6 +103,11 @@ http://{{ include "ogcloud.seaweedfsService" . }}:8333
 https://ogcloud-infisical.{{ .Release.Namespace }}.svc:8443
 {{- end -}}
 
+{{/* The audience of tokens the controller shows Infisical, which the API server refuses. */}}
+{{- define "ogcloud.infisicalAudience" -}}
+ogcloud-infisical
+{{- end -}}
+
 {{- define "ogcloud.valkeySentinelMaster" -}}
 {{- if and .Values.valkey.inCluster .Values.valkey.sentinel -}}ogcloud{{- else -}}{{ .Values.valkey.sentinelMaster }}{{- end -}}
 {{- end -}}
