@@ -89,6 +89,7 @@ class RuntimeBundles(
         readModels.put(ReadModelKind.RUNTIME_BUNDLE, profile.id, manifest.toByteArray())
     }
 
+    // A restored database outlives the bucket it described, so the record alone does not prove the object exists.
     private fun upToDate(
         source: BundleSource,
         existing: RuntimeArtifact,
@@ -97,7 +98,8 @@ class RuntimeBundles(
             is BundleSource.Download -> existing.sourceUrl == source.url.toString()
             is BundleSource.LocalFile -> existing.sha256 == Files.newInputStream(source.file).use { sha256(it) }
             is BundleSource.Generated -> existing.sha256 == sha256(source.content.inputStream())
-        }
+        } &&
+            objects.head(existing.objectKey) != null
 
     private fun store(
         profile: RuntimeProfile,

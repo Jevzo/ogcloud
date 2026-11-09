@@ -16,6 +16,7 @@ import io.ogwars.cloud.livestate.ValkeyReadModelStore
 import io.ogwars.cloud.persistence.JdbcJobStore
 import io.ogwars.cloud.persistence.JsonCodec
 import io.ogwars.cloud.persistence.TestDatabase
+import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -102,6 +103,19 @@ class RuntimeBundlesTest {
 
         downloads.size shouldBe 1
         objects.objects.size shouldBe 3
+    }
+
+    @Test
+    fun `objects missing from storage, as after a restore, are stored again without a rollout`() {
+        bundles.runOnce()
+        f.request(group(GroupType.PROXY, id = "proxy"))
+        objects.objects.clear()
+
+        bundles.runOnce()
+
+        val manifest = RuntimeBundle.parseFrom(readModels.get(ReadModelKind.RUNTIME_BUNDLE, "velocity-4.3.0"))
+        objects.objects.keys shouldContainAll manifest.artifactsList.map { it.objectKey }
+        jobs.findActive() shouldBe emptyList()
     }
 
     @Test
