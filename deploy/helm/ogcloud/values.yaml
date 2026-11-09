@@ -174,6 +174,14 @@ seaweedfs:
         cpu: null
         memory: 1Gi
 
+# The monitoring stack from platform-deps.yaml (D-0025): off on minikube, on for Hetzner. With it, the services
+# send traces to Tempo; Prometheus scrapes their metrics through ServiceMonitors (T-0603).
+monitoring:
+  enabled: false
+  otlpEndpoint: http://tempo.monitoring.svc:4318/v1/traces
+  # The share of new traces recorded.
+  traceSampling: 0.1
+
 infisical:
   # Our own Deployment (D-0150); v0.167.6, as the tests run it.
   image: infisical/infisical:v0.167.6@sha256:ca5cbd14b2f170feaaca3fbe5b001b7594c8b9c0c62a491409910f10b05dbb2c

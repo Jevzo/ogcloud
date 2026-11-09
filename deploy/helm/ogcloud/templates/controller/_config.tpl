@@ -59,6 +59,7 @@ ogcloud:
           finished-job: {{ .Values.retention.finishedJobs }}
           stale-credential: {{ .Values.retention.staleCredentials }}
   {{- include "ogcloud.springDependencies" (dict "root" . "user" "controller") | nindent 2 }}
+{{- include "ogcloud.springMonitoring" . }}
 {{- with .Values.controller.config }}
 {{ toYaml . }}
 {{- end }}

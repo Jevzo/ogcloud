@@ -15,6 +15,8 @@ valkey:
   sentinel: true
 infisical:
   replicas: 2
+monitoring:
+  enabled: true
 # Hetzner Object Storage (D-0010); Terraform creates the bucket (T-0702).
 s3:
   inCluster: false

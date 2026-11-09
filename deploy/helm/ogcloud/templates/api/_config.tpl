@@ -19,6 +19,7 @@ ogcloud:
   templates:
     max-upload-size: {{ .Values.api.templates.maxUploadSize }}
   {{- include "ogcloud.springDependencies" (dict "root" . "user" "api") | nindent 2 }}
+{{- include "ogcloud.springMonitoring" . }}
 {{- with .Values.api.config }}
 {{ toYaml . }}
 {{- end }}

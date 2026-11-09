@@ -142,6 +142,25 @@ s3:
   path-style: {{ $v.s3.pathStyle }}
 {{- end -}}
 
+{{/* Trace export of the Spring services with the monitoring stack (D-0025, D-0072); off without it. */}}
+{{- define "ogcloud.springMonitoring" -}}
+{{- with .Values.monitoring }}
+{{- if .enabled }}
+management:
+  tracing:
+    export:
+      enabled: true
+    sampling:
+      probability: {{ .traceSampling }}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: {{ .otlpEndpoint }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
 {{/* Environment of the Go services for one dependency user: (dict "root" $ "user" "gateway" "s3" true). */}}
 {{- define "ogcloud.goDependencies" -}}
 {{- $v := .root.Values -}}
@@ -174,6 +193,17 @@ s3:
   value: /var/run/secrets/ogcloud/secrets/s3-access-key
 - name: OGCLOUD_S3_SECRET_KEY_FILE
   value: /var/run/secrets/ogcloud/secrets/s3-secret-key
+{{- end }}
+{{- with $v.monitoring }}
+{{- if .enabled }}
+# Traces go to Tempo, sampled like the Spring services' (D-0025); the SDK reads the sampler itself.
+- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  value: {{ .otlpEndpoint | quote }}
+- name: OTEL_TRACES_SAMPLER
+  value: parentbased_traceidratio
+- name: OTEL_TRACES_SAMPLER_ARG
+  value: {{ .traceSampling | quote }}
+{{- end }}
 {{- end }}
 {{- end -}}
 
