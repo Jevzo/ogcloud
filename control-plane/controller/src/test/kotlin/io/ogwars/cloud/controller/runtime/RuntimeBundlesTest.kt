@@ -163,6 +163,7 @@ class RuntimeBundlesTest {
 
         toml shouldContain "player-info-forwarding-mode = \"bungeeguard\""
         toml shouldContain "haproxy-protocol = true"
+        toml shouldContain "login-ratelimit = 0"
         toml shouldContain "forwarding-secret-file = \"${GeneratedConfigs.FORWARDING_SECRET_FILE}\""
         GeneratedConfigs.viaVersionConfig() shouldContain "block-protocols: [\"<47\"]"
     }

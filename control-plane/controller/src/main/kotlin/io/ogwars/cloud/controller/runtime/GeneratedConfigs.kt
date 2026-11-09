@@ -33,6 +33,8 @@ object GeneratedConfigs {
         |[advanced]
         |# The load balancer sends PROXY protocol v2 headers with the real client address.
         |haproxy-protocol = true
+        |# The load balancer limits logins per client address (D-0118, D-0164).
+        |login-ratelimit = 0
         |log-player-connections = true
         |accepts-transfers = false
         |
