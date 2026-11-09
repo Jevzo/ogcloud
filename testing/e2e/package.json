@@ -1,0 +1,20 @@
+{
+  "name": "@ogcloud/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node src/seed.ts",
+    "test": "node --test --test-concurrency=1 src/scenarios/",
+    "test:unit": "node --test src/unit/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ogcloud/api-client": "workspace:*",
+    "mineflayer": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

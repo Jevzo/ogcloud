@@ -123,6 +123,17 @@ for dir in deploy/terraform/modules/* deploy/terraform/render; do
 done
 """
 
+# The end-to-end suite (T-0606, D-0161) against the minikube dev profile while `mise run dev` holds its port-forwards;
+# OGCLOUD_E2E_* point it elsewhere.
+[tasks.seed]
+description = "Create the owner, the suite's machine client, the groups and the lobby template (T-0606)"
+run = "pnpm --filter @ogcloud/e2e run seed"
+
+[tasks."test:e2e"]
+description = "Run the end-to-end suite against a seeded cluster (T-0606)"
+depends = ["seed"]
+run = "pnpm --filter @ogcloud/e2e run test"
+
 # Not part of `check`: it builds every image and installs everything on a k3d cluster, which takes a while (T-0605).
 [tasks."test:k3s"]
 description = "Apply every k3s HelmChart at once to a fresh k3d cluster and wait until OgCloud converges (T-0605)"
