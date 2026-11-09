@@ -23,14 +23,14 @@ admin:
     enabled: true
     infisicalHost: infisical.internal.example.com
     grafanaHost: grafana.internal.example.com
-# Hetzner Object Storage (D-0010); Terraform creates the bucket (T-0702).
+# Hetzner Object Storage (D-0010); Terraform creates the bucket (T-0802).
 s3:
   inCluster: false
   endpoint: https://fsn1.your-objectstorage.com
   region: fsn1
   pathStyle: false
 networkPolicies:
-  # Terraform sets the Object Storage endpoint's addresses (T-0702).
+  # Terraform sets the Object Storage endpoint's addresses (T-0802).
   externalS3Cidrs: [203.0.113.10/32]
 loadbalancer:
   service:

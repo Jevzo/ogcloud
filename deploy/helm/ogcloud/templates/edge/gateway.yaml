@@ -68,7 +68,7 @@ spec:
             scheme: https
             statusCode: 301
 ---
-{{- /* Everything the API serves (D-0098); the web app takes the rest once it ships (T-0811). */}}
+{{- /* Everything the API serves (D-0098); the web app takes the rest once it ships (T-0711). */}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

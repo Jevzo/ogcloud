@@ -62,7 +62,7 @@ spec:
           secret:
             secretName: ogcloud-loadbalancer-secrets
 ---
-{{- /* The players' entry; on Hetzner the cloud controller adopts the load balancer Terraform created (T-0701). */}}
+{{- /* The players' entry; on Hetzner the cloud controller adopts the load balancer Terraform created (T-0801). */}}
 apiVersion: v1
 kind: Service
 metadata:
