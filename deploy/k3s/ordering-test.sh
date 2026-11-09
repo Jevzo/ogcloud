@@ -39,3 +39,7 @@ docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^$registry/[^:]+:([
   | xargs k3d image import --cluster "$cluster"
 
 OGCLOUD_TAG=$tag deploy/k3s/install.sh
+
+# The same documents again, as every later Terraform apply sends them: nothing that k3s rewrote may conflict.
+kubectl apply --server-side -f "$work/manifest.yaml" >/dev/null
+echo "The documents apply again without conflicts"

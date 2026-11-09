@@ -59,7 +59,7 @@ run "installs_each_platform_chart_from_its_pin" {
         version         = "1.0.0"
         targetNamespace = "plain-system"
         createNamespace = true
-        timeout         = "30m"
+        timeout         = "30m0s"
         failurePolicy   = "retry"
       }
     }
@@ -122,7 +122,7 @@ run "installs_ogcloud_into_its_namespace_from_the_registry" {
   assert {
     condition = { for key, value in yamldecode(output.documents["helmchart-ogcloud.yaml"]).spec : key => value if key != "valuesSecrets" } == {
       targetNamespace = "ogcloud"
-      timeout         = "30m"
+      timeout         = "30m0s"
       failurePolicy   = "retry"
       chart           = "oci://charts.example.test/ogcloud"
       version         = "2.0.0"
@@ -152,6 +152,16 @@ run "refuses_an_archive_and_a_reference_together" {
   }
 
   expect_failures = [var.ogcloud_chart]
+}
+
+run "refuses_a_timeout_helm_controller_rewrites" {
+  command = plan
+
+  variables {
+    timeout = "30m"
+  }
+
+  expect_failures = [var.timeout]
 }
 
 run "refuses_an_unknown_failure_policy" {

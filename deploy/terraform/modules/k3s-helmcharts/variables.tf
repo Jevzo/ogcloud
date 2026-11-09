@@ -34,10 +34,16 @@ variable "ogcloud_values" {
 }
 
 variable "timeout" {
-  description = "Helm's timeout per chart; OgCloud's first install waits for its bootstrap hooks (D-0159)."
+  description = "Helm's timeout per chart, in Go's form (30m0s, 1h0m0s); OgCloud's first install waits for its bootstrap hooks (D-0159)."
   type        = string
-  default     = "30m"
+  default     = "30m0s"
   nullable    = false
+
+  # helm-controller rewrites any other form into Go's and takes the field over, so the next server-side apply conflicts.
+  validation {
+    condition     = can(regex("^(?:[1-9][0-9]*h[0-5]?[0-9]m|[1-5]?[0-9]m)?[0-5]?[0-9]s$", var.timeout))
+    error_message = "timeout is a duration in Go's form, such as 30m0s or 1h0m0s."
+  }
 }
 
 variable "failure_policy" {
