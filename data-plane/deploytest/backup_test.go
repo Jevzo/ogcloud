@@ -117,6 +117,10 @@ func TestARestoreRecoversPostgresAndThenTheTemplates(t *testing.T) {
 	if weight(job) <= weight(objects.find(t, "Job", "ogcloud-bootstrap-infisical")) {
 		t.Error("templates are restored before bootstrap has synced the S3 credentials")
 	}
+	// A k3s install whose first attempt fails continues as upgrades (D-0159).
+	if hooks := str(job, "metadata", "annotations", "helm.sh/hook"); hooks != "post-install,post-upgrade" {
+		t.Errorf("the restore job runs as %q, so a k3s install that retried never restores the templates", hooks)
+	}
 }
 
 func TestARestoreNeedsTheBackupTargetAndANewServerName(t *testing.T) {

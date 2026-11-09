@@ -1,6 +1,7 @@
 {{- /*
 After a restore (T-0607): once PostgreSQL is recovered and OgCloud's bucket exists, the template archives come back
-from the backup target. It runs on the install only; a later upgrade would find nothing missing anyway.
+from the backup target. It runs on upgrades too, since a k3s install that first fails goes on as upgrades (D-0159);
+it copies only missing archives, and any that come back unreferenced are left to the cleanup loop.
 */}}
 {{- if .Values.restore.fromServer }}
 apiVersion: batch/v1
@@ -11,7 +12,7 @@ metadata:
   labels:
     {{- include "ogcloud.componentLabels" (dict "root" . "component" "backup") | nindent 4 }}
   annotations:
-    helm.sh/hook: post-install
+    helm.sh/hook: post-install,post-upgrade
     # After bootstrap (0) and the bucket (10).
     helm.sh/hook-weight: "20"
     helm.sh/hook-delete-policy: before-hook-creation
