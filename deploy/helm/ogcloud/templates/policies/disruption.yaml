@@ -1,0 +1,29 @@
+{{- /*
+Node drains keep one pod of every workload that runs more than one; CloudNativePG and Strimzi write their own.
+*/}}
+{{- $workloads := dict
+  "api" .Values.api.replicas
+  "controller" .Values.controller.replicas
+  "gateway" .Values.gateway.replicas
+  "loadbalancer" .Values.loadbalancer.replicas
+  "infisical" .Values.infisical.replicas }}
+{{- if and .Values.valkey.inCluster .Values.valkey.sentinel }}
+{{- $_ := set $workloads "valkey" 3 }}
+{{- end }}
+{{- range $component, $replicas := $workloads }}
+{{- if gt (int $replicas) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ogcloud-{{ $component }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" $ "component" $component) | nindent 4 }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" $ "component" $component) | nindent 6 }}
+{{- end }}
+{{- end }}

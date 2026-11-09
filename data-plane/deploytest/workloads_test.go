@@ -110,3 +110,32 @@ func TestBootstrapRunsBeforeEveryOtherPostInstallHook(t *testing.T) {
 		})
 	}
 }
+
+// A node drain may take only one pod at a time from a workload that runs several.
+func TestWorkloadsWithSeveralPodsHaveADisruptionBudget(t *testing.T) {
+	for _, values := range valueSets(t) {
+		t.Run(values, func(t *testing.T) {
+			objects := render(t, values)
+			budgets := objects.all("PodDisruptionBudget")
+			for _, workload := range append(objects.all("Deployment"), objects.all("StatefulSet")...) {
+				replicas, _ := get(workload, "spec", "replicas").(int)
+				if replicas < 2 {
+					continue
+				}
+				labels, _ := get(workload, "spec", "template", "metadata", "labels").(map[string]any)
+				covered := false
+				for _, budget := range budgets {
+					selector := get(budget, "spec", "selector", "matchLabels")
+					stringLabels := map[string]string{}
+					for key, value := range labels {
+						stringLabels[key], _ = value.(string)
+					}
+					covered = covered || (labelsMatch(selector, stringLabels) && get(budget, "spec", "maxUnavailable") == 1)
+				}
+				if !covered {
+					t.Errorf("%s %s runs %d pods without a budget of one", workload.kind(), workload.name(), replicas)
+				}
+			}
+		})
+	}
+}
