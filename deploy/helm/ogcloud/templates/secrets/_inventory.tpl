@@ -131,6 +131,16 @@ ogcloud-grafana-oauth:
   keys:
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: GRAFANA_CLIENT_SECRET
 {{- end }}
+{{- if .Values.backup.enabled }}
+{{- /* The backup target's credentials (D-0166), imported from the seed; the region is the plugin's to read too. */}}
+ogcloud-backup-s3:
+  namespace: {{ .Release.Namespace }}
+  literals:
+    REGION: {{ .Values.backup.s3.region | quote }}
+  keys:
+    ACCESS_KEY_ID: BACKUP_S3_ACCESS_KEY
+    ACCESS_SECRET_KEY: BACKUP_S3_SECRET_KEY
+{{- end }}
 {{- if .Values.edge.tls.letsEncrypt.enabled }}
 {{- /* Let's Encrypt's DNS-01 token (D-0160), imported from the seed; a ClusterIssuer reads cert-manager's namespace. */}}
 ogcloud-cloudflare-dns:

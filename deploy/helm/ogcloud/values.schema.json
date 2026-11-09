@@ -103,6 +103,29 @@
     "retention": { "type": "object" },
     "edge": { "type": "object" },
     "bootstrap": { "type": "object" },
+    "backup": {
+      "description": "Backups into an S3 target of their own (D-0166); the seed carries its credentials.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "schedule": {
+          "description": "CloudNativePG's six-field cron, seconds first.",
+          "type": "string"
+        },
+        "s3": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "endpoint": { "type": "string" },
+            "region": { "type": "string" },
+            "bucket": { "type": "string" },
+            "cidrs": { "type": "array", "items": { "type": "string" } },
+            "port": { "type": "integer" }
+          }
+        }
+      }
+    },
     "admin": {
       "type": "object",
       "properties": {

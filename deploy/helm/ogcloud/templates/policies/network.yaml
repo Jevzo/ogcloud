@@ -275,6 +275,7 @@ spec:
         - podSelector:
             matchLabels:
               cnpg.io/cluster: ogcloud-postgres
+    {{- include "ogcloud.np.backupTarget" . | nindent 4 }}
 {{- end }}
 {{- if .Values.kafka.inCluster }}
 ---

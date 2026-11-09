@@ -302,6 +302,21 @@ loadbalancer:
   trustedProxies: []
 
 # Nothing piles up (D-0043); the controller's cleanup loop applies these.
+# Backups (D-0166): PostgreSQL through CloudNativePG's Barman Cloud plugin, and the template objects through the
+# backup CronJob, into an S3 target of their own; on Hetzner a bucket in another location than the data bucket. The
+# bootstrap seed carries its credentials as BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY.
+backup:
+  enabled: false
+  # CloudNativePG's six-field cron, seconds first: daily at 03:00.
+  schedule: "0 0 3 * * *"
+  s3:
+    endpoint: ""
+    region: ""
+    bucket: ""
+    # The target's addresses, for the NetworkPolicies.
+    cidrs: []
+    port: 443
+
 retention:
   dryRun: false
   templateVersionsToKeep: 3
@@ -310,6 +325,8 @@ retention:
   scalingLog: 30d
   finishedJobs: 30d
   staleCredentials: 30d
+  # PostgreSQL backups and template copies (D-0043).
+  backups: 14d
   # Finished bootstrap Jobs are removed after this many seconds.
   jobTtlSeconds: 3600
 

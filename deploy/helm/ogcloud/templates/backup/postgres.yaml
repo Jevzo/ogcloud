@@ -1,0 +1,49 @@
+{{- /*
+PostgreSQL backups (D-0166): the Barman Cloud plugin archives WAL continuously into the backup target and takes a
+daily base backup; both are kept for retention.backups (D-0043).
+*/}}
+{{- if and .Values.backup.enabled .Values.postgres.inCluster }}
+{{- $s3 := .Values.backup.s3 }}
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: ogcloud-backups
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  retentionPolicy: {{ .Values.retention.backups | quote }}
+  configuration:
+    destinationPath: s3://{{ required "backup.s3.bucket is required" $s3.bucket }}/postgres
+    endpointURL: {{ required "backup.s3.endpoint is required" $s3.endpoint }}
+    s3Credentials:
+      accessKeyId:
+        name: ogcloud-backup-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: ogcloud-backup-s3
+        key: ACCESS_SECRET_KEY
+      region:
+        name: ogcloud-backup-s3
+        key: REGION
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: ogcloud-postgres-daily
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "postgres") | nindent 4 }}
+spec:
+  cluster:
+    name: ogcloud-postgres
+  schedule: {{ .Values.backup.schedule | quote }}
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  backupOwnerReference: self
+{{- end }}

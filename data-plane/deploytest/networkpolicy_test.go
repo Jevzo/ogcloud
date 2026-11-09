@@ -52,6 +52,8 @@ var (
 	privateHost     = endpoint{ip: "10.20.30.40"}
 	// externalS3Cidrs in ci/hetzner.yaml.
 	objectStorage = endpoint{ip: "203.0.113.10"}
+	// backup.s3.cidrs in ci/hetzner.yaml (D-0166).
+	backupStorage = endpoint{ip: "198.51.100.10"}
 )
 
 type flow struct {
@@ -118,6 +120,9 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(api, tempo, 4318, true, "traces go to Tempo"),
 		tcp(backend, objectStorage, 443, true, "backends download templates from Hetzner Object Storage"),
 		tcp(backend, internet, 443, false, "S3's addresses, not the internet (D-0154)"),
+		tcp(postgresPod, backupStorage, 443, true, "PostgreSQL archives into the backup target (D-0166)"),
+		tcp(backend, backupStorage, 443, false, "game pods never reach the backups"),
+		tcp(api, backupStorage, 443, false, "the API never reaches the backups"),
 	} {
 		if got := monitored.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
 			t.Errorf("hetzner: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)

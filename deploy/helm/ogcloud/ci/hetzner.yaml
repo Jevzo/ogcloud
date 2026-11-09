@@ -43,3 +43,10 @@ edge:
   tls:
     letsEncrypt:
       enabled: true
+backup:
+  enabled: true
+  s3:
+    endpoint: https://hel1.your-objectstorage.com
+    region: hel1
+    bucket: ogcloud-backups
+    cidrs: [198.51.100.0/24]

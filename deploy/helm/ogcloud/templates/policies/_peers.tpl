@@ -141,3 +141,16 @@ Building blocks of the NetworkPolicies (D-0154). Peers are list items for `from`
   ports:
     - {protocol: TCP, port: 9443}
 {{- end -}}
+
+{{/* Egress to the backup target (D-0166), whose addresses the operator names; nothing while backups are off. */}}
+{{- define "ogcloud.np.backupTarget" -}}
+{{- if .Values.backup.enabled }}
+{{- if not .Values.backup.s3.cidrs }}
+{{- fail "backup.s3.cidrs must name the backup target's addresses" }}
+{{- end }}
+- to:
+    {{- include "ogcloud.np.cidrs" .Values.backup.s3.cidrs | nindent 4 }}
+  ports:
+    - {protocol: TCP, port: {{ .Values.backup.s3.port }}}
+{{- end }}
+{{- end -}}

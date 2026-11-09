@@ -38,7 +38,7 @@ func TestTheBootstrapConfigPassesBootstrapsOwnValidation(t *testing.T) {
 var infisicalKey = regexp.MustCompile(`\{\{ \.([A-Z0-9_]+)\.Value \}\}`)
 
 // Keys the operator brings in the bootstrap seed, which bootstrap imports into the main project (D-0114).
-var seededKeys = []string{"CLOUDFLARE_API_TOKEN"}
+var seededKeys = []string{"CLOUDFLARE_API_TOKEN", "BACKUP_S3_ACCESS_KEY", "BACKUP_S3_SECRET_KEY"}
 
 func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 	for _, values := range valueSets(t) {

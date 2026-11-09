@@ -53,6 +53,14 @@ spec:
   certificates:
     serverTLSSecret: ogcloud-postgres-tls
     serverCASecret: ogcloud-postgres-tls
+  {{- if .Values.backup.enabled }}
+  # WAL archiving and base backups through the Barman Cloud plugin (D-0166).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: ogcloud-backups
+  {{- end }}
   bootstrap:
     initdb:
       database: infisical
