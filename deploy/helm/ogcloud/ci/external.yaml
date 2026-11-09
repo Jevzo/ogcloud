@@ -9,6 +9,9 @@ valkey:
   inCluster: false
   addresses:
     - valkey.example.com:6379
+s3:
+  inCluster: false
+  endpoint: https://s3.example.com
 kafka:
   inCluster: false
   bootstrapServers: kafka.example.com:9093

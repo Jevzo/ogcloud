@@ -143,6 +143,10 @@ backups, orphaned objects).
       TLS only and reloads renewed certificates; the default user is off. App users come from a synced ACL file
       that a sidecar loads live (the gateway's and load balancer's users only read). On Sentinels, app users may
       only discover the primary.
+    - SeaweedFS from its subchart, as one all-in-one pod (off where Hetzner Object Storage serves S3). Its S3 users
+      file is synced from Infisical: OgCloud's identity may read, write, list and tag its bucket, nothing else.
+      Our own post-install Job creates the bucket after `bootstrap infisical`; every post-install hook must run
+      after it, which a render test checks.
   - api, controller, gateway and load balancer run restricted (uid 1000, read-only root, no automounted token)
     with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
     `/webauthn` to the API (D-0098).

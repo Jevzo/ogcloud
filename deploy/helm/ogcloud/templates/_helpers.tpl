@@ -85,6 +85,19 @@ projected:
 {{- end -}}
 {{- end -}}
 
+{{/* The S3 API: SeaweedFS's Service, by a name that game pods resolve for presigned URLs too, or the external one. */}}
+{{- define "ogcloud.s3Endpoint" -}}
+{{- if .Values.s3.inCluster -}}
+http://{{ include "ogcloud.seaweedfsService" . }}:8333
+{{- else -}}
+{{ required "s3.endpoint is required for an external S3" .Values.s3.endpoint }}
+{{- end -}}
+{{- end -}}
+
+{{- define "ogcloud.seaweedfsService" -}}
+{{ .Values.seaweedfs.fullnameOverride }}-all-in-one.{{ .Release.Namespace }}.svc
+{{- end -}}
+
 {{- define "ogcloud.valkeySentinelMaster" -}}
 {{- if and .Values.valkey.inCluster .Values.valkey.sentinel -}}ogcloud{{- else -}}{{ .Values.valkey.sentinelMaster }}{{- end -}}
 {{- end -}}
@@ -113,7 +126,7 @@ kafka:
   tls:
     ca-certificate-path: /etc/ogcloud/ca/ca.crt
 s3:
-  endpoint: {{ $v.s3.endpoint }}
+  endpoint: {{ include "ogcloud.s3Endpoint" .root }}
   region: {{ $v.s3.region }}
   bucket: {{ $v.s3.bucket }}
   path-style: {{ $v.s3.pathStyle }}
@@ -140,7 +153,7 @@ s3:
   value: /var/run/secrets/ogcloud/secrets/valkey-password
 {{- if .s3 }}
 - name: OGCLOUD_S3_ENDPOINT
-  value: {{ $v.s3.endpoint | quote }}
+  value: {{ include "ogcloud.s3Endpoint" .root | quote }}
 - name: OGCLOUD_S3_REGION
   value: {{ $v.s3.region | quote }}
 - name: OGCLOUD_S3_BUCKET

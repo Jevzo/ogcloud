@@ -29,6 +29,17 @@
       "postUpdateOptions": ["gomodTidy"]
     },
     {
+      "description": "The OgCloud chart's subcharts are vendored (D-0146), so their archives move with the version",
+      "matchManagers": ["helmv3"],
+      "semanticCommitScope": "chart",
+      "postUpdateOptions": ["helmUpdateSubChartArchives"]
+    },
+    {
+      "description": "The SeaweedFS subchart and the image the tests run move together",
+      "matchPackageNames": ["seaweedfs", "chrislusf/seaweedfs"],
+      "groupName": "SeaweedFS"
+    },
+    {
       "matchManagers": ["npm"],
       "semanticCommitScope": "ts"
     },

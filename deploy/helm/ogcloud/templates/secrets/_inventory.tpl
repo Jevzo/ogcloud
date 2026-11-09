@@ -96,6 +96,16 @@ ogcloud-valkey-users:
       user ogcloud-{{ $service }} on >{{ printf "{{ .VALKEY_%s_PASSWORD.Value }}" (upper $service) }} {{ include "ogcloud.valkeyRules" $service }}
       {{- end }}
 {{- end }}
+{{- if .Values.s3.inCluster }}
+{{- /* SeaweedFS's S3 users: OgCloud's identity may use its bucket and nothing else. */}}
+ogcloud-seaweedfs-s3:
+  namespace: {{ .Release.Namespace }}
+  templates:
+    seaweedfs_s3_config: |
+      {{- $bucket := .Values.s3.bucket }}
+      {{- $identity := dict "name" "ogcloud" "credentials" (list (dict "accessKey" "{{ .S3_ACCESS_KEY.Value }}" "secretKey" "{{ .S3_SECRET_KEY.Value }}")) "actions" (list (printf "Read:%s" $bucket) (printf "Write:%s" $bucket) (printf "List:%s" $bucket) (printf "Tagging:%s" $bucket)) }}
+      {{ dict "identities" (list $identity) | toJson }}
+{{- end }}
 {{- end -}}
 
 {{/*

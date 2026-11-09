@@ -1,0 +1,63 @@
+{{- /*
+Creates OgCloud's bucket in the in-cluster SeaweedFS. It replaces the subchart's bucket hook, which runs before
+`bootstrap infisical`: SeaweedFS starts only once the Secrets Operator has synced the S3 users that bootstrap
+creates, so this Job runs after it and retries until SeaweedFS answers.
+*/}}
+{{- if .Values.s3.inCluster }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ogcloud-seaweedfs-bucket
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "seaweedfs-bucket") | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 30
+  ttlSecondsAfterFinished: {{ .Values.retention.jobTtlSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" . "component" "seaweedfs-bucket") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      containers:
+        - name: bucket
+          image: chrislusf/seaweedfs:{{ .Subcharts.seaweedfs.Chart.AppVersion }}
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              curl -fsS --max-time 5 "http://${MASTER}/cluster/status" >/dev/null
+              shell() { echo "$1" | weed shell -master="${MASTER}" -filer="${FILER}"; }
+              if shell s3.bucket.list | awk -v bucket="${BUCKET}" '$1 == bucket { found = 1 } END { exit !found }'; then
+                echo "Bucket ${BUCKET} exists."
+              else
+                shell "s3.bucket.create -name ${BUCKET}"
+              fi
+          env:
+            - name: MASTER
+              value: {{ include "ogcloud.seaweedfsService" . }}:9333
+            - name: FILER
+              value: {{ include "ogcloud.seaweedfsService" . }}:8888
+            - name: BUCKET
+              value: {{ .Values.s3.bucket }}
+            - name: HOME
+              value: /tmp
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.s3.bucketJob.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

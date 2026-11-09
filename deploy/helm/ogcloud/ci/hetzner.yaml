@@ -13,6 +13,12 @@ controller:
       taintValue: game
 valkey:
   sentinel: true
+# Hetzner Object Storage (D-0010); Terraform creates the bucket (T-0702).
+s3:
+  inCluster: false
+  endpoint: https://fsn1.your-objectstorage.com
+  region: fsn1
+  pathStyle: false
 loadbalancer:
   service:
     annotations:

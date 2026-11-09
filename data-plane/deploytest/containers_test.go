@@ -12,6 +12,37 @@ import (
 
 // Helpers that run the chart's containers in Docker as Kubernetes would.
 
+func firstContainer(t *testing.T, workload object) any {
+	t.Helper()
+	containers, _ := get(workload.podSpec(), "containers").([]any)
+	if len(containers) == 0 {
+		t.Fatalf("%s %s has no containers", workload.kind(), workload.name())
+	}
+	return containers[0]
+}
+
+// literalEnv is a container's environment without the values Kubernetes fills in.
+func literalEnv(container any) map[string]string {
+	env := map[string]string{}
+	variables, _ := get(container, "env").([]any)
+	for _, variable := range variables {
+		if value, ok := get(variable, "value").(string); ok {
+			env[str(variable, "name")] = value
+		}
+	}
+	return env
+}
+
+func stringList(value any) []string {
+	items, _ := value.([]any)
+	var list []string
+	for _, item := range items {
+		s, _ := item.(string)
+		list = append(list, s)
+	}
+	return list
+}
+
 // mounted are files a container reads, by path, as Kubernetes mounts Secrets and ConfigMaps.
 type mounted map[string]mountedFile
 

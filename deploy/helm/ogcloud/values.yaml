@@ -107,11 +107,72 @@ valkey:
   addresses: []
   sentinelMaster: ""
 s3:
-  endpoint: http://ogcloud-s3:8333
+  # SeaweedFS in the cluster (D-0010), or an external S3 such as Hetzner Object Storage at endpoint.
+  inCluster: true
+  endpoint: ""
   region: us-east-1
+  # Also named in seaweedfs.allInOne below; a render test keeps them equal.
   bucket: ogcloud
   # SeaweedFS needs path-style URLs; Hetzner Object Storage takes virtual-hosted ones.
   pathStyle: true
+  # The Job that creates the in-cluster bucket.
+  bucketJob:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
+# The SeaweedFS subchart (D-0146), run as one all-in-one pod with S3 behind our credentials. Its own bucket hook
+# is off: it would run before the Infisical bootstrap that its credentials wait for.
+global:
+  seaweedfs:
+    createClusterRole: false
+    serviceAccountName: ogcloud-seaweedfs
+    automountServiceAccountToken: false
+seaweedfs:
+  fullnameOverride: ogcloud-seaweedfs
+  master:
+    enabled: false
+  volume:
+    enabled: false
+  filer:
+    enabled: false
+  allInOne:
+    enabled: true
+    serviceAccountName: ogcloud-seaweedfs
+    priorityClassName: ogcloud-platform
+    s3:
+      enabled: true
+      enableAuth: true
+      existingConfigSecret: ogcloud-seaweedfs-s3
+    data:
+      type: persistentVolumeClaim
+      size: 10Gi
+    podSecurityContext:
+      enabled: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    containerSecurityContext:
+      enabled: true
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        # Unset the subchart's CPU limit, as for every other workload.
+        cpu: null
+        memory: 1Gi
 
 infisical:
   url: http://ogcloud-infisical:8080
