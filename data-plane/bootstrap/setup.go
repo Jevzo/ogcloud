@@ -269,12 +269,7 @@ func (s *Setup) ensureBreakGlass(ctx context.Context, api *infisical.Client, ide
 		},
 		StringData: map[string]string{breakGlassClientID: clientID, breakGlassClientSecret: created.Secret},
 	}
-	secrets := s.Kube.CoreV1().Secrets(s.Config.Namespace)
-	_, err = secrets.Create(ctx, secret, metav1.CreateOptions{})
-	if apierrors.IsAlreadyExists(err) {
-		_, err = secrets.Update(ctx, secret, metav1.UpdateOptions{})
-	}
-	if err != nil {
+	if err := createOrUpdate(ctx, s.Kube.CoreV1().Secrets(s.Config.Namespace), secret); err != nil {
 		return fmt.Errorf("store the break-glass Secret %s: %w", secret.Name, err)
 	}
 	for _, id := range older {
@@ -330,12 +325,7 @@ func (s *Setup) publishIdentities(ctx context.Context, ids map[string]string) er
 		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{managedByLabel: managedBy}},
 		StringData: ids,
 	}
-	secrets := s.Kube.CoreV1().Secrets(s.Config.Namespace)
-	_, err := secrets.Create(ctx, secret, metav1.CreateOptions{})
-	if apierrors.IsAlreadyExists(err) {
-		_, err = secrets.Update(ctx, secret, metav1.UpdateOptions{})
-	}
-	if err != nil {
+	if err := createOrUpdate(ctx, s.Kube.CoreV1().Secrets(s.Config.Namespace), secret); err != nil {
 		return fmt.Errorf("publish the identity ids in Secret %s: %w", name, err)
 	}
 	return nil
@@ -491,15 +481,23 @@ func (s *Setup) saveState(ctx context.Context, saved state) error {
 	if saved.pendingRevocation != "" {
 		configMap.Data[statePendingRevocation] = saved.pendingRevocation
 	}
-	configMaps := s.Kube.CoreV1().ConfigMaps(s.Config.Namespace)
-	_, err := configMaps.Create(ctx, configMap, metav1.CreateOptions{})
-	if apierrors.IsAlreadyExists(err) {
-		_, err = configMaps.Update(ctx, configMap, metav1.UpdateOptions{})
-	}
-	if err != nil {
+	if err := createOrUpdate(ctx, s.Kube.CoreV1().ConfigMaps(s.Config.Namespace), configMap); err != nil {
 		return fmt.Errorf("save the state ConfigMap: %w", err)
 	}
 	return nil
+}
+
+// createOrUpdate creates the object, or replaces it when it exists already.
+func createOrUpdate[T any](ctx context.Context, client interface {
+	Create(context.Context, T, metav1.CreateOptions) (T, error)
+	Update(context.Context, T, metav1.UpdateOptions) (T, error)
+}, object T,
+) error {
+	_, err := client.Create(ctx, object, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		_, err = client.Update(ctx, object, metav1.UpdateOptions{})
+	}
+	return err
 }
 
 func seedHash(data map[string][]byte) string {
