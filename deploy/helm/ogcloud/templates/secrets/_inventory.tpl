@@ -140,6 +140,14 @@ ogcloud-backup-s3:
   keys:
     ACCESS_KEY_ID: BACKUP_S3_ACCESS_KEY
     ACCESS_SECRET_KEY: BACKUP_S3_SECRET_KEY
+{{- /* The template copy reads the data bucket and writes the target. */}}
+ogcloud-backup-secrets:
+  namespace: {{ .Release.Namespace }}
+  keys:
+    s3-access-key: S3_ACCESS_KEY
+    s3-secret-key: S3_SECRET_KEY
+    backup-access-key: BACKUP_S3_ACCESS_KEY
+    backup-secret-key: BACKUP_S3_SECRET_KEY
 {{- end }}
 {{- if .Values.edge.tls.letsEncrypt.enabled }}
 {{- /* Let's Encrypt's DNS-01 token (D-0160), imported from the seed; a ClusterIssuer reads cert-manager's namespace. */}}

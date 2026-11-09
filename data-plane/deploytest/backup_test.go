@@ -55,3 +55,26 @@ func TestBackupsStayOffUnlessEnabled(t *testing.T) {
 		t.Error("PostgreSQL loads the backup plugin without backup.enabled")
 	}
 }
+
+// The template copy runs daily with both buckets' credentials and the backups' retention in days (D-0166).
+func TestTemplatesAreCopiedDaily(t *testing.T) {
+	job := render(t, hetznerValues).find(t, "CronJob", "ogcloud-backup-templates")
+	container := firstContainer(t, job)
+	if args := stringList(get(container, "args")); !slices.Equal(args, []string{"templates"}) {
+		t.Errorf("the job runs %v", args)
+	}
+	if image := str(container, "image"); !strings.Contains(image, "/backup:") {
+		t.Errorf("the job runs image %s", image)
+	}
+	env := podEnv(t, container, nil)
+	for name, want := range map[string]string{
+		"OGCLOUD_BACKUP_RETENTION_DAYS":     "14",
+		"OGCLOUD_BACKUP_S3_BUCKET":          "ogcloud-backups",
+		"OGCLOUD_S3_ACCESS_KEY_FILE":        "/var/run/secrets/ogcloud/secrets/s3-access-key",
+		"OGCLOUD_BACKUP_S3_SECRET_KEY_FILE": "/var/run/secrets/ogcloud/secrets/backup-secret-key",
+	} {
+		if env[name] != want {
+			t.Errorf("%s = %q, want %q", name, env[name], want)
+		}
+	}
+}

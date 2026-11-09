@@ -121,7 +121,16 @@
             "region": { "type": "string" },
             "bucket": { "type": "string" },
             "cidrs": { "type": "array", "items": { "type": "string" } },
-            "port": { "type": "integer" }
+            "port": { "type": "integer" },
+            "pathStyle": { "type": "boolean" }
+          }
+        },
+        "templates": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schedule": { "type": "string" },
+            "resources": { "type": "object" }
           }
         }
       }

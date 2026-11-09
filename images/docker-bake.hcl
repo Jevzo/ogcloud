@@ -25,7 +25,7 @@ target "spring" {
 
 target "go" {
   name     = binary
-  matrix   = { binary = ["gateway", "loadbalancer", "template-loader", "bootstrap"] }
+  matrix   = { binary = ["gateway", "loadbalancer", "template-loader", "bootstrap", "backup"] }
   inherits = ["_platform"]
   target   = "go"
   args     = { BINARY = binary }

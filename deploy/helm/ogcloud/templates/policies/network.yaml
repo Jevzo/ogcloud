@@ -300,6 +300,26 @@ spec:
             matchLabels:
               strimzi.io/cluster: {{ .Values.kafka.clusterName }}
 {{- end }}
+{{- if .Values.backup.enabled }}
+---
+{{- /* The template copy (D-0166): from the data bucket into the backup target, nothing else. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-backup
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "backup") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  egress:
+    {{- include "ogcloud.np.dns" . | nindent 4 }}
+    {{- include "ogcloud.np.s3" . | nindent 4 }}
+    {{- include "ogcloud.np.backupTarget" . | nindent 4 }}
+{{- end }}
 {{- if .Values.s3.inCluster }}
 ---
 {{- /* SeaweedFS: S3 for OgCloud and the game pods' presigned URLs; its own ports for the bucket Job. */}}
@@ -320,6 +340,9 @@ spec:
         {{- include "ogcloud.np.component" (dict "root" . "component" "api") | nindent 8 }}
         {{- include "ogcloud.np.component" (dict "root" . "component" "controller") | nindent 8 }}
         {{- include "ogcloud.np.namespace" $servers | nindent 8 }}
+        {{- if .Values.backup.enabled }}
+        {{- include "ogcloud.np.component" (dict "root" . "component" "backup") | nindent 8 }}
+        {{- end }}
       ports:
         - {protocol: TCP, port: 8333}
     - from:

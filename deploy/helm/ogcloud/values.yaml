@@ -316,6 +316,17 @@ backup:
     # The target's addresses, for the NetworkPolicies.
     cidrs: []
     port: 443
+    pathStyle: false
+  # The template archives' daily copy, after PostgreSQL's base backup.
+  templates:
+    schedule: "30 3 * * *"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        # Archives are copied in 16 MiB parts, one at a time.
+        memory: 128Mi
 
 retention:
   dryRun: false

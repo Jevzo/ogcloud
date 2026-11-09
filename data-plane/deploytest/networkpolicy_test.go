@@ -32,6 +32,7 @@ func pod(ns string, labels ...string) endpoint {
 
 var (
 	api             = component("api")
+	backupJob       = component("backup")
 	controller      = component("controller")
 	gateway         = component("gateway")
 	loadbalancer    = component("loadbalancer")
@@ -123,6 +124,9 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(postgresPod, backupStorage, 443, true, "PostgreSQL archives into the backup target (D-0166)"),
 		tcp(backend, backupStorage, 443, false, "game pods never reach the backups"),
 		tcp(api, backupStorage, 443, false, "the API never reaches the backups"),
+		tcp(backupJob, objectStorage, 443, true, "the template copy reads the data bucket"),
+		tcp(backupJob, backupStorage, 443, true, "the template copy writes the backup target"),
+		tcp(backupJob, internet, 443, false, "the template copy reaches nothing else"),
 	} {
 		if got := monitored.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
 			t.Errorf("hetzner: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)

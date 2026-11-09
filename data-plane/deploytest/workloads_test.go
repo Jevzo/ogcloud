@@ -9,7 +9,7 @@ import (
 
 // workloads are the pods the release runs itself, subcharts included.
 func (r rendered) workloads() []object {
-	return slices.Concat(r.all("Deployment"), r.all("StatefulSet"), r.all("Job"))
+	return slices.Concat(r.all("Deployment"), r.all("StatefulSet"), r.all("Job"), r.all("CronJob"))
 }
 
 // mountsToken tells whether pod gets a service-account token automounted, by its own setting or its account's.
@@ -27,6 +27,10 @@ func (r rendered) mountsToken(pod map[string]any) bool {
 }
 
 func (o object) podSpec() map[string]any {
+	if o.kind() == "CronJob" {
+		spec, _ := get(o, "spec", "jobTemplate", "spec", "template", "spec").(map[string]any)
+		return spec
+	}
 	spec, _ := get(o, "spec", "template", "spec").(map[string]any)
 	return spec
 }
@@ -59,7 +63,9 @@ func TestPlatformPodsRunRestrictedWithResources(t *testing.T) {
 				}
 				containers, _ := pod["containers"].([]any)
 				for _, container := range containers {
-					checkContainer(t, where+" "+str(container, "name"), container, workload.kind() != "Job")
+					// Jobs run to completion; only long-running containers need probes.
+					longRunning := workload.kind() != "Job" && workload.kind() != "CronJob"
+					checkContainer(t, where+" "+str(container, "name"), container, longRunning)
 				}
 			}
 		})

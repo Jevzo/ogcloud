@@ -78,7 +78,7 @@ cp integrations/legacy-paper/build/libs/legacy-paper-all.jar "$out/plugins/ogclo
 cp integrations/velocity/build/libs/velocity-all.jar "$out/plugins/ogcloud-velocity.jar"
 arch=$(docker version --format '{% raw %}{{.Server.Arch}}{% endraw %}')
 build() { (cd data-plane && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -ldflags="-s -w" "$@"); }
-for binary in gateway loadbalancer template-loader bootstrap; do
+for binary in gateway loadbalancer template-loader bootstrap backup; do
   build -o "../$out/linux-$arch/$binary" "./cmd/$binary"
 done
 # Only for the contract test (T-0510): fake pod identities, never published.
@@ -96,7 +96,7 @@ run = """
 set -euo pipefail
 mise run images:build
 ./gradlew :images:smoke-test:test -Pogcloud.smoke
-for image in api controller gateway loadbalancer template-loader bootstrap; do
+for image in api controller gateway loadbalancer template-loader bootstrap backup; do
   trivy image --severity CRITICAL --ignore-unfixed --exit-code 1 --quiet "$REGISTRY/$image:$VERSION"
 done
 """

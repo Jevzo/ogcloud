@@ -30,15 +30,22 @@ type Presigner struct {
 	expiry time.Duration
 }
 
+// NewClient reaches the bucket's endpoint with the settings' credentials. Checksums are sent only where S3 requires
+// them: SeaweedFS and Hetzner Object Storage refuse some of the SDK's newer default ones.
+func NewClient(s Settings) *s3.Client {
+	return s3.New(s3.Options{
+		BaseEndpoint:               aws.String(s.Endpoint),
+		Region:                     s.Region,
+		Credentials:                credentials.NewStaticCredentialsProvider(s.AccessKey, s.SecretKey, ""),
+		UsePathStyle:               s.PathStyle,
+		RequestChecksumCalculation: aws.RequestChecksumCalculationWhenRequired,
+		ResponseChecksumValidation: aws.ResponseChecksumValidationWhenRequired,
+	})
+}
+
 // NewPresigner signs for s.Bucket; URLs expire after expiry.
 func NewPresigner(s Settings, expiry time.Duration) *Presigner {
-	client := s3.New(s3.Options{
-		BaseEndpoint: aws.String(s.Endpoint),
-		Region:       s.Region,
-		Credentials:  credentials.NewStaticCredentialsProvider(s.AccessKey, s.SecretKey, ""),
-		UsePathStyle: s.PathStyle,
-	})
-	return &Presigner{client: s3.NewPresignClient(client), bucket: s.Bucket, expiry: expiry}
+	return &Presigner{client: s3.NewPresignClient(NewClient(s)), bucket: s.Bucket, expiry: expiry}
 }
 
 // Get returns a URL that downloads key.

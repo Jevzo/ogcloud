@@ -22,7 +22,7 @@ class PlatformImagesSmokeTest {
     private val docker: DockerClient = DockerClientFactory.instance().client()
 
     @ParameterizedTest
-    @ValueSource(strings = ["gateway", "loadbalancer", "template-loader", "bootstrap"])
+    @ValueSource(strings = ["gateway", "loadbalancer", "template-loader", "bootstrap", "backup"])
     fun `a Go service runs and reports its missing configuration`(binary: String) {
         val (exitCode, logs) = run(binary)
 
@@ -41,7 +41,7 @@ class PlatformImagesSmokeTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["api", "controller", "gateway", "loadbalancer", "template-loader", "bootstrap"])
+    @ValueSource(strings = ["api", "controller", "gateway", "loadbalancer", "template-loader", "bootstrap", "backup"])
     fun `every platform image runs as uid 1000`(image: String) {
         docker
             .inspectImageCmd(imageOf(image))

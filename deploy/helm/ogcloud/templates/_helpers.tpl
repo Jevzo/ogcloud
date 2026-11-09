@@ -199,18 +199,7 @@ management:
 - name: OGCLOUD_VALKEY_PASSWORD_FILE
   value: /var/run/secrets/ogcloud/secrets/valkey-password
 {{- if .s3 }}
-- name: OGCLOUD_S3_ENDPOINT
-  value: {{ include "ogcloud.s3Endpoint" .root | quote }}
-- name: OGCLOUD_S3_REGION
-  value: {{ $v.s3.region | quote }}
-- name: OGCLOUD_S3_BUCKET
-  value: {{ $v.s3.bucket | quote }}
-- name: OGCLOUD_S3_PATH_STYLE
-  value: {{ $v.s3.pathStyle | quote }}
-- name: OGCLOUD_S3_ACCESS_KEY_FILE
-  value: /var/run/secrets/ogcloud/secrets/s3-access-key
-- name: OGCLOUD_S3_SECRET_KEY_FILE
-  value: /var/run/secrets/ogcloud/secrets/s3-secret-key
+{{ include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_S3" "endpoint" (include "ogcloud.s3Endpoint" .root) "region" $v.s3.region "bucket" $v.s3.bucket "pathStyle" $v.s3.pathStyle "keyFiles" "s3") }}
 {{- end }}
 {{- with $v.monitoring }}
 {{- if .enabled }}
@@ -316,4 +305,23 @@ name: ogcloud-letsencrypt
 kind: {{ .Values.edge.tls.issuer.kind }}
 name: {{ required "edge.tls.issuer.name is required" .Values.edge.tls.issuer.name }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+An S3 bucket for the Go services' objects.FromConfigPrefix: (dict "prefix" "endpoint" "region" "bucket" "pathStyle"
+"keyFiles"), the key files being <keyFiles>-access-key and <keyFiles>-secret-key in the mounted secrets.
+*/}}
+{{- define "ogcloud.s3Env" -}}
+- name: {{ .prefix }}_ENDPOINT
+  value: {{ .endpoint | quote }}
+- name: {{ .prefix }}_REGION
+  value: {{ .region | quote }}
+- name: {{ .prefix }}_BUCKET
+  value: {{ .bucket | quote }}
+- name: {{ .prefix }}_PATH_STYLE
+  value: {{ .pathStyle | quote }}
+- name: {{ .prefix }}_ACCESS_KEY_FILE
+  value: /var/run/secrets/ogcloud/secrets/{{ .keyFiles }}-access-key
+- name: {{ .prefix }}_SECRET_KEY_FILE
+  value: /var/run/secrets/ogcloud/secrets/{{ .keyFiles }}-secret-key
 {{- end -}}
