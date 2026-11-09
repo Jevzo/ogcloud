@@ -94,7 +94,7 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	if got := f.value(t, operator, project.ID, "/seed", "CLOUDFLARE_API_TOKEN"); got != "cf-1" {
 		t.Errorf("the operator read %q", got)
 	}
-	if _, err := f.api.KubernetesLogin(ctx, operatorID, testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil)); err == nil {
+	if _, err := f.api.KubernetesLogin(ctx, operatorID, testk3s.Token(t, f.kube, namespace, "ogcloud-controller", "", nil)); err == nil {
 		t.Error("another service account logged in as the operator")
 	}
 	// The controller rotates the forwarding tokens in their own project and reads nothing else (D-0152), with a
@@ -168,13 +168,19 @@ func newFixture(t *testing.T) *fixture {
 	kube := env.Cluster.Client
 	dir := t.TempDir()
 	must(t, create(ctx, kube.CoreV1().Namespaces(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}))
+	// Accounts that log in with API tokens review themselves; the controller's token has another audience, so the
+	// reviewer account reviews it (D-0167). The chart binds them the same way.
 	for _, account := range []string{"infisical-reviewer", "ogcloud-bootstrap", "infisical-secrets-operator", "ogcloud-controller"} {
 		must(t, create(ctx, kube.CoreV1().ServiceAccounts(namespace), &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: account}}))
 	}
+	reviewers := make([]rbacv1.Subject, 0, 3)
+	for _, account := range []string{"infisical-reviewer", "ogcloud-bootstrap", "infisical-secrets-operator"} {
+		reviewers = append(reviewers, rbacv1.Subject{Kind: "ServiceAccount", Name: account, Namespace: namespace})
+	}
 	must(t, create(ctx, kube.RbacV1().ClusterRoleBindings(), &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Name: "infisical-reviewer"},
+		ObjectMeta: metav1.ObjectMeta{Name: "infisical-token-review"},
 		RoleRef:    rbacv1.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: "system:auth-delegator"},
-		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: "infisical-reviewer", Namespace: namespace}},
+		Subjects:   reviewers,
 	}))
 	f := &fixture{kube: kube, dir: dir}
 	target, err := url.Parse(env.URL)
@@ -191,7 +197,6 @@ func newFixture(t *testing.T) *fixture {
 	f.api = infisical.New(proxy.URL, nil)
 	writeFile(t, filepath.Join(dir, "reviewer"), testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil))
 	writeFile(t, filepath.Join(dir, "bootstrap"), testk3s.Token(t, f.kube, namespace, "ogcloud-bootstrap", "", nil))
-	writeFile(t, filepath.Join(dir, "ca.crt"), string(env.Cluster.Config.CAData))
 	f.config = &Config{
 		Namespace: namespace,
 		Infisical: InfisicalSetup{
@@ -199,10 +204,8 @@ func newFixture(t *testing.T) *fixture {
 			StateConfigMap:          stateName,
 			IdentitiesSecret:        identitiesName,
 			ServiceAccountTokenFile: filepath.Join(dir, "bootstrap"),
-			Kubernetes: KubernetesAuth{
-				Host: testinfisical.KubernetesHost, CAFile: filepath.Join(dir, "ca.crt"), ReviewerTokenFile: filepath.Join(dir, "reviewer"),
-			},
-			BootstrapIdentity: IdentitySpec{Name: "ogcloud-bootstrap", ServiceAccounts: []string{"ogcloud/ogcloud-bootstrap"}},
+			Kubernetes:              KubernetesAuth{Host: testinfisical.KubernetesHost, ReviewerTokenFile: filepath.Join(dir, "reviewer")},
+			BootstrapIdentity:       IdentitySpec{Name: "ogcloud-bootstrap", ServiceAccounts: []string{"ogcloud/ogcloud-bootstrap"}},
 			Identities: []IdentitySpec{
 				{
 					Name: "ogcloud-secrets-operator", ServiceAccounts: []string{"ogcloud/infisical-secrets-operator"},

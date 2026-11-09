@@ -150,10 +150,12 @@ func (c *Client) DeleteIdentity(ctx context.Context, identityID string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/identities/"+url.PathEscape(identityID), nil, nil, nil)
 }
 
-// KubernetesAuth lets service accounts log in as an identity, reviewed by Infisical with TokenReview.
+// KubernetesAuth lets service accounts log in as an identity, reviewed by Infisical with TokenReview. It stores
+// nothing of the cluster (D-0167): Infisical trusts the API server's CA itself, and each login's own token, bound
+// to system:auth-delegator, is its reviewer, so a restored Infisical works on a new cluster.
 type KubernetesAuth struct {
-	Host        string
-	CACert      string
+	Host string
+	// Only for logins with a token of another audience, which cannot review itself.
 	ReviewerJWT string
 	Namespaces  []string
 	Names       []string
@@ -166,11 +168,12 @@ func (c *Client) SetKubernetesAuth(ctx context.Context, identityID string, auth 
 	path := "/api/v1/auth/kubernetes-auth/identities/" + url.PathEscape(identityID)
 	body := map[string]any{
 		"kubernetesHost":    auth.Host,
-		"caCert":            auth.CACert,
-		"tokenReviewerJwt":  auth.ReviewerJWT,
 		"allowedNamespaces": strings.Join(auth.Namespaces, ","),
 		"allowedNames":      strings.Join(auth.Names, ","),
 		"allowedAudience":   auth.Audience,
+	}
+	if auth.ReviewerJWT != "" {
+		body["tokenReviewerJwt"] = auth.ReviewerJWT
 	}
 	err := c.do(ctx, http.MethodGet, path, nil, nil, nil)
 	if IsNotFound(err) {
@@ -178,6 +181,12 @@ func (c *Client) SetKubernetesAuth(ctx context.Context, identityID string, auth 
 	}
 	if err != nil {
 		return err
+	}
+	// An earlier version stored a CA and a reviewer token for every identity; Infisical clears the CA on "" and the
+	// token only on null.
+	body["caCert"] = ""
+	if auth.ReviewerJWT == "" {
+		body["tokenReviewerJwt"] = nil
 	}
 	return c.do(ctx, http.MethodPatch, path, nil, body, nil)
 }

@@ -71,11 +71,17 @@ spec:
       containers:
         - name: infisical
           image: {{ $i.image }}
-          # Node reads the internal CA from NODE_EXTRA_CA_CERTS, the database driver only from DB_ROOT_CERT, in
-          # base64; the image's entrypoint would rewrite the system CAs, which a read-only root cannot hold.
+          # Node reads extra CAs from NODE_EXTRA_CA_CERTS: the internal CA, and the cluster's own for the TokenReviews
+          # of Kubernetes auth, which stores no CA (D-0167). The database driver reads the internal CA only from
+          # DB_ROOT_CERT, in base64. The image's entrypoint would rewrite the system CAs, which a read-only root cannot
+          # hold.
           command: [/bin/sh, -c]
           args:
-            - export DB_ROOT_CERT="$(base64 -w0 /etc/ogcloud/ca/ca.crt)" && exec node --enable-source-maps dist/main.mjs
+            - >-
+              cat /etc/ogcloud/ca/ca.crt /etc/kubernetes-ca/ca.crt > /tmp/ca-bundle.crt &&
+              export NODE_EXTRA_CA_CERTS=/tmp/ca-bundle.crt &&
+              export DB_ROOT_CERT="$(base64 -w0 /etc/ogcloud/ca/ca.crt)" &&
+              exec node --enable-source-maps dist/main.mjs
           env:
             - name: HOST
               value: 127.0.0.1
@@ -88,8 +94,6 @@ spec:
             # Kubernetes auth reviews tokens against the API server, a private address (T-0402).
             - name: ALLOW_INTERNAL_IP_CONNECTIONS
               value: "true"
-            - name: NODE_EXTRA_CA_CERTS
-              value: /etc/ogcloud/ca/ca.crt
             - name: NODE_OPTIONS
               value: --max-old-space-size={{ $i.heapMegabytes }}
             - name: ENCRYPTION_KEY
@@ -154,6 +158,9 @@ spec:
             {{- toYaml $i.resources | nindent 12 }}
           volumeMounts:
             {{- include "ogcloud.commonMounts" . | nindent 12 }}
+            - name: kubernetes-ca
+              mountPath: /etc/kubernetes-ca
+              readOnly: true
         - name: tls
           image: {{ $i.ghostunnelImage }}
           args:
@@ -193,6 +200,10 @@ spec:
               readOnly: true
       volumes:
         {{- include "ogcloud.commonVolumes" . | nindent 8 }}
+        # Kubernetes publishes the API server's CA in every namespace.
+        - name: kubernetes-ca
+          configMap:
+            name: kube-root-ca.crt
         - name: tls
           secret:
             secretName: ogcloud-infisical-tls

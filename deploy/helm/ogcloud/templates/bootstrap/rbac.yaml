@@ -48,7 +48,10 @@ subjects:
     name: ogcloud-bootstrap
     namespace: {{ .Release.Namespace }}
 ---
-{{- /* Infisical reviews service-account tokens with this account's long-lived token (D-0044). */}}
+{{- /*
+Infisical reviews the controller's audience-bound tokens with this account's long-lived token; every other login's
+own token reviews itself (D-0167).
+*/}}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -83,3 +86,26 @@ subjects:
   - kind: ServiceAccount
     name: ogcloud-infisical-reviewer
     namespace: {{ .Release.Namespace }}
+---
+{{- /* The accounts whose API tokens review themselves at Infisical's login (D-0167), read from bootstrap's config. */}}
+{{- $infisical := (include "ogcloud.bootstrapConfig" . | fromYaml).infisical }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ogcloud-infisical-token-review
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "bootstrap") | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  {{- range $identity := prepend $infisical.identities $infisical.bootstrapIdentity }}
+  {{- if not $identity.audience }}
+  {{- range $account := $identity.serviceAccounts }}
+  - kind: ServiceAccount
+    namespace: {{ (splitList "/" $account) | first }}
+    name: {{ (splitList "/" $account) | last }}
+  {{- end }}
+  {{- end }}
+  {{- end }}

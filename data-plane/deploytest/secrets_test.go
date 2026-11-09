@@ -198,3 +198,29 @@ func TestManagedRolePasswordsReloadInCloudNativePG(t *testing.T) {
 		}
 	}
 }
+
+// Logins whose API tokens review themselves may create TokenReviews; the controller's audience-bound token is
+// reviewed by the reviewer account instead, so it gets no such right (D-0167).
+func TestSelfReviewingAccountsMayReviewTokens(t *testing.T) {
+	objects := render(t, minikubeValues)
+	setup := bootstrapConfig(t, objects).Infisical
+	var want []string
+	for _, identity := range append([]bootstrap.IdentitySpec{setup.BootstrapIdentity}, setup.Identities...) {
+		if identity.Audience == "" {
+			want = append(want, identity.ServiceAccounts...)
+		}
+	}
+	var got []string
+	subjects, _ := get(objects.find(t, "ClusterRoleBinding", "ogcloud-infisical-token-review"), "subjects").([]any)
+	for _, subject := range subjects {
+		got = append(got, str(subject, "namespace")+"/"+str(subject, "name"))
+	}
+	slices.Sort(want)
+	slices.Sort(got)
+	if !slices.Equal(got, want) {
+		t.Errorf("accounts that review their own tokens: %v, want %v", got, want)
+	}
+	if slices.Contains(got, "ogcloud/ogcloud-controller") {
+		t.Error("the controller's account may review tokens")
+	}
+}

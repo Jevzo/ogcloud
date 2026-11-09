@@ -68,7 +68,10 @@ func TestInfisicalServesOnlyThroughItsTLSSidecar(t *testing.T) {
 	infisical, err := testcontainers.Run(ctx, str(app, "image"),
 		testcontainers.WithEntrypoint(append(stringList(get(app, "command")), stringList(get(app, "args"))...)...),
 		testcontainers.WithEnv(env),
-		mount(t, mounted{"/etc/ogcloud/ca/ca.crt": {content: ca.cert}}).restricted("/tmp"),
+		// kube-root-ca.crt stands in for the cluster's API CA, which Infisical trusts next to the internal one (D-0167).
+		mount(t, mounted{
+			"/etc/ogcloud/ca/ca.crt": {content: ca.cert}, "/etc/kubernetes-ca/ca.crt": {content: newTestCA(t).cert},
+		}).restricted("/tmp"),
 		network.WithNetwork(nil, &testcontainers.DockerNetwork{Name: dockerNetwork}),
 		// The sidecar shares this container's network, so its port is published here, next to the one that must
 		// stay closed.

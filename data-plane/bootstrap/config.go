@@ -65,11 +65,10 @@ type InfisicalSetup struct {
 	Seed                    Seed              `yaml:"seed"`
 }
 
-// KubernetesAuth is how Infisical reviews service-account tokens.
+// KubernetesAuth is where Infisical reviews service-account tokens (D-0167).
 type KubernetesAuth struct {
-	Host   string `yaml:"host"`
-	CAFile string `yaml:"caFile"`
-	// A long-lived token of a reviewer service account bound to system:auth-delegator.
+	Host string `yaml:"host"`
+	// A long-lived token of a reviewer account bound to system:auth-delegator, for identities with an audience.
 	ReviewerTokenFile string `yaml:"reviewerTokenFile"`
 }
 
@@ -171,7 +170,7 @@ func (c *Config) ValidateInfisical() error {
 		"infisical.url": setup.URL, "infisical.organization": setup.Organization, "infisical.project": setup.Project,
 		"infisical.environment": setup.Environment, "infisical.stateConfigMap": setup.StateConfigMap,
 		"infisical.serviceAccountTokenFile": setup.ServiceAccountTokenFile, "infisical.kubernetes.host": setup.Kubernetes.Host,
-		"infisical.kubernetes.reviewerTokenFile": setup.Kubernetes.ReviewerTokenFile, "infisical.seed.secret": setup.Seed.Secret,
+		"infisical.seed.secret":        setup.Seed.Secret,
 		"infisical.seed.adminEmailKey": setup.Seed.AdminEmailKey, "infisical.seed.adminPasswordKey": setup.Seed.AdminPasswordKey,
 	} {
 		if value == "" {
@@ -198,6 +197,10 @@ func (c *Config) ValidateInfisical() error {
 			problems = append(problems, fmt.Errorf("identity name %q is used twice", identity.Name))
 		}
 		names[identity.Name] = true
+		// A token for another audience cannot review itself (D-0167).
+		if identity.Audience != "" && setup.Kubernetes.ReviewerTokenFile == "" {
+			problems = append(problems, fmt.Errorf("identity %s has an audience, so infisical.kubernetes.reviewerTokenFile is required", identity.Name))
+		}
 	}
 	return errors.Join(problems...)
 }

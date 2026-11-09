@@ -118,9 +118,6 @@ func (s *Setup) bootstrapInstance(ctx context.Context) (state, error) {
 		return state{}, fmt.Errorf("the first run needs %s and %s in the seed Secret %s",
 			setup.Seed.AdminEmailKey, setup.Seed.AdminPasswordKey, setup.Seed.Secret)
 	}
-	if _, err := s.kubernetesAuth(setup.BootstrapIdentity); err != nil {
-		return state{}, err
-	}
 	if _, err := s.ReadFile(setup.ServiceAccountTokenFile); err != nil {
 		return state{}, fmt.Errorf("read the service-account token: %w", err)
 	}
@@ -284,22 +281,18 @@ func (s *Setup) setKubernetesAuth(ctx context.Context, api *infisical.Client, id
 	return nil
 }
 
-// kubernetesAuth reads what Infisical needs to review the identity's service-account tokens. The config
-// gives every identity a single namespace (ValidateInfisical), so the two lists name exactly its accounts.
+// kubernetesAuth is what Infisical needs to review the identity's service-account tokens: nothing for tokens that
+// review themselves, the reviewer's token for tokens of another audience (D-0167). The config gives every identity a
+// single namespace (ValidateInfisical), so the two lists name exactly its accounts.
 func (s *Setup) kubernetesAuth(spec IdentitySpec) (infisical.KubernetesAuth, error) {
 	kube := s.Config.Infisical.Kubernetes
-	reviewer, err := s.ReadFile(kube.ReviewerTokenFile)
-	if err != nil {
-		return infisical.KubernetesAuth{}, fmt.Errorf("read the reviewer token: %w", err)
-	}
-	var caCert []byte
-	if kube.CAFile != "" {
-		if caCert, err = s.ReadFile(kube.CAFile); err != nil {
-			return infisical.KubernetesAuth{}, fmt.Errorf("read the Kubernetes CA: %w", err)
+	auth := infisical.KubernetesAuth{Host: kube.Host, Audience: spec.Audience}
+	if spec.Audience != "" {
+		reviewer, err := s.ReadFile(kube.ReviewerTokenFile)
+		if err != nil {
+			return infisical.KubernetesAuth{}, fmt.Errorf("read the reviewer token: %w", err)
 		}
-	}
-	auth := infisical.KubernetesAuth{
-		Host: kube.Host, CACert: string(caCert), ReviewerJWT: strings.TrimSpace(string(reviewer)), Audience: spec.Audience,
+		auth.ReviewerJWT = strings.TrimSpace(string(reviewer))
 	}
 	for _, account := range spec.ServiceAccounts {
 		namespace, name, _ := strings.Cut(account, "/")

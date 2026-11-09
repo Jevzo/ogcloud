@@ -85,7 +85,7 @@ func TestTheInfisicalStageNeedsEverythingBeforeSpendingTheAdminToken(t *testing.
 	err := config.ValidateInfisical()
 
 	for _, want := range []string{
-		"infisical.url is required", "infisical.kubernetes.reviewerTokenFile is required", "infisical.seed.adminPasswordKey is required",
+		"infisical.url is required", "infisical.kubernetes.host is required", "infisical.seed.adminPasswordKey is required",
 		"seed.path must be absolute", `identity name "bootstrap" is used twice`, "not namespace/name", "share one namespace",
 		"an empty list would admit any", "roleless needs a project role", `stray: role "member" in project "elsewhere"`,
 		"secret /LOST: project elsewhere is not configured",
