@@ -3,7 +3,6 @@ The template archives' copy (D-0166): daily, after PostgreSQL's base backup, `ba
 from the data bucket into the backup target and prunes copies of deleted ones after retention.backups (D-0043).
 */}}
 {{- if .Values.backup.enabled }}
-{{- $backup := .Values.backup }}
 {{- if not (regexMatch "^[0-9]+d$" .Values.retention.backups) }}
 {{- fail "retention.backups is a number of days, such as 14d" }}
 {{- end }}
@@ -15,7 +14,7 @@ metadata:
   labels:
     {{- include "ogcloud.componentLabels" (dict "root" . "component" "backup") | nindent 4 }}
 spec:
-  schedule: {{ $backup.templates.schedule | quote }}
+  schedule: {{ .Values.backup.templates.schedule | quote }}
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
@@ -28,37 +27,5 @@ spec:
           labels:
             {{- include "ogcloud.selector" (dict "root" . "component" "backup") | nindent 12 }}
         spec:
-          automountServiceAccountToken: false
-          # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
-          enableServiceLinks: false
-          restartPolicy: OnFailure
-          priorityClassName: {{ .Values.priorityClasses.platform.name }}
-          securityContext:
-            {{- include "ogcloud.podSecurity" . | nindent 12 }}
-          containers:
-            - name: backup
-              image: {{ include "ogcloud.image" (dict "root" . "name" "backup") }}
-              imagePullPolicy: {{ .Values.image.pullPolicy }}
-              args: [templates]
-              env:
-                {{- include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_S3" "endpoint" (include "ogcloud.s3Endpoint" .) "region" .Values.s3.region "bucket" .Values.s3.bucket "pathStyle" .Values.s3.pathStyle "keyFiles" "s3") | nindent 16 }}
-                {{- include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_BACKUP_S3" "endpoint" $backup.s3.endpoint "region" $backup.s3.region "bucket" $backup.s3.bucket "pathStyle" $backup.s3.pathStyle "keyFiles" "backup") | nindent 16 }}
-                - name: OGCLOUD_BACKUP_RETENTION_DAYS
-                  value: {{ trimSuffix "d" .Values.retention.backups | quote }}
-              securityContext:
-                {{- include "ogcloud.containerSecurity" . | nindent 16 }}
-              resources:
-                {{- toYaml $backup.templates.resources | nindent 16 }}
-              volumeMounts:
-                - name: secrets
-                  mountPath: /var/run/secrets/ogcloud/secrets
-                  readOnly: true
-                - name: tmp
-                  mountPath: /tmp
-          volumes:
-            - name: secrets
-              secret:
-                secretName: ogcloud-backup-secrets
-            - name: tmp
-              emptyDir: {}
+          {{- include "ogcloud.backupPod" (dict "root" . "subcommand" "templates") | nindent 10 }}
 {{- end }}

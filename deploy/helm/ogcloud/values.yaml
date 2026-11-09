@@ -307,6 +307,9 @@ loadbalancer:
 # bootstrap seed carries its credentials as BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY.
 backup:
   enabled: false
+  # The name this cluster's PostgreSQL archives under. A restored cluster takes a new one, so it never writes over
+  # the backup it came from.
+  serverName: ogcloud-postgres
   # CloudNativePG's six-field cron, seconds first: daily at 03:00.
   schedule: "0 0 3 * * *"
   s3:
@@ -327,6 +330,11 @@ backup:
       limits:
         # Archives are copied in 16 MiB parts, one at a time.
         memory: 128Mi
+
+# Restores a backup into a fresh install (T-0607): PostgreSQL from the server name it was archived under, then the
+# template archives. Apply the exported bootstrap state (mise run backup:restore-root-key) before installing.
+restore:
+  fromServer: ""
 
 retention:
   dryRun: false

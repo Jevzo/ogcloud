@@ -60,13 +60,34 @@ spec:
       isWALArchiver: true
       parameters:
         barmanObjectName: ogcloud-backups
+        serverName: {{ .Values.backup.serverName }}
   {{- end }}
+  {{- with .Values.restore.fromServer }}
+  {{- if not $.Values.backup.enabled }}
+  {{- fail "restore.fromServer reads the backup target: set backup.enabled" }}
+  {{- end }}
+  {{- if eq . $.Values.backup.serverName }}
+  {{- fail "a restored cluster archives under a new backup.serverName, not the one it restores from" }}
+  {{- end }}
+  # Restored from the backup archived under {{ . }} (T-0607); the roles and both databases come with it.
+  bootstrap:
+    recovery:
+      source: backup
+  externalClusters:
+    - name: backup
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: ogcloud-backups
+          serverName: {{ . }}
+  {{- else }}
   bootstrap:
     initdb:
       database: infisical
       owner: infisical
       secret:
         name: ogcloud-postgres-infisical
+  {{- end }}
   managed:
     roles:
       {{- range $service := list "api" "controller" }}

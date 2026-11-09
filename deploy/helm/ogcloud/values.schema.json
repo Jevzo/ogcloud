@@ -103,12 +103,19 @@
     "retention": { "type": "object" },
     "edge": { "type": "object" },
     "bootstrap": { "type": "object" },
+    "restore": {
+      "description": "Restores a backup into a fresh install (T-0607).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "fromServer": { "type": "string" } }
+    },
     "backup": {
       "description": "Backups into an S3 target of their own (D-0166); the seed carries its credentials.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "enabled": { "type": "boolean" },
+        "serverName": { "type": "string" },
         "schedule": {
           "description": "CloudNativePG's six-field cron, seconds first.",
           "type": "string"

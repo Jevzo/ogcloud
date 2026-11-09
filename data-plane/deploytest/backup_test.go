@@ -1,7 +1,10 @@
 package deploytest
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -77,4 +80,53 @@ func TestTemplatesAreCopiedDaily(t *testing.T) {
 			t.Errorf("%s = %q, want %q", name, env[name], want)
 		}
 	}
+}
+
+// A restore recovers PostgreSQL from the backup it names, archives anew under its own server name, and copies the
+// templates back after bootstrap and the bucket (T-0607).
+func TestARestoreRecoversPostgresAndThenTheTemplates(t *testing.T) {
+	restore := filepath.Join(t.TempDir(), "restore.yaml")
+	if err := os.WriteFile(restore, []byte("restore: {fromServer: ogcloud-postgres}\nbackup: {serverName: ogcloud-postgres-2}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	objects := render(t, hetznerValues, restore)
+	cluster := objects.find(t, "Cluster", "ogcloud-postgres")
+	if got := str(cluster, "spec", "bootstrap", "recovery", "source"); got != "backup" {
+		t.Fatalf("PostgreSQL bootstraps from %q, want the backup", got)
+	}
+	if get(cluster, "spec", "bootstrap", "initdb") != nil {
+		t.Error("a restored PostgreSQL still runs initdb")
+	}
+	sources, _ := get(cluster, "spec", "externalClusters").([]any)
+	if len(sources) != 1 || str(sources[0], "plugin", "parameters", "serverName") != "ogcloud-postgres" {
+		t.Errorf("the restore reads %v, want the backup archived under ogcloud-postgres", sources)
+	}
+	plugins, _ := get(cluster, "spec", "plugins").([]any)
+	if len(plugins) != 1 || str(plugins[0], "parameters", "serverName") != "ogcloud-postgres-2" {
+		t.Errorf("the restored cluster archives as %v, want ogcloud-postgres-2", plugins)
+	}
+
+	job := objects.find(t, "Job", "ogcloud-restore-templates")
+	if args := stringList(get(firstContainer(t, job), "args")); !slices.Equal(args, []string{"restore-templates"}) {
+		t.Errorf("the restore job runs %v", args)
+	}
+	weight := func(o object) int {
+		w, _ := strconv.Atoi(str(o, "metadata", "annotations", "helm.sh/hook-weight"))
+		return w
+	}
+	if weight(job) <= weight(objects.find(t, "Job", "ogcloud-bootstrap-infisical")) {
+		t.Error("templates are restored before bootstrap has synced the S3 credentials")
+	}
+}
+
+func TestARestoreNeedsTheBackupTargetAndANewServerName(t *testing.T) {
+	refused := func(values string, want string, args ...string) {
+		t.Helper()
+		if _, err := helmTemplate(t, []string{values}, args...); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%v rendered with %v, want %q", args, err, want)
+		}
+	}
+	refused(hetznerValues, "archives under a new backup.serverName",
+		"--set", "restore.fromServer=ogcloud-postgres", "--set", "backup.serverName=ogcloud-postgres")
+	refused(minikubeValues, "set backup.enabled", "--set", "restore.fromServer=ogcloud-postgres")
 }

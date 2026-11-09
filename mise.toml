@@ -123,6 +123,18 @@ for dir in deploy/terraform/modules/* deploy/terraform/render; do
 done
 """
 
+# Infisical's root key and bootstrap's state for a restore (D-0166): export it after the first install and keep the
+# file off the cluster; import it into a fresh cluster before installing with restore.fromServer.
+[tasks."backup:root-key"]
+description = "Export Infisical's root key and bootstrap's state from the current cluster (D-0166)"
+usage = 'arg "[file]" default="build/backup/root-key.yaml"'
+run = 'deploy/backup/root-key.sh export {{usage.file}}'
+
+[tasks."backup:restore-root-key"]
+description = "Apply an exported root key and bootstrap state to the current cluster before a restore (D-0166)"
+usage = 'arg "[file]" default="build/backup/root-key.yaml"'
+run = 'deploy/backup/root-key.sh import {{usage.file}}'
+
 # The end-to-end suite (T-0606, D-0161) against the minikube dev profile while `mise run dev` holds its port-forwards;
 # OGCLOUD_E2E_* point it elsewhere.
 [tasks.seed]

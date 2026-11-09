@@ -1,0 +1,27 @@
+{{- /*
+After a restore (T-0607): once PostgreSQL is recovered and OgCloud's bucket exists, the template archives come back
+from the backup target. It runs on the install only; a later upgrade would find nothing missing anyway.
+*/}}
+{{- if .Values.restore.fromServer }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ogcloud-restore-templates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "backup") | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install
+    # After bootstrap (0) and the bucket (10).
+    helm.sh/hook-weight: "20"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 30
+  ttlSecondsAfterFinished: {{ .Values.retention.jobTtlSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" . "component" "backup") | nindent 8 }}
+    spec:
+      {{- include "ogcloud.backupPod" (dict "root" . "subcommand" "restore-templates") | nindent 6 }}
+{{- end }}
