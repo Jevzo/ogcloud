@@ -156,6 +156,7 @@ backups, orphaned objects).
   - api, controller, gateway and load balancer run restricted (uid 1000, read-only root, no automounted token)
     with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
     `/webauthn` to the API (D-0098).
+  - With `monitoring.enabled` (Hetzner) the services send traces to Tempo; without it nothing is exported.
   - `mise run check:chart` lints every value set in `ci/` and validates it with kubeconform against pinned
     schemas; Go render tests in `data-plane/deploytest` check the invariants (D-0148).
 - **Images:** `mise run images:build` builds the artifacts with mise's toolchains (Spring boot jars unpacked into
