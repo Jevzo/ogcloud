@@ -247,3 +247,20 @@ func TestProxiesAreOnlineUnlessTheDevProfileTurnsItOff(t *testing.T) {
 		t.Error("the dev profile's proxies are in online mode")
 	}
 }
+
+// fabric8's leader election reads, creates and patches its Lease (D-0007); without patch no replica ever leads, and
+// no leader loop runs.
+func TestTheControllerMayHoldItsLeaderLease(t *testing.T) {
+	rules, _ := get(render(t, minikubeValues).find(t, "Role", "ogcloud-controller-leader"), "rules").([]any)
+	for _, verb := range []string{"get", "create", "update", "patch"} {
+		allowed := false
+		for _, rule := range rules {
+			if slices.Contains(stringList(get(rule, "resources")), "leases") && slices.Contains(stringList(get(rule, "verbs")), verb) {
+				allowed = true
+			}
+		}
+		if !allowed {
+			t.Errorf("the controller may not %s its leader Lease", verb)
+		}
+	}
+}
