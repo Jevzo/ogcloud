@@ -6,7 +6,11 @@ import com.google.protobuf.Parser
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.AuthenticationException
+import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -20,9 +24,11 @@ import org.springframework.kafka.listener.ConsumerRecordRecoverer
 import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.kafka.listener.DefaultErrorHandler
+import org.springframework.kafka.support.ProducerListener
 import org.springframework.util.backoff.ExponentialBackOff
 import org.springframework.util.backoff.FixedBackOff
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** A record that can never succeed, so it skips retries and goes straight to the dead-letter topic. */
 class NonRetryableEventException(
@@ -37,6 +43,37 @@ fun <T : Message> ConsumerRecord<String, ByteArray>.decode(parser: Parser<T>): T
     } catch (e: InvalidProtocolBufferException) {
         throw NonRetryableEventException("Malformed record at ${topic()}-${partition()}@${offset()}", e)
     }
+
+/**
+ * Replaces the shared producer after a send fails in a way it does not recover from by itself: a producer whose first
+ * sends ran before its SCRAM user existed keeps expiring every batch, while a fresh one works at once. The reset runs
+ * off Kafka's sender thread, which must not close its own producer, and only one is queued at a time.
+ */
+internal class ProducerRecovery(
+    private val factory: DefaultKafkaProducerFactory<String, ByteArray>,
+) : ProducerListener<String, ByteArray> {
+    private val log = LoggerFactory.getLogger(javaClass)
+    private val pending = AtomicBoolean(false)
+
+    override fun onError(
+        record: ProducerRecord<String, ByteArray>,
+        metadata: RecordMetadata?,
+        exception: Exception,
+    ) {
+        if (!wedgesTheProducer(exception) || !pending.compareAndSet(false, true)) return
+        Thread.ofVirtual().name("kafka-producer-reset").start {
+            try {
+                log.warn("Replacing the Kafka producer after: {}", exception.message)
+                factory.reset()
+            } finally {
+                pending.set(false)
+            }
+        }
+    }
+
+    private fun wedgesTheProducer(exception: Throwable): Boolean =
+        generateSequence(exception) { it.cause }.any { it is AuthenticationException || it is TimeoutException }
+}
 
 data class RetryPolicy(
     val initialInterval: Duration = Duration.ofSeconds(1),
@@ -65,7 +102,8 @@ class KafkaComponents(
                     ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
                     ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to ByteArraySerializer::class.java,
                 )
-        return KafkaTemplate(DefaultKafkaProducerFactory(properties))
+        val factory = DefaultKafkaProducerFactory<String, ByteArray>(properties)
+        return KafkaTemplate(factory).apply { setProducerListener(ProducerRecovery(factory)) }
     }
 
     /**
@@ -95,6 +133,7 @@ class KafkaComponents(
         return ConcurrentKafkaListenerContainerFactory<String, ByteArray>().apply {
             setConsumerFactory(DefaultKafkaConsumerFactory(consumerProperties))
             setConcurrency(concurrency)
+            containerProperties.setAuthExceptionRetryInterval(AUTH_RETRY)
             setCommonErrorHandler(errorHandler(template, retry))
         }
     }
@@ -118,6 +157,7 @@ class KafkaComponents(
         return ConcurrentKafkaListenerContainerFactory<String, ByteArray>().apply {
             setConsumerFactory(DefaultKafkaConsumerFactory(consumerProperties))
             containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+            containerProperties.setAuthExceptionRetryInterval(AUTH_RETRY)
             setCommonErrorHandler(
                 DefaultErrorHandler({ record, error ->
                     log.warn(
@@ -181,6 +221,10 @@ class KafkaComponents(
         private const val DLT_SUFFIX = ".dlt"
         val MAX_BLOCK: Duration = Duration.ofSeconds(5)
         private val SESSION_TIMEOUT: Duration = Duration.ofSeconds(10)
+
+        // A service may start before its KafkaUser exists (Strimzi creates it after the Secret syncs); a container that
+        // fails to authenticate retries instead of stopping for good.
+        private val AUTH_RETRY: Duration = Duration.ofSeconds(10)
         private val HEARTBEAT_INTERVAL: Duration = Duration.ofSeconds(3)
 
         // Kafka requires delivery >= linger + request timeout.
