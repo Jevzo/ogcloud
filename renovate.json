@@ -35,9 +35,17 @@
       "postUpdateOptions": ["helmUpdateSubChartArchives"]
     },
     {
-      "description": "The SeaweedFS subchart and the image the tests run move together",
+      "description": "Dependencies the chart runs move together with the images the tests run (D-0113)",
       "matchPackageNames": ["seaweedfs", "chrislusf/seaweedfs"],
       "groupName": "SeaweedFS"
+    },
+    {
+      "matchPackageNames": ["valkey/valkey"],
+      "groupName": "Valkey"
+    },
+    {
+      "matchPackageNames": ["infisical/infisical"],
+      "groupName": "Infisical"
     },
     {
       "matchManagers": ["npm"],

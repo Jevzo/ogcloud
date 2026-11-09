@@ -129,17 +129,26 @@ func TestAnExternalKafkaGetsNoStrimziResources(t *testing.T) {
 	}
 }
 
-func TestPodsMountOnlySecretsTheReleaseCreates(t *testing.T) {
+func TestPodsReadOnlySecretsTheReleaseCreates(t *testing.T) {
 	for _, values := range valueSets(t) {
 		t.Run(values, func(t *testing.T) {
 			objects := render(t, values)
 			known := secretsTheChartAccountsFor(t, objects)
+			check := func(workload object, name string) {
+				if name != "" && !slices.Contains(known, name) {
+					t.Errorf("%s %s reads Secret %s, which nothing in the release creates", workload.kind(), workload.name(), name)
+				}
+			}
 			for _, workload := range objects.workloads() {
 				volumes, _ := get(workload.podSpec(), "volumes").([]any)
 				for _, volume := range volumes {
-					name := str(volume, "secret", "secretName")
-					if name != "" && !slices.Contains(known, name) {
-						t.Errorf("%s %s mounts Secret %s, which nothing in the release creates", workload.kind(), workload.name(), name)
+					check(workload, str(volume, "secret", "secretName"))
+				}
+				containers, _ := get(workload.podSpec(), "containers").([]any)
+				for _, container := range containers {
+					env, _ := get(container, "env").([]any)
+					for _, variable := range env {
+						check(workload, str(variable, "valueFrom", "secretKeyRef", "name"))
 					}
 				}
 			}

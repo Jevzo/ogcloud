@@ -21,11 +21,13 @@ aclfile /etc/valkey/users.acl
 notify-keyspace-events Egx
 dir /data
 appendonly yes
-masteruser ogcloud-replication
-masterauth $(cat /secrets/root/REPLICATION_PASSWORD)
 CONF
 if [ -n "${SENTINEL_MASTER:-}" ]; then
-  echo "replica-announce-ip ${fqdn}" >> "${conf}"
+  {
+    echo "masteruser ogcloud-replication"
+    echo "masterauth $(cat /secrets/root/REPLICATION_PASSWORD)"
+    echo "replica-announce-ip ${fqdn}"
+  } >> "${conf}"
   primary="$(current_primary)"
   if [ "${primary}" != "${fqdn}" ]; then
     echo "replicaof ${primary} 6379" >> "${conf}"

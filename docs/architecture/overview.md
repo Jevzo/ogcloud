@@ -126,8 +126,8 @@ backups, orphaned objects).
 ## Deployment
 
 - **One Helm chart** (`deploy/helm/ogcloud`) installs OgCloud and is reused everywhere (D-0019). Cluster-wide
-  operators are separate releases pinned in `deploy/platform-deps.yaml`; Infisical and SeaweedFS are subcharts, so
-  the secrets install graph runs in one release (D-0146):
+  operators are separate releases pinned in `deploy/platform-deps.yaml`; SeaweedFS is a subchart and Infisical the
+  chart's own Deployment, so the secrets install graph runs in one release (D-0150):
   - `bootstrap root` (pre-install hook) writes Infisical's root; `bootstrap infisical` (post-install Job) creates
     the project, the `ogcloud-secrets-sync` identity, every generated secret, and publishes the identity ids.
   - The Secrets Operator logs in as that identity and syncs one Secret per workload from the chart's secret
@@ -143,6 +143,10 @@ backups, orphaned objects).
       TLS only and reloads renewed certificates; the default user is off. App users come from a synced ACL file
       that a sidecar loads live (the gateway's and load balancer's users only read). On Sentinels, app users may
       only discover the primary.
+    - Infisical as the chart's own Deployment (D-0150), listening on 127.0.0.1 behind a ghostunnel sidecar that
+      serves TLS from the internal CA and reloads renewed certificates (D-0149). Its database is on
+      CloudNativePG over TLS; its Valkey is a standalone instance of its own from the same template (D-0151).
+      Bootstrap and the Secrets Operator trust the internal CA.
     - SeaweedFS from its subchart, as one all-in-one pod (off where Hetzner Object Storage serves S3). Its S3 users
       file is synced from Infisical: OgCloud's identity may read, write, list and tag its bucket, nothing else.
       Our own post-install Job creates the bucket after `bootstrap infisical`; every post-install hook must run

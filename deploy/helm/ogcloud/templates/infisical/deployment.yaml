@@ -1,0 +1,191 @@
+{{- /*
+Infisical (D-0044, D-0150) listens on 127.0.0.1 only; a ghostunnel sidecar terminates TLS with a certificate from
+the internal CA and reloads it when cert-manager renews it (D-0149). Its database is the shared CloudNativePG
+cluster, its Valkey its own (D-0151); the credentials for both are bootstrap's root Secrets.
+*/}}
+{{- $i := .Values.infisical }}
+{{- $labels := dict "root" . "component" "infisical" }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-infisical-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" $labels | nindent 4 }}
+spec:
+  secretName: ogcloud-infisical-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - ogcloud-infisical
+    - ogcloud-infisical.{{ .Release.Namespace }}.svc
+    - ogcloud-infisical.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-internal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ogcloud-infisical
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" $labels | nindent 4 }}
+spec:
+  selector:
+    {{- include "ogcloud.selector" $labels | nindent 4 }}
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ogcloud-infisical
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" $labels | nindent 4 }}
+spec:
+  replicas: {{ $i.replicas }}
+  selector:
+    matchLabels:
+      {{- include "ogcloud.selector" $labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" $labels | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      containers:
+        - name: infisical
+          image: {{ $i.image }}
+          # Node reads the internal CA from NODE_EXTRA_CA_CERTS, the database driver only from DB_ROOT_CERT, in
+          # base64; the image's entrypoint would rewrite the system CAs, which a read-only root cannot hold.
+          command: [/bin/sh, -c]
+          args:
+            - export DB_ROOT_CERT="$(base64 -w0 /etc/ogcloud/ca/ca.crt)" && exec node --enable-source-maps dist/main.mjs
+          env:
+            - name: HOST
+              value: 127.0.0.1
+            - name: PORT
+              value: "8080"
+            - name: SITE_URL
+              value: {{ $i.siteUrl | default (include "ogcloud.infisicalUrl" .) | quote }}
+            - name: TELEMETRY_ENABLED
+              value: "false"
+            # Kubernetes auth reviews tokens against the API server, a private address (T-0402).
+            - name: ALLOW_INTERNAL_IP_CONNECTIONS
+              value: "true"
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/ogcloud/ca/ca.crt
+            - name: NODE_OPTIONS
+              value: --max-old-space-size={{ $i.heapMegabytes }}
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ogcloud-infisical-root
+                  key: ENCRYPTION_KEY
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ogcloud-infisical-root
+                  key: AUTH_SECRET
+            - name: DB_HOST
+              value: {{ .Values.postgres.host | quote }}
+            - name: DB_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: DB_NAME
+              value: infisical
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ogcloud-postgres-infisical
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ogcloud-postgres-infisical
+                  key: password
+            # In URL mode Infisical takes the user from the URL only; the password is alphanumeric.
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ogcloud-infisical-valkey-root
+                  key: INFISICAL_PASSWORD
+            - name: REDIS_URL
+              value: rediss://infisical:$(REDIS_PASSWORD)@ogcloud-infisical-valkey.{{ .Release.Namespace }}.svc:6379
+          # Through ghostunnel, so the probes check both.
+          startupProbe:
+            httpGet:
+              path: /api/status
+              port: https
+              scheme: HTTPS
+            periodSeconds: 10
+            # Database migrations run before Infisical listens.
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: https
+              scheme: HTTPS
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: https
+              scheme: HTTPS
+            periodSeconds: 30
+            failureThreshold: 5
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml $i.resources | nindent 12 }}
+          volumeMounts:
+            {{- include "ogcloud.commonMounts" . | nindent 12 }}
+        - name: tls
+          image: {{ $i.ghostunnelImage }}
+          args:
+            - server
+            - --listen=0.0.0.0:8443
+            - --target=127.0.0.1:8080
+            - --cert=/tls/tls.crt
+            - --key=/tls/tls.key
+            # Clients authenticate to Infisical itself; the tunnel only encrypts.
+            - --disable-authentication
+            - --timed-reload=1h
+          ports:
+            - name: https
+              containerPort: 8443
+          readinessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 30
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        {{- include "ogcloud.commonVolumes" . | nindent 8 }}
+        - name: tls
+          secret:
+            secretName: ogcloud-infisical-tls

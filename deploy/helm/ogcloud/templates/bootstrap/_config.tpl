@@ -6,13 +6,19 @@ rootSecrets:
     keys:
       ENCRYPTION_KEY: {generate: hex, bytes: 16}
       AUTH_SECRET: {generate: base64, bytes: 32}
-  # Valkey's own users and Infisical's, which exist before Infisical can sync the app users.
+  # Infisical's own Valkey (D-0151): its admin and Infisical's user.
+  - name: ogcloud-infisical-valkey-root
+    keys:
+      ADMIN_PASSWORD: {generate: alnum, length: 40}
+      INFISICAL_PASSWORD: {generate: alnum, length: 40}
+  {{- if .Values.valkey.inCluster }}
+  # The app Valkey's own users, which exist before Infisical can sync the app users.
   - name: ogcloud-valkey-root
     keys:
       ADMIN_PASSWORD: {generate: alnum, length: 40}
       REPLICATION_PASSWORD: {generate: alnum, length: 40}
       SENTINEL_PASSWORD: {generate: alnum, length: 40}
-      INFISICAL_PASSWORD: {generate: alnum, length: 40}
+  {{- end }}
   # Infisical's database owner, which CloudNativePG's initdb creates before Infisical can sync anything.
   - name: ogcloud-postgres-infisical
     type: kubernetes.io/basic-auth
@@ -20,7 +26,8 @@ rootSecrets:
       username: {value: infisical}
       password: {generate: alnum, length: 40}
 infisical:
-  url: {{ .Values.infisical.url }}
+  url: {{ include "ogcloud.infisicalUrl" . }}
+  caFile: /etc/ogcloud/ca/ca.crt
   organization: {{ .Values.infisical.organization }}
   project: {{ .Values.infisical.project }}
   environment: {{ .Values.infisical.environment }}

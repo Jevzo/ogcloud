@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/moby/moby/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
@@ -21,16 +22,39 @@ func firstContainer(t *testing.T, workload object) any {
 	return containers[0]
 }
 
-// literalEnv is a container's environment without the values Kubernetes fills in.
-func literalEnv(container any) map[string]string {
+// podEnv is a container's environment as Kubernetes builds it: secretKeyRef values come from secrets (by Secret,
+// then key), $(VAR) refers to an earlier variable, and values Kubernetes fills in itself (fieldRef) are left out.
+func podEnv(t *testing.T, container any, secrets map[string]map[string]string) map[string]string {
+	t.Helper()
 	env := map[string]string{}
 	variables, _ := get(container, "env").([]any)
 	for _, variable := range variables {
-		if value, ok := get(variable, "value").(string); ok {
-			env[str(variable, "name")] = value
+		name := str(variable, "name")
+		switch {
+		case get(variable, "value") != nil:
+			env[name] = os.Expand(strings.NewReplacer("$(", "${", ")", "}").Replace(str(variable, "value")), func(ref string) string {
+				value, ok := env[ref]
+				if !ok {
+					t.Fatalf("%s refers to %s, which is not defined before it", name, ref)
+				}
+				return value
+			})
+		case get(variable, "valueFrom", "secretKeyRef") != nil:
+			secret, key := str(variable, "valueFrom", "secretKeyRef", "name"), str(variable, "valueFrom", "secretKeyRef", "key")
+			value, ok := secrets[secret][key]
+			if !ok {
+				t.Fatalf("%s reads %s/%s, which the test does not provide", name, secret, key)
+			}
+			env[name] = value
 		}
 	}
 	return env
+}
+
+// certificateNames are the DNS names of the rendered cert-manager Certificate name.
+func certificateNames(t *testing.T, objects rendered, name string) []string {
+	t.Helper()
+	return stringList(get(objects.find(t, "Certificate", name), "spec", "dnsNames"))
 }
 
 func stringList(value any) []string {
@@ -41,6 +65,26 @@ func stringList(value any) []string {
 		list = append(list, s)
 	}
 	return list
+}
+
+// syncedTemplate is what the Secrets Operator writes into key of the synced Secret secret, given Infisical's
+// secrets: its template engine is Go's text/template over them.
+func syncedTemplate(t *testing.T, objects rendered, secret, key string, secrets map[string]string) string {
+	t.Helper()
+	targets, _ := get(objects.find(t, "InfisicalStaticSecret", secret), "spec", "targets").([]any)
+	if len(targets) != 1 {
+		t.Fatalf("%s syncs %d targets, want 1", secret, len(targets))
+	}
+	values := map[string]any{}
+	for name, value := range secrets {
+		values[name] = map[string]string{"Value": value}
+	}
+	var out strings.Builder
+	source := str(targets[0], "template", "data", key)
+	if err := template.Must(template.New(key).Parse(source)).Execute(&out, values); err != nil {
+		t.Fatalf("%s %s template: %v", secret, key, err)
+	}
+	return out.String()
 }
 
 // mounted are files a container reads, by path, as Kubernetes mounts Secrets and ConfigMaps.

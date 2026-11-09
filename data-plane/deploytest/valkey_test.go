@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"text/template"
 	"time"
 
 	"github.com/moby/moby/api/types/container"
@@ -44,50 +43,58 @@ const (
 	adminPassword = "admin-password"
 )
 
-// valkeyChart is what a rendered chart hands Valkey's pods.
+// valkeyChart is what a rendered chart hands one Valkey StatefulSet's pods.
 type valkeyChart struct {
 	env map[string]string
-	// usersACL is the synced app users' file, with each service's password set to "<service>-password".
+	// root is its root Secret, each key's password being the key in lower case with dashes ("admin-password").
+	root map[string]string
+	// usersACL is the synced app users' file, empty for none, with each service's password "<service>-password".
 	usersACL string
+	// names are its certificate's DNS names, plus the test's headless domain.
+	names []string
 }
 
-func renderValkey(t *testing.T, values string) valkeyChart {
+func renderValkey(t *testing.T, values, name string) valkeyChart {
 	t.Helper()
 	objects := render(t, values)
-	chart := valkeyChart{env: map[string]string{}}
-	containers, _ := get(objects.find(t, "StatefulSet", "ogcloud-valkey").podSpec(), "containers").([]any)
-	if len(containers) == 0 {
-		t.Fatal("the Valkey StatefulSet has no containers")
-	}
-	env, _ := get(containers[0], "env").([]any)
-	for _, variable := range env {
-		chart.env[str(variable, "name")] = str(variable, "value")
+	statefulSet := objects.find(t, "StatefulSet", name)
+	chart := valkeyChart{
+		env:   podEnv(t, firstContainer(t, statefulSet), nil),
+		root:  map[string]string{},
+		names: append(certificateNames(t, objects, name+"-tls"), "*."+headless),
 	}
 	chart.env["HEADLESS_SERVICE"] = headless
 	// The chart keeps the hourly default; the test needs to see a reload.
 	chart.env["TLS_RELOAD_SECONDS"] = "1"
-
-	targets, _ := get(objects.find(t, "InfisicalStaticSecret", "ogcloud-valkey-users"), "spec", "targets").([]any)
-	if len(targets) != 1 {
-		t.Fatalf("the Valkey users sync %d targets, want 1", len(targets))
+	volumes, _ := get(statefulSet.podSpec(), "volumes").([]any)
+	for _, volume := range volumes {
+		secret := str(volume, "secret", "secretName")
+		switch str(volume, "name") {
+		case "root":
+			for _, rootSecret := range bootstrapConfig(t, objects).RootSecrets {
+				if rootSecret.Name == secret {
+					for key := range rootSecret.Keys {
+						chart.root[key] = strings.ToLower(strings.ReplaceAll(key, "_", "-"))
+					}
+				}
+			}
+		case "users":
+			passwords := map[string]string{}
+			for _, service := range []string{"api", "controller", "gateway", "loadbalancer"} {
+				passwords["VALKEY_"+strings.ToUpper(service)+"_PASSWORD"] = service + "-password"
+			}
+			chart.usersACL = syncedTemplate(t, objects, secret, "users.acl", passwords)
+		}
 	}
-	source := str(targets[0], "template", "data", "users.acl")
-	passwords := map[string]any{}
-	for _, service := range []string{"api", "controller", "gateway", "loadbalancer"} {
-		passwords["VALKEY_"+strings.ToUpper(service)+"_PASSWORD"] = map[string]string{"Value": service + "-password"}
+	if chart.root["ADMIN_PASSWORD"] != adminPassword {
+		t.Fatalf("%s's root Secret has no admin password: %v", name, chart.root)
 	}
-	// The Secrets Operator's template engine is Go's text/template over the synced secrets.
-	var acl strings.Builder
-	if err := template.Must(template.New("users.acl").Parse(source)).Execute(&acl, passwords); err != nil {
-		t.Fatalf("users.acl template: %v", err)
-	}
-	chart.usersACL = acl.String()
 	return chart
 }
 
 func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 	ca := newTestCA(t)
-	chart := renderValkey(t, minikubeValues)
+	chart := renderValkey(t, minikubeValues, "ogcloud-valkey")
 	node := startValkeyNode(t, ca, chart, "", 0, "/scripts/start-valkey.sh")
 
 	if out := cli(t, node, "ogcloud-api", "api-password", "SET", "k", "v"); out != "OK" {
@@ -99,8 +106,8 @@ func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 	if out := cli(t, node, "ogcloud-gateway", "gateway-password", "SET", "k", "x"); !strings.Contains(out, "NOPERM") {
 		t.Errorf("the gateway's user may write: %q", out)
 	}
-	if out := cli(t, node, "infisical", "infisical-password", "FLUSHALL"); !strings.Contains(out, "NOPERM") {
-		t.Errorf("Infisical's user may flush: %q", out)
+	if out := cli(t, node, "infisical", "infisical-password", "PING"); out == "PONG" {
+		t.Error("Infisical's user is in the app Valkey (D-0151)")
 	}
 	if out := cli(t, node, "default", "", "PING"); out == "PONG" {
 		t.Error("the default user is still on")
@@ -117,20 +124,20 @@ func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 	}
 
 	// A certificate cert-manager renewed is served without a restart.
-	renewed, key := ca.issue(t, "localhost", "*."+headless)
+	renewed, key := ca.issue(t, chart.names...)
 	node.files.update("/tls/tls.key", key)
 	node.files.update("/tls/tls.crt", renewed)
 	block, _ := pem.Decode([]byte(renewed))
 	eventually(t, 30*time.Second, "the renewed certificate is served", func() bool {
-		return bytes.Equal(servedCertificate(t, ca, testvalkey.Address(t, node, "6379/tcp")), block.Bytes)
+		return bytes.Equal(servedCertificate(t, ca, testvalkey.Address(t, node, "6379/tcp"), "localhost"), block.Bytes)
 	})
 }
 
-func servedCertificate(t *testing.T, ca testCA, address string) []byte {
+func servedCertificate(t *testing.T, ca testCA, address, serverName string) []byte {
 	t.Helper()
 	roots := x509.NewCertPool()
 	roots.AppendCertsFromPEM([]byte(ca.cert))
-	dialer := tls.Dialer{Config: &tls.Config{RootCAs: roots, ServerName: "localhost", MinVersion: tls.VersionTLS12}}
+	dialer := tls.Dialer{Config: &tls.Config{RootCAs: roots, ServerName: serverName, MinVersion: tls.VersionTLS12}}
 	conn, err := dialer.DialContext(t.Context(), "tcp", address)
 	if err != nil {
 		t.Fatalf("TLS handshake with %s: %v", address, err)
@@ -139,9 +146,26 @@ func servedCertificate(t *testing.T, ca testCA, address string) []byte {
 	return conn.(*tls.Conn).ConnectionState().PeerCertificates[0].Raw
 }
 
+func TestInfisicalsValkeyHoldsOnlyInfisicalsUser(t *testing.T) {
+	chart := renderValkey(t, minikubeValues, "ogcloud-infisical-valkey")
+	node := startValkeyNode(t, newTestCA(t), chart, "", 0, "/scripts/start-valkey.sh")
+
+	if out := cli(t, node, "infisical", "infisical-password", "SET", "k", "v"); out != "OK" {
+		t.Errorf("Infisical's user cannot write: %q", out)
+	}
+	if out := cli(t, node, "infisical", "infisical-password", "FLUSHALL"); !strings.Contains(out, "NOPERM") {
+		t.Errorf("Infisical's user may flush: %q", out)
+	}
+	for user, password := range map[string]string{"ogcloud-api": "api-password", "default": ""} {
+		if out := cli(t, node, user, password, "PING"); out == "PONG" {
+			t.Errorf("%s may use Infisical's Valkey", user)
+		}
+	}
+}
+
 func TestValkeySentinelsFailOverAndTheOldPrimaryRejoins(t *testing.T) {
 	ca := newTestCA(t)
-	chart := renderValkey(t, hetznerValues)
+	chart := renderValkey(t, hetznerValues, "ogcloud-valkey")
 	dockerNetwork := testvalkey.Network(t)
 	both := "/scripts/start-valkey.sh & exec /scripts/start-sentinel.sh"
 	var nodes []testcontainers.Container
@@ -266,16 +290,17 @@ func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork s
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert, key := ca.issue(t, "localhost", "*."+headless)
+	cert, key := ca.issue(t, chart.names...)
 	contents := mounted{
-		"/tls/ca.crt":                        {content: ca.cert},
-		"/tls/tls.crt":                       {content: cert},
-		"/tls/tls.key":                       {content: key},
-		"/secrets/root/ADMIN_PASSWORD":       {content: adminPassword},
-		"/secrets/root/REPLICATION_PASSWORD": {content: "replication-password"},
-		"/secrets/root/SENTINEL_PASSWORD":    {content: "sentinel-password"},
-		"/secrets/root/INFISICAL_PASSWORD":   {content: "infisical-password"},
-		"/secrets/users/users.acl":           {content: chart.usersACL},
+		"/tls/ca.crt":  {content: ca.cert},
+		"/tls/tls.crt": {content: cert},
+		"/tls/tls.key": {content: key},
+	}
+	for key, password := range chart.root {
+		contents["/secrets/root/"+key] = mountedFile{content: password}
+	}
+	if chart.usersACL != "" {
+		contents["/secrets/users/users.acl"] = mountedFile{content: chart.usersACL}
 	}
 	scripts, err := filepath.Glob(filepath.Join(valkeyScripts, "*.sh"))
 	if err != nil || len(scripts) == 0 {
@@ -289,7 +314,7 @@ func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork s
 		contents["/scripts/"+filepath.Base(script)] = mountedFile{content: string(content), executable: true}
 	}
 	files := mount(t, contents)
-	hostname := fmt.Sprintf("ogcloud-valkey-%d", index)
+	hostname := fmt.Sprintf("%s-%d", chart.env["STATEFULSET"], index)
 	opts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("6379/tcp", "26379/tcp"),
 		testcontainers.WithEntrypoint(command...),
@@ -299,7 +324,9 @@ func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork s
 		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections").WithStartupTimeout(time.Minute)),
 	}
 	if dockerNetwork != "" {
-		opts = append(opts, network.WithNetwork([]string{nodeName(index)}, &testcontainers.DockerNetwork{Name: dockerNetwork}))
+		// Reached by its pod name and, like a Service, by the StatefulSet's name.
+		aliases := []string{fmt.Sprintf("%s.%s", hostname, headless), chart.env["STATEFULSET"] + "." + namespace + ".svc"}
+		opts = append(opts, network.WithNetwork(aliases, &testcontainers.DockerNetwork{Name: dockerNetwork}))
 	}
 	node, err := testcontainers.Run(context.Background(), image, opts...)
 	testcontainers.CleanupContainer(t, node)

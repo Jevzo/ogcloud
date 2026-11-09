@@ -98,6 +98,11 @@ http://{{ include "ogcloud.seaweedfsService" . }}:8333
 {{ .Values.seaweedfs.fullnameOverride }}-all-in-one.{{ .Release.Namespace }}.svc
 {{- end -}}
 
+{{/* Infisical's API, through its TLS sidecar (D-0149). */}}
+{{- define "ogcloud.infisicalUrl" -}}
+https://ogcloud-infisical.{{ .Release.Namespace }}.svc:8443
+{{- end -}}
+
 {{- define "ogcloud.valkeySentinelMaster" -}}
 {{- if and .Values.valkey.inCluster .Values.valkey.sentinel -}}ogcloud{{- else -}}{{ .Values.valkey.sentinelMaster }}{{- end -}}
 {{- end -}}
@@ -223,7 +228,10 @@ readinessProbe:
 {{- (urlParse (required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin)).host -}}
 {{- end -}}
 
-{{/* What every Valkey container mounts; config is shared, so the reloader writes the file Valkey reads. */}}
+{{/*
+What every Valkey container mounts, given whether it has synced users; config is shared, so the reloader writes the
+file Valkey reads.
+*/}}
 {{- define "ogcloud.valkeyMounts" -}}
 - name: scripts
   mountPath: /scripts
@@ -234,9 +242,11 @@ readinessProbe:
 - name: root
   mountPath: /secrets/root
   readOnly: true
+{{- if . }}
 - name: users
   mountPath: /secrets/users
   readOnly: true
+{{- end }}
 - name: config
   mountPath: /etc/valkey
 - name: tmp

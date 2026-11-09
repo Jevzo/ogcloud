@@ -1,0 +1,16 @@
+{{- /* The app Valkey, and Infisical's own standalone one (D-0151), from one template and one set of scripts. */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ogcloud-valkey-scripts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+data:
+  {{- (.Files.Glob "files/valkey/*.sh").AsConfig | nindent 2 }}
+{{- if .Values.valkey.inCluster }}
+---
+{{ include "ogcloud.valkeyInstance" (dict "root" . "name" "ogcloud-valkey" "component" "valkey" "sentinel" .Values.valkey.sentinel "rootSecret" "ogcloud-valkey-root" "usersSecret" "ogcloud-valkey-users" "storage" .Values.valkey.storage "resources" .Values.valkey.resources) }}
+{{- end }}
+---
+{{ include "ogcloud.valkeyInstance" (dict "root" . "name" "ogcloud-infisical-valkey" "component" "infisical-valkey" "sentinel" false "rootSecret" "ogcloud-infisical-valkey-root" "usersSecret" "" "storage" .Values.infisical.valkey.storage "resources" .Values.infisical.valkey.resources) }}

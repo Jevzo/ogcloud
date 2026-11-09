@@ -56,6 +56,10 @@ spec:
             - name: reviewer
               mountPath: /var/run/secrets/ogcloud/reviewer
               readOnly: true
+            # The internal CA, which Infisical's TLS sidecar presents (D-0149).
+            - name: ca
+              mountPath: /etc/ogcloud/ca
+              readOnly: true
             {{- end }}
       volumes:
         - name: config
@@ -72,5 +76,8 @@ spec:
             items:
               - key: token
                 path: token
+        - name: ca
+          configMap:
+            name: ogcloud-internal-ca
         {{- end }}
 {{- end }}

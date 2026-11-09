@@ -3,11 +3,9 @@ package deploytest
 import (
 	"bytes"
 	"context"
-	"io"
 	"net/http"
 	"strings"
 	"testing"
-	"text/template"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -100,7 +98,7 @@ func startSeaweedFS(t *testing.T, objectsInChart rendered) seaweedFS {
 	command := append([]string{"/bin/sh", "-c", `export POD_IP="$(hostname -i)"; exec "$@"`, "sh"}, stringList(get(spec, "command"))...)
 	server, err := testcontainers.Run(context.Background(), str(spec, "image"),
 		testcontainers.WithEntrypoint(command...),
-		testcontainers.WithEnv(literalEnv(spec)),
+		testcontainers.WithEnv(podEnv(t, spec, nil)),
 		mount(t, mounted{
 			"/etc/sw/s3/seaweedfs_s3_config": {content: s3Users(t, objectsInChart)},
 			"/etc/seaweedfs/master.toml":     {content: masterConfig},
@@ -122,7 +120,7 @@ func runBucketJob(t *testing.T, objectsInChart rendered, dockerNetwork string) {
 	spec := firstContainer(t, objectsInChart.find(t, "Job", "ogcloud-seaweedfs-bucket"))
 	job, err := testcontainers.Run(context.Background(), str(spec, "image"),
 		testcontainers.WithEntrypoint(append(stringList(get(spec, "command")), stringList(get(spec, "args"))...)...),
-		testcontainers.WithEnv(literalEnv(spec)),
+		testcontainers.WithEnv(podEnv(t, spec, nil)),
 		mount(t, nil).restricted("/tmp"),
 		network.WithNetwork(nil, &testcontainers.DockerNetwork{Name: dockerNetwork}),
 		testcontainers.WithWaitStrategy(wait.ForExit().WithExitTimeout(time.Minute)),
@@ -136,34 +134,20 @@ func runBucketJob(t *testing.T, objectsInChart rendered, dockerNetwork string) {
 		t.Fatal(err)
 	}
 	if state.ExitCode != 0 {
-		logs, _ := job.Logs(context.Background())
-		output, _ := io.ReadAll(logs)
-		t.Fatalf("the bucket Job exited %d:\n%s", state.ExitCode, output)
+		t.Fatalf("the bucket Job exited %d:\n%s", state.ExitCode, containerLogs(t, job))
 	}
 }
 
 // s3Users is the synced SeaweedFS config with the test's credentials in place of Infisical's.
 func s3Users(t *testing.T, objectsInChart rendered) string {
 	t.Helper()
-	targets, _ := get(objectsInChart.find(t, "InfisicalStaticSecret", "ogcloud-seaweedfs-s3"), "spec", "targets").([]any)
-	if len(targets) != 1 {
-		t.Fatalf("the SeaweedFS users sync %d targets, want 1", len(targets))
-	}
-	source := str(targets[0], "template", "data", "seaweedfs_s3_config")
-	secrets := map[string]any{
-		"S3_ACCESS_KEY": map[string]string{"Value": s3AccessKey},
-		"S3_SECRET_KEY": map[string]string{"Value": s3SecretKey},
-	}
-	var config strings.Builder
-	if err := template.Must(template.New("s3").Parse(source)).Execute(&config, secrets); err != nil {
-		t.Fatalf("seaweedfs_s3_config template: %v", err)
-	}
-	return config.String()
+	return syncedTemplate(t, objectsInChart, "ogcloud-seaweedfs-s3", "seaweedfs_s3_config",
+		map[string]string{"S3_ACCESS_KEY": s3AccessKey, "S3_SECRET_KEY": s3SecretKey})
 }
 
 func chartBucket(t *testing.T, objectsInChart rendered) string {
 	t.Helper()
-	bucket := literalEnv(firstContainer(t, objectsInChart.find(t, "Job", "ogcloud-seaweedfs-bucket")))["BUCKET"]
+	bucket := podEnv(t, firstContainer(t, objectsInChart.find(t, "Job", "ogcloud-seaweedfs-bucket")), nil)["BUCKET"]
 	if bucket == "" {
 		t.Fatal("the bucket Job names no bucket")
 	}
