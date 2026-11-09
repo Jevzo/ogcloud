@@ -35,29 +35,38 @@ func TestTheBootstrapConfigPassesBootstrapsOwnValidation(t *testing.T) {
 	}
 }
 
-var infisicalKey = regexp.MustCompile(`^\{\{ \.([A-Z0-9_]+)\.Value \}\}$`)
+var infisicalKey = regexp.MustCompile(`\{\{ \.([A-Z0-9_]+)\.Value \}\}`)
 
 func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 	objects := render(t, valueSets(t)[0])
-	var generated []string
-	for _, secret := range bootstrapConfig(t, objects).Infisical.Secrets {
-		generated = append(generated, secret.Name)
+	setup := bootstrapConfig(t, objects).Infisical
+	// By project slug: each sync reads one project (D-0152).
+	generated := map[string][]string{}
+	for _, secret := range setup.Secrets {
+		project := secret.Project
+		if project == "" {
+			project = setup.Project
+		}
+		generated[project] = append(generated[project], secret.Name)
 	}
 	syncs := objects.all("InfisicalStaticSecret")
 	if len(syncs) == 0 {
 		t.Fatal("nothing is synced from Infisical")
 	}
 	for _, sync := range syncs {
+		sources, _ := get(sync, "spec", "sources").([]any)
+		if len(sources) != 1 {
+			t.Fatalf("%s reads %d sources, want 1", sync.name(), len(sources))
+		}
+		project := str(sources[0], "projectSlug")
 		targets, _ := get(sync, "spec", "targets").([]any)
 		for _, target := range targets {
 			data, _ := get(target, "template", "data").(map[string]any)
 			for key, value := range data {
-				match := infisicalKey.FindStringSubmatch(value.(string))
-				if match == nil {
-					continue
-				}
-				if !slices.Contains(generated, match[1]) {
-					t.Errorf("%s key %s reads %s, which bootstrap never generates", sync.name(), key, match[1])
+				for _, match := range infisicalKey.FindAllStringSubmatch(value.(string), -1) {
+					if !slices.Contains(generated[project], match[1]) {
+						t.Errorf("%s key %s reads %s, which bootstrap never generates in project %s", sync.name(), key, match[1], project)
+					}
 				}
 			}
 		}
@@ -68,8 +77,9 @@ func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 // certificates, the bootstrap root stage and plain Secrets such as the reviewer's token.
 func secretsTheChartAccountsFor(t *testing.T, objects rendered) []string {
 	t.Helper()
-	var names []string
-	for _, root := range bootstrapConfig(t, objects).RootSecrets {
+	config := bootstrapConfig(t, objects)
+	names := []string{config.Infisical.IdentitiesSecret}
+	for _, root := range config.RootSecrets {
 		names = append(names, root.Name)
 	}
 	for _, sync := range objects.all("InfisicalStaticSecret") {
@@ -143,6 +153,10 @@ func TestPodsReadOnlySecretsTheReleaseCreates(t *testing.T) {
 				volumes, _ := get(workload.podSpec(), "volumes").([]any)
 				for _, volume := range volumes {
 					check(workload, str(volume, "secret", "secretName"))
+					sources, _ := get(volume, "projected", "sources").([]any)
+					for _, source := range sources {
+						check(workload, str(source, "secret", "name"))
+					}
 				}
 				containers, _ := get(workload.podSpec(), "containers").([]any)
 				for _, container := range containers {

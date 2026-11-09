@@ -11,6 +11,9 @@ spring:
           keystore:
             certificate: /var/run/secrets/ogcloud-tls/tls.crt
             private-key: /var/run/secrets/ogcloud-tls/tls.key
+        internal-ca:
+          truststore:
+            certificate: /etc/ogcloud/ca/ca.crt
 ogcloud:
   controller:
     pods:
@@ -34,6 +37,14 @@ ogcloud:
         proxy: {{ .Values.priorityClasses.proxy.name }}
         default-group: {{ .Values.priorityClasses.defaultGroup.name }}
         game: {{ .Values.priorityClasses.game.name }}
+    # Rotates the forwarding tokens in their own project (D-0078, D-0152).
+    infisical:
+      url: {{ include "ogcloud.infisicalUrl" . }}
+      identity-id-file: /var/run/secrets/ogcloud-infisical/identity
+      token-file: /var/run/secrets/ogcloud-infisical/token
+      project: {{ .Values.infisical.forwardingProject }}
+      environment: {{ .Values.infisical.environment }}
+      ssl-bundle: internal-ca
     grpc-auth:
       allowed-callers:
         - system:serviceaccount:{{ .Release.Namespace }}:ogcloud-gateway

@@ -57,6 +57,9 @@ spec:
             - name: kubernetes
               mountPath: /var/run/secrets/kubernetes.io/serviceaccount
               readOnly: true
+            - name: infisical
+              mountPath: /var/run/secrets/ogcloud-infisical
+              readOnly: true
       volumes:
         {{- include "ogcloud.commonVolumes" . | nindent 8 }}
         - name: config
@@ -70,6 +73,19 @@ spec:
             secretName: ogcloud-controller-tls
         - name: kubernetes
           {{- include "ogcloud.apiServerAccess" (dict "audience" "") | nindent 10 }}
+        {{- /* Its Infisical identity, published by bootstrap, and a token only Infisical accepts (D-0152). */}}
+        - name: infisical
+          projected:
+            sources:
+              - secret:
+                  name: ogcloud-infisical-identities
+                  items:
+                    - key: ogcloud-controller
+                      path: identity
+              - serviceAccountToken:
+                  audience: {{ include "ogcloud.infisicalAudience" . }}
+                  expirationSeconds: 3600
+                  path: token
 ---
 apiVersion: v1
 kind: Service

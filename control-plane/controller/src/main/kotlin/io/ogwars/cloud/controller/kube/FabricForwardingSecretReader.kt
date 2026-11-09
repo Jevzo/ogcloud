@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.kube
 
 import io.ogwars.cloud.controller.config.PodProperties
 import io.ogwars.cloud.controller.jobs.ForwardingSecretReader
+import io.ogwars.cloud.controller.jobs.forwardingTokens
 import io.fabric8.kubernetes.client.KubernetesClient
 import org.springframework.stereotype.Component
 import java.util.Base64
@@ -21,7 +22,7 @@ class FabricForwardingSecretReader(
                 .get()
                 ?: return emptyList()
         val encoded = secret.data?.get(TOKENS_KEY) ?: return emptyList()
-        return String(Base64.getDecoder().decode(encoded)).lines().map(String::trim).filter(String::isNotEmpty)
+        return forwardingTokens(String(Base64.getDecoder().decode(encoded)))
     }
 
     companion object {

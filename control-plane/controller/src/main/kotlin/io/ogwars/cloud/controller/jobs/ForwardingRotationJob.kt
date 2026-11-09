@@ -27,6 +27,9 @@ fun interface ForwardingSecretReader {
     fun mountedTokens(): List<String>
 }
 
+/** The tokens in [text], one per line, as Infisical stores them and backends read them (D-0065). */
+fun forwardingTokens(text: String): List<String> = text.lines().map(String::trim).filter(String::isNotEmpty)
+
 /**
  * Rotates the forwarding token (D-0078): add a new token, wait for the sync, roll the proxies onto it, remove the
  * old tokens, wait for the sync again. Only token fingerprints are stored in the job, never the tokens.
@@ -43,7 +46,6 @@ class ForwardingRotationJob(
     override val kind = JobKinds.FORWARDING_ROTATE
 
     override fun step(job: Job): JobStep {
-        // TODO(D-0078) The Infisical adapter arrives with T-0402; until then a rotation fails right away.
         val tokens =
             source.getIfAvailable() ?: return JobStep.Failed("No forwarding token source is configured (Infisical)")
         val p = job.progress
