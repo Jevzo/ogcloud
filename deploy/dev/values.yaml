@@ -6,3 +6,6 @@ image:
   tag: dev
   # Only minikube's Docker has them.
   pullPolicy: Never
+minecraft:
+  # Bots and local clients join without Mojang accounts (D-0162); minikube is not reachable from outside.
+  proxyOnlineMode: false

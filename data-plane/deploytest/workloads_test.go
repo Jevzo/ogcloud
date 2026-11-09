@@ -231,3 +231,19 @@ func TestPodsGetNoServiceLinks(t *testing.T) {
 		}
 	}
 }
+
+// Proxies check players with Mojang on every install but the minikube dev profile, where bots join without accounts
+// (D-0162).
+func TestProxiesAreOnlineUnlessTheDevProfileTurnsItOff(t *testing.T) {
+	config := func(values ...string) string {
+		return str(render(t, values...).find(t, "ConfigMap", "ogcloud-controller"), "data", "application.yaml")
+	}
+	for _, values := range valueSets(t) {
+		if !containsLine(config(values), "proxy-online-mode: true") {
+			t.Errorf("%s: proxies are not in online mode", values)
+		}
+	}
+	if !containsLine(config(minikubeValues, "../../deploy/dev/values.yaml"), "proxy-online-mode: false") {
+		t.Error("the dev profile's proxies are in online mode")
+	}
+}

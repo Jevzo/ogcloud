@@ -37,6 +37,8 @@ ogcloud:
         proxy: {{ .Values.priorityClasses.proxy.name }}
         default-group: {{ .Values.priorityClasses.defaultGroup.name }}
         game: {{ .Values.priorityClasses.game.name }}
+    runtime:
+      proxy-online-mode: {{ .Values.minecraft.proxyOnlineMode }}
     # Rotates the forwarding tokens in their own project (D-0078, D-0152).
     infisical:
       url: {{ include "ogcloud.infisicalUrl" . }}

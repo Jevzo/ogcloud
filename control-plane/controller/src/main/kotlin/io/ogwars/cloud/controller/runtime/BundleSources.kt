@@ -47,7 +47,10 @@ class CatalogBundlePlan(
         return if (profile.platform == Platform.VELOCITY) {
             sources +
                 listOf(
-                    BundleSource.Generated(VELOCITY_CONFIG, GeneratedConfigs.velocityToml().toByteArray()),
+                    BundleSource.Generated(
+                        VELOCITY_CONFIG,
+                        GeneratedConfigs.velocityToml(properties.proxyOnlineMode).toByteArray(),
+                    ),
                     BundleSource.Generated(VIAVERSION_CONFIG, GeneratedConfigs.viaVersionConfig().toByteArray()),
                 )
         } else {

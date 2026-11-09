@@ -23,6 +23,10 @@
         "eulaAccepted": {
           "description": "Whether the network's owner accepts the Minecraft EULA (D-0046); there is no default.",
           "type": "boolean"
+        },
+        "proxyOnlineMode": {
+          "description": "Whether proxies authenticate players with Mojang; only private test clusters turn it off (D-0162).",
+          "type": "boolean"
         }
       }
     },

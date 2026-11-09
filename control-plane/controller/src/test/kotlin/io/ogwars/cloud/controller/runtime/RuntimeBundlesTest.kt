@@ -9,6 +9,7 @@ import io.ogwars.cloud.domain.group.group
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.runtime.Platform
+import io.ogwars.cloud.domain.runtime.RuntimeProfiles
 import io.ogwars.cloud.domain.store.JobStore
 import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.livestate.ValkeyReadModelStore
@@ -47,7 +48,10 @@ class RuntimeBundlesTest {
                 listOf(
                     BundleSource.LocalFile("plugins/ogcloud-velocity.jar", pluginsDir.resolve("ogcloud-velocity.jar")),
                     BundleSource.Download("plugins/ViaVersion.jar", viaUrl, viaSha512),
-                    BundleSource.Generated("velocity.toml", GeneratedConfigs.velocityToml().toByteArray()),
+                    BundleSource.Generated(
+                        "velocity.toml",
+                        GeneratedConfigs.velocityToml(onlineMode = true).toByteArray(),
+                    ),
                 )
             }
         }
@@ -155,12 +159,33 @@ class RuntimeBundlesTest {
 
     @Test
     fun `the generated Velocity config forwards with BungeeGuard behind the PROXY protocol`() {
-        val toml = GeneratedConfigs.velocityToml()
+        val toml = GeneratedConfigs.velocityToml(onlineMode = true)
 
         toml shouldContain "player-info-forwarding-mode = \"bungeeguard\""
         toml shouldContain "haproxy-protocol = true"
         toml shouldContain "forwarding-secret-file = \"${GeneratedConfigs.FORWARDING_SECRET_FILE}\""
         GeneratedConfigs.viaVersionConfig() shouldContain "block-protocols: [\"<47\"]"
+    }
+
+    @Test
+    fun `proxies authenticate players with Mojang unless a private cluster turns it off`() {
+        GeneratedConfigs.velocityToml(onlineMode = true) shouldContain
+            "online-mode = true\nforce-key-authentication = true\n"
+        GeneratedConfigs.velocityToml(onlineMode = false) shouldContain
+            "online-mode = false\nforce-key-authentication = false\n"
+    }
+
+    @Test
+    fun `the Velocity bundle carries the configured online mode`() {
+        val toml =
+            CatalogBundlePlan(RuntimeProperties(proxyOnlineMode = false))
+                .sourcesFor(RuntimeProfiles.ALL.first { it.platform == Platform.VELOCITY })
+                .filterIsInstance<BundleSource.Generated>()
+                .single { it.path == "velocity.toml" }
+                .content
+                .decodeToString()
+
+        toml shouldContain "online-mode = false"
     }
 
     private fun sha512(bytes: ByteArray) = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-512").digest(bytes))

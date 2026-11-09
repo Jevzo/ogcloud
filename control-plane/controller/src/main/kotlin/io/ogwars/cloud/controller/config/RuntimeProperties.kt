@@ -10,4 +10,6 @@ data class RuntimeProperties(
     val pluginsDir: Path = Path.of("/opt/ogcloud/plugins"),
     val syncInterval: Duration = Duration.ofMinutes(10),
     val downloadTimeout: Duration = Duration.ofMinutes(2),
+    /** Whether proxies authenticate players with Mojang; only private test clusters turn it off (D-0162). */
+    val proxyOnlineMode: Boolean = true,
 )

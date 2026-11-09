@@ -47,6 +47,9 @@ publicOrigin: ""
 minecraft:
   # Must be set: true records that the network owner accepted the Minecraft EULA (D-0046, D-0100).
   eulaAccepted: null
+  # Whether proxies authenticate players with Mojang. Only private test clusters turn it off, so bots join without
+  # accounts (D-0162); anyone could then join under any name.
+  proxyOnlineMode: true
 
 # Image prefixes a group may run instead of its runtime profile's image; empty forbids overrides (T-0306).
 allowedImagePrefixes: []
