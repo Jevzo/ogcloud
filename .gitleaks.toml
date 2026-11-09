@@ -1,0 +1,8 @@
+# gitleaks' own rules, minus git-ignored build output: the dev seeds Tilt and the k3s test generate there are never
+# committed, and the history scan still covers everything that was.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Git-ignored build output"
+paths = ['''(^|/)build/''']
