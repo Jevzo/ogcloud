@@ -1,5 +1,5 @@
 # OgCloud on minikube (D-0022, D-0155): the charts in deploy/platform-deps.yaml in their order, OgCloud's images
-# built into minikube's Docker, then OgCloud's chart without waits, so it converges as on k3s (D-0020, D-0150).
+# built into minikube's Docker, then OgCloud's chart without waits, so it converges as on k3s (D-0159, D-0150).
 # Start it with `mise run dev`; `mise run dev:ci` is the check.
 
 allow_k8s_contexts('ogcloud')
@@ -26,7 +26,7 @@ if not os.path.exists(DEV + '/seed.yaml'):
     local('mkdir -p %s && printf "bootstrap:\\n  seed:\\n    INFISICAL_ADMIN_EMAIL: admin@ogcloud.localhost\\n    INFISICAL_ADMIN_PASSWORD: %%s\\n" "$(openssl rand -hex 24)" > %s/seed.yaml' % (DEV, DEV), quiet=True, echo_off=True)
 
 # Strimzi's operator binds roles in the namespace it watches, so that one exists first.
-local_resource('namespace', cmd='kubectl apply -f deploy/dev/namespace.yaml', labels=['platform'])
+local_resource('namespace', cmd='kubectl apply -f deploy/namespace.yaml', labels=['platform'])
 
 deps = read_yaml('deploy/platform-deps.yaml')
 previous = ['namespace']

@@ -16,6 +16,7 @@ golangci-lint = "2.15.0"
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 kubeconform = "0.8.0"
+k3d = "5.9.0"
 gitleaks = "8.30.1"
 trivy = "0.76.2"
 protoc-gen-go = "1.36.12"
@@ -26,7 +27,7 @@ protoc-gen-go-grpc = "1.6.2"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:shell", "check:duplication", "check:proto", "check:generated", "check:vulns", "check:actions", "check:commits"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:shell", "check:duplication", "check:proto", "check:terraform", "check:generated", "check:vulns", "check:actions", "check:commits"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -105,6 +106,28 @@ description = "Format Kotlin sources and Gradle scripts"
 run = "./gradlew spotlessApply"
 
 # go.work modules are listed by `go list -m`; `./...` does not span workspace modules.
+# Every Terraform module and root: format, validate, and the modules' tests (AGENTS.md §11).
+[tasks."check:terraform"]
+description = "terraform fmt, validate and test for every Terraform module and root"
+shell = "bash -c"
+run = """
+set -euo pipefail
+terraform fmt -check -recursive deploy/terraform
+for dir in deploy/terraform/modules/* deploy/terraform/render; do
+  echo "== $dir"
+  terraform -chdir="$dir" init -backend=false -input=false >/dev/null
+  terraform -chdir="$dir" validate
+  if [ -d "$dir/tests" ]; then
+    terraform -chdir="$dir" test
+  fi
+done
+"""
+
+# Not part of `check`: it builds every image and installs everything on a k3d cluster, which takes a while (T-0605).
+[tasks."test:k3s"]
+description = "Apply every k3s HelmChart at once to a fresh k3d cluster and wait until OgCloud converges (T-0605)"
+run = "deploy/k3s/ordering-test.sh"
+
 [tasks."check:shell"]
 description = "shellcheck every tracked shell script"
 shell = "bash -c"

@@ -35,7 +35,7 @@ func TestTheGameNamespaceSurvivesAnUninstall(t *testing.T) {
 }
 
 // Every namespaced object names its namespace, so it lands in the release's however it is applied: Tilt and
-// kubectl read the manifest back, and k3s HelmCharts apply it as Helm does (D-0020).
+// kubectl read the manifest back, and k3s HelmCharts apply it as Helm does (D-0159).
 func TestEveryNamespacedObjectNamesItsNamespace(t *testing.T) {
 	clusterScoped := []string{
 		"Namespace", "PriorityClass", "ClusterRole", "ClusterRoleBinding", "ClusterIssuer", "Bundle",

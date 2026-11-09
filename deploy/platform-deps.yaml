@@ -1,6 +1,6 @@
 # What OgCloud's chart runs on (D-0021, D-0150): cluster-wide operators and charts, each pinned exactly. Tilt
 # (T-0604) and Terraform (T-0702) install them in this order; on k3s every one is applied at once and converges
-# by retries (D-0020). Renovate keeps the versions current (D-0052).
+# by retries (D-0159). Renovate keeps the versions current (D-0052).
 #
 # values apply everywhere; targets.<name> adds what one install target needs. Entries with `when: monitoring`
 # install only with the monitoring toggle (D-0025): off on minikube by default, on for Hetzner.

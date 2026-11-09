@@ -1,4 +1,5 @@
-# OgCloud's release namespace, enforcing the restricted Pod Security standard as Terraform's does (T-0603).
+# OgCloud's release namespace, enforcing the restricted Pod Security standard (T-0603); Tilt and the k3s HelmChart
+# module (D-0156) create it before Strimzi, which binds roles in it.
 apiVersion: v1
 kind: Namespace
 metadata:

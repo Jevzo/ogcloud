@@ -1,0 +1,9 @@
+manifests: []
+
+charts:
+  - name: sometimes
+    when: sometimes
+    namespace: sometimes
+    repository: https://charts.example.test
+    chart: sometimes
+    version: 1.0.0

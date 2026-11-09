@@ -1,0 +1,34 @@
+# A small platform-deps.yaml in the real file's shape; the manifest's sha256 is that of the mocked body.
+manifests:
+  - name: crds
+    url: https://manifests.example.test/crds.yaml
+    sha256: 15eccff2269fd6ecb58381f0ff86eee35f28fb7b5a259a7d2fd4455966e6ef4d
+
+charts:
+  - name: plain
+    namespace: plain-system
+    repository: https://charts.example.test
+    chart: plain
+    version: 1.0.0
+
+  - name: tuned
+    namespace: tuned-system
+    repository: https://charts.example.test
+    chart: tuned
+    version: 2.0.0
+    values:
+      service:
+        type: ClusterIP
+        ports: [80, 443]
+    targets:
+      hetzner:
+        service:
+          annotations:
+            example.test/private: "true"
+
+  - name: dashboards
+    when: monitoring
+    namespace: monitoring
+    repository: https://charts.example.test
+    chart: dashboards
+    version: 3.0.0
