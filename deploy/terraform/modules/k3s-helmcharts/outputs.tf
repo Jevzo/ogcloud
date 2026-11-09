@@ -10,7 +10,9 @@ output "documents" {
   )
 
   precondition {
-    condition     = alltrue([for chart in local.deps.charts : contains(["monitoring"], try(chart.when, "monitoring"))])
+    condition = alltrue([
+      for entry in concat(local.deps.charts, local.deps.manifests) : contains(["monitoring"], try(entry.when, "monitoring"))
+    ])
     error_message = "platform-deps.yaml knows only `when: monitoring`."
   }
 }

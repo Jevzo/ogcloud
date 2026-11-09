@@ -1,0 +1,7 @@
+manifests:
+  - name: sometimes-crds
+    when: sometimes
+    url: https://manifests.example.test/sometimes.yaml
+    sha256: 15eccff2269fd6ecb58381f0ff86eee35f28fb7b5a259a7d2fd4455966e6ef4d
+
+charts: []

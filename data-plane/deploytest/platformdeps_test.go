@@ -12,9 +12,14 @@ import (
 
 type platformDeps struct {
 	Manifests []struct {
-		Name   string `yaml:"name"`
-		URL    string `yaml:"url"`
-		SHA256 string `yaml:"sha256"`
+		Name    string `yaml:"name"`
+		When    string `yaml:"when"`
+		URL     string `yaml:"url"`
+		SHA256  string `yaml:"sha256"`
+		Follows *struct {
+			Chart   string `yaml:"chart"`
+			Version string `yaml:"version"`
+		} `yaml:"follows"`
 	} `yaml:"manifests"`
 	Charts []struct {
 		Name       string         `yaml:"name"`
@@ -41,6 +46,9 @@ func TestPlatformDependenciesArePinnedExactly(t *testing.T) {
 		if !strings.HasPrefix(manifest.URL, "https://") || !sha256Hex.MatchString(manifest.SHA256) {
 			t.Errorf("manifest %s needs an https URL and its sha256", manifest.Name)
 		}
+		if manifest.When != "" && manifest.When != "monitoring" {
+			t.Errorf("manifest %s: unknown toggle %q", manifest.Name, manifest.When)
+		}
 	}
 	names := map[string]bool{}
 	for _, chart := range deps.Charts {
@@ -61,6 +69,41 @@ func TestPlatformDependenciesArePinnedExactly(t *testing.T) {
 			if !slices.Contains(knownTargets, target) {
 				t.Errorf("chart %s: unknown install target %q", chart.Name, target)
 			}
+		}
+	}
+}
+
+// helm upgrade never changes a chart's crds/, so those CRDs come from a manifest pinned to the chart's release
+// (D-0171). A chart bump, Renovate's included, fails here until its manifest is bumped too.
+func TestCRDManifestsFollowTheirCharts(t *testing.T) {
+	deps := loadPlatformDeps(t)
+	charts := map[string]string{}
+	toggles := map[string]string{}
+	for _, chart := range deps.Charts {
+		charts[chart.Name] = chart.Version
+		toggles[chart.Name] = chart.When
+	}
+	followed := map[string]bool{}
+	for _, manifest := range deps.Manifests {
+		if manifest.Follows == nil {
+			continue
+		}
+		version, ok := charts[manifest.Follows.Chart]
+		switch {
+		case !ok:
+			t.Errorf("manifest %s follows chart %q, which platform-deps.yaml does not list", manifest.Name, manifest.Follows.Chart)
+		case manifest.Follows.Version != version:
+			t.Errorf("manifest %s follows %s %s, but the chart is pinned to %s: bump its url, sha256 and follows.version",
+				manifest.Name, manifest.Follows.Chart, manifest.Follows.Version, version)
+		case manifest.When != toggles[manifest.Follows.Chart]:
+			t.Errorf("manifest %s installs with %q, its chart with %q", manifest.Name, manifest.When, toggles[manifest.Follows.Chart])
+		}
+		followed[manifest.Follows.Chart] = true
+	}
+	// The charts that keep CRDs in crds/ and whose CRDs OgCloud uses.
+	for _, chart := range []string{"strimzi", "kube-prometheus-stack"} {
+		if !followed[chart] {
+			t.Errorf("no manifest follows %s, so its CRDs would stay at their first install", chart)
 		}
 	}
 }

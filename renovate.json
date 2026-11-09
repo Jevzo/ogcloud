@@ -81,7 +81,7 @@
   ],
   "customManagers": [
     {
-      "description": "Third-party charts in deploy/platform-deps.yaml (D-0021); the sha256-pinned manifests are bumped by hand",
+      "description": "Third-party charts in deploy/platform-deps.yaml (D-0021); the sha256-pinned manifests are bumped by hand, CRD manifests with the charts they follow (D-0171)",
       "customType": "regex",
       "managerFilePatterns": ["/^deploy/platform-deps\\.yaml$/"],
       "matchStrings": [

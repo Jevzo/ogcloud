@@ -3,13 +3,31 @@
 # by retries (D-0159). Renovate keeps the versions current (D-0052).
 #
 # values apply everywhere; targets.<name> adds what one install target needs. Entries with `when: monitoring`
-# install only with the monitoring toggle (D-0025): off on minikube by default, on for Hetzner.
+# install only with the monitoring toggle (D-0025): off on minikube by default, on for Hetzner. A manifest that
+# `follows` a chart holds the CRDs that chart keeps in crds/, which helm upgrade never changes (D-0171); bump the
+# manifest (url, sha256, follows.version) with the chart, which a test enforces.
 
 manifests:
   # Gateway API's Standard channel at the version Traefik 3.7 supports (D-0024).
   - name: gateway-api
     url: https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.3/standard-install.yaml
     sha256: 356c2b8e286a964dc20995435659ad1095386329974793af10bbfe3eff977fe5
+
+  - name: strimzi-crds
+    url: https://github.com/strimzi/strimzi-kafka-operator/releases/download/1.3.1/strimzi-crds-1.3.1.yaml
+    sha256: 09f6db7000e27d6121e02334e666a55f06f8d62a9124e66adee6c84ec010bf41
+    follows:
+      chart: strimzi
+      version: 1.3.1
+
+  # The operator release that kube-prometheus-stack 93.1.0 ships (its appVersion).
+  - name: prometheus-operator-crds
+    when: monitoring
+    url: https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.95.1/stripped-down-crds.yaml
+    sha256: 1a3fe61ea58cfe9c18da5d1ec2be86afdf65471a88dc54c102911aab71d42785
+    follows:
+      chart: kube-prometheus-stack
+      version: 93.1.0
 
 charts:
   - name: cert-manager
@@ -37,8 +55,11 @@ charts:
     chart: traefik
     version: 42.3.1
     values:
+      # OgCloud routes through Gateway API only, so Traefik's own CRDs, which its chart cannot upgrade, stay unused.
       providers:
         kubernetesIngress:
+          enabled: false
+        kubernetesCRD:
           enabled: false
         kubernetesGateway:
           enabled: true

@@ -8,6 +8,14 @@ override_data {
   }
 }
 
+override_data {
+  target = data.http.manifest["dashboard-crds"]
+  values = {
+    status_code   = 200
+    response_body = "kind: CustomResourceDefinition\n"
+  }
+}
+
 variables {
   target             = "hetzner"
   platform_deps_file = "tests/fixtures/platform-deps.yaml"
@@ -42,6 +50,11 @@ run "installs_monitoring_only_when_asked" {
   assert {
     condition     = contains(keys(output.documents), "helmchart-dashboards.yaml")
     error_message = "monitoring = true leaves out the monitoring charts"
+  }
+
+  assert {
+    condition     = contains(keys(output.documents), "manifest-dashboard-crds.yaml")
+    error_message = "monitoring = true leaves out the monitoring charts' CRDs"
   }
 }
 
@@ -193,6 +206,16 @@ run "refuses_an_unknown_condition" {
 
   variables {
     platform_deps_file = "tests/fixtures/unknown-when.yaml"
+  }
+
+  expect_failures = [output.documents]
+}
+
+run "refuses_an_unknown_condition_on_a_manifest" {
+  command = plan
+
+  variables {
+    platform_deps_file = "tests/fixtures/unknown-when-manifest.yaml"
   }
 
   expect_failures = [output.documents]

@@ -31,6 +31,8 @@ local_resource('namespace', cmd='kubectl apply -f deploy/namespace.yaml', labels
 deps = read_yaml('deploy/platform-deps.yaml')
 previous = ['namespace']
 for manifest in deps['manifests']:
+    if manifest.get('when') == 'monitoring' and not MONITORING:
+        continue
     path = '%s/manifests/%s.yaml' % (DEV, manifest['name'])
     local_resource(
         manifest['name'],

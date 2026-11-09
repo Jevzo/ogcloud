@@ -8,7 +8,8 @@ locals {
   helm_namespace = "kube-system"
   values_secret  = "ogcloud-values"
 
-  charts = [for chart in local.deps.charts : chart if try(chart.when, null) == null || var.monitoring]
+  charts    = [for chart in local.deps.charts : chart if try(chart.when, null) == null || var.monitoring]
+  manifests = [for manifest in local.deps.manifests : manifest if try(manifest.when, null) == null || var.monitoring]
 
   # Each chart's values go in valuesContent and its target's in values, which Helm reads as a second values file and
   # deep-merges on top, as Tilt does for minikube.
@@ -62,7 +63,7 @@ locals {
 }
 
 data "http" "manifest" {
-  for_each = { for manifest in local.deps.manifests : manifest.name => manifest }
+  for_each = { for manifest in local.manifests : manifest.name => manifest }
 
   url = each.value.url
 

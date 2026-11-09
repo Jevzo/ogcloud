@@ -4,6 +4,14 @@ manifests:
     url: https://manifests.example.test/crds.yaml
     sha256: 15eccff2269fd6ecb58381f0ff86eee35f28fb7b5a259a7d2fd4455966e6ef4d
 
+  - name: dashboard-crds
+    when: monitoring
+    url: https://manifests.example.test/dashboard-crds.yaml
+    sha256: 15eccff2269fd6ecb58381f0ff86eee35f28fb7b5a259a7d2fd4455966e6ef4d
+    follows:
+      chart: dashboards
+      version: 3.0.0
+
 charts:
   - name: plain
     namespace: plain-system
