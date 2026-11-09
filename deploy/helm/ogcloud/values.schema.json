@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OgCloud chart values",
+  "description": "Checks the values operators set; a typo in a top-level key fails instead of being ignored.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["publicOrigin", "minecraft"],
+  "properties": {
+    "image": { "type": "object" },
+    "namespaces": { "type": "object" },
+    "priorityClasses": { "type": "object" },
+    "servers": { "type": "object" },
+    "publicOrigin": {
+      "description": "The one public origin of the dashboard and the API (D-0098), e.g. https://cloud.example.com.",
+      "type": "string",
+      "pattern": "^https://[^/]+$"
+    },
+    "minecraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eulaAccepted"],
+      "properties": {
+        "eulaAccepted": {
+          "description": "Whether the network's owner accepts the Minecraft EULA (D-0046); there is no default.",
+          "type": "boolean"
+        }
+      }
+    },
+    "allowedImagePrefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "postgres": { "$ref": "#/definitions/dependency" },
+    "kafka": { "$ref": "#/definitions/dependency" },
+    "valkey": {
+      "allOf": [
+        { "$ref": "#/definitions/dependency" },
+        { "properties": { "sentinel": { "type": "boolean" } } }
+      ]
+    },
+    "s3": {
+      "allOf": [
+        { "$ref": "#/definitions/dependency" },
+        { "properties": { "pathStyle": { "type": "boolean" }, "bucket": { "type": "string", "minLength": 3 } } }
+      ]
+    },
+    "global": { "type": "object" },
+    "seaweedfs": { "type": "object" },
+    "monitoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "otlpEndpoint": { "type": "string", "pattern": "^https?://" },
+        "traceSampling": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "infisical": {
+      "type": "object",
+      "properties": { "replicas": { "type": "integer", "minimum": 1 } }
+    },
+    "certManager": { "type": "object" },
+    "api": { "type": "object" },
+    "controller": { "type": "object" },
+    "gateway": { "type": "object" },
+    "loadbalancer": { "type": "object" },
+    "retention": { "type": "object" },
+    "edge": { "type": "object" },
+    "bootstrap": { "type": "object" }
+  },
+  "definitions": {
+    "dependency": {
+      "description": "In the cluster, or an external endpoint (D-0021).",
+      "type": "object",
+      "properties": { "inCluster": { "type": "boolean" } }
+    }
+  }
+}

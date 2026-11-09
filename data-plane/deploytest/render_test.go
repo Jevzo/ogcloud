@@ -3,6 +3,7 @@ package deploytest
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -44,17 +45,9 @@ func valueSets(t *testing.T) []string {
 // render runs helm template with the given value files and decodes every document.
 func render(t *testing.T, values ...string) rendered {
 	t.Helper()
-	trackChart(t)
-	args := []string{"template", "ogcloud", chartDir, "--namespace", namespace}
-	for _, file := range values {
-		args = append(args, "-f", file)
-	}
-	var stderr bytes.Buffer
-	command := exec.CommandContext(t.Context(), "helm", args...)
-	command.Stderr = &stderr
-	output, err := command.Output()
+	output, err := helmTemplate(t, values)
 	if err != nil {
-		t.Fatalf("helm template %v: %v\n%s", values, err, stderr.String())
+		t.Fatalf("helm template %v: %v", values, err)
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(output))
 	var objects rendered
@@ -72,6 +65,24 @@ func render(t *testing.T, values ...string) rendered {
 			objects = append(objects, object(doc))
 		}
 	}
+}
+
+// helmTemplate renders the chart with the value files; args are further helm flags such as --set.
+func helmTemplate(t *testing.T, values []string, args ...string) ([]byte, error) {
+	t.Helper()
+	trackChart(t)
+	command := []string{"template", "ogcloud", chartDir, "--namespace", namespace}
+	for _, file := range values {
+		command = append(command, "-f", file)
+	}
+	var stderr bytes.Buffer
+	helm := exec.CommandContext(t.Context(), "helm", append(command, args...)...)
+	helm.Stderr = &stderr
+	output, err := helm.Output()
+	if err != nil {
+		return nil, fmt.Errorf("%w\n%s", err, stderr.String())
+	}
+	return output, nil
 }
 
 // trackChart reads every chart file, so Go's test cache sees chart changes that only helm reads otherwise.
