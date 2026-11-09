@@ -176,7 +176,12 @@ backups, orphaned objects).
   and Tilt. The `Tiltfile` installs `deploy/platform-deps.yaml` in order, builds the images into minikube's Docker
   and installs the chart with `deploy/dev/values.yaml`; the dashboard origin is `https://ogcloud.localhost:8443`
   through Traefik's port-forward. `mise run dev:ci` is `tilt ci`; `mise run dev:clean` deletes the profile.
+- **k3s:** `deploy/terraform/modules/k3s-helmcharts` renders `platform-deps.yaml` and the chart as k3s HelmChart
+  resources (D-0156): each chart's values plus its target's, the pinned manifests fetched and checked by sha256
+  (D-0158), and OgCloud's values in a Secret. Everything is applied at once and converges because every HelmChart
+  retries a failed release (D-0159). `mise run test:k3s` proves it on a fresh k3d cluster at the pinned k3s; the
+  `deploy/terraform/render` root serves clusters Terraform does not provision.
 - **Hetzner:** Terraform with the kube-hetzner module provisions the cluster and installs
-  OgCloud through k3s HelmChart resources; an optional WireGuard box guards admin access.
+  OgCloud through those HelmChart resources; an optional WireGuard box guards admin access.
 - Game servers run in their own namespace on a dedicated, autoscaled node pool.
 - Designed for 5,000 concurrent players and about 300 servers, with no singleton in the data path.
