@@ -20,6 +20,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 
 class RecordingPodGateway : PodGateway {
     val created = mutableListOf<Pod>()
@@ -63,14 +64,15 @@ class RecordingPodGateway : PodGateway {
     override fun groupOfServerPod(serverId: UUID): GroupId? = podGroups[serverId]
 }
 
+// Informer threads record while the test thread reads.
 class RecordingServerEvents : ServerEvents {
-    val transitions = mutableListOf<Triple<ServerState, ServerState, String>>()
+    val transitions = CopyOnWriteArrayList<Triple<ServerState, ServerState, String>>()
 
     /** Groups of newly requested servers, in request order. */
-    val requestedGroups = mutableListOf<GroupId>()
-    val transfers = mutableListOf<Pair<UUID, TransferTarget>>()
-    val pausedGroups = mutableListOf<GroupId>()
-    val scalings = mutableListOf<ScalingLogEntry>()
+    val requestedGroups = CopyOnWriteArrayList<GroupId>()
+    val transfers = CopyOnWriteArrayList<Pair<UUID, TransferTarget>>()
+    val pausedGroups = CopyOnWriteArrayList<GroupId>()
+    val scalings = CopyOnWriteArrayList<ScalingLogEntry>()
 
     override fun stateChanged(
         change: ServerChange,

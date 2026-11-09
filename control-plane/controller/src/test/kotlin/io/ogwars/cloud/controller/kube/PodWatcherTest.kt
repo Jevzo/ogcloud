@@ -48,10 +48,15 @@ class PodWatcherTest {
             .withName(pod.metadata.name)
             .delete()
 
-        runBlocking { eventually(TIMEOUT) { f.state(id) shouldBe null } }
-        f.events.transitions
-            .last()
-            .second shouldBe ServerState.STOPPED
+        // The server leaves live state a moment before its transition is announced.
+        runBlocking {
+            eventually(TIMEOUT) {
+                f.state(id) shouldBe null
+                f.events.transitions
+                    .last()
+                    .second shouldBe ServerState.STOPPED
+            }
+        }
     }
 
     @Test
