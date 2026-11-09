@@ -36,16 +36,7 @@ var (
 
 // Every dependency is pinned to one stable release (AGENTS.md §9), so Tilt, Terraform and k3s install the same.
 func TestPlatformDependenciesArePinnedExactly(t *testing.T) {
-	data, err := os.ReadFile("../../deploy/platform-deps.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var deps platformDeps
-	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&deps); err != nil {
-		t.Fatalf("platform-deps.yaml: %v", err)
-	}
+	deps := loadPlatformDeps(t)
 	for _, manifest := range deps.Manifests {
 		if !strings.HasPrefix(manifest.URL, "https://") || !sha256Hex.MatchString(manifest.SHA256) {
 			t.Errorf("manifest %s needs an https URL and its sha256", manifest.Name)
@@ -69,6 +60,53 @@ func TestPlatformDependenciesArePinnedExactly(t *testing.T) {
 		for target := range chart.Targets {
 			if !slices.Contains(knownTargets, target) {
 				t.Errorf("chart %s: unknown install target %q", chart.Name, target)
+			}
+		}
+	}
+}
+
+func loadPlatformDeps(t *testing.T) platformDeps {
+	t.Helper()
+	data, err := os.ReadFile("../../deploy/platform-deps.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var deps platformDeps
+	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&deps); err != nil {
+		t.Fatalf("platform-deps.yaml: %v", err)
+	}
+	return deps
+}
+
+// Traefik binds a Gateway listener only to an entrypoint on the same port, the one in its ports section, not
+// the Service's 80 or 443; a mismatch leaves the Gateway unattached and the site unreachable.
+func TestGatewaysListenOnTraefiksEntrypoints(t *testing.T) {
+	var entrypoints []int
+	for _, chart := range loadPlatformDeps(t).Charts {
+		if chart.Name != "traefik" {
+			continue
+		}
+		ports, _ := chart.Values["ports"].(map[string]any)
+		for _, port := range ports {
+			if number, ok := get(port, "port").(int); ok {
+				entrypoints = append(entrypoints, number)
+			}
+		}
+	}
+	if len(entrypoints) == 0 {
+		t.Fatal("platform-deps.yaml pins no Traefik entrypoint ports")
+	}
+	for _, values := range valueSets(t) {
+		for _, gateway := range render(t, values).all("Gateway") {
+			listeners, _ := get(gateway, "spec", "listeners").([]any)
+			for _, listener := range listeners {
+				port, _ := get(listener, "port").(int)
+				if !slices.Contains(entrypoints, port) {
+					t.Errorf("%s: Gateway %s listener %s is on port %d, no Traefik entrypoint's %v",
+						values, gateway.name(), str(listener, "name"), port, entrypoints)
+				}
 			}
 		}
 	}

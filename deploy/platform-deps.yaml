@@ -50,6 +50,12 @@ charts:
         name: traefik
       ingressClass:
         enabled: false
+      # The ports OgCloud's Gateway listeners name (edge.ports in its chart); the Service shows them as 80 and 443.
+      ports:
+        web:
+          port: 8000
+        websecure:
+          port: 8443
     targets:
       hetzner:
         service:

@@ -313,6 +313,10 @@ retention:
 # The public HTTP edge (D-0024, D-0098): a Gateway on Traefik's class with a certificate for publicOrigin's host.
 edge:
   gatewayClassName: traefik
+  # Traefik's entrypoint ports (deploy/platform-deps.yaml): a listener binds only to an entrypoint's own port.
+  ports:
+    http: 8000
+    https: 8443
   tls:
     # A cert-manager issuer for the public certificate, e.g. a Let's Encrypt ClusterIssuer with Cloudflare DNS-01.
     issuer:
