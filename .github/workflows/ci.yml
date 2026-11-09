@@ -4,6 +4,8 @@ on:
   push:
     branches: [v2, main]
   pull_request:
+  # Runs everything, the heavy jobs included, on the chosen branch (D-0165).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,7 +23,6 @@ jobs:
       ts: ${{ steps.filter.outputs.ts }}
       chart: ${{ steps.filter.outputs.chart }}
       terraform: ${{ steps.filter.outputs.terraform }}
-      images: ${{ steps.filter.outputs.images }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,15 +70,6 @@ jobs:
               - deploy/terraform/**
               - deploy/platform-deps.yaml
               - deploy/namespace.yaml
-            images:
-              - *shared
-              - images/**
-              - contracts/**
-              - integrations/**
-              - control-plane/**
-              - data-plane/**
-              - build-logic/**
-              - gradle/**
 
   # Repository-wide gates: run on every change.
   baseline:
@@ -165,9 +157,9 @@ jobs:
 
   # Builds every image, boots the server images with OgCloud's plugin (D-0139), starts the platform images, runs the
   # node client against the gateway image (T-0510) and scans the platform images.
+  # Heavy: on pushes to main and by hand only (D-0165).
   images:
-    needs: changes
-    if: needs.changes.outputs.images == 'true'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -177,16 +169,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - run: mise run check:images
 
-  # Applies every k3s HelmChart at once to a fresh k3d cluster and waits until OgCloud converges (T-0605, D-0159).
+  # Applies every k3s HelmChart at once to a fresh k3d cluster, waits until OgCloud converges (T-0605, D-0159), then
+  # runs the end-to-end suite on it (T-0606).
+  # Heavy: on pushes to main and by hand only (D-0165).
   k3s:
-    needs: changes
-    if: needs.changes.outputs.chart == 'true' || needs.changes.outputs.images == 'true'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - run: pnpm install --frozen-lockfile
+      # Then the end-to-end suite on the same cluster (T-0606).
       - run: mise run test:k3s
+        env:
+          OGCLOUD_K3S_E2E: "true"
