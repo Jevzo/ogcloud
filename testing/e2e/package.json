@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "seed": "node src/seed.ts",
+    "restore": "node src/restore.ts",
     "test": "node --test --test-concurrency=1 src/scenarios/",
     "test:unit": "node --test src/unit/",
     "typecheck": "tsc --noEmit"

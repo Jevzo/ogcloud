@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import {
+  type Call,
   type CreateGroupRequest,
   groupCreate,
   groupList,
@@ -154,7 +155,19 @@ export async function seed(target: Target): Promise<SeedState> {
     console.log(`Uploaded the ${GROUPS.lobby} template`);
   }
   // Scenarios start from a running network; a fresh cluster pulls the bundles and starts its servers first.
-  for (const { id } of GROUP_REQUESTS) {
+  await awaitRunningGroups(
+    call,
+    GROUP_REQUESTS.map(({ id }) => id),
+  );
+  return state;
+}
+
+/** Waits until each of [groups] runs a server, failing with the servers' states otherwise. */
+export async function awaitRunningGroups(
+  call: Call,
+  groups: readonly string[],
+): Promise<void> {
+  for (const id of groups) {
     const servers = async () =>
       expectStatus(
         await serverList({ groupId: id }, call),
@@ -180,7 +193,6 @@ export async function seed(target: Target): Promise<SeedState> {
     }
   }
   console.log("Every group runs a server");
-  return state;
 }
 
 // The suite's machine client holds every permission; only owners may create one (D-0094, D-0108).

@@ -3,8 +3,8 @@
 # every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the cluster, which
 # holds no OgCloud yet (an earlier install's finished jobs would pass the wait) and already has the images tagged
 # OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
-# certificate from Let's Encrypt (D-0160), and OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
-# (D-0162).
+# certificate from Let's Encrypt (D-0160), OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
+# (D-0162), and OGCLOUD_VALUES adds values files, separated by spaces.
 set -euo pipefail
 
 tag=${OGCLOUD_TAG:?OGCLOUD_TAG names the images to install}
@@ -62,6 +62,9 @@ if [ -n "${OGCLOUD_CLOUDFLARE_API_TOKEN:-}" ]; then
     "$OGCLOUD_CLOUDFLARE_API_TOKEN" > "$work/letsencrypt.yaml"
   values_files="$values_files,\"$PWD/$work/letsencrypt.yaml\""
 fi
+for extra in ${OGCLOUD_VALUES:-}; do
+  values_files="$values_files,\"$extra\""
+done
 terraform -chdir=deploy/terraform/render init -input=false >/dev/null
 terraform -chdir=deploy/terraform/render apply -input=false -auto-approve -state="$PWD/$work/render.tfstate" \
   -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=[$values_files]" >/dev/null

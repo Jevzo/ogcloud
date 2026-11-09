@@ -151,6 +151,11 @@ run = "pnpm --filter @ogcloud/e2e run test"
 description = "Apply every k3s HelmChart at once to a fresh k3d cluster and wait until OgCloud converges (T-0605)"
 run = "deploy/k3s/ordering-test.sh"
 
+# Not part of `check` either: two installs on k3d with a backup and a restore in between (T-0607).
+[tasks."test:restore"]
+description = "Back up OgCloud on k3d, delete the cluster and restore it into a fresh one (T-0607)"
+run = "deploy/k3s/restore-test.sh"
+
 [tasks."check:shell"]
 description = "shellcheck every tracked shell script"
 shell = "bash -c"
