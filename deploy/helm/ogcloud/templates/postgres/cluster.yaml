@@ -69,10 +69,12 @@ spec:
   {{- if eq . $.Values.backup.serverName }}
   {{- fail "a restored cluster archives under a new backup.serverName, not the one it restores from" }}
   {{- end }}
-  # Restored from the backup archived under {{ . }} (T-0607); the roles and both databases come with it.
+  # Restored from the backup archived under {{ . }} (T-0607); the roles and both databases come with it, and the
+  # owner's password follows the imported root Secret.
   bootstrap:
     recovery:
       source: backup
+      {{- include "ogcloud.postgresInfisicalOwner" $ | nindent 6 }}
   externalClusters:
     - name: backup
       plugin:
@@ -83,10 +85,7 @@ spec:
   {{- else }}
   bootstrap:
     initdb:
-      database: infisical
-      owner: infisical
-      secret:
-        name: ogcloud-postgres-infisical
+      {{- include "ogcloud.postgresInfisicalOwner" . | nindent 6 }}
   {{- end }}
   managed:
     roles:
