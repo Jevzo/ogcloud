@@ -27,5 +27,7 @@ while true; do
       echo "reloading the Valkey users failed; retrying" >&2
     fi
   fi
+  # The container's probes check that this loop still runs.
+  touch /tmp/acl-reloader.alive
   sleep 10
 done

@@ -14,6 +14,7 @@ import (
 	"io"
 	"math/big"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -109,7 +110,7 @@ func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 	}
 
 	// A rotated password reaches Valkey without a restart.
-	copyInto(t, node, strings.Replace(chart.usersACL, ">api-password ", ">rotated ", 1), "/secrets/users/users.acl", 0o644)
+	node.files.update("/secrets/users/users.acl", strings.Replace(chart.usersACL, ">api-password ", ">rotated ", 1))
 	runIn(t, node, "sh", "-c", ". /scripts/common.sh && /scripts/render-acl.sh && cli -h localhost -p 6379 ACL LOAD")
 	if out := cli(t, node, "ogcloud-api", "rotated", "GET", "k"); out != "v" {
 		t.Errorf("the rotated password was not loaded: %q", out)
@@ -117,8 +118,8 @@ func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 
 	// A certificate cert-manager renewed is served without a restart.
 	renewed, key := ca.issue(t, "localhost", "*."+headless)
-	copyInto(t, node, key, "/tls/tls.key", 0o644)
-	copyInto(t, node, renewed, "/tls/tls.crt", 0o644)
+	node.files.update("/tls/tls.key", key)
+	node.files.update("/tls/tls.crt", renewed)
 	block, _ := pem.Decode([]byte(renewed))
 	eventually(t, 30*time.Second, "the renewed certificate is served", func() bool {
 		return bytes.Equal(servedCertificate(t, ca, testvalkey.Address(t, node, "6379/tcp")), block.Bytes)
@@ -129,12 +130,13 @@ func servedCertificate(t *testing.T, ca testCA, address string) []byte {
 	t.Helper()
 	roots := x509.NewCertPool()
 	roots.AppendCertsFromPEM([]byte(ca.cert))
-	conn, err := tls.Dial("tcp", address, &tls.Config{RootCAs: roots, ServerName: "localhost", MinVersion: tls.VersionTLS12})
+	dialer := tls.Dialer{Config: &tls.Config{RootCAs: roots, ServerName: "localhost", MinVersion: tls.VersionTLS12}}
+	conn, err := dialer.DialContext(t.Context(), "tcp", address)
 	if err != nil {
 		t.Fatalf("TLS handshake with %s: %v", address, err)
 	}
 	defer func() { _ = conn.Close() }()
-	return conn.ConnectionState().PeerCertificates[0].Raw
+	return conn.(*tls.Conn).ConnectionState().PeerCertificates[0].Raw
 }
 
 func TestValkeySentinelsFailOverAndTheOldPrimaryRejoins(t *testing.T) {
@@ -251,46 +253,49 @@ func gatewayStore(t *testing.T, ca testCA, nodes []testcontainers.Container) *va
 	return store
 }
 
+// valkeyNode is one StatefulSet pod, with the Secrets it mounts.
+type valkeyNode struct {
+	testcontainers.Container
+	files mounts
+}
+
 // startValkeyNode runs the processes of the StatefulSet's pod index.
-func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork string, index int, command ...string) testcontainers.Container {
+func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork string, index int, command ...string) valkeyNode {
 	t.Helper()
 	image, err := testimages.Image("valkey")
 	if err != nil {
 		t.Fatal(err)
 	}
 	cert, key := ca.issue(t, "localhost", "*."+headless)
-	files := []testcontainers.ContainerFile{
-		{Reader: strings.NewReader(ca.cert), ContainerFilePath: "/tls/ca.crt", FileMode: 0o644},
-		{Reader: strings.NewReader(cert), ContainerFilePath: "/tls/tls.crt", FileMode: 0o644},
-		{Reader: strings.NewReader(key), ContainerFilePath: "/tls/tls.key", FileMode: 0o644},
-		{Reader: strings.NewReader(adminPassword), ContainerFilePath: "/secrets/root/ADMIN_PASSWORD", FileMode: 0o644},
-		{Reader: strings.NewReader("replication-password"), ContainerFilePath: "/secrets/root/REPLICATION_PASSWORD", FileMode: 0o644},
-		{Reader: strings.NewReader("sentinel-password"), ContainerFilePath: "/secrets/root/SENTINEL_PASSWORD", FileMode: 0o644},
-		{Reader: strings.NewReader("infisical-password"), ContainerFilePath: "/secrets/root/INFISICAL_PASSWORD", FileMode: 0o644},
-		{Reader: strings.NewReader(chart.usersACL), ContainerFilePath: "/secrets/users/users.acl", FileMode: 0o644},
+	contents := mounted{
+		"/tls/ca.crt":                        {content: ca.cert},
+		"/tls/tls.crt":                       {content: cert},
+		"/tls/tls.key":                       {content: key},
+		"/secrets/root/ADMIN_PASSWORD":       {content: adminPassword},
+		"/secrets/root/REPLICATION_PASSWORD": {content: "replication-password"},
+		"/secrets/root/SENTINEL_PASSWORD":    {content: "sentinel-password"},
+		"/secrets/root/INFISICAL_PASSWORD":   {content: "infisical-password"},
+		"/secrets/users/users.acl":           {content: chart.usersACL},
 	}
 	scripts, err := filepath.Glob(filepath.Join(valkeyScripts, "*.sh"))
 	if err != nil || len(scripts) == 0 {
 		t.Fatalf("no Valkey scripts: %v", err)
 	}
 	for _, script := range scripts {
-		files = append(files, testcontainers.ContainerFile{
-			HostFilePath: script, ContainerFilePath: "/scripts/" + filepath.Base(script), FileMode: 0o755,
-		})
+		content, err := os.ReadFile(script) //nolint:gosec // G304: the chart's own scripts.
+		if err != nil {
+			t.Fatal(err)
+		}
+		contents["/scripts/"+filepath.Base(script)] = mountedFile{content: string(content), executable: true}
 	}
+	files := mount(t, contents)
 	hostname := fmt.Sprintf("ogcloud-valkey-%d", index)
 	opts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithFiles(files...),
 		testcontainers.WithExposedPorts("6379/tcp", "26379/tcp"),
 		testcontainers.WithEntrypoint(command...),
 		testcontainers.WithEnv(chart.env),
-		testcontainers.WithConfigModifier(func(config *container.Config) {
-			config.User = "1000:1000"
-			config.Hostname = hostname
-		}),
-		testcontainers.WithHostConfigModifier(func(host *container.HostConfig) {
-			host.Tmpfs = map[string]string{"/data": "uid=1000", "/etc/valkey": "uid=1000", "/etc/sentinel": "uid=1000"}
-		}),
+		testcontainers.WithConfigModifier(func(config *container.Config) { config.Hostname = hostname }),
+		files.restricted("/data", "/etc/valkey", "/etc/sentinel", "/tmp"),
 		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections").WithStartupTimeout(time.Minute)),
 	}
 	if dockerNetwork != "" {
@@ -301,7 +306,7 @@ func startValkeyNode(t *testing.T, ca testCA, chart valkeyChart, dockerNetwork s
 	if err != nil {
 		t.Fatalf("start Valkey node %d: %v", index, err)
 	}
-	return node
+	return valkeyNode{Container: node, files: files}
 }
 
 // cli runs valkey-cli inside node over TLS as user; args may start with -p to reach the Sentinel.
@@ -325,13 +330,6 @@ func runIn(t *testing.T, node testcontainers.Container, command ...string) strin
 		t.Fatal(err)
 	}
 	return string(out)
-}
-
-func copyInto(t *testing.T, node testcontainers.Container, content, path string, mode int64) {
-	t.Helper()
-	if err := node.CopyToContainer(context.Background(), []byte(content), path, mode); err != nil {
-		t.Fatalf("copy %s: %v", path, err)
-	}
 }
 
 // eventually polls condition until it holds; Sentinel's failover takes real seconds. describe, if given, explains

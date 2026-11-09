@@ -1,12 +1,29 @@
 package deploytest
 
 import (
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 )
 
-// workloads are the Deployments and Jobs the chart runs itself.
+// workloads are the pods the release runs itself, subcharts included.
 func (r rendered) workloads() []object {
-	return append(r.all("Deployment"), r.all("Job")...)
+	return slices.Concat(r.all("Deployment"), r.all("StatefulSet"), r.all("Job"))
+}
+
+// mountsToken tells whether pod gets a service-account token automounted, by its own setting or its account's.
+func (r rendered) mountsToken(pod map[string]any) bool {
+	if setting, ok := pod["automountServiceAccountToken"].(bool); ok {
+		return setting
+	}
+	account := str(pod, "serviceAccountName")
+	for _, o := range r.all("ServiceAccount") {
+		if o.name() == account {
+			return get(o, "automountServiceAccountToken") != false
+		}
+	}
+	return true
 }
 
 func (o object) podSpec() map[string]any {
@@ -34,7 +51,7 @@ func TestPlatformPodsRunRestrictedWithResources(t *testing.T) {
 				if get(pod, "securityContext", "runAsNonRoot") != true || get(pod, "securityContext", "runAsUser") != 1000 {
 					t.Errorf("%s does not run as uid 1000", where)
 				}
-				if get(pod, "automountServiceAccountToken") != false {
+				if objects.mountsToken(pod) {
 					t.Errorf("%s automounts a service-account token", where)
 				}
 				if str(pod, "priorityClassName") != "ogcloud-platform" {
@@ -42,7 +59,7 @@ func TestPlatformPodsRunRestrictedWithResources(t *testing.T) {
 				}
 				containers, _ := pod["containers"].([]any)
 				for _, container := range containers {
-					checkContainer(t, where+" "+str(container, "name"), container, workload.kind() == "Deployment")
+					checkContainer(t, where+" "+str(container, "name"), container, workload.kind() != "Job")
 				}
 			}
 		})
@@ -70,5 +87,26 @@ func TestOnlyTheGatewayMayCallTheController(t *testing.T) {
 	config := str(render(t, minikubeValues).find(t, "ConfigMap", "ogcloud-controller"), "data", "application.yaml")
 	if !containsLine(config, "- system:serviceaccount:ogcloud:ogcloud-gateway") {
 		t.Errorf("the controller's allowed callers are not the gateway's account:\n%s", config)
+	}
+}
+
+// Hooks after install wait for what only `bootstrap infisical` creates, the synced secrets, so it must run first;
+// Helm runs hooks one at a time, lowest weight first.
+func TestBootstrapRunsBeforeEveryOtherPostInstallHook(t *testing.T) {
+	for _, values := range valueSets(t) {
+		t.Run(values, func(t *testing.T) {
+			weight := func(o object) int {
+				w, _ := strconv.Atoi(str(o, "metadata", "annotations", "helm.sh/hook-weight"))
+				return w
+			}
+			objects := render(t, values)
+			bootstrap := weight(objects.find(t, "Job", "ogcloud-bootstrap-infisical"))
+			for _, o := range objects {
+				hook := str(o, "metadata", "annotations", "helm.sh/hook")
+				if o.name() != "ogcloud-bootstrap-infisical" && strings.Contains(hook, "post-install") && weight(o) <= bootstrap {
+					t.Errorf("%s %s runs after install with weight %d, not after bootstrap (%d)", o.kind(), o.name(), weight(o), bootstrap)
+				}
+			}
+		})
 	}
 }
