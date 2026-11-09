@@ -1,0 +1,8 @@
+# minikube through `mise run dev` (D-0022), on top of the chart's ci/minikube.yaml: images built into minikube's
+# Docker by Tilt, the public origin on Traefik's port-forward.
+publicOrigin: https://ogcloud.localhost:8443
+image:
+  registry: ogcloud-local
+  tag: dev
+  # Only minikube's Docker has them.
+  pullPolicy: Never

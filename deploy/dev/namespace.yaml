@@ -1,0 +1,9 @@
+# OgCloud's release namespace, enforcing the restricted Pod Security standard as Terraform's does (T-0603).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ogcloud
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

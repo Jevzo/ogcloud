@@ -41,6 +41,24 @@ description = "Kotlin format check, compile with warnings as errors, tests, buil
 run = "./gradlew check"
 
 # Artifacts are built here with mise's toolchains and staged in build/images; the platform Dockerfile only copies them.
+[tasks."dev:cluster"]
+description = "Start (or create) the minikube profile OgCloud's dev loop runs on (D-0022, D-0155)"
+run = "minikube start --profile ogcloud --driver docker --cpus 6 --memory 14g --cni calico --container-runtime docker --kubernetes-version v1.37.0"
+
+[tasks.dev]
+description = "Run OgCloud on minikube with Tilt; OGCLOUD_MONITORING=true adds the monitoring stack"
+depends = ["dev:cluster"]
+run = "tilt up"
+
+[tasks."dev:ci"]
+description = "Bring OgCloud up on minikube once and fail unless every resource gets ready (T-0604)"
+depends = ["dev:cluster"]
+run = "tilt ci --timeout 45m"
+
+[tasks."dev:clean"]
+description = "Stop the dev loop, delete the minikube profile and its images"
+run = ["tilt down || true", "minikube delete --profile ogcloud"]
+
 [tasks."images:build"]
 description = "Build every server and platform image into the local Docker store (REGISTRY and VERSION tag them)"
 shell = "bash -c"
