@@ -27,6 +27,10 @@ const (
 	statePendingRevocation = "unrevokedAdminIdentityId"
 	// Holds the seed's hash, so an unchanged seed never overwrites edits made since (D-0044).
 	seedHashName = "OGCLOUD_SEED_SHA256"
+	// The break-glass Secret's keys (D-0173); its access tokens live only as long as a run needs.
+	breakGlassClientID     = "clientId"
+	breakGlassClientSecret = "clientSecret"
+	breakGlassTokenTTL     = 15 * time.Minute
 	// Identities get project roles; in the organization they hold nothing.
 	organizationNoAccess = "no-access"
 	organizationAdmin    = "admin"
@@ -77,6 +81,13 @@ func (s *Setup) Run(ctx context.Context) error {
 		return err
 	}
 	setup := s.Config.Infisical
+	// Its own login first, so a run after a restore leaves the next one on Kubernetes auth again (D-0173).
+	if err := s.setKubernetesAuth(ctx, api, current.identityID, setup.BootstrapIdentity); err != nil {
+		return err
+	}
+	if err := s.ensureBreakGlass(ctx, api, current.identityID); err != nil {
+		return err
+	}
 	projects := map[string]string{}
 	for _, slug := range setup.ProjectSlugs() {
 		project, err := s.ensureProject(ctx, api, slug)
@@ -185,16 +196,94 @@ func (s *Setup) retry(ctx context.Context, name string, step func() error) error
 	}
 }
 
+// login logs in with Kubernetes auth, or with the break-glass credential when that fails and one is stored: after a
+// restore onto a new cluster, the identities still hold the lost cluster's CA (D-0173).
 func (s *Setup) login(ctx context.Context, identityID string) (*infisical.Client, error) {
 	token, err := s.ReadFile(s.Config.Infisical.ServiceAccountTokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("read the service-account token: %w", err)
 	}
 	accessToken, err := s.API.KubernetesLogin(ctx, identityID, strings.TrimSpace(string(token)))
-	if err != nil {
-		return nil, fmt.Errorf("log in as the bootstrap identity: %w", err)
+	if err == nil {
+		return s.API.WithToken(accessToken), nil
 	}
+	kubernetesErr := fmt.Errorf("log in as the bootstrap identity: %w", err)
+	credential, found, readErr := s.breakGlass(ctx)
+	if readErr != nil || !found {
+		return nil, errors.Join(kubernetesErr, readErr)
+	}
+	accessToken, err = s.API.UniversalAuthLogin(ctx, credential[breakGlassClientID], credential[breakGlassClientSecret])
+	if err != nil {
+		return nil, errors.Join(kubernetesErr, fmt.Errorf("log in with the break-glass credential: %w", err))
+	}
+	s.Logger.Warn("the Kubernetes login failed, so bootstrap logged in with the break-glass credential and re-points "+
+		"every identity at this cluster", "error", kubernetesErr)
 	return s.API.WithToken(accessToken), nil
+}
+
+// breakGlass returns the stored break-glass credential, if any.
+func (s *Setup) breakGlass(ctx context.Context) (map[string]string, bool, error) {
+	secret, err := s.Kube.CoreV1().Secrets(s.Config.Namespace).Get(ctx, s.Config.Infisical.BreakGlassSecret, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("read the break-glass Secret: %w", err)
+	}
+	credential := map[string]string{}
+	for _, key := range []string{breakGlassClientID, breakGlassClientSecret} {
+		if len(secret.Data[key]) == 0 {
+			return nil, false, nil
+		}
+		credential[key] = string(secret.Data[key])
+	}
+	return credential, true, nil
+}
+
+// ensureBreakGlass gives the bootstrap identity a Universal Auth client secret once and stores it next to the root
+// Secrets (D-0173). A lost Secret gets a new client secret, and the identity's older ones are revoked.
+func (s *Setup) ensureBreakGlass(ctx context.Context, api *infisical.Client, identityID string) error {
+	if _, found, err := s.breakGlass(ctx); err != nil || found {
+		return err
+	}
+	clientID, err := api.UniversalAuthClientID(ctx, identityID)
+	if infisical.IsNotFound(err) {
+		clientID, err = api.AttachUniversalAuth(ctx, identityID, breakGlassTokenTTL)
+	}
+	if err != nil {
+		return fmt.Errorf("universal auth for the bootstrap identity: %w", err)
+	}
+	older, err := api.ClientSecretIDs(ctx, identityID)
+	if err != nil {
+		return fmt.Errorf("list the break-glass client secrets: %w", err)
+	}
+	created, err := api.CreateClientSecret(ctx, identityID, "OgCloud bootstrap break-glass login (D-0173)")
+	if err != nil {
+		return fmt.Errorf("create the break-glass client secret: %w", err)
+	}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        s.Config.Infisical.BreakGlassSecret,
+			Labels:      map[string]string{managedByLabel: managedBy},
+			Annotations: map[string]string{keepAnnotation: keep},
+		},
+		StringData: map[string]string{breakGlassClientID: clientID, breakGlassClientSecret: created.Secret},
+	}
+	secrets := s.Kube.CoreV1().Secrets(s.Config.Namespace)
+	_, err = secrets.Create(ctx, secret, metav1.CreateOptions{})
+	if apierrors.IsAlreadyExists(err) {
+		_, err = secrets.Update(ctx, secret, metav1.UpdateOptions{})
+	}
+	if err != nil {
+		return fmt.Errorf("store the break-glass Secret %s: %w", secret.Name, err)
+	}
+	for _, id := range older {
+		if err := api.RevokeClientSecret(ctx, identityID, id); err != nil {
+			return fmt.Errorf("revoke an older break-glass client secret: %w", err)
+		}
+	}
+	s.Logger.Info("stored the break-glass credential; keep it with the exported root key", "secret", secret.Name)
+	return nil
 }
 
 func (s *Setup) ensureProject(ctx context.Context, api *infisical.Client, slug string) (infisical.Project, error) {
@@ -281,12 +370,16 @@ func (s *Setup) setKubernetesAuth(ctx context.Context, api *infisical.Client, id
 	return nil
 }
 
-// kubernetesAuth is what Infisical needs to review the identity's service-account tokens: nothing for tokens that
-// review themselves, the reviewer's token for tokens of another audience (D-0167). The config gives every identity a
-// single namespace (ValidateInfisical), so the two lists name exactly its accounts.
+// kubernetesAuth is what Infisical needs to review the identity's service-account tokens: the current cluster's CA
+// (D-0173), and the reviewer's token only for tokens of another audience, which cannot review themselves (D-0167).
+// The config gives every identity a single namespace (ValidateInfisical), so the two lists name exactly its accounts.
 func (s *Setup) kubernetesAuth(spec IdentitySpec) (infisical.KubernetesAuth, error) {
 	kube := s.Config.Infisical.Kubernetes
-	auth := infisical.KubernetesAuth{Host: kube.Host, Audience: spec.Audience}
+	ca, err := s.ReadFile(kube.CAFile)
+	if err != nil {
+		return infisical.KubernetesAuth{}, fmt.Errorf("read the API server's CA: %w", err)
+	}
+	auth := infisical.KubernetesAuth{Host: kube.Host, CACert: string(ca), Audience: spec.Audience}
 	if spec.Audience != "" {
 		reviewer, err := s.ReadFile(kube.ReviewerTokenFile)
 		if err != nil {

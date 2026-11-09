@@ -35,9 +35,13 @@ infisical:
   stateConfigMap: ogcloud-infisical-state
   identitiesSecret: ogcloud-infisical-identities
   serviceAccountTokenFile: /var/run/secrets/ogcloud/bootstrap/token
-  # Infisical stores nothing of the cluster but, for the controller's audience-bound tokens, the reviewer's (D-0167).
+  # Bootstrap's Universal Auth credential for after a restore, exported with the root key (D-0173).
+  breakGlassSecret: ogcloud-infisical-break-glass
+  # Every identity gets this cluster's API CA on every run (D-0173); only the controller's audience-bound tokens need
+  # the reviewer's (D-0167).
   kubernetes:
     host: {{ .Values.infisical.kubernetesHost }}
+    caFile: /var/run/secrets/ogcloud/bootstrap/ca.crt
     reviewerTokenFile: /var/run/secrets/ogcloud/reviewer/token
   bootstrapIdentity:
     name: ogcloud-bootstrap

@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -31,6 +32,7 @@ const (
 	seedName       = "ogcloud-seed"
 	stateName      = "ogcloud-infisical-state"
 	identitiesName = "ogcloud-infisical-identities"
+	breakGlassName = "ogcloud-infisical-break-glass"
 	// Holds only the forwarding tokens (D-0152).
 	forwardingProject  = "ogcloud-forwarding"
 	controllerAudience = "ogcloud-infisical"
@@ -153,6 +155,28 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 		t.Error("a rerun replaced a generated secret")
 	}
 
+	// Infisical verifies the API server against the stored CA (D-0173); without one it would verify nothing.
+	for _, id := range []string{f.state(t)[stateIdentity], operatorID, controllerID} {
+		if !f.verifiesTLS(t, id) {
+			t.Errorf("Infisical does not verify the API server for identity %s", id)
+		}
+	}
+
+	// After a restore onto a new cluster the identities hold the lost cluster's CA, so the Kubernetes logins fail
+	// until the break-glass credential re-points them.
+	breakGlass, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, breakGlassName, metav1.GetOptions{})
+	if err != nil || len(breakGlass.Data["clientId"]) == 0 || len(breakGlass.Data["clientSecret"]) == 0 {
+		t.Fatalf("no break-glass credential was stored: %v", err)
+	}
+	f.failLogins.Store(1 << 20)
+	f.run(t)
+	f.failLogins.Store(0)
+	f.loginAs(t, f.state(t)[stateIdentity], "ogcloud-bootstrap")
+	kept, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, breakGlassName, metav1.GetOptions{})
+	if err != nil || string(kept.Data["clientSecret"]) != string(breakGlass.Data["clientSecret"]) {
+		t.Errorf("a run replaced the break-glass credential: %v", err)
+	}
+
 	// Without its state, bootstrap refuses to guess.
 	must(t, f.kube.CoreV1().ConfigMaps(namespace).Delete(ctx, stateName, metav1.DeleteOptions{}))
 	f.putSeed(t, map[string]string{"INFISICAL_ADMIN_EMAIL": "x@example.com", "INFISICAL_ADMIN_PASSWORD": "another-long-passw0rd!"})
@@ -197,6 +221,7 @@ func newFixture(t *testing.T) *fixture {
 	f.api = infisical.New(proxy.URL, nil)
 	writeFile(t, filepath.Join(dir, "reviewer"), testk3s.Token(t, f.kube, namespace, "infisical-reviewer", "", nil))
 	writeFile(t, filepath.Join(dir, "bootstrap"), testk3s.Token(t, f.kube, namespace, "ogcloud-bootstrap", "", nil))
+	writeFile(t, filepath.Join(dir, "ca.crt"), string(env.Cluster.Config.CAData))
 	f.config = &Config{
 		Namespace: namespace,
 		Infisical: InfisicalSetup{
@@ -204,8 +229,11 @@ func newFixture(t *testing.T) *fixture {
 			StateConfigMap:          stateName,
 			IdentitiesSecret:        identitiesName,
 			ServiceAccountTokenFile: filepath.Join(dir, "bootstrap"),
-			Kubernetes:              KubernetesAuth{Host: testinfisical.KubernetesHost, ReviewerTokenFile: filepath.Join(dir, "reviewer")},
-			BootstrapIdentity:       IdentitySpec{Name: "ogcloud-bootstrap", ServiceAccounts: []string{"ogcloud/ogcloud-bootstrap"}},
+			BreakGlassSecret:        breakGlassName,
+			Kubernetes: KubernetesAuth{
+				Host: testinfisical.KubernetesHost, CAFile: filepath.Join(dir, "ca.crt"), ReviewerTokenFile: filepath.Join(dir, "reviewer"),
+			},
+			BootstrapIdentity: IdentitySpec{Name: "ogcloud-bootstrap", ServiceAccounts: []string{"ogcloud/ogcloud-bootstrap"}},
 			Identities: []IdentitySpec{
 				{
 					Name: "ogcloud-secrets-operator", ServiceAccounts: []string{"ogcloud/infisical-secrets-operator"},
@@ -301,6 +329,32 @@ func create[T any](ctx context.Context, client interface {
 ) error {
 	_, err := client.Create(ctx, object, metav1.CreateOptions{})
 	return err
+}
+
+// verifiesTLS reads the identity's Kubernetes auth as the bootstrap identity, the organization's admin; the typed
+// client has no use for the setting outside this test.
+func (f *fixture) verifiesTLS(t *testing.T, identityID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	token, err := f.api.KubernetesLogin(ctx, f.state(t)[stateIdentity], testk3s.Token(t, f.kube, namespace, "ogcloud-bootstrap", "", nil))
+	must(t, err)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		f.config.Infisical.URL+"/api/v1/auth/kubernetes-auth/identities/"+identityID, nil)
+	must(t, err)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response, err := http.DefaultClient.Do(request)
+	must(t, err)
+	defer func() { _ = response.Body.Close() }()
+	var auth struct {
+		Kubernetes struct {
+			VerifyTLS bool `json:"verifyTlsCertificate"`
+		} `json:"identityKubernetesAuth"`
+	}
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("read the kubernetes auth of %s: %s", identityID, response.Status)
+	}
+	must(t, json.NewDecoder(response.Body).Decode(&auth))
+	return auth.Kubernetes.VerifyTLS
 }
 
 func writeFile(t *testing.T, path, content string) {

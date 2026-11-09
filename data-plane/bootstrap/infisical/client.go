@@ -1,5 +1,5 @@
 // Package infisical is a small typed client for the parts of Infisical's REST API that bootstrap needs
-// (D-0112): instance bootstrap, identities with Kubernetes auth, projects, folders and secrets.
+// (D-0112): instance bootstrap, identities with Kubernetes and Universal Auth, projects, folders and secrets.
 package infisical
 
 import (
@@ -150,11 +150,12 @@ func (c *Client) DeleteIdentity(ctx context.Context, identityID string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/identities/"+url.PathEscape(identityID), nil, nil, nil)
 }
 
-// KubernetesAuth lets service accounts log in as an identity, reviewed by Infisical with TokenReview. It stores
-// nothing of the cluster (D-0167): Infisical trusts the API server's CA itself, and each login's own token, bound
-// to system:auth-delegator, is its reviewer, so a restored Infisical works on a new cluster.
+// KubernetesAuth lets service accounts log in as an identity, reviewed by Infisical with TokenReview against the API
+// server, whose TLS it verifies with CACert (D-0173). Each login's own token, bound to system:auth-delegator, is its
+// reviewer unless ReviewerJWT names another (D-0167).
 type KubernetesAuth struct {
-	Host string
+	Host   string
+	CACert string
 	// Only for logins with a token of another audience, which cannot review itself.
 	ReviewerJWT string
 	Namespaces  []string
@@ -168,9 +169,12 @@ func (c *Client) SetKubernetesAuth(ctx context.Context, identityID string, auth 
 	path := "/api/v1/auth/kubernetes-auth/identities/" + url.PathEscape(identityID)
 	body := map[string]any{
 		"kubernetesHost":    auth.Host,
+		"caCert":            auth.CACert,
 		"allowedNamespaces": strings.Join(auth.Namespaces, ","),
 		"allowedNames":      strings.Join(auth.Names, ","),
 		"allowedAudience":   auth.Audience,
+		// Without it Infisical skips verification whenever no CA is given (D-0173).
+		"verifyTlsCertificate": true,
 	}
 	if auth.ReviewerJWT != "" {
 		body["tokenReviewerJwt"] = auth.ReviewerJWT
@@ -182,9 +186,7 @@ func (c *Client) SetKubernetesAuth(ctx context.Context, identityID string, auth 
 	if err != nil {
 		return err
 	}
-	// An earlier version stored a CA and a reviewer token for every identity; Infisical clears the CA on "" and the
-	// token only on null.
-	body["caCert"] = ""
+	// Infisical clears a stored reviewer token only on null.
 	if auth.ReviewerJWT == "" {
 		body["tokenReviewerJwt"] = nil
 	}
@@ -204,6 +206,99 @@ func (c *Client) KubernetesLogin(ctx context.Context, identityID, serviceAccount
 		return "", errors.New("infisical's kubernetes login answered without an access token")
 	}
 	return response.AccessToken, nil
+}
+
+// ClientSecret is a Universal Auth client secret; Secret is shown only when it is created.
+type ClientSecret struct {
+	ID     string
+	Secret string
+}
+
+// UniversalAuthClientID returns the identity's Universal Auth client id, or an error IsNotFound recognises when the
+// identity has none.
+func (c *Client) UniversalAuthClientID(ctx context.Context, identityID string) (string, error) {
+	var response universalAuthResponse
+	if err := c.do(ctx, http.MethodGet, universalAuthPath(identityID), nil, nil, &response); err != nil {
+		return "", err
+	}
+	return response.UniversalAuth.ClientID, nil
+}
+
+// AttachUniversalAuth gives the identity Universal Auth with access tokens of tokenTTL and returns its client id.
+func (c *Client) AttachUniversalAuth(ctx context.Context, identityID string, tokenTTL time.Duration) (string, error) {
+	seconds := int(tokenTTL.Seconds())
+	body := map[string]any{"accessTokenTTL": seconds, "accessTokenMaxTTL": seconds}
+	var response universalAuthResponse
+	if err := c.do(ctx, http.MethodPost, universalAuthPath(identityID), nil, body, &response); err != nil {
+		return "", err
+	}
+	return response.UniversalAuth.ClientID, nil
+}
+
+// ClientSecretIDs lists the ids of the identity's client secrets that are not revoked.
+func (c *Client) ClientSecretIDs(ctx context.Context, identityID string) ([]string, error) {
+	var response struct {
+		ClientSecrets []struct {
+			ID      string `json:"id"`
+			Revoked bool   `json:"isClientSecretRevoked"`
+		} `json:"clientSecretData"`
+	}
+	if err := c.do(ctx, http.MethodGet, universalAuthPath(identityID)+"/client-secrets", nil, nil, &response); err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(response.ClientSecrets))
+	for _, secret := range response.ClientSecrets {
+		if !secret.Revoked {
+			ids = append(ids, secret.ID)
+		}
+	}
+	return ids, nil
+}
+
+// CreateClientSecret creates a client secret that never expires and has no use limit.
+func (c *Client) CreateClientSecret(ctx context.Context, identityID, description string) (ClientSecret, error) {
+	var response struct {
+		ClientSecret string `json:"clientSecret"`
+		Data         struct {
+			ID string `json:"id"`
+		} `json:"clientSecretData"`
+	}
+	body := map[string]any{"description": description, "numUsesLimit": 0, "ttl": 0}
+	if err := c.do(ctx, http.MethodPost, universalAuthPath(identityID)+"/client-secrets", nil, body, &response); err != nil {
+		return ClientSecret{}, err
+	}
+	return ClientSecret{ID: response.Data.ID, Secret: response.ClientSecret}, nil
+}
+
+// RevokeClientSecret revokes one of the identity's client secrets.
+func (c *Client) RevokeClientSecret(ctx context.Context, identityID, secretID string) error {
+	path := universalAuthPath(identityID) + "/client-secrets/" + url.PathEscape(secretID) + "/revoke"
+	return c.do(ctx, http.MethodPost, path, nil, nil, nil)
+}
+
+// UniversalAuthLogin exchanges a client id and secret for an access token of their identity.
+func (c *Client) UniversalAuthLogin(ctx context.Context, clientID, clientSecret string) (string, error) {
+	var response struct {
+		AccessToken string `json:"accessToken"`
+	}
+	body := map[string]string{"clientId": clientID, "clientSecret": clientSecret}
+	if err := c.do(ctx, http.MethodPost, "/api/v1/auth/universal-auth/login", nil, body, &response); err != nil {
+		return "", err
+	}
+	if response.AccessToken == "" {
+		return "", errors.New("infisical's universal auth login answered without an access token")
+	}
+	return response.AccessToken, nil
+}
+
+type universalAuthResponse struct {
+	UniversalAuth struct {
+		ClientID string `json:"clientId"`
+	} `json:"identityUniversalAuth"`
+}
+
+func universalAuthPath(identityID string) string {
+	return "/api/v1/auth/universal-auth/identities/" + url.PathEscape(identityID)
 }
 
 // Project is a secret-manager project with its environment slugs.

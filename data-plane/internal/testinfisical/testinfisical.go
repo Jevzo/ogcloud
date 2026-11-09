@@ -3,7 +3,6 @@
 package testinfisical
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -24,8 +23,7 @@ const (
 	apiPort  = "8080/tcp"
 	database = "infisical"
 	// KubernetesHost is where Infisical reaches the k3s API inside the network.
-	KubernetesHost   = "https://k3s:6443"
-	kubernetesCAFile = "/etc/ssl/certs/kubernetes-ca.crt"
+	KubernetesHost = "https://k3s:6443"
 )
 
 // Environment is Infisical's URL on the host plus the cluster it reviews tokens with.
@@ -59,11 +57,6 @@ func Start(t *testing.T) *Environment {
 			"TELEMETRY_ENABLED": "false",
 			// The Kubernetes API sits on a private address, in the cluster as here.
 			"ALLOW_INTERNAL_IP_CONNECTIONS": "true",
-			// Infisical trusts the API server's CA itself, as the chart sets it up (D-0167).
-			"NODE_EXTRA_CA_CERTS": kubernetesCAFile,
-		}),
-		testcontainers.WithFiles(testcontainers.ContainerFile{
-			Reader: bytes.NewReader(cluster.Config.CAData), ContainerFilePath: kubernetesCAFile, FileMode: 0o644,
 		}),
 		testcontainers.WithExposedPorts(apiPort),
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/api/status").WithPort(apiPort)),

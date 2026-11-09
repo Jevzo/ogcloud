@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Infisical's root key and bootstrap's state, which nothing in a cluster can recreate (D-0166, D-0167): the root
-# Secrets (Infisical's encryption key and auth secret, its database and Valkey credentials), the identities and the
-# state ConfigMap, all labelled by bootstrap, plus the backup target's credentials, which PostgreSQL's recovery reads
-# before Infisical runs (D-0168). `export <file>` writes them for the operator's password manager; `import <file>`
-# applies them to a fresh cluster before a restore's install. OGCLOUD_NAMESPACE names the release's.
+# Secrets (Infisical's encryption key and auth secret, its database and Valkey credentials), the identities, the
+# state ConfigMap and the break-glass login that re-points Infisical at a new cluster (D-0173), all labelled by
+# bootstrap, plus the backup target's credentials, which PostgreSQL's recovery reads before Infisical runs (D-0168).
+# `export <file>` writes them for the operator's password manager; `import <file>` applies them to a fresh cluster
+# before a restore's install. OGCLOUD_NAMESPACE names the release's.
 set -euo pipefail
 
 usage="usage: root-key.sh <export|import> <file>"

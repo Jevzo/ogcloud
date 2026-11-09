@@ -57,17 +57,22 @@ type InfisicalSetup struct {
 	// InfisicalAuth resources, which read identity ids only from Secrets.
 	IdentitiesSecret string `yaml:"identitiesSecret"`
 	// The bootstrap Job's own projected token, for Kubernetes auth.
-	ServiceAccountTokenFile string            `yaml:"serviceAccountTokenFile"`
-	Kubernetes              KubernetesAuth    `yaml:"kubernetes"`
-	BootstrapIdentity       IdentitySpec      `yaml:"bootstrapIdentity"`
-	Identities              []IdentitySpec    `yaml:"identities"`
-	Secrets                 []GeneratedSecret `yaml:"secrets"`
-	Seed                    Seed              `yaml:"seed"`
+	ServiceAccountTokenFile string `yaml:"serviceAccountTokenFile"`
+	// Receives the bootstrap identity's Universal Auth credential, used only when its Kubernetes login fails, as after
+	// a restore onto a new cluster (D-0173); labelled like the root Secrets, so the root-key export carries it.
+	BreakGlassSecret  string            `yaml:"breakGlassSecret"`
+	Kubernetes        KubernetesAuth    `yaml:"kubernetes"`
+	BootstrapIdentity IdentitySpec      `yaml:"bootstrapIdentity"`
+	Identities        []IdentitySpec    `yaml:"identities"`
+	Secrets           []GeneratedSecret `yaml:"secrets"`
+	Seed              Seed              `yaml:"seed"`
 }
 
 // KubernetesAuth is where Infisical reviews service-account tokens (D-0167).
 type KubernetesAuth struct {
 	Host string `yaml:"host"`
+	// The API server's CA as the bootstrap pod sees it, stored on every identity on every run (D-0173).
+	CAFile string `yaml:"caFile"`
 	// A long-lived token of a reviewer account bound to system:auth-delegator, for identities with an audience.
 	ReviewerTokenFile string `yaml:"reviewerTokenFile"`
 }
@@ -170,6 +175,7 @@ func (c *Config) ValidateInfisical() error {
 		"infisical.url": setup.URL, "infisical.organization": setup.Organization, "infisical.project": setup.Project,
 		"infisical.environment": setup.Environment, "infisical.stateConfigMap": setup.StateConfigMap,
 		"infisical.serviceAccountTokenFile": setup.ServiceAccountTokenFile, "infisical.kubernetes.host": setup.Kubernetes.Host,
+		"infisical.kubernetes.caFile": setup.Kubernetes.CAFile, "infisical.breakGlassSecret": setup.BreakGlassSecret,
 		"infisical.seed.secret":        setup.Seed.Secret,
 		"infisical.seed.adminEmailKey": setup.Seed.AdminEmailKey, "infisical.seed.adminPasswordKey": setup.Seed.AdminPasswordKey,
 	} {
