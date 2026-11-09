@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { after, test } from "node:test";
 import {
   crashLoopGet,
   crashLoopResume,
@@ -7,18 +7,14 @@ import {
   groupDelete,
 } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
-import { playerName, type Suite, suite } from "../suite.ts";
+import { playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // A group whose servers never start is backed off and then paused (D-0069's latch), not restarted forever. Five
 // failures pause it, with backoffs from 15 s that double, so this takes about five minutes.
 const PAUSE_TIMEOUT_MS = 600_000;
-let context: Suite;
+const { context } = scenario();
 const groupId = `crash-${playerName("")}`;
-
-before(async () => {
-  context = await suite();
-});
 
 after(async () => {
   expectStatus(

@@ -1,27 +1,20 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { test } from "node:test";
 import {
   jobGet,
   networkRotateForwardingToken,
   serverList,
 } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
-import { join, leave, type Player } from "../bots.ts";
+import { join } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import { groupOf, playerName, type Suite, suite } from "../suite.ts";
+import { groupOf, playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // The forwarding token rotates end to end (D-0078, D-0152): a new token in Infisical, synced into the Secret, the
 // proxies rolled onto it, the old one removed. Players still join afterwards.
 const ROTATION_TIMEOUT_MS = 900_000;
-let context: Suite;
-const players: Player[] = [];
-
-before(async () => {
-  context = await suite();
-});
-
-after(() => leave(...players));
+const { context, players } = scenario();
 
 const proxies = async () =>
   expectStatus(

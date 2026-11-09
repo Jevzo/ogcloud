@@ -1,22 +1,15 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { test } from "node:test";
 import { serverList } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
-import { join, leave, type Player } from "../bots.ts";
+import { join } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import { playerName, type Suite, suite } from "../suite.ts";
+import { playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // The lobby holds four players per server and scales up above 80 % (seed.ts); a full lobby gets a second server.
 const LOBBY_PLAYERS_PER_SERVER = 4;
-let context: Suite;
-const players: Player[] = [];
-
-before(async () => {
-  context = await suite();
-});
-
-after(() => leave(...players));
+const { context, players } = scenario();
 
 const runningLobbies = async () =>
   expectStatus(

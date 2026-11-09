@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { after, before } from "node:test";
 import {
   type Call,
   type OnlinePlayerView,
@@ -6,6 +7,7 @@ import {
   serverGet,
 } from "@ogcloud/api-client";
 import { asClient, expectStatus } from "./api.ts";
+import { leave, type Player } from "./bots.ts";
 import { trustInternalCa } from "./cluster.ts";
 import { loadState, type SeedState } from "./state.ts";
 import { type Target, targetFromEnv } from "./target.ts";
@@ -27,6 +29,42 @@ export async function suite(): Promise<Suite> {
     );
   }
   return { target, state, api: asClient(target, state.client) };
+}
+
+/**
+ * Sets up one scenario file: the suite is ready before its tests, and every bot in [players] leaves after them.
+ * [context] reads the suite once the tests run.
+ */
+export function scenario(): {
+  readonly context: Suite;
+  readonly players: Player[];
+} {
+  let ready: Suite | undefined;
+  const players: Player[] = [];
+  before(async () => {
+    ready = await suite();
+  });
+  after(() => leave(...players));
+  const current = (): Suite => {
+    if (ready === undefined) {
+      throw new Error("The scenario's suite is read before its tests run");
+    }
+    return ready;
+  };
+  return {
+    context: {
+      get target() {
+        return current().target;
+      },
+      get state() {
+        return current().state;
+      },
+      get api() {
+        return current().api;
+      },
+    },
+    players,
+  };
 }
 
 /** A fresh, valid Minecraft name, so scenarios never share a player. */

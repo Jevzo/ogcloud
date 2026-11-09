@@ -1,27 +1,14 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { test } from "node:test";
 import { networkGet, networkUpdate, playerTransfer } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
-import { connect, join, LEGACY_VERSION, leave, type Player } from "../bots.ts";
+import { connect, join, LEGACY_VERSION } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import {
-  groupOf,
-  onlinePlayer,
-  playerName,
-  type Suite,
-  suite,
-} from "../suite.ts";
+import { groupOf, onlinePlayer, playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // Transfers through the API, the 1.8.8 backend behind the same proxies, and network maintenance (v1 parity, D-0004).
-let context: Suite;
-const players: Player[] = [];
-
-before(async () => {
-  context = await suite();
-});
-
-after(() => leave(...players));
+const { context, players } = scenario();
 
 async function moveTo(name: string, groupId: string): Promise<void> {
   const player = await eventually(`${name} to be online`, () =>

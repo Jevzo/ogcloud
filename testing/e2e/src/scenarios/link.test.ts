@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { after, before, test } from "node:test";
+import { after, test } from "node:test";
 import {
   meConfirmMinecraftLink,
   meGet,
@@ -9,22 +9,16 @@ import {
   userDelete,
 } from "@ogcloud/api-client";
 import { as, expectStatus } from "../api.ts";
-import { join, leave, message, type Player } from "../bots.ts";
+import { join, message } from "../bots.ts";
 import { signIn } from "../login.ts";
-import { playerName, type Suite, suite } from "../suite.ts";
+import { playerName, scenario } from "../suite.ts";
 
 // The Minecraft account link (D-0106): the player reads a code in chat and the web user confirms it. A linked user's
 // username follows the player's name, so the scenario links a user of its own, never the seed's owner.
-let context: Suite;
-const players: Player[] = [];
+const { context, players } = scenario();
 let userId: string | undefined;
 
-before(async () => {
-  context = await suite();
-});
-
 after(async () => {
-  leave(...players);
   if (userId !== undefined) {
     expectStatus(
       await userDelete(userId, context.api),

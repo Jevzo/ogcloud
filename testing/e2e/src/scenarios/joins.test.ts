@@ -1,25 +1,12 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
-import {
-  CURRENT_VERSION,
-  join,
-  LEGACY_VERSION,
-  leave,
-  type Player,
-} from "../bots.ts";
+import { test } from "node:test";
+import { CURRENT_VERSION, join, LEGACY_VERSION } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import { groupOf, playerName, type Suite, suite } from "../suite.ts";
+import { groupOf, playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // Players come in through the load balancer and the proxies (D-0118) and land in the network's default group.
-let context: Suite;
-const players: Player[] = [];
-
-before(async () => {
-  context = await suite();
-});
-
-after(() => leave(...players));
+const { context, players } = scenario();
 
 test("a current client joins through the load balancer and lands in the lobby", async () => {
   const name = playerName("join");
