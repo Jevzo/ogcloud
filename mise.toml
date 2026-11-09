@@ -156,6 +156,11 @@ run = "deploy/k3s/ordering-test.sh"
 description = "Back up OgCloud on k3d, delete the cluster and restore it into a fresh one (T-0607)"
 run = "deploy/k3s/restore-test.sh"
 
+# Not part of `check` either: N-1 from a git worktree installed on k3d, upgraded to this checkout (T-0608, D-0172).
+[tasks."test:upgrade"]
+description = "Install N-1 on k3d, upgrade it to this checkout and run the end-to-end suite (T-0608)"
+run = "deploy/k3s/upgrade-test.sh"
+
 [tasks."check:shell"]
 description = "shellcheck every tracked shell script"
 shell = "bash -c"

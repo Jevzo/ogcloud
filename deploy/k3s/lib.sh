@@ -21,15 +21,19 @@ k3d_cluster() {
   chmod 600 "$KUBECONFIG"
 }
 
-# k3d_images <name>: builds the images unless OGCLOUD_K3S_SKIP_IMAGES=true, then imports them. Platform images are
-# tagged <tag>, server images <platform version>-<tag>; the contract-test gateway stays out.
+built=" "
+
+# k3d_images <name> [tag] [checkout]: builds the checkout's images (this one by default) tagged <tag> once per run,
+# unless OGCLOUD_K3S_SKIP_IMAGES=true, then imports them. Platform images are tagged <tag>, server images
+# <platform version>-<tag>; the contract-test gateway stays out.
 k3d_images() {
-  if [ "${OGCLOUD_K3S_SKIP_IMAGES:-}" != true ]; then
-    REGISTRY=$registry VERSION=$tag mise run images:build
-    export OGCLOUD_K3S_SKIP_IMAGES=true
+  local name=$1 version=${2:-$tag} checkout=${3:-.}
+  if [ "${OGCLOUD_K3S_SKIP_IMAGES:-}" != true ] && [[ $built != *" $version "* ]]; then
+    (cd "$checkout" && REGISTRY=$registry VERSION=$version mise run images:build)
+    built="$built$version "
   fi
-  docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^$registry/[^:]+:([^:]*-)?$tag\$" | grep -v contracttest \
-    | xargs k3d image import --cluster "$1"
+  docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^$registry/[^:]+:([^:]*-)?$version\$" \
+    | grep -v contracttest | xargs k3d image import --cluster "$name"
 }
 
 # forward <log> <port-forward args>: kubectl's port-forward ends for good after one broken connection, which refused
@@ -44,9 +48,35 @@ forward() {
 }
 
 # forward_ogcloud <work dir>: the public origin and the Minecraft edge on the ports the suite expects (testing/e2e).
+# A port another process holds, such as a forward left over from an earlier run, would serve the wrong cluster.
 forward_ogcloud() {
+  local port deadline
+  for port in 8443 25565; do
+    # Forwards stopped a moment ago may still be closing.
+    deadline=$((SECONDS + 10))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+      (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null || continue 2
+      sleep 1
+    done
+    echo "port $port is taken, maybe by a port-forward an earlier run left behind" >&2
+    return 1
+  done
   forward "$1/forward-https.log" --namespace traefik svc/traefik 8443:443 &
   forward "$1/forward-minecraft.log" --namespace ogcloud svc/ogcloud-loadbalancer 25565:25565 &
+  await_origin
+}
+
+# await_origin: until the public origin answers through its forward, which reconnects when Traefik's pod changes.
+await_origin() {
+  local deadline=$((SECONDS + 300))
+  until curl -fsk --resolve ogcloud.localhost:8443:127.0.0.1 -o /dev/null \
+    https://ogcloud.localhost:8443/.well-known/openid-configuration; do
+    if [ "$SECONDS" -ge "$deadline" ]; then
+      echo "the origin did not answer through its forward within 300 s" >&2
+      return 1
+    fi
+    sleep 1
+  done
 }
 
 stop_forwards() {

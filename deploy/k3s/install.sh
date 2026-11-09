@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Installs OgCloud from this checkout on a single-node k3s cluster that Terraform does not provision (D-0156, D-0157):
-# every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the cluster, which
-# holds no OgCloud yet (an earlier install's finished jobs would pass the wait) and already has the images tagged
-# OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
+# Installs or upgrades OgCloud from this checkout on a single-node k3s cluster that Terraform does not provision
+# (D-0156, D-0157): every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the
+# cluster, which already has the images tagged OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
 # certificate from Let's Encrypt (D-0160), OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
 # (D-0162), and OGCLOUD_VALUES adds values files, separated by spaces.
 set -euo pipefail
@@ -75,12 +74,39 @@ deadline=$((start + timeout_seconds))
 elapsed() { echo "$(($(date +%s) - start))s"; }
 remaining() { echo "$((deadline - $(date +%s)))s"; }
 
+# On an upgrade a chart reruns only when its documents change, and its finished job would pass the wait: so the
+# charts that change (their HelmChart, or OgCloud's values Secret) wait for the job that replaces theirs.
+set +e
+kubectl diff --server-side -f "$work/manifest.yaml" > "$work/diff.txt" 2>&1
+status=$?
+set -e
+if [ "$status" -gt 1 ]; then
+  cat "$work/diff.txt"
+  echo "kubectl diff failed; on a cluster whose CRDs Helm created, see docs/runbooks/upgrades.md"
+  exit 1
+fi
+sed -n -e 's|^diff .*/helm\.cattle\.io\.v1\.HelmChart\.kube-system\.\([^ /]*\)$|\1|p' \
+  -e 's|^diff .*/v1\.Secret\.kube-system\.ogcloud-values$|ogcloud|p' "$work/diff.txt" | sort -u > "$work/changed.txt"
+kubectl -n kube-system get jobs -o go-template='{{range .items}}{{.metadata.name}} {{.metadata.uid}}{{"\n"}}{{end}}' \
+  > "$work/jobs-before.txt"
+
 # Everything at once, as kube-hetzner applies its kustomizations; server-side, since the CRDs outgrow the annotation
 # client-side apply keeps.
 kubectl apply --server-side -f "$work/manifest.yaml" >/dev/null
 
+# Done once the chart's job succeeded, and for a changed chart only once that job is a new one.
+installed() {
+  local chart=$1 job prior
+  job=$(kubectl -n kube-system get job "helm-install-$chart" -o jsonpath='{.metadata.uid} {.status.succeeded}' 2>/dev/null) ||
+    return 1
+  [ "${job#* }" = 1 ] || return 1
+  grep -qx "$chart" "$work/changed.txt" || return 0
+  prior=$(sed -n "s/^helm-install-$chart //p" "$work/jobs-before.txt")
+  [ "${job% *}" != "$prior" ]
+}
+
 for chart in $(kubectl -n kube-system get helmcharts -o jsonpath='{.items[*].metadata.name}'); do
-  until [ "$(kubectl -n kube-system get job "helm-install-$chart" -o jsonpath='{.status.succeeded}' 2>/dev/null)" = 1 ]; do
+  until installed "$chart"; do
     if [ "$(kubectl -n kube-system get helmchart "$chart" -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')" = True ]; then
       echo "HelmChart $chart failed after $(elapsed)"
       exit 1
