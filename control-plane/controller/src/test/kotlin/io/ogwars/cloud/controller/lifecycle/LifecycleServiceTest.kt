@@ -133,6 +133,19 @@ class LifecycleServiceTest {
     }
 
     @Test
+    fun `servers whose process exits before their first heartbeat pause the group too`() {
+        // The informer may see the container running for a moment before the JVM dies, e.g. on a bad flag.
+        repeat(properties.crashLoop.pauseAfter) {
+            val id = request()
+            lifecycle.podCreated(id)
+            lifecycle.podStarted(id, "10.42.0.7")
+            lifecycle.podEnded(id, PodEnd.FAILED, "server exited with 1")
+        }
+
+        failures.isPaused(lobby.id) shouldBe true
+    }
+
+    @Test
     fun `a STATIC group never gets a second server, whoever asks`() {
         val smp = group(GroupType.STATIC, id = "smp")
         val s = LifecycleFixture(listOf(smp))

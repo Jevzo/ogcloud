@@ -210,7 +210,8 @@ class LifecycleService(
 
     /**
      * The pod is gone or finished: the server becomes STOPPED and leaves live state. Only a pod that failed on its own
-     * before running counts as a crash; one we stopped (STOPPING) does not.
+     * before running counts as a crash, even if its container got as far as starting; one we stopped (STOPPING) does
+     * not.
      */
     fun podEnded(
         id: UUID,
@@ -225,7 +226,7 @@ class LifecycleService(
         servers.delete(change.after)
         events.stateChanged(change, SYSTEM, reason)
         val before = change.before
-        if (end == PodEnd.FAILED && before.startedAt == null && before.state != ServerState.STOPPING) {
+        if (end == PodEnd.FAILED && before.state in FAILED_START_STATES) {
             breaker.recordFailure(before.groupId, before.id)
         }
     }
@@ -267,5 +268,8 @@ class LifecycleService(
 
     private companion object {
         val SYSTEM = Actor.system("controller")
+
+        /** States a server is in until its first heartbeat: an exit from any of them is a failed start. */
+        val FAILED_START_STATES = setOf(ServerState.REQUESTED, ServerState.PREPARING, ServerState.STARTING)
     }
 }
