@@ -108,7 +108,8 @@ plugins:
     sha512: 18a942cb55f64783a63b28deea2cebbbe782e5d6a1089f6700430e183bfbce0a45398a640ed0dff4361b55190dcf47017f2ca7788f4a5c8c9efad1f549a63fe3
 
 # Settings the template loader writes into server files on every start (D-0119), so BungeeGuard forwarding
-# (D-0065) works whatever the template holds. YAML keys are dotted paths; ${serverPort} is the port above.
+# (D-0065) works whatever the template holds; the proxies decide who may join, so backends keep no whitelist (Minecraft
+# 26 turns it on in a fresh server.properties). YAML keys are dotted paths; ${serverPort} is the port above.
 # Velocity needs none: its configs come in the runtime bundle.
 overlays:
   - platform: paper
@@ -117,6 +118,7 @@ overlays:
     set:
       online-mode: "false"
       enforce-secure-profile: "false"
+      white-list: "false"
       server-port: ${serverPort}
   - platform: paper
     file: spigot.yml
@@ -128,6 +130,7 @@ overlays:
     format: properties
     set:
       online-mode: "false"
+      white-list: "false"
       server-port: ${serverPort}
   - platform: pandaspigot
     file: spigot.yml

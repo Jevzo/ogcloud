@@ -1,2 +1,3 @@
 online-mode=false
 server-port=25565
+white-list=false

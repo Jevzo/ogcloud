@@ -3,3 +3,4 @@ motd=A Lobby
 online-mode=false
 server-port=25565
 enforce-secure-profile=false
+white-list=false
