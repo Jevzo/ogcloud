@@ -5,17 +5,19 @@ import {
   groupList,
   oauthClientCreate,
   rolePermissions,
+  serverList,
   setupComplete,
   setupStatus,
   templateList,
   templateUpload,
 } from "@ogcloud/api-client";
-import { anonymous, as, expectStatus } from "./api.ts";
+import { anonymous, as, asClient, expectStatus } from "./api.ts";
 import { secretValue, trustInternalCa } from "./cluster.ts";
-import { clientToken, signIn, type UserLogin } from "./login.ts";
+import { signIn, type UserLogin } from "./login.ts";
 import { loadState, type SeedState, saveState } from "./state.ts";
 import { tarGz } from "./tar.ts";
 import { type Target, targetFromEnv } from "./target.ts";
+import { eventually } from "./wait.ts";
 
 /** What the suite expects to find; `mise run seed` creates whatever is missing and leaves the rest alone. */
 export const GROUPS = {
@@ -97,6 +99,8 @@ const GROUP_REQUESTS: readonly CreateGroupRequest[] = [
   },
 ];
 
+const READY_TIMEOUT_MS = 900_000;
+
 /** The lobby's template; the scenarios find the marker in its servers' files. */
 export const LOBBY_MARKER = "ogcloud-e2e.txt";
 
@@ -117,7 +121,7 @@ export async function seed(target: Target): Promise<SeedState> {
     state.client ?? (await createClient(target, owner.accessToken));
   state = { ...state, client };
   await saveState(target, state);
-  const call = as(target, await clientToken(target, client));
+  const call = asClient(target, client);
 
   const existing = new Set(
     expectStatus(await groupList(call), 200, "Listing the groups").map(
@@ -149,6 +153,33 @@ export async function seed(target: Target): Promise<SeedState> {
     );
     console.log(`Uploaded the ${GROUPS.lobby} template`);
   }
+  // Scenarios start from a running network; a fresh cluster pulls the bundles and starts its servers first.
+  for (const { id } of GROUP_REQUESTS) {
+    const servers = async () =>
+      expectStatus(
+        await serverList({ groupId: id }, call),
+        200,
+        `Listing the servers of ${id}`,
+      );
+    try {
+      await eventually(
+        `group ${id} to run a server`,
+        async () =>
+          (await servers()).some((server) => server.state === "RUNNING")
+            ? true
+            : undefined,
+        READY_TIMEOUT_MS,
+      );
+    } catch (error) {
+      const states = (await servers()).map(
+        (server) => `${server.id} ${server.state} since ${server.stateSince}`,
+      );
+      throw new Error(`${id} runs no server: ${states.join("; ") || "none"}`, {
+        cause: error,
+      });
+    }
+  }
+  console.log("Every group runs a server");
   return state;
 }
 

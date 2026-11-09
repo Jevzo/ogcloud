@@ -2,8 +2,9 @@
 # Installs OgCloud from this checkout on a single-node k3s cluster that Terraform does not provision (D-0156, D-0157):
 # every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the cluster, which
 # holds no OgCloud yet (an earlier install's finished jobs would pass the wait) and already has the images tagged
-# OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, and OGCLOUD_CLOUDFLARE_API_TOKEN gets its
-# certificate from Let's Encrypt (D-0160).
+# OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
+# certificate from Let's Encrypt (D-0160), and OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
+# (D-0162).
 set -euo pipefail
 
 tag=${OGCLOUD_TAG:?OGCLOUD_TAG names the images to install}
@@ -39,13 +40,15 @@ helm package deploy/helm/ogcloud --destination "$work" >/dev/null
 chart_archive=$(ls "$work"/ogcloud-*.tgz)
 
 umask 077
-cat > "$work/images.yaml" <<EOF
+cat > "$work/install.yaml" <<EOF
 image:
   registry: ogcloud-local
   tag: $tag
   # Only the cluster's own image store has them.
   pullPolicy: Never
 ${OGCLOUD_PUBLIC_ORIGIN:+publicOrigin: $OGCLOUD_PUBLIC_ORIGIN}
+minecraft:
+  proxyOnlineMode: ${OGCLOUD_PROXY_ONLINE_MODE:-true}
 EOF
 # Infisical's first admin (D-0114), made up once per checkout; bootstrap deletes the seed after use.
 if [ ! -f "$work/seed.yaml" ]; then
@@ -53,7 +56,7 @@ if [ ! -f "$work/seed.yaml" ]; then
     "$(openssl rand -hex 24)" > "$work/seed.yaml"
 fi
 
-values_files="\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/images.yaml\",\"$PWD/$work/seed.yaml\""
+values_files="\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/install.yaml\",\"$PWD/$work/seed.yaml\""
 if [ -n "${OGCLOUD_CLOUDFLARE_API_TOKEN:-}" ]; then
   printf 'edge:\n  tls:\n    letsEncrypt:\n      enabled: true\nbootstrap:\n  seed:\n    CLOUDFLARE_API_TOKEN: %s\n' \
     "$OGCLOUD_CLOUDFLARE_API_TOKEN" > "$work/letsencrypt.yaml"

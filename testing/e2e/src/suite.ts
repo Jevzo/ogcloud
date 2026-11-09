@@ -5,9 +5,8 @@ import {
   playerOnline,
   serverGet,
 } from "@ogcloud/api-client";
-import { as, expectStatus } from "./api.ts";
+import { asClient, expectStatus } from "./api.ts";
 import { trustInternalCa } from "./cluster.ts";
-import { clientToken } from "./login.ts";
 import { loadState, type SeedState } from "./state.ts";
 import { type Target, targetFromEnv } from "./target.ts";
 
@@ -27,8 +26,7 @@ export async function suite(): Promise<Suite> {
       `${target.stateDir} holds no seed; run mise run seed first`,
     );
   }
-  const token = await clientToken(target, state.client);
-  return { target, state, api: as(target, token) };
+  return { target, state, api: asClient(target, state.client) };
 }
 
 /** A fresh, valid Minecraft name, so scenarios never share a player. */

@@ -156,7 +156,7 @@ async function exchange(
       code_verifier: verifier,
     }),
   });
-  return accessToken(response);
+  return (await accessToken(response)).value;
 }
 
 /** A machine client (D-0040) and the scopes it may ask for. */
@@ -170,7 +170,7 @@ export interface MachineClient {
 export async function clientToken(
   target: Target,
   { clientId, clientSecret, scopes }: MachineClient,
-): Promise<string> {
+): Promise<Token> {
   const response = await send(new URL("/oauth2/token", target.origin), {
     method: "POST",
     headers: {
@@ -185,19 +185,29 @@ export async function clientToken(
   return accessToken(response);
 }
 
-async function accessToken(response: Response): Promise<string> {
+/** An access token and when it expires, in milliseconds since the epoch. */
+export interface Token {
+  readonly value: string;
+  readonly expiresAt: number;
+}
+
+async function accessToken(response: Response): Promise<Token> {
   const body: unknown = await response.json();
   if (
     !response.ok ||
     typeof body !== "object" ||
     body === null ||
-    !("access_token" in body)
+    !("access_token" in body) ||
+    !("expires_in" in body)
   ) {
     throw new Error(
       `The token endpoint answered ${response.status}: ${JSON.stringify(body)}`,
     );
   }
-  return String(body.access_token);
+  return {
+    value: String(body.access_token),
+    expiresAt: Date.now() + Number(body.expires_in) * 1000,
+  };
 }
 
 function page(reached: Page | URL): Page {
