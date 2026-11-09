@@ -5,6 +5,10 @@ minecraft:
 postgres:
   inCluster: false
   host: postgres.example.com
+valkey:
+  inCluster: false
+  addresses:
+    - valkey.example.com:6379
 kafka:
   inCluster: false
   bootstrapServers: kafka.example.com:9093

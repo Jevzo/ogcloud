@@ -11,6 +11,8 @@ controller:
       nodeLabelValue: game
       taintKey: ogcloud.io/pool
       taintValue: game
+valkey:
+  sentinel: true
 loadbalancer:
   service:
     annotations:

@@ -87,4 +87,25 @@ ogcloud-forwarding:
   namespace: {{ include "ogcloud.serversNamespace" . }}
   keys:
     tokens: TOKENS
+{{- if .Values.valkey.inCluster }}
+ogcloud-valkey-users:
+  namespace: {{ .Release.Namespace }}
+  templates:
+    users.acl: |
+      {{- range $service := include "ogcloud.dependencyUsers" . | fromYamlArray }}
+      user ogcloud-{{ $service }} on >{{ printf "{{ .VALKEY_%s_PASSWORD.Value }}" (upper $service) }} {{ include "ogcloud.valkeyRules" $service }}
+      {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+What each service may do in Valkey: the API and the controller write but never administer, the gateway and the
+load balancer only read (D-0109). Sentinel clients check the primary they find with ROLE.
+*/}}
+{{- define "ogcloud.valkeyRules" -}}
+{{- if has . (list "gateway" "loadbalancer") -}}
+~* &* -@all +@read +@connection +info +role
+{{- else -}}
+~* &* +@all -flushall -flushdb -debug -config -shutdown -acl -monitor -replicaof -slaveof -failover -save -bgsave -bgrewriteaof -sync -psync
+{{- end -}}
 {{- end -}}

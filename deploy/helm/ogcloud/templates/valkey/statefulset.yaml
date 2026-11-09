@@ -1,0 +1,219 @@
+{{- /*
+Valkey (D-0021, D-0048): our own StatefulSet. Standalone, or three pods that each run Valkey and a Sentinel,
+starting with pod 0 as the primary. TLS from the internal CA (D-0041); users are reloaded live (D-0044).
+*/}}
+{{- if .Values.valkey.inCluster }}
+{{- $v := .Values.valkey }}
+{{- $replicas := ternary 3 1 $v.sentinel }}
+{{- $headless := printf "ogcloud-valkey-headless.%s.svc.cluster.local" .Release.Namespace }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ogcloud-valkey-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+spec:
+  secretName: ogcloud-valkey-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  dnsNames:
+    - localhost
+    - ogcloud-valkey
+    - ogcloud-valkey.{{ .Release.Namespace }}.svc
+    - ogcloud-valkey.{{ .Release.Namespace }}.svc.cluster.local
+    - "*.ogcloud-valkey-headless.{{ .Release.Namespace }}.svc"
+    - "*.{{ $headless }}"
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-internal
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ogcloud-valkey-scripts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+data:
+  {{- (.Files.Glob "files/valkey/*.sh").AsConfig | nindent 2 }}
+---
+{{- /* Sentinels and replicas reach each other by name, also before they are ready. */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ogcloud-valkey-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "ogcloud.selector" (dict "root" . "component" "valkey") | nindent 4 }}
+  ports:
+    - name: valkey
+      port: 6379
+    - name: sentinel
+      port: 26379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ogcloud-valkey
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+spec:
+  selector:
+    {{- include "ogcloud.selector" (dict "root" . "component" "valkey") | nindent 4 }}
+  ports:
+    - name: valkey
+      port: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ogcloud-valkey
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "valkey") | nindent 4 }}
+spec:
+  serviceName: ogcloud-valkey-headless
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "valkey") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ogcloud.selector" (dict "root" . "component" "valkey") | nindent 8 }}
+      annotations:
+        checksum/scripts: {{ (.Files.Glob "files/valkey/*.sh").AsConfig | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClasses.platform.name }}
+      securityContext:
+        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      {{- $env := list
+        (dict "name" "HEADLESS_SERVICE" "value" $headless)
+        (dict "name" "STATEFULSET" "value" "ogcloud-valkey")
+        (dict "name" "REPLICAS" "value" (toString $replicas))
+        (dict "name" "SENTINEL_MASTER" "value" (include "ogcloud.valkeySentinelMaster" .))
+        (dict "name" "APP_RULES" "value" (include "ogcloud.valkeyRules" "api")) }}
+      containers:
+        - name: valkey
+          image: {{ $v.image }}
+          command: [/scripts/start-valkey.sh]
+          env:
+            {{- toYaml $env | nindent 12 }}
+          ports:
+            - name: valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: [/scripts/probe.sh, "6379"]
+            periodSeconds: 5
+            timeoutSeconds: 6
+          livenessProbe:
+            exec:
+              command: [/scripts/probe.sh, "6379"]
+            periodSeconds: 10
+            timeoutSeconds: 6
+            failureThreshold: 6
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          volumeMounts:
+            {{- include "ogcloud.valkeyMounts" . | nindent 12 }}
+            - name: data
+              mountPath: /data
+        {{- if $v.sentinel }}
+        - name: sentinel
+          image: {{ $v.image }}
+          command: [/scripts/start-sentinel.sh]
+          env:
+            {{- toYaml $env | nindent 12 }}
+          ports:
+            - name: sentinel
+              containerPort: 26379
+          readinessProbe:
+            exec:
+              command: [/scripts/probe.sh, "26379"]
+            periodSeconds: 5
+            timeoutSeconds: 6
+          livenessProbe:
+            exec:
+              command: [/scripts/probe.sh, "26379"]
+            periodSeconds: 10
+            timeoutSeconds: 6
+            failureThreshold: 6
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            {{- include "ogcloud.valkeyMounts" . | nindent 12 }}
+            - name: sentinel
+              mountPath: /etc/sentinel
+        {{- end }}
+        {{- /* Loads changed users without a restart (D-0044). */}}
+        - name: acl-reloader
+          image: {{ $v.image }}
+          command: [/scripts/reload-acl.sh]
+          env:
+            {{- toYaml $env | nindent 12 }}
+          securityContext:
+            {{- include "ogcloud.containerSecurity" . | nindent 12 }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          volumeMounts:
+            {{- include "ogcloud.valkeyMounts" . | nindent 12 }}
+      volumes:
+        - name: scripts
+          configMap:
+            name: ogcloud-valkey-scripts
+            defaultMode: 0555
+        - name: tls
+          secret:
+            secretName: ogcloud-valkey-tls
+        - name: root
+          secret:
+            secretName: ogcloud-valkey-root
+        - name: users
+          secret:
+            secretName: ogcloud-valkey-users
+            optional: true
+        - name: config
+          emptyDir: {}
+        - name: sentinel
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with $v.storage.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ $v.storage.size }}
+{{- end }}

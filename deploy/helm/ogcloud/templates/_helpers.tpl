@@ -71,20 +71,41 @@ projected:
 {{- printf "jdbc:postgresql://%s:%v/%s?sslmode=verify-full&sslrootcert=/etc/ogcloud/ca/ca.crt" .Values.postgres.host .Values.postgres.port .Values.postgres.database -}}
 {{- end -}}
 
+{{/* host:port of the in-cluster Valkey or its Sentinels, or the external ones (D-0048). */}}
+{{- define "ogcloud.valkeyAddresses" -}}
+{{- $v := .Values.valkey -}}
+{{- if and $v.inCluster $v.sentinel -}}
+{{- range $i := until 3 }}
+- ogcloud-valkey-{{ $i }}.ogcloud-valkey-headless.{{ $.Release.Namespace }}.svc:26379
+{{- end }}
+{{- else if $v.inCluster -}}
+- ogcloud-valkey.{{ .Release.Namespace }}.svc:6379
+{{- else -}}
+{{ required "valkey.addresses is required for an external Valkey" $v.addresses | toYaml }}
+{{- end -}}
+{{- end -}}
+
+{{- define "ogcloud.valkeySentinelMaster" -}}
+{{- if and .Values.valkey.inCluster .Values.valkey.sentinel -}}ogcloud{{- else -}}{{ .Values.valkey.sentinelMaster }}{{- end -}}
+{{- end -}}
+
 {{/* Spring settings both Kotlin services share, for one dependency user: (dict "root" $ "user" "api"). */}}
 {{- define "ogcloud.springDependencies" -}}
 {{- $v := .root.Values -}}
+{{- $addresses := include "ogcloud.valkeyAddresses" .root | fromYamlArray -}}
+{{- $master := include "ogcloud.valkeySentinelMaster" .root -}}
 valkey:
-  {{- if $v.valkey.sentinelMaster }}
+  {{- if $master }}
   sentinel:
-    master: {{ $v.valkey.sentinelMaster }}
-    nodes: {{ toJson $v.valkey.addresses }}
+    master: {{ $master }}
+    nodes: {{ toJson $addresses }}
   {{- else }}
-  host: {{ (splitList ":" (first $v.valkey.addresses)) | first }}
-  port: {{ (splitList ":" (first $v.valkey.addresses)) | last }}
+  host: {{ (splitList ":" (first $addresses)) | first }}
+  port: {{ (splitList ":" (first $addresses)) | last }}
   {{- end }}
   username: ogcloud-{{ .user }}
-  tls: true
+  tls:
+    ca-certificate-path: /etc/ogcloud/ca/ca.crt
 kafka:
   bootstrap-servers: {{ $v.kafka.bootstrapServers }}
   scram:
@@ -110,9 +131,9 @@ s3:
 - name: OGCLOUD_KAFKA_PASSWORD_FILE
   value: /var/run/secrets/ogcloud/secrets/kafka-password
 - name: OGCLOUD_VALKEY_ADDRESSES
-  value: {{ join "," $v.valkey.addresses | quote }}
+  value: {{ include "ogcloud.valkeyAddresses" .root | fromYamlArray | join "," | quote }}
 - name: OGCLOUD_VALKEY_SENTINEL_MASTER
-  value: {{ $v.valkey.sentinelMaster | quote }}
+  value: {{ include "ogcloud.valkeySentinelMaster" .root | quote }}
 - name: OGCLOUD_VALKEY_USERNAME
   value: ogcloud-{{ .user }}
 - name: OGCLOUD_VALKEY_PASSWORD_FILE
@@ -187,4 +208,24 @@ readinessProbe:
 {{/* The public host, from publicOrigin. */}}
 {{- define "ogcloud.publicHost" -}}
 {{- (urlParse (required "publicOrigin is required, e.g. https://cloud.example.com" .Values.publicOrigin)).host -}}
+{{- end -}}
+
+{{/* What every Valkey container mounts; config is shared, so the reloader writes the file Valkey reads. */}}
+{{- define "ogcloud.valkeyMounts" -}}
+- name: scripts
+  mountPath: /scripts
+  readOnly: true
+- name: tls
+  mountPath: /tls
+  readOnly: true
+- name: root
+  mountPath: /secrets/root
+  readOnly: true
+- name: users
+  mountPath: /secrets/users
+  readOnly: true
+- name: config
+  mountPath: /etc/valkey
+- name: tmp
+  mountPath: /tmp
 {{- end -}}

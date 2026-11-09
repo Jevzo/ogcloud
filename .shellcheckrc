@@ -1,0 +1,3 @@
+# Scripts source their neighbours, as the Valkey scripts do in the chart.
+external-sources=true
+source-path=SCRIPTDIR

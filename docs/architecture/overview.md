@@ -15,7 +15,7 @@ target design of the v2 rebuild; each section notes what is already built.
 | --- | --- |
 | `control-plane/domain` | Pure rules: server state machine and lifecycle deadlines, autoscaler, drain and game states, permissions and rank durations, restart planning, retention, crash-loop breaker, pseudonymizer; the store ports |
 | `control-plane/persistence` | PostgreSQL 18 schema (Flyway) and stores (Spring Data JDBC, `JdbcClient`) |
-| `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel and ACL support |
+| `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel, ACL users and TLS with the private CA (`ogcloud.valkey.tls.ca-certificate-path`), applied to every Sentinel connection too |
 | `control-plane/messaging` | Kafka publisher (idempotent, observed results), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
 | `control-plane/storage` | S3 object store: multipart streaming uploads, presigned URLs, stale-upload cleanup |
 | `control-plane/service-support` | Shared service plumbing (D-0088): Clock, UUIDv7 ids, secrets, default service configuration; golden-file test fixtures |
@@ -135,6 +135,14 @@ backups, orphaned objects).
     passwords, and `ogcloud-forwarding` in the game namespace.
   - cert-manager's private CA (a ClusterIssuer, D-0041) signs the gateway's and controller's certificates;
     trust-manager publishes the CA as ConfigMap `ogcloud-internal-ca` in both namespaces (D-0147).
+  - Dependencies run in the release, each replaceable by an external endpoint (D-0021):
+    - Strimzi `Kafka` on KRaft, with the generated topics and SCRAM users.
+    - A CloudNativePG `Cluster` (PostgreSQL 18): Infisical's database from initdb, managed roles for the API and
+      the controller.
+    - Valkey as our own StatefulSet: standalone, or three pods that each run Valkey and Sentinel (D-0048). It is
+      TLS only and reloads renewed certificates; the default user is off. App users come from a synced ACL file
+      that a sidecar loads live (the gateway's and load balancer's users only read). On Sentinels, app users may
+      only discover the primary.
   - api, controller, gateway and load balancer run restricted (uid 1000, read-only root, no automounted token)
     with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
     `/webauthn` to the API (D-0098).
