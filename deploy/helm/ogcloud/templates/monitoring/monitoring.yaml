@@ -1,0 +1,60 @@
+{{- /*
+With the monitoring stack (D-0025): Prometheus scrapes OgCloud's services and PostgreSQL through PodMonitors, so
+the Services need no metrics ports, and Grafana's sidecar loads the dashboards from ConfigMaps.
+*/}}
+{{- if .Values.monitoring.enabled }}
+{{- $scrapes := list
+  (dict "name" "spring" "components" (list "api" "controller") "port" "http" "path" "/actuator/prometheus")
+  (dict "name" "go" "components" (list "gateway" "loadbalancer") "port" "admin" "path" "/metrics") }}
+{{- range $scrape := $scrapes }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ogcloud-{{ $scrape.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" $ | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ogcloud
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values: {{ toJson $scrape.components }}
+  podMetricsEndpoints:
+    - port: {{ $scrape.port }}
+      path: {{ $scrape.path }}
+{{- end }}
+{{- if .Values.postgres.inCluster }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ogcloud-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: ogcloud-postgres
+  podMetricsEndpoints:
+    - port: metrics
+{{- end }}
+{{- range $path, $_ := .Files.Glob "files/dashboards/*.json" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ogcloud-dashboard-{{ base $path | trimSuffix ".json" }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" $ | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  {{ base $path }}: {{ $.Files.Get $path | quote }}
+{{- end }}
+{{- end }}

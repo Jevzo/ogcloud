@@ -1,6 +1,9 @@
 package deploytest
 
 import (
+	"encoding/json"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -23,5 +26,50 @@ func TestServicesExportTracesOnlyWithTheMonitoringStack(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+var dashboardMetric = regexp.MustCompile(`\bogcloud_[a-z_]+`)
+
+// A renamed metric would leave a dashboard panel empty without a word.
+func TestDashboardsQueryOnlyMetricsTheServicesExport(t *testing.T) {
+	var exported strings.Builder
+	for _, source := range []string{"../gateway/metrics.go", "../loadbalancer/metrics.go"} {
+		code, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		exported.Write(code)
+	}
+	dashboards := 0
+	for _, configMap := range render(t, hetznerValues).all("ConfigMap") {
+		if str(configMap, "metadata", "labels", "grafana_dashboard") != "1" {
+			continue
+		}
+		data, _ := get(configMap, "data").(map[string]any)
+		for name, content := range data {
+			dashboards++
+			var dashboard struct {
+				Panels []struct {
+					Title   string
+					Targets []struct{ Expr string }
+				}
+			}
+			if err := json.Unmarshal([]byte(content.(string)), &dashboard); err != nil {
+				t.Fatalf("%s: %v", name, err)
+			}
+			for _, panel := range dashboard.Panels {
+				for _, target := range panel.Targets {
+					for _, metric := range dashboardMetric.FindAllString(target.Expr, -1) {
+						if !strings.Contains(exported.String(), `"`+strings.TrimSuffix(metric, "_total")) {
+							t.Errorf("%s panel %q queries %s, which no service exports", name, panel.Title, metric)
+						}
+					}
+				}
+			}
+		}
+	}
+	if dashboards == 0 {
+		t.Error("monitoring renders no dashboard")
 	}
 }

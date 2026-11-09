@@ -85,11 +85,17 @@ charts:
     chart: kube-prometheus-stack
     version: 93.1.0
     values:
-      # ServiceMonitors of every namespace count, OgCloud's included (T-0603).
+      # Monitors of every namespace count, OgCloud's PodMonitors included (T-0603).
       prometheus:
         prometheusSpec:
           serviceMonitorSelectorNilUsesHelmValues: false
+          podMonitorSelectorNilUsesHelmValues: false
           retention: 15d
+      # Grafana loads every namespace's dashboard ConfigMaps, OgCloud's included.
+      grafana:
+        sidecar:
+          dashboards:
+            searchNamespace: ALL
 
   - name: loki
     when: monitoring
