@@ -10,7 +10,7 @@ import {
   templateList,
   templateUpload,
 } from "@ogcloud/api-client";
-import { as, expectStatus } from "./api.ts";
+import { anonymous, as, expectStatus } from "./api.ts";
 import { secretValue, trustInternalCa } from "./cluster.ts";
 import { clientToken, signIn, type UserLogin } from "./login.ts";
 import { loadState, type SeedState, saveState } from "./state.ts";
@@ -105,6 +105,11 @@ const OWNER = { username: "e2e-owner", email: "owner@ogcloud.localhost" };
 export async function seed(target: Target): Promise<SeedState> {
   let state = await ensureOwner(target, await loadState(target));
   const owner = await signIn(target, state.owner);
+  if (owner.totpSecret === undefined) {
+    throw new Error(
+      "The owner signed in without an authenticator, which D-0097 requires of owners",
+    );
+  }
   state = { ...state, owner: { ...state.owner, totpSecret: owner.totpSecret } };
   await saveState(target, state);
 
@@ -176,7 +181,7 @@ async function ensureOwner(
   state: SeedState | undefined,
 ): Promise<SeedState> {
   const pending = expectStatus(
-    await setupStatus({ origin: target.origin }),
+    await setupStatus(anonymous(target)),
     200,
     "Reading the setup state",
   ).pending;
@@ -200,7 +205,7 @@ async function ensureOwner(
   expectStatus(
     await setupComplete(
       { setupToken, ...OWNER, password: owner.password },
-      { origin: target.origin },
+      anonymous(target),
     ),
     201,
     "Creating the owner",

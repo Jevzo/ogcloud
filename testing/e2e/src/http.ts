@@ -6,7 +6,7 @@ const FALLBACK_WAIT_SECONDS = 10;
 
 /** fetch, retried after the API's Retry-After while it answers 429. */
 export async function send(
-  url: URL,
+  url: string | URL,
   init: RequestInit = {},
 ): Promise<Response> {
   for (let attempt = 1; ; attempt++) {

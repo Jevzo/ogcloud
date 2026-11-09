@@ -14,8 +14,8 @@ export interface UserLogin {
 
 export interface SignedIn {
   readonly accessToken: string;
-  /** The authenticator secret, enrolled during this login if the user had none. */
-  readonly totpSecret: string;
+  /** The authenticator secret, enrolled during this login if the user had to have one and had none. */
+  readonly totpSecret?: string;
 }
 
 // The dashboard's public PKCE client and its callback (D-0012); the suite stops where the dashboard would take over.
@@ -94,19 +94,24 @@ export async function signIn(
       );
     }
   }
-  if (!(reached instanceof URL) || totpSecret === undefined) {
+  if (!(reached instanceof URL)) {
     throw new Error(
-      `Signing in as ${user.username} never reached the callback`,
+      `Signing in as ${user.username} stopped on ${reached.url.href}`,
     );
   }
   const authorizationCode = reached.searchParams.get("code");
   if (authorizationCode === null) {
     throw new Error(`The callback carries no code: ${reached.href}`);
   }
-  return {
-    accessToken: await exchange(target, authorizationCode, callback, verifier),
-    totpSecret,
-  };
+  const accessToken = await exchange(
+    target,
+    authorizationCode,
+    callback,
+    verifier,
+  );
+  return totpSecret === undefined
+    ? { accessToken }
+    : { accessToken, totpSecret };
 }
 
 // The API refuses a code it has seen before (RFC 6238 §5.2), so a refused code is retried once in the next step.
