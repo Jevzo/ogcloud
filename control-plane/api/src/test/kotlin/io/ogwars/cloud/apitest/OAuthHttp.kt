@@ -36,9 +36,10 @@ class OAuthHttp(
         password: String,
         verifier: String?,
         totpCode: (() -> String)? = null,
+        scope: String = "openid",
     ): URI {
         val browser = Browser()
-        val next = browser.signIn(clientId, redirectUri, login, password, verifier)
+        val next = browser.signIn(clientId, redirectUri, login, password, verifier, scope)
         if (totpCode == null || next.path != MFA_PAGE) return next
         val afterCode = browser.secondFactor(totpCode()).location()
         return if (afterCode.path == MFA_PAGE) afterCode else browser.get(afterCode.toString()).location()
@@ -106,21 +107,32 @@ class OAuthHttp(
 
     fun codeFrom(callback: URI): String = query(callback)["code"] ?: error("No code in $callback")
 
+    /** Redeems a code; a confidential client also sends its [secret] (client_secret_basic). */
     fun exchange(
         clientId: String,
         code: String,
         redirectUri: String,
         verifier: String,
-    ): Tokens =
-        tokens(
-            token(
+        secret: String? = null,
+    ): Tokens = tokens(exchangeResponse(clientId, code, redirectUri, verifier, secret))
+
+    fun exchangeResponse(
+        clientId: String,
+        code: String,
+        redirectUri: String,
+        verifier: String,
+        secret: String? = null,
+    ): HttpResponse<String> {
+        val parameters =
+            listOf(
                 "grant_type" to "authorization_code",
                 "client_id" to clientId,
                 "code" to code,
                 "redirect_uri" to redirectUri,
                 "code_verifier" to verifier,
-            ),
-        )
+            )
+        return if (secret == null) token(*parameters.toTypedArray()) else postBasic(clientId, secret, form(parameters))
+    }
 
     fun refresh(
         clientId: String,
@@ -142,8 +154,16 @@ class OAuthHttp(
         secret: String,
         scopes: List<String>,
     ): HttpResponse<String> {
-        val basic = Base64.getEncoder().encodeToString("$clientId:$secret".toByteArray())
         val body = form(listOf("grant_type" to "client_credentials", "scope" to scopes.joinToString(" ")))
+        return postBasic(clientId, secret, body)
+    }
+
+    private fun postBasic(
+        clientId: String,
+        secret: String,
+        body: String,
+    ): HttpResponse<String> {
+        val basic = Base64.getEncoder().encodeToString("$clientId:$secret".toByteArray())
         return send(
             HttpRequest
                 .newBuilder(uri("/oauth2/token"))
@@ -281,13 +301,14 @@ class OAuthHttp(
             login: String,
             password: String,
             verifier: String?,
+            scope: String = "openid",
         ): URI {
             val parameters =
                 listOfNotNull(
                     "response_type" to "code",
                     "client_id" to clientId,
                     "redirect_uri" to redirectUri,
-                    "scope" to "openid",
+                    "scope" to scope,
                     "state" to STATE,
                     verifier?.let { "code_challenge" to challenge(it) },
                     verifier?.let { "code_challenge_method" to "S256" },

@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.auth
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.OidcScopes
@@ -13,11 +14,15 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.stereotype.Component
 import java.net.URI
 
-/** Registers the web, desktop and mobile apps as public PKCE clients on every start (D-0012, D-0090). */
+/**
+ * Registers the web, desktop and mobile apps as public PKCE clients on every start (D-0012, D-0090), and Grafana
+ * as a confidential one when it is configured (D-0153).
+ */
 @Component
 class FirstPartyClients(
     private val clients: RegisteredClientRepository,
     private val properties: AuthProperties,
+    private val passwords: PasswordEncoder,
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments) {
         definitions().forEach { client ->
@@ -40,7 +45,20 @@ class FirstPartyClients(
             ),
             app(DESKTOP, "OgCloud desktop", properties.clients.desktopRedirectUri, null),
             app(MOBILE, "OgCloud mobile", properties.clients.mobileRedirectUri, null),
-        )
+        ) + listOfNotNull(properties.clients.grafana?.let(::grafana))
+
+    /** Grafana signs people in with the code flow and its secret; it reads their role from the ID token. */
+    private fun grafana(grafana: AuthProperties.Grafana): RegisteredClient =
+        RegisteredClient
+            .from(app(GRAFANA, "Grafana", grafana.redirectUri, null))
+            .clientAuthenticationMethods {
+                it.clear()
+                it.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                it.add(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+            }.clientSecret(passwords.hash(grafana.clientSecret))
+            .scope(OidcScopes.PROFILE)
+            .scope(OidcScopes.EMAIL)
+            .build()
 
     private fun app(
         clientId: String,
@@ -77,5 +95,6 @@ class FirstPartyClients(
         const val WEB = "ogcloud-web"
         const val DESKTOP = "ogcloud-desktop"
         const val MOBILE = "ogcloud-mobile"
+        const val GRAFANA = "ogcloud-grafana"
     }
 }

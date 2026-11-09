@@ -49,5 +49,14 @@ data class AuthProperties(
         /** An RFC 8252 loopback redirect: the desktop app may listen on any port. */
         val desktopRedirectUri: URI = URI.create("http://127.0.0.1/callback"),
         val mobileRedirectUri: URI = URI.create("io.ogwars.cloud:/oauth2redirect"),
+        /** Grafana's confidential client (D-0153); without it, Grafana has no single sign-on. */
+        val grafana: Grafana? = null,
+    )
+
+    data class Grafana(
+        /** `/login/generic_oauth` at Grafana's root URL. */
+        val redirectUri: URI,
+        /** Synced from Infisical (D-0044). */
+        val clientSecret: String,
     )
 }

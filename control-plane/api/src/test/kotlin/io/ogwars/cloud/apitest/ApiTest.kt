@@ -25,6 +25,9 @@ const val UNLIMITED = 1_000_000
 /** Small, so the size limit can be tested without large uploads. */
 const val TEST_MAX_UPLOAD = "1MB"
 
+const val TEST_GRAFANA_REDIRECT = "https://grafana.test/login/generic_oauth"
+const val TEST_GRAFANA_SECRET = "grafana-test-secret"
+
 /** Static values, known before the web server and its filters start. */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
@@ -40,6 +43,8 @@ const val TEST_MAX_UPLOAD = "1MB"
         "ogcloud.rate-limits.api.capacity=$UNLIMITED",
         "ogcloud.rate-limits.api.per-minute=$UNLIMITED",
         "ogcloud.templates.max-upload-size=$TEST_MAX_UPLOAD",
+        "ogcloud.auth.clients.grafana.redirect-uri=$TEST_GRAFANA_REDIRECT",
+        "ogcloud.auth.clients.grafana.client-secret=$TEST_GRAFANA_SECRET",
     ],
 )
 @Import(ApiTestConfiguration::class)

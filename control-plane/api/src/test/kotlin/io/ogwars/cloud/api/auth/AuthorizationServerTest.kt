@@ -2,6 +2,8 @@ package io.ogwars.cloud.api.auth
 
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
+import io.ogwars.cloud.apitest.TEST_GRAFANA_REDIRECT
+import io.ogwars.cloud.apitest.TEST_GRAFANA_SECRET
 import io.ogwars.cloud.apitest.TEST_ISSUER
 import io.ogwars.cloud.apitest.TestSigningKeys
 import io.ogwars.cloud.apitest.TestUsers
@@ -12,6 +14,7 @@ import io.ogwars.cloud.livestate.ValkeyConnection
 import io.ogwars.cloud.livestate.ValkeyKeys
 import com.nimbusds.jose.JOSEObjectType
 import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -186,6 +189,64 @@ class AuthorizationServerTest(
     }
 
     @Test
+    fun `Grafana signs in with its secret and finds the role in the ID token`() {
+        val user = user(BuiltInRole.ADMIN)
+        val callback =
+            oauth.authorize(
+                FirstPartyClients.GRAFANA,
+                TEST_GRAFANA_REDIRECT,
+                user.username,
+                PASSWORD,
+                verifier,
+                scope = "openid profile email",
+            )
+        val code = oauth.codeFrom(callback)
+
+        val tokens =
+            oauth.exchange(
+                FirstPartyClients.GRAFANA,
+                code,
+                TEST_GRAFANA_REDIRECT,
+                verifier,
+                TEST_GRAFANA_SECRET,
+            )
+
+        val claims = payload(tokens.idToken ?: error("no ID token"))
+        claims[TokenClaims.ROLE_CLAIM] shouldBe BuiltInRole.ADMIN.id
+        claims[TokenClaims.USERNAME_CLAIM] shouldBe user.username
+        claims[TokenClaims.EMAIL_CLAIM] shouldBe user.email
+        (claims[TokenClaims.PERMISSIONS_CLAIM] as List<*>) shouldContainExactly
+            BuiltInRole.ADMIN.permissions
+                .map { it.scope }
+                .sorted()
+    }
+
+    @Test
+    fun `Grafana's code is worthless without its secret`() {
+        val user = user(BuiltInRole.VIEWER)
+        val callback =
+            oauth.authorize(FirstPartyClients.GRAFANA, TEST_GRAFANA_REDIRECT, user.username, PASSWORD, verifier)
+
+        val response =
+            oauth.exchangeResponse(
+                FirstPartyClients.GRAFANA,
+                oauth.codeFrom(callback),
+                TEST_GRAFANA_REDIRECT,
+                verifier,
+            )
+
+        response.statusCode() shouldBe UNAUTHORIZED
+    }
+
+    @Test
+    fun `the apps' ID tokens name no email without the email scope`() {
+        val claims = payload(login(user(BuiltInRole.VIEWER)).idToken ?: error("no ID token"))
+
+        claims[TokenClaims.ROLE_CLAIM] shouldBe BuiltInRole.VIEWER.id
+        claims.containsKey(TokenClaims.EMAIL_CLAIM) shouldBe false
+    }
+
+    @Test
     fun `discovery names the public origin and the routed endpoints`() {
         val discovery = oauth.get("/.well-known/openid-configuration").body()
 
@@ -201,6 +262,9 @@ class AuthorizationServerTest(
     }
 
     private fun refreshOf(tokens: OAuthHttp.Tokens) = tokens.refreshToken ?: error("no refresh token")
+
+    /** A JWT's claims, unverified: the server issued the token just now. */
+    private fun payload(jwt: String): Map<String, Any?> = SignedJWT.parse(jwt).jwtClaimsSet.claims
 
     private fun user(role: BuiltInRole): WebUser = testUsers.create(role.id)
 
