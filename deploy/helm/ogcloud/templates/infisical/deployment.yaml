@@ -74,11 +74,12 @@ spec:
           # Node reads extra CAs from NODE_EXTRA_CA_CERTS: the internal CA, and the cluster's own for the TokenReviews
           # of Kubernetes auth, which stores no CA (D-0167). The database driver reads the internal CA only from
           # DB_ROOT_CERT, in base64. The image's entrypoint would rewrite the system CAs, which a read-only root cannot
-          # hold.
+          # hold. A newline follows each file, since k3s writes its CA without one and a glued bundle loads nothing.
           command: [/bin/sh, -c]
           args:
             - >-
-              cat /etc/ogcloud/ca/ca.crt /etc/kubernetes-ca/ca.crt > /tmp/ca-bundle.crt &&
+              for ca in /etc/ogcloud/ca/ca.crt /etc/kubernetes-ca/ca.crt; do cat "$ca" && echo || exit 1; done
+              > /tmp/ca-bundle.crt &&
               export NODE_EXTRA_CA_CERTS=/tmp/ca-bundle.crt &&
               export DB_ROOT_CERT="$(base64 -w0 /etc/ogcloud/ca/ca.crt)" &&
               exec node --enable-source-maps dist/main.mjs
