@@ -76,13 +76,18 @@ remaining() { echo "$((deadline - $(date +%s)))s"; }
 
 # On an upgrade a chart reruns only when its documents change, and its finished job would pass the wait: so the
 # charts that change (their HelmChart, or OgCloud's values Secret) wait for the job that replaces theirs.
+# A fixed differ, so its headers parse below whatever KUBECTL_EXTERNAL_DIFF the caller set.
 set +e
-kubectl diff --server-side -f "$work/manifest.yaml" > "$work/diff.txt" 2>&1
+KUBECTL_EXTERNAL_DIFF="diff -u -N" kubectl diff --server-side -f "$work/manifest.yaml" > "$work/diff.txt" 2>&1
 status=$?
 set -e
 if [ "$status" -gt 1 ]; then
   cat "$work/diff.txt"
   echo "kubectl diff failed; on a cluster whose CRDs Helm created, see docs/runbooks/upgrades.md"
+  exit 1
+fi
+if [ "$status" -eq 1 ] && ! grep -q '^diff -u -N ' "$work/diff.txt"; then
+  echo "kubectl diff reported changes in a form this script cannot read, so it would not know which charts to wait for"
   exit 1
 fi
 sed -n -e 's|^diff .*/helm\.cattle\.io\.v1\.HelmChart\.kube-system\.\([^ /]*\)$|\1|p' \
@@ -120,11 +125,20 @@ for chart in $(kubectl -n kube-system get helmcharts -o jsonpath='{.items[*].met
   echo "HelmChart $chart installed after $(elapsed)"
 done
 
-kubectl -n ogcloud wait --for=condition=Ready kafka/ogcloud --timeout="$(remaining)"
-kubectl -n ogcloud wait --for=condition=Ready cluster.postgresql.cnpg.io/ogcloud-postgres --timeout="$(remaining)"
-kubectl -n ogcloud wait --for=condition=Available deployment --all --timeout="$(remaining)"
-for statefulset in $(kubectl -n ogcloud get statefulsets -o name); do
-  kubectl -n ogcloud rollout status "$statefulset" --timeout="$(remaining)"
+# Ready only once its operator has seen the current spec: after an upgrade the condition is still the old one's.
+ready() {
+  local resource=$1 generation
+  generation=$(kubectl -n ogcloud get "$resource" -o jsonpath='{.metadata.generation}')
+  if [ -n "$(kubectl -n ogcloud get "$resource" -o jsonpath='{.status.observedGeneration}')" ]; then
+    kubectl -n ogcloud wait --for=jsonpath='{.status.observedGeneration}'="$generation" "$resource" --timeout="$(remaining)"
+  fi
+  kubectl -n ogcloud wait --for=condition=Ready "$resource" --timeout="$(remaining)"
+}
+ready kafka/ogcloud
+ready cluster.postgresql.cnpg.io/ogcloud-postgres
+# Rollouts, not Available, which the replaced pods still report during an upgrade.
+for workload in $(kubectl -n ogcloud get deployments,statefulsets -o name); do
+  kubectl -n ogcloud rollout status "$workload" --timeout="$(remaining)"
 done
 kubectl -n ogcloud wait --for=condition=Ready pod --all --field-selector=status.phase!=Succeeded --timeout="$(remaining)"
 echo "OgCloud converged on k3s after $(elapsed)"
