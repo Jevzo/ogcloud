@@ -352,3 +352,32 @@ func TestTheControllerTakesOnlyTheLifecycleTimeoutsGiven(t *testing.T) {
 		t.Errorf("timeouts = %v, want %v", got, want)
 	}
 }
+
+// An install's own Spring settings merge into the chart's, so a key named in both is one key: Spring rejects a
+// document with a key twice, and the chart's settings must not be lost either.
+func TestTheServicesOwnSettingsMergeIntoTheCharts(t *testing.T) {
+	extra := valuesFile(t, "api: {config: {ogcloud: {templates: {max-upload-size: 1GB}, rate-limits: {strict: {per-minute: 5}}}}}\n"+
+		"controller: {config: {ogcloud: {controller: {provisioner: {rate: 2}}}}}\n")
+	objects := render(t, minikubeValues, extra)
+	for service, want := range map[string][]string{
+		"ogcloud-api":        {"web", "auth", "rate-limits"},
+		"ogcloud-controller": {"controller", "kafka", "valkey"},
+	} {
+		var config map[string]any
+		data := str(objects.find(t, "ConfigMap", service), "data", "application.yaml")
+		if err := yaml.Unmarshal([]byte(data), &config); err != nil {
+			t.Fatalf("%s's application.yaml does not parse: %v", service, err)
+		}
+		for _, key := range want {
+			if get(config, "ogcloud", key) == nil {
+				t.Errorf("%s's application.yaml lost ogcloud.%s", service, key)
+			}
+		}
+	}
+	var api map[string]any
+	if err := yaml.Unmarshal([]byte(str(objects.find(t, "ConfigMap", "ogcloud-api"), "data", "application.yaml")), &api); err == nil {
+		if got := get(api, "ogcloud", "templates", "max-upload-size"); got != "1GB" {
+			t.Errorf("api.config did not override max-upload-size: %v", got)
+		}
+	}
+}

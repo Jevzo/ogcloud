@@ -325,3 +325,15 @@ An S3 bucket for the Go services' objects.FromConfigPrefix: (dict "prefix" "endp
 - name: {{ .prefix }}_SECRET_KEY_FILE
   value: /var/run/secrets/ogcloud/secrets/{{ .keyFiles }}-secret-key
 {{- end -}}
+
+{{/*
+A Spring service's application.yaml: the chart's settings with the install's own (api.config, controller.config)
+merged on top, so a key both name appears once, as Spring requires, and the install's value wins.
+*/}}
+{{- define "ogcloud.springConfig" -}}
+{{- $settings := fromYaml .settings }}
+{{- if hasKey $settings "Error" }}
+{{- fail (printf "the chart's Spring settings do not parse: %s" $settings.Error) }}
+{{- end }}
+{{- toYaml (mergeOverwrite $settings (deepCopy .extra)) }}
+{{- end -}}

@@ -1,4 +1,4 @@
-{{- define "ogcloud.controllerConfig" -}}
+{{- define "ogcloud.controllerSettings" -}}
 {{- $pods := .Values.controller.pods -}}
 spring:
   datasource:
@@ -69,7 +69,8 @@ ogcloud:
           stale-credential: {{ .Values.retention.staleCredentials }}
   {{- include "ogcloud.springDependencies" (dict "root" . "user" "controller") | nindent 2 }}
 {{- include "ogcloud.springMonitoring" . }}
-{{- with .Values.controller.config }}
-{{ toYaml . }}
-{{- end }}
+{{- end -}}
+
+{{- define "ogcloud.controllerConfig" -}}
+{{- include "ogcloud.springConfig" (dict "settings" (include "ogcloud.controllerSettings" .) "extra" .Values.controller.config) }}
 {{- end -}}

@@ -1,4 +1,4 @@
-{{- define "ogcloud.apiConfig" -}}
+{{- define "ogcloud.apiSettings" -}}
 spring:
   datasource:
     url: {{ include "ogcloud.jdbcUrl" . }}
@@ -25,7 +25,8 @@ ogcloud:
     max-upload-size: {{ .Values.api.templates.maxUploadSize }}
   {{- include "ogcloud.springDependencies" (dict "root" . "user" "api") | nindent 2 }}
 {{- include "ogcloud.springMonitoring" . }}
-{{- with .Values.api.config }}
-{{ toYaml . }}
-{{- end }}
+{{- end -}}
+
+{{- define "ogcloud.apiConfig" -}}
+{{- include "ogcloud.springConfig" (dict "settings" (include "ogcloud.apiSettings" .) "extra" .Values.api.config) }}
 {{- end -}}
