@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join as joinPath } from "node:path";
 import { kubectl } from "../cluster.ts";
 import type { Target } from "../target.ts";
 import { eventually } from "../wait.ts";
@@ -17,6 +19,12 @@ const LOGIN_HISTOGRAM = "ogcloud_gateway_login_resolution_seconds";
 const FORWARDING = /Forwarding from 127\.0\.0\.1:(\d+)/;
 // A port-forward through a loaded node can drop its first connection, so a scrape is tried again.
 const SCRAPE_TIMEOUT_MS = 60_000;
+const PLATFORM_LOGS = [
+  "ogcloud-api",
+  "ogcloud-controller",
+  "ogcloud-gateway",
+  "ogcloud-loadbalancer",
+];
 
 /** What every pod in the namespace uses right now, from the metrics server. */
 export async function usage(target: Target, namespace: string): Promise<Usage> {
@@ -104,4 +112,53 @@ async function metricsOf(target: Target, pod: string): Promise<string> {
       await exited;
     }
   }
+}
+
+/** Saves the logs of every game pod's server and of the platform's services into dir, for a run that needs a look. */
+export async function saveLogs(
+  target: Target,
+  dir: string,
+  serversNamespace: string,
+): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  const pods = (
+    await kubectl(
+      target,
+      ["get", "pods", "--output", "jsonpath={.items[*].metadata.name}"],
+      serversNamespace,
+    )
+  )
+    .split(" ")
+    .filter((pod) => pod !== "");
+  for (const pod of pods) {
+    await save(
+      target,
+      dir,
+      pod,
+      ["logs", pod, "--container", "server"],
+      serversNamespace,
+    );
+  }
+  for (const service of PLATFORM_LOGS) {
+    await save(
+      target,
+      dir,
+      service,
+      ["logs", `deployment/${service}`, "--since=2h"],
+      target.namespace,
+    );
+  }
+}
+
+async function save(
+  target: Target,
+  dir: string,
+  name: string,
+  args: readonly string[],
+  namespace: string,
+): Promise<void> {
+  const log = await kubectl(target, args, namespace).catch(
+    (error: Error) => `kubectl ${args.join(" ")} failed: ${error.message}\n`,
+  );
+  await writeFile(joinPath(dir, `${name}.log`), log);
 }

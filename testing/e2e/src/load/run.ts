@@ -33,7 +33,7 @@ import {
   shareWithin,
   type Usage,
 } from "./measure.ts";
-import { loginHistogram, usage } from "./probe.ts";
+import { loginHistogram, saveLogs, usage } from "./probe.ts";
 import { Swarm } from "./swarm.ts";
 import { now } from "./swarm-protocol.ts";
 
@@ -53,7 +53,7 @@ const SETTINGS = {
   // How long the loaded network runs before it is measured, so the metrics server sees it.
   holdSeconds: number("OGCLOUD_LOAD_HOLD_SECONDS", 90),
   serverMemory: process.env.OGCLOUD_LOAD_SERVER_MEMORY ?? "1536Mi",
-  // Appended to the profile's own (D-0139), e.g. a smaller heap share.
+  // Appended to the profile's own (D-0139) on the load groups and the proxies, e.g. -XX:ActiveProcessorCount=2.
   jvmFlags: process.env.OGCLOUD_LOAD_JVM_FLAGS ?? "",
 };
 
@@ -243,6 +243,13 @@ async function run(context: Suite): Promise<boolean> {
     await writeReport({ ...report, passed });
     return passed;
   } finally {
+    await saveLogs(
+      target,
+      joinPath(REPORT_DIR, `logs-${RUN}`),
+      SERVERS_NAMESPACE,
+    ).catch((error: Error) =>
+      console.error(`Saving the logs: ${error.message}`),
+    );
     await swarm.close();
     if (proxyVersion !== undefined) {
       await setProxies(context, proxy.settings, proxyVersion);
@@ -288,6 +295,9 @@ async function growProxies(context: Suite, proxy: GroupView): Promise<number> {
         memoryRequest: PROXIES.memory,
         memoryLimit: PROXIES.memory,
       },
+      jvmFlags: [proxy.settings.jvmFlags, SETTINGS.jvmFlags]
+        .filter((flags) => flags !== "")
+        .join(" "),
     },
     proxy.version,
   );
