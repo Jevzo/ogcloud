@@ -284,7 +284,9 @@ func (h *harness) open(t *testing.T, token string, hello *nodev1.Hello) nodev1.G
 		t.Fatalf("Session: %v", err)
 	}
 	if hello != nil {
-		if err := stream.Send(&nodev1.SessionRequest{Message: &nodev1.SessionRequest_Hello{Hello: hello}}); err != nil {
+		// A stream the gateway already refused answers io.EOF; its status comes from Recv.
+		err := stream.Send(&nodev1.SessionRequest{Message: &nodev1.SessionRequest_Hello{Hello: hello}})
+		if err != nil && !errors.Is(err, io.EOF) {
 			t.Fatalf("send Hello: %v", err)
 		}
 	}
