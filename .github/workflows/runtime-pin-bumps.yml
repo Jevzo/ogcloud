@@ -3,8 +3,10 @@ name: Runtime pin bumps
 # Renovate cannot recompute Modrinth's SHA-512 hashes or follow PaperMC and hpfxd builds, so the bundle plugin pins
 # (D-0082) and the server jar pins (D-0139) are bumped here.
 on:
+  # GitHub runs schedules only from the default branch; until v2 is main, main's pointer workflow calls this (D-0199).
   schedule:
     - cron: "0 6 * * 1"
+  workflow_call:
   workflow_dispatch:
 
 permissions:

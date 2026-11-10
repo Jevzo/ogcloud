@@ -3,8 +3,15 @@ name: GHCR cleanup
 # Nothing piles up (D-0043, D-0196): dry-run tags go, each package keeps its newest 10 pre-releases and every real
 # release, and untagged images are deleted unless a kept one refers to them (architectures, attestations, signatures).
 on:
+  # GitHub runs schedules only from the default branch; until v2 is main, main's pointer workflow calls this (D-0199).
   schedule:
     - cron: "23 4 * * 1"
+  workflow_call:
+    inputs:
+      dry_run:
+        description: Only log what would be deleted
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       dry_run:
@@ -31,6 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: v2
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
       - id: packages
