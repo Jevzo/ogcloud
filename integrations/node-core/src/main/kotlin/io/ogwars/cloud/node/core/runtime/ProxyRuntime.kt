@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -79,6 +80,7 @@ class ProxyRuntime(
     private val enRoute = ConcurrentHashMap<UUID, EnRoute>()
     private val fullSince = ConcurrentHashMap<String, Instant>()
     private val routing = ReentrantLock()
+    private val countsFailing = AtomicBoolean()
 
     private data class EnRoute(
         val backendId: String,
@@ -391,8 +393,11 @@ class ProxyRuntime(
         queries.servers().whenComplete { servers, error ->
             if (error != null) {
                 // Routing goes on with the last counts, so a full backend may take players until a refresh works.
-                log.log(System.Logger.Level.WARNING, "Could not refresh the player counts", error)
+                if (!countsFailing.getAndSet(true)) {
+                    log.log(System.Logger.Level.WARNING, "Could not refresh the player counts; retrying quietly", error)
+                }
             } else {
+                if (countsFailing.getAndSet(false)) log.log(System.Logger.Level.INFO, "The player counts refresh again")
                 networkCounts(servers.associate { it.serverId to it.players })
             }
         }
