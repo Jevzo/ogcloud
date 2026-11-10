@@ -21,7 +21,6 @@ import {
   templateUpload,
 } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
-import { join, leave, type Player } from "../bots.ts";
 import { kubectl } from "../cluster.ts";
 import { awaitRunningGroups, GROUPS as SEEDED } from "../seed.ts";
 import { type Suite, suite } from "../suite.ts";
@@ -35,6 +34,8 @@ import {
   type Usage,
 } from "./measure.ts";
 import { loginHistogram, usage } from "./probe.ts";
+import { Swarm } from "./swarm.ts";
+import { now } from "./swarm-protocol.ts";
 
 // The load run (T-0609, D-0174, D-0175): two groups made for the run take the bots in waves, which then move from
 // one to the other and back. It measures latencies, the gateway's login resolution and the platform's usage, and
@@ -45,6 +46,8 @@ const SETTINGS = {
   serversPerGroup: number("OGCLOUD_LOAD_SERVERS_PER_GROUP", 15),
   // Bots that join together, a second apart.
   wave: number("OGCLOUD_LOAD_WAVE", 25),
+  // Processes the bots are spread over, so none falls behind its bots' keep-alives.
+  botWorkers: number("OGCLOUD_LOAD_BOT_WORKERS", 6),
   // How long the loaded network runs before it is measured, so the metrics server sees it.
   holdSeconds: number("OGCLOUD_LOAD_HOLD_SECONDS", 90),
   serverMemory: process.env.OGCLOUD_LOAD_SERVER_MEMORY ?? "1536Mi",
@@ -122,8 +125,9 @@ async function run(context: Suite): Promise<boolean> {
     200,
     "Reading the proxy group",
   );
-  const players: Player[] = [];
+  const players: string[] = [];
   const latencies: Latencies = { join: [], transfer: [] };
+  const swarm = Swarm.start(SETTINGS.botWorkers);
   let restoreVersion: number | undefined;
   let proxyVersion: number | undefined;
   try {
@@ -161,7 +165,7 @@ async function run(context: Suite): Promise<boolean> {
     );
 
     const loginsBefore = await loginHistogram(target);
-    const failures = await joinInWaves(context, players, latencies);
+    const failures = await joinInWaves(swarm, players, latencies);
     const lost = await lostSessions(api, players, GROUPS.first);
     await sleep(SETTINGS.holdSeconds * 1000);
     const loaded = {
@@ -175,6 +179,7 @@ async function run(context: Suite): Promise<boolean> {
 
     const there = await moveAll(
       api,
+      swarm,
       players,
       GROUPS.first,
       GROUPS.second,
@@ -184,6 +189,7 @@ async function run(context: Suite): Promise<boolean> {
     await sleep(COUNTS_SETTLE_MS);
     const back = await moveAll(
       api,
+      swarm,
       players,
       GROUPS.second,
       GROUPS.first,
@@ -229,7 +235,7 @@ async function run(context: Suite): Promise<boolean> {
     await writeReport({ ...report, passed });
     return passed;
   } finally {
-    leave(...players);
+    await swarm.close();
     if (proxyVersion !== undefined) {
       await setProxies(context, proxy.settings, proxyVersion);
     }
@@ -400,8 +406,8 @@ async function runningServers(api: Call): Promise<number> {
 
 /** Joins every bot, a wave a second, and returns how many could not join. */
 async function joinInWaves(
-  context: Suite,
-  players: Player[],
+  swarm: Swarm,
+  players: string[],
   latencies: Latencies,
 ): Promise<number> {
   let failed = 0;
@@ -411,10 +417,9 @@ async function joinInWaves(
     waves.push(
       ...Array.from({ length: count }, async (_, offset) => {
         const name = `${NAME_PREFIX}${String(first + offset).padStart(5, "0")}`;
-        const started = performance.now();
         try {
-          players.push(await join(context.target, name));
-          latencies.join.push(performance.now() - started);
+          latencies.join.push(await swarm.join(name));
+          players.push(name);
         } catch (error) {
           failed++;
           console.error(`${name} did not join: ${(error as Error).message}`);
@@ -434,18 +439,19 @@ async function joinInWaves(
  */
 async function moveAll(
   api: Call,
-  players: readonly Player[],
+  swarm: Swarm,
+  players: readonly string[],
   from: string,
   to: string,
   latencies: Latencies,
 ): Promise<number> {
   const arrivals = new Map<string, number>();
-  const started = performance.now();
-  for (const player of players) {
-    player.bot.once("login", () => {
-      arrivals.set(player.name, performance.now() - started);
-    });
-  }
+  const started = now();
+  const stop = swarm.onLogin((name, at) => {
+    if (!arrivals.has(name)) {
+      arrivals.set(name, at - started);
+    }
+  });
   for (const server of expectStatus(
     await serverList({ groupId: from }, api),
     200,
@@ -464,13 +470,12 @@ async function moveAll(
       TRANSFER_TIMEOUT_MS,
     );
   } catch {
-    const missing = players
-      .filter(({ name }) => !arrivals.has(name))
-      .map(({ name }) => name);
+    const missing = players.filter((name) => !arrivals.has(name));
     console.error(
       `${missing.length} bots did not reach ${to}, e.g. ${missing.slice(0, 5).join(", ")}`,
     );
   }
+  stop();
   latencies.transfer.push(...arrivals.values());
   console.log(
     `Moved ${arrivals.size} of ${players.length} players from ${from} to ${to}`,
@@ -481,7 +486,7 @@ async function moveAll(
 /** How many of the bots the API does not show online in group, after their sessions settle. */
 async function lostSessions(
   api: Call,
-  players: readonly Player[],
+  players: readonly string[],
   group: string,
 ): Promise<number> {
   const servers = new Set(
@@ -491,7 +496,7 @@ async function lostSessions(
       `Listing ${group}`,
     ).map(({ id }) => id),
   );
-  const expected = new Set(players.map(({ name }) => name));
+  const expected = new Set(players);
   let seen = 0;
   try {
     await eventually(
