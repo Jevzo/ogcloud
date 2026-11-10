@@ -37,9 +37,9 @@ docker buildx imagetools inspect ghcr.io/jevzo/ogcloud/api:<version> --format '{
 
 ## Dry run
 
-Start the Publish workflow by hand on `v2` and approve it. It publishes the images and the chart as
-`0.0.0-dryrun-<commit>`, verifies them, and uploads the SDK to the Central Portal as a deployment that is never
-released: drop it under Deployments in the Portal afterwards. The weekly cleanup deletes the dry run's images and
+Start the Release workflow by hand on `v2` (`gh workflow run release.yml --ref v2`) and approve it. It publishes the
+images and the chart as `0.0.0-dryrun-<commit>`, verifies them, and uploads the SDK to the Central Portal as a
+deployment that is never released: drop it under Deployments in the Portal afterwards. The weekly cleanup deletes the dry run's images and
 chart.
 
 ## Cleanup

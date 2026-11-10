@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     branches: [v2]
+  # A dry run of the publish workflow (docs/runbooks/releases.md). It is started here because GitHub dispatches only
+  # workflows it has seen run, and the publish workflow runs only when called.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,6 +17,7 @@ concurrency:
 jobs:
   # Keeps the release PR current; merging it tags the release with the one platform version (D-0029, D-0193).
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,3 +43,13 @@ jobs:
     uses: ./.github/workflows/publish.yml
     with:
       version: ${{ needs.release-please.outputs.version }}
+
+  dry-run:
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      version: ""

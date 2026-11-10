@@ -2,17 +2,16 @@ name: Publish
 
 # Publishes one version (D-0193 to D-0197): every image for amd64 and arm64 on native runners, merged into one
 # manifest list per tag and signed keyless, the chart next to them, then a check of every signature and attestation;
-# real releases also put the SDK on Maven Central (D-0195). The release workflow calls it for each release; started by
-# hand it is a dry run under 0.0.0-dryrun-<commit>, whose images and chart the weekly cleanup removes again and whose
-# SDK stays an unreleased deployment to drop in the Central Portal.
+# real releases also put the SDK on Maven Central (D-0195). The release workflow calls it for each release, and
+# without a version when started by hand: a dry run under 0.0.0-dryrun-<commit>, whose images and chart the cleanup
+# removes again and whose SDK stays an unreleased deployment to drop in the Central Portal.
 on:
   workflow_call:
     inputs:
       version:
-        description: The version release-please tagged
+        description: The version release-please tagged; empty for a dry run
         type: string
         required: true
-  workflow_dispatch:
 
 permissions:
   contents: read
