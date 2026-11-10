@@ -21,11 +21,16 @@ spring:
 server:
   port: 8080
   # Behind the Gateway (D-0098): X-Forwarded-* counts only from trusted proxies, so the client IP the rate limits
-  # key on cannot be spoofed, not even from other pods (D-0108).
+  # key on cannot be spoofed, not even from other pods (D-0108). Only Traefik reaches this port.
   forward-headers-strategy: native
   tomcat:
     remoteip:
       internal-proxies: ${ogcloud.web.trusted-proxies}
+
+# Probes and Prometheus use a port of their own, so monitoring never reaches the port above (D-0190).
+management:
+  server:
+    port: 8081
 
 # Same origin (D-0098): everything the API serves sits under /api, /oauth2, /.well-known, /login and /webauthn.
 springdoc:

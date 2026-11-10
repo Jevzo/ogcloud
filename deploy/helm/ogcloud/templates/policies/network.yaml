@@ -39,7 +39,7 @@ spec:
         {{- include "ogcloud.np.namespace" $np.namespaces.traefik | nindent 8 }}
       ports:
         - {protocol: TCP, port: 8080}
-    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8080) | nindent 4 }}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8081) | nindent 4 }}
   egress:
     {{- include "ogcloud.np.dns" . | nindent 4 }}
     {{- include "ogcloud.np.postgres" . | nindent 4 }}
@@ -64,7 +64,7 @@ spec:
         {{- include "ogcloud.np.component" (dict "root" . "component" "gateway") | nindent 8 }}
       ports:
         - {protocol: TCP, port: 9090}
-    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8080) | nindent 4 }}
+    {{- include "ogcloud.np.metrics" (dict "root" . "port" 8081) | nindent 4 }}
   egress:
     {{- include "ogcloud.np.dns" . | nindent 4 }}
     {{- include "ogcloud.np.apiServer" . | nindent 4 }}

@@ -161,7 +161,8 @@ backups, orphaned objects).
     with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
     `/webauthn` to the API (D-0098).
   - With `monitoring.enabled` (Hetzner) the services send traces to Tempo and Prometheus scrapes them through
-    PodMonitors; Grafana loads the `OgCloud` dashboard. Grafana Alloy, one per node, tails every pod's log into Loki,
+    PodMonitors on their admin ports (8081; the Spring services' actuator lives only there, so monitoring never
+    reaches the API's own port, D-0190); Grafana loads the `OgCloud` dashboard. Grafana Alloy, one per node, tails every pod's log into Loki,
     a single binary that keeps 14 days (D-0187); Grafana shows Loki and Tempo next to Prometheus. Without it nothing
     is exported. `mise run check:chart` renders every platform chart with its values and each target's.
   - Admin UIs (D-0045): with the VPN, Infisical and Grafana sit on the internal Gateway on Traefik's private

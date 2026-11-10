@@ -36,8 +36,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           ports:
-            - name: http
-              containerPort: 8080
+            # Probes and Prometheus only (D-0190).
+            - name: admin
+              containerPort: 8081
             - name: grpc
               containerPort: 9090
           {{- include "ogcloud.springProbes" . | nindent 10 }}

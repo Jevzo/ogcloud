@@ -4,7 +4,7 @@ the Services need no metrics ports, and Grafana's sidecar loads the dashboards f
 */}}
 {{- if .Values.monitoring.enabled }}
 {{- $scrapes := list
-  (dict "name" "spring" "components" (list "api" "controller") "port" "http" "path" "/actuator/prometheus")
+  (dict "name" "spring" "components" (list "api" "controller") "port" "admin" "path" "/actuator/prometheus")
   (dict "name" "go" "components" (list "gateway" "loadbalancer") "port" "admin" "path" "/metrics") }}
 {{- range $scrape := $scrapes }}
 ---

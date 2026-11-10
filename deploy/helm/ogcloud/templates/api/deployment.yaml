@@ -43,6 +43,9 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            # Probes and Prometheus only (D-0190).
+            - name: admin
+              containerPort: 8081
           {{- include "ogcloud.springProbes" . | nindent 10 }}
           securityContext:
             {{- include "ogcloud.containerSecurity" . | nindent 12 }}

@@ -34,9 +34,6 @@ class RateLimitFilter(
     private val limits: RateLimitProperties,
     private val clock: Clock,
 ) : OncePerRequestFilter() {
-    // Probes and scrapes come from inside the cluster and must never be throttled.
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean = request.requestURI.startsWith(ACTUATOR)
-
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -60,7 +57,6 @@ class RateLimitFilter(
     companion object {
         const val AUTH_BUCKET = "auth"
         const val API_BUCKET = "api"
-        private const val ACTUATOR = "/actuator"
         private const val MILLIS_PER_SECOND = 1000L
         private val paths = PathPatternRequestMatcher.withDefaults()
 

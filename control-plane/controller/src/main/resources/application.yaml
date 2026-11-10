@@ -10,7 +10,7 @@ spring:
   grpc:
     server:
       port: 9090
-      # A dedicated Netty server; the servlet container only serves actuator endpoints.
+      # A dedicated Netty server; the servlet container only serves actuator endpoints, on the management port.
       servlet:
         enabled: false
       # Internal TLS from the cert-manager CA (D-0041); the chart defines the `grpc` PEM bundle.
@@ -18,8 +18,9 @@ spring:
         enabled: true
         bundle: grpc
 
+# The management port, like the API's (D-0190): the controller serves nothing else over HTTP.
 server:
-  port: 8080
+  port: 8081
 
 management:
   endpoint:

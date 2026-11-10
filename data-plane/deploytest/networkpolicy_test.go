@@ -105,7 +105,7 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(intruder, appValkey, 6379, false, "nothing else reaches Valkey"),
 		tcp(gateway, privateHost, 443, true, "the gateway reviews tokens at the API server"),
 		tcp(api, privateHost, 443, false, "the API never talks to Kubernetes"),
-		tcp(prometheus, api, 8080, false, "no scraping without monitoring"),
+		tcp(prometheus, api, 8081, false, "no scraping without monitoring"),
 		tcp(api, tempo, 4318, false, "no traces without monitoring"),
 	}
 	objects := render(t, minikubeValues)
@@ -117,7 +117,9 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 
 	monitored := render(t, hetznerValues)
 	for _, f := range []flow{
-		tcp(prometheus, api, 8080, true, "Prometheus scrapes the API"),
+		tcp(prometheus, api, 8081, true, "Prometheus scrapes the API's management port (D-0190)"),
+		tcp(prometheus, api, 8080, false, "Prometheus never reaches the API's own port, where X-Forwarded-For counts (D-0190)"),
+		tcp(prometheus, controller, 8081, true, "Prometheus scrapes the controller"),
 		tcp(prometheus, gateway, 8081, true, "Prometheus scrapes the gateway"),
 		tcp(api, tempo, 4318, true, "traces go to Tempo"),
 		tcp(backend, objectStorage, 443, true, "backends download templates from Hetzner Object Storage"),

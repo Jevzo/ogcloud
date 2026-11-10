@@ -7,8 +7,10 @@ import io.ogwars.cloud.persistence.SchemaVersionProbe
 import io.ogwars.cloud.service.GoldenFiles
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.web.server.LocalManagementPort
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.core.env.Environment
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -23,10 +25,12 @@ class ApiApplicationTest(
     @Autowired private val jdbc: JdbcClient,
     @Autowired private val schema: SchemaVersionProbe,
     @LocalServerPort private val port: Int,
+    @LocalManagementPort private val managementPort: Int,
     @Autowired private val environment: Environment,
 ) {
     private val http = HttpClient.newHttpClient()
     private val oauth = OAuthHttp(port)
+    private val management = OAuthHttp(managementPort)
     private val token =
         TestSigningKeys.accessToken(
             TestSigningKeys.key(TestSigningKeys.CURRENT),
@@ -36,8 +40,10 @@ class ApiApplicationTest(
     @Test
     fun `the API migrates the schema and reports ready`() {
         schema.isCurrent() shouldBe true
-        oauth.get("/actuator/health/readiness").statusCode() shouldBe OK
-        oauth.get("/actuator/prometheus").body() shouldContain "jvm_threads"
+        management.get("/actuator/health/readiness").statusCode() shouldBe OK
+        management.get("/actuator/prometheus").body() shouldContain "jvm_threads"
+        // Only Traefik reaches the API's own port, where X-Forwarded-For counts (D-0108, D-0190).
+        oauth.get("/actuator/prometheus").body() shouldNotContain "jvm_threads"
     }
 
     @Test

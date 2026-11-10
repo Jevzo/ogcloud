@@ -214,23 +214,23 @@ management:
 {{- end }}
 {{- end -}}
 
-{{/* Probes of the Spring services' actuator; the JVM gets 150 s to start. */}}
+{{/* Probes of the Spring services' actuator on their management port (D-0190); the JVM gets 150 s to start. */}}
 {{- define "ogcloud.springProbes" -}}
 startupProbe:
   httpGet:
     path: /actuator/health/liveness
-    port: http
+    port: admin
   periodSeconds: 5
   failureThreshold: 30
 livenessProbe:
   httpGet:
     path: /actuator/health/liveness
-    port: http
+    port: admin
   periodSeconds: 10
 readinessProbe:
   httpGet:
     path: /actuator/health/readiness
-    port: http
+    port: admin
   periodSeconds: 5
 {{- end -}}
 

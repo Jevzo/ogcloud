@@ -39,13 +39,6 @@ class RateLimitFilterTest {
     }
 
     @Test
-    fun `probes and scrapes are never limited`() {
-        run("GET", "/actuator/health/readiness").status shouldBe OK
-
-        taken shouldBe emptyList()
-    }
-
-    @Test
     fun `an empty bucket answers 429 with Retry-After`() {
         decision = RateDecision(false, Duration.ofMillis(1500))
 
@@ -65,7 +58,6 @@ class RateLimitFilterTest {
     }
 
     private companion object {
-        const val OK = 200
         const val TOO_MANY_REQUESTS = 429
     }
 }
