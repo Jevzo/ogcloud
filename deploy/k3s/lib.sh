@@ -27,13 +27,18 @@ built=" "
 # unless OGCLOUD_K3S_SKIP_IMAGES=true, then imports them. Platform images are tagged <tag>, server images
 # <platform version>-<tag>; the contract-test gateway stays out.
 k3d_images() {
-  local name=$1 version=${2:-$tag} checkout=${3:-.}
+  local name=$1 version=${2:-$tag} checkout=${3:-.} images
   if [ "${OGCLOUD_K3S_SKIP_IMAGES:-}" != true ] && [[ $built != *" $version "* ]]; then
     (cd "$checkout" && REGISTRY=$registry VERSION=$version mise run images:build)
     built="$built$version "
   fi
-  docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^$registry/[^:]+:([^:]*-)?$version\$" \
-    | grep -v contracttest | xargs k3d image import --cluster "$name"
+  images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "^$registry/[^:]+:([^:]*-)?$version\$" \
+    | grep -v contracttest || true)
+  if [ -z "$images" ]; then
+    echo "no $registry images tagged $version to import; build them, or unset OGCLOUD_K3S_SKIP_IMAGES" >&2
+    return 1
+  fi
+  xargs k3d image import --cluster "$name" <<< "$images"
 }
 
 # forward <log> <port-forward args>: kubectl's port-forward ends for good after one broken connection, which refused

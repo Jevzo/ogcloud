@@ -52,7 +52,13 @@ docker run --detach --name "$backups" --network "$network" \
   --volume "$PWD/$work/backup-identities.json:/etc/seaweedfs/s3.json:ro" \
   "$(sed -n 's/^seaweedfs=//p' testing/images.properties)" \
   server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json >/dev/null
+deadline=$((SECONDS + 120))
 until docker exec "$backups" sh -c "echo 's3.bucket.create -name $bucket' | weed shell" 2>/dev/null | grep -q "created bucket"; do
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "the backup target's SeaweedFS did not create bucket $bucket within 120s" >&2
+    docker logs --tail 40 "$backups" >&2
+    exit 1
+  fi
   sleep 2
 done
 address=$(docker inspect --format "{{(index .NetworkSettings.Networks \"$network\").IPAddress}}" "$backups")
