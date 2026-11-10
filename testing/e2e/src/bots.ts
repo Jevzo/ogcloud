@@ -45,6 +45,7 @@ export async function join(
       resolve();
     });
     player.bot.once("kicked", (reason) => fail(`kicked: ${text(reason)}`));
+    player.bot.once("end", (reason) => fail(`the connection ended: ${reason}`));
     player.bot.once("error", (error: NodeJS.ErrnoException) =>
       fail(error.message || error.code || "connection error"),
     );
@@ -67,6 +68,8 @@ export function connect(
     hideErrors: true,
     // Bots stand still: simulated movement translated across versions gets kicked as invalid_player_movement.
     physicsEnabled: false,
+    // Few chunks per bot, so hundreds fit one process in a load run (T-0609).
+    viewDistance: "tiny",
   });
   const messages: string[] = [];
   let kickReason: string | undefined;
