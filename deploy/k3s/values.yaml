@@ -6,6 +6,11 @@ loadbalancer:
   # k3s's servicelb binds it on the node.
   service:
     type: LoadBalancer
+  # ServiceLB masquerades every client as the node's address, so these limits are shared by all players (D-0178).
+  limits:
+    openPerAddress: 200
+    newPerSecond: 50
+    newBurst: 100
 networkPolicies:
   # k3s's API server listens on 6443 behind the kubernetes Service.
   apiServer:
