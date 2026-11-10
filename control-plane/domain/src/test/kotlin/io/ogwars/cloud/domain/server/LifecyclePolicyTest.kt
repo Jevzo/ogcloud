@@ -3,7 +3,9 @@ package io.ogwars.cloud.domain.server
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -11,6 +13,23 @@ import org.junit.jupiter.params.provider.CsvSource
 import java.time.Duration
 
 class LifecyclePolicyTest {
+    // A zero deadline would clean up every server the moment it is requested (D-0179's chart values).
+    @ParameterizedTest
+    @CsvSource("requested", "preparing", "starting", "heartbeat", "stopping", "transferGrace")
+    fun `every timeout must be positive`(state: String) {
+        val zero = Duration.ZERO
+        shouldThrow<IllegalArgumentException> {
+            when (state) {
+                "requested" -> LifecycleTimeouts(requested = zero)
+                "preparing" -> LifecycleTimeouts(preparing = zero)
+                "starting" -> LifecycleTimeouts(starting = zero)
+                "heartbeat" -> LifecycleTimeouts(heartbeat = zero)
+                "stopping" -> LifecycleTimeouts(stopping = zero)
+                else -> LifecycleTimeouts(transferGrace = Duration.ofSeconds(-1))
+            }
+        }.message shouldContain state
+    }
+
     private val policy = LifecyclePolicy()
     private val lobby = GroupId("lobby")
     private val dynamicGroup = group()

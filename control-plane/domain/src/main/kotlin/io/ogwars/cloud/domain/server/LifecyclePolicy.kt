@@ -17,7 +17,18 @@ data class LifecycleTimeouts(
     val stopping: Duration = Duration.ofMinutes(3),
     /** After a drain timeout, players get this long to be transferred before a forced stop. */
     val transferGrace: Duration = Duration.ofSeconds(30),
-)
+) {
+    init {
+        mapOf(
+            "requested" to requested,
+            "preparing" to preparing,
+            "starting" to starting,
+            "heartbeat" to heartbeat,
+            "stopping" to stopping,
+            "transferGrace" to transferGrace,
+        ).forEach { (state, timeout) -> require(timeout.isPositive) { "The $state timeout must be positive" } }
+    }
+}
 
 /** What the controller does with a server whose deadline passed. */
 sealed interface OverdueAction {

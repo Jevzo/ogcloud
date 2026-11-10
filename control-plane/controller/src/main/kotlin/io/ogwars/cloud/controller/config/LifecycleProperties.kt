@@ -14,6 +14,12 @@ data class LifecycleProperties(
     val reconcileInterval: Duration = Duration.ofSeconds(30),
     val scaleInterval: Duration = Duration.ofSeconds(5),
 ) {
+    init {
+        require(listOf(sweepInterval, reconcileInterval, scaleInterval).all(Duration::isPositive)) {
+            "The lifecycle loops' intervals must be positive"
+        }
+    }
+
     /** Limits on pod creation (D-0075). */
     data class Provisioning(
         val podsPerRun: Int = 5,
@@ -22,6 +28,7 @@ data class LifecycleProperties(
     ) {
         init {
             require(podsPerRun > 0 && maxPreparing > 0) { "podsPerRun and maxPreparing must be positive" }
+            require(interval.isPositive) { "The provisioner's interval must be positive" }
         }
     }
 }
