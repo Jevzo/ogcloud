@@ -129,3 +129,24 @@ func TestARestoreNeedsTheBackupTargetAndANewServerName(t *testing.T) {
 		"--set", "restore.fromServer=ogcloud-postgres", "--set", "backup.serverName=ogcloud-postgres")
 	refused(minikubeValues, "set backup.enabled", "--set", "restore.fromServer=ogcloud-postgres")
 }
+
+// The CronJob's history limits keep its last failed runs for inspection; a Job TTL would delete them first.
+func TestFailedTemplateCopiesStayForInspection(t *testing.T) {
+	job := render(t, hetznerValues).find(t, "CronJob", "ogcloud-backup-templates")
+	if ttl := get(job, "spec", "jobTemplate", "spec", "ttlSecondsAfterFinished"); ttl != nil {
+		t.Errorf("finished template copies are deleted after %v s, failed ones too", ttl)
+	}
+	if limit := get(job, "spec", "failedJobsHistoryLimit"); limit == nil || limit == 0 {
+		t.Errorf("failedJobsHistoryLimit = %v, want failed runs kept", limit)
+	}
+}
+
+// Without the in-cluster PostgreSQL's ObjectStore, the template copy alone must still name its target.
+func TestTheTemplateCopyNeedsItsTarget(t *testing.T) {
+	for _, field := range []string{"bucket", "endpoint"} {
+		_, err := helmTemplate(t, []string{hetznerValues}, "--set", "postgres.inCluster=false", "--set", "backup.s3."+field+"=")
+		if err == nil || !strings.Contains(err.Error(), "backup.s3."+field+" is required") {
+			t.Errorf("an empty backup.s3.%s rendered: %v", field, err)
+		}
+	}
+}

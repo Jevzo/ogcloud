@@ -17,7 +17,7 @@ containers:
     args: [{{ .subcommand }}]
     env:
       {{- include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_S3" "endpoint" (include "ogcloud.s3Endpoint" .root) "region" .root.Values.s3.region "bucket" .root.Values.s3.bucket "pathStyle" .root.Values.s3.pathStyle "keyFiles" "s3") | nindent 6 }}
-      {{- include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_BACKUP_S3" "endpoint" .root.Values.backup.s3.endpoint "region" .root.Values.backup.s3.region "bucket" .root.Values.backup.s3.bucket "pathStyle" .root.Values.backup.s3.pathStyle "keyFiles" "backup") | nindent 6 }}
+      {{- include "ogcloud.s3Env" (dict "prefix" "OGCLOUD_BACKUP_S3" "endpoint" (required "backup.s3.endpoint is required" .root.Values.backup.s3.endpoint) "region" .root.Values.backup.s3.region "bucket" (required "backup.s3.bucket is required" .root.Values.backup.s3.bucket) "pathStyle" .root.Values.backup.s3.pathStyle "keyFiles" "backup") | nindent 6 }}
       - name: OGCLOUD_BACKUP_RETENTION_DAYS
         value: {{ trimSuffix "d" .root.Values.retention.backups | quote }}
     securityContext:

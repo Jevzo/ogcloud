@@ -16,12 +16,12 @@ metadata:
 spec:
   schedule: {{ .Values.backup.templates.schedule | quote }}
   concurrencyPolicy: Forbid
+  # These limits clean up its Jobs; a TTL would delete the failed ones before anyone looked.
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       backoffLimit: 3
-      ttlSecondsAfterFinished: {{ .Values.retention.jobTtlSeconds }}
       template:
         metadata:
           labels:
