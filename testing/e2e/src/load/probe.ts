@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { kubectl } from "../cluster.ts";
 import type { Target } from "../target.ts";
+import { eventually } from "../wait.ts";
 import {
   type Histogram,
   parseHistogram,
@@ -14,6 +15,8 @@ const GATEWAY_ADMIN_PORT = 8081;
 const GATEWAY_SELECTOR = "app.kubernetes.io/component=gateway";
 const LOGIN_HISTOGRAM = "ogcloud_gateway_login_resolution_seconds";
 const FORWARDING = /Forwarding from 127\.0\.0\.1:(\d+)/;
+// A port-forward through a loaded node can drop its first connection, so a scrape is tried again.
+const SCRAPE_TIMEOUT_MS = 60_000;
 
 /** What every pod in the namespace uses right now, from the metrics server. */
 export async function usage(target: Target, namespace: string): Promise<Usage> {
@@ -42,10 +45,12 @@ export async function loginHistogram(target: Target): Promise<Histogram> {
   const buckets = new Map<number, number>();
   let count = 0;
   for (const pod of pods) {
-    const histogram = parseHistogram(
-      await metricsOf(target, pod),
-      LOGIN_HISTOGRAM,
+    const metrics = await eventually(
+      `${pod}'s metrics`,
+      () => metricsOf(target, pod),
+      SCRAPE_TIMEOUT_MS,
     );
+    const histogram = parseHistogram(metrics, LOGIN_HISTOGRAM);
     count += histogram.count;
     for (const [bound, value] of histogram.buckets) {
       buckets.set(bound, (buckets.get(bound) ?? 0) + value);
