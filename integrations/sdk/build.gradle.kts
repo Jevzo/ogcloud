@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.binary.compatibility.validator)
 }
 
+description = "The OgCloud plugin API for Minecraft servers and proxies"
+
 dependencies {
     // The validator's own ASM cannot read Java 25 classes (D-0066).
     "bcv-rt-jvm-cp"(libs.asm)

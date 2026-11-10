@@ -81,12 +81,27 @@ class ConventionPluginsTest {
     }
 
     @Test
-    fun `published-library declares the MIT license`() {
+    fun `published-library writes Central's POM at the release's version`() {
+        project("ogcloud.published-library")
+        write("build.gradle.kts", "plugins { id(\"ogcloud.published-library\") }\ndescription = \"A fixture\"\n")
+
+        run("generatePomFileForMavenPublication", "-PogcloudVersion=2.0.0")
+
+        val pom = File(projectDir, "build/publications/maven/pom-default.xml").readText()
+        pom shouldContain "<artifactId>ogcloud-fixture</artifactId>"
+        pom shouldContain "<version>2.0.0</version>"
+        pom shouldContain "<description>A fixture</description>"
+        pom shouldContain "MIT License"
+        pom shouldContain "<developerConnection>scm:git:ssh://git@github.com/Jevzo/ogcloud.git</developerConnection>"
+    }
+
+    @Test
+    fun `published-library refuses a POM without a description`() {
         project("ogcloud.published-library")
 
-        run("generatePomFileForMavenPublication")
+        val result = runner("generatePomFileForMavenPublication").buildAndFail()
 
-        File(projectDir, "build/publications/maven/pom-default.xml").readText() shouldContain "MIT License"
+        result.output shouldContain "needs a description for its POM"
     }
 
     private fun project(pluginId: String) {

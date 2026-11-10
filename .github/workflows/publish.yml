@@ -1,9 +1,10 @@
 name: Publish
 
 # Publishes one version (D-0193 to D-0197): every image for amd64 and arm64 on native runners, merged into one
-# manifest list per tag and signed keyless, the chart next to them, then a check of every signature and attestation.
-# The release workflow calls it for each release; started by hand it is a dry run under 0.0.0-dryrun-<commit>, which
-# the weekly cleanup removes again.
+# manifest list per tag and signed keyless, the chart next to them, then a check of every signature and attestation;
+# real releases also put the SDK on Maven Central (D-0195). The release workflow calls it for each release; started by
+# hand it is a dry run under 0.0.0-dryrun-<commit>, whose images and chart the weekly cleanup removes again and whose
+# SDK stays an unreleased deployment to drop in the Central Portal.
 on:
   workflow_call:
     inputs:
@@ -28,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      # What the SDK does on Central: release, upload (dry run) or none (pre-releases, D-0193).
+      central: ${{ steps.version.outputs.central }}
     steps:
       - id: version
         env:
@@ -35,9 +38,11 @@ jobs:
         run: |
           version=${RELEASE_VERSION:-0.0.0-dryrun-${GITHUB_SHA::7}}
           [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "not a version: $version" >&2; exit 1; }
+          if [[ -z $RELEASE_VERSION ]]; then central=upload; elif [[ $version == *-* ]]; then central=none; else central=release; fi
           echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "central=$central" >>"$GITHUB_OUTPUT"
 
-  # Nothing is published before this waits for your approval (D-0196).
+  # Nothing is published before this waits for your approval (D-0196); the SDK's job waits in the same review.
   approve:
     needs: version
     runs-on: ubuntu-latest
@@ -164,3 +169,29 @@ jobs:
           path: build/release
           merge-multiple: true
       - run: deploy/release/publish.sh verify build/release/refs-images.txt build/release/refs-chart.txt
+
+  sdk:
+    needs: version
+    if: needs.version.outputs.central != 'none'
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      ORG_GRADLE_PROJECT_ogcloudVersion: ${{ needs.version.outputs.version }}
+      ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      TASK: ${{ needs.version.outputs.central == 'release' && 'publishAndReleaseToMavenCentral' || 'publishToMavenCentral' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # The build signs only with a key, so a missing secret would upload an unsigned deployment Central rejects.
+      - run: |
+          for name in ORG_GRADLE_PROJECT_mavenCentralUsername ORG_GRADLE_PROJECT_mavenCentralPassword ORG_GRADLE_PROJECT_signingInMemoryKey; do
+            [[ -n ${!name} ]] || { echo "the release environment lacks the secret behind $name" >&2; exit 1; }
+          done
+      # No configuration cache, which would keep the Central credentials it read.
+      - run: mise x -- ./gradlew ":integrations:sdk:$TASK" --no-configuration-cache

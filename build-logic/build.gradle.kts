@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.spring.boot.gradle.plugin)
     implementation(libs.spotless.gradle.plugin)
     implementation(libs.shadow.gradle.plugin)
+    implementation(libs.maven.publish.gradle.plugin)
 
     testImplementation(gradleTestKit())
     testImplementation(platform(libs.junit.bom))
