@@ -37,6 +37,8 @@ loadbalancer:
     annotations:
       load-balancer.hetzner.cloud/name: ogcloud-minecraft
       load-balancer.hetzner.cloud/use-private-ip: "true"
+      # The load balancer takes client addresses only from PROXY headers its trustedProxies send (D-0118).
+      load-balancer.hetzner.cloud/uses-proxyprotocol: "true"
   trustedProxies:
     - 10.0.0.0/16
 edge:

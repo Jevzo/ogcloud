@@ -323,6 +323,15 @@ func TestTheMinecraftServiceAdmitsOnlyTheGivenSources(t *testing.T) {
 	}
 }
 
+// The load balancer requires a PROXY header from its trusted proxies (D-0118), so on Hetzner the cloud's load
+// balancer must send one, or every player is refused.
+func TestHetznersMinecraftLoadBalancerSendsTheProxyProtocol(t *testing.T) {
+	service := render(t, hetznerValues).find(t, "Service", "ogcloud-loadbalancer")
+	if got := str(service, "metadata", "annotations", "load-balancer.hetzner.cloud/uses-proxyprotocol"); got != "true" {
+		t.Errorf("uses-proxyprotocol = %q, want true behind loadbalancer.trustedProxies", got)
+	}
+}
+
 // The controller's lifecycle timeouts are chart values (D-0179); unset ones keep the controller's own defaults.
 func TestTheControllerTakesOnlyTheLifecycleTimeoutsGiven(t *testing.T) {
 	timeouts := func(values ...string) any {
