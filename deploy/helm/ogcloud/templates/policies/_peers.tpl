@@ -95,12 +95,39 @@ Building blocks of the NetworkPolicies (D-0154). Peers are list items for `from`
     {{- end }}
 {{- end -}}
 
+{{/* The port of a host:port address; one without a port fails the render. */}}
+{{- define "ogcloud.np.addressPort" -}}
+{{- $port := regexFind ":[0-9]+$" (trim .) | trimPrefix ":" }}
+{{- if not $port }}
+{{- fail (printf "%q names no port; external Valkey and Kafka addresses are host:port" .) }}
+{{- end }}
+{{- $port }}
+{{- end -}}
+
 {{/* What the Spring and Go services share: Valkey, Kafka and, with monitoring, Tempo. */}}
 {{- define "ogcloud.np.platformDependencies" -}}
 {{- $v := .Values }}
-{{ include "ogcloud.np.dependency" (dict "root" . "inCluster" $v.valkey.inCluster "ports" (list 6379 26379)
+{{- $valkeyPorts := list 6379 26379 }}
+{{- if not $v.valkey.inCluster }}
+{{- $valkeyPorts = list }}
+{{- range required "valkey.addresses is required for an external Valkey" $v.valkey.addresses }}
+{{- $valkeyPorts = append $valkeyPorts (include "ogcloud.np.addressPort" . | atoi) }}
+{{- end }}
+{{- /* Sentinel names the primary's address only at run time; 6379 is where Valkey serves by default. */}}
+{{- if $v.valkey.sentinelMaster }}
+{{- $valkeyPorts = append $valkeyPorts 6379 }}
+{{- end }}
+{{- end }}
+{{- $kafkaPorts := list 9093 }}
+{{- if not $v.kafka.inCluster }}
+{{- $kafkaPorts = list }}
+{{- range splitList "," $v.kafka.bootstrapServers }}
+{{- $kafkaPorts = append $kafkaPorts (include "ogcloud.np.addressPort" . | atoi) }}
+{{- end }}
+{{- end }}
+{{ include "ogcloud.np.dependency" (dict "root" . "inCluster" $v.valkey.inCluster "ports" (uniq $valkeyPorts)
   "peers" (include "ogcloud.np.component" (dict "root" . "component" "valkey"))) }}
-{{ include "ogcloud.np.dependency" (dict "root" . "inCluster" $v.kafka.inCluster "ports" (list 9093)
+{{ include "ogcloud.np.dependency" (dict "root" . "inCluster" $v.kafka.inCluster "ports" (uniq $kafkaPorts)
   "peers" (printf "- podSelector:\n    matchLabels:\n      strimzi.io/cluster: %s" $v.kafka.clusterName)) }}
 {{ include "ogcloud.np.tempo" . }}
 {{- end -}}

@@ -3,6 +3,7 @@ package deploytest
 import (
 	"fmt"
 	"net/netip"
+	"strings"
 	"testing"
 )
 
@@ -283,4 +284,30 @@ func describe(e endpoint) string {
 		return e.ip
 	}
 	return fmt.Sprintf("%s%v", e.namespace, e.labels)
+}
+
+// External dependencies are reached on the ports their addresses name, not only the defaults; Sentinel names the
+// primary's address at run time, so Valkey's default ports stay open too.
+func TestExternalDependenciesAreReachedOnTheirOwnPorts(t *testing.T) {
+	ports := valuesFile(t, "kafka: {bootstrapServers: 'kafka-1.example.com:19092,kafka-2.example.com:19092'}\n"+
+		"valkey: {addresses: ['sentinel.example.com:16380'], sentinelMaster: ogcloud}\n")
+	objects := render(t, chartDir+"/ci/external.yaml", ports)
+	external := endpoint{ip: "192.0.2.50"}
+	for _, f := range []flow{
+		tcp(api, external, 19092, true, "the API reaches Kafka at the port bootstrapServers names"),
+		tcp(controller, external, 16380, true, "the controller reaches Valkey's Sentinels at their port"),
+		tcp(gateway, external, 6379, true, "the gateway reaches the primary Sentinel names"),
+		tcp(api, external, 9093, false, "no port is open that no address names"),
+	} {
+		if got := objects.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
+			t.Errorf("external: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)
+		}
+	}
+}
+
+func TestAnExternalAddressWithoutAPortIsRefused(t *testing.T) {
+	_, err := helmTemplate(t, []string{chartDir + "/ci/external.yaml"}, "--set", "kafka.bootstrapServers=kafka.example.com")
+	if err == nil || !strings.Contains(err.Error(), "names no port") {
+		t.Errorf("a Kafka address without a port rendered: %v", err)
+	}
 }
