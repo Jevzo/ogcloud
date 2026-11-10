@@ -31,13 +31,11 @@ export async function join(
 ): Promise<Player> {
   const player = connect(target, name, version);
   await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(
-      () =>
-        reject(
-          new Error(`${name} did not spawn within ${SPAWN_TIMEOUT_MS} ms`),
-        ),
-      SPAWN_TIMEOUT_MS,
-    );
+    // A bot that never spawned would otherwise stay connected and hold a slot on the network.
+    const timer = setTimeout(() => {
+      player.bot.quit();
+      reject(new Error(`${name} did not spawn within ${SPAWN_TIMEOUT_MS} ms`));
+    }, SPAWN_TIMEOUT_MS);
     const fail = (reason: string) => {
       clearTimeout(timer);
       reject(new Error(`${name} could not join: ${reason}`));

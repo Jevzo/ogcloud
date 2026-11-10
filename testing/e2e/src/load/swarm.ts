@@ -32,6 +32,10 @@ export class Swarm {
       worker.once("exit", (code, signal) =>
         this.lost(worker, `its worker exited with ${code ?? signal}`),
       );
+      // A send to a worker that just died fails here instead of throwing at the caller.
+      worker.on("error", (error) =>
+        this.lost(worker, `its worker failed: ${error.message}`),
+      );
     }
   }
 
@@ -47,7 +51,8 @@ export class Swarm {
   /** Joins a bot on the next worker; resolves with the ms it took to stand on a backend, or fails with the reason. */
   join(name: string): Promise<number> {
     const worker = this.workers[this.turn++ % this.workers.length];
-    if (worker === undefined || worker.exitCode !== null) {
+    // A worker killed by a signal has no exit code, but its channel is closed.
+    if (worker === undefined || !worker.connected) {
       return Promise.reject(new Error(`${name} has no worker to join on`));
     }
     this.homes.set(name, worker);
@@ -61,7 +66,7 @@ export class Swarm {
   leave(name: string): void {
     const worker = this.homes.get(name);
     this.homes.delete(name);
-    if (worker !== undefined && worker.exitCode === null) {
+    if (worker?.connected) {
       worker.send({ type: "leave", name } satisfies Command);
     }
   }
@@ -76,7 +81,7 @@ export class Swarm {
   async close(): Promise<void> {
     await Promise.all(
       this.workers.map(async (worker) => {
-        if (worker.exitCode !== null || worker.signalCode !== null) {
+        if (!worker.connected) {
           return;
         }
         const exited = once(worker, "exit");

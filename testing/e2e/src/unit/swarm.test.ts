@@ -50,6 +50,22 @@ test("a bot whose worker exits fails instead of waiting forever", async () => {
   }
 });
 
+// A signal leaves no exit code, and sending to the dead worker would throw.
+test("a worker killed by a signal takes no more bots", async () => {
+  const swarm = Swarm.start(1, FAKE);
+  try {
+    await assert.rejects(swarm.join("kill"), {
+      message: "kill could not join: its worker exited with SIGKILL",
+    });
+    await assert.rejects(swarm.join("next"), {
+      message: "next has no worker to join on",
+    });
+    swarm.leave("kill");
+  } finally {
+    await swarm.close();
+  }
+});
+
 test("a bot leaves on the worker it joined on", async () => {
   const swarm = Swarm.start(2, FAKE);
   const left = new Promise<string>((resolve) => {

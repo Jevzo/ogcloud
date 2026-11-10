@@ -1,7 +1,7 @@
 import { type Command, now, type Report } from "../../load/swarm-protocol.ts";
 
 // Stands in for bot-worker.ts: bots named "bad…" fail, every other one joins at once and logs in again right after,
-// and "crash" ends the worker.
+// "crash" ends the worker and "kill" has it killed by a signal.
 
 function report(message: Report): void {
   process.send?.(message);
@@ -17,6 +17,9 @@ process.on("message", (command: Command) => {
   }
   if (command.name === "crash") {
     process.exit(3);
+  }
+  if (command.name === "kill") {
+    process.kill(process.pid, "SIGKILL");
   }
   if (command.name.startsWith("bad")) {
     report({
