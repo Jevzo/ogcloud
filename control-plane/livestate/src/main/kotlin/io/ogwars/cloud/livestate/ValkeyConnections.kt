@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.domain.common.redacted
 import io.lettuce.core.ClientOptions
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
@@ -46,7 +47,11 @@ data class ValkeySettings(
     /** Null for plaintext. */
     val tls: ValkeyTls? = null,
     val timeout: Duration = Duration.ofSeconds(5),
-)
+) {
+    override fun toString() =
+        "ValkeySettings(topology=$topology, username=$username, password=${redacted(password)}, tls=$tls, " +
+            "timeout=$timeout)"
+}
 
 /** String keys, Protobuf byte values. */
 typealias ValkeyConnection = StatefulRedisConnection<String, ByteArray>

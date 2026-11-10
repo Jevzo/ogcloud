@@ -6,6 +6,7 @@ import io.ogwars.cloud.api.auth.Owners
 import io.ogwars.cloud.api.auth.hash
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
+import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.user.ApiPermission
 import io.ogwars.cloud.service.SecretGenerator
@@ -35,7 +36,10 @@ data class OAuthClientCredentials(
     val clientSecret: String,
     val name: String,
     val scopes: List<String>,
-)
+) {
+    override fun toString() =
+        "OAuthClientCredentials(clientId=$clientId, clientSecret=$REDACTED, name=$name, scopes=$scopes)"
+}
 
 /** Machine clients with client credentials (D-0040); their scopes are permissions, set by owners only (D-0094). */
 @Service

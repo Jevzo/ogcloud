@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.auth.mfa
 import io.ogwars.cloud.api.auth.AuthProperties
 import io.ogwars.cloud.api.auth.SealedSecret
 import io.ogwars.cloud.api.auth.SecretCipher
+import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.StoredTotp
 import io.ogwars.cloud.domain.store.TotpStore
@@ -20,7 +21,10 @@ import java.util.UUID
 data class TotpEnrollment(
     val secret: String,
     val uri: String,
-)
+) {
+    // The link carries the secret too.
+    override fun toString() = "TotpEnrollment(secret=$REDACTED, uri=$REDACTED)"
+}
 
 /** Authenticator-app codes (D-0084), with secrets encrypted at rest (D-0097). */
 @Service

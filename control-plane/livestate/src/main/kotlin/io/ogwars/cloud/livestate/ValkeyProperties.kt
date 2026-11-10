@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.domain.common.redacted
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
@@ -20,6 +21,10 @@ data class ValkeyProperties(
             (host == null) != (sentinel == null),
         ) { "Set exactly one of ogcloud.valkey.host and ogcloud.valkey.sentinel" }
     }
+
+    override fun toString() =
+        "ValkeyProperties(host=$host, port=$port, sentinel=$sentinel, username=$username, " +
+            "password=${redacted(password)}, tls=$tls, timeout=$timeout)"
 
     /** [nodes] as `host:port`. */
     data class Sentinel(

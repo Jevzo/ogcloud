@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth.users
 
+import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.WebUser
 import java.time.Instant
@@ -37,7 +38,9 @@ data class CreateUserRequest(
     val email: String,
     val password: String,
     val roleId: String,
-)
+) {
+    override fun toString() = "CreateUserRequest(username=$username, email=$email, password=$REDACTED, roleId=$roleId)"
+}
 
 data class UpdateUserRequest(
     val username: String,
@@ -49,12 +52,16 @@ data class UpdateUserRequest(
 
 data class PasswordRequest(
     val password: String,
-)
+) {
+    override fun toString() = "PasswordRequest(password=$REDACTED)"
+}
 
 data class ChangePasswordRequest(
     val currentPassword: String,
     val newPassword: String,
-)
+) {
+    override fun toString() = "ChangePasswordRequest(currentPassword=$REDACTED, newPassword=$REDACTED)"
+}
 
 data class MeView(
     val id: UUID,
@@ -81,7 +88,9 @@ data class SetupRequest(
     val username: String,
     val email: String,
     val password: String,
-)
+) {
+    override fun toString() = "SetupRequest(setupToken=$REDACTED, username=$username, email=$email, password=$REDACTED)"
+}
 
 data class MinecraftLinkRequest(
     val playerName: String,

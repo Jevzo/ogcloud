@@ -1,5 +1,6 @@
 package io.ogwars.cloud.storage
 
+import io.ogwars.cloud.domain.common.REDACTED
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 
@@ -18,6 +19,10 @@ data class S3Settings(
     init {
         require(partSizeBytes >= MIN_PART_SIZE) { "partSizeBytes must be at least 5 MiB" }
     }
+
+    override fun toString() =
+        "S3Settings(endpoint=$endpoint, region=$region, bucket=$bucket, accessKey=$accessKey, secretKey=$REDACTED, " +
+            "pathStyle=$pathStyle, partSizeBytes=$partSizeBytes)"
 
     companion object {
         const val MIN_PART_SIZE = 5 * 1024 * 1024

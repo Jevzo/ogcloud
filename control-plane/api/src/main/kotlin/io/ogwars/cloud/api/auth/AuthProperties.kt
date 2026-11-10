@@ -1,5 +1,7 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.domain.common.REDACTED
+import io.ogwars.cloud.domain.common.redacted
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.net.URI
 import java.nio.file.Path
@@ -23,6 +25,10 @@ data class AuthProperties(
         ) { "ogcloud.auth.issuer must be an origin without a path" }
     }
 
+    override fun toString() =
+        "AuthProperties(issuer=$issuer, signing=$signing, totp=$totp, tokens=$tokens, clients=$clients, " +
+            "setupToken=${redacted(setupToken)})"
+
     data class Signing(
         /** Holds `<kid>.pem` RSA private keys (PKCS#8), synced from Infisical (D-0044). */
         val keysDir: Path,
@@ -33,7 +39,9 @@ data class AuthProperties(
         /** Base64 AES-256 keys by id, synced from Infisical through the config tree (D-0097). */
         val keys: Map<String, String>,
         val activeKeyId: String,
-    )
+    ) {
+        override fun toString() = "Totp(keys=${keys.mapValues { REDACTED }}, activeKeyId=$activeKeyId)"
+    }
 
     data class Tokens(
         val accessToken: Duration = Duration.ofMinutes(5),
@@ -65,5 +73,7 @@ data class AuthProperties(
             require(clientSecret.isNotBlank()) { "ogcloud.auth.clients.grafana.client-secret must not be blank" }
             require(session.isPositive) { "ogcloud.auth.clients.grafana.session must be positive" }
         }
+
+        override fun toString() = "Grafana(redirectUri=$redirectUri, clientSecret=$REDACTED, session=$session)"
     }
 }

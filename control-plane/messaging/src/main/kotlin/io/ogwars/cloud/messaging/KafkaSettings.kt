@@ -1,5 +1,6 @@
 package io.ogwars.cloud.messaging
 
+import io.ogwars.cloud.domain.common.REDACTED
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.common.config.SaslConfigs
 import org.apache.kafka.common.config.SslConfigs
@@ -10,7 +11,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class ScramCredentials(
     val username: String,
     val password: String,
-)
+) {
+    override fun toString() = "ScramCredentials(username=$username, password=$REDACTED)"
+}
 
 /** In-cluster TLS from the private CA (D-0041), as a PEM file mounted from a Secret. */
 data class TlsTrust(
