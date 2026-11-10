@@ -53,6 +53,11 @@
       "groupName": "Infisical"
     },
     {
+      "description": "The CLI and its config's schema move in one PR, or Biome warns about the mismatch",
+      "matchPackageNames": ["@biomejs/biome"],
+      "groupName": "Biome"
+    },
+    {
       "matchManagers": ["npm"],
       "semanticCommitScope": "ts"
     },
@@ -109,6 +114,16 @@
       "managerFilePatterns": ["/^testing/images\\.properties$/"],
       "matchStrings": ["[a-z0-9-]+=(?<depName>[^:\\s]+):(?<currentValue>\\S+)"],
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Biome's config names the schema of its CLI version, pinned in the pnpm catalog",
+      "customType": "regex",
+      "managerFilePatterns": ["/^biome\\.jsonc$/"],
+      "matchStrings": [
+        "biomejs\\.dev/schemas/(?<currentValue>[^/]+)/schema\\.json"
+      ],
+      "depNameTemplate": "@biomejs/biome",
+      "datasourceTemplate": "npm"
     }
   ]
 }
