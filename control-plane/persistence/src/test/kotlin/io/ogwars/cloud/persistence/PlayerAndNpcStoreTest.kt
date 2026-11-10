@@ -16,6 +16,9 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.util.UUID
 
@@ -24,6 +27,7 @@ class PlayerAndNpcStoreTest(
     @Autowired private val players: PlayerStore,
     @Autowired private val npcs: NpcStore,
     @Autowired private val groups: GroupStore,
+    @Autowired private val jdbc: JdbcClient,
 ) {
     private val uuid = UUID.fromString("00000000-0000-0000-0000-00000000abcd")
 
@@ -38,6 +42,39 @@ class PlayerAndNpcStoreTest(
         later.firstSeenAt shouldBe NOW
         later.lastSeenAt shouldBe NOW.plusSeconds(60)
         players.findByName("jevzorenamed")?.uuid shouldBe uuid
+    }
+
+    // Autocommit, as at a login; a trigger sees the setting each write commits with (D-0181).
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `only a login's record commits without waiting for the disk`() {
+        jdbc.sql("create table commit_modes (mode text)").update()
+        jdbc
+            .sql(
+                """
+                create function record_commit_mode() returns trigger language plpgsql as ${'$'}${'$'}
+                begin
+                    insert into commit_modes values (current_setting('synchronous_commit'));
+                    return new;
+                end ${'$'}${'$'}
+                """.trimIndent(),
+            ).update()
+        jdbc
+            .sql(
+                "create trigger record_commit_mode before insert or update on players for each row execute function record_commit_mode()",
+            ).update()
+        try {
+            players.recordSeen(uuid, "Jevzo", NOW, PlayerRank(uuid, "default", null))
+            players.updateRank(PlayerRank(uuid, "default", null))
+
+            jdbc.sql("select mode from commit_modes").query(String::class.java).list() shouldContainExactly
+                listOf("off", "on")
+        } finally {
+            jdbc.sql("drop trigger record_commit_mode on players").update()
+            jdbc.sql("drop function record_commit_mode()").update()
+            jdbc.sql("drop table commit_modes").update()
+            players.delete(uuid)
+        }
     }
 
     @Test

@@ -59,6 +59,8 @@ class JdbcPlayerStore(
             .query(PLAYER)
             .list()
 
+    // Logins wait for this write, so its commit does not wait for the disk; a crash loses at most the latest seen
+    // times and names, which the next login writes again (D-0181). The setting holds for the enclosing transaction.
     override fun recordSeen(
         uuid: UUID,
         name: String,
@@ -68,8 +70,9 @@ class JdbcPlayerStore(
         jdbc
             .sql(
                 """
+                with async_commit as materialized (select set_config('synchronous_commit', 'off', true))
                 insert into players (uuid, name, permission_group_id, rank_expires_at, first_seen_at, last_seen_at)
-                values (:uuid, :name, :group, :expiresAt, :at, :at)
+                select :uuid, :name, :group, :expiresAt, :at, :at from async_commit
                 on conflict (uuid) do update set name = excluded.name, last_seen_at = excluded.last_seen_at
                 returning *
                 """.trimIndent(),
