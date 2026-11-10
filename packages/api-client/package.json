@@ -9,9 +9,11 @@
   },
   "scripts": {
     "generate": "orval --config orval.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --test src/"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "orval": "catalog:",
     "typescript": "catalog:"
   }

@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { privacyErasePlayer, privacyExportPlayer } from "@ogcloud/api-client";
+import {
+  ApiError,
+  privacyErasePlayer,
+  privacyExportPlayer,
+} from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
 import { join, leave } from "../bots.ts";
 import { onlinePlayer, playerName, scenario } from "../suite.ts";
@@ -32,10 +36,9 @@ test("an erased player leaves nothing to export", async () => {
     `Erasing ${name}`,
   );
 
-  const afterwards = await privacyExportPlayer(uuid, context.api);
-  assert.equal(
-    afterwards.status as number,
-    404,
-    `an export after the erasure answered ${afterwards.status}`,
+  await assert.rejects(
+    privacyExportPlayer(uuid, context.api),
+    (error: unknown) => error instanceof ApiError && error.status === 404,
+    "an export after the erasure found the player",
   );
 });

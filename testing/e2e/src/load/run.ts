@@ -4,6 +4,7 @@ import { join as joinPath } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import {
+  ApiError,
   type Call,
   type CreateGroupRequest,
   type GroupView,
@@ -320,10 +321,12 @@ async function run(context: Suite): Promise<boolean> {
       (id): Step => [
         `Deleting group ${id}`,
         async () => {
-          const deleted = await groupDelete(id, api);
-          if (![202, 204, 404].includes(deleted.status)) {
-            throw new Error(`the API answered ${deleted.status}`);
-          }
+          // A group the run never created is gone already.
+          await groupDelete(id, api).catch((error: unknown) => {
+            if (!(error instanceof ApiError && error.status === 404)) {
+              throw error;
+            }
+          });
         },
       ],
     ),

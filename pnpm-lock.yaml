@@ -205,6 +205,9 @@ importers:
 
   packages/api-client:
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
       orval:
         specifier: 'catalog:'
         version: 8.46.0(zod@4.6.7)
