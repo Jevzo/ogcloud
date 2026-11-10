@@ -6,9 +6,12 @@ import { fileURLToPath } from "node:url";
 import {
   type Call,
   type CreateGroupRequest,
+  type GroupView,
   groupCreate,
   groupDelete,
+  groupGet,
   groupList,
+  groupUpdate,
   networkGet,
   networkUpdate,
   playerOnline,
@@ -19,7 +22,8 @@ import {
 } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
 import { join, leave, type Player } from "../bots.ts";
-import { awaitRunningGroups } from "../seed.ts";
+import { kubectl } from "../cluster.ts";
+import { awaitRunningGroups, GROUPS as SEEDED } from "../seed.ts";
 import { type Suite, suite } from "../suite.ts";
 import { tarGz } from "../tar.ts";
 import { eventually } from "../wait.ts";
@@ -59,6 +63,9 @@ const CRITERIA = {
 const TARGET = { players: 5000, servers: 320 };
 // Deleted groups wait for their purge (D-0043), so every run names its own.
 const GROUP_PREFIX = "load-";
+// The seeded proxy group grows for the run: two proxies with room and memory for every bot.
+const PROXIES = { count: 2, memory: "1536Mi" };
+const GROUP_LABEL = "cloud.ogwars.io/group";
 const RUN = randomBytes(3).toString("hex");
 const GROUPS = {
   first: `${GROUP_PREFIX}${RUN}-a`,
@@ -110,10 +117,17 @@ async function run(context: Suite): Promise<boolean> {
     200,
     "Reading the network",
   );
+  const proxy = expectStatus(
+    await groupGet(SEEDED.proxy, api),
+    200,
+    "Reading the proxy group",
+  );
   const players: Player[] = [];
   const latencies: Latencies = { join: [], transfer: [] };
   let restoreVersion: number | undefined;
+  let proxyVersion: number | undefined;
   try {
+    proxyVersion = await growProxies(context, proxy);
     const baseline = {
       servers: await runningServers(api),
       usage: await usage(target, target.namespace),
@@ -216,6 +230,9 @@ async function run(context: Suite): Promise<boolean> {
     return passed;
   } finally {
     leave(...players);
+    if (proxyVersion !== undefined) {
+      await setProxies(context, proxy.settings, proxyVersion);
+    }
     if (restoreVersion !== undefined) {
       expectStatus(
         await networkUpdate(
@@ -237,6 +254,74 @@ async function run(context: Suite): Promise<boolean> {
       }
     }
   }
+}
+
+/** Gives the proxy group room and memory for every bot and returns its new version. */
+async function growProxies(context: Suite, proxy: GroupView): Promise<number> {
+  const playersPerServer = Math.ceil((SETTINGS.players * 1.2) / PROXIES.count);
+  return await setProxies(
+    context,
+    {
+      ...proxy.settings,
+      scaling: {
+        ...proxy.settings.scaling,
+        minOnline: PROXIES.count,
+        maxInstances: PROXIES.count,
+        playersPerServer,
+      },
+      resources: {
+        ...proxy.settings.resources,
+        memoryRequest: PROXIES.memory,
+        memoryLimit: PROXIES.memory,
+      },
+    },
+    proxy.version,
+  );
+}
+
+/** Saves the proxy group's settings and replaces its proxies, since a pod keeps what it was created with. */
+async function setProxies(
+  context: Suite,
+  settings: GroupView["settings"],
+  version: number,
+): Promise<number> {
+  const { api, target } = context;
+  const saved = expectStatus(
+    await groupUpdate(SEEDED.proxy, { settings, version }, api),
+    200,
+    "Updating the proxy group",
+  );
+  await kubectl(
+    target,
+    [
+      "delete",
+      "pods",
+      "--selector",
+      `${GROUP_LABEL}=${SEEDED.proxy}`,
+      "--wait=false",
+    ],
+    SERVERS_NAMESPACE,
+  );
+  const { minOnline, playersPerServer } = settings.scaling;
+  await eventually(
+    `${minOnline} proxies with room for ${playersPerServer} players each`,
+    async () => {
+      const proxies = expectStatus(
+        await serverList({ groupId: SEEDED.proxy }, api),
+        200,
+        "Listing the proxies",
+      ).filter(
+        (server) =>
+          server.state === "RUNNING" && server.maxPlayers === playersPerServer,
+      );
+      return proxies.length >= minOnline ? true : undefined;
+    },
+    READY_TIMEOUT_MS,
+  );
+  console.log(
+    `${minOnline} proxies run with room for ${playersPerServer} players each`,
+  );
+  return saved.version;
 }
 
 async function createGroup(api: Call, id: string): Promise<void> {
