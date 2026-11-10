@@ -205,6 +205,8 @@ class VelocityAdapterTest {
         // Mid-switch the player has no server, so Velocity counts the refusal as a kick from the current one.
         val switching = player(currentServer = null)
         val serverFull = Component.translatable("multiplayer.disconnect.server_full")
+        // PandaSpigot 1.8 refuses in plain text.
+        val legacyFull = Component.text("The server is full!")
         val banned = Component.text("banned")
 
         fun turnedAway(reason: Component) =
@@ -217,14 +219,16 @@ class VelocityAdapterTest {
             ).also(listeners::onKickedFromServer)
         every { runtime.refused(steve, backend.id) } returns Route.To(backend.copy(id = "other"))
         val redirected = turnedAway(serverFull)
+        val legacyRedirected = turnedAway(legacyFull)
         val bannedThere = turnedAway(banned)
         every { runtime.refused(steve, backend.id) } returns Route.NoRoom
         val stranded = turnedAway(serverFull)
 
         (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
+        (legacyRedirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
         (bannedThere.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe banned
         (stranded.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe serverFull
-        verify(exactly = 2) { runtime.refused(steve, backend.id) }
+        verify(exactly = 3) { runtime.refused(steve, backend.id) }
     }
 
     @Test

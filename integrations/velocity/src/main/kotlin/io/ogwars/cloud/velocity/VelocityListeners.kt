@@ -23,6 +23,7 @@ import com.velocitypowered.api.permission.Tristate
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
 import net.kyori.adventure.text.TranslatableComponent
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 
 /** Velocity's events, handed to node-core's proxy runtime. */
 internal class VelocityListeners(
@@ -115,7 +116,11 @@ internal class VelocityListeners(
     }
 
     private fun isFull(event: KickedFromServerEvent): Boolean =
-        (event.serverKickReason.orElse(null) as? TranslatableComponent)?.key() == SERVER_FULL
+        when (val reason = event.serverKickReason.orElse(null)) {
+            is TranslatableComponent -> reason.key() == SERVER_FULL
+            null -> false
+            else -> PlainTextComponentSerializer.plainText().serialize(reason) == LEGACY_SERVER_FULL
+        }
 
     /** OgCloud decides players' permissions while its permission system is on; otherwise the previous provider does. */
     @Subscribe
@@ -145,8 +150,9 @@ internal class VelocityListeners(
     private fun text(message: Message) = legacyText(runtime.messages.text(message))
 
     companion object {
-        // Vanilla's reason when a server is at its player limit.
+        // Vanilla's reason when a server is at its player limit, and the text 1.8 servers such as PandaSpigot send.
         private const val SERVER_FULL = "multiplayer.disconnect.server_full"
+        private const val LEGACY_SERVER_FULL = "The server is full!"
 
         private val REPORTED_LOGINS =
             setOf(DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN, DisconnectEvent.LoginStatus.PRE_SERVER_JOIN)
