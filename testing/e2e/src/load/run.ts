@@ -25,15 +25,23 @@ import { kubectl } from "../cluster.ts";
 import { awaitRunningGroups, GROUPS as SEEDED } from "../seed.ts";
 import { type Suite, suite } from "../suite.ts";
 import { tarGz } from "../tar.ts";
+import type { Target } from "../target.ts";
 import { eventually } from "../wait.ts";
 import {
   extrapolate,
   type Measured,
+  paperLogins,
   percentile,
   shareWithin,
   type Usage,
 } from "./measure.ts";
-import { loginHistogram, saveLogs, usage } from "./probe.ts";
+import {
+  GROUP_LABEL,
+  groupLogs,
+  loginHistogram,
+  saveLogs,
+  usage,
+} from "./probe.ts";
 import { Swarm } from "./swarm.ts";
 import { now } from "./swarm-protocol.ts";
 
@@ -57,12 +65,14 @@ const SETTINGS = {
   jvmFlags: process.env.OGCLOUD_LOAD_JVM_FLAGS ?? "",
 };
 
-// D-0175's pass criteria.
+// D-0175's pass criteria. The end-to-end p99s count only where the game servers have the hardware for them, as on
+// Hetzner; on the test server they are reported (D-0183).
 const CRITERIA = {
   joinP99Ms: 2000,
   transferP99Ms: 2000,
   loginBoundSeconds: 0.05,
   loginShare: 0.99,
+  judgeEndToEnd: process.env.OGCLOUD_LOAD_JUDGE_END_TO_END === "true",
 };
 // D-0053: 5,000 players on about 300 servers and 20 proxies.
 const TARGET = { players: 5000, servers: 320 };
@@ -70,7 +80,6 @@ const TARGET = { players: 5000, servers: 320 };
 const GROUP_PREFIX = "load-";
 // The seeded proxy group grows for the run: two proxies with room and memory for every bot.
 const PROXIES = { count: 2, memory: "1536Mi" };
-const GROUP_LABEL = "cloud.ogwars.io/group";
 const RUN = randomBytes(3).toString("hex");
 const GROUPS = {
   first: `${GROUP_PREFIX}${RUN}-a`,
@@ -214,12 +223,18 @@ async function run(context: Suite): Promise<boolean> {
     const lostAfterTransfers = await lostSessions(api, players, GROUPS.first);
 
     const measured: Measured = { baseline, idle, loaded };
+    const paperLogin = {
+      first: await paperLoginSeconds(target, GROUPS.first),
+      second: await paperLoginSeconds(target, GROUPS.second),
+    };
     const report = {
       settings: SETTINGS,
       criteria: CRITERIA,
       target: TARGET,
       measured,
       games: { idle: idleGames, loaded: loadedGames },
+      // The game servers' own share of the joins and moves, in whole seconds (D-0183).
+      paperLogin,
       joins: {
         failed: failures,
         p50: percentile(latencies.join, 50),
@@ -250,9 +265,10 @@ async function run(context: Suite): Promise<boolean> {
       report.joins.failed === 0 &&
       report.lostSessions === 0 &&
       report.transfers.failed === 0 &&
-      report.joins.p99 < CRITERIA.joinP99Ms &&
-      report.transfers.p99 < CRITERIA.transferP99Ms &&
-      report.loginShareWithinBound >= CRITERIA.loginShare;
+      report.loginShareWithinBound >= CRITERIA.loginShare &&
+      (!CRITERIA.judgeEndToEnd ||
+        (report.joins.p99 < CRITERIA.joinP99Ms &&
+          report.transfers.p99 < CRITERIA.transferP99Ms));
     await writeReport({ ...report, passed });
     return passed;
   } finally {
@@ -459,6 +475,17 @@ async function warmUp(api: Call, swarm: Swarm): Promise<Latencies> {
   }
   console.log(`Warmed the servers with ${joined.length} bots`);
   return warm;
+}
+
+/** The p50 and p99 of Paper's login step across a group's servers, from their logs. */
+async function paperLoginSeconds(
+  target: Target,
+  group: string,
+): Promise<{ p50: number; p99: number }> {
+  const seconds = (await groupLogs(target, SERVERS_NAMESPACE, group)).flatMap(
+    paperLogins,
+  );
+  return { p50: percentile(seconds, 50), p99: percentile(seconds, 99) };
 }
 
 /** Joins every bot, a wave a second, and returns how many could not join. */

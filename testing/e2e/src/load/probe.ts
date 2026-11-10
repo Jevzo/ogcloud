@@ -19,6 +19,8 @@ const LOGIN_HISTOGRAM = "ogcloud_gateway_login_resolution_seconds";
 const FORWARDING = /Forwarding from 127\.0\.0\.1:(\d+)/;
 // A port-forward through a loaded node can drop its first connection, so a scrape is tried again.
 const SCRAPE_TIMEOUT_MS = 60_000;
+/** The pod label naming a game pod's group (contracts/pod-labels.yaml). */
+export const GROUP_LABEL = "cloud.ogwars.io/group";
 const PLATFORM_LOGS = [
   "ogcloud-api",
   "ogcloud-controller",
@@ -161,4 +163,33 @@ async function save(
     (error: Error) => `kubectl ${args.join(" ")} failed: ${error.message}\n`,
   );
   await writeFile(joinPath(dir, `${name}.log`), log);
+}
+
+/** The server logs of every pod of a group. */
+export async function groupLogs(
+  target: Target,
+  namespace: string,
+  group: string,
+): Promise<string[]> {
+  const pods = (
+    await kubectl(
+      target,
+      [
+        "get",
+        "pods",
+        "--selector",
+        `${GROUP_LABEL}=${group}`,
+        "--output",
+        "jsonpath={.items[*].metadata.name}",
+      ],
+      namespace,
+    )
+  )
+    .split(" ")
+    .filter((pod) => pod !== "");
+  return await Promise.all(
+    pods.map((pod) =>
+      kubectl(target, ["logs", pod, "--container", "server"], namespace),
+    ),
+  );
 }

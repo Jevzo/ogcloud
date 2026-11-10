@@ -139,3 +139,38 @@ function per(usage: Usage, count: number): Usage {
     ? { cpu: usage.cpu / count, memory: usage.memory / count }
     : { cpu: 0, memory: 0 };
 }
+
+const PRE_LOGIN = /^\[(\d\d):(\d\d):(\d\d) INFO\]: UUID of player (\S+) is /;
+const PLACED =
+  /^\[(\d\d):(\d\d):(\d\d) INFO\]: ([^\s[]+)\[[^\]]*\] logged in with entity id /;
+const DAY_SECONDS = 86_400;
+
+/**
+ * Seconds from each player's pre-login to their placement in a Paper server's log, in the log's one-second steps:
+ * the game server's own share of a join or move (D-0183).
+ */
+export function paperLogins(log: string): number[] {
+  const pending = new Map<string, number[]>();
+  const seconds: number[] = [];
+  for (const line of log.split("\n")) {
+    const pre = line.match(PRE_LOGIN);
+    if (pre !== null) {
+      const name = pre[4] ?? "";
+      pending.set(name, [...(pending.get(name) ?? []), clockSeconds(pre)]);
+      continue;
+    }
+    const placed = line.match(PLACED);
+    const name = placed?.[4];
+    const started = name === undefined ? undefined : pending.get(name)?.shift();
+    if (placed !== null && started !== undefined) {
+      seconds.push(
+        (clockSeconds(placed) - started + DAY_SECONDS) % DAY_SECONDS,
+      );
+    }
+  }
+  return seconds;
+}
+
+function clockSeconds(match: RegExpMatchArray): number {
+  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+}

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   extrapolate,
+  paperLogins,
   parseHistogram,
   parseTop,
   percentile,
@@ -66,4 +67,18 @@ test("the platform's cost per server and per player scales a run to the target",
   assert.deepEqual(result.perServer, { cpu: 10, memory: 10 });
   assert.deepEqual(result.perPlayer, { cpu: 1, memory: 0.5 });
   assert.deepEqual(result.atTarget, { cpu: 9000, memory: 9500 });
+});
+
+test("Paper's login time runs from a player's pre-login to their placement, across midnight too", () => {
+  const log = [
+    "[23:59:58 INFO]: UUID of player ld00001 is 5e1b6974-d083-3b55-93e9-370ad9cb9052",
+    "[23:59:59 INFO]: UUID of player ld00002 is 5b341691-a954-3271-a36b-4561b1ce0208",
+    "[23:59:59 INFO]: ld00001[/10.42.0.1:47560] logged in with entity id 1 at ([minecraft:overworld]9.5, -60.0, -0.5)",
+    "[00:00:03 INFO]: ld00002[/10.42.0.1:47561] logged in with entity id 2 at ([minecraft:overworld]9.5, -60.0, -0.5)",
+    "[00:00:04 INFO]: UUID of player ld00001 is 5e1b6974-d083-3b55-93e9-370ad9cb9052",
+    "[00:00:05 INFO]: ld00001[/10.42.0.1:47562] logged in with entity id 3 at ([minecraft:overworld]9.5, -60.0, -0.5)",
+    "[00:00:06 INFO]: UUID of player ld00003 is 6ef97133-299b-3dba-a487-430b5e586505",
+  ].join("\n");
+
+  assert.deepEqual(paperLogins(log), [1, 4, 1]);
 });
