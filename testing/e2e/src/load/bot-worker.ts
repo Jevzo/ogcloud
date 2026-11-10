@@ -13,7 +13,7 @@ if (send === undefined) {
   throw new Error("bot-worker.ts runs as a process forked by the swarm");
 }
 const target = targetFromEnv();
-const players: Player[] = [];
+const players = new Map<string, Player>();
 
 function report(message: Report): void {
   send?.(message);
@@ -23,7 +23,7 @@ async function joinBot(name: string): Promise<void> {
   const started = now();
   try {
     const player = await join(target, name);
-    players.push(player);
+    players.set(name, player);
     report({ type: "joined", name, ms: now() - started });
     player.bot.on("login", () => report({ type: "login", name, at: now() }));
   } catch (error) {
@@ -32,10 +32,21 @@ async function joinBot(name: string): Promise<void> {
 }
 
 process.on("message", (command: Command) => {
-  if (command.type === "quit") {
-    leave(...players);
-    setTimeout(() => process.exit(0), QUIT_GRACE_MS);
-    return;
+  switch (command.type) {
+    case "quit":
+      leave(...players.values());
+      setTimeout(() => process.exit(0), QUIT_GRACE_MS);
+      break;
+    case "leave": {
+      const player = players.get(command.name);
+      players.delete(command.name);
+      if (player !== undefined) {
+        leave(player);
+      }
+      break;
+    }
+    case "join":
+      void joinBot(command.name);
+      break;
   }
-  void joinBot(command.name);
 });

@@ -11,6 +11,10 @@ process.on("message", (command: Command) => {
   if (command.type === "quit") {
     process.exit(0);
   }
+  if (command.type === "leave") {
+    report({ type: "login", name: `${command.name} left`, at: now() });
+    return;
+  }
   if (command.name === "crash") {
     process.exit(3);
   }

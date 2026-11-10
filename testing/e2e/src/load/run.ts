@@ -83,6 +83,7 @@ const SETTLE_MS = 60_000;
 // A backend's heartbeat plus the proxies' 5-second refresh of the network's counts.
 const COUNTS_SETTLE_MS = 15_000;
 const NAME_PREFIX = "ld";
+const WARM_PREFIX = "warm";
 const REPORT_DIR = fileURLToPath(
   new URL("../../../../build/load", import.meta.url),
 );
@@ -156,6 +157,7 @@ async function run(context: Suite): Promise<boolean> {
       "Making the first load group the default",
     ).version;
     await awaitServers(api);
+    const warm = await warmUp(api, swarm);
     await sleep(SETTLE_MS);
     const idle = {
       servers: await runningServers(api),
@@ -229,6 +231,17 @@ async function run(context: Suite): Promise<boolean> {
         p99: percentile(latencies.transfer, 99),
       },
       lostSessions: lost + lostAfterTransfers,
+      // Measured on cold servers, outside the criteria (D-0182).
+      warmUp: {
+        joins: {
+          p50: percentile(warm.join, 50),
+          p99: percentile(warm.join, 99),
+        },
+        transfers: {
+          p50: percentile(warm.transfer, 50),
+          p99: percentile(warm.transfer, 99),
+        },
+      },
       loginShareWithinBound: logins.share,
       logins,
       extrapolated: extrapolate(measured, TARGET),
@@ -420,6 +433,32 @@ async function runningServers(api: Call): Promise<number> {
     200,
     "Listing the servers",
   ).filter((server) => server.state === "RUNNING").length;
+}
+
+/**
+ * Puts one bot on every server of both load groups, so the measured players meet warm servers (D-0182): as many bots
+ * as a group has servers join the first group, where routing spreads them, move to the second and leave.
+ */
+async function warmUp(api: Call, swarm: Swarm): Promise<Latencies> {
+  const warm: Latencies = { join: [], transfer: [] };
+  const joined: string[] = [];
+  await Promise.all(
+    Array.from({ length: SETTINGS.serversPerGroup }, async (_, index) => {
+      const name = `${WARM_PREFIX}${String(index).padStart(3, "0")}`;
+      try {
+        warm.join.push(await swarm.join(name));
+        joined.push(name);
+      } catch (error) {
+        console.error(`${name} did not join: ${(error as Error).message}`);
+      }
+    }),
+  );
+  await moveAll(api, swarm, joined, GROUPS.first, GROUPS.second, warm);
+  for (const name of joined) {
+    swarm.leave(name);
+  }
+  console.log(`Warmed the servers with ${joined.length} bots`);
+  return warm;
 }
 
 /** Joins every bot, a wave a second, and returns how many could not join. */

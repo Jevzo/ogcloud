@@ -20,6 +20,8 @@ export type LoginListener = (name: string, at: number) => void;
 export class Swarm {
   private readonly workers: readonly ChildProcess[];
   private readonly pending = new Map<string, Pending>();
+  // Where each bot was sent, so it can leave again.
+  private readonly homes = new Map<string, ChildProcess>();
   private readonly listeners = new Set<LoginListener>();
   private turn = 0;
 
@@ -48,10 +50,20 @@ export class Swarm {
     if (worker === undefined || worker.exitCode !== null) {
       return Promise.reject(new Error(`${name} has no worker to join on`));
     }
+    this.homes.set(name, worker);
     return new Promise((resolve, reject) => {
       this.pending.set(name, { worker, resolve, reject });
       worker.send({ type: "join", name } satisfies Command);
     });
+  }
+
+  /** Disconnects a bot, if its worker still runs. */
+  leave(name: string): void {
+    const worker = this.homes.get(name);
+    this.homes.delete(name);
+    if (worker !== undefined && worker.exitCode === null) {
+      worker.send({ type: "leave", name } satisfies Command);
+    }
   }
 
   /** Hears every later login of a joined bot, as on a transfer; returns what stops it. */

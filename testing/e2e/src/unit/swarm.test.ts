@@ -49,3 +49,23 @@ test("a bot whose worker exits fails instead of waiting forever", async () => {
     await swarm.close();
   }
 });
+
+test("a bot leaves on the worker it joined on", async () => {
+  const swarm = Swarm.start(2, FAKE);
+  const left = new Promise<string>((resolve) => {
+    swarm.onLogin((name) => {
+      if (name.endsWith(" left")) {
+        resolve(name);
+      }
+    });
+  });
+  try {
+    await swarm.join("a");
+    await swarm.join("b");
+    swarm.leave("b");
+
+    assert.equal(await left, "b left");
+  } finally {
+    await swarm.close();
+  }
+});

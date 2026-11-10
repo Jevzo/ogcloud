@@ -2,6 +2,7 @@
 
 export type Command =
   | { readonly type: "join"; readonly name: string }
+  | { readonly type: "leave"; readonly name: string }
   | { readonly type: "quit" };
 
 export type Report =
