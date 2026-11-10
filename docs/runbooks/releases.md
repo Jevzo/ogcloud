@@ -48,7 +48,8 @@ dry run's images and chart.
 and every real release, and deletes untagged images that no kept image refers to. GitHub runs schedules only from the
 default branch, so until 2.0 the `Schedules` workflow on `main` starts it, together with the weekly plugin and server
 bump (D-0199). Started by hand (`gh workflow run schedules.yml --ref main`), the cleanup only logs what it would delete
-unless you untick the dry run; the bump runs either way and may open its pull request.
+unless you untick the dry run; the bump runs either way and may open its pull request. GitHub never deletes a
+package's last version, so a package that held only dry runs keeps one piece until a release lands in it.
 
 ## One-time setup
 
