@@ -12,6 +12,17 @@ on:
         description: The version release-please tagged; empty for a dry run
         type: string
         required: true
+    # The SDK's Central credentials from the release environment. A reusable workflow sees only the secrets its caller
+    # passes, environment secrets included; the SDK job checks they are set, since pre-releases need none (D-0193).
+    secrets:
+      MAVEN_CENTRAL_USERNAME:
+        required: false
+      MAVEN_CENTRAL_PASSWORD:
+        required: false
+      SIGNING_KEY:
+        required: false
+      SIGNING_KEY_PASSWORD:
+        required: false
 
 permissions:
   contents: read
