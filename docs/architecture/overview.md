@@ -161,7 +161,9 @@ backups, orphaned objects).
     with only the RBAC they use; the public Gateway routes `/api`, `/oauth2`, `/.well-known`, `/login` and
     `/webauthn` to the API (D-0098).
   - With `monitoring.enabled` (Hetzner) the services send traces to Tempo and Prometheus scrapes them through
-    PodMonitors; Grafana loads the `OgCloud` dashboard. Without it nothing is exported.
+    PodMonitors; Grafana loads the `OgCloud` dashboard. Grafana Alloy, one per node, tails every pod's log into Loki,
+    a single binary that keeps 14 days (D-0187); Grafana shows Loki and Tempo next to Prometheus. Without it nothing
+    is exported. `mise run check:chart` renders every platform chart with its values and each target's.
   - Admin UIs (D-0045): with the VPN, Infisical and Grafana sit on the internal Gateway on Traefik's private
     `admin` entrypoint; Grafana signs in through OgCloud as a confidential client (D-0153) that gets no refresh
     token; owners become Grafana Admins and readers of the overview Viewers, and Grafana's access tokens carry no
