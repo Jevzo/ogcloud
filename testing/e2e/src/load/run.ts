@@ -65,14 +65,14 @@ const SETTINGS = {
   jvmFlags: process.env.OGCLOUD_LOAD_JVM_FLAGS ?? "",
 };
 
-// D-0175's pass criteria. The end-to-end p99s count only where the game servers have the hardware for them, as on
-// Hetzner; on the test server they are reported (D-0183).
+// D-0175's pass criteria. The latencies count only where game servers do not share the platform's nodes, as on
+// Hetzner; on the test server they are reported (D-0183, D-0184).
 const CRITERIA = {
   joinP99Ms: 2000,
   transferP99Ms: 2000,
   loginBoundSeconds: 0.05,
   loginShare: 0.99,
-  judgeEndToEnd: process.env.OGCLOUD_LOAD_JUDGE_END_TO_END === "true",
+  judgeLatency: process.env.OGCLOUD_LOAD_JUDGE_LATENCY === "true",
 };
 // D-0053: 5,000 players on about 300 servers and 20 proxies.
 const TARGET = { players: 5000, servers: 320 };
@@ -265,9 +265,9 @@ async function run(context: Suite): Promise<boolean> {
       report.joins.failed === 0 &&
       report.lostSessions === 0 &&
       report.transfers.failed === 0 &&
-      report.loginShareWithinBound >= CRITERIA.loginShare &&
-      (!CRITERIA.judgeEndToEnd ||
-        (report.joins.p99 < CRITERIA.joinP99Ms &&
+      (!CRITERIA.judgeLatency ||
+        (report.loginShareWithinBound >= CRITERIA.loginShare &&
+          report.joins.p99 < CRITERIA.joinP99Ms &&
           report.transfers.p99 < CRITERIA.transferP99Ms));
     await writeReport({ ...report, passed });
     return passed;
