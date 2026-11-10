@@ -38,6 +38,15 @@ class InfisicalForwardingTokenSourceTest {
         secret.value shouldBe "old\n"
     }
 
+    // Bootstrap always generates one, so none means a broken read; the new token alone would cut the proxies off.
+    @Test
+    fun `a token is never added where none are`() {
+        for (empty in listOf(MemorySecret(""), MemorySecret(null))) {
+            shouldThrow<IllegalStateException> { InfisicalForwardingTokenSource(empty).add("new") }
+            empty.writes shouldBe 0
+        }
+    }
+
     @Test
     fun `a missing secret has no tokens`() {
         InfisicalForwardingTokenSource(MemorySecret(null)).tokens() shouldBe emptyList()

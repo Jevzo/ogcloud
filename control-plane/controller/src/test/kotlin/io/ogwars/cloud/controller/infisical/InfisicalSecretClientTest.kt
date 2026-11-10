@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.infisical
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -46,6 +47,15 @@ class InfisicalSecretClientTest {
         server.expect(method(HttpMethod.GET)).andRespond(withStatus(HttpStatus.NOT_FOUND))
 
         client().read().shouldBeNull()
+    }
+
+    // Read as empty, the next rotation would write the new token alone and cut the proxies off.
+    @Test
+    fun `an answer without the value is an error, not an empty secret`() {
+        expectLogin()
+        server.expect(method(HttpMethod.GET)).andRespond(json("""{"secret":{"secretKey":"TOKENS"}}"""))
+
+        shouldThrow<IllegalStateException> { client().read() }
     }
 
     @Test

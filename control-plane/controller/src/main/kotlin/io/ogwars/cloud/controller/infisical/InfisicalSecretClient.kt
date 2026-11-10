@@ -40,6 +40,7 @@ class InfisicalSecretClient(
                 .body<SecretResponse>()
                 ?.secret
                 ?.secretValue
+                ?: error("Infisical answered without the value of ${properties.secretName}")
         } catch (e: HttpClientErrorException) {
             if (e.statusCode == HttpStatus.NOT_FOUND) null else throw e
         }

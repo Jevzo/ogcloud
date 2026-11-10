@@ -11,6 +11,8 @@ class InfisicalForwardingTokenSource(
 
     override fun add(token: String) {
         val tokens = tokens()
+        // Bootstrap always generates one; without it the new token alone would cut off the proxies still on the old.
+        check(tokens.isNotEmpty()) { "Infisical holds no forwarding token; refusing to replace the proxies' token" }
         if (token !in tokens) secret.write((tokens + token).joinToString("\n"))
     }
 
