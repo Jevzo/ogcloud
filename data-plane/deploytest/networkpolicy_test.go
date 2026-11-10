@@ -34,6 +34,7 @@ func pod(ns string, labels ...string) endpoint {
 var (
 	api             = component("api")
 	backupJob       = component("backup")
+	bootstrapJob    = component("bootstrap")
 	controller      = component("controller")
 	gateway         = component("gateway")
 	loadbalancer    = component("loadbalancer")
@@ -107,6 +108,26 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(api, privateHost, 443, false, "the API never talks to Kubernetes"),
 		tcp(prometheus, api, 8081, false, "no scraping without monitoring"),
 		tcp(api, tempo, 4318, false, "no traces without monitoring"),
+		// The platform's own paths (D-0154): each workload reaches its dependencies and nothing else does.
+		tcp(controller, postgresPod, 5432, true, "the controller reads and writes control-plane state"),
+		tcp(infisicalPod, postgresPod, 5432, true, "Infisical's database is in the shared cluster"),
+		tcp(loadbalancer, postgresPod, 5432, false, "the load balancer holds no database access"),
+		tcp(backupJob, postgresPod, 5432, false, "the template copy needs no database"),
+		tcp(api, appValkey, 6379, true, "the API's sessions, rate limits and read models"),
+		tcp(controller, appValkey, 6379, true, "the controller writes the read models"),
+		tcp(api, seaweed, 8333, true, "template uploads stream into S3 (D-0087)"),
+		tcp(controller, seaweed, 8333, true, "the controller stores the runtime bundles"),
+		tcp(intruder, seaweed, 8333, false, "nothing else reaches S3"),
+		tcp(backend, seaweed, 9333, false, "SeaweedFS's master port has no authentication"),
+		tcp(controller, privateHost, 443, true, "the controller manages pods through the API server"),
+		tcp(bootstrapJob, infisicalPod, 8443, true, "bootstrap sets up Infisical"),
+		tcp(bootstrapJob, privateHost, 443, true, "bootstrap writes the root Secrets"),
+		tcp(intruder, infisicalPod, 8443, false, "Infisical is no one else's"),
+		tcp(intruder, controller, 9090, false, "only the gateway calls the controller"),
+		tcp(intruder, gateway, 9443, false, "only game pods hold gateway sessions"),
+		// Port 443 to anywhere stays open to the API server until Terraform names its addresses (T-0802).
+		tcp(gateway, internet, 80, false, "the gateway calls nothing outside"),
+		tcp(loadbalancer, internet, 443, false, "the load balancer calls nothing outside"),
 	}
 	objects := render(t, minikubeValues)
 	for _, f := range flows {
