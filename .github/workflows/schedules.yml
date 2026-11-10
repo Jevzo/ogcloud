@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Let the GHCR cleanup only log what it would delete
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -16,6 +21,8 @@ jobs:
       contents: read
       packages: write
     uses: Jevzo/ogcloud/.github/workflows/ghcr-cleanup.yml@v2
+    with:
+      dry_run: ${{ inputs.dry_run == true }}
 
   runtime-pin-bumps:
     permissions:
