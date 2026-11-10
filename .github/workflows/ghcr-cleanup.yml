@@ -43,12 +43,13 @@ jobs:
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
       - id: packages
         run: echo "names=$(deploy/release/publish.sh packages)" >>"$GITHUB_OUTPUT"
-      # Tags of the publish workflow's dry runs, 0.0.0-dryrun-<commit> or <server version>-0.0.0-dryrun-<commit>.
+      # Tags of the publish workflow's dry runs, 0.0.0-dryrun-<commit> or <server version>-0.0.0-dryrun-<commit>. The
+      # action refuses nested repetitions such as ([0-9.]+-)?, so the patterns match the tag's end only.
       - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
         with:
           owner: ${{ github.repository_owner }}
           packages: ${{ steps.packages.outputs.names }}
-          delete-tags: '^([0-9.]+-)?0\.0\.0-dryrun-[0-9a-f]+$'
+          delete-tags: '(^|-)0\.0\.0-dryrun-[0-9a-f]+$'
           use-regex: true
           dry-run: ${{ inputs.dry_run == true }}
       # Real releases are 2.0.0 or <server version>-2.0.0; every other tag is a pre-release.
@@ -56,7 +57,7 @@ jobs:
         with:
           owner: ${{ github.repository_owner }}
           packages: ${{ steps.packages.outputs.names }}
-          exclude-tags: '^([0-9.]+-)?[0-9]+\.[0-9]+\.[0-9]+$'
+          exclude-tags: '(^|-)[0-9]+\.[0-9]+\.[0-9]+$'
           keep-n-tagged: 10
           delete-untagged: true
           use-regex: true
