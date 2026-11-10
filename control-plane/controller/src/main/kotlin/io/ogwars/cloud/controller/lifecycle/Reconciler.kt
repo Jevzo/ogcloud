@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.lifecycle
 
 import io.ogwars.cloud.controller.config.LifecycleProperties
 import io.ogwars.cloud.controller.kube.PodGateway
+import io.ogwars.cloud.controller.kube.PodLabels
 import io.ogwars.cloud.controller.kube.PodObservation
 import io.ogwars.cloud.controller.kube.PodRecovery
 import io.ogwars.cloud.controller.leader.LeaderLoop
@@ -22,8 +23,8 @@ import java.util.UUID
 
 /**
  * Repairs drift between live state and Kubernetes. It runs as soon as a replica becomes leader and then
- * periodically: orphan pods are adopted or deleted, servers whose pod vanished are ended, and sessions on
- * a vanished proxy are dropped.
+ * periodically: orphan pods are adopted or deleted, servers whose pod vanished are ended, sessions on
+ * a vanished proxy are dropped, and each pod's safe-to-evict annotation follows its server's players.
  */
 @Component
 class Reconciler(
@@ -55,6 +56,25 @@ class Reconciler(
         val podNames = existingPods.mapTo(HashSet()) { it.metadata.name }
         val ended = records.filter { it.expectsPod() && it.podName !in podNames }.onEach(::endWithoutPod).map { it.id }
         dropStaleSessions(recordIds - ended.toSet() + adopted)
+        keepEvictionInStep(records, existingPods)
+    }
+
+    // The heartbeat that sees a server empty or fill patches its pod (D-0047); a failed patch is not retried there.
+    private fun keepEvictionInStep(
+        records: List<Server>,
+        existingPods: List<Pod>,
+    ) {
+        val byName = existingPods.filter { it.metadata.deletionTimestamp == null }.associateBy { it.metadata.name }
+        records
+            .filter { it.state == ServerState.RUNNING || it.state == ServerState.DRAINING }
+            .forEach { server ->
+                val pod = byName[server.podName] ?: return@forEach
+                val safe = server.players == 0
+                if (pod.metadata.annotations?.get(PodLabels.SAFE_TO_EVICT) != safe.toString()) {
+                    pods.setSafeToEvict(server.podName, safe)
+                    repaired(EVICTION_ANNOTATION)
+                }
+            }
     }
 
     private fun adoptOrDelete(pod: Pod): UUID? {
@@ -103,5 +123,6 @@ class Reconciler(
         const val ORPHAN_DELETED = "orphan-deleted"
         const val MISSING_POD = "missing-pod"
         const val STALE_SESSION = "stale-session"
+        const val EVICTION_ANNOTATION = "eviction-annotation"
     }
 }

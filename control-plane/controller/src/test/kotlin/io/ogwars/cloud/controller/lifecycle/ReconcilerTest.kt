@@ -138,6 +138,24 @@ class ReconcilerTest {
         sessions.get(onGoneProxy) shouldBe null
     }
 
+    // A heartbeat retried after its patch failed finds its counts stored and patches nothing (D-0047). Here the
+    // fixture's heartbeats never reach the pod at all.
+    @Test
+    fun `a pod's safe-to-evict annotation follows its server's players`() {
+        val id = running(lobby)
+        val pod = createPod(lobby, id)
+
+        fun annotation() = livePod(pod).metadata.annotations?.get(PodLabels.SAFE_TO_EVICT)
+
+        f.lifecycle.heartbeat(id, players = 3, maxPlayers = 50, at = f.clock.instant().plusSeconds(1))
+        reconciler.runOnce()
+        annotation() shouldBe "false"
+
+        f.lifecycle.heartbeat(id, players = 0, maxPlayers = 50, at = f.clock.instant().plusSeconds(2))
+        reconciler.runOnce()
+        annotation() shouldBe "true"
+    }
+
     @Test
     fun `a run without drift changes nothing`() {
         val id = running(lobby).also { createPod(lobby, it) }
