@@ -13,6 +13,9 @@ file=${2:?$usage}
 namespace=${OGCLOUD_NAMESPACE:-ogcloud}
 selector=app.kubernetes.io/managed-by=ogcloud-bootstrap
 backup_credentials=ogcloud-backup-s3
+# What no restore works without, as the chart's bootstrap config names them (templates/bootstrap/_config.tpl):
+# Infisical's encryption key, bootstrap's state and the break-glass login (D-0173).
+essentials=(Secret/ogcloud-infisical-root ConfigMap/ogcloud-infisical-state Secret/ogcloud-infisical-break-glass)
 
 # Only what a restore needs: no uid, resourceVersion or timestamps of the old cluster.
 # shellcheck disable=SC2016 # A kubectl go-template: its $ are not the shell's.
@@ -45,16 +48,22 @@ case "$action" in
     umask 077
     mkdir -p "$(dirname "$file")"
     kubectl --namespace "$namespace" get secrets,configmaps --selector "$selector" --output go-template="$template" > "$file"
+    # Each object as Kind/name: the go-template above indents only metadata.name by two spaces.
+    names=$(awk '/^kind:/ { kind = $2 } /^  name:/ { print kind "/" $2 }' "$file")
+    missing=()
+    for essential in "${essentials[@]}"; do
+      grep -qxF "$essential" <<< "$names" || missing+=("$essential")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+      echo "the export in $file is incomplete: $namespace has no ${missing[*]} labelled $selector" >&2
+      exit 1
+    fi
     kubectl --namespace "$namespace" get secrets --field-selector "metadata.name=$backup_credentials" \
       --output go-template="$template" >> "$file"
     if ! grep -q "^  name: $backup_credentials\$" "$file"; then
       echo "warning: no $backup_credentials in $namespace; a restore will need it (backup.enabled)" >&2
     fi
-    count=$(grep -c '^kind:' "$file" || true)
-    if [ "$count" -eq 0 ]; then
-      echo "nothing labelled $selector in $namespace" >&2
-      exit 1
-    fi
+    count=$(grep -c '^kind:' "$file")
     echo "Exported $count objects to $file; keep it with the cluster's other credentials."
     ;;
   import)
