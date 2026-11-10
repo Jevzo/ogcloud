@@ -49,6 +49,12 @@ func render(t *testing.T, values ...string) rendered {
 	if err != nil {
 		t.Fatalf("helm template %v: %v", values, err)
 	}
+	return decodeRendered(t, output)
+}
+
+// decodeRendered parses helm template's output into its objects.
+func decodeRendered(t *testing.T, output []byte) rendered {
+	t.Helper()
 	decoder := yaml.NewDecoder(bytes.NewReader(output))
 	var objects rendered
 	for {
