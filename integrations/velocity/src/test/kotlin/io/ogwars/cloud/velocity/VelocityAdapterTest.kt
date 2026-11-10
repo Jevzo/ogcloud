@@ -218,7 +218,7 @@ class VelocityAdapterTest {
         every { runtime.refused(steve, backend.id) } returns Route.To(backend.copy(id = "other"))
         val redirected = turnedAway(serverFull)
         val bannedThere = turnedAway(banned)
-        every { runtime.refused(steve, backend.id) } returns Route.Kick(Message.KICK_NO_SERVERS)
+        every { runtime.refused(steve, backend.id) } returns Route.NoRoom
         val stranded = turnedAway(serverFull)
 
         (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other

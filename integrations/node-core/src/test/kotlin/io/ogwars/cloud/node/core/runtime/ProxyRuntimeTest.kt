@@ -231,11 +231,11 @@ class ProxyRuntimeTest {
             .initialServer(second)
             .shouldBeInstanceOf<Route.To>()
             .backend.id shouldBe "l-8"
-        runtime.initialServer(third).shouldBeInstanceOf<Route.Kick>()
+        runtime.initialServer(third) shouldBe Route.NoRoom
 
         // An arrived player counts once, as a player of the backend.
         platform.players += OnlinePlayer(first, "First", "l-7")
-        runtime.initialServer(third).shouldBeInstanceOf<Route.Kick>()
+        runtime.initialServer(third) shouldBe Route.NoRoom
 
         // A route that never arrived, say a refused connection, stops counting.
         now = now.plusSeconds(60)
@@ -287,7 +287,7 @@ class ProxyRuntimeTest {
             .refused(player, "l-7")
             .shouldBeInstanceOf<Route.To>()
             .backend.id shouldBe "l-8"
-        runtime.refused(player, "gone") shouldBe Route.Kick(Message.KICK_NO_SERVERS)
+        runtime.refused(player, "gone") shouldBe Route.NoRoom
     }
 
     // Its heartbeat may still show room; trying it again would only bounce players off it.

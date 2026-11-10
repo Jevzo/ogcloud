@@ -45,6 +45,8 @@ class RouterTest {
                 server("d", "lobby", max = 50, state = ServerState.SERVER_STATE_DRAINING),
                 server("s", "smp", max = 20),
                 server("x", "bedwars", max = 16),
+                server("u1", "unlimited", max = 0),
+                server("u2", "unlimited", max = 0),
             ),
         )
     }
@@ -88,7 +90,17 @@ class RouterTest {
         val smp = checkNotNull(directory["s"])
 
         (router.instead(lobby, bypass = false) { players[it.id] ?: 0 } as Route.To).backend.id shouldBe "c"
-        router.instead(smp, bypass = false) { 0 } shouldBe Route.Kick(Message.KICK_NO_SERVERS)
+        router.instead(smp, bypass = false) { 0 } shouldBe Route.NoRoom
+    }
+
+    // Its count may still show room, and a backend without a limit would otherwise look emptiest.
+    @Test
+    fun `a backend that just turned players away as full takes nobody from a group route`() {
+        val route = router.route(Destination.Group("unlimited"), bypass = false, full = setOf("u1")) { 0 }
+
+        (route as Route.To).backend.id shouldBe "u2"
+        router.route(Destination.Group("unlimited"), bypass = false, full = setOf("u1", "u2")) { 0 } shouldBe
+            Route.NoRoom
     }
 
     @Test
@@ -104,7 +116,7 @@ class RouterTest {
         network.update(maintenance("lobby", on = true))
         router.initial(bypass = false) { 0 } shouldBe Route.Kick(Message.KICK_GROUP_MAINTENANCE)
 
-        router.route(Destination.Group("nowhere"), bypass = false) { 0 } shouldBe Route.Kick(Message.KICK_NO_SERVERS)
+        router.route(Destination.Group("nowhere"), bypass = false) { 0 } shouldBe Route.NoRoom
     }
 
     private fun maintenance(

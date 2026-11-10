@@ -59,6 +59,7 @@ internal class VelocityListeners(
         when (val route = runtime.initialServer(event.player.uniqueId)) {
             is Route.To -> proxy.getServer(route.backend.id).ifPresent(event::setInitialServer)
             is Route.Kick -> event.player.disconnect(text(route.reason))
+            Route.NoRoom -> event.player.disconnect(text(Message.KICK_NO_SERVERS))
         }
     }
 

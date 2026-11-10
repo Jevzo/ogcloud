@@ -129,7 +129,8 @@ class ProxyRuntime(
     }
 
     /** The first backend for a player who just logged in. */
-    fun initialServer(player: UUID): Route = sending(player) { router.initial(bypass(player), it) }
+    fun initialServer(player: UUID): Route =
+        sending(player) { full, players -> router.initial(bypass(player), full, players) }
 
     /**
      * Where a player goes whom [backendId] turned away as full while they had no server left. The backend counts as
@@ -139,9 +140,9 @@ class ProxyRuntime(
         player: UUID,
         backendId: String,
     ): Route {
-        val backend = directory[backendId] ?: return Route.Kick(Message.KICK_NO_SERVERS)
+        val backend = directory[backendId] ?: return Route.NoRoom
         fullSince[backendId] = clock.instant()
-        return sending(player) { router.instead(backend, bypass(player), it) }
+        return sending(player) { full, players -> router.instead(backend, bypass(player), full, players) }
     }
 
     fun joined(
@@ -169,7 +170,7 @@ class ProxyRuntime(
     fun route(
         player: UUID,
         destination: Destination,
-    ): Route = sending(player) { router.route(destination, bypass(player), it) }
+    ): Route = sending(player) { full, players -> router.route(destination, bypass(player), full, players) }
 
     override fun startTasks() {
         every(SNAPSHOT, "player snapshot", ::snapshot)
@@ -253,7 +254,12 @@ class ProxyRuntime(
             .filter {
                 it.serverId in inGroup
             }.forEach { player ->
-                apply(player.uuid, sending(player.uuid) { router.route(Destination.Group(update.groupId), false, it) })
+                apply(
+                    player.uuid,
+                    sending(player.uuid) { full, players ->
+                        router.route(Destination.Group(update.groupId), bypass = false, full, players)
+                    },
+                )
             }
     }
 
@@ -327,9 +333,9 @@ class ProxyRuntime(
         val unplaced =
             players.count { player ->
                 val route = routeOf(player)
-                val noRoom = route is Route.Kick && route.reason == Message.KICK_NO_SERVERS && player.serverId != null
-                if (!noRoom) apply(player.uuid, route)
-                noRoom
+                val stays = route == Route.NoRoom && player.serverId != null
+                if (!stays) apply(player.uuid, route)
+                stays
             }
         return if (unplaced ==
             0
@@ -346,6 +352,7 @@ class ProxyRuntime(
     ) = when (route) {
         is Route.To -> platform.connect(player, route.backend)
         is Route.Kick -> platform.kick(player, messages.text(route.reason))
+        Route.NoRoom -> platform.kick(player, messages.text(Message.KICK_NO_SERVERS))
     }
 
     private fun snapshot() {
@@ -383,8 +390,8 @@ class ProxyRuntime(
     private fun refreshPlayerCounts() {
         queries.servers().whenComplete { servers, error ->
             if (error != null) {
-                // Stale counts only make routing less even until the next refresh.
-                log.log(System.Logger.Level.DEBUG, "Could not refresh the player counts", error)
+                // Routing goes on with the last counts, so a full backend may take players until a refresh works.
+                log.log(System.Logger.Level.WARNING, "Could not refresh the player counts", error)
             } else {
                 networkCounts(servers.associate { it.serverId to it.players })
             }
@@ -402,10 +409,12 @@ class ProxyRuntime(
      */
     private fun sending(
         player: UUID,
-        decide: ((Backend) -> Int) -> Route,
+        decide: (full: Set<String>, players: (Backend) -> Int) -> Route,
     ): Route =
         routing.withLock {
-            decide(playerCounts()).also { route ->
+            val oldest = clock.instant().minus(EN_ROUTE)
+            fullSince.values.removeIf { it < oldest }
+            decide(fullSince.keys.toSet(), playerCounts(oldest)).also { route ->
                 if (route is Route.To) {
                     enRoute[player] = EnRoute(route.backend.id, clock.instant())
                 } else {
@@ -415,24 +424,15 @@ class ProxyRuntime(
         }
 
     // A backend's players: the other proxies' from the heartbeats, this proxy's own live, and those on their way there
-    // (D-0176). A route counts until its player arrives or it is too old, say because the backend refused them; a
-    // backend that turned a player away as full counts as full for as long.
-    private fun playerCounts(): (Backend) -> Int {
+    // (D-0176). A route counts until its player arrives or is older than [oldest], say because the backend refused
+    // them; a backend that turned a player away as full is left out for as long (fullSince).
+    private fun playerCounts(oldest: Instant): (Backend) -> Int {
         val online = platform.onlinePlayers()
         val where = online.associate { it.uuid to it.serverId }
-        val oldest = clock.instant().minus(EN_ROUTE)
         enRoute.entries.removeIf { (player, route) -> route.since < oldest || where[player] == route.backendId }
-        fullSince.values.removeIf { it < oldest }
         val here = online.groupingBy { it.serverId }.eachCount()
         val coming = enRoute.values.groupingBy { it.backendId }.eachCount()
-        val full = fullSince.keys.toSet()
-        return { backend ->
-            if (backend.id in full) {
-                backend.maxPlayers
-            } else {
-                (otherProxies[backend.id] ?: 0) + (here[backend.id] ?: 0) + (coming[backend.id] ?: 0)
-            }
-        }
+        return { backend -> (otherProxies[backend.id] ?: 0) + (here[backend.id] ?: 0) + (coming[backend.id] ?: 0) }
     }
 
     private fun status(enabled: Boolean) =
