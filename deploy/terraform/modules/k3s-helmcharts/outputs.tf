@@ -15,4 +15,9 @@ output "documents" {
     ])
     error_message = "platform-deps.yaml knows only `when: monitoring`."
   }
+
+  precondition {
+    condition     = contains(local.deps.targets, var.target)
+    error_message = "target ${var.target} is not one of platform-deps.yaml's targets: ${join(", ", local.deps.targets)}."
+  }
 }

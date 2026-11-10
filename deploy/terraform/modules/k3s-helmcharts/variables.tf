@@ -1,5 +1,5 @@
 variable "target" {
-  description = "The install target whose `targets.<name>` values platform-deps.yaml adds to each chart, e.g. hetzner."
+  description = "The install target whose `targets.<name>` values platform-deps.yaml adds to each chart, one of its `targets`, e.g. hetzner."
   type        = string
   nullable    = false
 }

@@ -1,3 +1,5 @@
+targets: [hetzner]
+
 manifests:
   - name: sometimes-crds
     when: sometimes

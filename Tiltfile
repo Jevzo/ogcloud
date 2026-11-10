@@ -29,6 +29,8 @@ if not os.path.exists(DEV + '/seed.yaml'):
 local_resource('namespace', cmd='kubectl apply -f deploy/namespace.yaml', labels=['platform'])
 
 deps = read_yaml('deploy/platform-deps.yaml')
+if TARGET not in deps['targets']:
+    fail('platform-deps.yaml names no install target ' + TARGET)
 previous = ['namespace']
 for manifest in deps['manifests']:
     if manifest.get('when') == 'monitoring' and not MONITORING:

@@ -1,4 +1,6 @@
 # A small platform-deps.yaml in the real file's shape; the manifest's sha256 is that of the mocked body.
+targets: [minikube, hetzner]
+
 manifests:
   - name: crds
     url: https://manifests.example.test/crds.yaml

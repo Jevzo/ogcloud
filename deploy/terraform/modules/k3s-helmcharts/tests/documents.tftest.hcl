@@ -231,3 +231,13 @@ run "reads_the_repositorys_platform_deps" {
 
   expect_failures = [data.http.manifest]
 }
+
+run "refuses_a_target_platform_deps_does_not_name" {
+  command = plan
+
+  variables {
+    target = "hetzer"
+  }
+
+  expect_failures = [output.documents]
+}

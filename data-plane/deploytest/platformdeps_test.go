@@ -11,6 +11,7 @@ import (
 )
 
 type platformDeps struct {
+	InstallTargets []string `yaml:"targets"`
 	Manifests []struct {
 		Name    string `yaml:"name"`
 		When    string `yaml:"when"`
@@ -36,7 +37,6 @@ type platformDeps struct {
 var (
 	exactVersion = regexp.MustCompile(`^v?\d+\.\d+\.\d+$`)
 	sha256Hex    = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	knownTargets = []string{"minikube", "hetzner"}
 )
 
 // Every dependency is pinned to one stable release (AGENTS.md §9), so Tilt, Terraform and k3s install the same.
@@ -66,7 +66,7 @@ func TestPlatformDependenciesArePinnedExactly(t *testing.T) {
 			t.Errorf("chart %s: unknown toggle %q", chart.Name, chart.When)
 		}
 		for target := range chart.Targets {
-			if !slices.Contains(knownTargets, target) {
+			if !slices.Contains(deps.InstallTargets, target) {
 				t.Errorf("chart %s: unknown install target %q", chart.Name, target)
 			}
 		}
