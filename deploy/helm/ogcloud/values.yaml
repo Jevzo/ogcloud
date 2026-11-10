@@ -300,6 +300,10 @@ loadbalancer:
     annotations: {}
   # CIDRs whose connections must start with a PROXY header, e.g. the Hetzner load balancer's range (D-0118).
   trustedProxies: []
+  # Per client address, as openPerAddress, newPerSecond and newBurst; a key left out keeps the load balancer's own
+  # default (D-0118). Behind k3s's ServiceLB every client shares one masqueraded address, so there they limit the
+  # whole network.
+  limits: {}
 
 # Nothing piles up (D-0043); the controller's cleanup loop applies these.
 # Backups (D-0166): PostgreSQL through CloudNativePG's Barman Cloud plugin, and the template objects through the

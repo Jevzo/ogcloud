@@ -40,6 +40,12 @@ spec:
               value: ":25565"
             - name: OGCLOUD_LB_TRUSTED_PROXIES
               value: {{ join "," .Values.loadbalancer.trustedProxies | quote }}
+            {{- range $key, $variable := dict "openPerAddress" "OGCLOUD_LB_MAX_OPEN_PER_IP" "newPerSecond" "OGCLOUD_LB_NEW_PER_SECOND" "newBurst" "OGCLOUD_LB_NEW_BURST" }}
+            {{- with index $.Values.loadbalancer.limits $key }}
+            - name: {{ $variable }}
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- include "ogcloud.goDependencies" (dict "root" . "user" "loadbalancer") | nindent 12 }}
           ports:
             - name: minecraft

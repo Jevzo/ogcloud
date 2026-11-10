@@ -1,6 +1,9 @@
 package deploytest
 
 import (
+	"maps"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -268,5 +271,33 @@ func TestTheControllerMayHoldItsLeaderLease(t *testing.T) {
 		if !allowed {
 			t.Errorf("the controller may not %s its leader Lease", verb)
 		}
+	}
+}
+
+// The load balancer's per-address limits keep its own defaults unless set (D-0118); load runs raise them, since a
+// test host's bots share one address (D-0175).
+func TestTheLoadBalancerTakesOnlyTheLimitsItIsGiven(t *testing.T) {
+	limits := func(values ...string) map[string]string {
+		t.Helper()
+		env := podEnv(t, firstContainer(t, render(t, values...).find(t, "Deployment", "ogcloud-loadbalancer")), nil)
+		set := map[string]string{}
+		for _, name := range []string{"OGCLOUD_LB_MAX_OPEN_PER_IP", "OGCLOUD_LB_NEW_PER_SECOND", "OGCLOUD_LB_NEW_BURST"} {
+			if value, ok := env[name]; ok {
+				set[name] = value
+			}
+		}
+		return set
+	}
+	if set := limits(minikubeValues); len(set) != 0 {
+		t.Errorf("the chart sets limits nobody asked for: %v", set)
+	}
+	raised := filepath.Join(t.TempDir(), "load.yaml")
+	if err := os.WriteFile(raised, []byte("loadbalancer: {limits: {openPerAddress: 1000, newBurst: 500}}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if set := limits(minikubeValues, raised); !maps.Equal(set, map[string]string{
+		"OGCLOUD_LB_MAX_OPEN_PER_IP": "1000", "OGCLOUD_LB_NEW_BURST": "500",
+	}) {
+		t.Errorf("raised limits = %v", set)
 	}
 }

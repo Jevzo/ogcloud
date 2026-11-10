@@ -99,7 +99,21 @@
     "api": { "type": "object" },
     "controller": { "type": "object" },
     "gateway": { "type": "object" },
-    "loadbalancer": { "type": "object" },
+    "loadbalancer": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "description": "Per client address (D-0118).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openPerAddress": { "type": "integer", "minimum": 1 },
+            "newPerSecond": { "type": "integer", "minimum": 1 },
+            "newBurst": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
     "retention": { "type": "object" },
     "edge": { "type": "object" },
     "bootstrap": { "type": "object" },
