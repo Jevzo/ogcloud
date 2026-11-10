@@ -1,7 +1,10 @@
 package deploytest
 
 import (
+	"errors"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -12,7 +15,7 @@ import (
 
 type platformDeps struct {
 	InstallTargets []string `yaml:"targets"`
-	Manifests []struct {
+	Manifests      []struct {
 		Name    string `yaml:"name"`
 		When    string `yaml:"when"`
 		URL     string `yaml:"url"`
@@ -152,5 +155,70 @@ func TestGatewaysListenOnTraefiksEntrypoints(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// renderPlatformChartsEnv opts into TestEveryPlatformChartRendersWithItsValues, which downloads every chart;
+// `mise run check:chart` sets it.
+const renderPlatformChartsEnv = "OGCLOUD_RENDER_PLATFORM_CHARTS"
+
+// Every third-party chart renders with its values, alone and with each install target's (D-0187): a value a chart
+// stopped taking, or a target's values that no longer fit, fails here instead of in a cluster.
+func TestEveryPlatformChartRendersWithItsValues(t *testing.T) {
+	if os.Getenv(renderPlatformChartsEnv) != "true" {
+		t.Skipf("set %s=true; it downloads every chart in platform-deps.yaml", renderPlatformChartsEnv)
+	}
+	deps := loadPlatformDeps(t)
+	cache := filepath.Join("..", "..", "build", "charts")
+	for _, chart := range deps.Charts {
+		t.Run(chart.Name, func(t *testing.T) {
+			// A directory per pin: an archive is named after the chart's own name, which may differ from chart.Chart.
+			dir := filepath.Join(cache, chart.Name, chart.Version)
+			archives, _ := filepath.Glob(filepath.Join(dir, "*.tgz"))
+			if len(archives) != 1 {
+				if err := errors.Join(os.RemoveAll(dir), os.MkdirAll(dir, 0o750)); err != nil {
+					t.Fatal(err)
+				}
+				run(t, "helm", "pull", chart.Chart, "--repo", chart.Repository, "--version", chart.Version, "--destination", dir)
+				archives, _ = filepath.Glob(filepath.Join(dir, "*.tgz"))
+			}
+			if len(archives) != 1 {
+				t.Fatalf("helm pull left %v in %s", archives, dir)
+			}
+			archive := archives[0]
+			base := writeYAML(t, chart.Values)
+			for _, target := range append([]string{""}, deps.InstallTargets...) {
+				args := []string{"template", chart.Name, archive, "--namespace", chart.Namespace, "-f", base}
+				if target != "" {
+					values, ok := chart.Targets[target]
+					if !ok {
+						continue
+					}
+					args = append(args, "-f", writeYAML(t, values))
+				}
+				run(t, "helm", args...)
+			}
+		})
+	}
+}
+
+func writeYAML(t *testing.T, value any) string {
+	t.Helper()
+	data, err := yaml.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(t.TempDir(), "values.yaml")
+	if err := os.WriteFile(file, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return file
+}
+
+func run(t *testing.T, name string, args ...string) {
+	t.Helper()
+	command := exec.CommandContext(t.Context(), name, args...)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("%s %s: %v\n%s", name, strings.Join(args, " "), err, output)
 	}
 }

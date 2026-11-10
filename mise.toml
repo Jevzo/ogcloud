@@ -179,7 +179,7 @@ git ls-files -z '*.sh' | xargs -0 shellcheck
 # Lints the chart and validates every value set in its ci/ folder (D-0148); the Go render tests in
 # data-plane/deploytest run with check:go. Schemas come from pinned commits, so a run is reproducible.
 [tasks."check:chart"]
-description = "helm lint and kubeconform for every value set of the OgCloud chart"
+description = "helm lint and kubeconform for every value set of the OgCloud chart, then every platform chart rendered"
 shell = "bash -c"
 run = """
 set -euo pipefail
@@ -193,6 +193,8 @@ for values in "$chart"/ci/*.yaml; do
     | kubeconform -strict -summary -kubernetes-version 1.37.0 \
         -schema-location "$kubernetes_schemas" -schema-location "$crd_schemas"
 done
+# Every chart in platform-deps.yaml with its values and each target's, cached in build/charts (D-0187).
+OGCLOUD_RENDER_PLATFORM_CHARTS=true go -C data-plane test -count=1 -run TestEveryPlatformChartRendersWithItsValues ./deploytest/
 """
 
 [tasks."check:go"]
