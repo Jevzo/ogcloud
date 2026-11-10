@@ -130,6 +130,15 @@ class ProxyRuntime(
     /** The first backend for a player who just logged in. */
     fun initialServer(player: UUID): Route = sending(player) { router.initial(bypass(player), it) }
 
+    /** Where a player goes whom [backendId] turned away while they had no server left, say because it was full. */
+    fun refused(
+        player: UUID,
+        backendId: String,
+    ): Route {
+        val backend = directory[backendId] ?: return Route.Kick(Message.KICK_NO_SERVERS)
+        return sending(player) { router.instead(backend, bypass(player), it) }
+    }
+
     fun joined(
         player: UUID,
         name: String,

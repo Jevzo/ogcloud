@@ -81,6 +81,16 @@ class RouterTest {
         List(4) { pick(RoutingStrategy.ROUTING_STRATEGY_ROUND_ROBIN) } shouldContainExactly listOf("a", "b", "c", "a")
     }
 
+    // A backend checks its own limit only at the end of a switch, when the player has left their old server (D-0142).
+    @Test
+    fun `a player a backend turned away goes to another backend of its group`() {
+        val lobby = checkNotNull(directory["b"])
+        val smp = checkNotNull(directory["s"])
+
+        (router.instead(lobby, bypass = false) { players[it.id] ?: 0 } as Route.To).backend.id shouldBe "c"
+        router.instead(smp, bypass = false) { 0 } shouldBe Route.Kick(Message.KICK_NO_SERVERS)
+    }
+
     @Test
     fun `a group in maintenance sends players without the bypass to the default group`() {
         network.update(maintenance("bedwars", on = true))

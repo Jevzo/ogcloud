@@ -279,6 +279,18 @@ class ProxyRuntimeTest {
     }
 
     @Test
+    fun `a player a backend turned away mid-switch goes to another backend of its group`() {
+        welcomeLobby(maxPlayers = 10, "l-7", "l-8")
+        val player = UUID.randomUUID()
+
+        runtime
+            .refused(player, "l-7")
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-8"
+        runtime.refused(player, "gone") shouldBe Route.Kick(Message.KICK_NO_SERVERS)
+    }
+
+    @Test
     fun `a transfer without room leaves the players where they are and reports it`() {
         welcomeLobby(maxPlayers = 1, "l-7")
         platform.players += OnlinePlayer(UUID.randomUUID(), "Sitting", "l-7")

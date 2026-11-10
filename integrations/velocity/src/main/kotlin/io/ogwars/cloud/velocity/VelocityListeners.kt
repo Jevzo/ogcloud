@@ -82,10 +82,20 @@ internal class VelocityListeners(
 
     /**
      * As v1: a backend that kicks with a reason has the last word. One that just failed sends a player still
-     * joining to another default-group server, and tells a player already playing elsewhere.
+     * joining to another default-group server, and tells a player already playing elsewhere. A player turned away
+     * mid-switch who cannot go back, as Paper does when full at the end of the switch, goes to another backend of the
+     * same group instead (D-0142).
      */
     @Subscribe
     fun onKickedFromServer(event: KickedFromServerEvent) {
+        if (event.kickedDuringServerConnect() && event.result is KickedFromServerEvent.DisconnectPlayer) {
+            val instead = runtime.refused(event.player.uniqueId, event.server.serverInfo.name)
+            val server = (instead as? Route.To)?.let { proxy.getServer(it.backend.id).orElse(null) }
+            if (server != null) {
+                event.result = KickedFromServerEvent.RedirectPlayer.create(server)
+                return
+            }
+        }
         if (event.serverKickReason.isPresent) return
         if (event.player.currentServer.isPresent) {
             event.result = KickedFromServerEvent.Notify.create(text(Message.KICK_SERVER_DOWN))

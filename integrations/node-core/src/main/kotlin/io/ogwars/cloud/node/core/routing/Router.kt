@@ -52,6 +52,23 @@ class Router(
         destination: Destination,
         bypass: Boolean,
         players: (Backend) -> Int,
+    ): Route = route(destination, bypass, players, except = null)
+
+    /**
+     * Another backend of [refused]'s group for a player it turned away. A backend checks its own limit only at the end
+     * of a switch, when the player has already left their old server (D-0142).
+     */
+    fun instead(
+        refused: Backend,
+        bypass: Boolean,
+        players: (Backend) -> Int,
+    ): Route = route(Destination.Group(refused.groupId), bypass, players, except = refused.id)
+
+    private fun route(
+        destination: Destination,
+        bypass: Boolean,
+        players: (Backend) -> Int,
+        except: String?,
     ): Route {
         val groupId =
             when (destination) {
@@ -62,7 +79,7 @@ class Router(
         val backend =
             when (destination) {
                 is Destination.Server -> destination.backend
-                is Destination.Group -> pick(groupId, destination.strategy, players)
+                is Destination.Group -> pick(groupId, destination.strategy, players, except)
             }
         return backend?.let(Route::To) ?: Route.Kick(Message.KICK_NO_SERVERS)
     }
@@ -90,11 +107,12 @@ class Router(
         groupId: String,
         strategy: RoutingStrategy?,
         players: (Backend) -> Int,
+        except: String? = null,
     ): Backend? {
         val open =
             directory
                 .ofGroup(groupId)
-                .filter { !it.draining && (it.maxPlayers == 0 || players(it) < it.maxPlayers) }
+                .filter { it.id != except && !it.draining && (it.maxPlayers == 0 || players(it) < it.maxPlayers) }
                 .sortedBy { it.displayName }
         if (open.size <= 1 || network.groupType(groupId) == GroupType.GROUP_TYPE_STATIC) return open.firstOrNull()
         return when (strategy ?: network.settings.routingStrategy) {

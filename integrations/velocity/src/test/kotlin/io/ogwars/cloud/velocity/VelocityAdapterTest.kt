@@ -194,6 +194,34 @@ class VelocityAdapterTest {
         stranded.result.shouldBeInstanceOf<KickedFromServerEvent.DisconnectPlayer>()
     }
 
+    // Paper checks its limit only at the end of a switch, when the player can no longer go back (D-0142).
+    @Test
+    fun `a player a full backend turns away mid-switch goes to another backend of its group`() {
+        val runtime = mockk<ProxyRuntime>()
+        val full = registered(backend.id)
+        val other = registered("other")
+        val proxy = mockk<ProxyServer> { every { getServer("other") } returns Optional.of(other) }
+        val listeners = VelocityListeners(proxy, runtime)
+        val switching = player(currentServer = mockk())
+        val serverFull = Component.translatable("multiplayer.disconnect.server_full")
+
+        fun turnedAway() =
+            KickedFromServerEvent(
+                switching,
+                full,
+                serverFull,
+                true,
+                KickedFromServerEvent.DisconnectPlayer.create(serverFull),
+            ).also(listeners::onKickedFromServer)
+        every { runtime.refused(steve, backend.id) } returns Route.To(backend.copy(id = "other"))
+        val redirected = turnedAway()
+        every { runtime.refused(steve, backend.id) } returns Route.Kick(Message.KICK_NO_SERVERS)
+        val stranded = turnedAway()
+
+        (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
+        (stranded.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe serverFull
+    }
+
     @Test
     fun `only the backend's npc command passes through the proxy (v1 bug 4)`() {
         VelocityListeners.isBackendCommand("ogcloud npc list") shouldBe true
