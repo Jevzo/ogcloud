@@ -32,6 +32,20 @@ func IsNotFound(err error) bool {
 	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound
 }
 
+// IsRefused reports whether Infisical answered err itself, rather than being busy or unreachable: any error status but
+// 429, 502, 503 and 504.
+func IsRefused(err error) bool {
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	switch apiErr.Status {
+	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return false
+	}
+	return true
+}
+
 // Client calls one Infisical instance, with an access token once logged in.
 type Client struct {
 	http  *http.Client
@@ -221,7 +235,7 @@ func (c *Client) UniversalAuthClientID(ctx context.Context, identityID string) (
 	if err := c.do(ctx, http.MethodGet, universalAuthPath(identityID), nil, nil, &response); err != nil {
 		return "", err
 	}
-	return response.UniversalAuth.ClientID, nil
+	return response.clientID()
 }
 
 // AttachUniversalAuth gives the identity Universal Auth with access tokens of tokenTTL and returns its client id.
@@ -232,7 +246,7 @@ func (c *Client) AttachUniversalAuth(ctx context.Context, identityID string, tok
 	if err := c.do(ctx, http.MethodPost, universalAuthPath(identityID), nil, body, &response); err != nil {
 		return "", err
 	}
-	return response.UniversalAuth.ClientID, nil
+	return response.clientID()
 }
 
 // ClientSecretIDs lists the ids of the identity's client secrets that are not revoked.
@@ -267,6 +281,9 @@ func (c *Client) CreateClientSecret(ctx context.Context, identityID, description
 	if err := c.do(ctx, http.MethodPost, universalAuthPath(identityID)+"/client-secrets", nil, body, &response); err != nil {
 		return ClientSecret{}, err
 	}
+	if response.ClientSecret == "" || response.Data.ID == "" {
+		return ClientSecret{}, errors.New("infisical created a client secret but answered without it or its id")
+	}
 	return ClientSecret{ID: response.Data.ID, Secret: response.ClientSecret}, nil
 }
 
@@ -295,6 +312,13 @@ type universalAuthResponse struct {
 	UniversalAuth struct {
 		ClientID string `json:"clientId"`
 	} `json:"identityUniversalAuth"`
+}
+
+func (r universalAuthResponse) clientID() (string, error) {
+	if r.UniversalAuth.ClientID == "" {
+		return "", errors.New("infisical answered without the identity's universal auth client id")
+	}
+	return r.UniversalAuth.ClientID, nil
 }
 
 func universalAuthPath(identityID string) string {
@@ -367,6 +391,17 @@ func (c *Client) SetProjectMember(ctx context.Context, projectID, identityID, ro
 	}
 	body := map[string]any{"roles": []map[string]any{{"role": role, "isTemporary": false}}}
 	return c.do(ctx, http.MethodPatch, memberPath(projectID, identityID), nil, body, nil)
+}
+
+// RemoveProjectMember takes the identity out of the project, if it is a member.
+func (c *Client) RemoveProjectMember(ctx context.Context, projectID, identityID string) error {
+	if _, err := c.ProjectMemberRole(ctx, projectID, identityID); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return c.do(ctx, http.MethodDelete, memberPath(projectID, identityID), nil, nil, nil)
 }
 
 func memberPath(projectID, identityID string) string {

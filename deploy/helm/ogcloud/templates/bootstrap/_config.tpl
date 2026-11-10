@@ -65,4 +65,13 @@ infisical:
     path: /seed
     adminEmailKey: INFISICAL_ADMIN_EMAIL
     adminPasswordKey: INFISICAL_ADMIN_PASSWORD
+    # What only the seed brings and this install syncs; bootstrap fails while Infisical lacks one.
+    requiredKeys:
+      {{- if .Values.edge.tls.letsEncrypt.enabled }}
+      - CLOUDFLARE_API_TOKEN
+      {{- end }}
+      {{- if .Values.backup.enabled }}
+      - BACKUP_S3_ACCESS_KEY
+      - BACKUP_S3_SECRET_KEY
+      {{- end }}
 {{- end -}}

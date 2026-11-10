@@ -44,8 +44,9 @@ type fixture struct {
 	config *Config
 	api    *infisical.Client
 	dir    string
-	// Kubernetes logins still to fail with 503, through a proxy in front of Infisical.
+	// Kubernetes logins still to fail, through a proxy in front of Infisical, with failStatus or else 503.
 	failLogins atomic.Int32
+	failStatus atomic.Int32
 }
 
 func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
@@ -155,6 +156,24 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 		t.Error("a rerun replaced a generated secret")
 	}
 
+	// A project the config no longer names for an identity drops it (D-0152).
+	delete(f.config.Infisical.Identities[0].Roles, forwardingProject)
+	f.run(t)
+	forwardingID, err := api.ProjectBySlug(ctx, forwardingProject)
+	must(t, err)
+	if role, err := api.ProjectMemberRole(ctx, forwardingID.ID, operatorID); !infisical.IsNotFound(err) {
+		t.Errorf("the operator kept its role %q in %s: %v", role, forwardingProject, err)
+	}
+
+	// A key only the seed brings fails the run until the seed carries it.
+	f.config.Infisical.Seed.RequiredKeys = []string{"CLOUDFLARE_API_TOKEN", "BACKUP_S3_ACCESS_KEY"}
+	if err := f.setup().Run(ctx); err == nil || !strings.Contains(err.Error(), "BACKUP_S3_ACCESS_KEY") ||
+		strings.Contains(err.Error(), "CLOUDFLARE_API_TOKEN") {
+		t.Errorf("a run without a required seed key: %v", err)
+	}
+	f.putSeed(t, map[string]string{"CLOUDFLARE_API_TOKEN": "cf-2", "BACKUP_S3_ACCESS_KEY": "backup-key"})
+	f.run(t)
+
 	// Infisical verifies the API server against the stored CA (D-0173); without one it would verify nothing.
 	for _, id := range []string{f.state(t)[stateIdentity], operatorID, controllerID} {
 		if !f.verifiesTLS(t, id) {
@@ -168,13 +187,41 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	if err != nil || len(breakGlass.Data["clientId"]) == 0 || len(breakGlass.Data["clientSecret"]) == 0 {
 		t.Fatalf("no break-glass credential was stored: %v", err)
 	}
-	f.failLogins.Store(1 << 20)
+	f.failStatus.Store(http.StatusUnauthorized)
+	f.failLogins.Store(1)
 	f.run(t)
-	f.failLogins.Store(0)
 	f.loginAs(t, f.state(t)[stateIdentity], "ogcloud-bootstrap")
 	kept, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, breakGlassName, metav1.GetOptions{})
 	if err != nil || string(kept.Data["clientSecret"]) != string(breakGlass.Data["clientSecret"]) {
 		t.Errorf("a run replaced the break-glass credential: %v", err)
+	}
+	// Re-pointed identities that still cannot log in fail the run, though it re-points them all.
+	f.failLogins.Store(1 << 20)
+	if err := f.setup().Run(ctx); err == nil || !strings.Contains(err.Error(), "still fails") {
+		t.Errorf("a run whose re-pointed login still fails: %v", err)
+	}
+	// A busy or unreachable Infisical is no reason to break the glass.
+	f.failStatus.Store(http.StatusServiceUnavailable)
+	if err := f.setup().Run(ctx); err == nil || strings.Contains(err.Error(), "re-pointed") {
+		t.Errorf("a run while Infisical's logins are unavailable: %v", err)
+	}
+	f.failLogins.Store(0)
+
+	// A break-glass secret revoked in the UI is noticed and replaced before a restore needs it.
+	bootstrapID := f.state(t)[stateIdentity]
+	ids, err := api.ClientSecretIDs(ctx, bootstrapID)
+	must(t, err)
+	for _, id := range ids {
+		must(t, api.RevokeClientSecret(ctx, bootstrapID, id))
+	}
+	f.run(t)
+	replaced, err := f.kube.CoreV1().Secrets(namespace).Get(ctx, breakGlassName, metav1.GetOptions{})
+	must(t, err)
+	if string(replaced.Data["clientSecret"]) == string(breakGlass.Data["clientSecret"]) {
+		t.Error("a revoked break-glass credential was kept")
+	}
+	if _, err := f.api.UniversalAuthLogin(ctx, string(replaced.Data["clientId"]), string(replaced.Data["clientSecret"])); err != nil {
+		t.Errorf("the replaced break-glass credential does not log in: %v", err)
 	}
 
 	// Without its state, bootstrap refuses to guess.
@@ -212,7 +259,11 @@ func newFixture(t *testing.T) *fixture {
 	upstream := httputil.NewSingleHostReverseProxy(target)
 	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/kubernetes-auth/login") && f.failLogins.Add(-1) >= 0 {
-			http.Error(w, `{"message":"try again"}`, http.StatusServiceUnavailable)
+			status := int(f.failStatus.Load())
+			if status == 0 {
+				status = http.StatusServiceUnavailable
+			}
+			http.Error(w, `{"message":"login failed"}`, status)
 			return
 		}
 		upstream.ServeHTTP(w, r)

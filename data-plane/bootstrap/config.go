@@ -121,6 +121,8 @@ type Seed struct {
 	Path             string `yaml:"path"`
 	AdminEmailKey    string `yaml:"adminEmailKey"`
 	AdminPasswordKey string `yaml:"adminPasswordKey"`
+	// Keys the install's settings need that only the seed brings, e.g. the Cloudflare token for Let's Encrypt.
+	RequiredKeys []string `yaml:"requiredKeys"`
 }
 
 // LoadConfig reads and validates the config file.
@@ -185,6 +187,12 @@ func (c *Config) ValidateInfisical() error {
 	}
 	if !strings.HasPrefix(setup.Seed.Path, "/") {
 		problems = append(problems, errors.New("infisical.seed.path must be absolute"))
+	}
+	for _, key := range setup.Seed.RequiredKeys {
+		// The admin's credentials are used once and never imported (D-0114).
+		if key == "" || key == setup.Seed.AdminEmailKey || key == setup.Seed.AdminPasswordKey {
+			problems = append(problems, fmt.Errorf("infisical.seed.requiredKeys cannot hold %q", key))
+		}
 	}
 	projects := setup.ProjectSlugs()
 	for _, secret := range setup.Secrets {

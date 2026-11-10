@@ -60,6 +60,9 @@ type state struct {
 
 // Run performs one idempotent pass.
 func (s *Setup) Run(ctx context.Context) error {
+	if err := s.Config.ValidateInfisical(); err != nil {
+		return fmt.Errorf("the bootstrap config: %w", err)
+	}
 	if err := s.API.Ready(ctx); err != nil {
 		return fmt.Errorf("infisical not ready: %w", err)
 	}
@@ -76,7 +79,7 @@ func (s *Setup) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	api, err := s.login(ctx, current.identityID)
+	api, brokeGlass, err := s.login(ctx, current.identityID)
 	if err != nil {
 		return err
 	}
@@ -84,6 +87,15 @@ func (s *Setup) Run(ctx context.Context) error {
 	// Its own login first, so a run after a restore leaves the next one on Kubernetes auth again (D-0173).
 	if err := s.setKubernetesAuth(ctx, api, current.identityID, setup.BootstrapIdentity); err != nil {
 		return err
+	}
+	var stillBroken error
+	if brokeGlass {
+		// Checked now, but reported after every identity is re-pointed too: otherwise each run would lean on the
+		// break-glass credential without anyone noticing.
+		if _, err := s.kubernetesLogin(ctx, current.identityID); err != nil {
+			stillBroken = fmt.Errorf("the bootstrap identity was re-pointed at this cluster, but its Kubernetes login "+
+				"still fails: %w", err)
+		}
 	}
 	if err := s.ensureBreakGlass(ctx, api, current.identityID); err != nil {
 		return err
@@ -112,7 +124,10 @@ func (s *Setup) Run(ctx context.Context) error {
 			return fmt.Errorf("secret %s%s: %w", secret.Path, secret.Name, err)
 		}
 	}
-	return s.importSeed(ctx, api, projects[setup.Project])
+	if err := s.importSeed(ctx, api, projects[setup.Project]); err != nil {
+		return errors.Join(err, stillBroken)
+	}
+	return errors.Join(s.requireSeededKeys(ctx, api, projects[setup.Project]), stillBroken)
 }
 
 // bootstrapInstance runs once per installation: the admin token creates the organization-scoped identity
@@ -155,7 +170,7 @@ func (s *Setup) bootstrapInstance(ctx context.Context) (state, error) {
 	if err == nil {
 		// The scoped login must work before the admin token goes.
 		err = s.retry(ctx, "log in as the bootstrap identity", func() error {
-			_, err := s.login(ctx, created.identityID)
+			_, err := s.kubernetesLogin(ctx, created.identityID)
 			return err
 		})
 	}
@@ -196,28 +211,36 @@ func (s *Setup) retry(ctx context.Context, name string, step func() error) error
 	}
 }
 
-// login logs in with Kubernetes auth, or with the break-glass credential when that fails and one is stored: after a
-// restore onto a new cluster, the identities still hold the lost cluster's CA (D-0173).
-func (s *Setup) login(ctx context.Context, identityID string) (*infisical.Client, error) {
+// login logs in with Kubernetes auth, or with the break-glass credential when Infisical refuses that login and one is
+// stored: after a restore onto a new cluster, the identities still hold the lost cluster's CA (D-0173). A busy or
+// unreachable Infisical fails the run instead. It reports whether it broke the glass.
+func (s *Setup) login(ctx context.Context, identityID string) (*infisical.Client, bool, error) {
+	api, kubernetesErr := s.kubernetesLogin(ctx, identityID)
+	if kubernetesErr == nil || !infisical.IsRefused(kubernetesErr) {
+		return api, false, kubernetesErr
+	}
+	credential, found, readErr := s.breakGlass(ctx)
+	if readErr != nil || !found {
+		return nil, false, errors.Join(kubernetesErr, readErr)
+	}
+	accessToken, err := s.API.UniversalAuthLogin(ctx, credential[breakGlassClientID], credential[breakGlassClientSecret])
+	if err != nil {
+		return nil, false, errors.Join(kubernetesErr, fmt.Errorf("log in with the break-glass credential: %w", err))
+	}
+	s.Logger.Warn("Infisical refused the Kubernetes login, so bootstrap logged in with the break-glass credential and "+
+		"re-points every identity at this cluster", "error", kubernetesErr)
+	return s.API.WithToken(accessToken), true, nil
+}
+
+func (s *Setup) kubernetesLogin(ctx context.Context, identityID string) (*infisical.Client, error) {
 	token, err := s.ReadFile(s.Config.Infisical.ServiceAccountTokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("read the service-account token: %w", err)
 	}
 	accessToken, err := s.API.KubernetesLogin(ctx, identityID, strings.TrimSpace(string(token)))
-	if err == nil {
-		return s.API.WithToken(accessToken), nil
-	}
-	kubernetesErr := fmt.Errorf("log in as the bootstrap identity: %w", err)
-	credential, found, readErr := s.breakGlass(ctx)
-	if readErr != nil || !found {
-		return nil, errors.Join(kubernetesErr, readErr)
-	}
-	accessToken, err = s.API.UniversalAuthLogin(ctx, credential[breakGlassClientID], credential[breakGlassClientSecret])
 	if err != nil {
-		return nil, errors.Join(kubernetesErr, fmt.Errorf("log in with the break-glass credential: %w", err))
+		return nil, fmt.Errorf("log in as the bootstrap identity: %w", err)
 	}
-	s.Logger.Warn("the Kubernetes login failed, so bootstrap logged in with the break-glass credential and re-points "+
-		"every identity at this cluster", "error", kubernetesErr)
 	return s.API.WithToken(accessToken), nil
 }
 
@@ -241,10 +264,23 @@ func (s *Setup) breakGlass(ctx context.Context) (map[string]string, bool, error)
 }
 
 // ensureBreakGlass gives the bootstrap identity a Universal Auth client secret once and stores it next to the root
-// Secrets (D-0173). A lost Secret gets a new client secret, and the identity's older ones are revoked.
+// Secrets (D-0173). A lost Secret, or one whose secret no longer logs in, gets a new client secret, and the
+// identity's older ones are revoked.
 func (s *Setup) ensureBreakGlass(ctx context.Context, api *infisical.Client, identityID string) error {
-	if _, found, err := s.breakGlass(ctx); err != nil || found {
+	credential, found, err := s.breakGlass(ctx)
+	if err != nil {
 		return err
+	}
+	if found {
+		_, err := s.API.UniversalAuthLogin(ctx, credential[breakGlassClientID], credential[breakGlassClientSecret])
+		if err == nil {
+			return nil
+		}
+		if !infisical.IsRefused(err) {
+			return fmt.Errorf("check the break-glass credential: %w", err)
+		}
+		s.Logger.Warn("the stored break-glass credential no longer logs in; it is replaced, so export the root key "+
+			"again (mise run backup:root-key)", "error", err)
 	}
 	clientID, err := api.UniversalAuthClientID(ctx, identityID)
 	if infisical.IsNotFound(err) {
@@ -307,8 +343,16 @@ func (s *Setup) ensureIdentity(ctx context.Context, api *infisical.Client, organ
 	if err := s.setKubernetesAuth(ctx, api, id, spec); err != nil {
 		return "", err
 	}
-	for _, slug := range sortedKeys(spec.Roles) {
-		if err := api.SetProjectMember(ctx, projects[slug], id, spec.Roles[slug]); err != nil {
+	for _, slug := range s.Config.Infisical.ProjectSlugs() {
+		role, member := spec.Roles[slug]
+		if !member {
+			// Each project is a boundary: one the config no longer names for the identity must not keep it (D-0152).
+			if err := api.RemoveProjectMember(ctx, projects[slug], id); err != nil {
+				return "", fmt.Errorf("leave project %s: %w", slug, err)
+			}
+			continue
+		}
+		if err := api.SetProjectMember(ctx, projects[slug], id, role); err != nil {
 			return "", fmt.Errorf("role in project %s: %w", slug, err)
 		}
 	}
@@ -439,6 +483,28 @@ func (s *Setup) importSeed(ctx context.Context, api *infisical.Client, projectID
 	err = s.Kube.CoreV1().Secrets(s.Config.Namespace).Delete(ctx, setup.Seed.Secret, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("delete the seed Secret: %w", err)
+	}
+	return nil
+}
+
+// requireSeededKeys fails while Infisical lacks a key only the seed brings and the install's settings need: the synced
+// Secrets would hold nothing for it.
+func (s *Setup) requireSeededKeys(ctx context.Context, api *infisical.Client, projectID string) error {
+	seed := s.Config.Infisical.Seed
+	var missing []string
+	for _, key := range seed.RequiredKeys {
+		ref := infisical.SecretRef{ProjectID: projectID, Environment: s.Config.Infisical.Environment, Path: seed.Path, Name: key}
+		_, found, err := api.Secret(ctx, ref)
+		if err != nil {
+			return fmt.Errorf("seed %s: %w", key, err)
+		}
+		if !found {
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("the install needs %s, which only the seed Secret %s brings: add them to it",
+			strings.Join(missing, ", "), seed.Secret)
 	}
 	return nil
 }
