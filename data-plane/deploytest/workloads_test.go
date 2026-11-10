@@ -310,3 +310,21 @@ func TestTheLoadBalancerTakesOnlyTheLimitsItIsGiven(t *testing.T) {
 		t.Errorf("raised limits = %v", set)
 	}
 }
+
+// A load run admits only its own host to the Minecraft port (D-0175); by default the Service admits everyone.
+func TestTheMinecraftServiceAdmitsOnlyTheGivenSources(t *testing.T) {
+	ranges := func(values ...string) []string {
+		t.Helper()
+		return stringList(get(render(t, values...).find(t, "Service", "ogcloud-loadbalancer"), "spec", "loadBalancerSourceRanges"))
+	}
+	if got := ranges(minikubeValues); len(got) != 0 {
+		t.Errorf("the Service limits its sources unasked: %v", got)
+	}
+	limited := filepath.Join(t.TempDir(), "limited.yaml")
+	if err := os.WriteFile(limited, []byte("loadbalancer: {service: {sourceRanges: [198.51.100.7/32]}}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := ranges(minikubeValues, limited); !slices.Equal(got, []string{"198.51.100.7/32"}) {
+		t.Errorf("source ranges = %v", got)
+	}
+}

@@ -82,6 +82,10 @@ metadata:
   {{- end }}
 spec:
   type: {{ .Values.loadbalancer.service.type }}
+  {{- with .Values.loadbalancer.service.sourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     {{- include "ogcloud.selector" (dict "root" . "component" "loadbalancer") | nindent 4 }}
   ports:

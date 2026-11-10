@@ -298,6 +298,8 @@ loadbalancer:
   service:
     type: LoadBalancer
     annotations: {}
+    # Client CIDRs the Service admits, if the cloud's load balancer honours them; empty admits everyone.
+    sourceRanges: []
   # CIDRs whose connections must start with a PROXY header, e.g. the Hetzner load balancer's range (D-0118).
   trustedProxies: []
   # Per client address, as openPerAddress, newPerSecond and newBurst; a key left out keeps the load balancer's own
