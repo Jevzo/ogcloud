@@ -1,0 +1,55 @@
+name: GHCR cleanup
+
+# Nothing piles up (D-0043, D-0196): dry-run tags go, each package keeps its newest 10 pre-releases and every real
+# release, and untagged images are deleted unless a kept one refers to them (architectures, attestations, signatures).
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only log what would be deleted
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/jevzo/ogcloud
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
+      - id: packages
+        run: echo "names=$(deploy/release/publish.sh packages)" >>"$GITHUB_OUTPUT"
+      # Tags of the publish workflow's dry runs, 0.0.0-dryrun-<commit> or <server version>-0.0.0-dryrun-<commit>.
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          owner: ${{ github.repository_owner }}
+          packages: ${{ steps.packages.outputs.names }}
+          delete-tags: '^([0-9.]+-)?0\.0\.0-dryrun-[0-9a-f]+$'
+          use-regex: true
+          dry-run: ${{ inputs.dry_run == true }}
+      # Real releases are 2.0.0 or <server version>-2.0.0; every other tag is a pre-release.
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          owner: ${{ github.repository_owner }}
+          packages: ${{ steps.packages.outputs.names }}
+          exclude-tags: '^([0-9.]+-)?[0-9]+\.[0-9]+\.[0-9]+$'
+          keep-n-tagged: 10
+          delete-untagged: true
+          use-regex: true
+          dry-run: ${{ inputs.dry_run == true }}
