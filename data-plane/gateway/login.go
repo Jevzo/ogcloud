@@ -17,10 +17,18 @@ func (s *Service) ResolveLogin(ctx context.Context, request *nodev1.ResolveLogin
 	if !ok || peer.Role != runtimeprofiles.RoleProxy {
 		return nil, status.Error(codes.PermissionDenied, "only proxies resolve logins")
 	}
+	started := s.Now()
 	response, err := s.Logins.ResolveLogin(ctx, &internalv1.ResolveLoginRequest{Login: request, ProxyServerId: peer.ServerID})
+	took := s.Now().Sub(started)
 	if err != nil {
+		s.Metrics.loginResolved(loginFailed, took)
 		return nil, controllerError("login resolution", err)
 	}
+	result := loginRefused
+	if response.GetResult().GetAllowed() {
+		result = loginAllowed
+	}
+	s.Metrics.loginResolved(result, took)
 	return response.GetResult(), nil
 }
 

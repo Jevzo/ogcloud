@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -16,6 +17,13 @@ const (
 	outcomeTimeout = "timeout"
 	// The node's queue was full, so it was disconnected instead.
 	outcomeDropped = "dropped"
+)
+
+// Results of a login resolution.
+const (
+	loginAllowed = "allowed"
+	loginRefused = "refused"
+	loginFailed  = "failed"
 )
 
 var gameLabels = []string{"server_id", "group_id", "node_type"}
@@ -33,6 +41,7 @@ type Metrics struct {
 	deliveries *prometheus.CounterVec
 	unroutable *prometheus.CounterVec
 	unsent     *prometheus.CounterVec
+	logins     *prometheus.HistogramVec
 }
 
 // NewMetrics registers the series with registerer.
@@ -47,6 +56,13 @@ func NewMetrics(registerer prometheus.Registerer) *Metrics {
 		registerer.MustRegister(vector)
 		return vector
 	}
+	logins := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "ogcloud_gateway_login_resolution_seconds",
+		Help: "How long the controller took to resolve a proxy's login, by result (D-0175).",
+		// Fine around the 50 ms target.
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5},
+	}, []string{"result"})
+	registerer.MustRegister(logins)
 	return &Metrics{
 		players:    gauge("ogcloud_node_players", "Players on a node, from its heartbeats.", gameLabels...),
 		maxPlayers: gauge("ogcloud_node_max_players", "A node's player limit.", gameLabels...),
@@ -63,6 +79,7 @@ func NewMetrics(registerer prometheus.Registerer) *Metrics {
 		deliveries: counter("ogcloud_gateway_deliveries_total", "Deliveries to nodes, by outcome.", "kind", "outcome"),
 		unroutable: counter("ogcloud_gateway_unroutable_records_total", "Kafka records the gateway could not route.", "topic"),
 		unsent:     counter("ogcloud_gateway_unpublished_events_total", "Node events that did not reach Kafka.", "message"),
+		logins:     logins,
 	}
 }
 
@@ -94,6 +111,10 @@ func (m *Metrics) heartbeat(session *Session, heartbeat *nodev1.Heartbeat) {
 		m.tps.WithLabelValues(labels...).Set(heartbeat.GetTps())
 		m.mspt.WithLabelValues(labels...).Set(heartbeat.GetMspt())
 	}
+}
+
+func (m *Metrics) loginResolved(result string, took time.Duration) {
+	m.logins.WithLabelValues(result).Observe(took.Seconds())
 }
 
 func (m *Metrics) delivery(kind deliveryKind, outcome string) {

@@ -3,6 +3,8 @@ package gateway
 import (
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -125,6 +127,10 @@ func TestOnlyProxiesResolveLogins(t *testing.T) {
 	if status.Code(refused) != codes.PermissionDenied {
 		t.Errorf("a backend resolved a login: %v", refused)
 	}
+	// Only the controller's answers are timed (D-0175); a refused caller asked nothing.
+	if got := h.loginsTimed(t, loginAllowed); got != 1 {
+		t.Errorf("%d allowed logins were timed", got)
+	}
 }
 
 func TestControllerOutagesStayRetryable(t *testing.T) {
@@ -136,4 +142,21 @@ func TestControllerOutagesStayRetryable(t *testing.T) {
 	if status.Code(err) != codes.Unavailable {
 		t.Errorf("got %v", err)
 	}
+	if got := h.loginsTimed(t, loginFailed); got != 1 {
+		t.Errorf("%d failed login resolutions were timed", got)
+	}
+}
+
+// loginsTimed is how many login resolutions with this result the histogram holds.
+func (h *harness) loginsTimed(t *testing.T, result string) uint64 {
+	t.Helper()
+	observer, err := h.metrics.logins.GetMetricWithLabelValues(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sample dto.Metric
+	if err := observer.(prometheus.Histogram).Write(&sample); err != nil {
+		t.Fatal(err)
+	}
+	return sample.GetHistogram().GetSampleCount()
 }
