@@ -15,13 +15,7 @@ spec:
       labels:
         {{- include "ogcloud.selector" (dict "root" . "component" "gateway") | nindent 8 }}
     spec:
-      serviceAccountName: ogcloud-gateway
-      automountServiceAccountToken: false
-      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
-      enableServiceLinks: false
-      priorityClassName: {{ .Values.priorityClasses.platform.name }}
-      securityContext:
-        {{- include "ogcloud.podSecurity" . | nindent 8 }}
+      {{- include "ogcloud.platformPod" (dict "root" . "serviceAccount" "ogcloud-gateway") | nindent 6 }}
       containers:
         - name: gateway
           image: {{ include "ogcloud.image" (dict "root" . "name" "gateway") }}

@@ -31,17 +31,8 @@ spec:
       labels:
         {{- include "ogcloud.selector" (dict "root" $ "component" "bootstrap") | nindent 8 }}
     spec:
-      serviceAccountName: ogcloud-bootstrap
-      automountServiceAccountToken: false
-      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
-      enableServiceLinks: false
-      restartPolicy: OnFailure
       {{- /* The root stage runs before the release's PriorityClasses exist. */}}
-      {{- if ne $stage "root" }}
-      priorityClassName: {{ $.Values.priorityClasses.platform.name }}
-      {{- end }}
-      securityContext:
-        {{- include "ogcloud.podSecurity" $ | nindent 8 }}
+      {{- include "ogcloud.platformPod" (dict "root" $ "serviceAccount" "ogcloud-bootstrap" "restartPolicy" "OnFailure" "withoutPriority" (eq $stage "root")) | nindent 6 }}
       containers:
         - name: bootstrap
           image: {{ include "ogcloud.image" (dict "root" $ "name" "bootstrap") }}

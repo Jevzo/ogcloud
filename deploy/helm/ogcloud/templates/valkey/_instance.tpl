@@ -92,12 +92,7 @@ spec:
       annotations:
         checksum/scripts: {{ ($root.Files.Glob "files/valkey/*.sh").AsConfig | sha256sum }}
     spec:
-      automountServiceAccountToken: false
-      # Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
-      enableServiceLinks: false
-      priorityClassName: {{ $root.Values.priorityClasses.platform.name }}
-      securityContext:
-        {{- include "ogcloud.podSecurity" $root | nindent 8 }}
+      {{- include "ogcloud.platformPod" (dict "root" $root) | nindent 6 }}
       {{- $env := list
         (dict "name" "HEADLESS_SERVICE" "value" $headless)
         (dict "name" "STATEFULSET" "value" $name)

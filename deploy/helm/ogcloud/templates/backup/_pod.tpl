@@ -3,13 +3,7 @@ The backup command's pod (D-0166): both buckets' credentials and the backups' re
 (dict "root" $ "subcommand" "templates" or "restore-templates").
 */}}
 {{- define "ogcloud.backupPod" -}}
-automountServiceAccountToken: false
-# Service links would set e.g. OGCLOUD_VALKEY_PORT=tcp://…, which Spring binds to ogcloud.valkey.port.
-enableServiceLinks: false
-restartPolicy: OnFailure
-priorityClassName: {{ .root.Values.priorityClasses.platform.name }}
-securityContext:
-  {{- include "ogcloud.podSecurity" .root | nindent 2 }}
+{{- include "ogcloud.platformPod" (dict "root" .root "restartPolicy" "OnFailure") }}
 containers:
   - name: backup
     image: {{ include "ogcloud.image" (dict "root" .root "name" "backup") }}

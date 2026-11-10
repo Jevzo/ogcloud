@@ -337,3 +337,25 @@ merged on top, so a key both name appears once, as Spring requires, and the inst
 {{- end }}
 {{- toYaml (mergeOverwrite $settings (deepCopy .extra)) }}
 {{- end -}}
+
+{{/*
+What every OgCloud pod's spec starts with: its service account if it has one, no automounted token, the platform's
+priority (but with "withoutPriority", as bootstrap's root stage, which runs before the PriorityClasses exist) and the
+restricted pod security. Service links stay off: they put a variable per Service into each container, such as
+OGCLOUD_VALKEY_PORT=tcp://…, which OgCloud's own settings would read. (dict "root" $ ["serviceAccount" name]
+["restartPolicy" policy] ["withoutPriority" bool])
+*/}}
+{{- define "ogcloud.platformPod" -}}
+{{ with .serviceAccount }}serviceAccountName: {{ . }}
+{{ end -}}
+automountServiceAccountToken: false
+enableServiceLinks: false
+{{- with .restartPolicy }}
+restartPolicy: {{ . }}
+{{- end }}
+{{- if not .withoutPriority }}
+priorityClassName: {{ .root.Values.priorityClasses.platform.name }}
+{{- end }}
+securityContext:
+  {{- include "ogcloud.podSecurity" .root | nindent 2 }}
+{{- end -}}
