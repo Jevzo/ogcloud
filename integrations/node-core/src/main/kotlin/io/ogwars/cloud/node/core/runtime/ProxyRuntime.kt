@@ -67,9 +67,10 @@ class ProxyRuntime(
     val router = Router(directory, network)
     override val api: OgCloudProxy = ProxyApi(identity, queries, session, messages, live, ready, callbacks)
 
-    // Players per backend across the network, from the backends' heartbeats (D-0142).
+    // The other proxies' players per backend: the network's count from the backends' heartbeats (D-0142), less this
+    // proxy's own players there at the time, which it counts live instead (D-0176).
     @Volatile
-    private var networkPlayers: Map<String, Int> = emptyMap()
+    private var otherProxies: Map<String, Int> = emptyMap()
 
     // Players this proxy sent to a backend they have not reached yet, so a burst of logins or a whole server's
     // transfer spreads instead of filling one backend past its limit.
@@ -172,7 +173,7 @@ class ProxyRuntime(
                 },
         )
         directory.reset(welcome.serversList)
-        networkPlayers = welcome.serversList.associate { it.serverId to it.players }
+        networkCounts(welcome.serversList.associate { it.serverId to it.players })
         // The Welcome lacks groups without servers; their maintenance flag matters once one starts.
         queries.groups().whenComplete { groups, error ->
             if (error != null) {
@@ -278,12 +279,12 @@ class ProxyRuntime(
 
             TransferRequested.DestinationCase.SERVER_ID -> {
                 val backend = directory[request.serverId] ?: return DeliveryOutcome(false, "unknown server")
-                players.forEach { apply(it.uuid, route(it.uuid, Destination.Server(backend))) }
+                return placed(players) { route(it.uuid, Destination.Server(backend)) }
             }
 
             TransferRequested.DestinationCase.GROUP_ID -> {
                 val strategy = request.routingStrategy.takeIf { it != RoutingStrategy.ROUTING_STRATEGY_UNSPECIFIED }
-                players.forEach { apply(it.uuid, route(it.uuid, Destination.Group(request.groupId, strategy))) }
+                return placed(players) { route(it.uuid, Destination.Group(request.groupId, strategy)) }
             }
 
             TransferRequested.DestinationCase.DESTINATION_NOT_SET, null -> {
@@ -299,6 +300,27 @@ class ProxyRuntime(
     ): DeliveryOutcome {
         val shown = platform.message(UUID.fromString(player), messages.text(Message.LINK_CODE, "code" to code))
         return DeliveryOutcome(shown, if (shown) "" else "player not here")
+    }
+
+    // A player a transfer finds no room for stays on their backend (D-0176); the delivery reports them.
+    private fun placed(
+        players: List<OnlinePlayer>,
+        routeOf: (OnlinePlayer) -> Route,
+    ): DeliveryOutcome {
+        val unplaced =
+            players.count { player ->
+                val route = routeOf(player)
+                val noRoom = route is Route.Kick && route.reason == Message.KICK_NO_SERVERS && player.serverId != null
+                if (!noRoom) apply(player.uuid, route)
+                noRoom
+            }
+        return if (unplaced ==
+            0
+        ) {
+            DeliveryOutcome(true)
+        } else {
+            DeliveryOutcome(false, "$unplaced of ${players.size} players had no room")
+        }
     }
 
     private fun apply(
@@ -347,9 +369,14 @@ class ProxyRuntime(
                 // Stale counts only make routing less even until the next refresh.
                 log.log(System.Logger.Level.DEBUG, "Could not refresh the player counts", error)
             } else {
-                networkPlayers = servers.associate { it.serverId to it.players }
+                networkCounts(servers.associate { it.serverId to it.players })
             }
         }
+    }
+
+    private fun networkCounts(network: Map<String, Int>) {
+        val mine = platform.onlinePlayers().groupingBy { it.serverId }.eachCount()
+        otherProxies = network.mapValues { (id, players) -> (players - (mine[id] ?: 0)).coerceAtLeast(0) }
     }
 
     /** Decides where player goes with the current counts, and remembers where they are headed. */
@@ -365,8 +392,8 @@ class ProxyRuntime(
             }
         }
 
-    // A backend's players, by this proxy or the network's heartbeats, which lag; plus those on their way there. A
-    // route counts until its player arrives or it is too old, say because the backend refused the connection.
+    // A backend's players: the other proxies' from the heartbeats, this proxy's own live, and those on their way there
+    // (D-0176). A route counts until its player arrives or it is too old, say because the backend refused them.
     private fun playerCounts(): (Backend) -> Int {
         val online = platform.onlinePlayers()
         val where = online.associate { it.uuid to it.serverId }
@@ -375,7 +402,7 @@ class ProxyRuntime(
         val here = online.groupingBy { it.serverId }.eachCount()
         val coming = enRoute.values.groupingBy { it.backendId }.eachCount()
         return { backend ->
-            maxOf(here[backend.id] ?: 0, networkPlayers[backend.id] ?: 0) + (coming[backend.id] ?: 0)
+            (otherProxies[backend.id] ?: 0) + (here[backend.id] ?: 0) + (coming[backend.id] ?: 0)
         }
     }
 

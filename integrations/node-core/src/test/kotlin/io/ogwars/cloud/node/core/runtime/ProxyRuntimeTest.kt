@@ -241,17 +241,53 @@ class ProxyRuntimeTest {
             .backend.id shouldBe "l-8"
     }
 
+    @Test
+    fun `a transfer without room leaves the players where they are and reports it`() {
+        welcomeLobby(maxPlayers = 1, "l-7")
+        platform.players += OnlinePlayer(UUID.randomUUID(), "Sitting", "l-7")
+        platform.connects.clear()
+
+        val outcome = session.listener.deliver(transfer { setPlayerUuid(steve.toString()).setGroupId("lobby") }).join()
+
+        outcome.let { it.success to it.message } shouldBe (false to "1 of 1 players had no room")
+        platform.connects shouldBe emptyList()
+        platform.kicks shouldBe emptyList()
+    }
+
+    @Test
+    fun `players this proxy moved away free their backend at once, before the heartbeats show it`() {
+        val leaving = List(2) { OnlinePlayer(UUID.randomUUID(), "leaver$it", "l-7") }
+        platform.players += leaving
+        // The heartbeats counted both, all of them this proxy's.
+        welcomeLobby(maxPlayers = 2, "l-7", players = 2)
+        platform.players -= leaving.toSet()
+        platform.players += leaving.map { it.copy(serverId = "b-1") }
+
+        runtime
+            .initialServer(UUID.randomUUID())
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-7"
+    }
+
     private fun welcomeLobby(
         maxPlayers: Int,
         vararg ids: String,
+        players: Int = 0,
     ) = session.listener.welcomed(
         Welcome
             .newBuilder()
             .setNetworkSettings(NetworkSettingsUpdated.newBuilder().setVersion(1).setDefaultGroupId("lobby"))
             .addServers(server("b-1", "bedwars"))
             .addServers(server("s-1", "source"))
-            .addAllServers(ids.map { server(it, "lobby").toBuilder().setMaxPlayers(maxPlayers).build() })
-            .build(),
+            .addAllServers(
+                ids.map {
+                    server(it, "lobby")
+                        .toBuilder()
+                        .setMaxPlayers(maxPlayers)
+                        .setPlayers(players)
+                        .build()
+                },
+            ).build(),
     )
 
     @Test
