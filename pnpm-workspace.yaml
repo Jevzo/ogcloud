@@ -11,7 +11,7 @@ catalog:
   i18next-cli: 1.87.0
   jscpd: 5.4.2
   mineflayer: 4.39.0
-  orval: 8.46.0
+  orval: 8.47.0
   typescript: 7.0.2
 
 minimumReleaseAgeExclude:
