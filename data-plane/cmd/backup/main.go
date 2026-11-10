@@ -1,5 +1,6 @@
 // Command backup keeps the template archives in the backup target (D-0166): `templates` copies new ones and prunes
-// old copies of deleted ones (a daily CronJob), `restore-templates` copies them back after a restore.
+// copies whose source has been gone for the retention (a daily CronJob, D-0186), `restore-templates` copies them back
+// after a restore.
 package main
 
 import (
@@ -60,6 +61,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("templates "+subcommand+" done", slog.Int("copied", result.Copied), slog.Int("pruned", result.Pruned))
+	logger.Info("templates "+subcommand+" done", slog.Int("copied", result.Copied), slog.Int("marked", result.Marked),
+		slog.Int("pruned", result.Pruned))
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -57,7 +58,7 @@ func read(t *testing.T, client *s3.Client, bucket, key string) []byte {
 	return content
 }
 
-func TestBackUpCopiesTemplatesPrunesOldCopiesAndRestores(t *testing.T) {
+func TestBackUpCopiesTemplatesPrunesCopiesLongGoneAndRestores(t *testing.T) {
 	ctx := context.Background()
 	data, target, client := buckets(t)
 	small := []byte("small archive")
@@ -87,15 +88,23 @@ func TestBackUpCopiesTemplatesPrunesOldCopiesAndRestores(t *testing.T) {
 	if err := data.delete(ctx, []string{"templates/lobby/small.tar.gz"}); err != nil {
 		t.Fatal(err)
 	}
-	if kept, err := BackUp(ctx, data, target, now, 14*24*time.Hour); err != nil || kept.Pruned != 0 {
-		t.Errorf("a fresh copy of a deleted template was pruned: %+v, %v", kept, err)
+	// The copies are new here, but what counts is how long ago their source went (D-0186).
+	later := now.Add(30 * 24 * time.Hour)
+	if marked, err := BackUp(ctx, data, target, later, 14*24*time.Hour); err != nil || marked.Marked != 1 || marked.Pruned != 0 {
+		t.Errorf("the copy of a template deleted just now: %+v, %v; want it marked and kept", marked, err)
 	}
-	if pruned, err := BackUp(ctx, data, target, now.Add(15*24*time.Hour), 14*24*time.Hour); err != nil || pruned.Pruned != 1 {
-		t.Errorf("an old copy of a deleted template was kept: %+v, %v", pruned, err)
+	if pruned, err := BackUp(ctx, data, target, later.Add(15*24*time.Hour), 14*24*time.Hour); err != nil || pruned.Pruned != 1 {
+		t.Errorf("a copy whose source went over 14 days ago was kept: %+v, %v", pruned, err)
+	}
+	if marks, _ := target.List(ctx, markPrefix); len(marks) != 0 {
+		t.Errorf("the pruned copy's mark stayed: %v", marks)
 	}
 
 	if err := data.delete(ctx, []string{"templates/lobby/large.tar.gz"}); err != nil {
 		t.Fatal(err)
+	}
+	if lost, err := BackUp(ctx, data, target, later.Add(60*24*time.Hour), 14*24*time.Hour); !errors.Is(err, ErrSourceLost) {
+		t.Errorf("a data bucket without any copied archive: %+v, %v; want ErrSourceLost", lost, err)
 	}
 	restored, err := Restore(ctx, target, data)
 	if err != nil || restored.Copied != 1 {
