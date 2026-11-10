@@ -29,6 +29,11 @@
       "postUpdateOptions": ["gomodTidy"]
     },
     {
+      "description": "+incompatible versions are tags from before a module used Go modules, such as client-go's v11 from 2019 against its current v0.x; never offer them",
+      "matchManagers": ["gomod"],
+      "allowedVersions": "!/\\+incompatible$/"
+    },
+    {
       "description": "The OgCloud chart's subcharts are vendored (D-0146), so their archives move with the version",
       "matchManagers": ["helmv3"],
       "semanticCommitScope": "chart",
