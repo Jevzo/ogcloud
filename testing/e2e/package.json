@@ -7,6 +7,7 @@
     "seed": "node src/seed.ts",
     "restore": "node src/restore.ts",
     "load": "node src/load/run.ts",
+    "failover": "node src/load/failover.ts",
     "test": "node --test --test-concurrency=1 src/scenarios/",
     "test:unit": "node --test src/unit/",
     "typecheck": "tsc --noEmit"
