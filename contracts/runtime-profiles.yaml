@@ -59,10 +59,10 @@ profiles:
     protocol: 777
     java: 25
     server:
-      build: 238
-      url: https://fill-data.papermc.io/v1/objects/989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6/paper-26.3-238.jar
-      sha256: 989f93c29d5b61fe52804f834ea6b3a0a5775d05412e238ec78107197a6b5be6
-      source: https://github.com/PaperMC/Paper/commit/df120fd8b5211f61146a59f69497a5a62064b917
+      build: 248
+      url: https://fill-data.papermc.io/v1/objects/352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2/paper-26.3-248.jar
+      sha256: 352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2
+      source: https://github.com/PaperMC/Paper/commit/0727243c940172f6731dc63bc195917b629b71f9
   - id: pandaspigot-1.8.8
     platform: pandaspigot
     version: "1.8.8"
@@ -89,15 +89,15 @@ plugins:
   - id: viaversion
     platforms: [velocity]
     file: ViaVersion.jar
-    version: "5.12.1"
-    url: https://cdn.modrinth.com/data/P1OZGk5p/versions/5WgnasGG/ViaVersion-5.12.1.jar
-    sha512: b2e5c03689e2265410613a928640076cfcd576e7a3dc7ca1276a76dbe624f2f5467348c3b3eaf8b5987ed7662afb93cc5cb9373035f4c5512884116e4bb6add9
+    version: "5.12.2"
+    url: https://cdn.modrinth.com/data/P1OZGk5p/versions/Fkfcr89K/ViaVersion-5.12.2.jar
+    sha512: c6af11f50e14bc1ba239f5a90be653cce85feee30c473a4b53336b4d5527d790369cf43843f7cb06d3ac3a34fc207e7203436737ca719070644101472453401b
   - id: viabackwards
     platforms: [velocity]
     file: ViaBackwards.jar
-    version: "5.12.1"
-    url: https://cdn.modrinth.com/data/NpvuJQoq/versions/dWw67APC/ViaBackwards-5.12.1.jar
-    sha512: 65752dd113bf1266ef2c3b25a748e79e9808bb67682a3f5fbcf3e2b097d76182786d0871562175af8d491bde7ec6addfeaf97fdb23987cb11b829b0c22f6e5ff
+    version: "5.12.2"
+    url: https://cdn.modrinth.com/data/NpvuJQoq/versions/WFO37e8T/ViaBackwards-5.12.2.jar
+    sha512: 78bc7e5fd33ecf13aee31c62e1de46a854e066a1936f294347c6798371357497fe2cc6f23f1d42003ad3050f94ac5382db95e60ffa90d765fada0322b59b0ef9
   - id: viarewind
     platforms: [velocity]
     file: ViaRewind.jar
