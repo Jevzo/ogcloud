@@ -16,9 +16,10 @@ metadata:
   labels:
     {{- include "ogcloud.componentLabels" (dict "root" . "component" "controller") | nindent 4 }}
 rules:
+  # patch: a pod's safe-to-evict annotation follows its players (D-0047).
   - apiGroups: [""]
     resources: [pods]
-    verbs: [get, list, watch, create, delete]
+    verbs: [get, list, watch, create, patch, delete]
   - apiGroups: [""]
     resources: [persistentvolumeclaims]
     verbs: [get, list, watch, create, patch, delete]

@@ -259,17 +259,26 @@ func TestProxiesAreOnlineUnlessTheDevProfileTurnsItOff(t *testing.T) {
 
 // fabric8's leader election reads, creates and patches its Lease (D-0007); without patch no replica ever leads, and
 // no leader loop runs.
-func TestTheControllerMayHoldItsLeaderLease(t *testing.T) {
-	rules, _ := get(render(t, minikubeValues).find(t, "Role", "ogcloud-controller-leader"), "rules").([]any)
-	for _, verb := range []string{"get", "create", "update", "patch"} {
-		allowed := false
-		for _, rule := range rules {
-			if slices.Contains(stringList(get(rule, "resources")), "leases") && slices.Contains(stringList(get(rule, "verbs")), verb) {
-				allowed = true
+// The controller's RBAC allows each call it makes; a missing verb fails at run time only. It patches a game pod's
+// safe-to-evict annotation when its players come or go (D-0047), and fabric8's leader election patches its Lease.
+func TestTheControllerMayMakeEveryCallItMakes(t *testing.T) {
+	objects := render(t, minikubeValues)
+	for _, want := range []struct {
+		role, resource string
+		verbs          []string
+	}{
+		{"ogcloud-controller", "pods", []string{"get", "list", "watch", "create", "delete", "patch"}},
+		{"ogcloud-controller", "persistentvolumeclaims", []string{"get", "list", "watch", "create", "patch", "delete"}},
+		{"ogcloud-controller-leader", "leases", []string{"get", "create", "update", "patch"}},
+	} {
+		rules, _ := get(objects.find(t, "Role", want.role), "rules").([]any)
+		for _, verb := range want.verbs {
+			if !slices.ContainsFunc(rules, func(rule any) bool {
+				return slices.Contains(stringList(get(rule, "resources")), want.resource) &&
+					slices.Contains(stringList(get(rule, "verbs")), verb)
+			}) {
+				t.Errorf("Role %s does not let the controller %s %s", want.role, verb, want.resource)
 			}
-		}
-		if !allowed {
-			t.Errorf("the controller may not %s its leader Lease", verb)
 		}
 	}
 }
