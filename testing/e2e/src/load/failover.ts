@@ -87,7 +87,7 @@ async function expectStandby(target: Target): Promise<void> {
       "--selector",
       CONTROLLER_PODS,
       "--output",
-      'jsonpath={range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}',
+      'jsonpath={range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\\n"}{end}',
     ])
   )
     .split("\n")
