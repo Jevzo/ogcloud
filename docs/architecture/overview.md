@@ -163,7 +163,9 @@ backups, orphaned objects).
   - With `monitoring.enabled` (Hetzner) the services send traces to Tempo and Prometheus scrapes them through
     PodMonitors; Grafana loads the `OgCloud` dashboard. Without it nothing is exported.
   - Admin UIs (D-0045): with the VPN, Infisical and Grafana sit on the internal Gateway on Traefik's private
-    `admin` entrypoint; Grafana signs in through OgCloud as a confidential client (D-0153). Without it, a
+    `admin` entrypoint; Grafana signs in through OgCloud as a confidential client (D-0153) that gets no refresh
+    token; owners become Grafana Admins and readers of the overview Viewers, and Grafana's access tokens carry no
+    permissions: the API takes users' tokens only for its own apps (D-0185). Without it, a
     port-forward. Values are checked against `values.schema.json`; replicated workloads have disruption budgets.
   - `mise run check:chart` lints every value set in `ci/` and validates it with kubeconform against pinned
     schemas; Go render tests in `data-plane/deploytest` check the invariants (D-0148).

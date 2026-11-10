@@ -47,7 +47,10 @@ class FirstPartyClients(
             app(MOBILE, "OgCloud mobile", properties.clients.mobileRedirectUri, null),
         ) + listOfNotNull(properties.clients.grafana?.let(::grafana))
 
-    /** Grafana signs people in with the code flow and its secret; it reads their role from the ID token. */
+    /**
+     * Grafana signs people in with the code flow and its secret and reads their role from the ID token. It gets no
+     * refresh token, so its session lasts as long as its access token, which opens nothing on the API (D-0185).
+     */
     private fun grafana(grafana: AuthProperties.Grafana): RegisteredClient =
         RegisteredClient
             .from(app(GRAFANA, "Grafana", grafana.redirectUri, null))
@@ -55,9 +58,11 @@ class FirstPartyClients(
                 it.clear()
                 it.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 it.add(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-            }.clientSecret(passwords.hash(grafana.clientSecret))
+            }.authorizationGrantTypes { it.remove(AuthorizationGrantType.REFRESH_TOKEN) }
+            .clientSecret(passwords.hash(grafana.clientSecret))
             .scope(OidcScopes.PROFILE)
             .scope(OidcScopes.EMAIL)
+            .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(grafana.session).build())
             .build()
 
     private fun app(
@@ -96,5 +101,8 @@ class FirstPartyClients(
         const val DESKTOP = "ogcloud-desktop"
         const val MOBILE = "ogcloud-mobile"
         const val GRAFANA = "ogcloud-grafana"
+
+        /** The apps whose users' tokens the API takes (D-0185). */
+        val APPS = setOf(WEB, DESKTOP, MOBILE)
     }
 }

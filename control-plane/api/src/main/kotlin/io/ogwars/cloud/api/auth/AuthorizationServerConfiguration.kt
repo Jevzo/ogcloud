@@ -59,6 +59,7 @@ class AuthorizationServerConfiguration {
                 JwtValidators.createDefaultWithValidators(
                     JwtIssuerValidator(properties.issuer.toString()),
                     JwtTypeValidator(TokenClaims.ACCESS_TOKEN_TYPE),
+                    ApiAudienceValidator(),
                 ),
             )
         }

@@ -1,5 +1,6 @@
 package io.ogwars.cloud.apitest
 
+import io.ogwars.cloud.api.auth.FirstPartyClients
 import io.ogwars.cloud.api.auth.hash
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.ApiPermission
@@ -38,6 +39,8 @@ class TestUsers(
                 it.scope
             },
             "user:${user.id}",
+            // As the dashboard's tokens are; the API takes users' tokens only for its apps (D-0185).
+            audience = FirstPartyClients.WEB,
         )
 
     companion object {

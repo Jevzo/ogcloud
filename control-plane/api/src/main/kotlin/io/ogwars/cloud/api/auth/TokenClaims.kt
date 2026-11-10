@@ -18,9 +18,9 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import java.util.UUID
 
 /**
- * Signs with the active key and puts the caller and its permissions into access tokens (D-0090, D-0092). A user's
- * ID token carries the role and permissions too, which Grafana maps to its roles (D-0153), and the username and
- * email when the profile and email scopes were granted.
+ * Signs with the active key and puts the caller and its permissions into access tokens (D-0090, D-0092); Grafana's
+ * carry none (D-0185). A user's ID token carries the role and permissions too, Grafana's only the role Grafana takes
+ * (D-0153), and the username and email when the profile and email scopes were granted.
  */
 class TokenClaims(
     private val activeKeyId: String,
@@ -41,7 +41,8 @@ class TokenClaims(
                     context.authorizedScopes.mapNotNull { ApiPermission.fromScope(it) }.toSet()
             } else {
                 val user = activeUser(context.getPrincipal<Authentication>()?.name)
-                Actor(ActorType.USER, user.id.toString()) to permissions.of(user)
+                Actor(ActorType.USER, user.id.toString()) to
+                    if (forGrafana(context)) emptySet() else permissions.of(user)
             }
         context.claims.claim(ACTOR_CLAIM, actor.toString()).claim(PERMISSIONS_CLAIM, granted.map { it.scope }.sorted())
     }
@@ -51,10 +52,17 @@ class TokenClaims(
         val scopes = context.authorizedScopes
         if (OidcScopes.PROFILE in scopes) context.claims.claim(USERNAME_CLAIM, user.username)
         if (OidcScopes.EMAIL in scopes) context.claims.claim(EMAIL_CLAIM, user.email)
+        val effective = permissions.of(user)
+        if (forGrafana(context)) {
+            GrafanaRole.of(user, effective)?.let { context.claims.claim(GRAFANA_ROLE_CLAIM, it) }
+            return
+        }
         context.claims
             .claim(ROLE_CLAIM, user.roleId)
-            .claim(PERMISSIONS_CLAIM, permissions.of(user).map { it.scope }.sorted())
+            .claim(PERMISSIONS_CLAIM, effective.map { it.scope }.sorted())
     }
+
+    private fun forGrafana(context: JwtEncodingContext) = context.registeredClient.clientId == FirstPartyClients.GRAFANA
 
     // Users sign in with their id as the principal name (WebUserDetails); a disabled user cannot refresh.
     private fun activeUser(principalName: String?): WebUser =
@@ -71,6 +79,7 @@ class TokenClaims(
         const val ACTOR_CLAIM = "actor"
         const val PERMISSIONS_CLAIM = "permissions"
         const val ROLE_CLAIM = "role"
+        const val GRAFANA_ROLE_CLAIM = "grafana_role"
         const val USERNAME_CLAIM = "preferred_username"
         const val EMAIL_CLAIM = "email"
 

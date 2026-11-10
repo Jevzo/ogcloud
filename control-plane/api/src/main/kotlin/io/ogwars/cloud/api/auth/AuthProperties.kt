@@ -58,5 +58,12 @@ data class AuthProperties(
         val redirectUri: URI,
         /** Synced from Infisical (D-0044). */
         val clientSecret: String,
-    )
+        /** Grafana's session ends with its access token, since it gets no refresh token (D-0185). */
+        val session: Duration = Duration.ofHours(8),
+    ) {
+        init {
+            require(clientSecret.isNotBlank()) { "ogcloud.auth.clients.grafana.client-secret must not be blank" }
+            require(session.isPositive) { "ogcloud.auth.clients.grafana.session must be positive" }
+        }
+    }
 }

@@ -121,12 +121,11 @@ ogcloud-grafana-oauth:
     GF_AUTH_GENERIC_OAUTH_TOKEN_URL: {{ $origin }}/oauth2/token
     GF_AUTH_GENERIC_OAUTH_API_URL: {{ $origin }}/oauth2/userinfo
     GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
-    GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: "true"
     GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
     GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
     GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH: email
-    # Owners and admins administer Grafana, overview:read lets one look; everyone else is refused.
-    GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(['owner', 'admin'], role) && 'Admin' || contains(permissions, 'overview:read') && 'Viewer' || ''"
+    # The API names the role (owners administer, overview:read looks); without one Grafana refuses (D-0185).
+    GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: grafana_role
     GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
   keys:
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: GRAFANA_CLIENT_SECRET

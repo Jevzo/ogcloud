@@ -189,7 +189,7 @@ class AuthorizationServerTest(
     }
 
     @Test
-    fun `Grafana signs in with its secret and finds the role in the ID token`() {
+    fun `Grafana signs in with its secret and finds its role in the ID token`() {
         val user = user(BuiltInRole.ADMIN)
         val callback =
             oauth.authorize(
@@ -212,13 +212,44 @@ class AuthorizationServerTest(
             )
 
         val claims = payload(tokens.idToken ?: error("no ID token"))
-        claims[TokenClaims.ROLE_CLAIM] shouldBe BuiltInRole.ADMIN.id
+        claims[TokenClaims.GRAFANA_ROLE_CLAIM] shouldBe GrafanaRole.VIEWER
         claims[TokenClaims.USERNAME_CLAIM] shouldBe user.username
         claims[TokenClaims.EMAIL_CLAIM] shouldBe user.email
-        (claims[TokenClaims.PERMISSIONS_CLAIM] as List<*>) shouldContainExactly
-            BuiltInRole.ADMIN.permissions
-                .map { it.scope }
-                .sorted()
+    }
+
+    // Grafana may forward its users' tokens to data sources, so they must open nothing (D-0185).
+    @Test
+    fun `Grafana's access token carries no permissions, opens no API and cannot be refreshed`() {
+        val user = user(BuiltInRole.ADMIN)
+        val callback =
+            oauth.authorize(FirstPartyClients.GRAFANA, TEST_GRAFANA_REDIRECT, user.username, PASSWORD, verifier)
+
+        val tokens =
+            oauth.exchange(
+                FirstPartyClients.GRAFANA,
+                oauth.codeFrom(callback),
+                TEST_GRAFANA_REDIRECT,
+                verifier,
+                TEST_GRAFANA_SECRET,
+            )
+
+        (payload(tokens.accessToken)[TokenClaims.PERMISSIONS_CLAIM] as List<*>).isEmpty() shouldBe true
+        tokens.refreshToken shouldBe null
+        oauth.getWithToken(PROBE, tokens.accessToken).statusCode() shouldBe UNAUTHORIZED
+    }
+
+    @Test
+    fun `the API takes a user's token only when it was issued to one of its apps`() {
+        val key = TestSigningKeys.key(TestSigningKeys.CURRENT)
+        val actor = "user:${UUID.randomUUID()}"
+
+        val forDashboard =
+            TestSigningKeys.accessToken(key, emptyList(), actor = actor, audience = FirstPartyClients.WEB)
+        val forGrafana =
+            TestSigningKeys.accessToken(key, emptyList(), actor = actor, audience = FirstPartyClients.GRAFANA)
+
+        oauth.getWithToken(PROBE, forDashboard).statusCode() shouldBe OK
+        oauth.getWithToken(PROBE, forGrafana).statusCode() shouldBe UNAUTHORIZED
     }
 
     @Test

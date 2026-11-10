@@ -53,6 +53,7 @@ object TestSigningKeys {
         permissions: List<String>,
         actor: String = "client:test-client",
         issuer: String = TEST_ISSUER,
+        audience: String? = null,
         type: JOSEObjectType = JOSEObjectType(TokenClaims.ACCESS_TOKEN_TYPE),
     ): String {
         val now = Instant.now()
@@ -65,6 +66,7 @@ object TestSigningKeys {
                 .expirationTime(Date.from(now.plus(TOKEN_LIFETIME)))
                 .claim(TokenClaims.ACTOR_CLAIM, actor)
                 .claim(TokenClaims.PERMISSIONS_CLAIM, permissions)
+                .apply { if (audience != null) audience(audience) }
                 .build()
         val header =
             JWSHeader

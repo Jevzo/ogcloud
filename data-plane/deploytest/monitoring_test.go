@@ -73,3 +73,21 @@ func TestDashboardsQueryOnlyMetricsTheServicesExport(t *testing.T) {
 		t.Error("monitoring renders no dashboard")
 	}
 }
+
+// Grafana takes the role the API names and keeps no refresh token, since its tokens may reach data sources (D-0185).
+func TestGrafanaSignsInWithTheAPIsRoleAndNoRefreshToken(t *testing.T) {
+	targets, _ := get(render(t, hetznerValues).find(t, "InfisicalStaticSecret", "ogcloud-grafana-oauth"), "spec", "targets").([]any)
+	if len(targets) != 1 {
+		t.Fatalf("Grafana's OAuth settings sync to %d targets, want 1", len(targets))
+	}
+	data, _ := get(targets[0], "template", "data").(map[string]any)
+	if got := data["GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH"]; got != "grafana_role" {
+		t.Errorf("Grafana's role path = %v, want the API's grafana_role claim", got)
+	}
+	if got := data["GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT"]; got != "true" {
+		t.Errorf("Grafana admits users without a role: strict = %v", got)
+	}
+	if _, refresh := data["GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN"]; refresh {
+		t.Error("Grafana still asks for refresh tokens")
+	}
+}
