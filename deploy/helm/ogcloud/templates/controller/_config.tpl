@@ -39,6 +39,13 @@ ogcloud:
         game: {{ .Values.priorityClasses.game.name }}
     runtime:
       proxy-online-mode: {{ .Values.minecraft.proxyOnlineMode }}
+    {{- with .Values.controller.lifecycle.timeouts }}
+    lifecycle:
+      timeouts:
+        {{- range $key, $value := . }}
+        {{ kebabcase $key }}: {{ $value | quote }}
+        {{- end }}
+    {{- end }}
     # Rotates the forwarding tokens in their own project (D-0078, D-0152).
     infisical:
       url: {{ include "ogcloud.infisicalUrl" . }}

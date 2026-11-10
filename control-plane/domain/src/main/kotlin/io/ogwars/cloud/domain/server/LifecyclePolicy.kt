@@ -11,7 +11,8 @@ data class LifecycleTimeouts(
     /** Servers queue for the provisioner's rate limit (D-0075). */
     val requested: Duration = Duration.ofMinutes(5),
     val preparing: Duration = Duration.ofMinutes(3),
-    val starting: Duration = Duration.ofSeconds(90),
+    /** Many servers booting on one node take minutes; crashes are seen at once through the pod (D-0179). */
+    val starting: Duration = Duration.ofMinutes(5),
     val heartbeat: Duration = Duration.ofSeconds(30),
     val stopping: Duration = Duration.ofMinutes(3),
     /** After a drain timeout, players get this long to be transferred before a forced stop. */

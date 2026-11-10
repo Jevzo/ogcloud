@@ -276,6 +276,10 @@ controller:
     staticStorageClass: ""
     # The tainted game node pool on Hetzner (D-0047): nodeLabel, nodeLabelValue, taintKey, taintValue.
     gamePool: null
+  lifecycle:
+    # How long a server may stay in a state, e.g. starting: 5m (D-0179): requested, preparing, starting, heartbeat,
+    # stopping, transferGrace. Unset ones keep the controller's defaults.
+    timeouts: {}
   config: {}
 
 gateway:

@@ -2,12 +2,12 @@ package deploytest
 
 import (
 	"maps"
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // workloads are the pods the release runs itself, subcharts included.
@@ -300,10 +300,7 @@ func TestTheLoadBalancerTakesOnlyTheLimitsItIsGiven(t *testing.T) {
 	if set := limits(minikubeValues); len(set) != 0 {
 		t.Errorf("the chart sets limits nobody asked for: %v", set)
 	}
-	raised := filepath.Join(t.TempDir(), "load.yaml")
-	if err := os.WriteFile(raised, []byte("loadbalancer: {limits: {openPerAddress: 1000, newBurst: 500}}\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	raised := valuesFile(t, "loadbalancer: {limits: {openPerAddress: 1000, newBurst: 500}}\n")
 	if set := limits(minikubeValues, raised); !maps.Equal(set, map[string]string{
 		"OGCLOUD_LB_MAX_OPEN_PER_IP": "1000", "OGCLOUD_LB_NEW_BURST": "500",
 	}) {
@@ -320,11 +317,29 @@ func TestTheMinecraftServiceAdmitsOnlyTheGivenSources(t *testing.T) {
 	if got := ranges(minikubeValues); len(got) != 0 {
 		t.Errorf("the Service limits its sources unasked: %v", got)
 	}
-	limited := filepath.Join(t.TempDir(), "limited.yaml")
-	if err := os.WriteFile(limited, []byte("loadbalancer: {service: {sourceRanges: [198.51.100.7/32]}}\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	limited := valuesFile(t, "loadbalancer: {service: {sourceRanges: [198.51.100.7/32]}}\n")
 	if got := ranges(minikubeValues, limited); !slices.Equal(got, []string{"198.51.100.7/32"}) {
 		t.Errorf("source ranges = %v", got)
+	}
+}
+
+// The controller's lifecycle timeouts are chart values (D-0179); unset ones keep the controller's own defaults.
+func TestTheControllerTakesOnlyTheLifecycleTimeoutsGiven(t *testing.T) {
+	timeouts := func(values ...string) any {
+		t.Helper()
+		var config map[string]any
+		data := str(render(t, values...).find(t, "ConfigMap", "ogcloud-controller"), "data", "application.yaml")
+		if err := yaml.Unmarshal([]byte(data), &config); err != nil {
+			t.Fatalf("the controller's config: %v", err)
+		}
+		return get(config, "ogcloud", "controller", "lifecycle", "timeouts")
+	}
+	if got := timeouts(minikubeValues); got != nil {
+		t.Errorf("the chart sets timeouts nobody asked for: %v", got)
+	}
+	given := valuesFile(t, "controller: {lifecycle: {timeouts: {starting: 7m, transferGrace: 45s}}}\n")
+	want := map[string]any{"starting": "7m", "transfer-grace": "45s"}
+	if got, _ := timeouts(minikubeValues, given).(map[string]any); !maps.Equal(got, want) {
+		t.Errorf("timeouts = %v, want %v", got, want)
 	}
 }

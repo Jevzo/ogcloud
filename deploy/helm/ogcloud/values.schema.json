@@ -97,7 +97,27 @@
     },
     "certManager": { "type": "object" },
     "api": { "type": "object" },
-    "controller": { "type": "object" },
+    "controller": {
+      "type": "object",
+      "properties": {
+        "lifecycle": {
+          "type": "object",
+          "properties": {
+            "timeouts": {
+              "description": "Durations such as 90s or 5m (D-0179).",
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^(requested|preparing|starting|heartbeat|stopping|transferGrace)$": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(ms|s|m|h|d)$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "gateway": { "type": "object" },
     "loadbalancer": {
       "type": "object",

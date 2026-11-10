@@ -1,8 +1,6 @@
 package deploytest
 
 import (
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -85,10 +83,7 @@ func TestTemplatesAreCopiedDaily(t *testing.T) {
 // A restore recovers PostgreSQL from the backup it names, archives anew under its own server name, and copies the
 // templates back after bootstrap and the bucket (T-0607).
 func TestARestoreRecoversPostgresAndThenTheTemplates(t *testing.T) {
-	restore := filepath.Join(t.TempDir(), "restore.yaml")
-	if err := os.WriteFile(restore, []byte("restore: {fromServer: ogcloud-postgres}\nbackup: {serverName: ogcloud-postgres-2}\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	restore := valuesFile(t, "restore: {fromServer: ogcloud-postgres}\nbackup: {serverName: ogcloud-postgres-2}\n")
 	objects := render(t, hetznerValues, restore)
 	cluster := objects.find(t, "Cluster", "ogcloud-postgres")
 	if got := str(cluster, "spec", "bootstrap", "recovery", "source"); got != "backup" {

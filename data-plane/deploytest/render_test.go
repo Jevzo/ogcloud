@@ -140,3 +140,13 @@ func containsLine(text, line string) bool {
 	}
 	return false
 }
+
+// valuesFile writes values for one test and returns its path.
+func valuesFile(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "values.yaml")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
