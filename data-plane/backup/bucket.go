@@ -100,7 +100,7 @@ func (b *Bucket) putInParts(ctx context.Context, key string, body io.Reader, siz
 		})
 	}
 	if err != nil {
-		// An abandoned upload would otherwise hold its parts until the bucket's cleanup (D-0043).
+		// Nothing else aborts uploads in the backup target, so an abandoned one would hold its parts for good.
 		_, abortErr := b.client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
 			Bucket: &b.name, Key: &key, UploadId: upload.UploadId,
 		})

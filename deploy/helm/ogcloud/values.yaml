@@ -114,7 +114,7 @@ s3:
   inCluster: true
   endpoint: ""
   region: us-east-1
-  # Also named in seaweedfs.allInOne below; a render test keeps them equal.
+  # In the cluster, bucketJob creates it.
   bucket: ogcloud
   # SeaweedFS needs path-style URLs; Hetzner Object Storage takes virtual-hosted ones.
   pathStyle: true
@@ -127,7 +127,7 @@ s3:
       limits:
         memory: 128Mi
 
-# The SeaweedFS subchart (D-0146), run as one all-in-one pod with S3 behind our credentials. Its own bucket hook
+# The SeaweedFS subchart (D-0150), run as one all-in-one pod with S3 behind our credentials. Its own bucket hook
 # is off: it would run before the Infisical bootstrap that its credentials wait for.
 global:
   seaweedfs:
@@ -311,7 +311,6 @@ loadbalancer:
   # whole network.
   limits: {}
 
-# Nothing piles up (D-0043); the controller's cleanup loop applies these.
 # Backups (D-0166): PostgreSQL through CloudNativePG's Barman Cloud plugin, and the template objects through the
 # backup CronJob, into an S3 target of their own; on Hetzner a bucket in another location than the data bucket. The
 # bootstrap seed carries its credentials as BACKUP_S3_ACCESS_KEY and BACKUP_S3_SECRET_KEY.
@@ -346,6 +345,7 @@ backup:
 restore:
   fromServer: ""
 
+# Nothing piles up (D-0043); the controller's cleanup loop applies these.
 retention:
   dryRun: false
   templateVersionsToKeep: 3

@@ -7,7 +7,7 @@ version: 0.0.0-dev
 appVersion: 0.0.0-dev
 home: https://github.com/Jevzo/ogcloud
 dependencies:
-  # In-cluster object storage (D-0010, D-0146); Hetzner uses Hetzner Object Storage instead.
+  # In-cluster object storage (D-0010, D-0150); Hetzner uses Hetzner Object Storage instead.
   - name: seaweedfs
     version: 4.52.0
     repository: https://seaweedfs.github.io/seaweedfs/helm

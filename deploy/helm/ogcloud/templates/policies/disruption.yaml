@@ -1,5 +1,6 @@
 {{- /*
-Node drains keep one pod of every workload that runs more than one; CloudNativePG and Strimzi write their own.
+A node drain evicts one pod at a time of every workload that runs more than one; CloudNativePG and Strimzi write
+their own budgets.
 */}}
 {{- $workloads := dict
   "api" .Values.api.replicas

@@ -20,7 +20,7 @@ import (
 )
 
 // SeaweedFS runs here as the rendered chart runs it: the subchart's all-in-one container with the S3 users
-// synced from Infisical, then the Job that creates OgCloud's bucket (D-0010, D-0146).
+// synced from Infisical, then the Job that creates OgCloud's bucket (D-0010, D-0150).
 
 const (
 	s3AccessKey = "ogcloud-access-key"

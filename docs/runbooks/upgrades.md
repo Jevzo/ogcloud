@@ -62,8 +62,9 @@ kubectl apply --server-side --force-conflicts -f <the manifest's url>
 
 ## Infisical
 
-The new Infisical image migrates its database when it starts. It runs one replica, so it is unavailable for a short
-time; workloads keep the Secrets the operator already synced. Migrations cannot be undone, so a rollback means
+The new Infisical image migrates its database when it starts. With one replica (`infisical.replicas`, the default)
+it is unavailable for a short time; with two, as on Hetzner, the pods are replaced one at a time and the old one may
+fail requests against the migrated schema until it is gone. Workloads keep the Secrets the operator already synced. Migrations cannot be undone, so a rollback means
 restoring PostgreSQL. Its root Secrets never change on an upgrade.
 
 ## OgCloud
