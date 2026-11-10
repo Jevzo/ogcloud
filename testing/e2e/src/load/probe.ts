@@ -69,6 +69,10 @@ async function metricsOf(target: Target, pod: string): Promise<string> {
     `pod/${pod}`,
     `:${GATEWAY_ADMIN_PORT}`,
   ]);
+  let said = "";
+  forward.stderr.on("data", (chunk: Buffer) => {
+    said += chunk.toString();
+  });
   try {
     const port = await new Promise<string>((resolve, reject) => {
       forward.stdout.on("data", (chunk: Buffer) => {
@@ -81,7 +85,14 @@ async function metricsOf(target: Target, pod: string): Promise<string> {
         reject(new Error(`the port-forward to ${pod} ended with ${code}`)),
       );
     });
-    const response = await fetch(`http://127.0.0.1:${port}/metrics`);
+    const response = await fetch(`http://127.0.0.1:${port}/metrics`).catch(
+      (error: Error) => {
+        throw new Error(
+          `${pod}'s metrics: ${error.message}; kubectl said: ${said.trim()}`,
+          { cause: error },
+        );
+      },
+    );
     if (!response.ok) {
       throw new Error(`${pod}'s metrics answered ${response.status}`);
     }

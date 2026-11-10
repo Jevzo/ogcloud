@@ -166,6 +166,17 @@ async function run(context: Suite): Promise<boolean> {
 
     const loginsBefore = await loginHistogram(target);
     const failures = await joinInWaves(swarm, players, latencies);
+    // Players resolve their login when they join; moving between backends does not log them in again.
+    const logins = await loginHistogram(target).then(
+      (after) => ({
+        share: shareWithin(loginsBefore, after, CRITERIA.loginBoundSeconds),
+        count: after.count - loginsBefore.count,
+      }),
+      (error: Error) => {
+        console.error(`The gateways' login histogram: ${error.message}`);
+        return { share: 0, count: 0, error: error.message };
+      },
+    );
     const lost = await lostSessions(api, players, GROUPS.first);
     await sleep(SETTINGS.holdSeconds * 1000);
     const loaded = {
@@ -197,7 +208,6 @@ async function run(context: Suite): Promise<boolean> {
     );
     const unmoved = there + back;
     const lostAfterTransfers = await lostSessions(api, players, GROUPS.first);
-    const loginsAfter = await loginHistogram(target);
 
     const measured: Measured = { baseline, idle, loaded };
     const report = {
@@ -217,12 +227,8 @@ async function run(context: Suite): Promise<boolean> {
         p99: percentile(latencies.transfer, 99),
       },
       lostSessions: lost + lostAfterTransfers,
-      loginShareWithinBound: shareWithin(
-        loginsBefore,
-        loginsAfter,
-        CRITERIA.loginBoundSeconds,
-      ),
-      logins: loginsAfter.count - loginsBefore.count,
+      loginShareWithinBound: logins.share,
+      logins,
       extrapolated: extrapolate(measured, TARGET),
     };
     const passed =
