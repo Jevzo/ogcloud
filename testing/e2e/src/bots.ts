@@ -1,4 +1,5 @@
 import { type Bot, createBot } from "mineflayer";
+import { configurationPackets } from "./protocol.ts";
 import type { Target } from "./target.ts";
 import { eventually } from "./wait.ts";
 
@@ -20,6 +21,7 @@ export interface Player {
 }
 
 const SPAWN_TIMEOUT_MS = 90_000;
+const CONFIGURATION = "configuration";
 
 /** Joins through the load balancer in offline mode (D-0162) and resolves once the bot stands on a backend. */
 export async function join(
@@ -71,6 +73,7 @@ export function connect(
     // Few chunks per bot, so hundreds fit one process in a load run (T-0609).
     viewDistance: "tiny",
   });
+  dropPlayPacketsWhileConfiguring(bot);
   const messages: string[] = [];
   let kickReason: string | undefined;
   bot.on("messagestr", (message) => {
@@ -80,6 +83,28 @@ export function connect(
     kickReason = text(reason);
   });
   return { name, bot, messages, kicked: () => kickReason };
+}
+
+/**
+ * mineflayer keeps writing play packets for a moment after a server switch has put the client back into the
+ * configuration state (PrismarineJS/mineflayer#3292); they go out unmapped and Velocity disconnects the bot. A vanilla
+ * client sends only configuration packets there, so the bot drops the rest.
+ */
+function dropPlayPacketsWhileConfiguring(bot: Bot): void {
+  const client = bot._client;
+  const write = client.write.bind(client);
+  let allowed: ReadonlySet<string> | undefined;
+  client.write = (name, params) => {
+    if (String(client.state) === CONFIGURATION) {
+      allowed ??= configurationPackets(
+        (bot.registry as { protocol?: unknown }).protocol,
+      );
+      if (allowed.size > 0 && !allowed.has(name)) {
+        return;
+      }
+    }
+    write(name, params);
+  };
 }
 
 /** The first chat message matching [pattern], once it arrives. */
