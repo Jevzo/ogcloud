@@ -146,13 +146,13 @@ class GroupManagement(
                 "Image ${override.image} is not allowed; allowed prefixes: ${properties.allowedImagePrefixes}"
             }
         }
+        val request = memoryBytes("memoryRequest", group.resources.memoryRequest)
+        val limit = memoryBytes("memoryLimit", group.resources.memoryLimit)
+        // Kubernetes refuses a pod whose request exceeds its limit.
+        require(request <= limit) { "memoryRequest must not exceed memoryLimit" }
         // Stored groups below a minimum still load; only new settings must meet it (D-0177).
         profile.minimumMemoryBytes?.let { minimum ->
-            val limit = group.resources.memoryLimit
-            val bytes =
-                MemoryQuantity.bytes(limit)
-                    ?: throw IllegalArgumentException("memoryLimit '$limit' is not a memory quantity")
-            require(bytes >= minimum) {
+            require(limit >= minimum) {
                 "A ${profile.platform.name.lowercase()} group needs a memoryLimit of at least ${MemoryQuantity.format(
                     minimum,
                 )}"
@@ -160,6 +160,12 @@ class GroupManagement(
         }
         return group
     }
+
+    private fun memoryBytes(
+        field: String,
+        quantity: String,
+    ): Long =
+        MemoryQuantity.bytes(quantity) ?: throw IllegalArgumentException("$field '$quantity' is not a memory quantity")
 
     private companion object {
         const val MAINTENANCE_ATTEMPTS = 3

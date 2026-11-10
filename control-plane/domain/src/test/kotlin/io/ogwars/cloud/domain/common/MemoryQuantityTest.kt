@@ -14,6 +14,11 @@ class MemoryQuantityTest {
         "512M, 512000000",
         "64Ki, 65536",
         "1000, 1000",
+        "1e9, 1000000000",
+        "15E8, 1500000000",
+        "1Pi, 1125899906842624",
+        "2P, 2000000000000000",
+        "1Ei, 1152921504606846976",
     )
     fun `Kubernetes memory quantities are read in bytes`(
         quantity: String,
@@ -23,7 +28,8 @@ class MemoryQuantityTest {
     }
 
     @ParameterizedTest
-    @CsvSource("lots", "1.5", "-1Gi", "2gi", "500m", "''")
+    // 8Ei and 1e19 are past a Long's bytes; 1e-3 and 1Gie3 are no whole quantity of bytes.
+    @CsvSource("lots", "1.5", "-1Gi", "2gi", "500m", "''", "8Ei", "1e19", "1e-3", "1Gie3")
     fun `anything else is not a memory quantity`(quantity: String) {
         MemoryQuantity.bytes(quantity) shouldBe null
     }

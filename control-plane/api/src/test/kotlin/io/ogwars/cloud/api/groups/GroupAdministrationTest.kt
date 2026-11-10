@@ -82,14 +82,26 @@ class GroupAdministrationTest(
         oauth.call("POST", GROUPS, admin, memory("lots")).statusCode() shouldBe BAD_REQUEST
     }
 
-    private fun memory(limit: String) =
-        mapOf(
-            "id" to groupId(),
-            "type" to "DYNAMIC",
-            "settings" to
-                settings() +
-                ("resources" to mapOf("memoryRequest" to "1Gi", "memoryLimit" to limit, "cpuRequest" to "500m")),
-        )
+    // Kubernetes refuses such a pod, so the group could never start a server.
+    @Test
+    fun `a memory request above the limit is refused`() {
+        val refused = oauth.call("POST", GROUPS, admin, memory("2Gi", request = "3Gi"))
+
+        refused.statusCode() shouldBe BAD_REQUEST
+        refused.body() shouldContain "memoryRequest"
+        oauth.call("POST", GROUPS, admin, memory("2Gi", request = "lots")).statusCode() shouldBe BAD_REQUEST
+    }
+
+    private fun memory(
+        limit: String,
+        request: String = "1Gi",
+    ) = mapOf(
+        "id" to groupId(),
+        "type" to "DYNAMIC",
+        "settings" to
+            settings() +
+            ("resources" to mapOf("memoryRequest" to request, "memoryLimit" to limit, "cpuRequest" to "500m")),
+    )
 
     @Test
     fun `a deleted group can be restored, and its delete job is visible`() {
