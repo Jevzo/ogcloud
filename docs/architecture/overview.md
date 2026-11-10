@@ -205,5 +205,16 @@ backups, orphaned objects).
   waits through upgrades too: it diffs the documents first and waits for the new jobs of the charts that change.
   `mise run test:upgrade` installs N-1 (the newest v2 tag, else `origin/v2`) from a git worktree on k3d, upgrades it
   to the checkout and runs the restore check and the whole suite.
+- **Load and failover** (T-0609, D-0174, D-0175, D-0180 to D-0184): `deploy/k3s/load-run.sh` runs the load on the
+  test server: the Minecraft Service admits only the host while proxies run offline, two load groups (warmed by one
+  bot per server) take bots from worker processes joining 5 a second, which then move between the groups a backend
+  every 3 s; the report in `build/load` holds join, move and login-resolution latencies, Paper's own login time, the
+  platform's usage idle and loaded and its extrapolation, with every pod's log beside it. On the test server (6 cores,
+  HDDs) it passes on completed joins and moves and no lost sessions, at 16 backends and 250 players: all joined and
+  moved both ways, 99.6% of logins resolved within 50 ms, and the platform extrapolates to about 6.7 cores and
+  5.8 GiB at 5,000 players and 300 servers. The latency p99s (join and move under 2 s, login under 50 ms) are judged
+  on Hetzner (`OGCLOUD_LOAD_JUDGE_LATENCY=true`). `mise run test:load` checks the load balancer's 500 new connections
+  a second. `deploy/k3s/failover-run.sh` kills the controller leader (taken over in 12.7 s) and the Sentinel-managed
+  Valkey primary (replaced in 8.7 s, every server kept its pod).
 - Game servers run in their own namespace on a dedicated, autoscaled node pool.
 - Designed for 5,000 concurrent players and about 300 servers, with no singleton in the data path.
