@@ -139,6 +139,8 @@ class BrowserLoginTest(
         @DynamicPropertySource
         fun origin(registry: DynamicPropertyRegistry) {
             registry.add("server.port") { port }
+            // A defined port keeps actuator's fixed 8081 too (D-0190), which other test JVMs may hold.
+            registry.add("management.server.port") { 0 }
             registry.add("ogcloud.auth.issuer") { origin }
         }
     }
