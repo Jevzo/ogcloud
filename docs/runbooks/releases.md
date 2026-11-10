@@ -53,8 +53,8 @@ unless you untick the dry run; the bump runs either way and may open its pull re
 ## One-time setup
 
 - **The `release` environment** names you as its required reviewer and admits `v2` and `main` only.
-- **Maven Central:** the namespace `io.ogwars.cloud` is verified in the Central Portal through the DNS TXT record on
-  `ogwars.io` (D-0036). The environment holds a Portal user token as `MAVEN_CENTRAL_USERNAME` and
+- **Maven Central:** the namespace `io.ogwars`, which covers the group `io.ogwars.cloud` (D-0036), is verified in the
+  Central Portal through a DNS TXT record on `ogwars.io`. The environment holds a Portal user token as `MAVEN_CENTRAL_USERNAME` and
   `MAVEN_CENTRAL_PASSWORD`, and the ASCII-armoured private signing key (`gpg --export-secret-keys --armor <key id>`)
   as `SIGNING_KEY`, with its passphrase as `SIGNING_KEY_PASSWORD`. Publish the public key to `keys.openpgp.org`, where
   Central looks it up.
