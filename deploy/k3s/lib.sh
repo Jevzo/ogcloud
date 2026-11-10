@@ -91,3 +91,19 @@ stop_forwards() {
     kill "$job" 2>/dev/null || true
   done
 }
+
+# save_logs <dir>: every pod's log (all containers) and the events of OgCloud's namespaces and kube-system, where
+# k3s runs the HelmChart jobs. The scripts call it when they fail, before the cluster goes; CI keeps the directory.
+save_logs() {
+  local dir=$1 namespace pod
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  for namespace in ogcloud ogcloud-servers kube-system; do
+    kubectl get events --namespace "$namespace" --sort-by=.lastTimestamp >"$dir/$namespace-events.txt" 2>&1 || true
+    for pod in $(kubectl get pods --namespace "$namespace" --output name 2>/dev/null); do
+      kubectl logs --namespace "$namespace" "$pod" --all-containers --prefix --timestamps \
+        >"$dir/$namespace-${pod#pod/}.log" 2>&1 || true
+    done
+  done
+  echo "Pod logs and events saved in $dir" >&2
+}

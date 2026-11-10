@@ -30,6 +30,9 @@ export OGCLOUD_E2E_KUBE_CONTEXT="k3d-$cluster" OGCLOUD_E2E_STATE="$state"
 finish() {
   local status=$?
   stop_forwards
+  if [ "$status" -ne 0 ]; then
+    save_logs "$work/logs"
+  fi
   if [ "${OGCLOUD_K3S_KEEP:-}" != true ]; then
     k3d cluster delete "$cluster" >/dev/null 2>&1 || true
     git worktree remove --force "$old" >/dev/null 2>&1 || true
