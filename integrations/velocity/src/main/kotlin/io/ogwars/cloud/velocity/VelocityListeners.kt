@@ -22,6 +22,7 @@ import com.velocitypowered.api.permission.PermissionProvider
 import com.velocitypowered.api.permission.Tristate
 import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.proxy.ProxyServer
+import net.kyori.adventure.text.TranslatableComponent
 
 /** Velocity's events, handed to node-core's proxy runtime. */
 internal class VelocityListeners(
@@ -82,13 +83,15 @@ internal class VelocityListeners(
 
     /**
      * As v1: a backend that kicks with a reason has the last word. One that just failed sends a player still
-     * joining to another default-group server, and tells a player already playing elsewhere. A player turned away
-     * mid-switch who cannot go back, as Paper does when full at the end of the switch, goes to another backend of the
-     * same group instead (D-0142).
+     * joining to another default-group server, and tells a player already playing elsewhere. A full backend that
+     * turns away a player who has no server to stay on, as Paper does at the end of a switch, sends them to another
+     * backend of its group instead (D-0142).
      */
     @Subscribe
     fun onKickedFromServer(event: KickedFromServerEvent) {
-        if (event.kickedDuringServerConnect() && event.result is KickedFromServerEvent.DisconnectPlayer) {
+        if (event.player.currentServer.isEmpty && event.result is KickedFromServerEvent.DisconnectPlayer &&
+            isFull(event)
+        ) {
             val instead = runtime.refused(event.player.uniqueId, event.server.serverInfo.name)
             val server = (instead as? Route.To)?.let { proxy.getServer(it.backend.id).orElse(null) }
             if (server != null) {
@@ -109,6 +112,9 @@ internal class VelocityListeners(
                 ?.let { KickedFromServerEvent.RedirectPlayer.create(it) }
                 ?: KickedFromServerEvent.DisconnectPlayer.create(text(Message.KICK_NO_SERVERS))
     }
+
+    private fun isFull(event: KickedFromServerEvent): Boolean =
+        (event.serverKickReason.orElse(null) as? TranslatableComponent)?.key() == SERVER_FULL
 
     /** OgCloud decides players' permissions while its permission system is on; otherwise the previous provider does. */
     @Subscribe
@@ -138,6 +144,9 @@ internal class VelocityListeners(
     private fun text(message: Message) = legacyText(runtime.messages.text(message))
 
     companion object {
+        // Vanilla's reason when a server is at its player limit.
+        private const val SERVER_FULL = "multiplayer.disconnect.server_full"
+
         private val REPORTED_LOGINS =
             setOf(DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN, DisconnectEvent.LoginStatus.PRE_SERVER_JOIN)
         private val ABANDONED_LOGINS =

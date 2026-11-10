@@ -290,6 +290,24 @@ class ProxyRuntimeTest {
         runtime.refused(player, "gone") shouldBe Route.Kick(Message.KICK_NO_SERVERS)
     }
 
+    // Its heartbeat may still show room; trying it again would only bounce players off it.
+    @Test
+    fun `a backend that turned a player away counts as full for a while`() {
+        welcomeLobby(maxPlayers = 10, "l-7", "l-8", "l-9")
+        runtime.refused(UUID.randomUUID(), "l-7")
+        runtime.refused(UUID.randomUUID(), "l-8")
+
+        runtime
+            .initialServer(UUID.randomUUID())
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-9"
+        now = now.plusSeconds(60)
+        runtime
+            .initialServer(UUID.randomUUID())
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-7"
+    }
+
     @Test
     fun `a transfer without room leaves the players where they are and reports it`() {
         welcomeLobby(maxPlayers = 1, "l-7")

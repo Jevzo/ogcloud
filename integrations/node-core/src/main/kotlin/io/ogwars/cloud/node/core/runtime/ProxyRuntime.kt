@@ -77,6 +77,7 @@ class ProxyRuntime(
     // Players this proxy sent to a backend they have not reached yet, so a burst of logins or a whole server's
     // transfer spreads instead of filling one backend past its limit.
     private val enRoute = ConcurrentHashMap<UUID, EnRoute>()
+    private val fullSince = ConcurrentHashMap<String, Instant>()
     private val routing = ReentrantLock()
 
     private data class EnRoute(
@@ -130,12 +131,16 @@ class ProxyRuntime(
     /** The first backend for a player who just logged in. */
     fun initialServer(player: UUID): Route = sending(player) { router.initial(bypass(player), it) }
 
-    /** Where a player goes whom [backendId] turned away while they had no server left, say because it was full. */
+    /**
+     * Where a player goes whom [backendId] turned away as full while they had no server left. The backend counts as
+     * full for a while, since its heartbeat may still show room (D-0142).
+     */
     fun refused(
         player: UUID,
         backendId: String,
     ): Route {
         val backend = directory[backendId] ?: return Route.Kick(Message.KICK_NO_SERVERS)
+        fullSince[backendId] = clock.instant()
         return sending(player) { router.instead(backend, bypass(player), it) }
     }
 
@@ -410,16 +415,23 @@ class ProxyRuntime(
         }
 
     // A backend's players: the other proxies' from the heartbeats, this proxy's own live, and those on their way there
-    // (D-0176). A route counts until its player arrives or it is too old, say because the backend refused them.
+    // (D-0176). A route counts until its player arrives or it is too old, say because the backend refused them; a
+    // backend that turned a player away as full counts as full for as long.
     private fun playerCounts(): (Backend) -> Int {
         val online = platform.onlinePlayers()
         val where = online.associate { it.uuid to it.serverId }
         val oldest = clock.instant().minus(EN_ROUTE)
         enRoute.entries.removeIf { (player, route) -> route.since < oldest || where[player] == route.backendId }
+        fullSince.values.removeIf { it < oldest }
         val here = online.groupingBy { it.serverId }.eachCount()
         val coming = enRoute.values.groupingBy { it.backendId }.eachCount()
+        val full = fullSince.keys.toSet()
         return { backend ->
-            (otherProxies[backend.id] ?: 0) + (here[backend.id] ?: 0) + (coming[backend.id] ?: 0)
+            if (backend.id in full) {
+                backend.maxPlayers
+            } else {
+                (otherProxies[backend.id] ?: 0) + (here[backend.id] ?: 0) + (coming[backend.id] ?: 0)
+            }
         }
     }
 

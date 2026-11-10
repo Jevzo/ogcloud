@@ -202,24 +202,29 @@ class VelocityAdapterTest {
         val other = registered("other")
         val proxy = mockk<ProxyServer> { every { getServer("other") } returns Optional.of(other) }
         val listeners = VelocityListeners(proxy, runtime)
-        val switching = player(currentServer = mockk())
+        // Mid-switch the player has no server, so Velocity counts the refusal as a kick from the current one.
+        val switching = player(currentServer = null)
         val serverFull = Component.translatable("multiplayer.disconnect.server_full")
+        val banned = Component.text("banned")
 
-        fun turnedAway() =
+        fun turnedAway(reason: Component) =
             KickedFromServerEvent(
                 switching,
                 full,
-                serverFull,
-                true,
-                KickedFromServerEvent.DisconnectPlayer.create(serverFull),
+                reason,
+                false,
+                KickedFromServerEvent.DisconnectPlayer.create(reason),
             ).also(listeners::onKickedFromServer)
         every { runtime.refused(steve, backend.id) } returns Route.To(backend.copy(id = "other"))
-        val redirected = turnedAway()
+        val redirected = turnedAway(serverFull)
+        val bannedThere = turnedAway(banned)
         every { runtime.refused(steve, backend.id) } returns Route.Kick(Message.KICK_NO_SERVERS)
-        val stranded = turnedAway()
+        val stranded = turnedAway(serverFull)
 
         (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
+        (bannedThere.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe banned
         (stranded.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe serverFull
+        verify(exactly = 2) { runtime.refused(steve, backend.id) }
     }
 
     @Test
