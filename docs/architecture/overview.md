@@ -207,7 +207,8 @@ backups, orphaned objects).
   sha-pinned manifests in `platform-deps.yaml` that follow their chart's version, checked by a test. `install.sh`
   waits through upgrades too: it diffs the documents first and waits for the new jobs of the charts that change.
   `mise run test:upgrade` installs N-1 (the newest v2 tag, else `origin/v2`) from a git worktree on k3d, upgrades it
-  to the checkout and runs the restore check and the whole suite.
+  to the checkout and runs the restore check and the whole suite. It refuses an N-1 that is the checkout itself
+  unless `OGCLOUD_UPGRADE_ALLOW_SAME=true` (D-0191); a manual CI run names N-1 in its `upgrade_from` input.
 - **Load and failover** (T-0609, D-0174, D-0175, D-0180 to D-0184): `deploy/k3s/load-run.sh` runs the load on the
   test server: the Minecraft Service admits only the host while proxies run offline, two load groups (warmed by one
   bot per server) take bots from worker processes joining 5 a second, which then move between the groups a backend

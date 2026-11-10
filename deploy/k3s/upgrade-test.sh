@@ -2,8 +2,8 @@
 # The upgrade test (T-0608, D-0172): N-1 is installed on a fresh k3d cluster from a git worktree, seeded with its own
 # suite, then upgraded to this checkout by applying its documents as the next Terraform apply would; the data must
 # survive and the whole end-to-end suite must pass. OGCLOUD_UPGRADE_FROM names N-1 (default: the newest v2 tag, else
-# origin/v2). OGCLOUD_K3S_KEEP=true keeps the cluster and the worktree; OGCLOUD_K3S_SKIP_IMAGES=true imports images
-# built before.
+# origin/v2); one that is this checkout fails unless OGCLOUD_UPGRADE_ALLOW_SAME=true (D-0191). OGCLOUD_K3S_KEEP=true
+# keeps the cluster and the worktree; OGCLOUD_K3S_SKIP_IMAGES=true imports images built before.
 set -euo pipefail
 
 # shellcheck source=deploy/k3s/lib.sh
@@ -16,8 +16,11 @@ old_tag=n-1
 state="$PWD/$work/e2e"
 
 from=${OGCLOUD_UPGRADE_FROM:-$(git describe --tags --abbrev=0 --match 'v2.*' 2>/dev/null || echo origin/v2)}
-if [ "$(git rev-parse "$from^{commit}")" = "$(git rev-parse HEAD)" ]; then
-  echo "warning: N-1 ($from) is this checkout, so the upgrade changes nothing" >&2
+# A test from HEAD to HEAD crosses no version and would pass on nothing (D-0191).
+if [ "$(git rev-parse "$from^{commit}")" = "$(git rev-parse HEAD)" ] && [ "${OGCLOUD_UPGRADE_ALLOW_SAME:-}" != true ]; then
+  echo "N-1 ($from) is this checkout, so the upgrade would change nothing; name another ref in OGCLOUD_UPGRADE_FROM," \
+    "or set OGCLOUD_UPGRADE_ALLOW_SAME=true to run it anyway" >&2
+  exit 2
 fi
 
 mkdir -p "$work"
