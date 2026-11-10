@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.groups
 import io.ogwars.cloud.api.events.Announcements
 import io.ogwars.cloud.api.jobs.JobManagement
 import io.ogwars.cloud.domain.audit.Actor
+import io.ogwars.cloud.domain.common.MemoryQuantity
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
@@ -143,6 +144,18 @@ class GroupManagement(
         group.imageOverride?.let { override ->
             require(properties.allowedImagePrefixes.any(override.image::startsWith)) {
                 "Image ${override.image} is not allowed; allowed prefixes: ${properties.allowedImagePrefixes}"
+            }
+        }
+        // Stored groups below a minimum still load; only new settings must meet it (D-0177).
+        profile.minimumMemoryBytes?.let { minimum ->
+            val limit = group.resources.memoryLimit
+            val bytes =
+                MemoryQuantity.bytes(limit)
+                    ?: throw IllegalArgumentException("memoryLimit '$limit' is not a memory quantity")
+            require(bytes >= minimum) {
+                "A ${profile.platform.name.lowercase()} group needs a memoryLimit of at least ${MemoryQuantity.format(
+                    minimum,
+                )}"
             }
         }
         return group

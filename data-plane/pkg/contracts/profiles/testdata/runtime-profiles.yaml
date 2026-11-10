@@ -6,6 +6,8 @@ serverPort: 25565
 jvmFlags:
   paper: [-XX:+UseG1GC, -XX:MaxRAMPercentage=75]
   velocity: [-XX:+UseG1GC]
+minimumMemory:
+  paper: 1536Mi
 profiles:
   - id: paper-26.3
     platform: paper

@@ -43,8 +43,9 @@ test("a group whose servers keep crashing is paused until an admin resumes it", 
           drainTimeoutSeconds: 0,
           maintenance: false,
           resources: {
-            memoryRequest: "512Mi",
-            memoryLimit: "512Mi",
+            // Paper's minimum (D-0177), though these servers crash anyway.
+            memoryRequest: "1536Mi",
+            memoryLimit: "1536Mi",
             cpuRequest: "100m",
           },
           // The JVM refuses to start with an option it does not know.

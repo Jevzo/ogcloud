@@ -13,6 +13,12 @@ object RuntimeProfiles {
             RuntimeProfile("velocity-4.3.0", Platform.VELOCITY, ProfileRole.PROXY, "4.3.0", 0, 25),
         )
 
+    /** The smallest memory limit a group of a platform may set (D-0177). */
+    val MINIMUM_MEMORY_BYTES: Map<Platform, Long> =
+        mapOf(
+            Platform.PAPER to 1610612736L,
+        )
+
     val PLUGINS: List<RuntimePlugin> =
         listOf(
             RuntimePlugin(

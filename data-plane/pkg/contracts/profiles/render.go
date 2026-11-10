@@ -3,7 +3,8 @@ package profiles
 import (
 	"fmt"
 	"go/format"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -26,12 +27,7 @@ func RenderGo(c Catalog) ([]byte, error) {
 	b.WriteString("\t}\n}\n\n")
 	b.WriteString("// Overlays returns the settings the template loader writes on every start (D-0119).\nfunc Overlays() []Overlay {\n\treturn []Overlay{\n")
 	for _, overlay := range c.Overlays {
-		keys := make([]string, 0, len(overlay.Set))
-		for key := range overlay.Set {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
+		for _, key := range slices.Sorted(maps.Keys(overlay.Set)) {
 			fmt.Fprintf(&b, "\t\t{Platform: %s, File: %q, Format: %s, Key: %q, Value: %q},\n",
 				platforms[overlay.Platform].goConst, overlay.File, overlayFormats[overlay.Format], key, c.value(overlay.Set[key]))
 		}
@@ -57,6 +53,18 @@ func RenderKotlin(packageName string, c Catalog) []byte {
 			p.ID, info.kotlinEnum, strings.ToUpper(info.role), p.Version, p.Protocol, p.JavaVersion)
 	}
 	b.WriteString("        )\n")
+	b.WriteString("\n    /** The smallest memory limit a group of a platform may set (D-0177). */\n")
+	if len(c.MinimumMemory) == 0 {
+		b.WriteString("    val MINIMUM_MEMORY_BYTES: Map<Platform, Long> = emptyMap()\n")
+	} else {
+		b.WriteString("    val MINIMUM_MEMORY_BYTES: Map<Platform, Long> =\n        mapOf(\n")
+		for _, name := range slices.Sorted(maps.Keys(c.MinimumMemory)) {
+			// Validate parsed it already.
+			bytes, _ := memoryBytes(c.MinimumMemory[name])
+			fmt.Fprintf(&b, "            Platform.%s to %dL,\n", platforms[name].kotlinEnum, bytes)
+		}
+		b.WriteString("        )\n")
+	}
 	if len(c.Plugins) > 0 {
 		b.WriteString("\n    val PLUGINS: List<RuntimePlugin> =\n        listOf(\n")
 		for _, p := range c.Plugins {

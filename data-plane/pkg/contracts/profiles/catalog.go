@@ -53,9 +53,11 @@ type Catalog struct {
 	ServerPort int `yaml:"serverPort"`
 	// JVMFlags are the flags every server of a platform starts with, baked into its image (D-0139).
 	JVMFlags map[string][]string `yaml:"jvmFlags"`
-	Profiles []ProfileEntry      `yaml:"profiles"`
-	Plugins  []PluginEntry       `yaml:"plugins"`
-	Overlays []OverlayEntry      `yaml:"overlays"`
+	// MinimumMemory is the smallest memory limit a group of a platform may set, as a Kubernetes quantity (D-0177).
+	MinimumMemory map[string]string `yaml:"minimumMemory"`
+	Profiles      []ProfileEntry    `yaml:"profiles"`
+	Plugins       []PluginEntry     `yaml:"plugins"`
+	Overlays      []OverlayEntry    `yaml:"overlays"`
 }
 
 // OverlayEntry is a file the template loader patches on every start of a platform's servers (D-0119).
@@ -162,9 +164,38 @@ func (c Catalog) Validate() error {
 		problems = append(problems, errors.New("the catalog needs at least one proxy and one backend profile"))
 	}
 	problems = append(problems, c.validateJVMFlags()...)
+	problems = append(problems, c.validateMinimumMemory()...)
 	problems = append(problems, c.validatePlugins()...)
 	problems = append(problems, c.validateOverlays()...)
 	return errors.Join(problems...)
+}
+
+func (c Catalog) validateMinimumMemory() []error {
+	var problems []error
+	for name, quantity := range c.MinimumMemory {
+		if _, known := platforms[name]; !known {
+			problems = append(problems, fmt.Errorf("minimumMemory: unknown platform %q", name))
+		}
+		if _, err := memoryBytes(quantity); err != nil {
+			problems = append(problems, fmt.Errorf("minimumMemory.%s: %w", name, err))
+		}
+	}
+	return problems
+}
+
+var memoryQuantity = regexp.MustCompile(`^([1-9][0-9]*)(Ki|Mi|Gi)$`)
+
+// memoryBytes reads a whole number of Ki, Mi or Gi.
+func memoryBytes(quantity string) (int64, error) {
+	match := memoryQuantity.FindStringSubmatch(quantity)
+	if match == nil {
+		return 0, fmt.Errorf("%q must be a whole Ki, Mi or Gi quantity", quantity)
+	}
+	value, err := strconv.ParseInt(match[1], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%q: %w", quantity, err)
+	}
+	return value << map[string]int{"Ki": 10, "Mi": 20, "Gi": 30}[match[2]], nil
 }
 
 func (c Catalog) validateJVMFlags() []error {

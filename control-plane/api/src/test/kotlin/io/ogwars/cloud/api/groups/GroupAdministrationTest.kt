@@ -12,6 +12,7 @@ import io.ogwars.cloud.messaging.KafkaTopics
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -68,6 +69,27 @@ class GroupAdministrationTest(
             )
         oauth.call("POST", GROUPS, admin, quotedFlags).statusCode() shouldBe BAD_REQUEST
     }
+
+    @Test
+    fun `a Paper group needs its platform's minimum memory`() {
+        val small = memory("1Gi")
+        val refused = oauth.call("POST", GROUPS, admin, small)
+
+        refused.statusCode() shouldBe BAD_REQUEST
+        refused.body() shouldContain "at least 1536Mi"
+        oauth.call("POST", GROUPS, admin, memory("1536Mi")).statusCode() shouldBe CREATED
+        oauth.call("POST", GROUPS, admin, memory("2G")).statusCode() shouldBe CREATED
+        oauth.call("POST", GROUPS, admin, memory("lots")).statusCode() shouldBe BAD_REQUEST
+    }
+
+    private fun memory(limit: String) =
+        mapOf(
+            "id" to groupId(),
+            "type" to "DYNAMIC",
+            "settings" to
+                settings() +
+                ("resources" to mapOf("memoryRequest" to "1Gi", "memoryLimit" to limit, "cpuRequest" to "500m")),
+        )
 
     @Test
     fun `a deleted group can be restored, and its delete job is visible`() {

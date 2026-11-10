@@ -45,6 +45,11 @@ jvmFlags:
     - -XX:+ParallelRefProcEnabled
     - -XX:+PerfDisableSharedMem
 
+# The smallest memory limit a group of a platform may set (D-0177): below it a loaded server runs out of memory.
+# Paper 26.3 at 1 GiB was OOMKilled once players joined, even with a 60% heap; 1.5 GiB held (T-0609).
+minimumMemory:
+  paper: 1536Mi
+
 # Each profile's server jar is baked into its image (D-0046) and patched there (D-0139). `codegen servers`
 # moves build, url, sha256 and source to the newest stable build of the profile's version.
 profiles:

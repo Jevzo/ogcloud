@@ -80,6 +80,8 @@ func TestValidateRejectsInvalidCatalogs(t *testing.T) {
 		{"no server", header + proxy + "  - {id: paper-26.3, platform: paper, version: '26.3', protocol: 777, java: 25}\n", "server.build"},
 		{"no flags", base + "profiles:\n" + proxy + paper, "jvmFlags has no flags"},
 		{"flag with a space", base + "jvmFlags: {paper: ['-Xmx1G -Xms1G'], velocity: [-XX:+UseG1GC]}\nprofiles:\n" + proxy + paper, "one plain flag"},
+		{"minimum memory unit", header + proxy + paper + "minimumMemory: {paper: 1.5G}\n", "whole Ki, Mi or Gi"},
+		{"minimum memory platform", header + proxy + paper + "minimumMemory: {spigot: 1Gi}\n", "minimumMemory: unknown platform"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

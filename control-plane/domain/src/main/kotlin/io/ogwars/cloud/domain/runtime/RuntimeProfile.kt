@@ -28,6 +28,9 @@ data class RuntimeProfile(
     /** The third-party plugins in this profile's runtime bundle. */
     val plugins: List<RuntimePlugin> get() = RuntimeProfiles.PLUGINS.filter { platform in it.platforms }
 
+    /** The smallest memory limit a group of this platform may set, if the catalog names one (D-0177). */
+    val minimumMemoryBytes: Long? get() = RuntimeProfiles.MINIMUM_MEMORY_BYTES[platform]
+
     companion object {
         fun find(id: String): RuntimeProfile? = RuntimeProfiles.ALL.find { it.id == id }
     }
