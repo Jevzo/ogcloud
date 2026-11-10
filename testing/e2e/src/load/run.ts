@@ -23,6 +23,7 @@ import {
 import { expectStatus } from "../api.ts";
 import { kubectl } from "../cluster.ts";
 import { awaitRunningGroups, GROUPS as SEEDED } from "../seed.ts";
+import { everyStep, type Step } from "../steps.ts";
 import { type Suite, suite } from "../suite.ts";
 import { tarGz } from "../tar.ts";
 import type { Target } from "../target.ts";
@@ -142,6 +143,8 @@ async function run(context: Suite): Promise<boolean> {
   const swarm = Swarm.start(SETTINGS.botWorkers);
   let restoreVersion: number | undefined;
   let proxyVersion: number | undefined;
+  let passed = false;
+  let failure: unknown;
   try {
     proxyVersion = await growProxies(context, proxy);
     const baseline = {
@@ -223,9 +226,14 @@ async function run(context: Suite): Promise<boolean> {
     const lostAfterTransfers = await lostSessions(api, players, GROUPS.first);
 
     const measured: Measured = { baseline, idle, loaded };
+    // Read from the servers' logs, so a missing log only leaves its entry out of the report.
     const paperLogin = {
-      first: await paperLoginSeconds(target, GROUPS.first),
-      second: await paperLoginSeconds(target, GROUPS.second),
+      first: await paperLoginSeconds(target, GROUPS.first).catch(
+        (error: Error) => ({ error: error.message }),
+      ),
+      second: await paperLoginSeconds(target, GROUPS.second).catch(
+        (error: Error) => ({ error: error.message }),
+      ),
     };
     const report = {
       settings: SETTINGS,
@@ -261,7 +269,7 @@ async function run(context: Suite): Promise<boolean> {
       logins,
       extrapolated: extrapolate(measured, TARGET),
     };
-    const passed =
+    passed =
       report.joins.failed === 0 &&
       report.lostSessions === 0 &&
       report.transfers.failed === 0 &&
@@ -270,40 +278,67 @@ async function run(context: Suite): Promise<boolean> {
           report.joins.p99 < CRITERIA.joinP99Ms &&
           report.transfers.p99 < CRITERIA.transferP99Ms));
     await writeReport({ ...report, passed });
-    return passed;
-  } finally {
-    await saveLogs(
-      target,
-      joinPath(REPORT_DIR, `logs-${RUN}`),
-      SERVERS_NAMESPACE,
-    ).catch((error: Error) =>
-      console.error(`Saving the logs: ${error.message}`),
-    );
-    await swarm.close();
-    if (proxyVersion !== undefined) {
-      await setProxies(context, proxy.settings, proxyVersion);
-    }
-    if (restoreVersion !== undefined) {
-      expectStatus(
-        await networkUpdate(
-          { settings: network.settings, version: restoreVersion },
-          api,
-        ),
-        200,
-        "Restoring the default group",
-      );
-    }
-    for (const id of Object.values(GROUPS)) {
-      const deleted = await groupDelete(id, api);
-      if (
-        deleted.status !== 202 &&
-        deleted.status !== 204 &&
-        deleted.status !== 404
-      ) {
-        console.error(`Deleting group ${id} answered ${deleted.status}`);
-      }
-    }
+  } catch (error) {
+    failure = error;
   }
+  // Each step on its own, so one that fails still leaves the test server as the others put it back.
+  const failures = await everyStep([
+    [
+      "Saving the logs",
+      () =>
+        saveLogs(
+          target,
+          joinPath(REPORT_DIR, `logs-${RUN}`),
+          SERVERS_NAMESPACE,
+        ),
+    ],
+    ["Closing the bots", () => swarm.close()],
+    [
+      "Shrinking the proxy group back",
+      async () => {
+        if (proxyVersion !== undefined) {
+          await setProxies(context, proxy.settings, proxyVersion);
+        }
+      },
+    ],
+    [
+      "Restoring the default group",
+      async () => {
+        if (restoreVersion !== undefined) {
+          expectStatus(
+            await networkUpdate(
+              { settings: network.settings, version: restoreVersion },
+              api,
+            ),
+            200,
+            "Restoring the default group",
+          );
+        }
+      },
+    ],
+    ...Object.values(GROUPS).map(
+      (id): Step => [
+        `Deleting group ${id}`,
+        async () => {
+          const deleted = await groupDelete(id, api);
+          if (![202, 204, 404].includes(deleted.status)) {
+            throw new Error(`the API answered ${deleted.status}`);
+          }
+        },
+      ],
+    ),
+  ]);
+  for (const problem of failures) {
+    console.error(problem.message);
+  }
+  // A failed run's own error is the one to see; the failures above are logged either way.
+  if (failure !== undefined) {
+    throw failure;
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(failures, "Putting the test server back failed");
+  }
+  return passed;
 }
 
 /** Gives the proxy group room and memory for every bot and returns its new version. */
