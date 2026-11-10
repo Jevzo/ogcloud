@@ -1,28 +1,6 @@
 {{- /* Server certificates from the internal CA (D-0041), one per service that terminates TLS. */}}
 {{- range $service := list "gateway" "controller" }}
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: ogcloud-{{ $service }}-tls
-  namespace: {{ $.Release.Namespace }}
-  labels:
-    {{- include "ogcloud.componentLabels" (dict "root" $ "component" $service) | nindent 4 }}
-spec:
-  secretName: ogcloud-{{ $service }}-tls
-  duration: 2160h
-  renewBefore: 360h
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always
-    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
-    encoding: PKCS8
-  dnsNames:
-    - ogcloud-{{ $service }}
-    - ogcloud-{{ $service }}.{{ $.Release.Namespace }}.svc
-    - ogcloud-{{ $service }}.{{ $.Release.Namespace }}.svc.cluster.local
-  issuerRef:
-    kind: ClusterIssuer
-    name: ogcloud-internal
+{{ include "ogcloud.internalCertificate" (dict "root" $ "name" (printf "ogcloud-%s-tls" $service)
+  "labels" (dict "root" $ "component" $service) "services" (list (printf "ogcloud-%s" $service))) }}
 {{- end }}

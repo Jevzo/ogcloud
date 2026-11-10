@@ -5,30 +5,8 @@ cluster, its Valkey its own (D-0151); the credentials for both are bootstrap's r
 */}}
 {{- $i := .Values.infisical }}
 {{- $labels := dict "root" . "component" "infisical" }}
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: ogcloud-infisical-tls
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "ogcloud.componentLabels" $labels | nindent 4 }}
-spec:
-  secretName: ogcloud-infisical-tls
-  duration: 2160h
-  renewBefore: 360h
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always
-    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
-    encoding: PKCS8
-  dnsNames:
-    - ogcloud-infisical
-    - ogcloud-infisical.{{ .Release.Namespace }}.svc
-    - ogcloud-infisical.{{ .Release.Namespace }}.svc.cluster.local
-  issuerRef:
-    kind: ClusterIssuer
-    name: ogcloud-internal
+{{ include "ogcloud.internalCertificate" (dict "root" . "name" "ogcloud-infisical-tls" "labels" $labels
+  "services" (list "ogcloud-infisical")) }}
 ---
 apiVersion: v1
 kind: Service

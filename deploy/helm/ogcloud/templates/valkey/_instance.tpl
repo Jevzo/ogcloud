@@ -9,35 +9,9 @@ Parameters: root, name, component, sentinel, rootSecret, usersSecret (empty for 
 {{- $labels := dict "root" $root "component" .component }}
 {{- $replicas := ternary 3 1 .sentinel }}
 {{- $headless := printf "%s-headless.%s.svc.cluster.local" $name $root.Release.Namespace }}
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: {{ $name }}-tls
-  namespace: {{ $root.Release.Namespace }}
-  labels:
-    {{- include "ogcloud.componentLabels" $labels | nindent 4 }}
-spec:
-  secretName: {{ $name }}-tls
-  duration: 2160h
-  renewBefore: 360h
-  privateKey:
-    algorithm: ECDSA
-    size: 256
-    rotationPolicy: Always
-    # Java's PEM keystores, Kafka's among them, read only PKCS#8 keys.
-    encoding: PKCS8
-  dnsNames:
-    - localhost
-    - {{ $name }}
-    - {{ $name }}.{{ $root.Release.Namespace }}.svc
-    - {{ $name }}.{{ $root.Release.Namespace }}.svc.cluster.local
-    - "*.{{ $name }}-headless.{{ $root.Release.Namespace }}.svc"
-    - "*.{{ $headless }}"
-  ipAddresses:
-    - 127.0.0.1
-  issuerRef:
-    kind: ClusterIssuer
-    name: ogcloud-internal
+{{ include "ogcloud.internalCertificate" (dict "root" $root "name" (printf "%s-tls" $name) "labels" $labels
+  "names" (list "localhost") "services" (list $name) "ipAddresses" (list "127.0.0.1")
+  "wildcards" (list (printf "*.%s-headless.%s.svc" $name $root.Release.Namespace) (printf "*.%s" $headless))) }}
 ---
 {{- /* Sentinels and replicas reach each other by name, also before they are ready. */}}
 apiVersion: v1

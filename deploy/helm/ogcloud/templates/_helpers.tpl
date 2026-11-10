@@ -359,3 +359,43 @@ priorityClassName: {{ .root.Values.priorityClasses.platform.name }}
 securityContext:
   {{- include "ogcloud.podSecurity" .root | nindent 2 }}
 {{- end -}}
+
+{{/*
+A server certificate from the internal CA (D-0041): ECDSA, renewed two weeks before its 90 days end, its key PKCS#8,
+which Kafka's PEM keystores need and every other server accepts. Its names are "names", then each of "services" in
+its three forms, then "wildcards". (dict "root" $ "name" secret "labels" componentLabels-dict ["names" list]
+["services" list] ["wildcards" list] ["ipAddresses" list])
+*/}}
+{{- define "ogcloud.internalCertificate" -}}
+{{- $namespace := .root.Release.Namespace }}
+{{- $names := default list .names }}
+{{- range default list .services }}
+{{- $names = concat $names (list . (printf "%s.%s.svc" . $namespace) (printf "%s.%s.svc.cluster.local" . $namespace)) }}
+{{- end }}
+{{- $names = concat $names (default list .wildcards) -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .name }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" .labels | nindent 4 }}
+spec:
+  secretName: {{ .name }}
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+    encoding: PKCS8
+  dnsNames:
+    {{- toYaml $names | nindent 4 }}
+  {{- with .ipAddresses }}
+  ipAddresses:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: ogcloud-internal
+{{- end -}}
