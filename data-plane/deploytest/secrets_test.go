@@ -266,3 +266,21 @@ func TestBootstrapTouchesOnlyTheObjectsItsConfigNames(t *testing.T) {
 		t.Error("bootstrap cannot delete the seed after importing it (D-0114)")
 	}
 }
+
+// Helm keeps every release's values in its history and the k3s path keeps them in a Secret of their own, so the seed
+// is no value: the installers apply it as its own Secret, which bootstrap deletes after the import (D-0188).
+func TestTheSeedIsNoChartValue(t *testing.T) {
+	_, err := helmTemplate(t, []string{minikubeValues}, "--set", "bootstrap.seed.INFISICAL_ADMIN_PASSWORD=secret")
+	if err == nil || !strings.Contains(err.Error(), "seed") {
+		t.Errorf("bootstrap.seed was taken as a value: %v", err)
+	}
+	for _, values := range valueSets(t) {
+		objects := render(t, values)
+		seed := bootstrapConfig(t, objects).Infisical.Seed.Secret
+		for _, o := range objects {
+			if o.kind() == "Secret" && o.name() == seed {
+				t.Errorf("%s renders the seed Secret, which only the installers apply", values)
+			}
+		}
+	}
+}

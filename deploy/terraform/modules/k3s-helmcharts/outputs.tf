@@ -1,5 +1,5 @@
 output "documents" {
-  description = "Every manifest to apply at once, by file name; sensitive, since OgCloud's values hold the seed."
+  description = "Every manifest to apply at once, by file name; sensitive, since they hold the seed and OgCloud's values."
   sensitive   = true
 
   value = merge(
@@ -7,6 +7,7 @@ output "documents" {
     { for name, manifest in data.http.manifest : "manifest-${name}.yaml" => manifest.response_body },
     { for name, chart in local.platform_charts : "helmchart-${name}.yaml" => yamlencode(chart) },
     { "ogcloud-values.yaml" = yamlencode(local.ogcloud_values), "helmchart-ogcloud.yaml" = yamlencode(local.ogcloud) },
+    length(var.seed) > 0 ? { "ogcloud-seed.yaml" = yamlencode(local.seed) } : {},
   )
 
   precondition {

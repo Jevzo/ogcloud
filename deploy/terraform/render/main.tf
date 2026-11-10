@@ -23,6 +23,17 @@ variable "values_files" {
   default     = []
 }
 
+variable "seed_files" {
+  description = "YAML maps of bootstrap's seed keys (D-0188), later ones taking precedence; a file from before D-0188 holds them under bootstrap.seed."
+  type        = list(string)
+  default     = []
+}
+
+locals {
+  # An N-1 checkout's seed file still has the values file's shape (the upgrade test, D-0172).
+  seed = merge([for path in var.seed_files : try(yamldecode(file(path)).bootstrap.seed, yamldecode(file(path)))]...)
+}
+
 module "helmcharts" {
   source = "../modules/k3s-helmcharts"
 
@@ -30,6 +41,7 @@ module "helmcharts" {
   monitoring     = var.monitoring
   ogcloud_chart  = { content = filebase64(var.chart_archive) }
   ogcloud_values = [for path in var.values_files : file(path)]
+  seed           = local.seed
 }
 
 output "manifest" {

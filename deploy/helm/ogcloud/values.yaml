@@ -400,6 +400,8 @@ bootstrap:
       memory: 64Mi
     limits:
       memory: 128Mi
-  # The operator's first-install input (D-0114), imported into Infisical's /seed folder and then deleted:
-  # INFISICAL_ADMIN_EMAIL and INFISICAL_ADMIN_PASSWORD for the UI's super-admin, plus anything else to seed.
-  seed: {}
+  # The seed (D-0114) is no value, so Helm's release history never holds it (D-0188): the installer applies the
+  # Secret ogcloud-seed in the release namespace, with INFISICAL_ADMIN_EMAIL and INFISICAL_ADMIN_PASSWORD for
+  # Infisical's super-admin and whatever else to import into Infisical's /seed folder; bootstrap deletes it after
+  # the import. The installer sets its hash here, so a changed seed upgrades the release and reaches bootstrap.
+  seedChecksum: ""

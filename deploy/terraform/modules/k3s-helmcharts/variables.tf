@@ -27,10 +27,18 @@ variable "ogcloud_chart" {
 }
 
 variable "ogcloud_values" {
-  description = "Values files for OgCloud's chart, later ones taking precedence; they reach Helm through a Secret, since they hold the seed."
+  description = "Values files for OgCloud's chart, later ones taking precedence; they reach Helm through a Secret. The seed is no value (D-0188)."
   type        = list(string)
   default     = []
   nullable    = false
+}
+
+variable "seed" {
+  description = "Bootstrap's seed (D-0114): Infisical's first admin and the keys only the operator brings, applied as the Secret ogcloud-seed, never as a chart value (D-0188)."
+  type        = map(string)
+  default     = {}
+  nullable    = false
+  sensitive   = true
 }
 
 variable "timeout" {

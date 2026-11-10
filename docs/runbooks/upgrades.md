@@ -74,3 +74,7 @@ restoring PostgreSQL. Its root Secrets never change on an upgrade.
   job (D-0079). New server images matter only for profiles that name them.
 - Rolling the chart back with Helm is safe only if no migration ran. Otherwise, restore the backup from above as in
   the restore drill (`mise run test:restore`).
+- The seed (Infisical's first admin, the Cloudflare token, the backup target's keys) is the Secret `ogcloud-seed`
+  that the installer applies, never a chart value (D-0188). A release installed before that kept the seed in its
+  values, so Helm's release history (`sh.helm.release.v1.ogcloud.*` in the release namespace) still holds it until
+  those revisions roll out of the history; delete the old revisions once the upgrade has converged.

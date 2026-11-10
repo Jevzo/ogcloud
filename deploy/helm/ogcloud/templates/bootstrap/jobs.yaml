@@ -17,6 +17,10 @@ metadata:
     helm.sh/hook-weight: "-10"
     {{- else }}
     helm.sh/hook: post-install,post-upgrade
+    {{- /* A changed seed changes this value, so the release upgrades and bootstrap imports it (D-0188). */}}
+    {{- with $.Values.bootstrap.seedChecksum }}
+    cloud.ogwars.io/seed-checksum: {{ . | quote }}
+    {{- end }}
     {{- end }}
     helm.sh/hook-delete-policy: before-hook-creation
 spec:

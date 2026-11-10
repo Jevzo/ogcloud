@@ -19,11 +19,24 @@ def merge(base, extra):
     return merged
 
 def write(path, content):
-    local('mkdir -p "$(dirname %s)" && cat > %s' % (path, path), stdin=content, quiet=True, echo_off=True)
+    local('mkdir -p "$(dirname %s)" && umask 077 && cat > %s' % (path, path), stdin=content, quiet=True, echo_off=True)
 
-# Infisical's first super-admin (D-0114), made up once and kept out of git; bootstrap deletes the seed after use.
-if not os.path.exists(DEV + '/seed.yaml'):
-    local('mkdir -p %s && printf "bootstrap:\\n  seed:\\n    INFISICAL_ADMIN_EMAIL: admin@ogcloud.localhost\\n    INFISICAL_ADMIN_PASSWORD: %%s\\n" "$(openssl rand -hex 24)" > %s/seed.yaml' % (DEV, DEV), quiet=True, echo_off=True)
+# Infisical's first super-admin (D-0114), made up once and kept out of git. It reaches the cluster as the seed Secret,
+# never as a chart value (D-0188), and bootstrap deletes that after the import.
+SEED = DEV + '/seed.yaml'
+SEED_SECRET = DEV + '/seed-secret.yaml'
+if not os.path.exists(SEED):
+    local('mkdir -p %s && umask 077 && printf "INFISICAL_ADMIN_EMAIL: admin@ogcloud.localhost\\nINFISICAL_ADMIN_PASSWORD: %%s\\n" "$(openssl rand -hex 24)" > %s' % (DEV, SEED), quiet=True, echo_off=True)
+seed = read_yaml(SEED)
+# A seed file from before D-0188 held a values file.
+if 'bootstrap' in seed:
+    seed = seed['bootstrap']['seed']
+write(SEED_SECRET, encode_yaml({
+    'apiVersion': 'v1',
+    'kind': 'Secret',
+    'metadata': {'name': 'ogcloud-seed', 'namespace': 'ogcloud'},
+    'stringData': seed,
+}))
 
 # Strimzi's operator binds roles in the namespace it watches, so that one exists first.
 local_resource('namespace', cmd='kubectl apply -f deploy/namespace.yaml', labels=['platform'])
@@ -69,14 +82,15 @@ local_resource(
     labels=['ogcloud'],
 )
 
-chart_values = '--values deploy/helm/ogcloud/ci/minikube.yaml --values deploy/dev/values.yaml --values %s/seed.yaml' % DEV
+# The seed's hash as a value, so a changed seed upgrades the release and reaches bootstrap (D-0188).
+chart_values = '--values deploy/helm/ogcloud/ci/minikube.yaml --values deploy/dev/values.yaml --set bootstrap.seedChecksum=$(shasum -a 256 %s | cut -d" " -f1)' % SEED_SECRET
 if MONITORING:
     chart_values += ' --set monitoring.enabled=true'
 k8s_custom_deploy(
     'ogcloud',
     # Helm waits for the bootstrap hooks even without --wait; a first install pulls images and migrates Infisical.
     # Tilt tracks what apply_cmd prints, with UIDs, so the release's objects are read back from the cluster.
-    apply_cmd='helm upgrade --install ogcloud deploy/helm/ogcloud --namespace ogcloud --timeout 30m %s >&2 && helm get manifest ogcloud --namespace ogcloud | kubectl get -f - -o yaml' % chart_values,
+    apply_cmd='kubectl apply -f %s >&2 && helm upgrade --install ogcloud deploy/helm/ogcloud --namespace ogcloud --timeout 30m %s >&2 && helm get manifest ogcloud --namespace ogcloud | kubectl get -f - -o yaml' % (SEED_SECRET, chart_values),
     delete_cmd='helm uninstall ogcloud --namespace ogcloud',
     deps=['deploy/helm/ogcloud', 'deploy/dev'],
 )

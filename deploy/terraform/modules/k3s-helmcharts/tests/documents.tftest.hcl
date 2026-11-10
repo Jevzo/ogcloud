@@ -124,6 +124,45 @@ run "passes_ogcloud_its_values_files_in_order" {
   }
 }
 
+run "applies_the_seed_as_a_secret_of_its_own" {
+  command = plan
+
+  variables {
+    seed = { INFISICAL_ADMIN_EMAIL = "admin@example.test", CLOUDFLARE_API_TOKEN = "token" }
+  }
+
+  assert {
+    condition = yamldecode(output.documents["ogcloud-seed.yaml"]) == {
+      apiVersion = "v1"
+      kind       = "Secret"
+      type       = "Opaque"
+      metadata   = { name = "ogcloud-seed", namespace = "ogcloud" }
+      stringData = { INFISICAL_ADMIN_EMAIL = "admin@example.test", CLOUDFLARE_API_TOKEN = "token" }
+    }
+    error_message = "the seed is not its own Secret in the release namespace (D-0188)"
+  }
+
+  assert {
+    condition     = yamldecode(base64decode(yamldecode(output.documents["ogcloud-values.yaml"]).data["values-2.yaml"])).bootstrap.seedChecksum == sha256(jsonencode({ INFISICAL_ADMIN_EMAIL = "admin@example.test", CLOUDFLARE_API_TOKEN = "token" }))
+    error_message = "a changed seed would not change OgCloud's values, so bootstrap would never import it"
+  }
+
+  # Applied in one stream, it must come after the namespace it lives in.
+  assert {
+    condition     = index(sort(keys(output.documents)), "namespace.yaml") < index(sort(keys(output.documents)), "ogcloud-seed.yaml")
+    error_message = "the seed would be applied before its namespace"
+  }
+}
+
+run "applies_no_seed_without_one" {
+  command = plan
+
+  assert {
+    condition     = !contains(keys(output.documents), "ogcloud-seed.yaml")
+    error_message = "an empty seed Secret was rendered"
+  }
+}
+
 run "installs_ogcloud_into_its_namespace_from_the_registry" {
   command = plan
 

@@ -34,14 +34,30 @@ locals {
     }
   }
 
-  value_keys = [for index in range(length(var.ogcloud_values)) : "values-${index}.yaml"]
+  # Bootstrap imports the seed into Infisical and deletes it (D-0114); a later apply that brings it again is imported
+  # only when it changed.
+  seed = {
+    apiVersion = "v1"
+    kind       = "Secret"
+    type       = "Opaque"
+    metadata   = { name = "ogcloud-seed", namespace = local.namespace.metadata.name }
+    stringData = var.seed
+  }
+
+  # The seed's hash as OgCloud's last values file: a changed seed changes the values Secret, so helm-controller
+  # upgrades the release and bootstrap imports it (D-0188).
+  values = concat(
+    var.ogcloud_values,
+    length(var.seed) > 0 ? [yamlencode({ bootstrap = { seedChecksum = sha256(jsonencode(var.seed)) } })] : [],
+  )
+  value_keys = [for index in range(length(local.values)) : "values-${index}.yaml"]
 
   ogcloud_values = {
     apiVersion = "v1"
     kind       = "Secret"
     type       = "Opaque"
     metadata   = { name = local.values_secret, namespace = local.helm_namespace }
-    data       = zipmap(local.value_keys, [for values in var.ogcloud_values : base64encode(values)])
+    data       = zipmap(local.value_keys, [for values in local.values : base64encode(values)])
   }
 
   ogcloud = {

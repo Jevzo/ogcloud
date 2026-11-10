@@ -3,7 +3,8 @@
 # (D-0156, D-0157): every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the
 # cluster, which already has the images tagged OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
 # certificate from Let's Encrypt (D-0160), OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
-# (D-0162), and OGCLOUD_VALUES adds values files, separated by spaces.
+# (D-0162), OGCLOUD_VALUES adds values files and OGCLOUD_SEED_FILES seed files (YAML maps of seed keys, D-0188), each
+# separated by spaces.
 set -euo pipefail
 
 tag=${OGCLOUD_TAG:?OGCLOUD_TAG names the images to install}
@@ -49,24 +50,34 @@ ${OGCLOUD_PUBLIC_ORIGIN:+publicOrigin: $OGCLOUD_PUBLIC_ORIGIN}
 minecraft:
   proxyOnlineMode: ${OGCLOUD_PROXY_ONLINE_MODE:-true}
 EOF
-# Infisical's first admin (D-0114), made up once per checkout; bootstrap deletes the seed after use.
+# Infisical's first admin (D-0114), made up once per checkout; it reaches the cluster as the seed Secret, never as a
+# value (D-0188), and bootstrap deletes that after the import.
 if [ ! -f "$work/seed.yaml" ]; then
-  printf 'bootstrap:\n  seed:\n    INFISICAL_ADMIN_EMAIL: admin@ogcloud.localhost\n    INFISICAL_ADMIN_PASSWORD: %s\n' \
-    "$(openssl rand -hex 24)" > "$work/seed.yaml"
+  printf 'INFISICAL_ADMIN_EMAIL: admin@ogcloud.localhost\nINFISICAL_ADMIN_PASSWORD: %s\n' "$(openssl rand -hex 24)" \
+    > "$work/seed.yaml"
 fi
 
-values_files="\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/install.yaml\",\"$PWD/$work/seed.yaml\""
+values_files="\"$PWD/deploy/helm/ogcloud/ci/minikube.yaml\",\"$PWD/deploy/k3s/values.yaml\",\"$PWD/$work/install.yaml\""
+seed_files="\"$PWD/$work/seed.yaml\""
+rm -f "$work/letsencrypt.yaml" "$work/cloudflare-seed.yaml"
 if [ -n "${OGCLOUD_CLOUDFLARE_API_TOKEN:-}" ]; then
-  printf 'edge:\n  tls:\n    letsEncrypt:\n      enabled: true\nbootstrap:\n  seed:\n    CLOUDFLARE_API_TOKEN: %s\n' \
-    "$OGCLOUD_CLOUDFLARE_API_TOKEN" > "$work/letsencrypt.yaml"
+  printf 'edge:\n  tls:\n    letsEncrypt:\n      enabled: true\n' > "$work/letsencrypt.yaml"
+  printf 'CLOUDFLARE_API_TOKEN: %s\n' "$OGCLOUD_CLOUDFLARE_API_TOKEN" > "$work/cloudflare-seed.yaml"
   values_files="$values_files,\"$PWD/$work/letsencrypt.yaml\""
+  seed_files="$seed_files,\"$PWD/$work/cloudflare-seed.yaml\""
 fi
 for extra in ${OGCLOUD_VALUES:-}; do
   values_files="$values_files,\"$extra\""
 done
+for extra in ${OGCLOUD_SEED_FILES:-}; do
+  seed_files="$seed_files,\"$extra\""
+done
 terraform -chdir=deploy/terraform/render init -input=false >/dev/null
 terraform -chdir=deploy/terraform/render apply -input=false -auto-approve -state="$PWD/$work/render.tfstate" \
-  -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=[$values_files]" >/dev/null
+  -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=[$values_files]" \
+  -var "seed_files=[$seed_files]" >/dev/null
+# The rendered manifest holds the token as well; the file of it alone is not needed after the render.
+rm -f "$work/cloudflare-seed.yaml"
 terraform -chdir=deploy/terraform/render output -state="$PWD/$work/render.tfstate" -raw manifest > "$work/manifest.yaml"
 
 start=$(date +%s)

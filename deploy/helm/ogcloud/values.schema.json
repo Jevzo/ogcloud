@@ -136,7 +136,15 @@
     },
     "retention": { "type": "object" },
     "edge": { "type": "object" },
-    "bootstrap": { "type": "object" },
+    "bootstrap": {
+      "description": "The bootstrap Jobs' resources; the seed is a Secret the installer applies, never a value (D-0188).",
+      "type": "object",
+      "properties": {
+        "resources": { "type": "object" },
+        "seedChecksum": { "description": "The seed Secret's hash, set by the installer.", "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "restore": {
       "description": "Restores a backup into a fresh install (T-0607).",
       "type": "object",

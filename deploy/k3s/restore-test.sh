@@ -63,8 +63,8 @@ until docker exec "$backups" sh -c "echo 's3.bucket.create -name $bucket' | weed
 done
 address=$(docker inspect --format "{{(index .NetworkSettings.Networks \"$network\").IPAddress}}" "$backups")
 # Only these files hold secrets; a umask for the whole script would also reach the image build.
-touch "$work/backup.yaml"
-chmod 600 "$work/backup.yaml"
+touch "$work/backup.yaml" "$work/backup-seed.yaml"
+chmod 600 "$work/backup.yaml" "$work/backup-seed.yaml"
 cat > "$work/backup.yaml" <<EOF
 backup:
   enabled: true
@@ -75,10 +75,11 @@ backup:
     cidrs: [$address/32]
     port: 8333
     pathStyle: true
-bootstrap:
-  seed:
-    BACKUP_S3_ACCESS_KEY: $access_key
-    BACKUP_S3_SECRET_KEY: $secret_key
+EOF
+# The target's keys come with the seed, never as values (D-0188).
+cat > "$work/backup-seed.yaml" <<EOF
+BACKUP_S3_ACCESS_KEY: $access_key
+BACKUP_S3_SECRET_KEY: $secret_key
 EOF
 # The restored cluster archives under a name of its own, so it never writes over the backup it came from.
 cat > "$work/restore.yaml" <<EOF
@@ -90,7 +91,7 @@ EOF
 
 install() {
   OGCLOUD_TAG=$tag OGCLOUD_PUBLIC_ORIGIN=https://ogcloud.localhost:8443 OGCLOUD_PROXY_ONLINE_MODE=false \
-    OGCLOUD_VALUES="$*" deploy/k3s/install.sh
+    OGCLOUD_VALUES="$*" OGCLOUD_SEED_FILES="$PWD/$work/backup-seed.yaml" deploy/k3s/install.sh
   forward_ogcloud "$work"
 }
 
