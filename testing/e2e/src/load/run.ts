@@ -44,8 +44,10 @@ import { now } from "./swarm-protocol.ts";
 const SETTINGS = {
   players: number("OGCLOUD_LOAD_PLAYERS", 500),
   serversPerGroup: number("OGCLOUD_LOAD_SERVERS_PER_GROUP", 15),
-  // Bots that join together, a second apart.
-  wave: number("OGCLOUD_LOAD_WAVE", 25),
+  // Bots that join each second, a pace the test server holds (D-0180).
+  wave: number("OGCLOUD_LOAD_WAVE", 5),
+  // The moves transfer one backend's players this often (D-0180).
+  movePaceSeconds: number("OGCLOUD_LOAD_MOVE_PACE_SECONDS", 3),
   // Processes the bots are spread over, so none falls behind its bots' keep-alives.
   botWorkers: number("OGCLOUD_LOAD_BOT_WORKERS", 6),
   // How long the loaded network runs before it is measured, so the metrics server sees it.
@@ -440,8 +442,8 @@ async function joinInWaves(
 }
 
 /**
- * Moves every player on from's servers to the other group, timing each until its bot logs in on the new backend, and
- * returns how many bots did not arrive in time.
+ * Moves the players on from's servers to the other group, one server every movePaceSeconds, times each from its
+ * server's transfer until its bot logs in on the new backend, and returns how many bots did not arrive in time.
  */
 async function moveAll(
   api: Call,
@@ -451,18 +453,24 @@ async function moveAll(
   to: string,
   latencies: Latencies,
 ): Promise<number> {
+  const where = await whereOnline(api, new Set(players));
+  const issued = new Map<string, number>();
   const arrivals = new Map<string, number>();
-  const started = now();
   const stop = swarm.onLogin((name, at) => {
     if (!arrivals.has(name)) {
-      arrivals.set(name, at - started);
+      arrivals.set(name, at);
     }
   });
-  for (const server of expectStatus(
+  const servers = expectStatus(
     await serverList({ groupId: from }, api),
     200,
     `Listing ${from}`,
-  )) {
+  );
+  for (const [index, server] of servers.entries()) {
+    if (index > 0) {
+      await sleep(SETTINGS.movePaceSeconds * 1000);
+    }
+    issued.set(server.id, now());
     expectStatus(
       await serverTransferAll(server.id, { groupId: to }, api),
       202,
@@ -482,7 +490,12 @@ async function moveAll(
     );
   }
   stop();
-  latencies.transfer.push(...arrivals.values());
+  for (const [name, at] of arrivals) {
+    const requested = issued.get(where.get(name) ?? "");
+    if (requested !== undefined) {
+      latencies.transfer.push(at - requested);
+    }
+  }
   console.log(
     `Moved ${arrivals.size} of ${players.length} players from ${from} to ${to}`,
   );
@@ -508,7 +521,9 @@ async function lostSessions(
     await eventually(
       `every bot's session on ${group}`,
       async () => {
-        seen = await onlineIn(api, expected, servers);
+        seen = [...(await whereOnline(api, expected)).values()].filter((id) =>
+          servers.has(id),
+        ).length;
         return seen === expected.size ? true : undefined;
       },
       TRANSFER_TIMEOUT_MS,
@@ -519,12 +534,12 @@ async function lostSessions(
   return expected.size - seen;
 }
 
-async function onlineIn(
+/** The server each of the named players is on, from the API's list of online players. */
+async function whereOnline(
   api: Call,
   names: ReadonlySet<string>,
-  servers: ReadonlySet<string>,
-): Promise<number> {
-  let found = 0;
+): Promise<Map<string, string>> {
+  const where = new Map<string, string>();
   let cursor: string | undefined;
   do {
     const page = expectStatus(
@@ -535,13 +550,15 @@ async function onlineIn(
       200,
       "Listing the online players",
     );
-    found += page.items.filter(
-      (player) =>
-        names.has(player.name) && servers.has(player.session.serverId ?? ""),
-    ).length;
+    for (const player of page.items) {
+      const server = player.session.serverId;
+      if (names.has(player.name) && server) {
+        where.set(player.name, server);
+      }
+    }
     cursor = page.nextCursor ?? undefined;
   } while (cursor !== undefined);
-  return found;
+  return where;
 }
 
 async function writeReport(
