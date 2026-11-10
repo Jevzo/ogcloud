@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/v17.11.2/schemas/config.json",
+  "bootstrap-sha": "d7329065373bcf334c66bfd2a752b4053a8876ff",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "ogcloud",
+      "include-component-in-tag": false,
+      "versioning": "prerelease",
+      "prerelease-type": "alpha",
+      "prerelease": true,
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}
