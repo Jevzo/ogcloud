@@ -230,8 +230,8 @@ done
 """
 
 [tasks."check:ts"]
-description = "Biome lint and format check, then type-check every TS package"
-run = ["pnpm exec biome ci", "pnpm -r --if-present run typecheck"]
+description = "Biome lint and format check, type-check every TS package, then their unit tests"
+run = ["pnpm exec biome ci", "pnpm -r --if-present run typecheck", "pnpm -r --if-present run test:unit"]
 
 [tasks."fmt:ts"]
 description = "Format and fix TypeScript, JavaScript and JSON"
