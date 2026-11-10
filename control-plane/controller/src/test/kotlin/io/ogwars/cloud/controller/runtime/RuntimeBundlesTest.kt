@@ -105,12 +105,26 @@ class RuntimeBundlesTest {
         objects.objects.size shouldBe 3
     }
 
+    // A sync runs every minute; an object only goes missing when the bucket is lost, as before a restore.
+    @Test
+    fun `stored objects are checked for again only after a while`() {
+        bundles.runOnce()
+        val checked = objects.heads
+
+        bundles.runOnce()
+        objects.heads shouldBe checked
+        f.clock.advance(RuntimeProperties().objectCheckInterval)
+        bundles.runOnce()
+        objects.heads shouldBe checked + 3
+    }
+
     @Test
     fun `objects missing from storage, as after a restore, are stored again without a rollout`() {
         bundles.runOnce()
         f.request(group(GroupType.PROXY, id = "proxy"))
         objects.objects.clear()
 
+        f.clock.advance(RuntimeProperties().objectCheckInterval)
         bundles.runOnce()
 
         val manifest = RuntimeBundle.parseFrom(readModels.get(ReadModelKind.RUNTIME_BUNDLE, "velocity-4.3.0"))

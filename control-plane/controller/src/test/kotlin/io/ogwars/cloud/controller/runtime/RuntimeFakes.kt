@@ -16,6 +16,7 @@ class InMemoryObjectStore(
 ) : ObjectStore {
     val objects = mutableMapOf<String, ByteArray>()
     private val modified = mutableMapOf<String, Instant>()
+    var heads = 0
 
     override fun upload(
         key: String,
@@ -32,7 +33,8 @@ class InMemoryObjectStore(
         target.write(objects.getValue(key))
     }
 
-    override fun head(key: String) = objects[key]?.let { StoredObject(key, it.size.toLong(), modified.getValue(key)) }
+    override fun head(key: String) =
+        objects[key]?.let { StoredObject(key, it.size.toLong(), modified.getValue(key)) }.also { heads++ }
 
     override fun list(prefix: String) =
         objects

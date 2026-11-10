@@ -30,7 +30,9 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.HexFormat
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Keeps every profile's runtime bundle in object storage (D-0079): uploads what changed under content-addressed
@@ -53,10 +55,15 @@ class RuntimeBundles(
 ) : LeaderLoop {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    // When each object was last seen in storage, so a sync a minute does not ask for every one.
+    private val seen = ConcurrentHashMap<String, Instant>()
+
     override val name = "runtime-bundles"
     override val interval: Duration get() = properties.syncInterval
 
     override fun runOnce() {
+        val recheck = clock.instant().minus(properties.objectCheckInterval)
+        seen.values.removeIf { !it.isAfter(recheck) }
         RuntimeProfiles.ALL.forEach { profile ->
             // One profile's broken download must not keep the others from updating.
             try {
@@ -89,7 +96,6 @@ class RuntimeBundles(
         readModels.put(ReadModelKind.RUNTIME_BUNDLE, profile.id, manifest.toByteArray())
     }
 
-    // A restored database outlives the bucket it described, so the record alone does not prove the object exists.
     private fun upToDate(
         source: BundleSource,
         existing: RuntimeArtifact,
@@ -99,7 +105,15 @@ class RuntimeBundles(
             is BundleSource.LocalFile -> existing.sha256 == Files.newInputStream(source.file).use { sha256(it) }
             is BundleSource.Generated -> existing.sha256 == sha256(source.content.inputStream())
         } &&
-            objects.head(existing.objectKey) != null
+            stored(existing.objectKey)
+
+    // A restored database outlives the bucket it described, so the record alone does not prove the object exists.
+    private fun stored(key: String): Boolean {
+        if (seen.containsKey(key)) return true
+        val there = objects.head(key) != null
+        if (there) seen[key] = clock.instant()
+        return there
+    }
 
     private fun store(
         profile: RuntimeProfile,
@@ -158,6 +172,7 @@ class RuntimeBundles(
     ): RuntimeArtifact {
         val artifact = RuntimeArtifact(profile.id, source.path, key, sourceOf(source), sha256, size, clock.instant())
         artifacts.save(artifact)
+        seen[key] = clock.instant()
         log.info("Stored {} of {} as {}", source.path, profile.id, key)
         return artifact
     }
