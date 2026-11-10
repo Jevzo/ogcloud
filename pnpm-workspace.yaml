@@ -5,10 +5,10 @@ packages:
 
 # Single source of truth for JS/TS versions (AGENTS.md §9, D-0001). Renovate keeps them current (D-0052).
 catalog:
-  "@biomejs/biome": 2.6.5
+  "@biomejs/biome": 2.6.6
   "@types/node": 26.6.6
   i18next: 26.7.2
-  i18next-cli: 1.85.1
+  i18next-cli: 1.87.0
   jscpd: 5.4.2
   mineflayer: 4.39.0
   orval: 8.46.0
