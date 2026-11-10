@@ -9,7 +9,12 @@ set -euo pipefail
 origin=${OGCLOUD_PUBLIC_ORIGIN:?OGCLOUD_PUBLIC_ORIGIN is the public origin of the install}
 work=build/k3s
 
-IFS= read -r OGCLOUD_CLOUDFLARE_API_TOKEN
+IFS= read -r OGCLOUD_CLOUDFLARE_API_TOKEN || true
+# Without it the reinstalls would drop the public certificate's Let's Encrypt issuer (D-0160).
+if [ -z "$OGCLOUD_CLOUDFLARE_API_TOKEN" ]; then
+  echo "the Cloudflare API token must come on stdin" >&2
+  exit 2
+fi
 export OGCLOUD_CLOUDFLARE_API_TOKEN
 export OGCLOUD_E2E_ORIGIN="$origin" OGCLOUD_E2E_KUBE_CONTEXT=default OGCLOUD_E2E_STATE="$PWD/$work/e2e"
 
