@@ -175,12 +175,22 @@ backups, orphaned objects).
     port-forward. Values are checked against `values.schema.json`; replicated workloads have disruption budgets.
   - `mise run check:chart` lints every value set in `ci/` and validates it with kubeconform against pinned
     schemas; Go render tests in `data-plane/deploytest` check the invariants (D-0148).
-- **Images:** `mise run images:build` builds the artifacts with mise's toolchains (Spring boot jars unpacked into
-  their layers, static Go binaries, the plugin jars) into `build/images`, then bakes every image from
-  `images/docker-bake.json` (server images, generated from the catalog) and `images/docker-bake.hcl` (platform images).
+- **Images:** `mise run images:stage` builds the artifacts with mise's toolchains (Spring boot jars unpacked into
+  their layers, static Go binaries, the plugin jars) into `build/images`; `mise run images:build` then bakes every image
+  from `images/docker-bake.json` (server images, generated from the catalog) and `images/docker-bake.hcl` (platform
+  images).
   The api and controller run on distroless Java 25, the Go services on distroless static, all as uid 1000 (D-0128);
   the controller image carries `ogcloud-<platform>.jar` in `/opt/ogcloud/plugins` (D-0079). Tags are
   `<registry>/<name>:<platform-version>`, as the controller expects.
+- **Releases** (D-0193 to D-0198, `docs/runbooks/releases.md`): release-please keeps the one platform version in
+  `.release-please-manifest.json` and cuts `2.0.0-alpha.N` pre-releases from `v2`. Each release runs the publish
+  workflow after your approval in the `release` environment: every image of the `default` and `platform` bake groups is
+  built on an amd64 and an arm64 runner and pushed by digest with an SBOM and provenance, `deploy/release/publish.sh`
+  merges them into one manifest list per tag (the Go `release` command reads the bake file and the build metadata),
+  signs the lists and the chart (`oci://ghcr.io/jevzo/ogcloud/charts/ogcloud`) keyless with cosign, and verifies
+  every signature and attestation; real releases also put `io.ogwars.cloud:ogcloud-sdk` on Maven Central. A run by
+  hand is a dry run under `0.0.0-dryrun-<commit>`. A weekly job keeps 10 pre-releases per GHCR package, every real
+  release, and nothing else.
 - **Local development:** `mise run dev` starts the minikube profile `ogcloud` (Calico, the Docker runtime, D-0155)
   and Tilt. The `Tiltfile` installs `deploy/platform-deps.yaml` in order, builds the images into minikube's Docker
   and installs the chart with `deploy/dev/values.yaml`; the dashboard origin is `https://ogcloud.localhost:8443`
