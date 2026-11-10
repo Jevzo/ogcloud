@@ -27,6 +27,10 @@ export const GROUPS = {
   legacy: "legacy",
 } as const;
 
+// CI's k3d node has four CPUs, most of them requested by the platform; at 250m each, a crashing group's server could
+// no longer be scheduled once the lobby had scaled up, so it never failed and was never paused.
+const CPU_REQUEST = "100m";
+
 const SCALING = {
   scaleUpThreshold: 0.8,
   scaleDownThreshold: 0.2,
@@ -50,7 +54,7 @@ const GROUP_REQUESTS: readonly CreateGroupRequest[] = [
       resources: {
         memoryRequest: "512Mi",
         memoryLimit: "512Mi",
-        cpuRequest: "250m",
+        cpuRequest: CPU_REQUEST,
       },
       jvmFlags: "",
     },
@@ -72,7 +76,7 @@ const GROUP_REQUESTS: readonly CreateGroupRequest[] = [
       resources: {
         memoryRequest: "1536Mi",
         memoryLimit: "1536Mi",
-        cpuRequest: "250m",
+        cpuRequest: CPU_REQUEST,
       },
       jvmFlags: "",
     },
@@ -93,7 +97,7 @@ const GROUP_REQUESTS: readonly CreateGroupRequest[] = [
       resources: {
         memoryRequest: "768Mi",
         memoryLimit: "768Mi",
-        cpuRequest: "250m",
+        cpuRequest: CPU_REQUEST,
       },
       jvmFlags: "",
     },
