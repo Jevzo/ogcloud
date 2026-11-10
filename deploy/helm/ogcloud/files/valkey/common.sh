@@ -7,9 +7,10 @@ fqdn="$(hostname).${HEADLESS_SERVICE}"
 TLS_RELOAD_SECONDS="${TLS_RELOAD_SECONDS:-3600}"
 admin_password="$(cat /secrets/root/ADMIN_PASSWORD)"
 
-# Gives up after a few seconds, so a peer that is gone or not resolvable yet never stalls a start.
+# Gives up after a few seconds, so a peer that is gone or not resolvable yet never stalls a start. The password goes
+# in the environment, which other processes in the pod cannot read, unlike the command line.
 cli() {
-  timeout 5 valkey-cli -e --tls --cacert /tls/ca.crt --user ogcloud-admin --pass "${admin_password}" --no-auth-warning "$@"
+  VALKEYCLI_AUTH="${admin_password}" timeout 5 valkey-cli -e --tls --cacert /tls/ca.crt --user ogcloud-admin "$@"
 }
 
 # The primary the sentinels name, or pod 0 when none answers yet (the first start).
@@ -24,5 +25,7 @@ current_primary() {
     fi
     replica=$((replica + 1))
   done
+  # Right on the first start; after a failover it means every Sentinel was unreachable, which the log must show.
+  echo "no Sentinel names a primary for ${SENTINEL_MASTER}; taking ${STATEFULSET}-0, as on the first start" >&2
   echo "${STATEFULSET}-0.${HEADLESS_SERVICE}"
 }

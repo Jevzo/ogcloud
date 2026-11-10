@@ -118,9 +118,20 @@ func TestValkeyStartsWithTLSUsersAndKeyspaceEvents(t *testing.T) {
 
 	// A rotated password reaches Valkey without a restart.
 	node.files.update("/secrets/users/users.acl", strings.Replace(chart.usersACL, ">api-password ", ">rotated ", 1))
-	runIn(t, node, "sh", "-c", ". /scripts/common.sh && /scripts/render-acl.sh && cli -h localhost -p 6379 ACL LOAD")
+	runIn(t, node, "/scripts/apply-acl.sh")
 	if out := cli(t, node, "ogcloud-api", "rotated", "GET", "k"); out != "v" {
 		t.Errorf("the rotated password was not loaded: %q", out)
+	}
+	// Users Valkey refuses never replace the file it runs on.
+	node.files.update("/secrets/users/users.acl", chart.usersACL+"user broken on >x +nosuchcommand\n")
+	if code, _ := execIn(t, node, "/scripts/apply-acl.sh"); code == 0 {
+		t.Error("a refused ACL file was reported as loaded")
+	}
+	if file := runIn(t, node, "cat", "/etc/valkey/users.acl"); strings.Contains(file, "broken") || !strings.Contains(file, ">rotated ") {
+		t.Errorf("the refused users replaced the accepted file:\n%s", file)
+	}
+	if out := cli(t, node, "ogcloud-api", "rotated", "GET", "k"); out != "v" {
+		t.Errorf("the accepted users are gone after a refused reload: %q", out)
 	}
 
 	// A certificate cert-manager renewed is served without a restart.
@@ -348,7 +359,14 @@ func cli(t *testing.T, node testcontainers.Container, user, password string, arg
 
 func runIn(t *testing.T, node testcontainers.Container, command ...string) string {
 	t.Helper()
-	_, reader, err := node.Exec(context.Background(), command, tcexec.Multiplexed())
+	_, out := execIn(t, node, command...)
+	return out
+}
+
+// execIn runs command in node and returns its exit code and output.
+func execIn(t *testing.T, node testcontainers.Container, command ...string) (int, string) {
+	t.Helper()
+	code, reader, err := node.Exec(context.Background(), command, tcexec.Multiplexed())
 	if err != nil {
 		t.Fatalf("exec %v: %v", command, err)
 	}
@@ -356,7 +374,7 @@ func runIn(t *testing.T, node testcontainers.Container, command ...string) strin
 	if err != nil {
 		t.Fatal(err)
 	}
-	return string(out)
+	return code, string(out)
 }
 
 // eventually polls condition until it holds; Sentinel's failover takes real seconds. describe, if given, explains
