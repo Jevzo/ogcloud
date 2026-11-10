@@ -27,10 +27,14 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
 import io.ogwars.cloud.sdk.GroupType as SdkGroupType
 
 class ProxyRuntimeTest {
@@ -239,6 +243,39 @@ class ProxyRuntimeTest {
             .initialServer(third)
             .shouldBeInstanceOf<Route.To>()
             .backend.id shouldBe "l-8"
+    }
+
+    // Velocity routes logins on several threads at once; each must see the routes decided before it (D-0176).
+    @Test
+    @Timeout(10)
+    fun `logins routed at the same moment see each other on their way`() {
+        welcomeLobby(maxPlayers = 1, "l-7", "l-8")
+        val first = UUID.randomUUID()
+        val routes = ConcurrentLinkedQueue<Route>()
+        val second = Thread { routes += runtime.initialServer(UUID.randomUUID()) }
+        val firstChecking = CountDownLatch(1)
+        val secondChecked = AtomicBoolean()
+        // The first login has read the counts and is checking its permissions: until the second has done the same,
+        // or waits for the first to finish.
+        platform.permissionChecked = { player ->
+            if (player == first) {
+                firstChecking.countDown()
+                while (!secondChecked.get() && second.state !in setOf(Thread.State.BLOCKED, Thread.State.WAITING)) {
+                    Thread.onSpinWait()
+                }
+            } else {
+                secondChecked.set(true)
+            }
+        }
+        val firstThread = Thread { routes += runtime.initialServer(first) }
+
+        firstThread.start()
+        firstChecking.await()
+        second.start()
+        firstThread.join()
+        second.join()
+
+        routes.map { it.shouldBeInstanceOf<Route.To>().backend.id } shouldContainExactlyInAnyOrder listOf("l-7", "l-8")
     }
 
     @Test

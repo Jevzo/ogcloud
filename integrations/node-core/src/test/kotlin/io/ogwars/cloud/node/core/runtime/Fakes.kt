@@ -88,6 +88,10 @@ open class FakePlatform : NodePlatform {
     val rankChanges = mutableListOf<Set<UUID>>()
     var sample = HeartbeatSample(3, 19.9, 12.5, 512, 1024)
 
+    /** Runs on the caller's thread at every permission check, so a test can hold a decision in the middle. */
+    @Volatile
+    var permissionChecked: (UUID) -> Unit = {}
+
     override fun onlinePlayers() = players.toList()
 
     override fun sample() = sample
@@ -95,7 +99,10 @@ open class FakePlatform : NodePlatform {
     override fun hasPermission(
         player: UUID,
         node: String,
-    ) = node in granted[player].orEmpty()
+    ): Boolean {
+        permissionChecked(player)
+        return node in granted[player].orEmpty()
+    }
 
     override fun message(
         player: UUID,

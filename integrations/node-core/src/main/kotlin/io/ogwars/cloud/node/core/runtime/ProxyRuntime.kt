@@ -39,6 +39,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /** Whether a joining player may log in, and with what message they are turned away. */
 sealed interface LoginDecision {
@@ -75,6 +77,7 @@ class ProxyRuntime(
     // Players this proxy sent to a backend they have not reached yet, so a burst of logins or a whole server's
     // transfer spreads instead of filling one backend past its limit.
     private val enRoute = ConcurrentHashMap<UUID, EnRoute>()
+    private val routing = ReentrantLock()
 
     private data class EnRoute(
         val backendId: String,
@@ -379,16 +382,21 @@ class ProxyRuntime(
         otherProxies = network.mapValues { (id, players) -> (players - (mine[id] ?: 0)).coerceAtLeast(0) }
     }
 
-    /** Decides where player goes with the current counts, and remembers where they are headed. */
+    /**
+     * Decides where player goes with the current counts, and remembers where they are headed. One decision at a time:
+     * Velocity routes logins on several threads, and each must count the routes decided before it.
+     */
     private fun sending(
         player: UUID,
         decide: ((Backend) -> Int) -> Route,
     ): Route =
-        decide(playerCounts()).also { route ->
-            if (route is Route.To) {
-                enRoute[player] = EnRoute(route.backend.id, clock.instant())
-            } else {
-                enRoute.remove(player)
+        routing.withLock {
+            decide(playerCounts()).also { route ->
+                if (route is Route.To) {
+                    enRoute[player] = EnRoute(route.backend.id, clock.instant())
+                } else {
+                    enRoute.remove(player)
+                }
             }
         }
 
