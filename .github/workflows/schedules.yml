@@ -1,0 +1,24 @@
+name: Schedules
+
+# GitHub runs scheduled workflows only from the default branch, which stays main until v2 replaces it at 2.0. This
+# runs v2's weekly workflows from here and goes away at 2.0, when their own schedules take over.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ghcr-cleanup:
+    permissions:
+      contents: read
+      packages: write
+    uses: Jevzo/ogcloud/.github/workflows/ghcr-cleanup.yml@v2
+
+  runtime-pin-bumps:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: Jevzo/ogcloud/.github/workflows/runtime-pin-bumps.yml@v2
