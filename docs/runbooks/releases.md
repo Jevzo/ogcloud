@@ -39,14 +39,16 @@ docker buildx imagetools inspect ghcr.io/jevzo/ogcloud/api:<version> --format '{
 
 Start the Release workflow by hand on `v2` (`gh workflow run release.yml --ref v2`) and approve it. It publishes the
 images and the chart as `0.0.0-dryrun-<commit>`, verifies them, and uploads the SDK to the Central Portal as a
-deployment that is never released: drop it under Deployments in the Portal afterwards. The weekly cleanup deletes the dry run's images and
-chart.
+deployment that is never released: drop it under Deployments in the Portal afterwards. The weekly cleanup deletes the
+dry run's images and chart.
 
 ## Cleanup
 
 `GHCR cleanup` runs every Monday (D-0043, D-0196). It deletes dry-run tags, keeps the newest 10 pre-releases per package
-and every real release, and deletes untagged images that no kept image refers to. Started by hand, it only logs what
-it would delete unless you untick the dry run.
+and every real release, and deletes untagged images that no kept image refers to. GitHub runs schedules only from the
+default branch, so until 2.0 the `Schedules` workflow on `main` starts it, together with the weekly plugin and server
+bump (D-0199). Started by hand (`gh workflow run schedules.yml --ref main`), the cleanup only logs what it would delete
+unless you untick the dry run; the bump runs either way and may open its pull request.
 
 ## One-time setup
 
