@@ -38,6 +38,15 @@ class ProxyRuntimeTest {
     private val platform = FakeProxyPlatform()
     private val queries = FakeQueries()
     private val scheduler = ManualScheduler()
+    private var now = Instant.parse("2026-11-03T12:00:00Z")
+    private val clock =
+        object : Clock() {
+            override fun instant() = now
+
+            override fun getZone() = ZoneOffset.UTC
+
+            override fun withZone(zone: java.time.ZoneId) = this
+        }
     private lateinit var session: FakeSession
     private val runtime =
         ProxyRuntime(
@@ -47,7 +56,7 @@ class ProxyRuntimeTest {
             messages,
             scheduler.executor,
             Runnable::run,
-            Clock.fixed(Instant.parse("2026-11-03T12:00:00Z"), ZoneOffset.UTC),
+            clock,
         ) { listener -> FakeSession(listener).also { session = it } }
     private val steve = UUID.randomUUID()
     private val admin = UUID.randomUUID()
@@ -193,6 +202,57 @@ class ProxyRuntimeTest {
             .shouldBeInstanceOf<Route.To>()
             .backend.id shouldBe "l-1"
     }
+
+    @Test
+    fun `a burst routed at once spreads over the group, counting players still on their way`() {
+        welcomeLobby(maxPlayers = 2, "l-7", "l-8")
+        val movers = List(4) { UUID.randomUUID().also { platform.players += OnlinePlayer(it, "m$it", "s-1") } }
+
+        session.listener.deliver(transfer { setFromServerId("s-1").setGroupId("lobby") }).join()
+
+        platform.connects.map { it.first } shouldContainExactlyInAnyOrder movers
+        platform.connects.groupingBy { it.second }.eachCount() shouldBe mapOf("l-7" to 2, "l-8" to 2)
+    }
+
+    @Test
+    fun `players on their way count for their backend until they arrive or the route expires`() {
+        welcomeLobby(maxPlayers = 1, "l-7", "l-8")
+        val (first, second, third) = List(3) { UUID.randomUUID() }
+
+        runtime
+            .initialServer(first)
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-7"
+        runtime
+            .initialServer(second)
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-8"
+        runtime.initialServer(third).shouldBeInstanceOf<Route.Kick>()
+
+        // An arrived player counts once, as a player of the backend.
+        platform.players += OnlinePlayer(first, "First", "l-7")
+        runtime.initialServer(third).shouldBeInstanceOf<Route.Kick>()
+
+        // A route that never arrived, say a refused connection, stops counting.
+        now = now.plusSeconds(60)
+        runtime
+            .initialServer(third)
+            .shouldBeInstanceOf<Route.To>()
+            .backend.id shouldBe "l-8"
+    }
+
+    private fun welcomeLobby(
+        maxPlayers: Int,
+        vararg ids: String,
+    ) = session.listener.welcomed(
+        Welcome
+            .newBuilder()
+            .setNetworkSettings(NetworkSettingsUpdated.newBuilder().setVersion(1).setDefaultGroupId("lobby"))
+            .addServers(server("b-1", "bedwars"))
+            .addServers(server("s-1", "source"))
+            .addAllServers(ids.map { server(it, "lobby").toBuilder().setMaxPlayers(maxPlayers).build() })
+            .build(),
+    )
 
     @Test
     fun `a transfer to a named server goes there, unless its group is in maintenance`() {

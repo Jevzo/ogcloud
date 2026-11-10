@@ -33,8 +33,10 @@ import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.sdk.OgCloudProxy
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
 
@@ -58,7 +60,7 @@ class ProxyRuntime(
     messages: Messages,
     scheduler: ScheduledExecutorService,
     callbacks: Executor,
-    clock: Clock,
+    private val clock: Clock,
     sessionOf: (SessionListener) -> NodeSession,
 ) : NodeRuntime(identity, platform, queries, messages, scheduler, callbacks, sessionOf) {
     val directory = ServerDirectory(platform)
@@ -68,6 +70,15 @@ class ProxyRuntime(
     // Players per backend across the network, from the backends' heartbeats (D-0142).
     @Volatile
     private var networkPlayers: Map<String, Int> = emptyMap()
+
+    // Players this proxy sent to a backend they have not reached yet, so a burst of logins or a whole server's
+    // transfer spreads instead of filling one backend past its limit.
+    private val enRoute = ConcurrentHashMap<UUID, EnRoute>()
+
+    private data class EnRoute(
+        val backendId: String,
+        val since: Instant,
+    )
 
     /** `/ogcloud`, for the adapter to register. */
     val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
@@ -113,7 +124,7 @@ class ProxyRuntime(
     }
 
     /** The first backend for a player who just logged in. */
-    fun initialServer(player: UUID): Route = router.initial(bypass(player), ::playersOn)
+    fun initialServer(player: UUID): Route = sending(player) { router.initial(bypass(player), it) }
 
     fun joined(
         player: UUID,
@@ -128,6 +139,7 @@ class ProxyRuntime(
     ) = report(player) { setSwitched(PlayerSwitched.newBuilder().setFromServerId(from.orEmpty()).setToServerId(to)) }
 
     fun left(player: UUID) {
+        enRoute.remove(player)
         permissions.unload(player)
         report(player) { setDisconnected(PlayerDisconnected.getDefaultInstance()) }
     }
@@ -139,7 +151,7 @@ class ProxyRuntime(
     fun route(
         player: UUID,
         destination: Destination,
-    ): Route = router.route(destination, bypass(player), ::playersOn)
+    ): Route = sending(player) { router.route(destination, bypass(player), it) }
 
     override fun startTasks() {
         every(SNAPSHOT, "player snapshot", ::snapshot)
@@ -222,7 +234,9 @@ class ProxyRuntime(
         players
             .filter {
                 it.serverId in inGroup
-            }.forEach { apply(it.uuid, router.route(Destination.Group(update.groupId), false, ::playersOn)) }
+            }.forEach { player ->
+                apply(player.uuid, sending(player.uuid) { router.route(Destination.Group(update.groupId), false, it) })
+            }
     }
 
     override fun deliverOther(delivery: Delivery): CompletableFuture<DeliveryOutcome> =
@@ -338,9 +352,32 @@ class ProxyRuntime(
         }
     }
 
-    // The network's count lags by a heartbeat, so the players this proxy just sent there count too.
-    private fun playersOn(backend: Backend): Int =
-        maxOf(platform.onlinePlayers().count { it.serverId == backend.id }, networkPlayers[backend.id] ?: 0)
+    /** Decides where player goes with the current counts, and remembers where they are headed. */
+    private fun sending(
+        player: UUID,
+        decide: ((Backend) -> Int) -> Route,
+    ): Route =
+        decide(playerCounts()).also { route ->
+            if (route is Route.To) {
+                enRoute[player] = EnRoute(route.backend.id, clock.instant())
+            } else {
+                enRoute.remove(player)
+            }
+        }
+
+    // A backend's players, by this proxy or the network's heartbeats, which lag; plus those on their way there. A
+    // route counts until its player arrives or it is too old, say because the backend refused the connection.
+    private fun playerCounts(): (Backend) -> Int {
+        val online = platform.onlinePlayers()
+        val where = online.associate { it.uuid to it.serverId }
+        val oldest = clock.instant().minus(EN_ROUTE)
+        enRoute.entries.removeIf { (player, route) -> route.since < oldest || where[player] == route.backendId }
+        val here = online.groupingBy { it.serverId }.eachCount()
+        val coming = enRoute.values.groupingBy { it.backendId }.eachCount()
+        return { backend ->
+            maxOf(here[backend.id] ?: 0, networkPlayers[backend.id] ?: 0) + (coming[backend.id] ?: 0)
+        }
+    }
 
     private fun status(enabled: Boolean) =
         messages.text(if (enabled) Message.STATUS_ENABLED else Message.STATUS_DISABLED)
@@ -348,5 +385,8 @@ class ProxyRuntime(
     private companion object {
         val SNAPSHOT: Duration = Duration.ofSeconds(60)
         val PLAYER_COUNTS: Duration = Duration.ofSeconds(5)
+
+        // Longer than a backend takes to accept a player.
+        val EN_ROUTE: Duration = Duration.ofSeconds(15)
     }
 }
