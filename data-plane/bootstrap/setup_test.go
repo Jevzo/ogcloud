@@ -47,6 +47,8 @@ type fixture struct {
 	// Kubernetes logins still to fail, through a proxy in front of Infisical, with failStatus or else 503.
 	failLogins atomic.Int32
 	failStatus atomic.Int32
+	// Set when a secret is written to Infisical while the identities Secret already exists.
+	writtenAfterPublish atomic.Bool
 }
 
 func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
@@ -232,6 +234,25 @@ func TestSetupBootstrapsOnceRevokesTheAdminAndNeverOverwrites(t *testing.T) {
 	}
 }
 
+// The Secrets Operator logs in with the published identities and renders every Secret from what the project holds
+// at that moment; a workload that reads its Secret once, like SeaweedFS its S3 users, keeps a half-written one.
+func TestSetupPublishesTheIdentitiesOnlyOnceTheProjectHoldsEverySecret(t *testing.T) {
+	f := newFixture(t)
+	f.putSeed(t, map[string]string{
+		"INFISICAL_ADMIN_EMAIL": "owner@example.com", "INFISICAL_ADMIN_PASSWORD": "a-very-long-admin-passw0rd!",
+		"CLOUDFLARE_API_TOKEN": "cf-1",
+	})
+
+	f.run(t)
+
+	if _, err := f.kube.CoreV1().Secrets(namespace).Get(context.Background(), identitiesName, metav1.GetOptions{}); err != nil {
+		t.Fatalf("the identities were never published: %v", err)
+	}
+	if f.writtenAfterPublish.Load() {
+		t.Error("a secret was written to Infisical after the identities were published")
+	}
+}
+
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
 	ctx := context.Background()
@@ -265,6 +286,11 @@ func newFixture(t *testing.T) *fixture {
 			}
 			http.Error(w, `{"message":"login failed"}`, status)
 			return
+		}
+		if r.Method != http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v4/secrets/") {
+			if _, err := kube.CoreV1().Secrets(namespace).Get(r.Context(), identitiesName, metav1.GetOptions{}); err == nil {
+				f.writtenAfterPublish.Store(true)
+			}
 		}
 		upstream.ServeHTTP(w, r)
 	}))

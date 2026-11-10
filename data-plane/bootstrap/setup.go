@@ -116,9 +116,6 @@ func (s *Setup) Run(ctx context.Context) error {
 		}
 		ids[spec.Name] = id
 	}
-	if err := s.publishIdentities(ctx, ids); err != nil {
-		return err
-	}
 	for _, secret := range setup.Secrets {
 		if err := s.ensureSecret(ctx, api, projects[secret.project(setup)], secret); err != nil {
 			return fmt.Errorf("secret %s%s: %w", secret.Path, secret.Name, err)
@@ -126,6 +123,11 @@ func (s *Setup) Run(ctx context.Context) error {
 	}
 	if err := s.importSeed(ctx, api, projects[setup.Project]); err != nil {
 		return errors.Join(err, stillBroken)
+	}
+	// The Secrets Operator logs in with these and renders each Secret from what the project holds then; a workload
+	// that reads its Secret once, as SeaweedFS its S3 users, would keep one rendered before the values existed.
+	if err := s.publishIdentities(ctx, ids); err != nil {
+		return err
 	}
 	return errors.Join(s.requireSeededKeys(ctx, api, projects[setup.Project]), stillBroken)
 }
