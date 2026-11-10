@@ -80,7 +80,9 @@ jobs:
   baseline:
     runs-on: ubuntu-latest
     env:
-      OGCLOUD_COMMIT_RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || (github.event.before != '0000000000000000000000000000000000000000' && format('{0}..{1}', github.event.before, github.sha) || github.sha) }}
+      # The commits a pull request or push adds. A run by hand or a new branch adds none; a bare commit as the range
+      # would check the whole history, back to commits older than the rules. An empty range checks what no remote has.
+      OGCLOUD_COMMIT_RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000' && format('{0}..{1}', github.event.before, github.sha) || '') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
