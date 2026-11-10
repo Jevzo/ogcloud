@@ -24,6 +24,8 @@ import org.springframework.kafka.listener.ConsumerRecordRecoverer
 import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer
 import org.springframework.kafka.listener.DefaultErrorHandler
+import org.springframework.kafka.listener.ListenerExecutionFailedException
+import org.springframework.kafka.listener.RetryListener
 import org.springframework.kafka.support.ProducerListener
 import org.springframework.util.backoff.ExponentialBackOff
 import org.springframework.util.backoff.FixedBackOff
@@ -83,9 +85,38 @@ data class RetryPolicy(
     val maxInterval: Duration = Duration.ofSeconds(30),
 )
 
-/** Builds producers and listener containers with OgCloud's delivery guarantees. */
+private val failedAttemptLog = LoggerFactory.getLogger(KafkaComponents::class.java)
+
+private fun logFailedAttempt(failure: FailedAttempt) {
+    val record = failure.record
+    failedAttemptLog.warn(
+        "Delivery {} of {}-{}@{} failed; it will be retried",
+        failure.attempt,
+        record.topic(),
+        record.partition(),
+        record.offset(),
+        failure.error,
+    )
+}
+
+// Spring Kafka wraps what the listener threw.
+private fun listenersOwn(error: Exception?): Exception? =
+    if (error is ListenerExecutionFailedException) error.cause as? Exception ?: error else error
+
+/** A delivery of a record that its listener failed; [attempt] counts from 1, and Spring Kafka may omit [error]. */
+class FailedAttempt(
+    val record: ConsumerRecord<*, *>,
+    val error: Exception?,
+    val attempt: Int,
+)
+
+/**
+ * Builds producers and listener containers with OgCloud's delivery guarantees. [failed] hears every failed delivery
+ * that will be retried, which for topics without a dead-letter topic may be forever; it logs them by default.
+ */
 class KafkaComponents(
     private val settings: KafkaSettings,
+    private val failed: (FailedAttempt) -> Unit = ::logFailedAttempt,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -202,6 +233,9 @@ class KafkaComponents(
             }
         return DefaultErrorHandler(recoverer, backOff(retry, retry.maxAttempts)).apply {
             addNotRetryableExceptions(NonRetryableEventException::class.java)
+            setRetryListeners(
+                RetryListener { record, error, attempt -> failed(FailedAttempt(record, listenersOwn(error), attempt)) },
+            )
             setBackOffFunction { record, _ ->
                 if (record.topic() in KafkaTopics.DEAD_LETTERED) null else backOff(retry, attempts = null)
             }

@@ -35,7 +35,8 @@ import java.util.concurrent.atomic.AtomicLong
 class KafkaIntegrationTest {
     private val kafka = KafkaContainer(KAFKA_IMAGE).also { it.start() }
     private val settings = KafkaSettings(kafka.bootstrapServers, clientId = "test")
-    private val components = KafkaComponents(settings)
+    private val failedAttempts = LinkedBlockingQueue<FailedAttempt>()
+    private val components = KafkaComponents(settings) { failedAttempts.add(it) }
     private val template: KafkaTemplate<String, ByteArray> = components.template()
     private val publisher = EventPublisher(template)
     private val ids = AtomicLong()
@@ -153,6 +154,10 @@ class KafkaIntegrationTest {
 
         processed.poll(WAIT_SECONDS, TimeUnit.SECONDS) shouldBe "outage"
         attempts.get() shouldBe failuresBeforeRecovery + 1
+        // Every failed attempt is reported with its error, so a record retried forever never fails silently.
+        val reported = generateSequence { failedAttempts.poll() }.filter { it.record.key() == "outage" }.toList()
+        reported.map { it.attempt } shouldBe (1..failuresBeforeRecovery).toList()
+        reported.map { it.error?.message }.distinct() shouldBe listOf("valkey failing over")
     }
 
     private fun request(group: String): ServerCommand =
