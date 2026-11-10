@@ -141,7 +141,10 @@
       "type": "object",
       "properties": {
         "resources": { "type": "object" },
-        "seedChecksum": { "description": "The seed Secret's hash, set by the installer.", "type": "string" }
+        "seedChecksum": {
+          "description": "The seed Secret's hash, set by the installer.",
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
