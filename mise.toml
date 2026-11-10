@@ -19,6 +19,7 @@ kubeconform = "0.8.0"
 k3d = "5.9.0"
 gitleaks = "8.30.1"
 trivy = "0.76.2"
+cosign = "3.1.4"
 protoc-gen-go = "1.36.12"
 protoc-gen-go-grpc = "1.6.2"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
@@ -60,8 +61,8 @@ run = "tilt ci --timeout 45m"
 description = "Stop the dev loop, delete the minikube profile and its images"
 run = ["tilt down || true", "minikube delete --profile ogcloud"]
 
-[tasks."images:build"]
-description = "Build every server and platform image into the local Docker store (REGISTRY and VERSION tag them)"
+[tasks."images:stage"]
+description = "Build what the images copy (boot jars, plugins, Go binaries for this machine's architecture) into build/images"
 shell = "bash -c"
 run = """
 set -euo pipefail
@@ -83,8 +84,12 @@ for binary in gateway loadbalancer template-loader bootstrap backup; do
 done
 # Only for the contract test (T-0510): fake pod identities, never published.
 build -tags contracttest -o "../$out/linux-$arch/gateway-contracttest" ./cmd/gateway
-docker buildx bake -f images/docker-bake.json -f images/docker-bake.hcl --load default platform test
 """
+
+[tasks."images:build"]
+description = "Build every server and platform image into the local Docker store (REGISTRY and VERSION tag them)"
+depends = ["images:stage"]
+run = "docker buildx bake -f images/docker-bake.json -f images/docker-bake.hcl --load default platform test"
 
 # Not part of `check`: it builds every image, boots the server images with OgCloud's plugins, starts the platform
 # images, runs the gateway contract test (T-0510) and scans them, which needs Docker and the network (D-0139).

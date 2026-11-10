@@ -21,26 +21,46 @@ func exported(objects ...string) string {
 	return out.String()
 }
 
+// fakes writes each tool as an executable shell script into a new directory, and the files beside them. It returns
+// the directory and an environment that puts it first on PATH and names it in FAKE.
+func fakes(t *testing.T, tools, files map[string]string) (string, []string) {
+	t.Helper()
+	dir := t.TempDir()
+	for name, content := range files {
+		writeFile(t, filepath.Join(dir, name), content, 0o600)
+	}
+	for name, script := range tools {
+		writeFile(t, filepath.Join(dir, name), "#!/bin/sh\n"+script, 0o700)
+	}
+	return dir, append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+os.Getenv("PATH"), "FAKE="+dir)
+}
+
+func writeFile(t *testing.T, path, content string, mode os.FileMode) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), mode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// runScript runs a repository script with bash and returns what it printed.
+func runScript(t *testing.T, env []string, script string, args ...string) (string, error) {
+	t.Helper()
+	command := exec.CommandContext(t.Context(), "bash", append([]string{script}, args...)...)
+	command.Env = env
+	out, err := command.CombinedOutput()
+	return string(out), err
+}
+
 // exportRootKey runs root-key.sh export against a kubectl that prints labelled for the bootstrap selector and backup
 // for the backup credentials.
 func exportRootKey(t *testing.T, labelled, backup string) (string, error) {
 	t.Helper()
-	dir := t.TempDir()
-	for name, content := range map[string]string{"labelled": labelled, "backup": backup} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	fake := "#!/bin/sh\ncase \"$*\" in\n  *--field-selector*) cat \"$FAKE/backup\" ;;\n  *--selector*) cat \"$FAKE/labelled\" ;;\nesac\n"
-	if err := os.WriteFile(filepath.Join(dir, "kubectl"), []byte(fake), 0o700); err != nil {
-		t.Fatal(err)
-	}
+	dir, env := fakes(t,
+		map[string]string{"kubectl": "case \"$*\" in\n  *--field-selector*) cat \"$FAKE/backup\" ;;\n  *--selector*) cat \"$FAKE/labelled\" ;;\nesac\n"},
+		map[string]string{"labelled": labelled, "backup": backup})
 	file := filepath.Join(dir, "export", "root-key.yaml")
-	command := exec.CommandContext(t.Context(), "bash", rootKeyScript, "export", file)
-	command.Env = append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+os.Getenv("PATH"), "FAKE="+dir)
-	out, err := command.CombinedOutput()
-	if err != nil {
-		return string(out), err
+	if out, err := runScript(t, env, rootKeyScript, "export", file); err != nil {
+		return out, err
 	}
 	content, readErr := os.ReadFile(file)
 	if readErr != nil {

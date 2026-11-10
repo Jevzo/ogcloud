@@ -90,6 +90,15 @@
       "datasourceTemplate": "helm"
     },
     {
+      "description": "The SBOM generator the release's image builds run (D-0197)",
+      "customType": "regex",
+      "managerFilePatterns": ["/^deploy/release/publish\\.sh$/"],
+      "matchStrings": [
+        "SBOM_SCANNER=(?<depName>[^:\\s]+):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
       "description": "Testcontainers images shared by the Kotlin and Go tests (D-0113)",
       "customType": "regex",
       "managerFilePatterns": ["/^testing/images\\.properties$/"],
