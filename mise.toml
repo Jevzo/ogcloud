@@ -156,6 +156,13 @@ run = "deploy/k3s/ordering-test.sh"
 description = "Back up OgCloud on k3d, delete the cluster and restore it into a fresh one (T-0607)"
 run = "deploy/k3s/restore-test.sh"
 
+# Load tests on real time (T-0609, D-0175): the load balancer's accept rate in its package.
+[tasks."test:load"]
+description = "Run the load tests: the load balancer's accept rate (T-0609)"
+dir = "data-plane"
+env = { OGCLOUD_LOAD = "true" }
+run = "go test -count=1 -run TestTakesFiveHundredNewLoginsASecond -v ./loadbalancer/"
+
 # Not part of `check` either: N-1 from a git worktree installed on k3d, upgraded to this checkout (T-0608, D-0172).
 [tasks."test:upgrade"]
 description = "Install N-1 on k3d, upgrade it to this checkout and run the end-to-end suite (T-0608)"
