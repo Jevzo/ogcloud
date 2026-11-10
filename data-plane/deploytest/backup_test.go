@@ -1,6 +1,7 @@
 package deploytest
 
 import (
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -91,6 +92,14 @@ func TestARestoreRecoversPostgresAndThenTheTemplates(t *testing.T) {
 	}
 	if get(cluster, "spec", "bootstrap", "initdb") != nil {
 		t.Error("a restored PostgreSQL still runs initdb")
+	}
+	// As initdb does, so the restored owner's password follows the imported root Secret (a7f6bb1).
+	initdb := get(render(t, hetznerValues).find(t, "Cluster", "ogcloud-postgres"), "spec", "bootstrap", "initdb")
+	recovery := get(cluster, "spec", "bootstrap", "recovery")
+	for _, field := range []string{"database", "owner", "secret"} {
+		if got, want := get(recovery, field), get(initdb, field); got == nil || !reflect.DeepEqual(got, want) {
+			t.Errorf("recovery's %s = %v, want initdb's %v", field, got, want)
+		}
 	}
 	sources, _ := get(cluster, "spec", "externalClusters").([]any)
 	if len(sources) != 1 || str(sources[0], "plugin", "parameters", "serverName") != "ogcloud-postgres" {
