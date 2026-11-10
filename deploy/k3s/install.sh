@@ -87,10 +87,16 @@ remaining() { echo "$((deadline - $(date +%s)))s"; }
 
 # On an upgrade a chart reruns only when its documents change, and its finished job would pass the wait: so the
 # charts that change (their HelmChart, or OgCloud's values Secret) wait for the job that replaces theirs.
-# A fixed differ, so its headers parse below whatever KUBECTL_EXTERNAL_DIFF the caller set.
+# A fixed differ, so its headers parse below whatever KUBECTL_EXTERNAL_DIFF the caller set. A first install has no
+# finished jobs to tell apart, and the seed's namespace does not exist yet, which a dry run cannot get past.
 set +e
-KUBECTL_EXTERNAL_DIFF="diff -u -N" kubectl diff --server-side -f "$work/manifest.yaml" > "$work/diff.txt" 2>&1
-status=$?
+if kubectl get namespace ogcloud >/dev/null 2>&1; then
+  KUBECTL_EXTERNAL_DIFF="diff -u -N" kubectl diff --server-side -f "$work/manifest.yaml" > "$work/diff.txt" 2>&1
+  status=$?
+else
+  : > "$work/diff.txt"
+  status=0
+fi
 set -e
 if [ "$status" -gt 1 ]; then
   cat "$work/diff.txt"
