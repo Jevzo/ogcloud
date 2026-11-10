@@ -23,10 +23,28 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-20"
     helm.sh/hook-delete-policy: before-hook-creation
+{{- $config := include "ogcloud.bootstrapConfig" . | fromYaml }}
+{{- $secrets := list $config.infisical.breakGlassSecret $config.infisical.identitiesSecret }}
+{{- range $config.rootSecrets }}
+{{- $secrets = append $secrets .name }}
+{{- end }}
 rules:
+  # Creating cannot be limited to names; reading, changing and deleting only what bootstrap's config names can.
   - apiGroups: [""]
     resources: [secrets, configmaps]
-    verbs: [get, create, update, delete]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: {{ toJson $secrets }}
+    verbs: [get, update]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [{{ $config.infisical.seed.secret }}]
+    verbs: [get, delete]
+  - apiGroups: [""]
+    resources: [configmaps]
+    resourceNames: [{{ $config.infisical.stateConfigMap }}]
+    verbs: [get, update]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

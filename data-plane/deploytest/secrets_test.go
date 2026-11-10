@@ -37,9 +37,6 @@ func TestTheBootstrapConfigPassesBootstrapsOwnValidation(t *testing.T) {
 
 var infisicalKey = regexp.MustCompile(`\{\{ \.([A-Z0-9_]+)\.Value \}\}`)
 
-// Keys the operator brings in the bootstrap seed, which bootstrap imports into the main project (D-0114).
-var seededKeys = []string{"CLOUDFLARE_API_TOKEN", "BACKUP_S3_ACCESS_KEY", "BACKUP_S3_SECRET_KEY"}
-
 func TestEverySyncedSecretKeyIsOneBootstrapGenerates(t *testing.T) {
 	for _, values := range valueSets(t) {
 		t.Run(values, func(t *testing.T) { syncedKeysAreGenerated(t, render(t, values)) })
@@ -58,7 +55,8 @@ func syncedKeysAreGenerated(t *testing.T, objects rendered) {
 		}
 		generated[project] = append(generated[project], secret.Name)
 	}
-	generated[setup.Project] = append(generated[setup.Project], seededKeys...)
+	// What the seed must bring into the main project (D-0114), so bootstrap fails without it.
+	generated[setup.Project] = append(generated[setup.Project], setup.Seed.RequiredKeys...)
 	syncs := objects.all("InfisicalStaticSecret")
 	if len(syncs) == 0 {
 		t.Fatal("nothing is synced from Infisical")
@@ -222,5 +220,49 @@ func TestSelfReviewingAccountsMayReviewTokens(t *testing.T) {
 	}
 	if slices.Contains(got, "ogcloud/ogcloud-controller") {
 		t.Error("the controller's account may review tokens")
+	}
+}
+
+// Bootstrap may create any Secret or ConfigMap, which Kubernetes cannot limit by name, but read, change and delete
+// only those its config names: the release namespace holds every service's synced Secrets.
+func TestBootstrapTouchesOnlyTheObjectsItsConfigNames(t *testing.T) {
+	objects := render(t, hetznerValues)
+	setup := bootstrapConfig(t, objects)
+	named := map[string][]string{
+		"secrets":    {setup.Infisical.BreakGlassSecret, setup.Infisical.IdentitiesSecret, setup.Infisical.Seed.Secret},
+		"configmaps": {setup.Infisical.StateConfigMap},
+	}
+	for _, root := range setup.RootSecrets {
+		named["secrets"] = append(named["secrets"], root.Name)
+	}
+	rules, _ := get(objects.find(t, "Role", "ogcloud-bootstrap"), "rules").([]any)
+	granted := map[string]map[string][]string{}
+	for _, rule := range rules {
+		verbs := stringList(get(rule, "verbs"))
+		names := stringList(get(rule, "resourceNames"))
+		for _, resource := range stringList(get(rule, "resources")) {
+			if len(names) == 0 && !slices.Equal(verbs, []string{"create"}) {
+				t.Errorf("bootstrap may %v every one of %s", verbs, resource)
+			}
+			for _, name := range names {
+				if !slices.Contains(named[resource], name) {
+					t.Errorf("bootstrap may %v %s %s, which its config does not name", verbs, resource, name)
+				}
+				if granted[resource] == nil {
+					granted[resource] = map[string][]string{}
+				}
+				granted[resource][name] = append(granted[resource][name], verbs...)
+			}
+		}
+	}
+	for resource, names := range named {
+		for _, name := range names {
+			if !slices.Contains(granted[resource][name], "get") {
+				t.Errorf("bootstrap cannot read %s %s", resource, name)
+			}
+		}
+	}
+	if !slices.Contains(granted["secrets"][setup.Infisical.Seed.Secret], "delete") {
+		t.Error("bootstrap cannot delete the seed after importing it (D-0114)")
 	}
 }
