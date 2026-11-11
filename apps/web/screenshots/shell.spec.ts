@@ -1,13 +1,15 @@
 import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
-import { MOCK_NOW } from "../src/mocks/fixtures.ts";
+import { MOCK_NOW, servers } from "../src/mocks/fixtures.ts";
 
 // The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0216).
 const OUT = new URL("../../../build/screenshots/web/", import.meta.url)
   .pathname;
 const VIEWPORTS = layout.reviewViewports;
 const THEMES = themeNames;
-const PAGES = ["/", "/servers", "/users"] as const;
+// A busy bedwars server for the server page.
+const SERVER = servers.find((server) => server.gameState === "INGAME")?.id;
+const PAGES = ["/", "/servers", `/servers/${SERVER}`, "/users"] as const;
 
 async function open(
   page: Page,
@@ -30,7 +32,12 @@ async function open(
   await page.waitForTimeout(400);
 }
 
-const slug = (path: string) => (path === "/" ? "overview" : path.slice(1));
+const slug = (path: string) =>
+  path === "/"
+    ? "overview"
+    : path.startsWith("/servers/")
+      ? "server"
+      : path.slice(1);
 
 for (const theme of THEMES) {
   for (const viewport of VIEWPORTS) {

@@ -10,9 +10,10 @@ import {
 import { ConfirmDialog, type RowActions, useToast } from "@ogcloud/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Construction, Play, RotateCw } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
+import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
 
@@ -22,8 +23,6 @@ export interface GroupState {
   maintenance: boolean;
   crashLoopPaused: boolean;
 }
-
-type Confirmation = { kind: "maintenance" | "restart"; group: string };
 
 function useGroupMutations() {
   const read = useGroupGetHook();
@@ -75,7 +74,7 @@ export function useGroupActions(): {
   const failed = useFailureToast();
   const canWrite = useCan("groups:write");
   const mutations = useGroupMutations();
-  const [confirming, setConfirming] = useState<Confirmation | null>(null);
+  const confirming = usePendingAction<"maintenance" | "restart", string>();
 
   const endMaintenance = (id: string) =>
     mutations.maintenance.mutate(
@@ -102,13 +101,12 @@ export function useGroupActions(): {
       : {
           label: t("groups.actions.startMaintenance"),
           icon: Construction,
-          onPress: () =>
-            setConfirming({ kind: "maintenance", group: group.id }),
+          onPress: () => confirming.open("maintenance", group.id),
         };
     const restart = {
       label: t("groups.actions.restart"),
       icon: RotateCw,
-      onSelect: () => setConfirming({ kind: "restart", group: group.id }),
+      onSelect: () => confirming.open("restart", group.id),
     };
     return {
       inline: [maintenance],
@@ -133,12 +131,12 @@ export function useGroupActions(): {
   };
 
   const actionsFor = canWrite ? actionsOf : undefined;
-  const id = confirming?.group ?? "";
+  const id = confirming.target ?? "";
   const dialogs = (
     <>
       <ConfirmDialog
-        open={confirming?.kind === "maintenance"}
-        onOpenChange={(open) => (open ? undefined : setConfirming(null))}
+        open={confirming.isOpen("maintenance")}
+        onOpenChange={confirming.onOpenChange}
         title={t("groups.confirm.maintenanceTitle", { id })}
         description={t("groups.confirm.maintenanceDescription", { id })}
         confirmLabel={t("groups.actions.startMaintenance")}
@@ -153,8 +151,8 @@ export function useGroupActions(): {
         }
       />
       <ConfirmDialog
-        open={confirming?.kind === "restart"}
-        onOpenChange={(open) => (open ? undefined : setConfirming(null))}
+        open={confirming.isOpen("restart")}
+        onOpenChange={confirming.onOpenChange}
         title={t("groups.confirm.restartTitle", { id })}
         description={t("groups.confirm.restartDescription", { id })}
         confirmLabel={t("groups.actions.restart")}

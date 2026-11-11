@@ -9,6 +9,8 @@ import { Callback } from "./pages/callback.tsx";
 import { NotFound } from "./pages/not-found.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { Placeholder } from "./pages/placeholder.tsx";
+import { ServerPage } from "./pages/servers/server-page.tsx";
+import { ServersPage } from "./pages/servers/servers-page.tsx";
 import { AppShell } from "./shell/app-shell.tsx";
 
 const root = createRootRoute({
@@ -37,7 +39,12 @@ const overview = createRoute({
 const servers = createRoute({
   getParentRoute: () => app,
   path: "/servers",
-  component: () => <Placeholder label="servers" />,
+  component: ServersPage,
+});
+const server = createRoute({
+  getParentRoute: () => app,
+  path: "/servers/$serverId",
+  component: ServerPage,
 });
 const groups = createRoute({
   getParentRoute: () => app,
@@ -100,6 +107,7 @@ const routeTree = root.addChildren([
   app.addChildren([
     overview,
     servers,
+    server,
     groups,
     players,
     permissions,

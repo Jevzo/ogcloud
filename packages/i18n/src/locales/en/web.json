@@ -149,6 +149,89 @@
     "servers": "Servers"
   },
   "servers": {
+    "actions": {
+      "command": "Run command",
+      "kill": "Kill",
+      "killed": "Killed {{name}}",
+      "move": "Move players",
+      "open": "Open",
+      "push": "Push template",
+      "pushing": "Pushing the files of {{name}} as a new template version",
+      "stop": "Stop",
+      "stopping": "Stopping {{name}}"
+    },
+    "columns": {
+      "game": "Game",
+      "group": "Group",
+      "heartbeat": "Last heartbeat",
+      "players": "Players",
+      "server": "Server",
+      "started": "Started",
+      "state": "State"
+    },
+    "command": {
+      "all": "All servers",
+      "command": "Command",
+      "description": "It runs as the server console. Its output goes to the server's log, not here.",
+      "group": "One group",
+      "hint": "Without the leading slash.",
+      "placeholder": "say Restarting in 5 minutes",
+      "scope": "Run on",
+      "sent": "Command sent",
+      "submit": "Run command",
+      "title": "Run a console command",
+      "titleFor": "Run a command on {{name}}"
+    },
+    "confirm": {
+      "killDescription": "The pod is deleted at once. Its players are disconnected and anything not saved is lost.",
+      "killTitle": "Kill {{name}}?",
+      "pushDynamic": "Its files become a new template version of {{group}}, which servers use once you promote it.",
+      "pushStatic": "Its files become a new template version of {{group}}, which the group uses at once.",
+      "pushTitle": "Push the files of {{name}}?",
+      "stopDescription": "Players move to other servers first; an empty or starting server stops at once.",
+      "stopTitle": "Stop {{name}}?"
+    },
+    "description": "{{count}} live servers",
+    "detail": {
+      "back": "Back to the servers",
+      "description": "{{type}} server of {{group}} on {{profile}}",
+      "failed": "This server could not be loaded",
+      "gone": "This server is gone",
+      "goneDescription": "It stopped and left the live state. Its group starts others as needed.",
+      "id": "Server id",
+      "idHint": "Pods and logs carry this id; the short name above is the last six characters players see.",
+      "identity": "Identity",
+      "more": "More actions",
+      "profile": "Runtime profile",
+      "status": "Status"
+    },
+    "empty": {
+      "filtered": "No server matches",
+      "filteredDescription": "Clear the filters or search for another name.",
+      "none": "No servers are running",
+      "noneDescription": "Groups start servers on their own once the Minecraft EULA is accepted; request one to start now."
+    },
+    "filters": {
+      "all": "All",
+      "allGroups": "All groups",
+      "draining": "Draining",
+      "phase": "State",
+      "running": "Running",
+      "search": "Search by name",
+      "starting": "Starting"
+    },
+    "game": {
+      "ENDING": "Ending",
+      "INGAME": "In game",
+      "LOBBY": "Lobby"
+    },
+    "move": {
+      "description": "Everyone on the server goes to another group, placed by the network's routing strategy.",
+      "done": "Moving players from {{name}} to {{group}}",
+      "submit": "Move players",
+      "target": "Move to",
+      "title": "Move the players on {{name}}"
+    },
     "request": {
       "description": "One more server of the group starts as soon as the controller gets to it.",
       "done": "Requested a server in {{group}}",
@@ -156,6 +239,15 @@
       "pickGroup": "Pick a group",
       "submit": "Request server",
       "title": "Request a server"
+    },
+    "state": {
+      "DRAINING": "Draining",
+      "PREPARING": "Preparing",
+      "REQUESTED": "Requested",
+      "RUNNING": "Running",
+      "STARTING": "Starting",
+      "STOPPED": "Stopped",
+      "STOPPING": "Stopping"
     }
   },
   "shell": {

@@ -3,6 +3,7 @@ import type {
   MeView,
   OverviewView,
   ScalingLogView,
+  ServerView,
 } from "@ogcloud/api-client";
 
 // Fixed answers for the screenshots, so pages look the same on every run; everything else comes from orval's mocks.
@@ -165,4 +166,91 @@ export function loadHistory(): LoadHistoryView {
     };
   });
   return { intervalSeconds: 60, points };
+}
+
+interface Fleet {
+  group: string;
+  type: ServerView["groupType"];
+  profile: string;
+  maxPlayers: number;
+  players: readonly number[];
+  states?: Partial<Record<number, ServerView["state"]>>;
+  games?: readonly ServerView["gameState"][];
+}
+
+const FLEETS: readonly Fleet[] = [
+  {
+    group: "proxy",
+    type: "PROXY",
+    profile: "velocity-4.3.0",
+    maxPlayers: 1000,
+    players: [650, 634],
+  },
+  {
+    group: "lobby",
+    type: "DYNAMIC",
+    profile: "paper-26.3",
+    maxPlayers: 100,
+    players: [96, 88, 81, 79, 68, 0],
+    states: { 5: "DRAINING" },
+  },
+  {
+    group: "bedwars",
+    type: "DYNAMIC",
+    profile: "paper-26.3",
+    maxPlayers: 64,
+    players: [64, 64, 62, 64, 60, 64, 58, 64, 56, 64, 52, 60, 48, 48, 0],
+    states: { 14: "STARTING" },
+    games: ["INGAME", "INGAME", "LOBBY", "INGAME", "LOBBY", "ENDING"],
+  },
+  {
+    group: "smp",
+    type: "STATIC",
+    profile: "paper-26.3",
+    maxPlayers: 100,
+    players: [41],
+  },
+  {
+    group: "build",
+    type: "STATIC",
+    profile: "pandaspigot-1.8.8",
+    maxPlayers: 20,
+    players: [3],
+  },
+];
+
+/** The 25 live servers the overview counts, with ids that look like the controller's UUIDv7s. */
+export const servers: readonly ServerView[] = FLEETS.flatMap((fleet, f) =>
+  fleet.players.map((players, index) => {
+    const tail = (0x3fa9c1 + f * 0x10f3 + index * 0x2b7d)
+      .toString(16)
+      .padStart(6, "0");
+    const id = `0195b1d2-7c4e-7a10-9f3e-2b8d4c${tail}`;
+    const state = fleet.states?.[index] ?? "RUNNING";
+    const started = state === "STARTING" ? null : minutesAgo(30 + index * 47);
+    return {
+      id,
+      displayName: `${fleet.group}-${tail}`,
+      groupId: fleet.group,
+      groupType: fleet.type,
+      profileId: fleet.profile,
+      state,
+      stateSince: minutesAgo(state === "RUNNING" ? 25 + index * 47 : 1),
+      players,
+      maxPlayers: fleet.maxPlayers,
+      gameState:
+        fleet.type === "DYNAMIC"
+          ? (fleet.games?.[index % fleet.games.length] ?? "LOBBY")
+          : null,
+      startedAt: started,
+      lastHeartbeatAt: state === "STARTING" ? null : minutesAgo(0.05),
+    };
+  }),
+);
+
+/** A server by id; unknown ids get the first one, since mocks have no live state to miss. */
+export function serverById(id: string): ServerView {
+  const found = servers.find((server) => server.id === id) ?? servers[0];
+  if (found === undefined) throw new Error("The server fixture is empty");
+  return found;
 }
