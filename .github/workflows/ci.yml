@@ -46,10 +46,9 @@ jobs:
               - *shared
               - "**/*.kt"
               - "**/*.kts"
-              # The API's browser login test drives the login pages (D-0212).
-              - apps/web/login/**
-              - apps/web/src/login/**
-              - apps/web/vite.login.config.ts
+              # The API's browser login test drives the login pages (D-0212), built from the web app and its packages.
+              - apps/web/**
+              - packages/**
               - gradle/**
               - gradle.properties
               - .editorconfig
@@ -247,6 +246,8 @@ jobs:
       - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - run: pnpm install --frozen-lockfile
+      # Both installs are seeded through the setup wizard in Chromium (T-0710).
+      - run: pnpm --filter @ogcloud/e2e exec playwright install --with-deps chromium
       # Without a tag, origin/v2 is this commit after a push, which the test refuses (D-0191).
       - run: mise run test:upgrade
         env:
