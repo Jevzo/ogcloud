@@ -117,6 +117,25 @@ class ServerRuntimeTest {
     }
 
     @Test
+    fun `a backend kicks only the players on it, with a valid tag text (D-0208)`() {
+        platform.players += OnlinePlayer(steve, "Steve", "s-1")
+
+        api.kickPlayer(steve, "<red>Banned").join()
+        session.sent.last().transfer.let {
+            it.playerUuid shouldBe steve.toString()
+            it.kickMessage shouldBe "<red>Banned"
+        }
+        val sent = session.sent.size
+        shouldThrow<CompletionException> { api.kickPlayer(UUID.randomUUID(), "Bye").join() }
+            .cause
+            .shouldBeInstanceOf<OgCloudException>()
+            .message shouldBe messages.text(Message.ERROR_NOT_OWN_SERVER).toPlain()
+        shouldThrow<IllegalArgumentException> { api.kickPlayer(steve, "<frog>Bye") }
+        shouldThrow<IllegalArgumentException> { api.kickPlayer(steve, " ") }
+        session.sent.size shouldBe sent
+    }
+
+    @Test
     fun `console commands run on the platform and report whether it knew them`() {
         session.listener
             .deliver(command("say hi"))

@@ -56,6 +56,7 @@ public abstract interface class io/ogwars/cloud/sdk/OgCloudNode {
 	public abstract fun getGroupType ()Lio/ogwars/cloud/sdk/GroupType;
 	public abstract fun getLiveChannels ()Lio/ogwars/cloud/sdk/LiveChannels;
 	public abstract fun getServerId ()Ljava/lang/String;
+	public abstract fun kickPlayer (Ljava/util/UUID;Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
 	public abstract fun onReady (Ljava/lang/Runnable;)V
 	public abstract fun requestServer (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;
 	public abstract fun server (Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;

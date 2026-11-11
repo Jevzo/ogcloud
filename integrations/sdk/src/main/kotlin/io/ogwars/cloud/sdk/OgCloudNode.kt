@@ -45,6 +45,15 @@ interface OgCloudNode {
         strategy: RoutingStrategy?,
     ): CompletableFuture<Void>
 
+    /**
+     * Disconnects a player with [message], a tag text: a proxy may kick anyone, a backend only a player on it. Throws
+     * IllegalArgumentException for a blank or invalid message; fails like [transferPlayer], or when not allowed.
+     */
+    fun kickPlayer(
+        player: UUID,
+        message: String,
+    ): CompletableFuture<Void>
+
     val liveChannels: LiveChannels
 
     /** Runs [action] off the server thread once the gateway first welcomed this node, or soon if it already has. */

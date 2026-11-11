@@ -407,6 +407,18 @@ class ProxyRuntimeTest {
     }
 
     @Test
+    fun `a proxy kicks any player in the network (D-0208)`() {
+        val elsewhere = UUID.randomUUID()
+
+        runtime.api.kickPlayer(elsewhere, "<red>Banned").join()
+
+        session.sent.last().transfer.let {
+            it.playerUuid shouldBe elsewhere.toString()
+            it.kickMessage shouldBe "<red>Banned"
+        }
+    }
+
+    @Test
     fun `a draining proxy's own players are kicked with the catalog's shutdown text`() {
         // Players on their way to a backend have none yet; they leave with the rest.
         platform.players += OnlinePlayer(UUID.randomUUID(), "Alex", null)

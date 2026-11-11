@@ -24,6 +24,7 @@ import io.ogwars.cloud.sdk.PlayerLocation
 import io.ogwars.cloud.sdk.RoutingStrategy
 import io.ogwars.cloud.sdk.RuntimeNpcs
 import io.ogwars.cloud.sdk.ServerInfo
+import io.ogwars.cloud.text.TextField
 import io.ogwars.cloud.text.toPlain
 import java.util.Optional
 import java.util.UUID
@@ -104,12 +105,29 @@ internal open class NodeApi(
             }
         }, callbacks)
 
+    override fun kickPlayer(
+        player: UUID,
+        message: String,
+    ): CompletableFuture<Void> {
+        // An empty kick message would show the network's shutdown text on the proxy.
+        require(message.isNotBlank()) { "A kick message must not be blank" }
+        TextField.KICK_MESSAGE.require("Kick message", message)
+        if (!mayKick(player)) return failure(Message.ERROR_NOT_OWN_SERVER)
+        return transfer(TransferRequested.newBuilder().setPlayerUuid(player.toString()).setKickMessage(message))
+    }
+
+    /** Whether this node may kick [player]; the gateway enforces the same rule (D-0208). */
+    protected open fun mayKick(player: UUID): Boolean = true
+
     private fun transfer(request: TransferRequested.Builder): CompletableFuture<Void> =
         if (session.send(SessionRequest.newBuilder().setTransfer(request).build())) {
             CompletableFuture.completedFuture(null)
         } else {
-            CompletableFuture.failedFuture(OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED).toPlain()))
+            failure(Message.ERROR_NOT_CONNECTED)
         }
+
+    private fun failure(reason: Message): CompletableFuture<Void> =
+        CompletableFuture.failedFuture(OgCloudException(messages.text(reason).toPlain()))
 }
 
 /** A Paper or PandaSpigot server's SDK; the platform adapter brings the runtime NPCs. */
@@ -122,8 +140,12 @@ internal class ServerApi(
     ready: CompletableFuture<Unit>,
     callbacks: Executor,
     override val npcs: RuntimeNpcs,
+    private val isHere: (UUID) -> Boolean,
 ) : NodeApi(identity, queries, session, messages, liveChannels, ready, callbacks),
     OgCloudServer {
+    // A backend kicks only the players on it (D-0208).
+    override fun mayKick(player: UUID) = isHere(player)
+
     @Volatile
     private var state = GameState.LOBBY
 

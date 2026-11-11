@@ -28,7 +28,10 @@ class ServerRuntime(
     npcs: RuntimeNpcs,
     sessionOf: (SessionListener) -> NodeSession,
 ) : NodeRuntime(identity, platform, queries, messages, texts, scheduler, callbacks, sessionOf) {
-    private val server = ServerApi(identity, queries, session, messages, live, ready, callbacks, npcs)
+    private val server =
+        ServerApi(identity, queries, session, messages, live, ready, callbacks, npcs) { player ->
+            platform.onlinePlayers().any { it.uuid == player }
+        }
     override val api: OgCloudServer = server
 
     fun joined(player: UUID) = loadRank(player)
