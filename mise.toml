@@ -3,7 +3,7 @@ min_version = "2026.10.19"
 # Single source of truth for tool versions (AGENTS.md §9). Renovate keeps them current (D-0052).
 [tools]
 java = "temurin-25.0.5+8.0.LTS"
-go = "1.27.3"
+go = "1.27.4"
 node = "26.13.0"
 pnpm = "12.18.0"
 terraform = "1.17.1"
