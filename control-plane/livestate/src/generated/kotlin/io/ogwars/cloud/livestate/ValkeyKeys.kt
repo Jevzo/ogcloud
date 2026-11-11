@@ -39,4 +39,6 @@ object ValkeyKeys {
     fun rateLimit(bucket: String, client: String) = "ratelimit:${bucket}:${client}"
     fun oneTime(kind: OneTimeKind, id: String) = "onetime:${kind.key}:${id}"
     fun readModel(kind: ReadModelKind, id: String) = "readmodel:${kind.key}:${id}"
+    /** One load sample a minute by time, kept 24 hours for the dashboard's charts (D-0213). */
+    const val LOAD_HISTORY = "history:load"
 }

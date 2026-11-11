@@ -41,3 +41,20 @@ message PlayerSession {
   uint64 rank_version = 6;
   google.protobuf.Timestamp connected_at = 7;
 }
+
+// One sample of the network's load (key "history:load", a sorted set scored by time), kept 24
+// hours for the dashboard's charts (D-0213). Written by the controller leader, read by the API.
+message LoadSample {
+  google.protobuf.Timestamp at = 1;
+  uint32 players = 2;
+  // Every group that existed when the sample was taken, idle ones included.
+  repeated GroupLoad groups = 3;
+}
+
+message GroupLoad {
+  string group_id = 1;
+  uint32 running = 2;
+  // Requested, preparing or starting.
+  uint32 pending = 3;
+  uint32 players = 4;
+}

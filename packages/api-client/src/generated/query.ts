@@ -40,6 +40,7 @@ import type {
   JobListParams,
   JobView,
   LinkCodeSent,
+  LoadHistoryView,
   LogAuditParams,
   LogScalingParams,
   LoginState,
@@ -53,6 +54,7 @@ import type {
   OAuthClientCredentials,
   OAuthClientRequest,
   OAuthClientView,
+  OverviewHistoryParams,
   OverviewView,
   PageAuditEntryView,
   PageJobView,
@@ -7749,6 +7751,124 @@ export function useOverviewGet<TData = Awaited<ReturnType<ReturnType<typeof useO
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = useOverviewGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type overviewHistoryResponse200 = {
+  data: LoadHistoryView
+  status: 200
+}
+
+export type overviewHistoryResponseSuccess = (overviewHistoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type overviewHistoryResponse = (overviewHistoryResponseSuccess)
+
+export const getOverviewHistoryUrl = (params?: OverviewHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/overview/history?${stringifiedParams}` : `/api/v1/overview/history`
+}
+
+export const useOverviewHistoryHook = (): (params?: OverviewHistoryParams, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<overviewHistoryResponse> => {
+
+      const customFetcher = useApiRequest();
+      return (params?: OverviewHistoryParams, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getOverviewHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getOverviewHistoryQueryKey = (params?: OverviewHistoryParams,) => {
+    return [
+    `/api/v1/overview/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const useOverviewHistoryQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError = unknown>(params?: OverviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOverviewHistoryQueryKey(params);
+
+  const overviewHistory =  useOverviewHistoryHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>> = ({ signal }) => overviewHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OverviewHistoryQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>>
+export type OverviewHistoryQueryError = unknown
+
+
+export function useOverviewHistory<TData = Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError = unknown>(
+ params: undefined |  OverviewHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOverviewHistory<TData = Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError = unknown>(
+ params?: OverviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOverviewHistory<TData = Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError = unknown>(
+ params?: OverviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOverviewHistory<TData = Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError = unknown>(
+ params?: OverviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useOverviewHistoryHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useOverviewHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

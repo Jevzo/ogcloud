@@ -4,9 +4,13 @@ import io.ogwars.cloud.contracts.internal.v1.ServerRecord
 import io.ogwars.cloud.contracts.toInstant
 import io.ogwars.cloud.contracts.toTimestamp
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.overview.GroupLoad
+import io.ogwars.cloud.domain.overview.LoadSample
 import io.ogwars.cloud.domain.server.Server
 import io.ogwars.cloud.domain.session.PlayerSession
 import java.util.UUID
+import io.ogwars.cloud.contracts.internal.v1.GroupLoad as GroupLoadRecord
+import io.ogwars.cloud.contracts.internal.v1.LoadSample as LoadSampleRecord
 import io.ogwars.cloud.contracts.internal.v1.PlayerSession as PlayerSessionRecord
 
 /** Maps domain objects to the Protobuf records shared with the Go gateway. */
@@ -81,6 +85,41 @@ internal object RecordCodec {
                 permissionGroupId = record.permissionGroupId,
                 rankVersion = record.rankVersion,
                 connectedAt = record.connectedAt.toInstant(),
+            )
+        }
+
+    fun encode(sample: LoadSample): ByteArray =
+        LoadSampleRecord
+            .newBuilder()
+            .setAt(sample.at.toTimestamp())
+            .setPlayers(sample.players)
+            .addAllGroups(
+                sample.groups.map { (groupId, load) ->
+                    GroupLoadRecord
+                        .newBuilder()
+                        .setGroupId(groupId.value)
+                        .setRunning(load.running)
+                        .setPending(load.pending)
+                        .setPlayers(load.players)
+                        .build()
+                },
+            ).build()
+            .toByteArray()
+
+    fun decodeLoadSample(
+        key: String,
+        bytes: ByteArray,
+    ): LoadSample =
+        decoding(key) {
+            val record = LoadSampleRecord.parseFrom(bytes)
+            LoadSample(
+                at = record.at.toInstant(),
+                players = record.players,
+                groups =
+                    record.groupsList.associate {
+                        GroupId(it.groupId) to
+                            GroupLoad(running = it.running, pending = it.pending, players = it.players)
+                    },
             )
         }
 

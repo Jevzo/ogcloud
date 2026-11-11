@@ -21,6 +21,7 @@ import type {
   JobListParams,
   JobView,
   LinkCodeSent,
+  LoadHistoryView,
   LogAuditParams,
   LogScalingParams,
   LoginState,
@@ -34,6 +35,7 @@ import type {
   OAuthClientCredentials,
   OAuthClientRequest,
   OAuthClientView,
+  OverviewHistoryParams,
   OverviewView,
   PageAuditEntryView,
   PageJobView,
@@ -3069,6 +3071,46 @@ export const getOverviewGetUrl = () => {
 export const overviewGet = async ( options?: Parameters<typeof request>[1]): Promise<overviewGetResponse> => {
 
   return request<overviewGetResponse>(getOverviewGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type overviewHistoryResponse200 = {
+  data: LoadHistoryView
+  status: 200
+}
+
+export type overviewHistoryResponseSuccess = (overviewHistoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type overviewHistoryResponse = (overviewHistoryResponseSuccess)
+
+export const getOverviewHistoryUrl = (params?: OverviewHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/overview/history?${stringifiedParams}` : `/api/v1/overview/history`
+}
+
+export const overviewHistory = async (params?: OverviewHistoryParams, options?: Parameters<typeof request>[1]): Promise<overviewHistoryResponse> => {
+
+  return request<overviewHistoryResponse>(getOverviewHistoryUrl(params),
   {
     ...options,
     method: 'GET'

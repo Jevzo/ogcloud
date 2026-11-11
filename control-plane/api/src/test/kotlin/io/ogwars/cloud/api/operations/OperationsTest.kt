@@ -7,11 +7,15 @@ import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.contracts.events.v1.ConfigChanged
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.group
+import io.ogwars.cloud.domain.overview.GroupLoad
+import io.ogwars.cloud.domain.overview.LoadHistory
+import io.ogwars.cloud.domain.overview.LoadSample
 import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.scaling.ScalingReason
 import io.ogwars.cloud.domain.server.server
 import io.ogwars.cloud.domain.store.GroupStore
+import io.ogwars.cloud.domain.store.LoadHistoryStore
 import io.ogwars.cloud.domain.store.ScalingLogStore
 import io.ogwars.cloud.domain.store.ServerStateStore
 import io.ogwars.cloud.domain.store.WebUserStore
@@ -24,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /** NPCs, runtime bundles, logs and the overview (D-0104). */
@@ -36,6 +42,7 @@ class OperationsTest(
     @Autowired private val groups: GroupStore,
     @Autowired private val servers: ServerStateStore,
     @Autowired private val scaling: ScalingLogStore,
+    @Autowired private val history: LoadHistoryStore,
     @Value("\${ogcloud.kafka.bootstrap-servers}") kafka: String,
 ) {
     private val oauth = OAuthHttp(port)
@@ -136,6 +143,28 @@ class OperationsTest(
                 ?.scaling
                 ?.playersPerServer
         (overview["serversByState"] as Map<*, *>).keys shouldContain "RUNNING"
+    }
+
+    @Test
+    fun `the history serves the last day of samples for the network or one group`() {
+        val groupId = newGroup()
+        val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+        val load = GroupLoad(running = 2, pending = 0, players = PLAYERS)
+        history.record(LoadSample(now.minus(Duration.ofHours(25)), 1, emptyMap()), Duration.ofDays(2))
+        history.record(LoadSample(now.minusSeconds(120), 4, emptyMap()), LoadHistory.KEPT)
+        history.record(LoadSample(now.minusSeconds(60), PLAYERS + 1, mapOf(GroupId(groupId) to load)), LoadHistory.KEPT)
+
+        val network = oauth.json(oauth.call("GET", "$OVERVIEW/history", admin))
+        val group = oauth.json(oauth.call("GET", "$OVERVIEW/history?groupId=$groupId", admin))
+
+        network["intervalSeconds"] shouldBe LoadHistory.INTERVAL.toSeconds().toInt()
+        val networkPoints = (network["points"] as List<*>).map { it as Map<*, *> }
+        networkPoints.none { it["at"] == now.minus(Duration.ofHours(25)).toString() } shouldBe true
+        networkPoints.single { it["at"] == now.minusSeconds(60).toString() } shouldBe
+            mapOf("at" to now.minusSeconds(60).toString(), "players" to PLAYERS + 1, "running" to 2)
+        group["points"] shouldBe
+            listOf(mapOf("at" to now.minusSeconds(60).toString(), "players" to PLAYERS, "running" to 2))
+        oauth.call("GET", "$OVERVIEW/history?groupId=missing-group", admin).statusCode() shouldBe NOT_FOUND
     }
 
     @Test

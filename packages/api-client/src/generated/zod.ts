@@ -705,6 +705,13 @@ export const PlayerKnownResponse = zod.unknown()
 export const OverviewGetResponse = zod.unknown()
 
 
+export const OverviewHistoryQueryParams = zod.object({
+  "groupId": zod.string().optional()
+})
+
+export const OverviewHistoryResponse = zod.unknown()
+
+
 export const MeGetResponse = zod.unknown()
 
 

@@ -1340,6 +1340,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/OverviewView"
+  /api/v1/overview/history:
+    get:
+      tags:
+      - overview-controller
+      operationId: overviewHistory
+      parameters:
+      - name: groupId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoadHistoryView"
   /api/v1/me:
     get:
       tags:
@@ -3086,6 +3104,35 @@ components:
       - id
       - occurredAt
       - reason
+    LoadHistoryView:
+      type: object
+      properties:
+        intervalSeconds:
+          type: integer
+          format: int64
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoadPointView"
+      required:
+      - intervalSeconds
+      - points
+    LoadPointView:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        players:
+          type: integer
+          format: int32
+        running:
+          type: integer
+          format: int32
+      required:
+      - at
+      - players
+      - running
     PageScalingLogView:
       type: object
       properties:

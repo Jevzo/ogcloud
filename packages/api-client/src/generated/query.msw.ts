@@ -34,6 +34,7 @@ import type {
   JobEvent,
   JobView,
   LinkCodeSent,
+  LoadHistoryView,
   LoginState,
   MeView,
   MinecraftLinkConfirmation,
@@ -263,6 +264,8 @@ export const getPlayerKnownResponseMock = (overrideResponse: Partial<Extract<Pag
 export const getOverviewGetResponseMock = (overrideResponse: Partial<Extract<OverviewView, object>> = {}): OverviewView => ({playersOnline: faker.number.int(), maxPlayers: faker.number.int(), maintenance: faker.datatype.boolean(), eulaAccepted: faker.datatype.boolean(), serversByState: {
         [faker.string.alphanumeric(5)]: faker.number.int()
       }, groups: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), type: faker.helpers.arrayElement(['DYNAMIC','STATIC','PROXY'] as const), maintenance: faker.datatype.boolean(), crashLoopPaused: faker.datatype.boolean(), running: faker.number.int(), pending: faker.number.int(), players: faker.number.int(), capacity: faker.number.int()})), recentScaling: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', groupId: faker.string.alpha({length: {min: 10, max: 20}}), action: faker.helpers.arrayElement(['START','DRAIN','UNDRAIN','STOP'] as const), serverId: faker.helpers.arrayElement([faker.string.uuid(), null]), reason: faker.helpers.arrayElement(['MIN_ONLINE','LOAD','SCALE_DOWN','STATIC'] as const), details: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getOverviewHistoryResponseMock = (overrideResponse: Partial<Extract<LoadHistoryView, object>> = {}): LoadHistoryView => ({intervalSeconds: faker.number.int(), points: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({at: faker.date.past().toISOString().slice(0, 19) + 'Z', players: faker.number.int(), running: faker.number.int()})), ...overrideResponse})
 
 export const getMeGetResponseMock = (overrideResponse: Partial<Extract<MeView, object>> = {}): MeView => ({id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), permissions: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), totpEnabled: faker.datatype.boolean(), ...overrideResponse})
 
@@ -1175,6 +1178,18 @@ export const getOverviewGetMockHandler = (overrideResponse?: OverviewView | ((in
   }, options)
 }
 
+export const getOverviewHistoryMockHandler = (overrideResponse?: LoadHistoryView | ((info: Parameters<HttpResponseResolver>[0]) => Promise<LoadHistoryView> | LoadHistoryView), options?: RequestHandlerOptions) => {
+  return http.get('*/api/v1/overview/history', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getOverviewHistoryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getMeGetMockHandler = (overrideResponse?: MeView | ((info: Parameters<HttpResponseResolver>[0]) => Promise<MeView> | MeView), options?: RequestHandlerOptions) => {
   return http.get('*/api/v1/me', async (info: Parameters<HttpResponseResolver>[0]) => {
 
@@ -1388,6 +1403,7 @@ export const getOgCloudAPIMock = () => [
   getPlayerGetMockHandler(),
   getPlayerKnownMockHandler(),
   getOverviewGetMockHandler(),
+  getOverviewHistoryMockHandler(),
   getMeGetMockHandler(),
   getLogScalingMockHandler(),
   getLogAuditMockHandler(),

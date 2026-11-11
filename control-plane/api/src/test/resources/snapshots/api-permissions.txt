@@ -26,6 +26,7 @@ GET /api/v1/npcs npcs:read
 GET /api/v1/npcs/{id} npcs:read
 GET /api/v1/oauth-clients oauth-clients:read
 GET /api/v1/overview overview:read
+GET /api/v1/overview/history overview:read
 GET /api/v1/permission-groups permissions:read
 GET /api/v1/permission-groups/{id} permissions:read
 GET /api/v1/players players:read

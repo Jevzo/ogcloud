@@ -125,3 +125,6 @@ func OneTime(kind OneTimeKind, id string) string {
 func ReadModel(kind ReadModelKind, id string) string {
 	return "readmodel:" + string(kind) + ":" + id
 }
+
+// One load sample a minute by time, kept 24 hours for the dashboard's charts (D-0213).
+const LoadHistory = "history:load"

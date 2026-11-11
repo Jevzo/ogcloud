@@ -85,7 +85,7 @@ class ValkeyCrashFailureStore(
         val millis = at.toEpochMilli()
         // The server id keeps simultaneous failures of different pods apart.
         valkey.evalLong(
-            LuaScripts.RECORD_FAILURE,
+            LuaScripts.RECORD_IN_WINDOW,
             listOf(ValkeyKeys.crashLoop(groupId)),
             millis.toString().utf8(),
             "$millis:$serverId".utf8(),

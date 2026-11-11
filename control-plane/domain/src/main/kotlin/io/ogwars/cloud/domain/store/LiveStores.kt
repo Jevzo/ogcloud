@@ -1,6 +1,7 @@
 package io.ogwars.cloud.domain.store
 
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.overview.LoadSample
 import io.ogwars.cloud.domain.server.Server
 import io.ogwars.cloud.domain.session.PlayerSession
 import java.time.Duration
@@ -112,6 +113,18 @@ interface CrashFailureStore {
 
     /** Called when an admin resumes a paused group: clears the latch and the failures. */
     fun clear(groupId: GroupId)
+}
+
+/** The dashboard's 24-hour load history (D-0213): the controller leader records, the API reads. */
+interface LoadHistoryStore {
+    /** Adds [sample] and forgets samples older than [kept] before it. */
+    fun record(
+        sample: LoadSample,
+        kept: Duration,
+    )
+
+    /** Samples taken at or after [from], oldest first. */
+    fun since(from: Instant): List<LoadSample>
 }
 
 /** Encoded read models the gateway and load balancer serve from (D-0007); the controller writes them. */

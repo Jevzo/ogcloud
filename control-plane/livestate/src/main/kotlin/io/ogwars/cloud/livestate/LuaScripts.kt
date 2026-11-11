@@ -62,8 +62,11 @@ internal object LuaScripts {
         return 1
     """
 
-    /** KEYS: failure set. ARGV: score (ms), member, window ms. Adds, trims to the window and refreshes the ttl. */
-    const val RECORD_FAILURE = """
+    /**
+     * KEYS: a sorted set by time (crash failures, load samples). ARGV: score (ms), member, window ms. Adds, trims to
+     * the window and refreshes the ttl.
+     */
+    const val RECORD_IN_WINDOW = """
         redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
         redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', tonumber(ARGV[1]) - tonumber(ARGV[3]))
         redis.call('PEXPIRE', KEYS[1], ARGV[3])

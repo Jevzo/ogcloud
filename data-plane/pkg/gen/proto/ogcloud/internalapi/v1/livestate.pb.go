@@ -270,6 +270,138 @@ func (x *PlayerSession) GetConnectedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// One sample of the network's load (key "history:load", a sorted set scored by time), kept 24
+// hours for the dashboard's charts (D-0213). Written by the controller leader, read by the API.
+type LoadSample struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	At      *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=at,proto3" json:"at,omitempty"`
+	Players uint32                 `protobuf:"varint,2,opt,name=players,proto3" json:"players,omitempty"`
+	// Every group that existed when the sample was taken, idle ones included.
+	Groups        []*GroupLoad `protobuf:"bytes,3,rep,name=groups,proto3" json:"groups,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoadSample) Reset() {
+	*x = LoadSample{}
+	mi := &file_ogcloud_internal_v1_livestate_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoadSample) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoadSample) ProtoMessage() {}
+
+func (x *LoadSample) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_internal_v1_livestate_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoadSample.ProtoReflect.Descriptor instead.
+func (*LoadSample) Descriptor() ([]byte, []int) {
+	return file_ogcloud_internal_v1_livestate_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *LoadSample) GetAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.At
+	}
+	return nil
+}
+
+func (x *LoadSample) GetPlayers() uint32 {
+	if x != nil {
+		return x.Players
+	}
+	return 0
+}
+
+func (x *LoadSample) GetGroups() []*GroupLoad {
+	if x != nil {
+		return x.Groups
+	}
+	return nil
+}
+
+type GroupLoad struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	GroupId string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Running uint32                 `protobuf:"varint,2,opt,name=running,proto3" json:"running,omitempty"`
+	// Requested, preparing or starting.
+	Pending       uint32 `protobuf:"varint,3,opt,name=pending,proto3" json:"pending,omitempty"`
+	Players       uint32 `protobuf:"varint,4,opt,name=players,proto3" json:"players,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupLoad) Reset() {
+	*x = GroupLoad{}
+	mi := &file_ogcloud_internal_v1_livestate_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupLoad) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupLoad) ProtoMessage() {}
+
+func (x *GroupLoad) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_internal_v1_livestate_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupLoad.ProtoReflect.Descriptor instead.
+func (*GroupLoad) Descriptor() ([]byte, []int) {
+	return file_ogcloud_internal_v1_livestate_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GroupLoad) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *GroupLoad) GetRunning() uint32 {
+	if x != nil {
+		return x.Running
+	}
+	return 0
+}
+
+func (x *GroupLoad) GetPending() uint32 {
+	if x != nil {
+		return x.Pending
+	}
+	return 0
+}
+
+func (x *GroupLoad) GetPlayers() uint32 {
+	if x != nil {
+		return x.Players
+	}
+	return 0
+}
+
 var File_ogcloud_internal_v1_livestate_proto protoreflect.FileDescriptor
 
 const file_ogcloud_internal_v1_livestate_proto_rawDesc = "" +
@@ -306,7 +438,17 @@ const file_ogcloud_internal_v1_livestate_proto_rawDesc = "" +
 	"\tserver_id\x18\x04 \x01(\tR\bserverId\x12.\n" +
 	"\x13permission_group_id\x18\x05 \x01(\tR\x11permissionGroupId\x12!\n" +
 	"\frank_version\x18\x06 \x01(\x04R\vrankVersion\x12=\n" +
-	"\fconnected_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vconnectedAtB\xec\x01\n" +
+	"\fconnected_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vconnectedAt\"\x8a\x01\n" +
+	"\n" +
+	"LoadSample\x12*\n" +
+	"\x02at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12\x18\n" +
+	"\aplayers\x18\x02 \x01(\rR\aplayers\x126\n" +
+	"\x06groups\x18\x03 \x03(\v2\x1e.ogcloud.internal.v1.GroupLoadR\x06groups\"t\n" +
+	"\tGroupLoad\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x18\n" +
+	"\arunning\x18\x02 \x01(\rR\arunning\x12\x18\n" +
+	"\apending\x18\x03 \x01(\rR\apending\x12\x18\n" +
+	"\aplayers\x18\x04 \x01(\rR\aplayersB\xec\x01\n" +
 	"\x17com.ogcloud.internal.v1B\x0eLivestateProtoP\x01ZSgithub.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/internalapi/v1;internalv1\xa2\x02\x03OIX\xaa\x02\x13Ogcloud.Internal.V1\xca\x02\x13Ogcloud\\Internal\\V1\xe2\x02\x1fOgcloud\\Internal\\V1\\GPBMetadata\xea\x02\x15Ogcloud::Internal::V1b\x06proto3"
 
 var (
@@ -321,28 +463,32 @@ func file_ogcloud_internal_v1_livestate_proto_rawDescGZIP() []byte {
 	return file_ogcloud_internal_v1_livestate_proto_rawDescData
 }
 
-var file_ogcloud_internal_v1_livestate_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_ogcloud_internal_v1_livestate_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_ogcloud_internal_v1_livestate_proto_goTypes = []any{
 	(*ServerRecord)(nil),          // 0: ogcloud.internal.v1.ServerRecord
 	(*PlayerSession)(nil),         // 1: ogcloud.internal.v1.PlayerSession
-	(v1.GroupType)(0),             // 2: ogcloud.events.v1.GroupType
-	(v1.ServerState)(0),           // 3: ogcloud.events.v1.ServerState
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(v1.GameState)(0),             // 5: ogcloud.events.v1.GameState
+	(*LoadSample)(nil),            // 2: ogcloud.internal.v1.LoadSample
+	(*GroupLoad)(nil),             // 3: ogcloud.internal.v1.GroupLoad
+	(v1.GroupType)(0),             // 4: ogcloud.events.v1.GroupType
+	(v1.ServerState)(0),           // 5: ogcloud.events.v1.ServerState
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(v1.GameState)(0),             // 7: ogcloud.events.v1.GameState
 }
 var file_ogcloud_internal_v1_livestate_proto_depIdxs = []int32{
-	2, // 0: ogcloud.internal.v1.ServerRecord.group_type:type_name -> ogcloud.events.v1.GroupType
-	3, // 1: ogcloud.internal.v1.ServerRecord.state:type_name -> ogcloud.events.v1.ServerState
-	4, // 2: ogcloud.internal.v1.ServerRecord.state_since:type_name -> google.protobuf.Timestamp
-	5, // 3: ogcloud.internal.v1.ServerRecord.game_state:type_name -> ogcloud.events.v1.GameState
-	4, // 4: ogcloud.internal.v1.ServerRecord.started_at:type_name -> google.protobuf.Timestamp
-	4, // 5: ogcloud.internal.v1.ServerRecord.last_heartbeat_at:type_name -> google.protobuf.Timestamp
-	4, // 6: ogcloud.internal.v1.PlayerSession.connected_at:type_name -> google.protobuf.Timestamp
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4, // 0: ogcloud.internal.v1.ServerRecord.group_type:type_name -> ogcloud.events.v1.GroupType
+	5, // 1: ogcloud.internal.v1.ServerRecord.state:type_name -> ogcloud.events.v1.ServerState
+	6, // 2: ogcloud.internal.v1.ServerRecord.state_since:type_name -> google.protobuf.Timestamp
+	7, // 3: ogcloud.internal.v1.ServerRecord.game_state:type_name -> ogcloud.events.v1.GameState
+	6, // 4: ogcloud.internal.v1.ServerRecord.started_at:type_name -> google.protobuf.Timestamp
+	6, // 5: ogcloud.internal.v1.ServerRecord.last_heartbeat_at:type_name -> google.protobuf.Timestamp
+	6, // 6: ogcloud.internal.v1.PlayerSession.connected_at:type_name -> google.protobuf.Timestamp
+	6, // 7: ogcloud.internal.v1.LoadSample.at:type_name -> google.protobuf.Timestamp
+	3, // 8: ogcloud.internal.v1.LoadSample.groups:type_name -> ogcloud.internal.v1.GroupLoad
+	9, // [9:9] is the sub-list for method output_type
+	9, // [9:9] is the sub-list for method input_type
+	9, // [9:9] is the sub-list for extension type_name
+	9, // [9:9] is the sub-list for extension extendee
+	0, // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_internal_v1_livestate_proto_init() }
@@ -356,7 +502,7 @@ func file_ogcloud_internal_v1_livestate_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_internal_v1_livestate_proto_rawDesc), len(file_ogcloud_internal_v1_livestate_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

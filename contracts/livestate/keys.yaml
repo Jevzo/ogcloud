@@ -93,3 +93,6 @@ keys:
     pattern: onetime:{kind:oneTimeKind}:{id:string}
   - name: readModel
     pattern: readmodel:{kind:readModelKind}:{id:string}
+  - name: loadHistory
+    pattern: history:load
+    doc: One load sample a minute by time, kept 24 hours for the dashboard's charts (D-0213).
