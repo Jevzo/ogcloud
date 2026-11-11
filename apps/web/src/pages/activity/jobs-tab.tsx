@@ -19,6 +19,7 @@ import {
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
+import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 
@@ -128,6 +129,7 @@ export function JobsTab() {
       <DataTable
         label={t("activity.tabs.jobs")}
         data={jobs.items}
+        failure={loadFailure(jobs)}
         columns={jobColumns}
         getRowId={(job) => job.id}
         loading={jobs.pending}

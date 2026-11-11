@@ -18,6 +18,7 @@ import { ArrowUpRight, KeyRound, Lock, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monoColumn } from "../../columns.tsx";
+import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useIsOwner } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -95,6 +96,7 @@ export function RolesPage() {
         <DataTable
           label={t("nav.roles")}
           data={roles.data?.data ?? []}
+          failure={loadFailure(roles)}
           columns={roleColumns}
           getRowId={(role) => role.id}
           actions={(role) => ({

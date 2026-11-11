@@ -37,6 +37,12 @@
     "title": "Confirm with your passkey",
     "use": "Use my passkey"
   },
+  "problems": {
+    "cancelled": "the browser's passkey prompt was closed or timed out",
+    "exists": "this device already holds a passkey for this account",
+    "refused": "the server did not accept it",
+    "unreachable": "OgCloud could not be reached; try again"
+  },
   "totp": {
     "code": "Code",
     "description": "Open your authenticator app and enter the code it shows for OgCloud.",

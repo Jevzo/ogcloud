@@ -250,6 +250,7 @@ async function ensureOwner(
     target,
     { ...OWNER, password: randomBytes(24).toString("base64url") },
     setupToken,
+    (created) => saveState(target, { owner: created }),
   );
   console.log(`Created the owner ${owner.username}`);
   const created: SeedState = { owner };

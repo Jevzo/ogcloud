@@ -36,7 +36,7 @@ import {
 import { type ChangeEvent, useContext, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { downloadFile, uploadWithProgress } from "../../files.ts";
 import { useFormat } from "../../format.ts";
 import { usePendingAction } from "../../pending-action.ts";
@@ -216,6 +216,7 @@ export function TemplatesPanel({
         <DataTable
           label={t("templates.title")}
           data={rows}
+          failure={loadFailure(versions)}
           columns={versionColumns}
           getRowId={(version) => version.id}
           actions={(version) => ({

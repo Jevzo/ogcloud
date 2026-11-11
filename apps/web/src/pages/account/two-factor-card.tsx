@@ -30,8 +30,9 @@ import {
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog } from "../../action-dialog.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { LoadFailed } from "../../load-failed.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useMe } from "../../permissions.ts";
 import { QrCode } from "../../qr-code.tsx";
@@ -260,9 +261,12 @@ function PasskeyRows() {
   const passkeys = useMeListPasskeys();
   const pending = usePendingAction<PasskeyAction, PasskeyView>();
   const list = passkeys.data?.data ?? [];
+  const failure = loadFailure(passkeys);
   return (
     <>
-      {list.length === 0 ? (
+      {failure !== undefined && list.length === 0 ? (
+        <LoadFailed failure={failure} />
+      ) : list.length === 0 ? (
         <FactorRow
           icon={Fingerprint}
           title={t("account.passkeys.title")}

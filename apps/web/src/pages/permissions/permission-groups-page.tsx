@@ -17,6 +17,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Plus, Shield, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useCan } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -114,6 +115,7 @@ export function PermissionGroupsPage() {
         <DataTable
           label={t("nav.permissions")}
           data={rows}
+          failure={loadFailure(groups)}
           columns={groupColumns}
           getRowId={(group) => group.id}
           actions={(group) => ({

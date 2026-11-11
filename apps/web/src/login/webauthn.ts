@@ -37,8 +37,41 @@ async function post<T>(
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  if (!response.ok) throw new Error(`${path} answered ${response.status}`);
+  if (!response.ok) {
+    throw new PasskeyError(
+      "unreachable",
+      `${path} answered ${response.status}`,
+    );
+  }
   return (await response.json()) as T;
+}
+
+/** Why a passkey step failed, in words the login catalog has (D-0050). */
+export type PasskeyProblem = "cancelled" | "exists" | "refused" | "unreachable";
+
+export class PasskeyError extends Error {
+  readonly problem: PasskeyProblem;
+
+  constructor(
+    problem: PasskeyProblem,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "PasskeyError";
+    this.problem = problem;
+  }
+}
+
+/** The problem behind any error of a passkey step, including the browser's own (WebAuthn's DOMException names). */
+export function passkeyProblemOf(error: unknown): PasskeyProblem {
+  if (error instanceof PasskeyError) return error.problem;
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError" || error.name === "AbortError")
+      return "cancelled";
+    if (error.name === "InvalidStateError") return "exists";
+  }
+  return "unreachable";
 }
 
 interface Described {
@@ -78,7 +111,8 @@ export async function signInWithPasskey(csrf: LoginCsrf): Promise<string> {
       })),
     },
   })) as PublicKeyCredential | null;
-  if (credential === null) throw new Error("No passkey was chosen");
+  if (credential === null)
+    throw new PasskeyError("cancelled", "No passkey was chosen");
   const response = credential.response as AuthenticatorAssertionResponse;
   const result = await post<{ authenticated?: boolean; redirectUrl?: string }>(
     AUTHENTICATE,
@@ -101,7 +135,7 @@ export async function signInWithPasskey(csrf: LoginCsrf): Promise<string> {
     },
   );
   if (result.authenticated !== true || result.redirectUrl === undefined) {
-    throw new Error("The server did not accept the passkey");
+    throw new PasskeyError("refused", "The server did not accept the passkey");
   }
   return result.redirectUrl;
 }
@@ -122,7 +156,8 @@ export async function registerPasskey(
       ),
     },
   })) as PublicKeyCredential | null;
-  if (credential === null) throw new Error("No passkey was created");
+  if (credential === null)
+    throw new PasskeyError("cancelled", "No passkey was created");
   const response = credential.response as AuthenticatorAttestationResponse;
   const result = await post<{ success?: boolean }>(REGISTER, csrf, {
     publicKey: {
@@ -142,5 +177,5 @@ export async function registerPasskey(
     },
   });
   if (result.success !== true)
-    throw new Error("The server did not store the passkey");
+    throw new PasskeyError("refused", "The server did not store the passkey");
 }

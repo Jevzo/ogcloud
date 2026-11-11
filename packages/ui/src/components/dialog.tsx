@@ -63,6 +63,7 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   /** Irreversible or network-wide: a danger button, and the target's name must be typed (D-0210). */
   typedName?: string;
+  /** Rejects to keep the dialog open, e.g. to try again; reporting why is the action's own job. */
   onConfirm: () => Promise<void> | void;
 }
 
@@ -91,6 +92,8 @@ export function ConfirmDialog({
     try {
       await onConfirm();
       close(false);
+    } catch (error) {
+      console.error("A confirmed action failed; the dialog stays open", error);
     } finally {
       setBusy(false);
     }

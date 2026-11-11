@@ -18,6 +18,7 @@ import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
+import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
@@ -79,6 +80,7 @@ function PlayerTable<T extends Named>({
       <DataTable
         label={label}
         data={rows}
+        failure={loadFailure(paged)}
         columns={columns}
         getRowId={(player) => player.uuid}
         actions={(player) => actions.actionsFor(toRef(player))}

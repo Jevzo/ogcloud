@@ -67,20 +67,31 @@ export async function request<T>(path: string, call: Call): Promise<T> {
     body: body ?? null,
   });
   const text = EMPTY_BODIES.has(response.status) ? "" : await response.text();
-  const isJson =
-    response.headers.get("content-type")?.includes("json") ?? false;
-  const data: unknown =
-    text === "" ? undefined : isJson ? JSON.parse(text) : text;
   if (!response.ok) {
-    const problem =
-      typeof data === "object" && data !== null ? (data as Problem) : undefined;
     throw new ApiError(
       init.method ?? "GET",
       path,
       response.status,
-      problem,
+      problemIn(text),
       text,
     );
   }
+  const isJson =
+    response.headers.get("content-type")?.includes("json") ?? false;
+  const data: unknown =
+    text === "" ? undefined : isJson ? JSON.parse(text) : text;
   return { data, status: response.status, headers: response.headers } as T;
+}
+
+/** The ProblemDetail in an error answer's body, if it holds one. */
+export function problemIn(text: string): Problem | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === "object" && parsed !== null
+      ? (parsed as Problem)
+      : undefined;
+  } catch {
+    // Not JSON, such as a proxy's error page; the error quotes the text instead.
+    return undefined;
+  }
 }

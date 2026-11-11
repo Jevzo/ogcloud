@@ -9,8 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppWindow, LogOut, MonitorSmartphone } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { LoadFailed } from "../../load-failed.tsx";
 
 // OgCloud's own apps by client id (D-0040); any other client shows its id.
 const APPS = {
@@ -35,6 +36,7 @@ export function LoginsCard() {
   const [signingOutOthers, setSigningOutOthers] = useState(false);
   const list = logins.data?.data ?? [];
   const others = list.filter((login) => !login.current);
+  const failure = loadFailure(logins);
   const now = Date.now();
   const refresh = () =>
     queries.invalidateQueries({ queryKey: getMeListLoginsQueryKey() });
@@ -66,6 +68,7 @@ export function LoginsCard() {
         ) : undefined
       }
     >
+      {failure === undefined ? null : <LoadFailed failure={failure} />}
       <ul className="flex flex-col">
         {list.map((login) => (
           <li
@@ -115,14 +118,21 @@ export function LoginsCard() {
           count: others.length,
         })}
         confirmLabel={t("account.logins.signOutOthers")}
-        onConfirm={() =>
-          Promise.all(
+        onConfirm={async () => {
+          // Every device is tried, and the list shows what is left even when one sign-out failed.
+          const outcomes = await Promise.allSettled(
             others.map((login) => revoke.mutateAsync({ id: login.id })),
-          ).then(() => {
+          );
+          void refresh();
+          const refused = outcomes.find(
+            (outcome) => outcome.status === "rejected",
+          );
+          if (refused === undefined) {
             toast({ message: t("account.logins.othersSignedOut") });
-            void refresh();
-          }, failed)
-        }
+          } else {
+            failed(refused.reason);
+          }
+        }}
       />
     </Card>
   );

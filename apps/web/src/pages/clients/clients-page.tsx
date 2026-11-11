@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog } from "../../action-dialog.tsx";
 import { agoColumn, monoColumn } from "../../columns.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useIsOwner } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { PermissionPicker } from "../roles/permission-picker.tsx";
@@ -114,6 +114,7 @@ export function ClientsPage() {
         <DataTable
           label={t("nav.clients")}
           data={clients.data?.data ?? []}
+          failure={loadFailure(clients)}
           columns={clientColumns}
           getRowId={(client) => client.clientId}
           actions={(client) => ({

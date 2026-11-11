@@ -16,7 +16,12 @@ export function readCspNonce(doc: Document = document): string | undefined {
   const content = doc
     .querySelector('meta[name="csp-nonce"]')
     ?.getAttribute("content");
-  return content != null && NONCE.test(content) ? content : undefined;
+  if (content != null && NONCE.test(content)) return content;
+  if (content != null && import.meta.env.PROD) {
+    // A built page whose server left the placeholder: the CSP refuses every style the libraries insert.
+    console.error(`The CSP nonce was not filled in ("${content}")`);
+  }
+  return undefined;
 }
 
 export const NonceContext = createContext<string | undefined>(undefined);

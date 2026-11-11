@@ -54,7 +54,7 @@ export function useTextPreview(field: TextPreviewRequestField, text: string) {
   });
 }
 
-/** A field validator that refuses texts the API refuses, so a form cannot save them (D-0205). */
+/** A field validator that refuses texts the API refuses, so a form cannot save them; a failed check refuses none. */
 export function useTextValidator(field: TextPreviewRequestField) {
   const { t } = useTranslation("web");
   const client = useQueryClient();
@@ -62,9 +62,14 @@ export function useTextValidator(field: TextPreviewRequestField) {
   return {
     onChangeAsyncDebounceMs: DEBOUNCE_MS,
     onChangeAsync: async ({ value }: { value: string }) => {
-      const result = await cached(client, preview, field, value);
-      const first = result.errors[0];
-      return first === undefined ? undefined : textProblem(t, first);
+      try {
+        const first = (await cached(client, preview, field, value)).errors[0];
+        return first === undefined ? undefined : textProblem(t, first);
+      } catch (error) {
+        // Without a check the save goes ahead; the API checks the text again when it is saved (D-0205).
+        console.error(`Could not check the ${field} text`, error);
+        return undefined;
+      }
     },
   };
 }

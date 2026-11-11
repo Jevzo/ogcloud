@@ -292,6 +292,7 @@
     "action": "That did not go through. Try again in a moment.",
     "back": "Back to the overview",
     "generic": "Something went wrong: {{detail}}",
+    "load": "This did not load: {{detail}}",
     "notFound": "There is no page here.",
     "retry": "Try again"
   },

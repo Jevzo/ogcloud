@@ -77,6 +77,8 @@
   },
   "table": {
     "actions": "Actions",
+    "failed": "This list did not load",
+    "retry": "Try again",
     "sortedAscending": "Sorted ascending",
     "sortedDescending": "Sorted descending"
   },

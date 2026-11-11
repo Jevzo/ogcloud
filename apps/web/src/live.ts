@@ -1,4 +1,4 @@
-import { eventTicket } from "@ogcloud/api-client";
+import { type AlertEvent, eventTicket } from "@ogcloud/api-client";
 import {
   type ApiConnection,
   ApiConnectionContext,
@@ -9,10 +9,8 @@ import { invalidatePaths } from "./queries.ts";
 
 export type LiveState = "connecting" | "connected" | "reconnecting";
 
-export interface Alert {
-  subjectId: string;
-  kind: string;
-}
+/** An alert as the event stream sends it; its type comes from the contract (D-0011). */
+export type Alert = AlertEvent;
 
 // Which cached reads each event makes stale (D-0105); counts that heartbeats change are refetched on their own timer.
 const STALE_AFTER: Record<string, readonly string[]> = {
@@ -23,6 +21,30 @@ const STALE_AFTER: Record<string, readonly string[]> = {
 };
 const FIRST_RETRY_MS = 1_000;
 const LONGEST_RETRY_MS = 30_000;
+
+/** An alert event's data, or none when it is not the contract's shape; such an event is logged and skipped. */
+function parseAlert(data: string): Alert | undefined {
+  try {
+    const value: unknown = JSON.parse(data);
+    if (isAlert(value)) return value;
+    console.error("Skipping an alert event of an unknown shape", value);
+  } catch (error) {
+    console.error("Skipping an alert event that is not JSON", error);
+  }
+  return undefined;
+}
+
+function isAlert(value: unknown): value is Alert {
+  if (typeof value !== "object" || value === null) return false;
+  const event = value as Record<string, unknown>;
+  return (
+    typeof event.subjectId === "string" &&
+    typeof event.kind === "string" &&
+    typeof event.severity === "string" &&
+    typeof event.attributes === "object" &&
+    event.attributes !== null
+  );
+}
 
 async function openStream(connection: ApiConnection): Promise<EventSource> {
   const token = await connection.accessToken();
@@ -79,10 +101,9 @@ export function useLiveEvents(
           for (const [name, prefixes] of Object.entries(STALE_AFTER)) {
             opened.addEventListener(name, (event) => {
               void invalidatePaths(client, prefixes);
-              if (name === "alert")
-                onAlert(
-                  JSON.parse((event as MessageEvent<string>).data) as Alert,
-                );
+              if (name !== "alert") return;
+              const alert = parseAlert((event as MessageEvent<string>).data);
+              if (alert !== undefined) onAlert(alert);
             });
           }
         },

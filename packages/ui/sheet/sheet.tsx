@@ -642,6 +642,26 @@ function Table() {
   );
 }
 
+/** A list whose rows did not load: the reason in place of the rows, and a retry. */
+function FailedTable() {
+  return (
+    <Card flush title="Servers that did not load">
+      <DataTable
+        label="Servers that did not load"
+        data={[]}
+        columns={SERVER_COLUMNS}
+        getRowId={(row) => row.id}
+        empty={null}
+        failure={{
+          message:
+            "GET /api/v1/players/online answered 503: Valkey is unavailable",
+          retry: () => undefined,
+        }}
+      />
+    </Card>
+  );
+}
+
 function Feedback() {
   const toast = useToast();
   const [stopOpen, setStopOpen] = useState(false);
@@ -925,6 +945,7 @@ export function Sheet() {
       </Section>
       <Section title="Table">
         <Table />
+        <FailedTable />
       </Section>
       <Section title="Charts">
         <Charts />

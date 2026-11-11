@@ -12,7 +12,7 @@ import { Package, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 
@@ -76,6 +76,7 @@ export function RuntimeCard() {
       <DataTable
         label={t("network.runtime.title")}
         data={runtime.data?.data ?? []}
+        failure={loadFailure(runtime)}
         columns={profileColumns}
         getRowId={(profile) => profile.id}
         actions={

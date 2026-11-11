@@ -16,12 +16,14 @@ const STEP_TIMEOUT_MS = 60_000;
  * Sets up a fresh install as its owner would, in Chromium (T-0710): the dashboard sends a signed-out visitor to the
  * setup, which takes the setup token and the owner, signs in with an authenticator enrolled on the way (D-0097) and
  * finishes on the EULA and the starter groups, which the seed skips since it makes its own. Fails on any CSP refusal
- * (D-0219). Returns the owner's login with the authenticator's secret.
+ * (D-0219) or script error. `onOwnerCreated` keeps the login as soon as the account exists, so a later failure leaves
+ * an install the seed can sign in to. Returns the owner's login with the authenticator's secret.
  */
 export async function setUpThroughWizard(
   target: Target,
   owner: NewOwner,
   setupToken: string,
+  onOwnerCreated: (login: UserLogin) => Promise<void>,
   now: () => Date = () => new Date(),
 ): Promise<UserLogin> {
   const browser = await chromium.launch();
@@ -35,6 +37,8 @@ export async function setUpThroughWizard(
       if (message.text().includes("Content Security Policy"))
         refused.push(message.text());
     });
+    const crashed: string[] = [];
+    page.on("pageerror", (error) => crashed.push(error.message));
 
     await page.goto(target.origin);
     await page.waitForURL("**/setup");
@@ -47,7 +51,13 @@ export async function setUpThroughWizard(
       .getByLabel("Repeat the new password", { exact: true })
       .fill(owner.password);
     await page.getByRole("button", { name: "Create owner account" }).click();
-    await page.getByRole("button", { name: "Sign in" }).click();
+    const signIn = page.getByRole("button", { name: "Sign in" });
+    await signIn.waitFor();
+    await onOwnerCreated({
+      username: owner.username,
+      password: owner.password,
+    });
+    await signIn.click();
 
     // The login pages (D-0212): the password, then the authenticator owners must have.
     await page.getByLabel("Username or email").fill(owner.username);
@@ -81,6 +91,8 @@ export async function setUpThroughWizard(
 
     if (refused.length > 0)
       throw new Error(`The CSP refused: ${refused.join("; ")}`);
+    if (crashed.length > 0)
+      throw new Error(`The pages threw: ${crashed.join("; ")}`);
     return {
       username: owner.username,
       password: owner.password,

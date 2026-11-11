@@ -8,12 +8,19 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, Ellipsis, type LucideIcon } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Ellipsis,
+  type LucideIcon,
+  RotateCw,
+  TriangleAlert,
+} from "lucide-react";
 import { type ReactNode, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn.ts";
 import { Button } from "./button.tsx";
-import { Skeleton } from "./layout.tsx";
+import { EmptyState, Skeleton } from "./layout.tsx";
 import { Menu, type MenuItem } from "./menu.tsx";
 
 /** The features every OgCloud table registers: client-side sorting. */
@@ -50,6 +57,12 @@ const ESTIMATED_ROW_PX = 32;
 const OVERSCAN_ROWS = 8;
 const LOADING_ROWS = 5;
 
+/** Why a list could not load, and a way to try again; shown where the rows would be. */
+export interface TableFailure {
+  message: string;
+  retry: () => void;
+}
+
 interface DataTableProps<T extends RowData> {
   label: string;
   data: readonly T[];
@@ -58,6 +71,8 @@ interface DataTableProps<T extends RowData> {
   actions?: ((row: T) => RowActions) | undefined;
   loading?: boolean;
   empty: ReactNode;
+  /** Set while the rows failed to load; with rows already shown, they stay. */
+  failure?: TableFailure | undefined;
   /** The height long lists scroll within, e.g. `calc(100vh - 14rem)`. */
   maxHeight?: string;
   /** Rows to mark, such as one that changed state just now. */
@@ -72,6 +87,7 @@ export function DataTable<T extends RowData>({
   actions,
   loading = false,
   empty,
+  failure,
   maxHeight,
   highlighted,
 }: DataTableProps<T>) {
@@ -181,7 +197,20 @@ export function DataTable<T extends RowData>({
           ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columnCount} className="p-4">
-                {empty}
+                {failure === undefined ? (
+                  empty
+                ) : (
+                  <EmptyState
+                    icon={TriangleAlert}
+                    title={t("table.failed")}
+                    description={failure.message}
+                    action={
+                      <Button icon={RotateCw} onClick={failure.retry}>
+                        {t("table.retry")}
+                      </Button>
+                    }
+                  />
+                )}
               </td>
             </tr>
           ) : (

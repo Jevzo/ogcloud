@@ -11,6 +11,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Bot, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { loadFailure } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
@@ -112,6 +113,7 @@ export function NpcsPage() {
         <DataTable
           label={t("nav.npcs")}
           data={npcs.data?.data ?? []}
+          failure={loadFailure(npcs)}
           columns={npcColumns}
           getRowId={(npc) => npc.id}
           actions={(npc) => ({

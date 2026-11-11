@@ -23,7 +23,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog } from "../../action-dialog.tsx";
 import { agoColumn } from "../../columns.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { loadFailure, useFailureToast } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { useIsOwner, useMe } from "../../permissions.ts";
@@ -133,6 +133,7 @@ export function UsersPage() {
         <DataTable
           label={t("nav.users")}
           data={users.items}
+          failure={loadFailure(users)}
           columns={userColumns}
           getRowId={(user) => user.id}
           actions={(user) => {

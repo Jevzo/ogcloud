@@ -2,7 +2,9 @@ import { useOverviewHistory } from "@ogcloud/api-client/react";
 import { Card, Segmented, Skeleton, TimeSeriesChart } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { LoadFailed } from "../../load-failed.tsx";
 import { useMediaQuery } from "../../media.ts";
 
 const HOUR_MS = 3_600_000;
@@ -32,6 +34,7 @@ export function PlayersCard({ online, max }: { online: number; max: number }) {
   const shown = points.filter(
     (point) => point.at.getTime() >= now - RANGES[range] * HOUR_MS,
   );
+  const failure = loadFailure(history);
   const hourAgo = points.find((point) => point.at.getTime() >= now - HOUR_MS);
 
   return (
@@ -68,6 +71,8 @@ export function PlayersCard({ online, max }: { online: number; max: number }) {
         <div style={{ height }}>
           <Skeleton className="h-full" />
         </div>
+      ) : failure !== undefined && points.length === 0 ? (
+        <LoadFailed failure={failure} />
       ) : shown.length < 2 ? (
         <p
           className="grid place-items-center text-small text-text-3"

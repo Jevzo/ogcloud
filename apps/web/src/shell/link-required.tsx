@@ -9,8 +9,10 @@ import { Link2, RotateCcw } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import mascot from "../assets/mascot-256.png";
+import { problemOf } from "../errors.ts";
 import { useSession } from "../session-context.ts";
 
+const BAD_REQUEST = 400;
 const NOT_FOUND = 404;
 const CONFLICT = 409;
 
@@ -75,15 +77,20 @@ export function LinkFlow() {
     );
   };
   const requestError =
-    statusOf(request.error) === NOT_FOUND
-      ? t("link.offline", { name: name.trim() })
-      : undefined;
+    request.error === null
+      ? undefined
+      : statusOf(request.error) === NOT_FOUND
+        ? t("link.offline", { name: name.trim() })
+        : (problemOf(request.error) ?? t("errors.action"));
+  // A wrong or expired code answers 400 and is gone (D-0106); anything else is not the code's fault.
   const confirmError =
-    statusOf(confirm.error) === CONFLICT
-      ? t("link.taken")
-      : confirm.error === null
-        ? undefined
-        : t("link.wrongCode");
+    confirm.error === null
+      ? undefined
+      : statusOf(confirm.error) === BAD_REQUEST
+        ? t("link.wrongCode")
+        : statusOf(confirm.error) === CONFLICT
+          ? t("link.taken")
+          : (problemOf(confirm.error) ?? t("errors.action"));
 
   return sentTo === null ? (
     <form onSubmit={send} className="flex flex-col gap-3">
@@ -124,7 +131,7 @@ export function LinkFlow() {
           />
         )}
       </Field>
-      {confirm.error !== null && statusOf(confirm.error) !== CONFLICT ? (
+      {statusOf(confirm.error) === BAD_REQUEST ? (
         <Button
           kind="ghost"
           icon={RotateCcw}

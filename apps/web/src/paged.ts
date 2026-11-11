@@ -29,5 +29,6 @@ export function usePaged<T>(
     hasMore: query.hasNextPage,
     loadingMore: query.isFetchingNextPage,
     loadMore: () => void query.fetchNextPage(),
+    refetch: () => void query.refetch(),
   };
 }

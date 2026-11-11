@@ -54,3 +54,31 @@ test("an error without a ProblemDetail still names its status", async () => {
       error.message === "GET /api/v1/overview answered 502: Bad Gateway",
   );
 });
+
+test("an error whose body only claims to be JSON still names its status", async () => {
+  await assert.rejects(
+    request("/api/v1/overview", {
+      fetch: answering(502, "<html>Bad Gateway</html>", "application/json"),
+    }),
+    (error: unknown) =>
+      error instanceof ApiError &&
+      error.status === 502 &&
+      error.problem === undefined,
+  );
+});
+
+test("a call carries the bearer token only when it has one", async () => {
+  const sent: (string | null)[] = [];
+  const recording = async (_url: string, init: RequestInit) => {
+    sent.push(new Headers(init.headers).get("Authorization"));
+    return new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  await request("/api/v1/setup", { fetch: recording });
+  await request("/api/v1/me", { fetch: recording, token: "access-1" });
+
+  assert.deepEqual(sent, [null, "Bearer access-1"]);
+});

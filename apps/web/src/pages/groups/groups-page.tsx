@@ -17,6 +17,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { useGroupActions } from "./group-actions.tsx";
 import { GroupLink, GroupStatusBadge } from "./group-status.tsx";
@@ -147,6 +148,7 @@ export function GroupsPage() {
         <DataTable
           label={t("nav.groups")}
           data={rows}
+          failure={loadFailure(groups)}
           columns={groupColumns}
           getRowId={(row) => row.view.id}
           actions={(row) => actions.actionsFor(row.live)}

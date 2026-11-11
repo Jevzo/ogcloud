@@ -17,6 +17,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
 import { useDebounced } from "../../debounce.ts";
+import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 
@@ -168,6 +169,7 @@ export function AuditTab() {
         <DataTable
           label={t("activity.tabs.audit")}
           data={audit.items}
+          failure={loadFailure(audit)}
           columns={auditColumns}
           getRowId={(entry) => entry.id}
           loading={audit.pending}

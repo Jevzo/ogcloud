@@ -8,6 +8,7 @@ import { TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn } from "../../columns.tsx";
+import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
@@ -77,6 +78,7 @@ export function ScalingTab() {
         <DataTable
           label={t("activity.tabs.scaling")}
           data={scaling.items}
+          failure={loadFailure(scaling)}
           columns={scalingColumns}
           getRowId={(entry) => entry.id}
           loading={scaling.pending}

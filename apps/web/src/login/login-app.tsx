@@ -11,7 +11,12 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandedPage } from "../branded-page.tsx";
 import { QrCode } from "../qr-code.tsx";
-import { registerPasskey, signInWithPasskey } from "./webauthn.ts";
+import {
+  type PasskeyProblem,
+  passkeyProblemOf,
+  registerPasskey,
+  signInWithPasskey,
+} from "./webauthn.ts";
 
 /** Where the state and the authenticator secret come from: the API, or fixtures in mocks mode. */
 export interface LoginSource {
@@ -100,17 +105,23 @@ function Problem({ children }: { children: ReactNode }) {
 }
 
 function usePasskey(task: () => Promise<void>) {
+  const { t } = useTranslation("login");
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<PasskeyProblem | null>(null);
   const run = () => {
     setBusy(true);
     setProblem(null);
     task().catch((error: unknown) => {
-      setProblem(error instanceof Error ? error.message : String(error));
+      console.error("A passkey step failed", error);
+      setProblem(passkeyProblemOf(error));
       setBusy(false);
     });
   };
-  return { busy, problem, run };
+  return {
+    busy,
+    problem: problem === null ? null : t(`problems.${problem}`),
+    run,
+  };
 }
 
 function Credentials({

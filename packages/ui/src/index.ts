@@ -30,6 +30,7 @@ export {
   DataTable,
   type RowAction,
   type RowActions,
+  type TableFailure,
   tableFeatureSet,
 } from "./components/data-table.tsx";
 export { DateTimePicker, PERMANENT } from "./components/date-time-picker.tsx";

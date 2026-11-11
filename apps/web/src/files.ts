@@ -1,4 +1,4 @@
-import { ApiError, type Problem } from "@ogcloud/api-client";
+import { ApiError, problemIn } from "@ogcloud/api-client";
 import type { ApiConnection } from "@ogcloud/api-client/react";
 
 /**
@@ -26,18 +26,21 @@ export async function uploadWithProgress<T>(
       reject(new Error(`POST ${path} failed before an answer`));
     request.onload = () => {
       const text = request.responseText;
-      if (request.status >= 200 && request.status < 300) {
-        resolve(JSON.parse(text) as T);
+      if (request.status < 200 || request.status >= 300) {
+        reject(
+          new ApiError("POST", path, request.status, problemIn(text), text),
+        );
         return;
       }
-      let problem: Problem | undefined;
       try {
-        problem = JSON.parse(text) as Problem;
-      } catch {
-        // Not a ProblemDetail; the error quotes the text instead.
-        problem = undefined;
+        resolve(JSON.parse(text) as T);
+      } catch (error) {
+        reject(
+          new Error(`POST ${path} answered ${request.status} without JSON`, {
+            cause: error,
+          }),
+        );
       }
-      reject(new ApiError("POST", path, request.status, problem, text));
     };
     request.send(file);
   });
@@ -54,7 +57,7 @@ export async function downloadFile(
   });
   if (!response.ok) {
     const text = await response.text();
-    throw new ApiError("GET", path, response.status, undefined, text);
+    throw new ApiError("GET", path, response.status, problemIn(text), text);
   }
   saveBlob(await response.blob(), filename);
 }
@@ -74,11 +77,14 @@ export function saveJson(data: unknown, filename: string): void {
   );
 }
 
+// Some browsers read the blob only after the click returns, so it stays valid for a while.
+const REVOKE_AFTER_MS = 60_000;
+
 function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
 }

@@ -35,12 +35,14 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { loadFailure } from "../../errors.ts";
 import {
   contractSchema,
   keepingMaintenance,
   useViewSettingsForm,
 } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
+import { LoadFailed } from "../../load-failed.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
@@ -244,6 +246,7 @@ function LivePanel({
     at: new Date(point.at),
     value: point.players,
   }));
+  const failure = loadFailure(history);
 
   return (
     <Card title={t("groups.detail.live")}>
@@ -271,7 +274,9 @@ function LivePanel({
               })}
             </dd>
           </dl>
-          {points.length < 2 ? null : (
+          {failure !== undefined && points.length === 0 ? (
+            <LoadFailed failure={failure} />
+          ) : points.length < 2 ? null : (
             <TimeSeriesChart
               label={t("groups.detail.chart", { id: groupId })}
               series={[{ name: t("overview.players.series"), points }]}

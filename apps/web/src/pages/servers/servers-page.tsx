@@ -15,6 +15,7 @@ import { Plus, Server, SquareTerminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
+import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { CommandDialog } from "./command-dialog.tsx";
@@ -166,6 +167,7 @@ export function ServersPage() {
         <DataTable
           label={t("nav.servers")}
           data={shown}
+          failure={loadFailure(servers)}
           columns={serverColumns}
           getRowId={(server) => server.id}
           actions={actions.actionsFor}
