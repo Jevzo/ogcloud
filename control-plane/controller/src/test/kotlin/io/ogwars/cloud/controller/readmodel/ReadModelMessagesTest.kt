@@ -1,8 +1,6 @@
 package io.ogwars.cloud.controller.readmodel
 
-import io.ogwars.cloud.domain.group.GroupId
-import io.ogwars.cloud.domain.network.NetworkSettings
-import io.ogwars.cloud.domain.network.RoutingStrategy
+import io.ogwars.cloud.domain.network.networkSettings
 import io.ogwars.cloud.domain.store.Revisioned
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -12,22 +10,11 @@ class ReadModelMessagesTest {
     @Test
     fun `network settings carry their server-list texts rendered for new and old clients`() {
         val settings =
-            NetworkSettings(
-                maintenance = false,
+            networkSettings(
                 motd = "<gradient:#ff0000:#0000ff>OgW</gradient> <gray>\"net\"",
                 maintenanceMotd = "<red>Closed",
                 versionName = "<gold>OgWars",
                 maintenanceVersionName = "<#aa0000>Maintenance",
-                maxPlayers = 100,
-                defaultGroupId = GroupId("lobby"),
-                routingStrategy = RoutingStrategy.LEAST_FILLED,
-                permissionSystemEnabled = true,
-                tablistEnabled = false,
-                tablistHeader = "",
-                tablistFooter = "",
-                maintenanceKickMessage = "",
-                eulaAcceptedAt = null,
-                requireMinecraftLink = false,
             )
 
         val texts = ReadModelMessages.networkSettings(Revisioned(settings, 3)).serverList
@@ -40,5 +27,14 @@ class ReadModelMessagesTest {
         texts.maintenanceMotdLegacy shouldBe "§cClosed"
         texts.versionNameLegacy shouldBe "§6OgWars"
         texts.maintenanceVersionNameLegacy shouldBe "§4Maintenance"
+    }
+
+    @Test
+    fun `a stored text from before a rule is shown as written instead of failing the read model`() {
+        val texts =
+            ReadModelMessages.networkSettings(Revisioned(networkSettings(motd = "I <3 OgCloud"), 1)).serverList
+
+        texts.motdJson shouldBe """{"text":"","extra":[{"text":"I <3 OgCloud"}]}"""
+        texts.motdLegacy shouldBe "I <3 OgCloud"
     }
 }

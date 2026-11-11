@@ -2154,6 +2154,7 @@ components:
           - TABLIST_HEADER
           - TABLIST_FOOTER
           - MAINTENANCE_KICK_MESSAGE
+          - KICK_MESSAGE
           - NPC_TITLE
           - NPC_SUBTITLE
       required:
@@ -2162,12 +2163,31 @@ components:
     TextErrorView:
       type: object
       properties:
+        code:
+          type: string
+          enum:
+          - UNKNOWN_TAG
+          - LONE_ANGLE
+          - BAD_COLOUR
+          - COLOUR_COUNT
+          - GRADIENT_STOPS
+          - TAG_ARGUMENTS
+          - UNMATCHED_CLOSE
+          - UNKNOWN_PLACEHOLDER
+          - MISSING_PLACEHOLDER
+          - SECTION_SIGN
+          - TOO_LONG
         offset:
+          type: integer
+          format: int32
+        length:
           type: integer
           format: int32
         reason:
           type: string
       required:
+      - code
+      - length
       - offset
       - reason
     TextPreview:
@@ -2177,6 +2197,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TextErrorView"
+        rendering:
+          oneOf:
+          - $ref: "#/components/schemas/TextRendering"
+          - type: "null"
+      required:
+      - errors
+    TextRendering:
+      type: object
+      properties:
         modern:
           type: array
           items:
@@ -2186,7 +2215,6 @@ components:
           items:
             $ref: "#/components/schemas/TextSpanView"
       required:
-      - errors
       - legacy
       - modern
     TextSpanView:

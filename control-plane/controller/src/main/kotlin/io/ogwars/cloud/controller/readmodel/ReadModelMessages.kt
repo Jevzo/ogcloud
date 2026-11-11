@@ -17,8 +17,10 @@ import io.ogwars.cloud.domain.player.Player
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.livestate.toProto
 import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.describe
 import io.ogwars.cloud.text.toJson
 import io.ogwars.cloud.text.toLegacy
+import org.slf4j.LoggerFactory
 import io.ogwars.cloud.domain.permission.PermissionGroup as DomainPermissionGroup
 
 /**
@@ -26,6 +28,8 @@ import io.ogwars.cloud.domain.permission.PermissionGroup as DomainPermissionGrou
  * update only when it is newer than its cached entry and drops the entry on a delete.
  */
 object ReadModelMessages {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun networkSettings(settings: Revisioned<NetworkSettings>): NetworkSettingsUpdated {
         val s = settings.value
         return NetworkSettingsUpdated
@@ -50,18 +54,27 @@ object ReadModelMessages {
 
     /** The status ping's texts, rendered here so the load balancer parses no tags (D-0202, D-0204). */
     private fun serverList(s: NetworkSettings): ServerListTexts {
-        val motd = RichText.parseValid(s.motd)
-        val maintenanceMotd = RichText.parseValid(s.maintenanceMotd)
+        val motd = stored("motd", s.motd)
+        val maintenanceMotd = stored("maintenanceMotd", s.maintenanceMotd)
         return ServerListTexts
             .newBuilder()
             .setMotdJson(motd.toJson())
             .setMotdLegacy(motd.toLegacy())
             .setMaintenanceMotdJson(maintenanceMotd.toJson())
             .setMaintenanceMotdLegacy(maintenanceMotd.toLegacy())
-            .setVersionNameLegacy(RichText.parseValid(s.versionName).toLegacy())
-            .setMaintenanceVersionNameLegacy(RichText.parseValid(s.maintenanceVersionName).toLegacy())
+            .setVersionNameLegacy(stored("versionName", s.versionName).toLegacy())
+            .setMaintenanceVersionNameLegacy(stored("maintenanceVersionName", s.maintenanceVersionName).toLegacy())
             .build()
     }
+
+    /** Texts are checked when saved; one from before a rule is shown as written, never failing the read model (D-0205). */
+    private fun stored(
+        label: String,
+        source: String,
+    ): RichText =
+        RichText.stored(source) { errors ->
+            log.warn("The network's {} is shown as written, since it is not valid: {}", label, errors.describe())
+        }
 
     fun group(group: Revisioned<Group>): GroupUpdated =
         GroupUpdated

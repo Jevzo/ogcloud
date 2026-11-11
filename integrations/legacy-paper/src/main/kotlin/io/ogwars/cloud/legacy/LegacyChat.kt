@@ -2,6 +2,7 @@ package io.ogwars.cloud.legacy
 
 import io.ogwars.cloud.node.core.format.ChatFormat
 import io.ogwars.cloud.node.core.runtime.ServerRuntime
+import io.ogwars.cloud.text.LEGACY_RESET
 import io.ogwars.cloud.text.RichText
 import io.ogwars.cloud.text.endColor
 import io.ogwars.cloud.text.legacyCode
@@ -14,7 +15,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent
 internal class LegacyChat(
     private val runtime: ServerRuntime,
 ) : Listener {
-    private val chat = ChatFormat(runtime.messages)
+    private val chat = ChatFormat(runtime.messages, runtime.texts)
 
     @EventHandler
     fun onChat(event: AsyncPlayerChatEvent) {
@@ -27,9 +28,9 @@ internal class LegacyChat(
 
         /** As Paper's chat: the message takes the head's end colour, but none of its formats. */
         fun format(head: RichText): String {
-            val color = head.endColor()?.let { "§" + legacyCode(it) }.orEmpty()
+            val color = head.endColor()?.legacyCode().orEmpty()
             // The format is a printf pattern, so a `%` in a prefix must not read as a placeholder.
-            return head.toLegacy().replace("%", "%%") + "§r" + color + MESSAGE
+            return head.toLegacy().replace("%", "%%") + LEGACY_RESET + color + MESSAGE
         }
     }
 }

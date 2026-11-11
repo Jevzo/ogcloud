@@ -806,7 +806,7 @@ type PermissionGroup struct {
 	Version     uint64   `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	// Players without a rank get the default group.
 	IsDefault bool `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
-	// The player's name, shown as {name}; empty for the catalog's default (D-0203).
+	// A tag text showing the player's name as {name}; empty for the catalog's default (D-0203).
 	NameFormat    string `protobuf:"bytes,11,opt,name=name_format,json=nameFormat,proto3" json:"name_format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

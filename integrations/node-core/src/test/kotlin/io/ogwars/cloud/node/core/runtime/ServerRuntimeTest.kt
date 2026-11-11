@@ -15,6 +15,7 @@ import io.ogwars.cloud.contracts.node.v1.Welcome
 import io.ogwars.cloud.node.core.query.FakeQueries
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.GameState
 import io.ogwars.cloud.sdk.GroupType
 import io.ogwars.cloud.sdk.LiveMessage
@@ -43,6 +44,7 @@ class ServerRuntimeTest {
             platform,
             queries,
             messages,
+            StoredTexts(),
             scheduler.executor,
             Runnable::run,
             mockk(),

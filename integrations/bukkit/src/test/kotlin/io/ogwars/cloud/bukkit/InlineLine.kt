@@ -1,8 +1,8 @@
 package io.ogwars.cloud.bukkit
 
-import io.ogwars.cloud.contracts.node.v1.PermissionGroup
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.Color
 import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.legacyTeamPrefix
 import io.ogwars.cloud.text.toLegacy
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
@@ -33,9 +33,10 @@ class InlineLine : BukkitLine {
 
     override fun styleTeam(
         team: Team,
-        group: PermissionGroup,
+        prefix: RichText,
+        nameColor: Color?,
     ) {
         @Suppress("DEPRECATION") // The 1.8 API the shared code targets has only string prefixes.
-        team.prefix = storedText(group.tabPrefix).toLegacy()
+        team.prefix = legacyTeamPrefix(prefix, nameColor)
     }
 }

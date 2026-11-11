@@ -293,6 +293,7 @@ export const TextPreviewRequestField = {
   TABLIST_HEADER: 'TABLIST_HEADER',
   TABLIST_FOOTER: 'TABLIST_FOOTER',
   MAINTENANCE_KICK_MESSAGE: 'MAINTENANCE_KICK_MESSAGE',
+  KICK_MESSAGE: 'KICK_MESSAGE',
   NPC_TITLE: 'NPC_TITLE',
   NPC_SUBTITLE: 'NPC_SUBTITLE',
 } as const;
@@ -302,8 +303,27 @@ export interface TextPreviewRequest {
   field: TextPreviewRequestField;
 }
 
+export type TextErrorViewCode = typeof TextErrorViewCode[keyof typeof TextErrorViewCode];
+
+
+export const TextErrorViewCode = {
+  UNKNOWN_TAG: 'UNKNOWN_TAG',
+  LONE_ANGLE: 'LONE_ANGLE',
+  BAD_COLOUR: 'BAD_COLOUR',
+  COLOUR_COUNT: 'COLOUR_COUNT',
+  GRADIENT_STOPS: 'GRADIENT_STOPS',
+  TAG_ARGUMENTS: 'TAG_ARGUMENTS',
+  UNMATCHED_CLOSE: 'UNMATCHED_CLOSE',
+  UNKNOWN_PLACEHOLDER: 'UNKNOWN_PLACEHOLDER',
+  MISSING_PLACEHOLDER: 'MISSING_PLACEHOLDER',
+  SECTION_SIGN: 'SECTION_SIGN',
+  TOO_LONG: 'TOO_LONG',
+} as const;
+
 export interface TextErrorView {
+  code: TextErrorViewCode;
   offset: number;
+  length: number;
   reason: string;
 }
 
@@ -318,10 +338,14 @@ export interface TextSpanView {
   obfuscated: boolean;
 }
 
-export interface TextPreview {
-  errors: TextErrorView[];
+export interface TextRendering {
   modern: TextSpanView[];
   legacy: TextSpanView[];
+}
+
+export interface TextPreview {
+  errors: TextErrorView[];
+  rendering?: TextRendering | null;
 }
 
 export interface SetupRequest {

@@ -1,12 +1,9 @@
 package io.ogwars.cloud.legacy
 
 import io.ogwars.cloud.bukkit.BukkitLine
-import io.ogwars.cloud.contracts.node.v1.PermissionGroup
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.Color
 import io.ogwars.cloud.text.RichText
-import io.ogwars.cloud.text.TextField
-import io.ogwars.cloud.text.firstColor
-import io.ogwars.cloud.text.legacyCode
+import io.ogwars.cloud.text.legacyTeamPrefix
 import io.ogwars.cloud.text.toLegacy
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
@@ -37,31 +34,12 @@ internal class LegacyLine(
         text: RichText,
     ) = to.sendMessage(text.toLegacy())
 
-    /**
-     * 1.8 colours a name with the prefix's last code, so the name format's first colour goes last. 1.8 takes 16
-     * characters, so gradients take their first colour (D-0204) and the prefix is cut.
-     */
+    /** 1.8 colours a name with the prefix's last code, so the name's colour goes last (D-0204). */
     override fun styleTeam(
         team: Team,
-        group: PermissionGroup,
+        prefix: RichText,
+        nameColor: Color?,
     ) {
-        team.prefix = teamPrefix(group)
-    }
-
-    companion object {
-        private const val PREFIX_LIMIT = 16
-        private const val SECTION = '§'
-
-        fun teamPrefix(group: PermissionGroup): String {
-            val nameColor =
-                storedText(group.nameFormat)
-                    .fill(TextField.NAME_FORMAT.samples)
-                    .firstColor()
-                    ?.let { "$SECTION${legacyCode(it)}" }
-                    .orEmpty()
-            return (storedText(group.tabPrefix).toLegacy(TextField.TAB_PREFIX.collapsesOnLegacy) + nameColor)
-                .take(PREFIX_LIMIT)
-                .removeSuffix(SECTION.toString())
-        }
+        team.prefix = legacyTeamPrefix(prefix, nameColor)
     }
 }

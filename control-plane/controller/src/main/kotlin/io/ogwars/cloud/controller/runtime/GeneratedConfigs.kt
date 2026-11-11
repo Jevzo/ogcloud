@@ -5,7 +5,7 @@ import io.ogwars.cloud.domain.runtime.RuntimeProfiles
 
 /**
  * Config files the controller writes into bundles. Keys left out keep their platform defaults; the OgCloud plugins
- * set everything dynamic (servers, MOTD, protocol per backend) at runtime.
+ * set what changes at runtime (servers, protocol per backend), and the load balancer answers status pings (D-0202).
  */
 object GeneratedConfigs {
     /**

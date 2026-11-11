@@ -1,8 +1,10 @@
 package io.ogwars.cloud.api.web
 
 import io.ogwars.cloud.api.templates.UploadTooLargeException
+import io.ogwars.cloud.api.text.TextErrorView
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.StaleUpdateException
+import io.ogwars.cloud.domain.text.InvalidTextException
 import io.ogwars.cloud.messaging.PublishException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
@@ -22,6 +24,13 @@ class ApiErrors {
     @ExceptionHandler(IllegalArgumentException::class)
     fun badRequest(e: IllegalArgumentException): ProblemDetail = problem(HttpStatus.BAD_REQUEST, e)
 
+    /** In-game texts a field may not hold, each error coded so the dashboard can show it at its place (D-0205). */
+    @ExceptionHandler(InvalidTextException::class)
+    fun invalidText(e: InvalidTextException): ProblemDetail =
+        problem(HttpStatus.BAD_REQUEST, e).apply {
+            setProperty(TEXT_ERRORS, e.errors.mapValues { (_, errors) -> errors.map(TextErrorView::of) })
+        }
+
     /** Someone changed the record since the caller read it (D-0069): reload and retry. */
     @ExceptionHandler(StaleUpdateException::class)
     fun stale(e: StaleUpdateException): ProblemDetail = problem(HttpStatus.CONFLICT, e)
@@ -36,6 +45,10 @@ class ApiErrors {
 
     @ExceptionHandler(UploadTooLargeException::class)
     fun tooLarge(e: UploadTooLargeException): ProblemDetail = problem(HttpStatus.CONTENT_TOO_LARGE, e)
+
+    private companion object {
+        const val TEXT_ERRORS = "textErrors"
+    }
 
     private fun problem(
         status: HttpStatus,

@@ -43,6 +43,7 @@ interface RuntimeNpc {
         /** [handler] runs on the clicking player's thread: the main thread, or the player's region on Folia. */
         fun onClick(handler: Consumer<NpcClick>): Builder
 
+        /** Throws IllegalArgumentException naming each error when the title or subtitle is not a valid tag text. */
         fun spawn(): RuntimeNpc
     }
 }

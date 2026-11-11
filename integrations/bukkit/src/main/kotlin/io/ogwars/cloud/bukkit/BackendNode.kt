@@ -36,7 +36,7 @@ class BackendNode(
     private val pod = NodePod(NodeType.NODE_TYPE_BACKEND, integrationVersion)
     val identity = pod.identity
     private val ticks = TickSampler()
-    private val tablist = TeamTablist(server, line) { runtime.permissions.rank(it) }
+    private val tablist = TeamTablist(server, line, pod.texts) { runtime.permissions.rank(it) }
     private val npcs =
         NpcHub(
             npcPackets,
@@ -45,6 +45,7 @@ class BackendNode(
             { player, group, strategy -> runtime.api.transferPlayerToGroup(player, group, strategy) },
             pod.scheduler,
             Clock.systemUTC(),
+            pod.texts,
         )
     private val npcClicks =
         PacketEvents.getAPI().eventManager.registerListener(
@@ -57,6 +58,7 @@ class BackendNode(
             BukkitPlatform(server, identity.serverId, tablist, npcs, line, ticks, plugin.logger),
             pod.connection.queries,
             pod.messages,
+            pod.texts,
             pod.scheduler,
             pod.connection.callbacks,
             HubRuntimeNpcs(npcs) { player, task -> server.getPlayer(player)?.let { line.player(it, task) } },
@@ -73,7 +75,8 @@ class BackendNode(
         val tracker = NpcTracker(server, npcs, line)
         (listOf(BackendListeners(runtime, tokens, tablist, plugin.logger), tracker, ticks) + extras)
             .forEach { server.pluginManager.registerEvents(it, plugin) }
-        val npcCommands = NpcCommands(npcs, pod.messages, identity.groupId, tracker, runtime::requestNpcChange)
+        val npcCommands =
+            NpcCommands(npcs, pod.messages, pod.texts, identity.groupId, tracker, runtime::requestNpcChange)
         val command = checkNotNull(server.getPluginCommand(COMMAND)) { "plugin.yml lacks /$COMMAND" }
         command.executor = BukkitCommand(CommandTree(pod.messages, npcCommands.subcommands, Message.INFO), line)
         OgCloud.install(runtime.api)

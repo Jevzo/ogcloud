@@ -36,13 +36,8 @@ class Messages(
             "${message.key} takes ${message.placeholders}, got ${given.keys}"
         }
         val filled =
-            given.mapNotNull { (name, value) ->
-                value?.let {
-                    name to
-                        (it as? RichText ?: RichText.plain(it.toString()))
-                }
-            }
-        return texts.getValue(message).insert(filled.toMap())
+            given.filterValues { it != null }.mapValues { (_, value) -> value as? RichText ?: RichText.plain("$value") }
+        return texts.getValue(message).insert(filled)
     }
 
     companion object {

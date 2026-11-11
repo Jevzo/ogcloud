@@ -43,7 +43,7 @@ class BackendListeners(
             is HandshakeVerdict.Refused -> {
                 logger.warning("Refused a handshake from ${event.originalSocketAddressHostname}: ${verdict.reason}")
                 event.isFailed = true
-                // Both lines take a legacy string here.
+                // The 1.8 API the shared code targets takes only a string, so Paper gets nearest-colour legacy text too.
                 event.failMessage = runtime.messages.text(Message.KICK_LOGIN_FAILED).toLegacy()
             }
         }

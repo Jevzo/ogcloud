@@ -23,6 +23,8 @@ internal class TablistUpdater(
             return
         }
         shown = true
+        val header = runtime.texts.parse(settings.tablistHeader)
+        val footer = runtime.texts.parse(settings.tablistFooter)
         proxy.allPlayers.forEach { player ->
             val serverId = player.currentServer.map { it.serverInfo.name }.orElse(null)
             val backend = serverId?.let { runtime.directory[it] }
@@ -42,8 +44,8 @@ internal class TablistUpdater(
                             .orEmpty(),
                 )
             player.sendPlayerListHeaderAndFooter(
-                Tablist.fill(settings.tablistHeader, values).toComponent(),
-                Tablist.fill(settings.tablistFooter, values).toComponent(),
+                Tablist.fill(header, values).toComponent(),
+                Tablist.fill(footer, values).toComponent(),
             )
         }
     }

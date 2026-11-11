@@ -5,9 +5,11 @@ import io.ogwars.cloud.contracts.node.v1.Location
 import io.ogwars.cloud.contracts.node.v1.NpcChangeRequest
 import io.ogwars.cloud.node.core.command.CommandSender
 import io.ogwars.cloud.node.core.command.CommandTree
+import io.ogwars.cloud.node.core.command.prefixed
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.text.RichText
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
@@ -47,7 +49,15 @@ class NpcCommandsTest {
     private val queries =
         mockk<NodeQueries> { every { npcs("lobby") } returns completedFuture(listOf(shop, guide, portal)) }
     private val hub =
-        NpcHub(RecordingPackets(), queries, "lobby", { _, _, _ -> }, mockk(relaxed = true), Clock.systemUTC())
+        NpcHub(
+            RecordingPackets(),
+            queries,
+            "lobby",
+            { _, _, _ -> },
+            mockk(relaxed = true),
+            Clock.systemUTC(),
+            StoredTexts(),
+        )
     private val here = NpcLocation("world", 10.5, 70.0, -3.0, 90f, 0f)
     private val teleports = mutableListOf<NpcLocation>()
     private val sent = mutableListOf<NpcChangeRequest>()
@@ -55,6 +65,7 @@ class NpcCommandsTest {
         NpcCommands(
             hub,
             messages,
+            StoredTexts(),
             "lobby",
             object : NpcPlaces {
                 override fun location(player: UUID) = here
@@ -150,8 +161,32 @@ class NpcCommandsTest {
         admin.replies shouldContain prefixed(Message.NPC_WORLD_MISSING, "world" to "void")
     }
 
+    @Test
+    fun `an invalid title is explained instead of sent, and the API never sees it`() {
+        run("npc create <frog>Shop")
+        run("npc title 2c3d4e5f {name} wins")
+
+        sent shouldBe emptyList()
+        admin.replies shouldContain
+            prefixed(Message.NPC_TEXT_INVALID, "errors" to "unknown tag <frog> (at character 0)")
+        admin.replies shouldContain
+            prefixed(
+                Message.NPC_TEXT_INVALID,
+                "errors" to "{name} is no placeholder here; this text offers {players}, {servers} (at character 0)",
+            )
+    }
+
+    @Test
+    fun `a valid title and the off word reach the API`() {
+        run("npc title 2c3d4e5f <gold>{players} playing")
+        run("npc subtitle 2c3d4e5f off")
+
+        sent.map { it.update.title } shouldBe listOf("<gold>{players} playing", "")
+        sent.last().update.hasSubtitle() shouldBe true
+    }
+
     private fun prefixed(
         message: Message,
         vararg values: Pair<String, Any?>,
-    ) = messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values)
+    ) = messages.prefixed(message, *values)
 }

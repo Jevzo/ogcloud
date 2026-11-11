@@ -7,6 +7,7 @@ import io.ogwars.cloud.contracts.node.v1.NpcAction
 import io.ogwars.cloud.contracts.node.v1.NpcTransfer
 import io.ogwars.cloud.contracts.node.v1.ServerInfo
 import io.ogwars.cloud.node.core.query.NodeQueries
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.text.RichText
 import io.ogwars.cloud.text.toLegacy
 import com.github.retrooper.packetevents.protocol.player.User
@@ -101,7 +102,7 @@ class NpcHubTest {
         NpcHub(packets, queries, "lobby", { player, group, strategy ->
             transfers +=
                 Triple(player, group, strategy)
-        }, scheduler, clock)
+        }, scheduler, clock, StoredTexts())
     private val steve = UUID.randomUUID()
     private val shop =
         ManagedNpc

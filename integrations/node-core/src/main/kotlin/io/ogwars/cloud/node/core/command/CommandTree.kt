@@ -14,12 +14,18 @@ interface CommandSender {
     fun reply(text: RichText)
 }
 
+/** A catalog text behind OgCloud's prefix, as command replies show it. */
+fun Messages.prefixed(
+    message: Message,
+    vararg values: Pair<String, Any?>,
+): RichText = text(Message.PREFIX) + RichText.plain(" ") + text(message, *values)
+
 /** Replies with a catalog text behind OgCloud's prefix. */
 fun CommandSender.say(
     messages: Messages,
     message: Message,
     vararg values: Pair<String, Any?>,
-) = reply(messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values))
+) = reply(messages.prefixed(message, *values))
 
 class Argument(
     val name: String,

@@ -153,6 +153,11 @@ class LiveDataTest(
             ).statusCode() shouldBe
             BAD_REQUEST
         oauth.call("POST", "$PLAYERS/$offline/transfer", admin, transfer(kick = "bye")).statusCode() shouldBe CONFLICT
+        // A kick message is a tag text, checked like a stored one (D-0206), and never blank.
+        val invalid = oauth.call("POST", "$PLAYERS/$player/transfer", admin, transfer(kick = "<frog>bye"))
+        invalid.statusCode() shouldBe BAD_REQUEST
+        (oauth.json(invalid)["textErrors"] as Map<*, *>).keys shouldBe setOf("kickMessage")
+        oauth.call("POST", "$PLAYERS/$player/transfer", admin, transfer(kick = " ")).statusCode() shouldBe BAD_REQUEST
         probe.received(
             KafkaTopics.PLAYER_TRANSFER,
         ) { TransferRequested.parseFrom(it).playerUuid == player.toString() } shouldBe

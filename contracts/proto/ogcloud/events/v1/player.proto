@@ -45,7 +45,7 @@ message TransferRequested {
   oneof destination {
     string server_id = 4;
     string group_id = 5;
-    // Disconnect with this message instead of moving.
+    // Disconnect with this tag text (D-0206) instead of moving; empty shows the catalog's shutdown message.
     string kick_message = 6;
   }
   // Unset uses the network's routing strategy.

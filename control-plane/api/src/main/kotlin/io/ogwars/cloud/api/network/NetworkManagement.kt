@@ -32,6 +32,7 @@ class NetworkManagement(
         expectedVersion: Long,
         settings: NetworkSettings,
     ): Revisioned<NetworkSettings> {
+        settings.requireValidTexts()
         network.save(expectedVersion, settings.copy(eulaAcceptedAt = network.load().value.eulaAcceptedAt))
         announcements.networkSettings(actor)
         return get()

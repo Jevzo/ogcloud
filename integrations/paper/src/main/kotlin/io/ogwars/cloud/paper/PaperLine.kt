@@ -1,13 +1,11 @@
 package io.ogwars.cloud.paper
 
 import io.ogwars.cloud.bukkit.BukkitLine
-import io.ogwars.cloud.contracts.node.v1.PermissionGroup
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.Color
 import io.ogwars.cloud.text.RichText
-import io.ogwars.cloud.text.TextField
-import io.ogwars.cloud.text.firstColor
 import io.ogwars.cloud.text.nearestNamed
 import io.ogwars.cloud.text.toComponent
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -41,18 +39,14 @@ internal class PaperLine(
         text: RichText,
     ) = to.sendMessage(text.toComponent())
 
-    /**
-     * Current clients colour the name with the team colour, a named colour only, so it is the name format's first
-     * colour's nearest one (D-0203); the prefix keeps every colour.
-     */
+    /** The team colour is a named colour only, so names take the nearest one; the prefix keeps every colour. */
     override fun styleTeam(
         team: Team,
-        group: PermissionGroup,
+        prefix: RichText,
+        nameColor: Color?,
     ) {
-        team.prefix(storedText(group.tabPrefix).toComponent())
-        storedText(group.nameFormat)
-            .fill(TextField.NAME_FORMAT.samples)
-            .firstColor()
-            ?.let { team.color(it.nearestNamed()) }
+        team.prefix(prefix.toComponent())
+        // White, as names show without a colour, so a team whose format lost its colour drops the old one.
+        team.color(nameColor?.nearestNamed() ?: NamedTextColor.WHITE)
     }
 }

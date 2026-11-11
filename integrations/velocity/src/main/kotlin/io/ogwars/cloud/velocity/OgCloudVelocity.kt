@@ -64,6 +64,7 @@ class OgCloudVelocity
                     VelocityPlatform(proxy, ViaProtocols.ifInstalled(proxy)),
                     pod.connection.queries,
                     pod.messages,
+                    pod.texts,
                     pod.scheduler,
                     pod.connection.callbacks,
                     Clock.systemUTC(),

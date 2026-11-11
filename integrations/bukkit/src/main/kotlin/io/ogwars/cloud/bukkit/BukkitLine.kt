@@ -1,6 +1,6 @@
 package io.ogwars.cloud.bukkit
 
-import io.ogwars.cloud.contracts.node.v1.PermissionGroup
+import io.ogwars.cloud.text.Color
 import io.ogwars.cloud.text.RichText
 import org.bukkit.Location
 import org.bukkit.command.CommandSender
@@ -32,9 +32,10 @@ interface BukkitLine {
         text: RichText,
     )
 
-    /** Shows a permission group on its tablist team. */
+    /** Shows a permission group on its tablist team: its tab prefix, and the colour its name format shows names in. */
     fun styleTeam(
         team: Team,
-        group: PermissionGroup,
+        prefix: RichText,
+        nameColor: Color?,
     )
 }

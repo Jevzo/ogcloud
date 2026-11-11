@@ -8,8 +8,7 @@ import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.crashloop.CrashLoopPolicy
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
-import io.ogwars.cloud.domain.network.NetworkSettings
-import io.ogwars.cloud.domain.network.RoutingStrategy
+import io.ogwars.cloud.domain.network.networkSettings
 import io.ogwars.cloud.domain.server.LifecyclePolicy
 import io.ogwars.cloud.domain.server.T0
 import io.ogwars.cloud.livestate.ValkeyCrashFailureStore
@@ -52,21 +51,5 @@ class LifecycleFixture(
     private fun settings(
         eulaAccepted: Boolean,
         maintenance: Boolean,
-    ) = NetworkSettings(
-        maintenance = maintenance,
-        motd = "OgCloud",
-        maintenanceMotd = "Maintenance",
-        versionName = "OgCloud",
-        maintenanceVersionName = "Maintenance",
-        maxPlayers = 1000,
-        defaultGroupId = GroupId("lobby"),
-        routingStrategy = RoutingStrategy.entries.first(),
-        permissionSystemEnabled = true,
-        tablistEnabled = false,
-        tablistHeader = "",
-        tablistFooter = "",
-        maintenanceKickMessage = "Maintenance",
-        eulaAcceptedAt = if (eulaAccepted) T0 else null,
-        requireMinecraftLink = false,
-    )
+    ) = networkSettings(maintenance = maintenance, eulaAcceptedAt = if (eulaAccepted) T0 else null)
 }

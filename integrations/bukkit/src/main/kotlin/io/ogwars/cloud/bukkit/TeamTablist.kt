@@ -2,6 +2,9 @@ package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.node.core.format.Tablist
 import io.ogwars.cloud.node.core.permission.Rank
+import io.ogwars.cloud.node.core.text.StoredTexts
+import io.ogwars.cloud.text.Placeholders
+import io.ogwars.cloud.text.colorOf
 import org.bukkit.Server
 import org.bukkit.entity.Player
 import org.bukkit.scoreboard.Scoreboard
@@ -9,11 +12,13 @@ import java.util.UUID
 
 /**
  * Tablist names by rank, as v1: every player gets their own scoreboard with one team per permission group, so the
- * tablist sorts by weight and shows each group's prefix and name colour. Runs on the server thread.
+ * tablist sorts by weight and shows each group's prefix and the colour its name format shows names in (D-0206). Runs
+ * on the server thread.
  */
 class TeamTablist(
     private val server: Server,
     private val line: BukkitLine,
+    private val texts: StoredTexts,
     private val rankOf: (UUID) -> Rank?,
 ) {
     var enabled = false
@@ -51,7 +56,7 @@ class TeamTablist(
         leaveTeams(board, player.name)
         val group = rankOf(player.uniqueId)?.group ?: return
         val team = board.getTeam(Tablist.teamName(group)) ?: board.registerNewTeam(Tablist.teamName(group))
-        line.styleTeam(team, group)
+        line.styleTeam(team, texts.parse(group.tabPrefix), texts.parse(group.nameFormat).colorOf(Placeholders.NAME))
         team.addEntry(player.name)
     }
 

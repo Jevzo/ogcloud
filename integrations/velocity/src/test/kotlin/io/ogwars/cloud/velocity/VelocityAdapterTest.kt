@@ -10,7 +10,7 @@ import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.state.Backend
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.RichText
 import io.ogwars.cloud.text.toPlain
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.connection.DisconnectEvent
@@ -146,7 +146,7 @@ class VelocityAdapterTest {
         val runtime = mockk<ProxyRuntime>()
         val bypass = slot<() -> Boolean>()
         every { runtime.login(steve, "Steve", 47, "1.2.3.4", capture(bypass)) } returns
-            CompletableFuture.completedFuture(LoginDecision.Denied(storedText("<red>Maintenance")))
+            CompletableFuture.completedFuture(LoginDecision.Denied(RichText.parseValid("<red>Maintenance")))
         val listeners = VelocityListeners(mockk(), runtime)
         val player = player(currentServer = null)
         val event = LoginEvent(player, "")
@@ -199,7 +199,7 @@ class VelocityAdapterTest {
     // Paper checks its limit only at the end of a switch, when the player can no longer go back (D-0142).
     @Test
     fun `a player a full backend turns away mid-switch goes to another backend of its group`() {
-        val runtime = mockk<ProxyRuntime>()
+        val runtime = mockk<ProxyRuntime> { every { messages } returns Messages.load() }
         val full = registered(backend.id)
         val other = registered("other")
         val proxy = mockk<ProxyServer> { every { getServer("other") } returns Optional.of(other) }
@@ -207,8 +207,9 @@ class VelocityAdapterTest {
         // Mid-switch the player has no server, so Velocity counts the refusal as a kick from the current one.
         val switching = player(currentServer = null)
         val serverFull = Component.translatable("multiplayer.disconnect.server_full")
-        // PandaSpigot 1.8 refuses in plain text.
+        // PandaSpigot 1.8 refuses in plain text; OgCloud's plugin there with the catalog's legacy text.
         val legacyFull = Component.text("The server is full!")
+        val ogcloudFull = Component.text("§cThis server is full.")
         val banned = Component.text("banned")
 
         fun turnedAway(reason: Component) =
@@ -222,15 +223,17 @@ class VelocityAdapterTest {
         every { runtime.refused(steve, backend.id) } returns Route.To(backend.copy(id = "other"))
         val redirected = turnedAway(serverFull)
         val legacyRedirected = turnedAway(legacyFull)
+        val ogcloudRedirected = turnedAway(ogcloudFull)
         val bannedThere = turnedAway(banned)
         every { runtime.refused(steve, backend.id) } returns Route.NoRoom
         val stranded = turnedAway(serverFull)
 
         (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
         (legacyRedirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
+        (ogcloudRedirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
         (bannedThere.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe banned
         (stranded.result as KickedFromServerEvent.DisconnectPlayer).reasonComponent shouldBe serverFull
-        verify(exactly = 3) { runtime.refused(steve, backend.id) }
+        verify(exactly = 4) { runtime.refused(steve, backend.id) }
     }
 
     @Test

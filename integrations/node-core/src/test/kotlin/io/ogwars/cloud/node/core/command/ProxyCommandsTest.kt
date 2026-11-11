@@ -2,6 +2,8 @@ package io.ogwars.cloud.node.core.command
 
 import io.ogwars.cloud.contracts.NodeErrors
 import io.ogwars.cloud.contracts.events.v1.GroupType
+import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.events.v1.NodeBroadcast
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.contracts.node.v1.AdminRequestResult
 import io.ogwars.cloud.contracts.node.v1.GroupInfo
@@ -19,7 +21,9 @@ import io.ogwars.cloud.node.core.runtime.NodeIdentity
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toLegacy
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -41,6 +45,7 @@ class ProxyCommandsTest {
             FakeProxyPlatform(),
             queries,
             messages,
+            StoredTexts(),
             ManualScheduler().executor,
             Runnable::run,
             Clock.fixed(now, ZoneOffset.UTC),
@@ -94,7 +99,28 @@ class ProxyCommandsTest {
     private fun said(
         message: Message,
         vararg values: Pair<String, Any?>,
-    ) = messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values)
+    ) = messages.prefixed(message, *values)
+
+    @Test
+    fun `network info shows the stored texts formatted`() {
+        session.listener.broadcast(
+            NodeBroadcast
+                .newBuilder()
+                .setNetworkSettings(
+                    NetworkSettingsUpdated
+                        .newBuilder()
+                        .setVersion(2)
+                        .setDefaultGroupId("lobby")
+                        .setMotd("<green>Hi")
+                        .setVersionName("<gold>OgWars"),
+                ).build(),
+        )
+
+        run("network info")
+
+        admin.replies.map { it.toLegacy() } shouldContain "§8| §6OgCloud §7>§r §7Version: §6OgWars"
+        admin.replies.map { it.toLegacy() } shouldContain "§8| §6OgCloud §7>§r §7MOTD: §aHi"
+    }
 
     @Test
     fun `servers are listed and found by display name`() {

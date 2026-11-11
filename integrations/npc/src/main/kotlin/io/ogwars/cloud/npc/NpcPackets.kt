@@ -193,7 +193,7 @@ class ModernNpcPackets : NpcPackets {
         user.sendPacket(WrapperPlayServerPlayerInfoRemove(npc.profile.uuid))
     }
 
-    /** PacketEvents downsamples the colours for older clients (D-0204). */
+    /** Older clients reach Paper through ViaBackwards on the proxy, which downsamples these colours (D-0204). */
     private fun line(text: RichText): List<EntityData<*>> =
         listOf(
             EntityData(NpcPackets.FLAGS_INDEX, EntityDataTypes.BYTE, NpcPackets.INVISIBLE),

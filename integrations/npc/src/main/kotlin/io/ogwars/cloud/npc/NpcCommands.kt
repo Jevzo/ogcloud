@@ -12,8 +12,10 @@ import io.ogwars.cloud.node.core.command.Subcommand
 import io.ogwars.cloud.node.core.command.say
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.TextField
+import io.ogwars.cloud.text.describe
 import java.util.Locale
 import java.util.UUID
 import io.ogwars.cloud.contracts.events.v1.RoutingStrategy as ProtoRoutingStrategy
@@ -37,6 +39,7 @@ interface NpcPlaces {
 class NpcCommands(
     private val hub: NpcHub,
     private val messages: Messages,
+    private val texts: StoredTexts,
     private val groupId: String,
     private val places: NpcPlaces,
     private val send: (NpcChangeRequest.Builder) -> Boolean,
@@ -65,10 +68,10 @@ class NpcCommands(
                 }
             },
             change(listOf("title"), listOf(npc, Argument("text", Argument.Kind.REST))) { call ->
-                update(call) { setTitle(text(call)) }
+                checked(call, TextField.NPC_TITLE, text(call)) { update(call) { setTitle(it) } }
             },
             change(listOf("subtitle"), listOf(npc, Argument("text", Argument.Kind.REST))) { call ->
-                update(call) { setSubtitle(text(call)) }
+                checked(call, TextField.NPC_SUBTITLE, text(call)) { update(call) { setSubtitle(it) } }
             },
             change(listOf("skin"), listOf(npc, Argument("clear"))) { call ->
                 if (!call.word("clear").equals(CLEAR, ignoreCase = true)) return@change usage(call, "skin <npc> $CLEAR")
@@ -135,7 +138,7 @@ class NpcCommands(
                 messages,
                 Message.NPC_LIST_ENTRY,
                 "npc" to short(it.npcId),
-                "title" to storedText(it.title),
+                "title" to texts.parse(it.title),
                 "world" to it.location.world,
                 "x" to round(it.location.x),
                 "y" to round(it.location.y),
@@ -155,8 +158,8 @@ class NpcCommands(
                 ?: return call.sender.say(messages, Message.NPC_NOT_LOOKING)
         val say = { message: Message, values: Array<Pair<String, Any?>> -> call.sender.say(messages, message, *values) }
         say(Message.NPC_INFO_HEADER, arrayOf("npc" to target.npcId))
-        say(Message.NPC_INFO_TITLE, arrayOf("title" to storedText(target.title)))
-        say(Message.NPC_INFO_SUBTITLE, arrayOf("subtitle" to storedText(target.subtitle)))
+        say(Message.NPC_INFO_TITLE, arrayOf("title" to texts.parse(target.title)))
+        say(Message.NPC_INFO_SUBTITLE, arrayOf("subtitle" to texts.parse(target.subtitle)))
         val at = target.location
         say(
             Message.NPC_INFO_LOCATION,
@@ -178,16 +181,36 @@ class NpcCommands(
     }
 
     /** A new NPC of this server's group where the player stands; the gateway gives it its id (D-0129). */
-    private fun create(call: Invocation) {
-        val here = places.location(call.player) ?: return positionUnknown(call)
-        val npc =
-            ManagedNpc
-                .newBuilder()
-                .setGroupId(groupId)
-                .setLocation(here.toProto())
-                .setTitle(call.optional("title").orEmpty())
-                .setLookAtPlayers(true)
-        send(call, NpcChangeRequest.newBuilder().setCreate(npc))
+    private fun create(call: Invocation) =
+        checked(call, TextField.NPC_TITLE, call.optional("title").orEmpty()) { title ->
+            val here = places.location(call.player) ?: return@checked positionUnknown(call)
+            val npc =
+                ManagedNpc
+                    .newBuilder()
+                    .setGroupId(groupId)
+                    .setLocation(here.toProto())
+                    .setTitle(title)
+                    .setLookAtPlayers(true)
+            send(call, NpcChangeRequest.newBuilder().setCreate(npc))
+        }
+
+    /** The API refuses an invalid text without telling the player, so it is checked here first (D-0205). */
+    private fun checked(
+        call: Invocation,
+        field: TextField,
+        text: String,
+        then: (String) -> Unit,
+    ) {
+        val errors = field.validate(text)
+        if (errors.isEmpty()) {
+            then(text)
+        } else {
+            call.sender.say(
+                messages,
+                Message.NPC_TEXT_INVALID,
+                "errors" to errors.describe(),
+            )
+        }
     }
 
     /** Sends only the fields [edit] sets, so edits made meanwhile elsewhere stay (D-0140). */

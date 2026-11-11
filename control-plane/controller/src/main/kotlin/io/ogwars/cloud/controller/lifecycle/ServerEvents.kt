@@ -88,7 +88,9 @@ class KafkaServerEvents(
                 .apply {
                     when (target) {
                         is TransferTarget.ToGroup -> setGroupId(target.groupId.value)
-                        TransferTarget.Kick -> setKickMessage(reason)
+
+                        // Empty: proxies show the catalog's shutdown message, never the internal reason.
+                        TransferTarget.Kick -> setKickMessage("")
                     }
                 }.build()
         // Waits, so the sweeper only marks a transfer as done once Kafka has it.

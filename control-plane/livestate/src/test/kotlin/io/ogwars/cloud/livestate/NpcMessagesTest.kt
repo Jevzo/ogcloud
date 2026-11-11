@@ -22,7 +22,7 @@ class NpcMessagesTest {
                 GroupId("lobby"),
                 Location("world", 1.5, 64.0, -3.25, 90f, 10f),
                 "<green>Shop",
-                "%players% online",
+                "{players} online",
                 NpcSkin("texture", "signature"),
                 lookAtPlayers = false,
                 leftClick = NpcAction.Transfer(GroupId("bedwars"), RoutingStrategy.ROUND_ROBIN),

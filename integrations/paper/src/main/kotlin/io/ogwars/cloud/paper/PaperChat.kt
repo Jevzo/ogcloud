@@ -13,13 +13,14 @@ import org.bukkit.event.Listener
 internal class PaperChat(
     private val runtime: ServerRuntime,
 ) : Listener {
-    private val chat = ChatFormat(runtime.messages)
+    private val chat = ChatFormat(runtime.messages, runtime.texts)
 
     @EventHandler
     fun onChat(event: AsyncChatEvent) {
         if (!runtime.network.settings.permissionSystemEnabled) return
         val head = chat.head(runtime.permissions.rank(event.player.uniqueId), event.player.name)
         val color = head.endColor()?.toTextColor()
-        event.renderer { _, _, message, _ -> head.toComponent().append(message.colorIfAbsent(color)) }
+        val rendered = head.toComponent()
+        event.renderer { _, _, message, _ -> rendered.append(message.colorIfAbsent(color)) }
     }
 }

@@ -105,7 +105,7 @@ message PermissionGroup {
   uint64 version = 9;
   // Players without a rank get the default group.
   bool is_default = 10;
-  // The player's name, shown as {name}; empty for the catalog's default (D-0203).
+  // A tag text showing the player's name as {name}; empty for the catalog's default (D-0203).
   string name_format = 11;
 }
 

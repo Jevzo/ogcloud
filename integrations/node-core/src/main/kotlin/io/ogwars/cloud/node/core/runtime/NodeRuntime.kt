@@ -21,6 +21,7 @@ import io.ogwars.cloud.node.core.sdk.LiveChannelHub
 import io.ogwars.cloud.node.core.sdk.SerialExecutor
 import io.ogwars.cloud.node.core.state.NetworkState
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.OgCloudNode
 import java.time.Duration
 import java.util.UUID
@@ -40,6 +41,7 @@ abstract class NodeRuntime(
     private val platform: NodePlatform,
     val queries: NodeQueries,
     val messages: Messages,
+    val texts: StoredTexts,
     private val scheduler: ScheduledExecutorService,
     protected val callbacks: Executor,
     sessionOf: (SessionListener) -> NodeSession,

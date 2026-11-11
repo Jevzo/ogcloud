@@ -20,6 +20,9 @@ import io.ogwars.cloud.domain.store.NetworkSettingsStore
 import io.ogwars.cloud.domain.store.PlayerStore
 import io.ogwars.cloud.domain.store.ServerStateStore
 import io.ogwars.cloud.domain.store.SessionStore
+import io.ogwars.cloud.domain.text.FieldText
+import io.ogwars.cloud.domain.text.requireTexts
+import io.ogwars.cloud.text.TextField
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -169,7 +172,11 @@ class Transfers(
             }
 
             else -> {
-                TransferDestination.Kick(request.kickMessage.orEmpty())
+                val message = request.kickMessage.orEmpty()
+                // An empty kick message is the network's shutdown text on the proxies, never an admin's kick.
+                require(message.isNotBlank()) { "kickMessage must not be blank" }
+                requireTexts(FieldText("kickMessage", TextField.KICK_MESSAGE, message))
+                TransferDestination.Kick(message)
             }
         }
     }

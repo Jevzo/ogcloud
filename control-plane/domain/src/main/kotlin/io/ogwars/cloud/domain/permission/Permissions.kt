@@ -1,6 +1,7 @@
 package io.ogwars.cloud.domain.permission
 
-import io.ogwars.cloud.domain.text.requireText
+import io.ogwars.cloud.domain.text.FieldText
+import io.ogwars.cloud.domain.text.requireTexts
 import io.ogwars.cloud.text.TextField
 import java.time.Duration
 import java.time.Instant
@@ -16,12 +17,14 @@ data class RankDisplay(
     val nameFormat: String = "",
     val tabPrefix: String = "",
 ) {
-    init {
-        requireText("chatPrefix", TextField.CHAT_PREFIX, chatPrefix)
-        requireText("chatSuffix", TextField.CHAT_SUFFIX, chatSuffix)
-        requireText("nameFormat", TextField.NAME_FORMAT, nameFormat)
-        requireText("tabPrefix", TextField.TAB_PREFIX, tabPrefix)
-    }
+    /** Refuses texts their fields may not hold, before the group is saved (D-0205). */
+    fun requireValidTexts() =
+        requireTexts(
+            FieldText("chatPrefix", TextField.CHAT_PREFIX, chatPrefix),
+            FieldText("chatSuffix", TextField.CHAT_SUFFIX, chatSuffix),
+            FieldText("nameFormat", TextField.NAME_FORMAT, nameFormat),
+            FieldText("tabPrefix", TextField.TAB_PREFIX, tabPrefix),
+        )
 }
 
 data class PermissionGroup(

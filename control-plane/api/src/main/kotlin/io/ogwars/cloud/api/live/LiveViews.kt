@@ -84,6 +84,7 @@ data class TransferRequest(
     val serverId: UUID?,
     val groupId: String?,
     val routingStrategy: RoutingStrategy?,
+    /** Disconnects the players with this tag text (D-0206) instead of moving them. */
     val kickMessage: String?,
 )
 

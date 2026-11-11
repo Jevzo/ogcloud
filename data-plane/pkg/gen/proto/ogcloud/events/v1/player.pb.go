@@ -455,7 +455,7 @@ type TransferRequested_GroupId struct {
 }
 
 type TransferRequested_KickMessage struct {
-	// Disconnect with this message instead of moving.
+	// Disconnect with this tag text (D-0206) instead of moving; empty shows the catalog's shutdown message.
 	KickMessage string `protobuf:"bytes,6,opt,name=kick_message,json=kickMessage,proto3,oneof"`
 }
 

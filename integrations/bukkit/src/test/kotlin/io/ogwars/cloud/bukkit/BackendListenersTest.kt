@@ -7,6 +7,7 @@ import io.ogwars.cloud.node.core.permission.Decision
 import io.ogwars.cloud.node.core.permission.Rank
 import io.ogwars.cloud.node.core.runtime.ServerRuntime
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import com.destroystokyo.paper.event.player.PlayerHandshakeEvent
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -46,7 +47,7 @@ class BackendListenersTest {
                 if (ranks[firstArg()]?.grants(secondArg()) == true) Decision.ALLOW else Decision.DENY
             }
         }
-    private val tablist = TeamTablist(server, InlineLine()) { ranks[it] }
+    private val tablist = TeamTablist(server, InlineLine(), StoredTexts()) { ranks[it] }
     private val listeners =
         BackendListeners(
             runtime,

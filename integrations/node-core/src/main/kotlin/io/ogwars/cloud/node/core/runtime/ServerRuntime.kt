@@ -9,6 +9,7 @@ import io.ogwars.cloud.node.client.SessionListener
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.node.core.sdk.ServerApi
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.OgCloudServer
 import io.ogwars.cloud.sdk.RuntimeNpcs
 import java.util.UUID
@@ -21,11 +22,12 @@ class ServerRuntime(
     private val platform: ServerPlatform,
     queries: NodeQueries,
     messages: Messages,
+    texts: StoredTexts,
     scheduler: ScheduledExecutorService,
     callbacks: Executor,
     npcs: RuntimeNpcs,
     sessionOf: (SessionListener) -> NodeSession,
-) : NodeRuntime(identity, platform, queries, messages, scheduler, callbacks, sessionOf) {
+) : NodeRuntime(identity, platform, queries, messages, texts, scheduler, callbacks, sessionOf) {
     private val server = ServerApi(identity, queries, session, messages, live, ready, callbacks, npcs)
     override val api: OgCloudServer = server
 

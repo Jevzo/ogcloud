@@ -49,13 +49,25 @@ class NetworkAdministrationTest(
     }
 
     @Test
-    fun `texts are refused unless they are valid tag texts with their own placeholders (D-0200)`() {
+    fun `texts are refused unless they are valid tag texts with their own placeholders (D-0205)`() {
         val refused = oauth.call("PUT", NETWORK, admin, update(mapOf("tablistHeader" to "{players} online")))
 
         refused.statusCode() shouldBe BAD_REQUEST
-        oauth.json(refused)["detail"] shouldBe
+        val problem = oauth.json(refused)
+        problem["detail"] shouldBe
             "tablistHeader: {players} is no placeholder here; this text offers {server}, {group}, {proxy}, " +
             "{onlinePlayers}, {maxPlayers}, {ping}, {permissionGroup} (at character 0)"
+        (problem["textErrors"] as Map<*, *>)["tablistHeader"] shouldBe
+            listOf(
+                mapOf(
+                    "code" to "UNKNOWN_PLACEHOLDER",
+                    "offset" to 0,
+                    "length" to 9,
+                    "reason" to
+                        "{players} is no placeholder here; this text offers {server}, {group}, {proxy}, " +
+                        "{onlinePlayers}, {maxPlayers}, {ping}, {permissionGroup}",
+                ),
+            )
     }
 
     @Test

@@ -4,7 +4,10 @@ import io.ogwars.cloud.contracts.node.v1.PermissionGroup
 import io.ogwars.cloud.contracts.node.v1.PlayerProfile
 import io.ogwars.cloud.node.core.permission.Rank
 import io.ogwars.cloud.node.core.text.Messages
-import io.ogwars.cloud.text.Color
+import io.ogwars.cloud.node.core.text.StoredTexts
+import io.ogwars.cloud.text.NamedColor
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.TextField
 import io.ogwars.cloud.text.endColor
 import io.ogwars.cloud.text.toComponent
 import io.ogwars.cloud.text.toLegacy
@@ -19,7 +22,7 @@ import net.kyori.adventure.text.format.TextColor
 import org.junit.jupiter.api.Test
 
 class FormatsTest {
-    private val chat = ChatFormat(Messages.load())
+    private val chat = ChatFormat(Messages.load(), StoredTexts())
 
     private fun rank(group: PermissionGroup) = Rank(PlayerProfile.getDefaultInstance(), group)
 
@@ -44,25 +47,35 @@ class FormatsTest {
                 .append(Component.text("v", TextColor.color(0x0000ff)))
                 .append(Component.text(" "))
                 .append(Component.text("» ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("", NamedTextColor.WHITE))
                 .build()
-        head.endColor() shouldBe Color.NAMED.getValue("white")
-        chat.head(rank(PermissionGroup.getDefaultInstance()), "Steve").toLegacy() shouldBe "§7Steve: §f"
-        chat.head(null, "Steve").toLegacy() shouldBe "§7Steve: §f"
+        head.endColor() shouldBe NamedColor.WHITE
+        chat.head(rank(PermissionGroup.getDefaultInstance()), "Steve").toLegacy() shouldBe "§7Steve: "
+        chat.head(null, "Steve").toLegacy() shouldBe "§7Steve: "
     }
 
     @Test
     fun `a name is plain text, whatever it looks like`() {
-        chat.head(null, "<red>Eve").toLegacy() shouldBe "§7<red>Eve: §f"
+        chat.head(null, "<red>Eve").toLegacy() shouldBe "§7<red>Eve: "
     }
 
     @Test
     fun `tablist placeholders are v1's names in braces, filled once`() {
         val values = TablistValues("lobby-789abc", "lobby", "proxy-1", 12, 1000, 42, "{server}")
 
-        Tablist
-            .fill("<gray>{server} {onlinePlayers}/{maxPlayers} {ping}ms {permissionGroup} {unknown}", values)
-            .toPlain() shouldBe "lobby-789abc 12/1000 42ms {server} {unknown}"
+        val template =
+            RichText.parseValid(
+                "<gray>{server} {onlinePlayers}/{maxPlayers} {ping}ms {permissionGroup} {unknown}",
+            )
+        Tablist.fill(template, values).toPlain() shouldBe "lobby-789abc 12/1000 42ms {server} {unknown}"
+    }
+
+    @Test
+    fun `the tablist fills every placeholder its texts offer`() {
+        val values = TablistValues("s", "g", "p", 1, 2, 3, "r")
+        listOf(TextField.TABLIST_HEADER, TextField.TABLIST_FOOTER).forEach { field ->
+            val template = RichText.parseValid(field.samples.keys.joinToString(" ") { "{$it}" })
+            Tablist.fill(template, values).toPlain() shouldBe "s g p 1 2 3 r"
+        }
     }
 
     @Test

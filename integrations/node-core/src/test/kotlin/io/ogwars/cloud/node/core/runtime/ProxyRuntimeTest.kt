@@ -21,7 +21,8 @@ import io.ogwars.cloud.node.core.query.FakeQueries
 import io.ogwars.cloud.node.core.routing.Route
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.node.core.text.StoredTexts
+import io.ogwars.cloud.text.toLegacy
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -59,6 +60,7 @@ class ProxyRuntimeTest {
             platform,
             queries,
             messages,
+            StoredTexts(),
             scheduler.executor,
             Runnable::run,
             clock,
@@ -133,8 +135,7 @@ class ProxyRuntimeTest {
                 .setAllowed(false)
                 .setKickMessage("<red>Maintenance")
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
-            LoginDecision.Denied(storedText("<red>Maintenance"))
+        denial(runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join()) shouldBe "§cMaintenance"
 
         queries.login = null
         runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
@@ -179,8 +180,7 @@ class ProxyRuntimeTest {
                 .setProfile(profile(steve))
                 .build()
 
-        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
-            LoginDecision.Denied(storedText("<red>Maintenance"))
+        denial(runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join()) shouldBe "§cMaintenance"
         runtime.login(steve, "Steve", 47, "1.2.3.4") { true }.join() shouldBe LoginDecision.Allowed
     }
 
@@ -407,6 +407,20 @@ class ProxyRuntimeTest {
     }
 
     @Test
+    fun `a draining proxy's own players are kicked with the catalog's shutdown text`() {
+        // Players on their way to a backend have none yet; they leave with the rest.
+        platform.players += OnlinePlayer(UUID.randomUUID(), "Alex", null)
+
+        session.listener
+            .deliver(transfer { setFromServerId("p-1").setKickMessage("") })
+            .join()
+            .success shouldBe true
+
+        platform.kicks.map { it.first } shouldContainExactlyInAnyOrder platform.players.map { it.uuid }
+        platform.kicks.map { it.second }.toSet() shouldBe setOf(messages.text(Message.KICK_SHUTDOWN))
+    }
+
+    @Test
     fun `transfers route each player, and a gone player fails the delivery`() {
         val toLobby = transfer { setPlayerUuid(steve.toString()).setGroupId("lobby") }
         val everyone = transfer { setFromServerId("l-1").setKickMessage("<red>Bye") }
@@ -425,7 +439,7 @@ class ProxyRuntimeTest {
             .join()
             .success shouldBe false
         platform.connects shouldContainExactly listOf(steve to "l-1")
-        platform.kicks shouldContainExactly listOf(admin to storedText("<red>Bye"))
+        platform.kicks.map { it.first to it.second.toLegacy() } shouldContainExactly listOf(admin to "§cBye")
     }
 
     @Test
@@ -459,7 +473,7 @@ class ProxyRuntimeTest {
                 ).build(),
         )
 
-        platform.kicks shouldContainExactly listOf(steve to storedText("<red>Maintenance"))
+        platform.kicks.map { it.first to it.second.toLegacy() } shouldContainExactly listOf(steve to "§cMaintenance")
         platform.messages.map { it.first } shouldContainExactly listOf(admin)
     }
 
@@ -573,6 +587,8 @@ class ProxyRuntimeTest {
             .setPlayerUuid(player.toString())
             .setPermissionGroupId("default")
             .build()
+
+    private fun denial(decision: LoginDecision): String = (decision as LoginDecision.Denied).message.toLegacy()
 
     private companion object {
         const val MAX_PLAYERS = 10

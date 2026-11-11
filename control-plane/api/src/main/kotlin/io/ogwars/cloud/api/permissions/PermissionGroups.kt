@@ -31,6 +31,7 @@ class PermissionGroups(
         actor: Actor,
         group: PermissionGroup,
     ): Revisioned<PermissionGroup> {
+        group.display.requireValidTexts()
         val previousDefault = groups.findDefault().value.id
         groups.create(group)
         announce(actor, group, previousDefault)
@@ -42,6 +43,7 @@ class PermissionGroups(
         expectedVersion: Long,
         group: PermissionGroup,
     ): Revisioned<PermissionGroup> {
+        group.display.requireValidTexts()
         val previousDefault = groups.findDefault().value.id
         groups.update(expectedVersion, group)
         announce(actor, group, previousDefault)

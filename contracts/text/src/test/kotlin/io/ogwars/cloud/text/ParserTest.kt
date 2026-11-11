@@ -1,5 +1,6 @@
 package io.ogwars.cloud.text
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
@@ -40,28 +41,59 @@ class ParserTest {
         delimiter = '|',
         quoteCharacter = '`',
         textBlock = """
-        a <frog>b                   | 2 | unknown tag <frog>
-        a < b                       | 2 | '<' starts no tag; write \< for a literal <
-        <#12345>x                   | 0 | unknown tag <#12345>
-        <gradient:#ff0000>x         | 0 | <gradient:#ff0000> takes two or more colours
-        <gradient:#ff0000:pink>x    | 0 | "pink" in <gradient:#ff0000:pink> is no colour
-        <color>x                    | 0 | <color> takes one colour
-        <color:red:blue>x           | 0 | <color:red:blue> takes one colour
-        <rainbow:2>x                | 0 | <rainbow> takes no arguments
-        x</bold>                    | 1 | </bold> closes no open tag""",
+        a <frog>b                   | UNKNOWN_TAG     | 2 | 6  | unknown tag <frog>
+        a < b                       | LONE_ANGLE      | 2 | 1  | '<' starts no tag; write \< for a literal <
+        <#12345>x                   | UNKNOWN_TAG     | 0 | 8  | unknown tag <#12345>
+        <#-12345>x                  | UNKNOWN_TAG     | 0 | 9  | unknown tag <#-12345>
+        <#+12345>x                  | UNKNOWN_TAG     | 0 | 9  | unknown tag <#+12345>
+        <color:#-12345>x            | BAD_COLOUR      | 0 | 15 | "#-12345" in <color:#-12345> is no colour
+        <gradient:#-12345:red>x     | BAD_COLOUR      | 0 | 22 | "#-12345" in <gradient:#-12345:red> is no colour
+        <gradient:#ff0000>x         | GRADIENT_STOPS  | 0 | 18 | <gradient:#ff0000> takes two or more colours
+        <gradient:#ff0000:pink>x    | BAD_COLOUR      | 0 | 23 | "pink" in <gradient:#ff0000:pink> is no colour
+        <color>x                    | COLOUR_COUNT    | 0 | 7  | <color> takes one colour
+        <color:red:blue>x           | COLOUR_COUNT    | 0 | 16 | <color:red:blue> takes one colour
+        <rainbow:2>x                | TAG_ARGUMENTS   | 0 | 11 | <rainbow> takes no arguments
+        <color:red>a</red>          | UNMATCHED_CLOSE | 12 | 6 | </red> closes no open tag
+        x</bold>                    | UNMATCHED_CLOSE | 1 | 7  | </bold> closes no open tag""",
     )
-    fun `invalid texts name each error and where it is`(
+    fun `invalid texts name each error, where it is and how long`(
         source: String,
+        code: TextErrorCode,
         offset: Int,
+        length: Int,
         reason: String,
     ) {
-        RichText.parse(source) shouldBe ParseResult.Invalid(listOf(TextError(offset, reason)))
+        RichText.parse(source) shouldBe ParseResult.Invalid(listOf(TextError(code, offset, length, reason)))
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        delimiter = '|',
+        quoteCharacter = '`',
+        textBlock = """
+        <red><bold>a<reset>b      | a:red:BOLD,b::
+        <bold><red>a</bold>b      | a:red:BOLD,b::
+        <red><bold>a</red>b       | a:red:BOLD,b::
+        <RED>a</RED>b             | a:red:,b::
+        <red>a<#123456>b</color>c | a:red:,b:#123456:,c:red:
+        <red>a</color>b           | a:red:,b::
+        <gradient:red:blue>a</gradient>b | a:red:,b::""",
+    )
+    fun `closing tags end what they close and everything opened inside`(
+        source: String,
+        spans: String,
+    ) {
+        RichText.parseValid(source).spans().joinToString(",") { span ->
+            val color = (span.color as? NamedColor)?.tag ?: span.color?.hex.orEmpty()
+            "${span.text}:$color:${span.decorations.joinToString("+")}"
+        } shouldBe spans
     }
 
     @Test
     fun `every error is reported at once`() {
         val result = RichText.parse("<frog>a</bold><gradient:red>")
         result.shouldBeInstanceOf<ParseResult.Invalid>().errors.map { it.offset } shouldBe listOf(0, 7, 14)
+        shouldThrow<IllegalArgumentException> { ParseResult.Invalid(emptyList()) }
     }
 
     @Test
@@ -81,9 +113,9 @@ class ParserTest {
             RichText.parseValid("{prefix}Eve").insert(mapOf("prefix" to prefix)) + RichText.parseValid("<red>!")
         joined.spans() shouldBe
             listOf(
-                Span("[VIP] ", Color.NAMED.getValue("gold"), emptySet()),
+                Span("[VIP] ", NamedColor.GOLD, emptySet()),
                 Span("Eve", null, emptySet()),
-                Span("!", Color.NAMED.getValue("red"), emptySet()),
+                Span("!", NamedColor.RED, emptySet()),
             )
     }
 

@@ -19,8 +19,8 @@ fun RichText.toJson(): String {
 
 private fun colorName(color: Color): String =
     when (color) {
-        is Color.Named -> color.name
-        is Color.Hex -> "#%06x".format(color.rgb)
+        is NamedColor -> color.tag
+        is Color.Hex -> color.hex
     }
 
 private fun quote(text: String): String =

@@ -3,23 +3,24 @@ package io.ogwars.cloud.text
 import kotlin.math.roundToInt
 
 /** A stretch of text with one colour (null: the default) and one set of decorations, as every renderer writes it. */
-data class Span(
+@ConsistentCopyVisibility
+data class Span internal constructor(
     val text: String,
     val color: Color?,
     val decorations: Set<Decoration>,
 )
 
 /**
- * The text's spans. Gradients and rainbows colour each code point, counted across their whole tag with placeholders
- * as filled in; an unfilled placeholder is shown as written. With [collapseGradients] each takes its first colour.
+ * The text's spans, none of them empty. Gradients and rainbows colour each code point, counted over the characters
+ * they colour with placeholders as filled in; an unfilled placeholder is shown as written. With [collapseGradients]
+ * each takes its first colour. A '§' is dropped, so no literal or value adds legacy codes (D-0206).
  */
 fun RichText.spans(collapseGradients: Boolean = false): List<Span> {
-    val glyphs = mutableListOf<Glyph>()
-    layout(nodes, null, emptySet(), collapseGradients, glyphs)
     val spans = mutableListOf<Span>()
     val text = StringBuilder()
     var current: Pair<Color?, Set<Decoration>>? = null
-    for (glyph in glyphs) {
+    for (glyph in glyphs(collapseGradients)) {
+        if (glyph.text.isEmpty()) continue
         val style = glyph.color() to glyph.decorations
         if (style != current && current != null) {
             spans += Span(text.toString(), current.first, current.second)
@@ -29,15 +30,18 @@ fun RichText.spans(collapseGradients: Boolean = false): List<Span> {
         text.append(glyph.text)
     }
     current?.let { spans += Span(text.toString(), it.first, it.second) }
-    // An empty colour tag matters only at the end, where what follows (a typed chat message) continues in it.
-    return spans.filterIndexed { index, span -> span.text.isNotEmpty() || index == spans.lastIndex }
+    return spans
 }
 
-/** The colour in effect at the end, an empty colour tag's included, which a typed chat message continues in. */
-fun RichText.endColor(): Color? = spans().lastOrNull()?.color
+/**
+ * The colour in effect at the end, which a typed chat message continues in: the last character's, or an empty colour
+ * tag's at the very end; null, the default, once a closing tag or `<reset>` has ended every colour.
+ */
+fun RichText.endColor(): Color? = glyphs(collapse = false).lastOrNull()?.color()
 
-/** The colour of the first character, which gives a team its nearest named colour; null for the default. */
-fun RichText.firstColor(): Color? = spans().firstOrNull()?.color
+/** The colour [placeholder] is shown in, its first character's under a gradient; null for the default (D-0206). */
+fun RichText.colorOf(placeholder: String): Color? =
+    glyphs(collapse = false).firstOrNull { it.placeholder == placeholder }?.color()
 
 /** The text without any styling. */
 fun RichText.toPlain(): String = spans().joinToString("") { it.text }
@@ -49,24 +53,22 @@ private sealed interface Paint {
     ) : Paint
 
     class Scale(
-        val style: Style,
+        val style: Style.Scaled,
     ) : Paint {
+        /** Known only once the whole text is laid out, so glyphs read their colour afterwards. */
         var size = 0
 
-        fun at(index: Int): Color =
-            when (style) {
-                is Style.Gradient -> gradient(style.stops, index, size)
-                Style.Rainbow -> rainbow(index, size)
-                else -> error("a scale is a gradient or a rainbow, not $style")
-            }
+        fun at(index: Int): Color = style.colorAt(index, size)
     }
 }
 
+/** One character, or an empty marker of the colour in effect at its place; [placeholder] names its source. */
 private class Glyph(
     val text: String,
     val paint: Paint?,
     val index: Int,
     val decorations: Set<Decoration>,
+    val placeholder: String? = null,
 ) {
     fun color(): Color? =
         when (paint) {
@@ -75,6 +77,9 @@ private class Glyph(
             is Paint.Scale -> paint.at(index)
         }
 }
+
+private fun RichText.glyphs(collapse: Boolean): List<Glyph> =
+    mutableListOf<Glyph>().also { layout(nodes, null, emptySet(), collapse, it) }
 
 private fun layout(
     nodes: List<Node>,
@@ -90,7 +95,13 @@ private fun layout(
             }
 
             is Node.Placeholder -> {
-                glyphs("{${node.name}}", paint, decorations, into)
+                glyphs("{${node.name}}", paint, decorations, into, node.name)
+            }
+
+            Node.End -> {
+                // Marks the colour in effect here; under a scale, the character's before it.
+                val index = if (paint is Paint.Scale) maxOf(paint.size - 1, 0) else 0
+                into += Glyph("", paint, index, decorations)
             }
 
             is Node.Styled -> {
@@ -102,12 +113,13 @@ private fun layout(
                     is Style.Solid -> {
                         val before = into.size
                         layout(node.children, Paint.Fixed(style.color), decorations, collapse, into)
-                        // An empty colour tag still sets the colour in effect after it.
+                        // Kept as an empty glyph, so an empty colour tag at the very end sets the colour that follows.
                         if (into.size == before) into += Glyph("", Paint.Fixed(style.color), 0, decorations)
                     }
 
-                    is Style.Gradient, Style.Rainbow -> {
-                        val inner = if (collapse) Paint.Fixed(firstColor(style)) else Paint.Scale(style)
+                    is Style.Scaled -> {
+                        // Collapsed, a scale shows what a lone character gets: a gradient's first stop, the rainbow's red.
+                        val inner = if (collapse) Paint.Fixed(style.colorAt(0, 1)) else Paint.Scale(style)
                         layout(node.children, inner, decorations, collapse, into)
                     }
                 }
@@ -121,20 +133,26 @@ private fun glyphs(
     paint: Paint?,
     decorations: Set<Decoration>,
     into: MutableList<Glyph>,
+    placeholder: String? = null,
 ) {
     var offset = 0
     while (offset < text.length) {
         val end = text.offsetByCodePoints(offset, 1)
-        val index = if (paint is Paint.Scale) paint.size++ else 0
-        into += Glyph(text.substring(offset, end), paint, index, decorations)
+        if (text[offset] != SECTION_SIGN) {
+            val index = if (paint is Paint.Scale) paint.size++ else 0
+            into += Glyph(text.substring(offset, end), paint, index, decorations, placeholder)
+        }
         offset = end
     }
 }
 
-private fun firstColor(style: Style): Color =
-    when (style) {
-        is Style.Gradient -> style.stops.first()
-        else -> rainbow(0, 1)
+private fun Style.Scaled.colorAt(
+    index: Int,
+    size: Int,
+): Color =
+    when (this) {
+        is Style.Gradient -> gradient(stops, index, size)
+        Style.Rainbow -> rainbow(index, size)
     }
 
 /** Linear in RGB between neighbouring stops, from the first character's first stop to the last's last stop. */
@@ -154,7 +172,7 @@ private fun rainbow(
     index: Int,
     size: Int,
 ): Color {
-    val hue = index.toDouble() / size * HUE_SECTORS
+    val hue = index.toDouble() / maxOf(size, 1) * HUE_SECTORS
     val sector = hue.toInt() % HUE_SECTORS
     val rising = (hue - hue.toInt()) * CHANNEL_MASK
     val up = rising.roundToInt()
@@ -184,6 +202,7 @@ private fun lerp(
     return channel(RED_SHIFT) or channel(GREEN_SHIFT) or channel(0)
 }
 
+internal const val SECTION_SIGN = '§'
 private const val HUE_SECTORS = 6
 private const val CHANNEL_MASK = 0xFF
 private const val RED_SHIFT = 16

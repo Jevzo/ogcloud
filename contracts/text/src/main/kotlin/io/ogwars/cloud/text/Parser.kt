@@ -1,6 +1,6 @@
 package io.ogwars.cloud.text
 
-/** One pass over the source; every error is collected, so a dashboard can show them all at once. */
+/** One pass over the source; every tag error is collected, so a dashboard can show them all at once. */
 internal class Parser(
     private val source: String,
 ) {
@@ -33,7 +33,8 @@ internal class Parser(
                 else -> stack.last().text.append(source[position++])
             }
         }
-        while (stack.size > 1) close()
+        // Tags still open run to the end of the text.
+        closeTo(1)
         val root = stack.single().also(Frame::flush)
         return if (errors.isEmpty()) ParseResult.Valid(RichText(root.children)) else ParseResult.Invalid(errors)
     }
@@ -66,100 +67,121 @@ internal class Parser(
         val start = position
         val end = source.indexOfAny(charArrayOf('>', '<'), start + 1)
         if (end == -1 || source[end] == '<') {
-            errors += TextError(start, "'<' starts no tag; write \\< for a literal <")
+            fail(TextErrorCode.LONE_ANGLE, start, 1, "'<' starts no tag; write \\< for a literal <")
             stack.last().text.append('<')
             position++
             return
         }
         position = end + 1
-        val content = source.substring(start + 1, end).lowercase()
+        val tag = Tag(start, end - start + 1, source.substring(start + 1, end).lowercase())
         when {
-            content.startsWith('/') -> closeTag(start, content.substring(1))
-            content == RESET -> while (stack.size > 1) close()
-            else -> openTag(start, content)
+            tag.content.startsWith('/') -> closeTag(tag, tag.content.substring(1))
+            tag.content == RESET -> closeExplicitly(1)
+            else -> openTag(tag)
         }
     }
 
-    private fun openTag(
-        start: Int,
-        content: String,
+    /** `<content>` at [start], [length] characters long with its angle brackets. */
+    private class Tag(
+        val start: Int,
+        val length: Int,
+        val content: String,
     ) {
-        val opened = style(start, content) ?: return
-        stack.last().flush()
-        stack.addLast(Frame(opened.first, opened.second))
+        val name: String get() = content.substringBefore(':')
+        val arguments: List<String> get() = if (':' in content) content.substringAfter(':').split(':') else emptyList()
     }
 
-    /** What `<content>` sets and the names that close it, or null after reporting why it sets nothing. */
-    private fun style(
-        start: Int,
-        content: String,
-    ): Pair<Style, Set<String>>? {
-        val name = content.substringBefore(':')
-        val arguments = if (':' in content) content.substringAfter(':').split(':') else emptyList()
-        Decoration.BY_TAG[content]?.let { return Style.Decorated(it) to setOf(content) }
-        Color.parse(content)?.let { return Style.Solid(it) to setOf(content, COLOR) }
-        return when (name) {
+    private fun openTag(tag: Tag) {
+        val frame = frame(tag) ?: return
+        stack.last().flush()
+        stack.addLast(frame)
+    }
+
+    /** What `<content>` opens, or null after reporting why it opens nothing. */
+    private fun frame(tag: Tag): Frame? {
+        Decoration.BY_TAG[tag.content]?.let { return Frame(Style.Decorated(it), setOf(tag.content)) }
+        Color.parse(tag.content)?.let { return Frame(Style.Solid(it), setOf(tag.content, COLOR)) }
+        return when (tag.name) {
             COLOR -> {
-                colors(start, content, arguments, exactly = 1)?.let { Style.Solid(it.single()) to setOf(COLOR) }
+                colors(tag)?.let {
+                    if (it.size == 1) {
+                        Frame(Style.Solid(it.single()), setOf(COLOR))
+                    } else {
+                        fail(TextErrorCode.COLOUR_COUNT, tag, "<${tag.content}> takes one colour")
+                    }
+                }
             }
 
             GRADIENT -> {
-                colors(start, content, arguments, exactly = null)?.let { Style.Gradient(it) to setOf(GRADIENT) }
+                colors(tag)?.let {
+                    if (it.size >= MIN_GRADIENT_STOPS) {
+                        Frame(Style.Gradient(it), setOf(GRADIENT))
+                    } else {
+                        fail(TextErrorCode.GRADIENT_STOPS, tag, "<${tag.content}> takes two or more colours")
+                    }
+                }
             }
 
             RAINBOW -> {
-                if (arguments.isEmpty()) {
-                    Style.Rainbow to setOf(RAINBOW)
+                if (tag.arguments.isEmpty()) {
+                    Frame(Style.Rainbow, setOf(RAINBOW))
                 } else {
-                    fail(start, "<rainbow> takes no arguments")
+                    fail(TextErrorCode.TAG_ARGUMENTS, tag, "<rainbow> takes no arguments")
                 }
             }
 
             else -> {
-                fail(start, "unknown tag <$content>")
+                fail(TextErrorCode.UNKNOWN_TAG, tag, "unknown tag <${tag.content}>")
             }
         }
     }
 
-    /** The colours of `<color:…>` (exactly one) or `<gradient:…>` (two or more). */
-    private fun colors(
-        start: Int,
-        content: String,
-        arguments: List<String>,
-        exactly: Int?,
-    ): List<Color>? {
-        val colors = arguments.map { Color.parse(it) ?: return fail(start, "\"$it\" in <$content> is no colour") }
-        return when {
-            exactly != null && colors.size != exactly -> fail(start, "<$content> takes one colour")
-            exactly == null && colors.size < MIN_GRADIENT_STOPS -> fail(start, "<$content> takes two or more colours")
-            else -> colors
+    private fun colors(tag: Tag): List<Color>? =
+        tag.arguments.map {
+            Color.parse(it) ?: return fail(TextErrorCode.BAD_COLOUR, tag, "\"$it\" in <${tag.content}> is no colour")
         }
-    }
 
     private fun closeTag(
-        start: Int,
+        tag: Tag,
         name: String,
     ) {
         val index = stack.indexOfLast { name in it.names }
         if (index <= 0) {
-            errors += TextError(start, "</$name> closes no open tag")
+            fail(TextErrorCode.UNMATCHED_CLOSE, tag, "</$name> closes no open tag")
             return
         }
         // Tags opened inside the closed one end with it.
-        while (stack.size > index) close()
+        closeExplicitly(index)
     }
 
-    private fun close() {
-        val frame = stack.removeLast().also(Frame::flush)
-        val parent = stack.last().also(Frame::flush)
-        parent.children += Node.Styled(checkNotNull(frame.style), frame.children)
+    /** Closes the tags above [depth] where the source says so, which [Node.End] marks for what follows. */
+    private fun closeExplicitly(depth: Int) {
+        if (stack.size <= depth) return
+        closeTo(depth)
+        stack.last().children += Node.End
+    }
+
+    /** Closes the tags above [depth]. Text only goes into the innermost frame, so that is the one to flush. */
+    private fun closeTo(depth: Int) {
+        while (stack.size > depth) {
+            val frame = stack.removeLast().also(Frame::flush)
+            stack.last().children += Node.Styled(checkNotNull(frame.style), frame.children)
+        }
     }
 
     private fun fail(
+        code: TextErrorCode,
+        tag: Tag,
+        reason: String,
+    ): Nothing? = fail(code, tag.start, tag.length, reason)
+
+    private fun fail(
+        code: TextErrorCode,
         offset: Int,
+        length: Int,
         reason: String,
     ): Nothing? {
-        errors += TextError(offset, reason)
+        errors += TextError(code, offset, length, reason)
         return null
     }
 
@@ -169,6 +191,5 @@ internal class Parser(
         const val COLOR = "color"
         const val GRADIENT = "gradient"
         const val RAINBOW = "rainbow"
-        const val MIN_GRADIENT_STOPS = 2
     }
 }

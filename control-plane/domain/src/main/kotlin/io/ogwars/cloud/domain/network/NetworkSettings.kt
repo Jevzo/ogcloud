@@ -1,7 +1,8 @@
 package io.ogwars.cloud.domain.network
 
 import io.ogwars.cloud.domain.group.GroupId
-import io.ogwars.cloud.domain.text.requireText
+import io.ogwars.cloud.domain.text.FieldText
+import io.ogwars.cloud.domain.text.requireTexts
 import io.ogwars.cloud.text.TextField
 import java.time.Instant
 
@@ -33,14 +34,19 @@ data class NetworkSettings(
 ) {
     init {
         require(maxPlayers > 0) { "maxPlayers must be positive" }
-        requireText("motd", TextField.MOTD, motd)
-        requireText("maintenanceMotd", TextField.MAINTENANCE_MOTD, maintenanceMotd)
-        requireText("versionName", TextField.VERSION_NAME, versionName)
-        requireText("maintenanceVersionName", TextField.MAINTENANCE_VERSION_NAME, maintenanceVersionName)
-        requireText("tablistHeader", TextField.TABLIST_HEADER, tablistHeader)
-        requireText("tablistFooter", TextField.TABLIST_FOOTER, tablistFooter)
-        requireText("maintenanceKickMessage", TextField.MAINTENANCE_KICK_MESSAGE, maintenanceKickMessage)
     }
 
     val eulaAccepted: Boolean get() = eulaAcceptedAt != null
+
+    /** Refuses texts their fields may not hold, before the settings are saved (D-0205). */
+    fun requireValidTexts() =
+        requireTexts(
+            FieldText("motd", TextField.MOTD, motd),
+            FieldText("maintenanceMotd", TextField.MAINTENANCE_MOTD, maintenanceMotd),
+            FieldText("versionName", TextField.VERSION_NAME, versionName),
+            FieldText("maintenanceVersionName", TextField.MAINTENANCE_VERSION_NAME, maintenanceVersionName),
+            FieldText("tablistHeader", TextField.TABLIST_HEADER, tablistHeader),
+            FieldText("tablistFooter", TextField.TABLIST_FOOTER, tablistFooter),
+            FieldText("maintenanceKickMessage", TextField.MAINTENANCE_KICK_MESSAGE, maintenanceKickMessage),
+        )
 }

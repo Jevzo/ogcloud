@@ -30,7 +30,7 @@ import io.ogwars.cloud.node.core.state.Backend
 import io.ogwars.cloud.node.core.state.ServerDirectory
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.OgCloudProxy
 import io.ogwars.cloud.text.RichText
 import java.time.Clock
@@ -63,11 +63,12 @@ class ProxyRuntime(
     private val platform: ProxyPlatform,
     queries: NodeQueries,
     messages: Messages,
+    texts: StoredTexts,
     scheduler: ScheduledExecutorService,
     callbacks: Executor,
     private val clock: Clock,
     sessionOf: (SessionListener) -> NodeSession,
-) : NodeRuntime(identity, platform, queries, messages, scheduler, callbacks, sessionOf) {
+) : NodeRuntime(identity, platform, queries, messages, texts, scheduler, callbacks, sessionOf) {
     val directory = ServerDirectory(platform)
     val router = Router(directory, network)
     override val api: OgCloudProxy = ProxyApi(identity, queries, session, messages, live, ready, callbacks)
@@ -90,7 +91,8 @@ class ProxyRuntime(
     )
 
     /** `/ogcloud`, for the adapter to register. */
-    val commands = ProxyCommands(messages, queries, session, network, directory, platform::onlinePlayers, clock).tree
+    val commands =
+        ProxyCommands(messages, texts, queries, session, network, directory, platform::onlinePlayers, clock).tree
 
     /**
      * Refuses players while this proxy is full (D-0134), else asks the controller and loads the rank. With the
@@ -108,7 +110,7 @@ class ProxyRuntime(
         }
         val settings = network.settings
         if (settings.maintenance && !settings.permissionSystemEnabled && !bypass()) {
-            return CompletableFuture.completedFuture(LoginDecision.Denied(storedText(settings.maintenanceKickMessage)))
+            return CompletableFuture.completedFuture(LoginDecision.Denied(texts.parse(settings.maintenanceKickMessage)))
         }
         val request =
             ResolveLoginRequest
@@ -122,7 +124,7 @@ class ProxyRuntime(
             .resolveLogin(request)
             .thenCompose { response ->
                 if (!response.allowed) {
-                    CompletableFuture.completedFuture(LoginDecision.Denied(storedText(response.kickMessage)))
+                    CompletableFuture.completedFuture(LoginDecision.Denied(texts.parse(response.kickMessage)))
                 } else {
                     loadRank(player, response.profile).thenApply { LoginDecision.Allowed }
                 }
@@ -231,7 +233,7 @@ class ProxyRuntime(
                     bypass(
                         it.uuid,
                     )
-                }.forEach { platform.kick(it.uuid, storedText(now.maintenanceKickMessage)) }
+                }.forEach { platform.kick(it.uuid, texts.parse(now.maintenanceKickMessage)) }
         }
     }
 
@@ -285,10 +287,9 @@ class ProxyRuntime(
                 }
 
                 TransferRequested.SubjectCase.FROM_SERVER_ID -> {
-                    platform.onlinePlayers().filter {
-                        it.serverId ==
-                            request.fromServerId
-                    }
+                    // Everyone on this proxy, when the controller moves them off it as it drains.
+                    val all = request.fromServerId == identity.serverId
+                    platform.onlinePlayers().filter { all || it.serverId == request.fromServerId }
                 }
 
                 TransferRequested.SubjectCase.SUBJECT_NOT_SET, null -> {
@@ -301,7 +302,10 @@ class ProxyRuntime(
         }
         when (request.destinationCase) {
             TransferRequested.DestinationCase.KICK_MESSAGE -> {
-                players.forEach { platform.kick(it.uuid, storedText(request.kickMessage)) }
+                // Without a text of its own, the network is taking the server down.
+                val message =
+                    request.kickMessage.ifEmpty { null }?.let(texts::parse) ?: messages.text(Message.KICK_SHUTDOWN)
+                players.forEach { platform.kick(it.uuid, message) }
             }
 
             TransferRequested.DestinationCase.SERVER_ID -> {

@@ -7,6 +7,7 @@ import io.ogwars.cloud.node.core.runtime.LoginDecision
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.text.toComponent
+import io.ogwars.cloud.text.toPlain
 import com.velocitypowered.api.event.EventTask
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.Subscribe
@@ -116,11 +117,19 @@ internal class VelocityListeners(
                 ?: KickedFromServerEvent.DisconnectPlayer.create(text(Message.KICK_NO_SERVERS))
     }
 
+    // OgCloud's PandaSpigot plugin refuses with the catalog's text, since it lifts the server's own (D-0134).
+    private val fullTexts by lazy {
+        setOf(
+            LEGACY_SERVER_FULL,
+            runtime.messages.text(Message.KICK_SERVER_FULL).toPlain(),
+        )
+    }
+
     private fun isFull(event: KickedFromServerEvent): Boolean =
         when (val reason = event.serverKickReason.orElse(null)) {
             is TranslatableComponent -> reason.key() == SERVER_FULL
             null -> false
-            else -> PlainTextComponentSerializer.plainText().serialize(reason) == LEGACY_SERVER_FULL
+            else -> PlainTextComponentSerializer.plainText().serialize(reason).replace(LEGACY_CODE, "") in fullTexts
         }
 
     /** OgCloud decides players' permissions while its permission system is on; otherwise the previous provider does. */
@@ -154,6 +163,9 @@ internal class VelocityListeners(
         // Vanilla's reason when a server is at its player limit, and the text 1.8 servers such as PandaSpigot send.
         private const val SERVER_FULL = "multiplayer.disconnect.server_full"
         private const val LEGACY_SERVER_FULL = "The server is full!"
+
+        // 1.8 backends send their refusals as legacy text, which may reach the proxy with its codes still in it.
+        private val LEGACY_CODE = Regex("§[0-9a-fk-or]", RegexOption.IGNORE_CASE)
 
         private val REPORTED_LOGINS =
             setOf(DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN, DisconnectEvent.LoginStatus.PRE_SERVER_JOIN)

@@ -3,6 +3,7 @@ package io.ogwars.cloud.node.core.runtime
 import io.ogwars.cloud.contracts.events.v1.NodeType
 import io.ogwars.cloud.node.client.NodeSettings
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.StoredTexts
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
@@ -14,6 +15,7 @@ class NodePod(
 ) : AutoCloseable {
     val identity = NodeIdentity.fromEnvironment(environment)
     val messages = Messages.load()
+    val texts = StoredTexts()
     val scheduler: ScheduledExecutorService =
         Executors.newSingleThreadScheduledExecutor { Thread(it, "ogcloud").apply { isDaemon = true } }
     val connection =

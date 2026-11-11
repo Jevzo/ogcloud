@@ -1,7 +1,6 @@
 package io.ogwars.cloud.node.core.format
 
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
-import io.ogwars.cloud.node.core.text.storedText
 import io.ogwars.cloud.text.Placeholders
 import io.ogwars.cloud.text.RichText
 
@@ -20,10 +19,10 @@ object Tablist {
     /** The tablist header or footer with its placeholders filled in (D-0200). */
     @JvmStatic
     fun fill(
-        template: String,
+        template: RichText,
         values: TablistValues,
     ): RichText =
-        storedText(template).fill(
+        template.fill(
             Placeholders.SERVER to values.server,
             Placeholders.GROUP to values.group,
             Placeholders.PROXY to values.proxy,

@@ -6,26 +6,25 @@ import net.kyori.adventure.text.format.Style
 import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 
-/** The text as an Adventure component for 1.16 and newer clients; Velocity and ViaBackwards downsample it for older ones. */
+/**
+ * The text as an Adventure component for 1.16 and newer clients; Velocity and ViaBackwards on the proxy downsample it
+ * for older ones (D-0204).
+ */
 fun RichText.toComponent(): Component {
     val spans = spans()
     if (spans.isEmpty()) return Component.empty()
     return Component.text().append(spans.map { Component.text(it.text, style(it)) }).build()
 }
 
-/** The Adventure colour of [color]: a named colour stays named, so a legacy serializer keeps its exact code. */
+/** As an Adventure colour: a named colour stays named, so a legacy serializer keeps its exact code. */
 fun Color.toTextColor(): TextColor =
     when (this) {
-        is Color.Named -> checkNotNull(NamedTextColor.NAMES.value(name)) { "Adventure has no colour $name" }
+        is NamedColor -> checkNotNull(NamedTextColor.NAMES.value(tag)) { "Adventure has no colour $tag" }
         is Color.Hex -> TextColor.color(rgb)
     }
 
-/** The named colour nearest to [color], as older clients and team colours need one (D-0204). */
-fun Color.nearestNamed(): NamedTextColor =
-    when (this) {
-        is Color.Named -> checkNotNull(NamedTextColor.NAMES.value(name)) { "Adventure has no colour $name" }
-        is Color.Hex -> NamedTextColor.nearestTo(TextColor.color(rgb))
-    }
+/** The nearest named colour, which older clients and team colours need (D-0204). */
+fun Color.nearestNamed(): NamedTextColor = NamedTextColor.nearestTo(toTextColor())
 
 private fun style(span: Span): Style {
     val builder = Style.style()

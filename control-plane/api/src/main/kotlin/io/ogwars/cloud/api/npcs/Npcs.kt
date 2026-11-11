@@ -160,6 +160,7 @@ class NpcManagement(
     }
 
     private fun validated(npc: Npc): Npc {
+        npc.requireValidTexts()
         val targets =
             listOfNotNull(npc.leftClick, npc.rightClick).map { action ->
                 when (action) {

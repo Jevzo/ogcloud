@@ -280,7 +280,7 @@ func (*NodeBroadcast_PlayerPermissions) isNodeBroadcast_Update() {}
 
 func (*NodeBroadcast_Npc) isNodeBroadcast_Update() {}
 
-// The texts are in OgCloud's tag format (D-0200).
+// The texts are in OgCloud's tag format (D-0200), except server_list's, which the controller renders.
 type NetworkSettingsUpdated struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Read-model version; nodes ignore anything older than what they hold.
@@ -438,9 +438,8 @@ func (x *NetworkSettingsUpdated) GetServerList() *ServerListTexts {
 	return nil
 }
 
-// What the load balancer answers status pings with, rendered by the controller so the load balancer parses no tags
-// (D-0202): the MOTDs as chat-component JSON for 1.16 and newer clients and as legacy text for older ones, whose
-// colours are the nearest named ones (D-0204); the version names, a plain string in the status answer, always legacy.
+// Status-ping texts the controller renders, so the load balancer parses no tags (D-0202): MOTDs as JSON for 1.16+ and
+// as legacy text in nearest named colours for older clients (D-0204); version names, plain strings, always legacy.
 type ServerListTexts struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	MotdJson                     string                 `protobuf:"bytes,1,opt,name=motd_json,json=motdJson,proto3" json:"motd_json,omitempty"`

@@ -1,5 +1,7 @@
 package io.ogwars.cloud.node.core.text
 
+import io.ogwars.cloud.text.Placeholders
+
 /** Every catalog text with the placeholders it takes; tests keep it and `messages.properties` in step. */
 enum class Message(
     val key: String,
@@ -101,7 +103,7 @@ enum class Message(
     NOTIFY_GROUP_MAINTENANCE("notify.group-maintenance", "group", "status"),
     STATUS_ENABLED("status.enabled"),
     STATUS_DISABLED("status.disabled"),
-    CHAT_NAME_FORMAT("chat.name-format", "name"),
+    CHAT_NAME_FORMAT("chat.name-format", Placeholders.NAME),
     CHAT_SUFFIX("chat.suffix"),
     NPC_LIST_EMPTY("npc.list.empty"),
     NPC_LIST_HEADER("npc.list.header", "count"),
@@ -125,6 +127,7 @@ enum class Message(
     NPC_POSITION_UNKNOWN("npc.position-unknown"),
     NPC_STRATEGY_INVALID("npc.strategy.invalid", "strategy"),
     NPC_ACTION_INVALID("npc.action.invalid"),
+    NPC_TEXT_INVALID("npc.text.invalid", "errors"),
     ;
 
     val placeholders: Set<String> = names.toSet()

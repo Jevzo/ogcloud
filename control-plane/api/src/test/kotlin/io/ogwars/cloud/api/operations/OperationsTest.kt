@@ -64,6 +64,16 @@ class OperationsTest(
         oauth.jsonList(oauth.call("GET", "$NPCS?groupId=$hub", admin)) shouldBe emptyList<Any>()
 
         oauth.call("POST", NPCS, admin, npc(hub, clickTo = "no-such-group")).statusCode() shouldBe BAD_REQUEST
+        val badTitle = oauth.call("POST", NPCS, admin, npc(hub, clickTo = hub) + ("title" to "{name} wins"))
+        badTitle.statusCode() shouldBe BAD_REQUEST
+        (
+            (
+                oauth.json(
+                    badTitle,
+                )["textErrors"] as Map<*, *>
+            )["title"] as List<*>
+        ).map { (it as Map<*, *>)["code"] } shouldBe
+            listOf("UNKNOWN_PLACEHOLDER")
         oauth.call("DELETE", "$NPCS/$id", admin).statusCode() shouldBe NO_CONTENT
         oauth.call("GET", "$NPCS/$id", admin).statusCode() shouldBe NOT_FOUND
     }
@@ -150,7 +160,7 @@ class OperationsTest(
         "groupId" to groupId,
         "location" to mapOf("world" to "world", "x" to 0.5, "y" to 64.0, "z" to 0.5, "yaw" to 90.0, "pitch" to 0.0),
         "title" to "<green>Play",
-        "subtitle" to "%players% playing",
+        "subtitle" to "{players} playing",
         "skin" to null,
         "lookAtPlayers" to true,
         "leftClick" to null,

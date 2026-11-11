@@ -60,6 +60,17 @@ class PermissionGroupsTest(
 
         refused.statusCode() shouldBe BAD_REQUEST
         oauth.json(refused)["detail"] shouldBe "chatPrefix: unknown tag <frog> (at character 0)"
+        val legacy =
+            oauth.call("POST", GROUPS, admin, mapOf("id" to groupId(), "settings" to settings(chatPrefix = "§cVIP ")))
+        legacy.statusCode() shouldBe BAD_REQUEST
+        (
+            (
+                oauth.json(
+                    legacy,
+                )["textErrors"] as Map<*, *>
+            )["chatPrefix"] as List<*>
+        ).map { (it as Map<*, *>)["code"] } shouldBe
+            listOf("SECTION_SIGN")
     }
 
     @Test

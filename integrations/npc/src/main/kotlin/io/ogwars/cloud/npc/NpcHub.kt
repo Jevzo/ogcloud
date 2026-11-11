@@ -2,7 +2,7 @@ package io.ogwars.cloud.npc
 
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.node.core.query.NodeQueries
-import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.RoutingStrategy
 import io.ogwars.cloud.text.Placeholders
 import io.ogwars.cloud.text.RichText
@@ -45,6 +45,7 @@ class NpcHub(
     private val transfers: GroupTransfer,
     private val scheduler: ScheduledExecutorService,
     private val clock: Clock,
+    private val texts: StoredTexts,
 ) {
     private val shown = ConcurrentHashMap<String, ShownNpc>()
     private val managed = ConcurrentHashMap<String, ManagedNpc>()
@@ -241,7 +242,7 @@ class NpcHub(
         return listOf(spec.title, spec.subtitle)
             .filter(String::isNotBlank)
             .map {
-                storedText(it).fill(
+                texts.parse(it).fill(
                     Placeholders.PLAYERS to players.toString(),
                     Placeholders.SERVERS to servers.toString(),
                 )

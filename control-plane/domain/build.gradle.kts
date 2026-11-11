@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    // Stored in-game texts are validated against the tag format (D-0200).
-    implementation(project(":contracts:text"))
+    // In-game texts are checked against the tag format before they are written; refusals carry its errors (D-0205).
+    api(project(":contracts:text"))
 }
 
 // Committed output of `mise run gen` (contracts/runtime-profiles.yaml), checked for drift.
