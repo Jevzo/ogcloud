@@ -29,8 +29,7 @@ class FakeServer {
   revoked: string[] = [];
   refuseRevocation = false;
   unavailable = false;
-  /** While set, renewals wait for it, so a test can act in the middle of one. */
-  hold: Promise<void> | undefined;
+  private hold: Promise<void> | undefined;
   private issued = 0;
 
   readonly fetch = async (
@@ -64,6 +63,15 @@ class FakeServer {
       expires_in: LIFETIME_S,
     });
   };
+
+  /** Makes renewals wait until the returned function runs, so a test can act in the middle of one. */
+  holdRenewals(): () => void {
+    let release = () => {};
+    this.hold = new Promise((resolve) => {
+      release = resolve;
+    });
+    return release;
+  }
 
   refreshes(): string[] {
     return this.requests
@@ -289,10 +297,7 @@ test("a renewal the server cannot answer keeps the login for the next try", asyn
 
 test("signing out while another tab renews revokes the token that renewal stored", async () => {
   const server = new FakeServer();
-  let release = () => {};
-  server.hold = new Promise((resolve) => {
-    release = resolve;
-  });
+  const release = server.holdRenewals();
   const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
   const tab = tabsSharing(server, logins);
 
@@ -308,10 +313,7 @@ test("signing out while another tab renews revokes the token that renewal stored
 test("a sign-in that finishes while another tab's renewal is refused keeps its login", async () => {
   const server = new FakeServer();
   server.current = "rotated-elsewhere";
-  let release = () => {};
-  server.hold = new Promise((resolve) => {
-    release = resolve;
-  });
+  const release = server.holdRenewals();
   const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
   const tab = tabsSharing(server, logins);
   const renewing = tab().accessToken();
