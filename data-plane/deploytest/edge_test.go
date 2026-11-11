@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-// Admin surfaces are never public (D-0045): the public Gateway routes only to the API, and Infisical and Grafana
-// attach to the internal Gateway alone.
+// Admin surfaces are never public (D-0045): the public Gateway routes only to the API and the dashboard, and
+// Infisical and Grafana attach to the internal Gateway alone.
 func TestAdminSurfacesNeverAttachToThePublicGateway(t *testing.T) {
-	public := []string{"ogcloud-api"}
+	public := []string{"ogcloud-api", "ogcloud-web"}
 	for _, values := range valueSets(t) {
 		t.Run(values, func(t *testing.T) {
 			admin := 0

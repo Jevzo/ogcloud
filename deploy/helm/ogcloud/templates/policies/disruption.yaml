@@ -4,6 +4,7 @@ their own budgets.
 */}}
 {{- $workloads := dict
   "api" .Values.api.replicas
+  "web" .Values.web.replicas
   "controller" .Values.controller.replicas
   "gateway" .Values.gateway.replicas
   "loadbalancer" .Values.loadbalancer.replicas

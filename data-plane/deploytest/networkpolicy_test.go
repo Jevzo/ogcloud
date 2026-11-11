@@ -33,6 +33,7 @@ func pod(ns string, labels ...string) endpoint {
 
 var (
 	api             = component("api")
+	web             = component("web")
 	backupJob       = component("backup")
 	bootstrapJob    = component("bootstrap")
 	controller      = component("controller")
@@ -75,6 +76,10 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 	flows := []flow{
 		tcp(traefik, api, 8080, true, "Traefik serves the API (D-0108)"),
 		tcp(intruder, api, 8080, false, "nothing else reaches the API"),
+		tcp(traefik, web, 8080, true, "Traefik serves the dashboard (D-0214)"),
+		tcp(intruder, web, 8080, false, "nothing else reaches the dashboard"),
+		tcp(web, api, 8080, false, "the dashboard's server calls nothing; browsers call the API"),
+		tcp(web, internet, 443, false, "the dashboard's server calls nothing outside"),
 		tcp(backend, api, 8080, false, "game pods never reach the API"),
 		tcp(proxy, backend, 25565, true, "proxies forward players to backends"),
 		tcp(backend, backend, 25565, false, "backends never reach each other: the forwarding token is in the handshake (D-0065)"),

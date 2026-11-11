@@ -97,6 +97,7 @@
     },
     "certManager": { "type": "object" },
     "api": { "type": "object" },
+    "web": { "type": "object" },
     "controller": {
       "type": "object",
       "properties": {

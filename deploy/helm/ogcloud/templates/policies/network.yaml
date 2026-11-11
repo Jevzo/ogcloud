@@ -46,6 +46,26 @@ spec:
     {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
     {{- include "ogcloud.np.s3" . | nindent 4 }}
 ---
+{{- /* The dashboard: only Traefik reaches it, and it reaches nothing (D-0214). */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ogcloud-web
+  namespace: {{ $ns }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ogcloud.selector" (dict "root" . "component" "web") | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        {{- include "ogcloud.np.namespace" $np.namespaces.traefik | nindent 8 }}
+      ports:
+        - {protocol: TCP, port: 8080}
+  egress: []
+---
 {{- /* The controller: the gateway calls it; it reaches the API server, Infisical and Modrinth (D-0079). */}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

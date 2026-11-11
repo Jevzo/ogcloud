@@ -68,7 +68,7 @@ spec:
             scheme: https
             statusCode: 301
 ---
-{{- /* Everything the API serves (D-0098); the web app takes the rest once it ships (T-0711). */}}
+{{- /* Everything the API serves (D-0098); the web app takes the rest. */}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -91,4 +91,27 @@ spec:
         {{- end }}
       backendRefs:
         - name: ogcloud-api
+          port: 8080
+---
+{{- /* The dashboard takes every other path; Gateway API prefers the API's longer prefixes (D-0098, D-0214). */}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ogcloud-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.componentLabels" (dict "root" . "component" "web") | nindent 4 }}
+spec:
+  parentRefs:
+    - name: ogcloud-public
+      sectionName: https
+  hostnames:
+    - {{ include "ogcloud.publicHost" . }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: ogcloud-web
           port: 8080

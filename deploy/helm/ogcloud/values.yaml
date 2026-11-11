@@ -262,6 +262,16 @@ api:
   # More Spring properties for the API's application.yaml, e.g. rate limits.
   config: {}
 
+# The dashboard's static files behind Caddy (D-0214).
+web:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
 controller:
   replicas: 2
   resources:
