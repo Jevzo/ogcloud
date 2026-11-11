@@ -67,6 +67,7 @@
   --container-aside: 440px;
   --container-side-min: 320px;
   --container-number-field: 160px;
+  --container-toast: 400px;
 }
 
 @theme inline {

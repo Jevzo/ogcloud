@@ -33,7 +33,10 @@ export function useFailureToast(): (error: unknown) => void {
   return useCallback(
     (error: unknown) => {
       console.error("An action failed", error);
-      toast({ message: problemOf(error) ?? t("errors.action") });
+      toast({
+        message: problemOf(error) ?? t("errors.action"),
+        tone: "danger",
+      });
     },
     [t, toast],
   );

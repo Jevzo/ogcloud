@@ -116,6 +116,16 @@ for (const theme of THEMES) {
     await page.screenshot({ path: `${OUT}save-bar-${theme}.png` });
   });
 
+  test(`a toast, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/groups/bedwars", theme);
+    await page.getByLabel("Fewest servers").fill("3");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("status").filter({ hasText: "Saved" }).waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}toast-${theme}.png` });
+  });
+
   test(`player dialogs, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, `/players/${onlinePlayers[1]?.uuid}`, theme);

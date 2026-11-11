@@ -1,5 +1,5 @@
 import { useMeGet } from "@ogcloud/api-client/react";
-import { Card, useToast } from "@ogcloud/ui";
+import { Card, type ToastTone, useToast } from "@ogcloud/ui";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useCallback, useMemo, useState } from "react";
@@ -22,6 +22,12 @@ import { LinkRequired } from "./link-required.tsx";
 import { Sidebar } from "./sidebar.tsx";
 
 /** Everything behind sign-in: the sidebar, the header with search and live state, and the page. */
+const ALERT_TONES: Record<Alert["severity"], ToastTone> = {
+  INFO: "info",
+  WARNING: "warning",
+  CRITICAL: "danger",
+};
+
 export function AppShell() {
   const { t } = useTranslation("web");
   const session = useSession();
@@ -36,7 +42,10 @@ export function AppShell() {
   const onAlert = useCallback(
     (alert: Alert) => {
       alerts.add(alert);
-      toast({ message: alertMessage(t, alert) });
+      toast({
+        message: alertMessage(t, alert),
+        tone: ALERT_TONES[alert.severity],
+      });
     },
     [t, toast, alerts.add],
   );

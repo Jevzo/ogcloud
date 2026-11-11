@@ -124,6 +124,7 @@ function staticTheme(): Declaration[] {
     ["--container-aside", px(layout.asideWidth)],
     ["--container-side-min", px(layout.sideMinWidth)],
     ["--container-number-field", px(layout.numberFieldWidth)],
+    ["--container-toast", px(layout.toastMaxWidth)],
   ];
 }
 

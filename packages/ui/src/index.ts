@@ -60,7 +60,11 @@ export { SaveBar } from "./components/save-bar.tsx";
 export { Segmented } from "./components/segmented.tsx";
 export { Select, type SelectOption } from "./components/select.tsx";
 export { type Tab, Tabs } from "./components/tabs.tsx";
-export { type ToastOptions, useToast } from "./components/toast.tsx";
+export {
+  type ToastOptions,
+  type ToastTone,
+  useToast,
+} from "./components/toast.tsx";
 export { Tooltip } from "./components/tooltip.tsx";
 export { type GameSpan, GameText } from "./game/game-text.tsx";
 export {

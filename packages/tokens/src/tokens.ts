@@ -294,6 +294,8 @@ export const layout = {
   sideMinWidth: 320,
   /** A number field beside a text field, such as a weight or a player limit. */
   numberFieldWidth: 160,
+  /** The widest a toast grows before its message wraps. */
+  toastMaxWidth: 400,
   /** Screenshot reviews run at the smallest layout and on a large monitor (AGENTS.md §13, D-0170). */
   reviewViewports: [
     { name: "laptop", width: 1280, height: 800 },
