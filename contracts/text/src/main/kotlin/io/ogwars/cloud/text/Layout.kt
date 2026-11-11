@@ -3,44 +3,44 @@ package io.ogwars.cloud.text
 import kotlin.math.roundToInt
 
 /** A stretch of text with one colour (null: the default) and one set of decorations, as every renderer writes it. */
-internal data class Run(
+data class Span(
     val text: String,
     val color: Color?,
     val decorations: Set<Decoration>,
 )
 
 /**
- * The text's runs. Gradients and rainbows colour each code point, counted across their whole span with placeholders
+ * The text's spans. Gradients and rainbows colour each code point, counted across their whole tag with placeholders
  * as filled in; an unfilled placeholder is shown as written. With [collapseGradients] each takes its first colour.
  */
-internal fun RichText.runs(collapseGradients: Boolean = false): List<Run> {
+fun RichText.spans(collapseGradients: Boolean = false): List<Span> {
     val glyphs = mutableListOf<Glyph>()
     layout(nodes, null, emptySet(), collapseGradients, glyphs)
-    val runs = mutableListOf<Run>()
+    val spans = mutableListOf<Span>()
     val text = StringBuilder()
     var current: Pair<Color?, Set<Decoration>>? = null
     for (glyph in glyphs) {
         val style = glyph.color() to glyph.decorations
         if (style != current && current != null) {
-            runs += Run(text.toString(), current.first, current.second)
+            spans += Span(text.toString(), current.first, current.second)
             text.clear()
         }
         current = style
         text.append(glyph.text)
     }
-    current?.let { runs += Run(text.toString(), it.first, it.second) }
+    current?.let { spans += Span(text.toString(), it.first, it.second) }
     // An empty colour tag matters only at the end, where what follows (a typed chat message) continues in it.
-    return runs.filterIndexed { index, run -> run.text.isNotEmpty() || index == runs.lastIndex }
+    return spans.filterIndexed { index, span -> span.text.isNotEmpty() || index == spans.lastIndex }
 }
 
 /** The colour in effect at the end, an empty colour tag's included, which a typed chat message continues in. */
-fun RichText.endColor(): Color? = runs().lastOrNull()?.color
+fun RichText.endColor(): Color? = spans().lastOrNull()?.color
 
 /** The colour of the first character, which gives a team its nearest named colour; null for the default. */
-fun RichText.firstColor(): Color? = runs().firstOrNull()?.color
+fun RichText.firstColor(): Color? = spans().firstOrNull()?.color
 
 /** The text without any styling. */
-fun RichText.toPlain(): String = runs().joinToString("") { it.text }
+fun RichText.toPlain(): String = spans().joinToString("") { it.text }
 
 /** Where a glyph's colour comes from: one colour, or a scale it takes its share of. */
 private sealed interface Paint {

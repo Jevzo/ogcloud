@@ -459,6 +459,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/UserView"
+  /api/v1/text/preview:
+    post:
+      tags:
+      - text-controller
+      operationId: textPreview
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TextPreviewRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TextPreview"
   /api/v1/setup:
     get:
       tags:
@@ -2117,6 +2135,86 @@ components:
       - password
       - roleId
       - username
+    TextPreviewRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        field:
+          type: string
+          enum:
+          - CHAT_PREFIX
+          - CHAT_SUFFIX
+          - TAB_PREFIX
+          - NAME_FORMAT
+          - MOTD
+          - MAINTENANCE_MOTD
+          - VERSION_NAME
+          - MAINTENANCE_VERSION_NAME
+          - TABLIST_HEADER
+          - TABLIST_FOOTER
+          - MAINTENANCE_KICK_MESSAGE
+          - NPC_TITLE
+          - NPC_SUBTITLE
+      required:
+      - field
+      - text
+    TextErrorView:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int32
+        reason:
+          type: string
+      required:
+      - offset
+      - reason
+    TextPreview:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/TextErrorView"
+        modern:
+          type: array
+          items:
+            $ref: "#/components/schemas/TextSpanView"
+        legacy:
+          type: array
+          items:
+            $ref: "#/components/schemas/TextSpanView"
+      required:
+      - errors
+      - legacy
+      - modern
+    TextSpanView:
+      type: object
+      properties:
+        text:
+          type: string
+        color:
+          type:
+          - string
+          - "null"
+        bold:
+          type: boolean
+        italic:
+          type: boolean
+        underlined:
+          type: boolean
+        strikethrough:
+          type: boolean
+        obfuscated:
+          type: boolean
+      required:
+      - bold
+      - italic
+      - obfuscated
+      - strikethrough
+      - text
+      - underlined
     SetupRequest:
       type: object
       properties:

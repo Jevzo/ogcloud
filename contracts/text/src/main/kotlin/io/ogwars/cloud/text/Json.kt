@@ -6,11 +6,11 @@ package io.ogwars.cloud.text
  */
 fun RichText.toJson(): String {
     val extra =
-        runs().joinToString(",") { run ->
+        spans().joinToString(",") { span ->
             buildString {
-                append("{\"text\":").append(quote(run.text))
-                run.color?.let { append(",\"color\":").append(quote(colorName(it))) }
-                run.decorations.forEach { append(",\"").append(it.tag).append("\":true") }
+                append("{\"text\":").append(quote(span.text))
+                span.color?.let { append(",\"color\":").append(quote(colorName(it))) }
+                span.decorations.forEach { append(",\"").append(it.tag).append("\":true") }
                 append('}')
             }
         }

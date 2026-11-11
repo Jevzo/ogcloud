@@ -8,9 +8,9 @@ import net.kyori.adventure.text.format.TextDecoration
 
 /** The text as an Adventure component for 1.16 and newer clients; Velocity and ViaBackwards downsample it for older ones. */
 fun RichText.toComponent(): Component {
-    val runs = runs()
-    if (runs.isEmpty()) return Component.empty()
-    return Component.text().append(runs.map { Component.text(it.text, style(it)) }).build()
+    val spans = spans()
+    if (spans.isEmpty()) return Component.empty()
+    return Component.text().append(spans.map { Component.text(it.text, style(it)) }).build()
 }
 
 /** The Adventure colour of [color]: a named colour stays named, so a legacy serializer keeps its exact code. */
@@ -27,10 +27,10 @@ fun Color.nearestNamed(): NamedTextColor =
         is Color.Hex -> NamedTextColor.nearestTo(TextColor.color(rgb))
     }
 
-private fun style(run: Run): Style {
+private fun style(span: Span): Style {
     val builder = Style.style()
-    run.color?.let { builder.color(it.toTextColor()) }
-    run.decorations.forEach { builder.decoration(it.toTextDecoration(), true) }
+    span.color?.let { builder.color(it.toTextColor()) }
+    span.decorations.forEach { builder.decoration(it.toTextDecoration(), true) }
     return builder.build()
 }
 

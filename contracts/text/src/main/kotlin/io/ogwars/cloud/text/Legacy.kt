@@ -11,27 +11,30 @@ fun RichText.toLegacy(collapseGradients: Boolean = false): String {
     val out = StringBuilder()
     var color: Char? = null
     var decorations = emptySet<Decoration>()
-    for (run in runs(collapseGradients)) {
-        val code = run.color?.let { legacyCode(it) }
-        if (code != color || !run.decorations.containsAll(decorations)) {
+    for (span in spans(collapseGradients)) {
+        val code = span.color?.let { legacyCode(it) }
+        if (code != color || !span.decorations.containsAll(decorations)) {
             out.append(SECTION).append(code ?: RESET)
-            run.decorations.forEach { out.append(SECTION).append(it.code) }
+            span.decorations.forEach { out.append(SECTION).append(it.code) }
         } else {
-            (run.decorations - decorations).forEach { out.append(SECTION).append(it.code) }
+            (span.decorations - decorations).forEach { out.append(SECTION).append(it.code) }
         }
         color = code
-        decorations = run.decorations
-        out.append(run.text)
+        decorations = span.decorations
+        out.append(span.text)
     }
     return out.toString()
 }
 
-/** The legacy code of [color]'s nearest named colour. */
-fun legacyCode(color: Color): Char =
+/** [color]'s nearest named colour, the one clients before 1.16 show (D-0204). */
+fun legacyColor(color: Color): Color.Named =
     when (color) {
-        is Color.Named -> color.code
-        is Color.Hex -> checkNotNull(Color.NAMED[NamedTextColor.NAMES.key(color.nearestNamed())]).code
+        is Color.Named -> color
+        is Color.Hex -> Color.NAMED.getValue(checkNotNull(NamedTextColor.NAMES.key(color.nearestNamed())))
     }
+
+/** The legacy code of [color]'s nearest named colour. */
+fun legacyCode(color: Color): Char = legacyColor(color).code
 
 private const val SECTION = '§'
 private const val RESET = 'r'

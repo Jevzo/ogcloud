@@ -71,7 +71,7 @@ class ParserTest {
         text.placeholders() shouldBe setOf("player", "server")
         val filled = text.fill("player" to "<bold>Eve", "server" to "lobby-1")
         filled.toPlain() shouldBe "<bold>Eve joined lobby-1"
-        filled.runs().none { Decoration.BOLD in it.decorations } shouldBe true
+        filled.spans().none { Decoration.BOLD in it.decorations } shouldBe true
     }
 
     @Test
@@ -79,11 +79,11 @@ class ParserTest {
         val prefix = RichText.parseValid("<gold>[VIP] ")
         val joined =
             RichText.parseValid("{prefix}Eve").insert(mapOf("prefix" to prefix)) + RichText.parseValid("<red>!")
-        joined.runs() shouldBe
+        joined.spans() shouldBe
             listOf(
-                Run("[VIP] ", Color.NAMED.getValue("gold"), emptySet()),
-                Run("Eve", null, emptySet()),
-                Run("!", Color.NAMED.getValue("red"), emptySet()),
+                Span("[VIP] ", Color.NAMED.getValue("gold"), emptySet()),
+                Span("Eve", null, emptySet()),
+                Span("!", Color.NAMED.getValue("red"), emptySet()),
             )
     }
 

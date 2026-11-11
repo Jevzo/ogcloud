@@ -278,6 +278,52 @@ export interface CreateUserRequest {
   roleId: string;
 }
 
+export type TextPreviewRequestField = typeof TextPreviewRequestField[keyof typeof TextPreviewRequestField];
+
+
+export const TextPreviewRequestField = {
+  CHAT_PREFIX: 'CHAT_PREFIX',
+  CHAT_SUFFIX: 'CHAT_SUFFIX',
+  TAB_PREFIX: 'TAB_PREFIX',
+  NAME_FORMAT: 'NAME_FORMAT',
+  MOTD: 'MOTD',
+  MAINTENANCE_MOTD: 'MAINTENANCE_MOTD',
+  VERSION_NAME: 'VERSION_NAME',
+  MAINTENANCE_VERSION_NAME: 'MAINTENANCE_VERSION_NAME',
+  TABLIST_HEADER: 'TABLIST_HEADER',
+  TABLIST_FOOTER: 'TABLIST_FOOTER',
+  MAINTENANCE_KICK_MESSAGE: 'MAINTENANCE_KICK_MESSAGE',
+  NPC_TITLE: 'NPC_TITLE',
+  NPC_SUBTITLE: 'NPC_SUBTITLE',
+} as const;
+
+export interface TextPreviewRequest {
+  text: string;
+  field: TextPreviewRequestField;
+}
+
+export interface TextErrorView {
+  offset: number;
+  reason: string;
+}
+
+export interface TextSpanView {
+  text: string;
+  /** @nullable */
+  color?: string | null;
+  bold: boolean;
+  italic: boolean;
+  underlined: boolean;
+  strikethrough: boolean;
+  obfuscated: boolean;
+}
+
+export interface TextPreview {
+  errors: TextErrorView[];
+  modern: TextSpanView[];
+  legacy: TextSpanView[];
+}
+
 export interface SetupRequest {
   setupToken: string;
   username: string;
@@ -1858,6 +1904,53 @@ return request<userCreateResponse>(getUserCreateUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createUserRequest)
+  }
+);}
+
+
+
+export type textPreviewResponse200 = {
+  data: TextPreview
+  status: 200
+}
+
+export type textPreviewResponseSuccess = (textPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type textPreviewResponse = (textPreviewResponseSuccess)
+
+export const getTextPreviewUrl = () => {
+
+
+
+
+  return `/api/v1/text/preview`
+}
+
+export const textPreview = async (textPreviewRequest: TextPreviewRequest, options?: Parameters<typeof request>[1]): Promise<textPreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return request<textPreviewResponse>(getTextPreviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(textPreviewRequest)
   }
 );}
 

@@ -9,10 +9,12 @@ enum class TextField(
     val samples: Map<String, String> = emptyMap(),
     /** Placeholders the text must use. */
     val required: Set<String> = emptySet(),
+    /** 1.8 caps its length, so its gradients take their first colour there (D-0204). */
+    val collapsesOnLegacy: Boolean = false,
 ) {
     CHAT_PREFIX,
     CHAT_SUFFIX,
-    TAB_PREFIX,
+    TAB_PREFIX(collapsesOnLegacy = true),
     NAME_FORMAT(mapOf(Placeholders.NAME to "Steve"), required = setOf(Placeholders.NAME)),
     MOTD,
     MAINTENANCE_MOTD,

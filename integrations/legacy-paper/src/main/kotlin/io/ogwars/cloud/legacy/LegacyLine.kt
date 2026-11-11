@@ -59,7 +59,7 @@ internal class LegacyLine(
                     .firstColor()
                     ?.let { "$SECTION${legacyCode(it)}" }
                     .orEmpty()
-            return (storedText(group.tabPrefix).toLegacy(collapseGradients = true) + nameColor)
+            return (storedText(group.tabPrefix).toLegacy(TextField.TAB_PREFIX.collapsesOnLegacy) + nameColor)
                 .take(PREFIX_LIMIT)
                 .removeSuffix(SECTION.toString())
         }

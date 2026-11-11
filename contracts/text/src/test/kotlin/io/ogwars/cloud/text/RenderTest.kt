@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.CsvSource
 
 class RenderTest {
     private fun colors(source: String): List<Int?> =
-        RichText.parseValid(source).runs().flatMap { run ->
+        RichText.parseValid(source).spans().flatMap { run ->
             List(run.text.codePointCount(0, run.text.length)) { run.color?.rgb }
         }
 
@@ -31,7 +31,7 @@ class RenderTest {
     @Test
     fun `a gradient spans the text a placeholder was filled with`() {
         val text = RichText.parseValid("<gradient:#000000:#ffffff>{name}</gradient>").fill("name" to "abc")
-        text.runs().map { it.color?.rgb } shouldBe listOf(0x000000, 0x808080, 0xffffff)
+        text.spans().map { it.color?.rgb } shouldBe listOf(0x000000, 0x808080, 0xffffff)
     }
 
     @Test
@@ -46,11 +46,11 @@ class RenderTest {
 
     @Test
     fun `equal neighbours merge into one run`() {
-        RichText.parseValid("<red>a<bold>b</bold></red>c").runs() shouldBe
+        RichText.parseValid("<red>a<bold>b</bold></red>c").spans() shouldBe
             listOf(
-                Run("a", Color.NAMED.getValue("red"), emptySet()),
-                Run("b", Color.NAMED.getValue("red"), setOf(Decoration.BOLD)),
-                Run("c", null, emptySet()),
+                Span("a", Color.NAMED.getValue("red"), emptySet()),
+                Span("b", Color.NAMED.getValue("red"), setOf(Decoration.BOLD)),
+                Span("c", null, emptySet()),
             )
     }
 
@@ -108,7 +108,7 @@ class RenderTest {
         val suffix = RichText.parseValid("<gray>: <white>")
         suffix.endColor() shouldBe Color.NAMED.getValue("white")
         suffix.toLegacy() shouldBe "§7: §f"
-        RichText.parseValid("<red></red>x").runs() shouldBe listOf(Run("x", null, emptySet()))
+        RichText.parseValid("<red></red>x").spans() shouldBe listOf(Span("x", null, emptySet()))
     }
 
     @Test

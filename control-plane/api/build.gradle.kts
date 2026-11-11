@@ -3,6 +3,9 @@ plugins {
 }
 
 dependencies {
+    // Validates and previews in-game texts (D-0202); legacy previews' nearest colours come from Adventure.
+    implementation(project(":contracts:text"))
+    implementation(libs.adventure.api)
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework:spring-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server")
