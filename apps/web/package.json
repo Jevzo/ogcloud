@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "mocks": "msw init mocks/public --save=false && vite --mode mocks",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.login.config.ts",
     "typecheck": "tsc --noEmit",
-    "screenshots": "msw init mocks/public --save=false && playwright test"
+    "screenshots": "msw init mocks/public --save=false && playwright test",
+    "mocks:login": "vite --config vite.login.config.ts --mode mocks"
   },
   "dependencies": {
     "@ogcloud/api-client": "workspace:*",
@@ -20,6 +21,7 @@
     "@tanstack/react-router": "catalog:",
     "cmdk": "catalog:",
     "i18next": "catalog:",
+    "lean-qr": "catalog:",
     "lucide-react": "catalog:",
     "motion": "catalog:",
     "radix-ui": "catalog:",

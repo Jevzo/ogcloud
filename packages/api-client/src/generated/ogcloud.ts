@@ -23,6 +23,7 @@ import type {
   LinkCodeSent,
   LogAuditParams,
   LogScalingParams,
+  LoginState,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -67,6 +68,7 @@ import type {
   TextPreviewRequest,
   TotpCodeRequest,
   TotpEnrollment,
+  TotpSetup,
   TransferRequest,
   UpdateGroupRequest,
   UpdateNetworkSettingsRequest,
@@ -2655,6 +2657,72 @@ return request<commandRunResponse>(getCommandRunUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(consoleCommandRequest)
+  }
+);}
+
+
+
+export type loginStateResponse200 = {
+  data: LoginState
+  status: 200
+}
+
+export type loginStateResponseSuccess = (loginStateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type loginStateResponse = (loginStateResponseSuccess)
+
+export const getLoginStateUrl = () => {
+
+
+
+
+  return `/login/state`
+}
+
+export const loginState = async ( options?: Parameters<typeof request>[1]): Promise<loginStateResponse> => {
+
+  return request<loginStateResponse>(getLoginStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type mfaSetupResponse200 = {
+  data: TotpSetup
+  status: 200
+}
+
+export type mfaSetupResponseSuccess = (mfaSetupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mfaSetupResponse = (mfaSetupResponseSuccess)
+
+export const getMfaSetupUrl = () => {
+
+
+
+
+  return `/login/mfa/totp-setup`
+}
+
+export const mfaSetup = async ( options?: Parameters<typeof request>[1]): Promise<mfaSetupResponse> => {
+
+  return request<mfaSetupResponse>(getMfaSetupUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 

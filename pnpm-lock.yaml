@@ -239,6 +239,9 @@ catalogs:
     jscpd:
       specifier: 5.4.2
       version: 5.4.2
+    lean-qr:
+      specifier: 2.7.4
+      version: 2.7.4
     lucide-react:
       specifier: 1.70.0
       version: 1.70.0
@@ -331,6 +334,9 @@ importers:
       i18next:
         specifier: 'catalog:'
         version: 27.0.1(typescript@7.0.2)
+      lean-qr:
+        specifier: 'catalog:'
+        version: 2.7.4
       lucide-react:
         specifier: 'catalog:'
         version: 1.70.0(@types/react@19.3.0)(react@19.3.1)
@@ -2747,6 +2753,10 @@ packages:
 
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
+
+  lean-qr@2.7.4:
+    resolution: {integrity: sha512-tlMPFfqhAAZN7+j/djRSvl/2+AYT2+7RRuyq8bvcbV8gMiENiscquQ9WTfCSyeEdxsVaEB+tU7e9nFZC63BFnQ==}
+    hasBin: true
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -5480,6 +5490,8 @@ snapshots:
     dependencies:
       jwa: 2.0.1
       safe-buffer: 5.2.1
+
+  lean-qr@2.7.4: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true

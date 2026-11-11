@@ -49,6 +49,10 @@ export class Browser {
     throw new Error(`More than ${MAX_REDIRECTS} redirects from ${url}`);
   }
 
+  /** A fetch that carries this browser's cookies, for the generated API client's calls (D-0163). */
+  readonly fetch = (url: string, init: RequestInit): Promise<Response> =>
+    this.#send(new URL(url), init);
+
   /** Posts a form the way a browser does. */
   submit(
     url: string | URL,
@@ -90,14 +94,4 @@ export class Browser {
     }
     return response;
   }
-}
-
-/** The value of the named input in [html], e.g. Spring Security's `_csrf`. */
-export function inputValue(html: string, name: string): string {
-  const input = html.match(new RegExp(`<input[^>]*name="${name}"[^>]*>`))?.[0];
-  const value = input?.match(/value="([^"]*)"/)?.[1];
-  if (value === undefined) {
-    throw new Error(`The page has no ${name} input`);
-  }
-  return value;
 }

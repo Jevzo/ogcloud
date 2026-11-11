@@ -38,8 +38,14 @@ run = [
   "gitleaks git . --redact --no-banner --log-opts=HEAD",
 ]
 
+[tasks."build:login"]
+description = "Build the login pages the API serves (D-0212) into apps/web/dist-login"
+run = ["pnpm install --frozen-lockfile", "pnpm --filter @ogcloud/web exec vite build --config vite.login.config.ts"]
+
 [tasks."check:jvm"]
 description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
+# The API's browser login test drives the real login pages.
+depends = ["build:login"]
 run = "./gradlew check"
 
 # Artifacts are built here with mise's toolchains and staged in build/images; the platform Dockerfile only copies them.
@@ -73,6 +79,9 @@ mkdir -p "$out/plugins"
 for service in api controller; do
   java -Djarmode=tools -jar "control-plane/$service/build/libs/$service.jar" extract --layers --launcher --destination "$out/$service"
 done
+# The API serves the login pages from /app/login (D-0212).
+mise run build:login
+cp -R apps/web/dist-login "$out/login"
 # The controller ships OgCloud's plugins as ogcloud-<platform>.jar (D-0079).
 cp integrations/paper/build/libs/paper-all.jar "$out/plugins/ogcloud-paper.jar"
 cp integrations/legacy-paper/build/libs/legacy-paper-all.jar "$out/plugins/ogcloud-pandaspigot.jar"

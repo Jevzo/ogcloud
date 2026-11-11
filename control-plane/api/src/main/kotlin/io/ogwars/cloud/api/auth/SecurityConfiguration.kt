@@ -1,8 +1,9 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.api.auth.login.LoginPages
 import io.ogwars.cloud.api.auth.mfa.EnrollmentGate
+import io.ogwars.cloud.api.auth.mfa.MfaEndpoints
 import io.ogwars.cloud.api.auth.mfa.MfaGate
-import io.ogwars.cloud.api.auth.mfa.MfaPage
 import io.ogwars.cloud.api.auth.mfa.MfaRequirements
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -62,7 +63,7 @@ class SecurityConfiguration {
             .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
             .exceptionHandling {
                 it.defaultAuthenticationEntryPointFor(
-                    LoginUrlAuthenticationEntryPoint(LOGIN_PAGE),
+                    LoginUrlAuthenticationEntryPoint(LoginPages.LOGIN_PAGE),
                     MediaTypeRequestMatcher(MediaType.TEXT_HTML),
                 )
             }
@@ -101,22 +102,25 @@ class SecurityConfiguration {
         return http
             .authorizeHttpRequests {
                 it.requestMatchers("/actuator/health/**", "/actuator/prometheus", "/error").permitAll()
+                // The pages and their state are open; the forms they post are what checks a login (D-0212).
+                it.requestMatchers(HttpMethod.GET, LoginPages.STATE_PATH, LoginPages.ASSETS).permitAll()
                 it.anyRequest().authenticated()
             }.addFilterAfter(
                 EnrollmentGate(
                     OrRequestMatcher(
                         paths.matcher("/webauthn/register/**"),
-                        paths.matcher("${MfaPage.PATH}/totp-setup"),
+                        paths.matcher("${MfaEndpoints.PATH}/totp-setup"),
                     ),
                     mfa,
                 ),
                 SecurityContextHolderFilter::class.java,
-            ).formLogin(Customizer.withDefaults())
-            // Passkeys belong to the public origin (D-0085, D-0098).
+            ).formLogin { it.loginPage(LoginPages.LOGIN_PAGE).permitAll() }
+            // Passkeys belong to the public origin (D-0085, D-0098); the login pages register them (D-0212).
             .webAuthn {
                 it.rpName(RELYING_PARTY)
                 it.rpId(properties.issuer.host)
                 it.allowedOrigins(properties.issuer.toString())
+                it.disableDefaultRegistrationPage(true)
             }.build()
     }
 
@@ -133,7 +137,6 @@ class SecurityConfiguration {
         }
 
     private companion object {
-        const val LOGIN_PAGE = "/login"
         const val API_PATHS = "/api"
         const val RELYING_PARTY = "OgCloud"
     }

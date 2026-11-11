@@ -30,8 +30,9 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * The interim login pages in headless Chromium (D-0083, D-0099). Passkeys need the page's origin to be the relying
- * party, so this context serves the issuer itself on a fixed port, and a virtual authenticator stands in for a device.
+ * The login pages (D-0212, D-0099) in headless Chromium, as built by `mise run build:login`. Passkeys need the page's
+ * origin to be the relying party, so this context serves the issuer itself on a fixed port, and a virtual
+ * authenticator stands in for a device.
  */
 @ApiTestSetup
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -53,7 +54,7 @@ class BrowserLoginTest(
     }
 
     @Test
-    fun `a wrong password stays on the login page`() {
+    fun `a wrong password stays on the login page and says so`() {
         val user = testUsers.create()
         browser.newContext().use { context ->
             val page = context.newPage()
@@ -61,32 +62,47 @@ class BrowserLoginTest(
             signIn(page, user.username, "not the password")
 
             page.url() shouldContain "/login?error"
+            page.getByText("That username and password do not match.").waitFor()
         }
     }
 
     @Test
-    fun `an owner enrolls an authenticator, then a passkey, and signs in with each`() {
+    fun `an owner enrolls an authenticator app and continues to the app`() {
+        val owner = testUsers.create(BuiltInRole.OWNER.id)
+        browser.newContext().use { context ->
+            val page = context.newPage()
+            page.navigate(authorizeUrl())
+            signIn(page, owner.username, TestUsers.PASSWORD)
+
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Authenticator app")).click()
+            val secret =
+                Base32.decode(
+                    page.locator("span.font-mono").first().textContent() ?: error("The setup shows no secret"),
+                )
+            page.getByLabel("Code from the app").fill(totp.code(secret, totp.step(Instant.now())))
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Confirm")).click()
+
+            callbackCode(page).shouldNotBeNull()
+        }
+    }
+
+    @Test
+    fun `an owner enrolls a passkey and then signs in with it alone`() {
         val owner = testUsers.create(BuiltInRole.OWNER.id)
         browser.newContext().use { context ->
             val page = context.newPage()
             addVirtualAuthenticator(context, page)
-
             page.navigate(authorizeUrl())
             signIn(page, owner.username, TestUsers.PASSWORD)
-            page.getByText("Use an authenticator app").click()
-            val secret = Base32.decode(page.locator("code").textContent() ?: error("The setup page shows no secret"))
-            page.locator("#code").fill(totp.code(secret, totp.step(Instant.now())))
-            page.getByRole(AriaRole.BUTTON).click()
-            callbackCode(page).shouldNotBeNull()
 
-            page.navigate("$origin/webauthn/register")
-            page.locator("#label").fill("Test passkey")
-            page.locator("#register").click()
-            page.waitForURL("**/webauthn/register?success")
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Passkey")).click()
+            page.getByLabel("Passkey name").fill("Test passkey")
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Register passkey")).click()
+            callbackCode(page).shouldNotBeNull()
 
             context.clearCookies()
             page.navigate(authorizeUrl())
-            page.locator("#passkey-signin").click()
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Sign in with a passkey")).click()
             callbackCode(page).shouldNotBeNull()
         }
     }
@@ -96,9 +112,9 @@ class BrowserLoginTest(
         username: String,
         password: String,
     ) {
-        page.locator("#username").fill(username)
-        page.locator("#password").fill(password)
-        page.locator("form.login-form button[type=submit]").first().click()
+        page.getByLabel("Username or email").fill(username)
+        page.getByLabel("Password").fill(password)
+        page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Sign in").setExact(true)).click()
         page.waitForLoadState()
     }
 

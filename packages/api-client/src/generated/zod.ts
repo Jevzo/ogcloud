@@ -628,6 +628,22 @@ export const CommandRunBody = zod.object({
 export const CommandRunResponse = zod.void()
 
 
+export const LoginStateResponse = zod.object({
+  "step": zod.enum(['CREDENTIALS', 'TOTP', 'PASSKEY', 'ENROLMENT', 'DONE']),
+  "csrf": zod.object({
+  "headerName": zod.string(),
+  "parameterName": zod.string(),
+  "token": zod.string()
+})
+})
+
+
+export const MfaSetupResponse = zod.object({
+  "secret": zod.string(),
+  "uri": zod.string()
+})
+
+
 export const ServerGetParams = zod.object({
   "id": zod.uuid()
 })

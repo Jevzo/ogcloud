@@ -13,6 +13,8 @@ USER 1000:1000
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]
 
 FROM spring AS api
+# The branded login pages the API serves (D-0212), built from apps/web.
+COPY --from=artifacts login/ /app/login/
 
 FROM spring AS controller
 # OgCloud's own plugins, which the controller puts into the runtime bundles (D-0079).

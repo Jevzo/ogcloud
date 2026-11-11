@@ -1129,6 +1129,30 @@ paths:
       responses:
         "202":
           description: Accepted
+  /login/state:
+    get:
+      tags:
+      - login-state-controller
+      operationId: loginState
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginState"
+  /login/mfa/totp-setup:
+    get:
+      tags:
+      - mfa-endpoints
+      operationId: mfaSetup
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TotpSetup"
   /api/v1/servers/{id}:
     get:
       tags:
@@ -2538,6 +2562,45 @@ components:
       required:
       - command
       - target
+    LoginCsrf:
+      type: object
+      properties:
+        headerName:
+          type: string
+        parameterName:
+          type: string
+        token:
+          type: string
+      required:
+      - headerName
+      - parameterName
+      - token
+    LoginState:
+      type: object
+      properties:
+        step:
+          type: string
+          enum:
+          - CREDENTIALS
+          - TOTP
+          - PASSKEY
+          - ENROLMENT
+          - DONE
+        csrf:
+          $ref: "#/components/schemas/LoginCsrf"
+      required:
+      - csrf
+      - step
+    TotpSetup:
+      type: object
+      properties:
+        secret:
+          type: string
+        uri:
+          type: string
+      required:
+      - secret
+      - uri
     PageUserView:
       type: object
       properties:

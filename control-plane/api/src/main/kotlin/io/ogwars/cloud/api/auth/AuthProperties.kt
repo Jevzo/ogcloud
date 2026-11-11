@@ -18,6 +18,8 @@ data class AuthProperties(
     val clients: Clients = Clients(),
     /** Creates the first owner; bootstrap puts it into Infisical and it is useless once an owner exists (D-0094). */
     val setupToken: String? = null,
+    /** The built login pages, a second entry of the web app (D-0212); the API image carries them. */
+    val loginPages: Path? = null,
 ) {
     init {
         require(
@@ -27,7 +29,7 @@ data class AuthProperties(
 
     override fun toString() =
         "AuthProperties(issuer=$issuer, signing=$signing, totp=$totp, tokens=$tokens, clients=$clients, " +
-            "setupToken=${redacted(setupToken)})"
+            "setupToken=${redacted(setupToken)}, loginPages=$loginPages)"
 
     data class Signing(
         /** Holds `<kid>.pem` RSA private keys (PKCS#8), synced from Infisical (D-0044). */

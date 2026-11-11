@@ -46,6 +46,10 @@ jobs:
               - *shared
               - "**/*.kt"
               - "**/*.kts"
+              # The API's browser login test drives the login pages (D-0212).
+              - apps/web/login/**
+              - apps/web/src/login/**
+              - apps/web/vite.login.config.ts
               - gradle/**
               - gradle.properties
               - .editorconfig

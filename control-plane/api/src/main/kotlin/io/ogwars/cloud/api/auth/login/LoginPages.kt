@@ -1,0 +1,131 @@
+package io.ogwars.cloud.api.auth.login
+
+import io.ogwars.cloud.api.auth.AuthProperties
+import io.ogwars.cloud.api.auth.mfa.MfaEndpoints
+import io.ogwars.cloud.api.auth.mfa.MfaRequirements
+import io.ogwars.cloud.domain.user.MfaRequirement
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.context.annotation.Configuration
+import org.springframework.http.CacheControl
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.security.authentication.AnonymousAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.csrf.CsrfToken
+import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
+
+/** Where the login pages are in a sign-in, as the pages ask through [LoginPages.state]. */
+enum class LoginStep {
+    /** Nobody is signed in: a password or a passkey. */
+    CREDENTIALS,
+
+    /** Signed in with a password; the authenticator's code follows (D-0097). */
+    TOTP,
+
+    /** Signed in with a password; this account's second factor is its passkey. */
+    PASSKEY,
+
+    /** An owner without a second factor sets one up before going on (D-0097). */
+    ENROLMENT,
+
+    /** Nothing is missing: the pages continue the app's authorization request. */
+    DONE,
+}
+
+data class LoginCsrf(
+    val headerName: String,
+    val parameterName: String,
+    val token: String,
+)
+
+data class LoginState(
+    val step: LoginStep,
+    val csrf: LoginCsrf,
+)
+
+/**
+ * Serves the branded login pages, built as a second entry of the web app (D-0212), and the state they render from.
+ * Spring's form, TOTP and WebAuthn endpoints still take the sign-in itself.
+ */
+@Controller
+class LoginPages(
+    properties: AuthProperties,
+) {
+    private val index: String? =
+        properties.loginPages
+            ?.resolve(INDEX)
+            ?.takeIf(Files::isRegularFile)
+            ?.let(Files::readString)
+
+    @GetMapping(LOGIN_PAGE, MfaEndpoints.PATH, produces = [MediaType.TEXT_HTML_VALUE])
+    @ResponseBody
+    fun page(): ResponseEntity<String> =
+        if (index == null) {
+            ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("The login pages are not installed.")
+        } else {
+            ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(index)
+        }
+
+    companion object {
+        const val LOGIN_PAGE = "/login"
+        const val STATE_PATH = "/login/state"
+        const val ASSETS = "/login/assets/**"
+        private const val INDEX = "index.html"
+    }
+}
+
+/** What the login pages need to render (D-0212); part of the OpenAPI contract, so the pages' types are generated. */
+@RestController
+@RequestMapping("/login")
+class LoginStateController(
+    private val requirements: MfaRequirements,
+) {
+    @GetMapping("/state", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun state(request: HttpServletRequest): ResponseEntity<LoginState> {
+        val csrf = request.getAttribute(CsrfToken::class.java.name) as CsrfToken
+        val login = SecurityContextHolder.getContext().authentication
+        val step =
+            if (login == null || !login.isAuthenticated || login is AnonymousAuthenticationToken) {
+                LoginStep.CREDENTIALS
+            } else {
+                when (requirements.of(login)) {
+                    MfaRequirement.NONE -> LoginStep.DONE
+                    MfaRequirement.TOTP_CODE -> LoginStep.TOTP
+                    MfaRequirement.PASSKEY_SIGN_IN -> LoginStep.PASSKEY
+                    MfaRequirement.ENROLLMENT -> LoginStep.ENROLMENT
+                }
+            }
+        return ResponseEntity
+            .ok()
+            .cacheControl(CacheControl.noStore())
+            .body(LoginState(step, LoginCsrf(csrf.headerName, csrf.parameterName, csrf.token)))
+    }
+}
+
+/** The pages' hashed scripts, styles and fonts never change under one name, so browsers keep them a year. */
+@Configuration(proxyBeanMethods = false)
+class LoginAssets(
+    private val properties: AuthProperties,
+) : WebMvcConfigurer {
+    override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
+        val directory = properties.loginPages ?: return
+        registry
+            .addResourceHandler(LoginPages.ASSETS)
+            .addResourceLocations(directory.resolve(ASSETS_DIRECTORY).toUri().toString())
+            .setCacheControl(CacheControl.maxAge(ASSET_LIFETIME_DAYS, TimeUnit.DAYS).cachePublic().immutable())
+    }
+
+    private companion object {
+        const val ASSETS_DIRECTORY = "assets/"
+        const val ASSET_LIFETIME_DAYS = 365L
+    }
+}

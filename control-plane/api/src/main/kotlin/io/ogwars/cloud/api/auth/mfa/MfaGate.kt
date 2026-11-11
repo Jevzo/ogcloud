@@ -35,6 +35,6 @@ class MfaGate(
             return
         }
         requestCache.saveRequest(request, response)
-        response.sendRedirect(request.contextPath + MfaPage.PATH)
+        response.sendRedirect(request.contextPath + MfaEndpoints.PATH)
     }
 }

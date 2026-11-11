@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import { Browser, inputValue, type Page } from "./browser.ts";
+import { loginState, mfaSetup } from "@ogcloud/api-client";
+import { Browser, type Page } from "./browser.ts";
 import { send } from "./http.ts";
 import type { Target } from "./target.ts";
 import { base32Decode, code, nextStepAt, step } from "./totp.ts";
@@ -43,13 +44,17 @@ export async function signIn(
     code_challenge_method: "S256",
   }).toString();
 
-  const loginPage = page(await browser.open(authorize));
+  // The login pages read their state, CSRF token included, from /login/state (D-0212).
+  const state = async () =>
+    (await loginState({ origin: target.origin, fetch: browser.fetch })).data;
+  page(await browser.open(authorize));
+  const { csrf } = await state();
   let reached = await browser.submit(
     new URL("/login", target.origin),
     {
       username: user.username,
       password: user.password,
-      _csrf: inputValue(loginPage.html, "_csrf"),
+      [csrf.parameterName]: csrf.token,
     },
     callback,
   );
@@ -60,24 +65,21 @@ export async function signIn(
         `Signing in as ${user.username} ended on ${reached.url.href}`,
       );
     }
-    if (reached.html.includes(`${MFA_PATH}/totp-setup`)) {
-      const setup = page(
-        await browser.open(new URL(`${MFA_PATH}/totp-setup`, target.origin)),
-      );
-      totpSecret = setup.html.match(/<code>([A-Z2-7=]+)<\/code>/)?.[1];
-      if (totpSecret === undefined) {
-        throw new Error("The setup page shows no secret");
-      }
+    const { step } = await state();
+    if (step === "ENROLMENT") {
+      totpSecret = (
+        await mfaSetup({ origin: target.origin, fetch: browser.fetch })
+      ).data.secret;
       reached = await answer(
         browser,
         target,
         `${MFA_PATH}/totp-setup`,
-        setup,
+        state,
         totpSecret,
         callback,
         now,
       );
-    } else {
+    } else if (step === "TOTP") {
       if (totpSecret === undefined) {
         throw new Error(
           `${user.username} has an authenticator, but no secret is known for it`,
@@ -87,10 +89,14 @@ export async function signIn(
         browser,
         target,
         `${MFA_PATH}/totp`,
-        reached,
+        state,
         totpSecret,
         callback,
         now,
+      );
+    } else {
+      throw new Error(
+        `Signing in as ${user.username} needs the ${step} step, which the suite cannot do`,
       );
     }
   }
@@ -119,24 +125,26 @@ async function answer(
   browser: Browser,
   target: Target,
   path: string,
-  form: Page,
+  state: () => Promise<{ csrf: { parameterName: string; token: string } }>,
   secret: string,
   callback: string,
   now: () => Date,
 ): Promise<Page | URL> {
   const key = base32Decode(secret);
-  const submitCode = (csrf: string) =>
-    browser.submit(
+  const submitCode = async () => {
+    const { csrf } = await state();
+    return browser.submit(
       new URL(path, target.origin),
-      { code: code(key, step(now())), _csrf: csrf },
+      { code: code(key, step(now())), [csrf.parameterName]: csrf.token },
       callback,
     );
-  const first = await submitCode(inputValue(form.html, "_csrf"));
+  };
+  const first = await submitCode();
   if (first instanceof URL) {
     return first;
   }
   await sleep(nextStepAt(now()).getTime() - now().getTime());
-  return submitCode(inputValue(first.html, "_csrf"));
+  return submitCode();
 }
 
 async function exchange(

@@ -42,6 +42,7 @@ import type {
   LinkCodeSent,
   LogAuditParams,
   LogScalingParams,
+  LoginState,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -86,6 +87,7 @@ import type {
   TextPreviewRequest,
   TotpCodeRequest,
   TotpEnrollment,
+  TotpSetup,
   TransferRequest,
   UpdateGroupRequest,
   UpdateNetworkSettingsRequest,
@@ -6405,6 +6407,228 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(useCommandRunMutationOptions(options), queryClient);
     }
+
+export type loginStateResponse200 = {
+  data: LoginState
+  status: 200
+}
+
+export type loginStateResponseSuccess = (loginStateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type loginStateResponse = (loginStateResponseSuccess)
+
+export const getLoginStateUrl = () => {
+
+
+
+
+  return `/login/state`
+}
+
+export const useLoginStateHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<loginStateResponse> => {
+
+      const customFetcher = useApiRequest();
+      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getLoginStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getLoginStateQueryKey = () => {
+    return [
+    `/login/state`
+    ] as const;
+    }
+
+
+export const useLoginStateQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLoginStateQueryKey();
+
+  const loginState =  useLoginStateHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>> = ({ signal }) => loginState({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LoginStateQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>>
+export type LoginStateQueryError = unknown
+
+
+export function useLoginState<TData = Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginState<TData = Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginState<TData = Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginState<TData = Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useLoginStateHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useLoginStateQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type mfaSetupResponse200 = {
+  data: TotpSetup
+  status: 200
+}
+
+export type mfaSetupResponseSuccess = (mfaSetupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mfaSetupResponse = (mfaSetupResponseSuccess)
+
+export const getMfaSetupUrl = () => {
+
+
+
+
+  return `/login/mfa/totp-setup`
+}
+
+export const useMfaSetupHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<mfaSetupResponse> => {
+
+      const customFetcher = useApiRequest();
+      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMfaSetupUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMfaSetupQueryKey = () => {
+    return [
+    `/login/mfa/totp-setup`
+    ] as const;
+    }
+
+
+export const useMfaSetupQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMfaSetupQueryKey();
+
+  const mfaSetup =  useMfaSetupHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>> = ({ signal }) => mfaSetup({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MfaSetupQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>>
+export type MfaSetupQueryError = unknown
+
+
+export function useMfaSetup<TData = Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMfaSetup<TData = Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMfaSetup<TData = Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMfaSetup<TData = Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMfaSetupHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useMfaSetupQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type serverGetResponse200 = {
   data: ServerView

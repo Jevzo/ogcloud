@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.DynamicPropertyRegistrar
 import org.springframework.test.context.TestPropertySource
+import java.nio.file.Path
 
 /** The issuer tokens carry in tests; nothing listens there, flows only read the redirects. */
 const val TEST_ISSUER = "http://ogcloud.test"
@@ -73,6 +74,14 @@ class ApiTestConfiguration {
     fun apiTestProperties() =
         DynamicPropertyRegistrar { registry ->
             registry.add("ogcloud.auth.signing.keys-dir") { TestSigningKeys.dir.toString() }
+            // Built by `mise run build:login`, which check:jvm runs first (D-0212).
+            registry.add("ogcloud.auth.login-pages") {
+                Path
+                    .of("../../apps/web/dist-login")
+                    .toAbsolutePath()
+                    .normalize()
+                    .toString()
+            }
             registry.add("ogcloud.auth.signing.active-key-id") { TestSigningKeys.CURRENT }
         }
 }

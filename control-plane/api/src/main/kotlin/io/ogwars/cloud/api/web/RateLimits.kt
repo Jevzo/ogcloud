@@ -62,8 +62,10 @@ class RateLimitFilter(
 
         val SIGN_IN: RequestMatcher =
             OrRequestMatcher(
-                paths.matcher("/login"),
-                paths.matcher("/login/**"),
+                // The pages, their assets and state are reads; what a brute force sends is a POST (D-0212).
+                paths.matcher(HttpMethod.POST, "/login"),
+                paths.matcher(HttpMethod.POST, "/login/**"),
+                paths.matcher("/login/mfa/totp-setup"),
                 paths.matcher("/webauthn/**"),
                 paths.matcher("/oauth2/authorize"),
                 paths.matcher(HttpMethod.POST, "/oauth2/token"),

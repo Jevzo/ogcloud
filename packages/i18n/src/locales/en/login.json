@@ -1,0 +1,43 @@
+{
+  "credentials": {
+    "description": "Manage your network's servers, players and settings.",
+    "error": "That username and password do not match.",
+    "passkey": "Sign in with a passkey",
+    "password": "Password",
+    "submit": "Sign in",
+    "title": "Sign in",
+    "username": "Username or email"
+  },
+  "enrol": {
+    "app": "Authenticator app",
+    "appDescription": "A six-digit code from an app on your phone.",
+    "back": "Back",
+    "code": "Code from the app",
+    "confirm": "Confirm",
+    "description": "Owners confirm every sign-in with a second factor. Choose one to continue.",
+    "error": "That code did not work. Enter the one your app shows now.",
+    "failed": "Registering the passkey failed: {{detail}}",
+    "label": "Passkey name",
+    "labelHint": "So you can tell it apart later, for example Work laptop.",
+    "passkey": "Passkey",
+    "passkeyDescription": "Your device's fingerprint, face or PIN, or a security key.",
+    "register": "Register passkey",
+    "scan": "Scan this code with your authenticator app, or enter the secret by hand.",
+    "secret": "Secret",
+    "title": "Add a second factor"
+  },
+  "passkey": {
+    "description": "This account confirms sign-ins with a passkey.",
+    "failed": "The passkey did not sign you in: {{detail}}",
+    "title": "Confirm with your passkey",
+    "use": "Use my passkey"
+  },
+  "totp": {
+    "code": "Code",
+    "description": "Open your authenticator app and enter the code it shows for OgCloud.",
+    "error": "That code did not work. Enter the one your app shows now.",
+    "submit": "Continue",
+    "title": "Enter your code"
+  },
+  "unavailable": "The sign-in service did not answer. Reload the page to try again."
+}

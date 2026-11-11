@@ -58,9 +58,9 @@ class OAuthHttp(
         check(browser.signIn(clientId, redirectUri, login, password, verifier).path == MFA_PAGE) {
             "No second factor was asked for"
         }
-        val page = browser.get("$MFA_PAGE/totp-setup").body()
-        val secret = SECRET.find(page)?.groupValues?.get(1) ?: error("The setup page shows no secret")
-        val csrf = CSRF.find(page)?.groupValues?.get(1) ?: error("The setup page has no CSRF token")
+        val setup = browser.getJson("$MFA_PAGE/totp-setup").body()
+        val secret = SECRET.find(setup)?.groupValues?.get(1) ?: error("The setup answer holds no secret")
+        val csrf = browser.csrf()
         val afterCode =
             browser
                 .post(
@@ -85,11 +85,10 @@ class OAuthHttp(
         check(browser.signIn(clientId, redirectUri, login, password, verifier).path == MFA_PAGE) {
             "No second factor was asked for"
         }
-        val csrf =
-            CSRF.find(browser.get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
+        val csrf = browser.csrf()
         val code = form(listOf("code" to "000000", "_csrf" to csrf))
         return listOf(
-            browser.get("$MFA_PAGE/totp-setup").statusCode(),
+            browser.getJson("$MFA_PAGE/totp-setup").statusCode(),
             browser.post("$MFA_PAGE/totp-setup", code).statusCode(),
             browser.postJson("/webauthn/register/options", csrf).statusCode(),
             browser.post("$MFA_PAGE/totp", code).statusCode(),
@@ -100,9 +99,7 @@ class OAuthHttp(
     /** The passkey sign-in options the login page's script requests. */
     fun passkeyOptions(): HttpResponse<String> {
         val browser = Browser()
-        val csrf =
-            CSRF.find(browser.get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
-        return browser.postJson("/webauthn/authenticate/options", csrf)
+        return browser.postJson("/webauthn/authenticate/options", browser.csrf())
     }
 
     fun codeFrom(callback: URI): String = query(callback)["code"] ?: error("No code in $callback")
@@ -315,12 +312,20 @@ class OAuthHttp(
                 )
             val toLogin = get("/oauth2/authorize?${form(parameters)}")
             if (toLogin.statusCode() != FOUND || !toLogin.location().path.endsWith("/login")) return toLogin.location()
-            val csrf = CSRF.find(get("/login").body())?.groupValues?.get(1) ?: error("The login page has no CSRF token")
-            val afterLogin = post("/login", form(listOf("username" to login, "password" to password, "_csrf" to csrf)))
+            val afterLogin =
+                post("/login", form(listOf("username" to login, "password" to password, "_csrf" to csrf())))
             return get(afterLogin.location().toString()).location()
         }
 
         fun get(path: String) = exchange(HttpRequest.newBuilder(uri(path)).header("Accept", "text/html").GET())
+
+        fun getJson(path: String) =
+            exchange(HttpRequest.newBuilder(uri(path)).header("Accept", "application/json").GET())
+
+        /** The login pages read their CSRF token from `/login/state` (D-0212). */
+        fun csrf(): String =
+            TOKEN.find(getJson("/login/state").body())?.groupValues?.get(1)
+                ?: error("The login state has no CSRF token")
 
         fun post(
             path: String,
@@ -333,10 +338,8 @@ class OAuthHttp(
                 .POST(HttpRequest.BodyPublishers.ofString(body)),
         )
 
-        fun secondFactor(code: String): HttpResponse<String> {
-            val csrf = CSRF.find(get(MFA_PAGE).body())?.groupValues?.get(1) ?: error("The MFA page has no CSRF token")
-            return post("$MFA_PAGE/totp", form(listOf("code" to code, "_csrf" to csrf)))
-        }
+        fun secondFactor(code: String): HttpResponse<String> =
+            post("$MFA_PAGE/totp", form(listOf("code" to code, "_csrf" to csrf())))
 
         fun postJson(
             path: String,
@@ -371,8 +374,8 @@ class OAuthHttp(
         private const val OK = 200
         private const val FOUND = 302
         private const val FORM = "application/x-www-form-urlencoded"
-        private val CSRF = Regex("""name="_csrf"[^>]*value="([^"]+)"""")
-        private val SECRET = Regex("""<code>([A-Z2-7]+)</code>""")
+        private val TOKEN = Regex(""""token":"([^"]+)"""")
+        private val SECRET = Regex(""""secret":"([A-Z2-7]+)"""")
 
         fun challenge(verifier: String): String =
             Base64.getUrlEncoder().withoutPadding().encodeToString(

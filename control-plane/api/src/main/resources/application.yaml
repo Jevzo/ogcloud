@@ -37,8 +37,8 @@ springdoc:
   api-docs:
     path: /api/openapi
   packages-to-scan: io.ogwars.cloud.api
-  # The login and MFA pages are HTML for browsers, not part of the API contract.
-  paths-to-match: /api/**
+  # The login pages are HTML for browsers; only the JSON they read joins the contract (D-0212).
+  paths-to-match: /api/**, /login/state, /login/mfa/totp-setup
 
 ogcloud:
   web:
@@ -47,6 +47,8 @@ ogcloud:
   auth:
     # The public origin, also the OIDC issuer (D-0098); the chart sets it.
     issuer: ${OGCLOUD_PUBLIC_ORIGIN}
+    # The login pages the API image carries (D-0212); without them /login answers 503.
+    login-pages: /app/login
     signing:
       # `<kid>.pem` files synced from Infisical (D-0044, D-0090); active-key-id arrives through the config tree.
       keys-dir: /var/run/secrets/ogcloud-signing

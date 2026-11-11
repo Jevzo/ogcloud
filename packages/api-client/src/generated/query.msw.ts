@@ -34,6 +34,7 @@ import type {
   JobEvent,
   JobView,
   LinkCodeSent,
+  LoginState,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -76,6 +77,7 @@ import type {
   TextRendering,
   TotpCodeRequest,
   TotpEnrollment,
+  TotpSetup,
   TransferActionView,
   TransferRequest,
   UpdateGroupRequest,
@@ -225,6 +227,10 @@ export const getTemplateListResponseMock = (): TemplateVersionView[] => (Array.f
 export const getTemplateUploadResponseMock = (overrideResponse: Partial<Extract<TemplateVersionView, object>> = {}): TemplateVersionView => ({id: faker.string.uuid(), sha256: faker.string.alpha({length: {min: 10, max: 20}}), sizeBytes: faker.number.int(), source: faker.helpers.arrayElement(['UPLOAD','PUSH','IMPORT'] as const), createdBy: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', active: faker.datatype.boolean(), ...overrideResponse})
 
 export const getEventTicketResponseMock = (overrideResponse: Partial<Extract<EventTicket, object>> = {}): EventTicket => ({ticket: faker.string.alpha({length: {min: 10, max: 20}}), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getLoginStateResponseMock = (overrideResponse: Partial<Extract<LoginState, object>> = {}): LoginState => ({step: faker.helpers.arrayElement(['CREDENTIALS','TOTP','PASSKEY','ENROLMENT','DONE'] as const), csrf: {headerName: faker.string.alpha({length: {min: 10, max: 20}}), parameterName: faker.string.alpha({length: {min: 10, max: 20}}), token: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
+
+export const getMfaSetupResponseMock = (overrideResponse: Partial<Extract<TotpSetup, object>> = {}): TotpSetup => ({secret: faker.string.alpha({length: {min: 10, max: 20}}), uri: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
 export const getServerGetResponseMock = (overrideResponse: Partial<Extract<ServerView, object>> = {}): ServerView => ({id: faker.string.uuid(), groupId: faker.string.alpha({length: {min: 10, max: 20}}), groupType: faker.helpers.arrayElement(['DYNAMIC','STATIC','PROXY'] as const), profileId: faker.string.alpha({length: {min: 10, max: 20}}), state: faker.helpers.arrayElement(['REQUESTED','PREPARING','STARTING','RUNNING','DRAINING','STOPPING','STOPPED'] as const), stateSince: faker.date.past().toISOString().slice(0, 19) + 'Z', players: faker.number.int(), maxPlayers: faker.number.int(), gameState: faker.helpers.arrayElement([faker.helpers.arrayElement(['LOBBY','INGAME','ENDING'] as const), null]), startedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastHeartbeatAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
@@ -1025,6 +1031,30 @@ export const getCommandRunMockHandler = (overrideResponse?: void | ((info: Param
   }, options)
 }
 
+export const getLoginStateMockHandler = (overrideResponse?: LoginState | ((info: Parameters<HttpResponseResolver>[0]) => Promise<LoginState> | LoginState), options?: RequestHandlerOptions) => {
+  return http.get('*/login/state', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getLoginStateResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMfaSetupMockHandler = (overrideResponse?: TotpSetup | ((info: Parameters<HttpResponseResolver>[0]) => Promise<TotpSetup> | TotpSetup), options?: RequestHandlerOptions) => {
+  return http.get('*/login/mfa/totp-setup', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMfaSetupResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getServerGetMockHandler = (overrideResponse?: ServerView | ((info: Parameters<HttpResponseResolver<{ id: string }>>[0]) => Promise<ServerView> | ServerView), options?: RequestHandlerOptions) => {
   return http.get<{ id: string }>('*/api/v1/servers/:id', async (info: Parameters<HttpResponseResolver<{ id: string }>>[0]) => {
 
@@ -1346,6 +1376,8 @@ export const getOgCloudAPIMock = () => [
   getTemplateUploadMockHandler(),
   getEventTicketMockHandler(),
   getCommandRunMockHandler(),
+  getLoginStateMockHandler(),
+  getMfaSetupMockHandler(),
   getServerGetMockHandler(),
   getSearchFindMockHandler(),
   getRuntimeListMockHandler(),

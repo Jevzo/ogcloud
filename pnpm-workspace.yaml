@@ -30,6 +30,7 @@ catalog:
   i18next: 27.0.1
   i18next-cli: 1.87.0
   jscpd: 5.4.2
+  lean-qr: 2.7.4
   lucide-react: 1.70.0
   mineflayer: 4.39.0
   motion: 14.10.1
