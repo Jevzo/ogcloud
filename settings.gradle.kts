@@ -36,6 +36,7 @@ dependencyResolutionManagement {
 rootProject.name = "ogcloud"
 
 include(":contracts")
+include(":contracts:text")
 include(":control-plane:domain")
 include(":control-plane:persistence")
 include(":control-plane:livestate")
