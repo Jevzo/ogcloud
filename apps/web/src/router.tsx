@@ -5,6 +5,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { CALLBACK_PATH } from "./auth.ts";
+import { ActivityPage } from "./pages/activity/activity-page.tsx";
 import { Callback } from "./pages/callback.tsx";
 import { GroupCreatePage } from "./pages/groups/group-create-page.tsx";
 import { GroupPage } from "./pages/groups/group-page.tsx";
@@ -115,7 +116,7 @@ const npc = createRoute({
 const activity = createRoute({
   getParentRoute: () => app,
   path: "/activity",
-  component: () => <Placeholder label="activity" />,
+  component: ActivityPage,
 });
 const users = createRoute({
   getParentRoute: () => app,

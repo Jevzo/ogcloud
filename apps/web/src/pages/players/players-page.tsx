@@ -6,7 +6,6 @@ import {
   usePlayerOnlineHook,
 } from "@ogcloud/api-client/react";
 import {
-  Button,
   columnsFor,
   DataTable,
   EmptyState,
@@ -20,6 +19,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { useFormat } from "../../format.ts";
+import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { useServerNames } from "../servers/server-names.ts";
 import { type PlayerRef, usePlayerActions } from "./player-actions.tsx";
@@ -299,24 +299,5 @@ function KnownTable({
       emptyTitle={t("players.empty.known")}
       emptyDescription={t("players.empty.knownDescription")}
     />
-  );
-}
-
-function LoadMore({
-  paged,
-}: {
-  paged: Pick<
-    ReturnType<typeof usePaged>,
-    "hasMore" | "loadMore" | "loadingMore"
-  >;
-}) {
-  const { t } = useTranslation("web");
-  if (!paged.hasMore) return null;
-  return (
-    <div className="flex justify-center p-3">
-      <Button size="sm" onClick={paged.loadMore} loading={paged.loadingMore}>
-        {t("players.loadMore")}
-      </Button>
-    </div>
   );
 }

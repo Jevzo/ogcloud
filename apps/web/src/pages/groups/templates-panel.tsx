@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { type ChangeEvent, useContext, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Ago } from "../../ago.tsx";
+import { agoColumn, monoColumn } from "../../columns.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { downloadFile, uploadWithProgress } from "../../files.ts";
 import { useFormat } from "../../format.ts";
@@ -156,18 +156,18 @@ export function TemplatesPanel({
             <span className="text-text-2">{format.bytes(cell.getValue())}</span>
           ),
         }),
-        columns.accessor("createdAt", {
-          header: () => t("templates.columns.created"),
-          cell: (cell) => <Ago at={cell.getValue()} />,
-        }),
-        columns.accessor("createdBy", {
-          header: () => t("templates.columns.by"),
-          cell: (cell) => (
-            <span className="font-mono text-mono text-text-2">
-              {cell.getValue()}
-            </span>
-          ),
-        }),
+        agoColumn(
+          columns,
+          "createdAt",
+          t("templates.columns.created"),
+          (version) => version.createdAt,
+        ),
+        monoColumn(
+          columns,
+          "createdBy",
+          t("templates.columns.by"),
+          (version) => version.createdBy,
+        ),
       ]),
     [t, format],
   );

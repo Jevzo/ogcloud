@@ -4,6 +4,9 @@ import {
   getGroupDeletedMockHandler,
   getGroupGetMockHandler,
   getGroupListMockHandler,
+  getJobListMockHandler,
+  getLogAuditMockHandler,
+  getLogScalingMockHandler,
   getMeGetMockHandler,
   getNetworkGetMockHandler,
   getNpcGetMockHandler,
@@ -24,9 +27,11 @@ import {
 } from "@ogcloud/api-client/mocks";
 import { setupWorker } from "msw/browser";
 import {
+  auditEntries,
   deletedGroups,
   groupById,
   groups,
+  jobs,
   knownPlayers,
   loadHistory,
   me,
@@ -64,6 +69,12 @@ export async function startMocks(): Promise<void> {
     ),
     getNetworkGetMockHandler(networkSettings),
     getNpcListMockHandler(npcs),
+    getLogAuditMockHandler({ items: auditEntries, nextCursor: null }),
+    getLogScalingMockHandler({
+      items: overview.recentScaling,
+      nextCursor: null,
+    }),
+    getJobListMockHandler({ items: jobs, nextCursor: null }),
     getNpcGetMockHandler(({ params }) => npcById(String(params.id))),
     getPlayerOnlineMockHandler({ items: onlinePlayers, nextCursor: null }),
     getPlayerKnownMockHandler({ items: knownPlayers, nextCursor: null }),

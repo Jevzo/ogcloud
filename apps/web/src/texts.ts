@@ -11,8 +11,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDebounced } from "./debounce.ts";
 
 // In-game texts are checked and drawn by the API, never parsed here (D-0202).
 
@@ -40,15 +40,6 @@ function cached(
     queryFn: () => preview(field, text),
     staleTime: Number.POSITIVE_INFINITY,
   });
-}
-
-function useDebounced<T>(value: T, delay: number): T {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return settled;
 }
 
 /** How a text looks to modern and older clients, or what keeps it from being saved; asked once the typing pauses. */

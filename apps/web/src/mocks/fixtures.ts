@@ -1,6 +1,8 @@
 import type {
+  AuditEntryView,
   DeletedGroupView,
   GroupView,
+  JobView,
   LoadHistoryView,
   MeView,
   NetworkSettingsView,
@@ -685,3 +687,74 @@ export function npcById(id: string): NpcView {
   if (found === undefined) throw new Error("The NPC fixture is empty");
   return found;
 }
+
+export const auditEntries: AuditEntryView[] = [
+  ["PUT /api/v1/groups/{id}", "groups", "bedwars", "user:mira", 4],
+  ["POST /api/v1/servers", "servers", "", "user:mira", 12],
+  [
+    "PUT /api/v1/players/{uuid}/rank",
+    "players",
+    "5f1c2a9e-3b7d-4e8f-a1c2-9d8e7f6a5b02",
+    "player:kiwibear",
+    31,
+  ],
+  [
+    "DELETE /api/v1/npcs/{id}",
+    "npcs",
+    "0195b1d2-7c4e-7a10-9f3e-0000000a0004",
+    "user:mira",
+    95,
+  ],
+  ["PUT /api/v1/network", "network", "", "client:ogcloud-discord-bot", 180],
+].map(([action, targetType, targetId, actor, minutes], index) => ({
+  id: `0195b1d2-7c4e-7a10-9f3e-0000000b${index.toString().padStart(4, "0")}`,
+  occurredAt: minutesAgo(Number(minutes)),
+  actor: String(actor),
+  action: String(action),
+  targetType: String(targetType),
+  targetId: String(targetId),
+  summary: "",
+  metadata: {},
+}));
+
+export const jobs: JobView[] = [
+  {
+    id: "0195b1d2-7c4e-7a10-9f3e-0000000c0001",
+    kind: "group.restart",
+    state: "RUNNING",
+    payload: { groupId: "bedwars" },
+    completedSteps: 9,
+    totalSteps: 15,
+    message: "Replacing batch 2 of 3",
+    createdBy: "user:mira",
+    createdAt: minutesAgo(6),
+    startedAt: minutesAgo(6),
+    finishedAt: null,
+  },
+  {
+    id: "0195b1d2-7c4e-7a10-9f3e-0000000c0002",
+    kind: "bundle.rollout",
+    state: "SUCCEEDED",
+    payload: { profileId: "paper-26.3" },
+    completedSteps: 21,
+    totalSteps: 21,
+    message: "Every server runs the new bundle",
+    createdBy: "user:mira",
+    createdAt: minutesAgo(300),
+    startedAt: minutesAgo(300),
+    finishedAt: minutesAgo(281),
+  },
+  {
+    id: "0195b1d2-7c4e-7a10-9f3e-0000000c0003",
+    kind: "forwarding.rotate",
+    state: "FAILED",
+    payload: {},
+    completedSteps: 1,
+    totalSteps: 4,
+    message: "The Secrets Operator did not sync the new token within 5 minutes",
+    createdBy: "user:mira",
+    createdAt: minutesAgo(60 * 24 * 3),
+    startedAt: minutesAgo(60 * 24 * 3),
+    finishedAt: minutesAgo(60 * 24 * 3 - 6),
+  },
+];

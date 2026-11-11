@@ -1,6 +1,72 @@
 {
   "actions": {
+    "loadMore": "Load more",
     "more": "More actions"
+  },
+  "activity": {
+    "alerts": {
+      "empty": "No alerts",
+      "emptyDescription": "Alerts that arrive while the dashboard is open show here, such as a group that stopped starting servers."
+    },
+    "audit": {
+      "action": "Action",
+      "actor": "Who",
+      "anyTime": "Any time",
+      "empty": "Nothing matches",
+      "emptyDescription": "Changes are kept for 90 days by default; loosen the filters to see more.",
+      "example": {
+        "action": "PUT /api/v1/groups/{id}",
+        "actor": "user:…",
+        "targetType": "groups"
+      },
+      "filter": {
+        "action": "Action",
+        "actor": "Who",
+        "from": "From",
+        "targetId": "Target id",
+        "targetType": "Target type",
+        "until": "Until"
+      },
+      "filters": "Filters",
+      "target": "Target",
+      "when": "When"
+    },
+    "description": "Changes, scaling decisions, long operations and alerts across the network.",
+    "jobs": {
+      "empty": "No jobs yet",
+      "emptyDescription": "Restarts, deletes, rollouts and token rotations run as jobs and show their progress here.",
+      "kind": "Job",
+      "kindFor": "{{kind}}: {{subject}}",
+      "kinds": {
+        "bundleRollout": "Runtime rollout",
+        "forwardingRotate": "Forwarding token rotation",
+        "groupDelete": "Group delete",
+        "groupRestart": "Group restart",
+        "networkRestart": "Network restart"
+      },
+      "message": "Status",
+      "progress": "Progress",
+      "state": {
+        "FAILED": "Failed",
+        "QUEUED": "Queued",
+        "RUNNING": "Running",
+        "SUCCEEDED": "Done"
+      }
+    },
+    "scaling": {
+      "decision": "Decision",
+      "emptyDescription": "The autoscaler writes each start, drain and stop here; it keeps 30 days by default.",
+      "reason": "Why"
+    },
+    "sections": "Sections",
+    "tabs": {
+      "alerts": "Alerts",
+      "alertsNew_one": "Alerts ({{count}} new)",
+      "alertsNew_other": "Alerts ({{count}} new)",
+      "audit": "Changes",
+      "jobs": "Jobs",
+      "scaling": "Scaling"
+    }
   },
   "alerts": {
     "crashLoopPaused": "{{subject}} is paused after repeated failed starts",
@@ -514,7 +580,6 @@
       "submit": "Kick",
       "title": "Kick {{name}}?"
     },
-    "loadMore": "Load more",
     "online": "Online",
     "rank": {
       "description": "The new rank applies at once, on every server the player is on.",

@@ -121,6 +121,16 @@ for (const theme of THEMES) {
     await page.screenshot({ path: `${OUT}templates-${theme}.png` });
   });
 
+  test(`activity, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/activity", theme);
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}activity-${theme}.png` });
+    await page.getByRole("tab", { name: "Jobs" }).click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}jobs-${theme}.png` });
+  });
+
   test(`a typed confirmation, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, `/servers/${SERVER}`, theme);

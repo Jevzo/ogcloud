@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AlertsContext, useAlertList } from "../alerts.ts";
 import { type Alert, useLiveEvents } from "../live.ts";
 import { PermissionsContext } from "../permissions.ts";
 import {
@@ -32,15 +33,18 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [searching, setSearching] = useState(false);
 
+  const alerts = useAlertList(Date.now);
   const onAlert = useCallback(
-    (alert: Alert) =>
+    (alert: Alert) => {
+      alerts.add(alert);
       toast({
         message:
           alert.kind === CRASH_LOOP_PAUSED
             ? t("alerts.crashLoopPaused", { subject: alert.subjectId })
             : t("alerts.other", { kind: alert.kind, subject: alert.subjectId }),
-      }),
-    [t, toast],
+      });
+    },
+    [t, toast, alerts.add],
   );
   const live = useLiveEvents(session !== null, onAlert);
   const changePreferences = (next: Preferences) => {
@@ -65,38 +69,40 @@ export function AppShell() {
   if (profile.permissions.length === 0) return <LinkRequired me={profile} />;
 
   return (
-    <PermissionsContext.Provider value={profile.permissions}>
-      <div className="flex min-h-screen">
-        <Sidebar
-          permissions={profile.permissions}
-          collapsed={collapsed}
-          onToggle={() => setCollapsed((value) => !value)}
-          account={
-            <AccountMenu
-              me={profile}
-              collapsed={collapsed}
-              preferences={preferences}
-              onPreferences={changePreferences}
-            />
-          }
-        />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Header live={live} onSearch={() => setSearching(true)} />
-          <motion.main
-            key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex-1 px-4 pt-2 pb-6"
-          >
-            <Outlet />
-          </motion.main>
+    <AlertsContext.Provider value={alerts}>
+      <PermissionsContext.Provider value={profile.permissions}>
+        <div className="flex min-h-screen">
+          <Sidebar
+            permissions={profile.permissions}
+            collapsed={collapsed}
+            onToggle={() => setCollapsed((value) => !value)}
+            account={
+              <AccountMenu
+                me={profile}
+                collapsed={collapsed}
+                preferences={preferences}
+                onPreferences={changePreferences}
+              />
+            }
+          />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <Header live={live} onSearch={() => setSearching(true)} />
+            <motion.main
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-1 px-4 pt-2 pb-6"
+            >
+              <Outlet />
+            </motion.main>
+          </div>
         </div>
-      </div>
-      <CommandPalette
-        open={searching}
-        onOpenChange={setSearching}
-        permissions={profile.permissions}
-      />
-    </PermissionsContext.Provider>
+        <CommandPalette
+          open={searching}
+          onOpenChange={setSearching}
+          permissions={profile.permissions}
+        />
+      </PermissionsContext.Provider>
+    </AlertsContext.Provider>
   );
 }

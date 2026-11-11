@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { PanelLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useAlerts } from "../alerts.ts";
 import mascot from "../assets/mascot-64.png";
 import { useFormat } from "../format.ts";
 import {
@@ -147,12 +148,14 @@ function NavLink({
 /** Live counts beside Servers and Players, for those who may read the overview. */
 function useNavCounts(): Partial<Record<NavItem["path"], string>> {
   const format = useFormat();
+  const { unseen } = useAlerts();
   const enabled = useCan("overview:read");
   const overview = useOverviewGet({
     query: { enabled, refetchInterval: COUNTS_REFRESH_MS },
   });
   const data = overview.data?.data;
-  if (data === undefined) return {};
+  const activity = unseen > 0 ? { "/activity": format.number(unseen) } : {};
+  if (data === undefined) return activity;
   const servers = Object.values(data.serversByState).reduce(
     (sum, count) => sum + count,
     0,
@@ -160,5 +163,6 @@ function useNavCounts(): Partial<Record<NavItem["path"], string>> {
   return {
     "/servers": format.number(servers),
     "/players": format.number(data.playersOnline),
+    ...activity,
   };
 }
