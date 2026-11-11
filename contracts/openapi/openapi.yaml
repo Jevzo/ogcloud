@@ -2645,6 +2645,8 @@ components:
         id:
           type: string
           format: uuid
+        displayName:
+          type: string
         groupId:
           type: string
         groupType:
@@ -2693,6 +2695,7 @@ components:
           - "null"
           format: date-time
       required:
+      - displayName
       - groupId
       - groupType
       - id

@@ -60,7 +60,8 @@ class LiveDataTest(
 
     @Test
     fun `servers are listed from the live state and filtered`() {
-        val running = servers.create(server(group = groupId, id = UUID.randomUUID()))
+        val runningServer = server(group = groupId, id = UUID.randomUUID())
+        val running = servers.create(runningServer)
         servers.create(
             server(group = groupId, id = UUID.randomUUID(), state = ServerState.STARTING),
         )
@@ -69,6 +70,7 @@ class LiveDataTest(
 
         running shouldBe true
         listed.size shouldBe 1
+        (listed.single() as Map<*, *>)["displayName"] shouldBe runningServer.displayName
         oauth.call("GET", "$SERVERS/${UUID.randomUUID()}", admin).statusCode() shouldBe NOT_FOUND
     }
 

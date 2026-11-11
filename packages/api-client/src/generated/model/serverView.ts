@@ -10,6 +10,7 @@ import type { ServerViewState } from './serverViewState.ts';
 
 export interface ServerView {
   id: string;
+  displayName: string;
   groupId: string;
   groupType: ServerViewGroupType;
   profileId: string;

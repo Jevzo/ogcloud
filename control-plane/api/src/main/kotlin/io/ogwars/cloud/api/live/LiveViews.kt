@@ -12,6 +12,8 @@ import java.util.UUID
 
 data class ServerView(
     val id: UUID,
+    /** The short name players see in game, e.g. lobby-789abc. */
+    val displayName: String,
     val groupId: String,
     val groupType: GroupType,
     val profileId: String,
@@ -27,6 +29,7 @@ data class ServerView(
 fun Server.toView() =
     ServerView(
         id,
+        displayName,
         groupId.value,
         groupType,
         profileId,
