@@ -11,7 +11,7 @@
     "./mocks": "./src/generated/query.msw.ts"
   },
   "scripts": {
-    "generate": "orval --config orval.config.ts",
+    "generate": "node --eval \"require('node:fs').rmSync('src/generated', { recursive: true, force: true })\" && orval --config orval.config.ts",
     "typecheck": "tsc --noEmit",
     "test:unit": "node --test src/"
   },
