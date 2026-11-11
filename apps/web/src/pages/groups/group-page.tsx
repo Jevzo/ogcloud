@@ -21,7 +21,6 @@ import {
   Tabs,
   TimeSeriesChart,
 } from "@ogcloud/ui";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Construction,
@@ -35,8 +34,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
-import { contractSchema, useSettingsForm } from "../../form.tsx";
+import { EditorForm, useDetailSave } from "../../editing.tsx";
+import {
+  contractSchema,
+  keepingMaintenance,
+  useViewSettingsForm,
+} from "../../form.tsx";
 import { useFormat } from "../../format.ts";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -82,7 +85,6 @@ export function GroupPage() {
 function GroupEditor({ view }: { view: GroupView }) {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
-  const client = useQueryClient();
   const canWrite = useCan("groups:write");
   const canRequest = useCan("servers:command");
   const runtime = useRuntimeList();
@@ -96,25 +98,17 @@ function GroupEditor({ view }: { view: GroupView }) {
   const [tab, setTab] = useState<"settings" | "templates">("settings");
   const update = useGroupUpdate();
   const live = overview.data?.data.groups.find((group) => group.id === view.id);
-  const saved = useSaved(getGroupGetQueryKey(view.id));
-  const saveFailed = useSaveFailure(() =>
-    client.invalidateQueries({ queryKey: getGroupGetQueryKey(view.id) }),
-  );
+  const outcome = useDetailSave(getGroupGetQueryKey(view.id));
 
-  const { form, changes, saving } = useSettingsForm({
+  const { form, changes, saving } = useViewSettingsForm({
     view,
-    settingsOf: (group) => group.settings,
     schema: SettingsForm,
     save: (settings, base) =>
       update.mutateAsync({
         id: base.id,
-        data: {
-          settings: { ...settings, maintenance: base.settings.maintenance },
-          version: base.version,
-        },
+        data: keepingMaintenance(settings, base),
       }),
-    onSaved: saved,
-    onFailed: saveFailed,
+    ...outcome,
   });
 
   const menu = canWrite

@@ -30,7 +30,7 @@ import { Ago } from "../../ago.tsx";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
-import { EditorForm, useSavedInList, useSaveFailure } from "../../editing.tsx";
+import { EditorForm, useListSave } from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
@@ -97,10 +97,7 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
     remove: () => remove.mutateAsync({ clientId: client.clientId }),
     onDeleted: () => void navigate({ to: "/clients" }),
   });
-  const saved = useSavedInList(list);
-  const saveFailed = useSaveFailure(
-    () => void invalidatePaths(queries, [list]),
-  );
+  const outcome = useListSave(list);
 
   const { form, changes, saving } = useSettingsForm({
     view: client,
@@ -108,8 +105,7 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
     schema: SettingsForm,
     save: (settings, base) =>
       update.mutateAsync({ clientId: base.clientId, data: settings }),
-    onSaved: saved,
-    onFailed: saveFailed,
+    ...outcome,
   });
 
   return (

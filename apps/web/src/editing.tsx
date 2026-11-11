@@ -53,7 +53,7 @@ export function EditGuard({
  * Says a save failed. A stale version (409, D-0069) offers a reload that shows the newer state, keeping nothing of
  * the edits silently (D-0210).
  */
-export function useSaveFailure(reload: () => void): (error: unknown) => void {
+function useSaveFailure(reload: () => void): (error: unknown) => void {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
@@ -70,7 +70,7 @@ export function useSaveFailure(reload: () => void): (error: unknown) => void {
 }
 
 /** After a save of something the page reads from a list: the list reloads, and the page says it saved. */
-export function useSavedInList(path: string): () => void {
+function useSavedInList(path: string): () => void {
   const { t } = useTranslation("web");
   const toast = useToast();
   const client = useQueryClient();
@@ -81,7 +81,7 @@ export function useSavedInList(path: string): () => void {
 }
 
 /** After a save: the page shows what the API answered at once, and says it saved. */
-export function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
+function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
   const { t } = useTranslation("web");
   const toast = useToast();
   const client = useQueryClient();
@@ -92,6 +92,29 @@ export function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
     },
     [client, queryKey, t, toast],
   );
+}
+
+interface SaveOutcome<T> {
+  onSaved: (saved: T) => void;
+  onFailed: (error: unknown) => void;
+}
+
+/** A detail page's save outcomes: it shows the API's answer at once, and reads again after a failed or stale save. */
+export function useDetailSave<T>(queryKey: QueryKey): SaveOutcome<T> {
+  const client = useQueryClient();
+  return {
+    onSaved: useSaved<T>(queryKey),
+    onFailed: useSaveFailure(() => void client.invalidateQueries({ queryKey })),
+  };
+}
+
+/** The save outcomes of a page that reads its subject from a list under `path`: the list reads again either way. */
+export function useListSave(path: string): SaveOutcome<unknown> {
+  const client = useQueryClient();
+  return {
+    onSaved: useSavedInList(path),
+    onFailed: useSaveFailure(() => void invalidatePaths(client, [path])),
+  };
 }
 
 interface EditorFormProps {

@@ -283,6 +283,15 @@ export function localizeValidation(t: TFunction<"web">): void {
   });
 }
 
+interface SettingsFormOptions<V, S extends object, A> {
+  view: V;
+  settingsOf: (view: V) => S;
+  schema: StandardSchemaV1<{ settings: S }>;
+  save: (settings: S, base: V) => Promise<A>;
+  onSaved: (answer: A) => void;
+  onFailed: (error: unknown) => void;
+}
+
 /**
  * An in-place editor for a resource's settings: the form, how many values changed and whether it is saving. Edits start
  * from `view`; a newer view replaces it only while nothing is edited, or right after a save, so a refetch never drops
@@ -295,14 +304,7 @@ export function useSettingsForm<V, S extends object, A>({
   save,
   onSaved,
   onFailed,
-}: {
-  view: V;
-  settingsOf: (view: V) => S;
-  schema: StandardSchemaV1<{ settings: S }>;
-  save: (settings: S, base: V) => Promise<A>;
-  onSaved: (answer: A) => void;
-  onFailed: (error: unknown) => void;
-}) {
+}: SettingsFormOptions<V, S, A>) {
   const [base, setBase] = useState(view);
   const adoptNext = useRef(false);
   const form = useAppForm({
@@ -329,4 +331,29 @@ export function useSettingsForm<V, S extends object, A>({
     form.reset({ settings: settingsOf(view) });
   }, [view, base, changes, form, settingsOf]);
   return { form, changes, saving, base };
+}
+
+const settingsField = <S,>(view: { settings: S }): S => view.settings;
+
+/** {@link useSettingsForm} for a view that holds its settings as `settings`, as groups, NPCs and the network do. */
+export function useViewSettingsForm<
+  V extends { settings: S },
+  S extends object,
+  A,
+>(options: Omit<SettingsFormOptions<V, S, A>, "settingsOf">) {
+  return useSettingsForm<V, S, A>({ ...options, settingsOf: settingsField });
+}
+
+/**
+ * The body of a settings save whose maintenance flag has an action of its own: the flag stays as the edits' base
+ * had it, so a save never switches maintenance (groups, the network).
+ */
+export function keepingMaintenance<S extends { maintenance: boolean }>(
+  settings: S,
+  base: { settings: S; version: number },
+): { settings: S; version: number } {
+  return {
+    settings: { ...settings, maintenance: base.settings.maintenance },
+    version: base.version,
+  };
 }

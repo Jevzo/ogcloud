@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useSavedInList, useSaveFailure } from "../../editing.tsx";
+import { EditorForm, useListSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan, useIsOwner } from "../../permissions.ts";
@@ -80,10 +80,7 @@ function RoleEditor({ role }: { role: RoleView }) {
     remove: () => remove.mutateAsync({ id: role.id }),
     onDeleted: () => void navigate({ to: "/roles" }),
   });
-  const saved = useSavedInList(getRoleListQueryKey()[0]);
-  const saveFailed = useSaveFailure(
-    () => void invalidatePaths(client, [getRoleListQueryKey()[0]]),
-  );
+  const outcome = useListSave(getRoleListQueryKey()[0]);
 
   const { form, changes, saving } = useSettingsForm({
     view: role,
@@ -94,8 +91,7 @@ function RoleEditor({ role }: { role: RoleView }) {
         id: base.id,
         data: { ...settings, version: base.version },
       }),
-    onSaved: saved,
-    onFailed: saveFailed,
+    ...outcome,
   });
 
   return (

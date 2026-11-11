@@ -19,8 +19,8 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
-import { contractSchema, useSettingsForm } from "../../form.tsx";
+import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { contractSchema, useViewSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -82,12 +82,7 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
     remove: () => remove.mutateAsync({ id: view.id }),
     onDeleted: () => void navigate({ to: "/permissions" }),
   });
-  const saved = useSaved(getPermissionGroupGetQueryKey(view.id));
-  const saveFailed = useSaveFailure(() =>
-    client.invalidateQueries({
-      queryKey: getPermissionGroupGetQueryKey(view.id),
-    }),
-  );
+  const outcome = useDetailSave(getPermissionGroupGetQueryKey(view.id));
   const validators = {
     chatPrefix: useTextValidator("CHAT_PREFIX"),
     chatSuffix: useTextValidator("CHAT_SUFFIX"),
@@ -95,9 +90,8 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
     tabPrefix: useTextValidator("TAB_PREFIX"),
   };
 
-  const { form, changes, saving } = useSettingsForm({
+  const { form, changes, saving } = useViewSettingsForm({
     view,
-    settingsOf: (group) => group.settings,
     schema: SettingsForm,
     save: (settings, base) =>
       update.mutateAsync({
@@ -106,9 +100,9 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
       }),
     onSaved: (answer) => {
       void invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]);
-      saved(answer);
+      outcome.onSaved(answer);
     },
-    onFailed: saveFailed,
+    onFailed: outcome.onFailed,
   });
   const display = useStore(
     form.store,

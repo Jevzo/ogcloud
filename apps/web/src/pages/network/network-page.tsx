@@ -22,7 +22,6 @@ import {
   useToast,
 } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
   Construction,
@@ -36,9 +35,13 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
+import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
-import { contractSchema, useSettingsForm } from "../../form.tsx";
+import {
+  contractSchema,
+  keepingMaintenance,
+  useViewSettingsForm,
+} from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
@@ -84,7 +87,6 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
-  const client = useQueryClient();
   const canWrite = useCan("network:write");
   const me = useMeGet();
   const overview = useOverviewGet();
@@ -94,10 +96,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const rotate = useNetworkRotateForwardingToken();
   const eula = useNetworkAcceptEula();
   const pending = usePendingAction<NetworkAction, true>();
-  const saved = useSaved(getNetworkGetQueryKey());
-  const saveFailed = useSaveFailure(() =>
-    client.invalidateQueries({ queryKey: getNetworkGetQueryKey() }),
-  );
+  const outcome = useDetailSave(getNetworkGetQueryKey());
   const validators = {
     motd: useTextValidator("MOTD"),
     maintenanceMotd: useTextValidator("MAINTENANCE_MOTD"),
@@ -109,19 +108,12 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   };
   const groupIds = useBackendGroupIds();
 
-  const { form, changes, saving } = useSettingsForm({
+  const { form, changes, saving } = useViewSettingsForm({
     view,
-    settingsOf: (network) => network.settings,
     schema: SettingsForm,
     save: (settings, base) =>
-      update.mutateAsync({
-        data: {
-          settings: { ...settings, maintenance: base.settings.maintenance },
-          version: base.version,
-        },
-      }),
-    onSaved: saved,
-    onFailed: saveFailed,
+      update.mutateAsync({ data: keepingMaintenance(settings, base) }),
+    ...outcome,
   });
   const settings = useStore(form.store, (state) => state.values.settings);
   const started = (message: string) => () => toast({ message });
@@ -194,9 +186,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
                 loading={eula.isPending}
                 onClick={() =>
                   eula.mutate(undefined, {
-                    onSuccess: (answer) => {
-                      saved(answer);
-                    },
+                    onSuccess: outcome.onSaved,
                     onError: failed,
                   })
                 }

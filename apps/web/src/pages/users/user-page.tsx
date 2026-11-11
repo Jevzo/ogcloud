@@ -15,7 +15,7 @@ import { z } from "zod";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
-import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
+import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { isOwner, useIsOwner, useMe } from "../../permissions.ts";
@@ -79,11 +79,7 @@ function UserEditor({ user }: { user: UserView }) {
       onSettled: () => invalidatePaths(queries, [getUserListQueryKey()[0]]),
     },
   });
-  const saved = useSaved(getUserGetQueryKey(user.id));
-  const saveFailed = useSaveFailure(
-    () =>
-      void queries.invalidateQueries({ queryKey: getUserGetQueryKey(user.id) }),
-  );
+  const outcome = useDetailSave(getUserGetQueryKey(user.id));
 
   const { form, changes, saving } = useSettingsForm({
     view: user,
@@ -99,8 +95,7 @@ function UserEditor({ user }: { user: UserView }) {
         id: base.id,
         data: { ...settings, version: base.version },
       }),
-    onSaved: saved,
-    onFailed: saveFailed,
+    ...outcome,
   });
   const items = actions.itemsFor(user);
   const subject = {
