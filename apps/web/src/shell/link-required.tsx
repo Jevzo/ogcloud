@@ -43,7 +43,8 @@ export function LinkRequired({ me }: { me: MeView }) {
   );
 }
 
-function LinkFlow() {
+/** Sends a code to the player in game and links the account once it is typed back (D-0106). */
+export function LinkFlow() {
   const { t } = useTranslation("web");
   const session = useSession();
   const queries = useQueryClient();

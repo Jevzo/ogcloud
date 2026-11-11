@@ -10,7 +10,7 @@ import {
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import mascot from "../assets/mascot-256.png";
-import { QrCode } from "./qr-code.tsx";
+import { QrCode } from "../qr-code.tsx";
 import { registerPasskey, signInWithPasskey } from "./webauthn.ts";
 
 /** Where the state and the authenticator secret come from: the API, or fixtures in mocks mode. */

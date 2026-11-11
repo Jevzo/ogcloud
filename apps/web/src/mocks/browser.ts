@@ -8,9 +8,12 @@ import {
   getLogAuditMockHandler,
   getLogScalingMockHandler,
   getMeGetMockHandler,
+  getMeListLoginsMockHandler,
+  getMeListPasskeysMockHandler,
   getNetworkGetMockHandler,
   getNpcGetMockHandler,
   getNpcListMockHandler,
+  getOauthClientListMockHandler,
   getOgCloudAPIMock,
   getOverviewGetMockHandler,
   getOverviewHistoryMockHandler,
@@ -19,14 +22,19 @@ import {
   getPlayerGetMockHandler,
   getPlayerKnownMockHandler,
   getPlayerOnlineMockHandler,
+  getRoleListMockHandler,
+  getRolePermissionsMockHandler,
   getRuntimeListMockHandler,
   getServerGetMockHandler,
   getServerListMockHandler,
   getTemplateListMockHandler,
   getTextPreviewMockHandler,
+  getUserGetMockHandler,
+  getUserListMockHandler,
 } from "@ogcloud/api-client/mocks";
 import { setupWorker } from "msw/browser";
 import {
+  ALL_PERMISSIONS,
   auditEntries,
   deletedGroups,
   groupById,
@@ -34,20 +42,26 @@ import {
   jobs,
   knownPlayers,
   loadHistory,
+  logins,
   me,
   networkSettings,
   npcById,
   npcs,
+  oauthClients,
   onlinePlayers,
   overview,
+  passkeys,
   permissionGroupById,
   permissionGroups,
   playerById,
   previewOf,
+  roles,
   runtimeProfiles,
   serverById,
   servers,
   templatesOf,
+  userById,
+  users,
 } from "./fixtures.ts";
 
 // The generated mocks draw from faker; one seed keeps every screenshot run identical.
@@ -77,7 +91,24 @@ export async function startMocks(): Promise<void> {
     getJobListMockHandler({ items: jobs, nextCursor: null }),
     getNpcGetMockHandler(({ params }) => npcById(String(params.id))),
     getPlayerOnlineMockHandler({ items: onlinePlayers, nextCursor: null }),
-    getPlayerKnownMockHandler({ items: knownPlayers, nextCursor: null }),
+    getPlayerKnownMockHandler(({ request }) => {
+      // Players are found by the start of their name, as the API does.
+      const name =
+        new URL(request.url).searchParams.get("name")?.toLowerCase() ?? "";
+      return {
+        items: knownPlayers.filter((player) =>
+          player.name.toLowerCase().startsWith(name),
+        ),
+        nextCursor: null,
+      };
+    }),
+    getRoleListMockHandler(roles),
+    getRolePermissionsMockHandler(ALL_PERMISSIONS),
+    getUserListMockHandler({ items: users, nextCursor: null }),
+    getUserGetMockHandler(({ params }) => userById(String(params.id))),
+    getOauthClientListMockHandler(oauthClients),
+    getMeListPasskeysMockHandler(passkeys),
+    getMeListLoginsMockHandler(logins),
     getPlayerGetMockHandler(({ params }) => playerById(String(params.uuid))),
     getPermissionGroupListMockHandler(permissionGroups),
     getPermissionGroupGetMockHandler(({ params }) =>

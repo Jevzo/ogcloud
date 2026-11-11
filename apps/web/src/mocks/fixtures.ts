@@ -4,19 +4,24 @@ import type {
   GroupView,
   JobView,
   LoadHistoryView,
+  LoginView,
   MeView,
   NetworkSettingsView,
   NpcView,
+  OAuthClientView,
   OnlinePlayerView,
   OverviewView,
+  PasskeyView,
   PermissionGroupView,
   PlayerView,
+  RoleView,
   RuntimeProfileView,
   ScalingLogView,
   ServerView,
   TemplateVersionView,
   TextPreview,
   TextPreviewRequest,
+  UserView,
 } from "@ogcloud/api-client";
 
 // Fixed answers for the screenshots, so pages look the same on every run; everything else comes from orval's mocks.
@@ -27,7 +32,8 @@ const MINUTE_MS = 60_000;
 const minutesAgo = (minutes: number) =>
   new Date(MOCK_NOW - minutes * MINUTE_MS).toISOString();
 
-const ALL_PERMISSIONS = [
+/** The API's permission catalog, in its order (D-0092). */
+export const ALL_PERMISSIONS = [
   "overview:read",
   "servers:read",
   "servers:command",
@@ -756,5 +762,185 @@ export const jobs: JobView[] = [
     createdAt: minutesAgo(60 * 24 * 3),
     startedAt: minutesAgo(60 * 24 * 3),
     finishedAt: minutesAgo(60 * 24 * 3 - 6),
+  },
+];
+
+const READ_ONLY = ALL_PERMISSIONS.filter((permission) =>
+  permission.endsWith(":read"),
+);
+
+export const roles: RoleView[] = [
+  {
+    id: "owner",
+    name: "Owner",
+    builtIn: true,
+    permissions: ALL_PERMISSIONS,
+    version: 1,
+  },
+  {
+    id: "admin",
+    name: "Admin",
+    builtIn: true,
+    permissions: ALL_PERMISSIONS.filter(
+      (permission) => !/^(users|roles|oauth-clients|privacy):/.test(permission),
+    ),
+    version: 1,
+  },
+  {
+    id: "moderator",
+    name: "Moderator",
+    builtIn: true,
+    permissions: [
+      "overview:read",
+      "servers:read",
+      "servers:command",
+      "groups:read",
+      "players:read",
+      "players:write",
+      "logs:read",
+    ],
+    version: 1,
+  },
+  {
+    id: "viewer",
+    name: "Viewer",
+    builtIn: true,
+    permissions: READ_ONLY,
+    version: 1,
+  },
+  {
+    id: "builder",
+    name: "Builder",
+    builtIn: false,
+    permissions: [
+      "overview:read",
+      "groups:read",
+      "templates:read",
+      "templates:write",
+      "npcs:read",
+      "npcs:write",
+    ],
+    version: 4,
+  },
+];
+
+const user = (
+  index: number,
+  username: string,
+  roleId: string,
+  linkedPlayerName: string | null,
+  days: number,
+  enabled = true,
+): UserView => ({
+  id: `0195b1d2-7c4e-7a10-9f3e-0000000d${index.toString().padStart(4, "0")}`,
+  username,
+  email: `${username}@ogwars.io`,
+  roleId,
+  enabled,
+  linkedPlayerUuid:
+    linkedPlayerName === null
+      ? null
+      : `5f1c2a9e-3b7d-4e8f-a1c2-00000000${index.toString().padStart(4, "0")}`,
+  linkedPlayerName,
+  createdAt: minutesAgo(days * 24 * 60),
+  version: 2,
+});
+
+export const users: UserView[] = [
+  {
+    ...user(0, "mira", "owner", "mira", 214),
+    id: me.id,
+    linkedPlayerUuid: me.linkedPlayerUuid ?? null,
+  },
+  user(1, "jonas", "admin", "JonasBuilds", 180),
+  user(2, "kiwi", "moderator", "kiwibear", 96),
+  user(3, "lena", "builder", null, 41),
+  user(4, "ops-bot-review", "viewer", null, 12),
+  user(5, "tobi", "moderator", "Tobi_04", 230, false),
+];
+
+export function userById(id: string): UserView {
+  const found = users.find((candidate) => candidate.id === id);
+  if (found === undefined) throw new Error(`No fixture user ${id}`);
+  return found;
+}
+
+export const oauthClients: OAuthClientView[] = [
+  {
+    clientId: "ogcloud-web",
+    name: "Web dashboard",
+    scopes: [],
+    firstParty: true,
+    createdAt: minutesAgo(214 * 24 * 60),
+  },
+  {
+    clientId: "ogcloud-desktop",
+    name: "Desktop app",
+    scopes: [],
+    firstParty: true,
+    createdAt: minutesAgo(214 * 24 * 60),
+  },
+  {
+    clientId: "ogcloud-grafana",
+    name: "Grafana",
+    scopes: [],
+    firstParty: true,
+    createdAt: minutesAgo(214 * 24 * 60),
+  },
+  {
+    clientId: "oc_2f6b9d1c8e4a",
+    name: "Discord bot",
+    scopes: ["overview:read", "servers:read", "players:read", "players:write"],
+    firstParty: false,
+    createdAt: minutesAgo(33 * 24 * 60),
+  },
+  {
+    clientId: "oc_7a3e5c0b9f12",
+    name: "Release pipeline",
+    scopes: ["groups:read", "templates:read", "templates:write"],
+    firstParty: false,
+    createdAt: minutesAgo(9 * 24 * 60),
+  },
+];
+
+export const passkeys: PasskeyView[] = [
+  {
+    id: "mCrA7k1y0bMq",
+    label: "MacBook Touch ID",
+    createdAt: minutesAgo(120 * 24 * 60),
+    lastUsedAt: minutesAgo(3 * 60),
+  },
+  {
+    id: "pX9fW2nE5dTz",
+    label: "YubiKey 5C",
+    createdAt: minutesAgo(64 * 24 * 60),
+    lastUsedAt: minutesAgo(12 * 24 * 60),
+  },
+];
+
+export const logins: LoginView[] = [
+  {
+    id: "auth-1",
+    clientId: "ogcloud-web",
+    signedInAt: minutesAgo(2 * 24 * 60),
+    lastActiveAt: minutesAgo(1),
+    expiresAt: minutesAgo(-30 * 24 * 60),
+    current: true,
+  },
+  {
+    id: "auth-2",
+    clientId: "ogcloud-desktop",
+    signedInAt: minutesAgo(9 * 24 * 60),
+    lastActiveAt: minutesAgo(5 * 60),
+    expiresAt: minutesAgo(-25 * 24 * 60),
+    current: false,
+  },
+  {
+    id: "auth-3",
+    clientId: "ogcloud-web",
+    signedInAt: minutesAgo(20 * 24 * 60),
+    lastActiveAt: minutesAgo(6 * 24 * 60),
+    expiresAt: minutesAgo(-24 * 24 * 60),
+    current: false,
   },
 ];

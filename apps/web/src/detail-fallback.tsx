@@ -7,6 +7,8 @@ const NOT_FOUND = 404;
 
 interface DetailFallbackProps {
   error: unknown;
+  /** The subject is known not to exist, such as when it is missing from a list that loaded. */
+  missing?: boolean;
   icon: LucideIcon;
   goneTitle: string;
   goneDescription: string;
@@ -18,13 +20,14 @@ interface DetailFallbackProps {
 /** A detail page while it loads (no error yet), or why its subject is missing, with the way back. */
 export function DetailFallback({
   error,
+  missing = false,
   icon,
   goneTitle,
   goneDescription,
   failedTitle,
   back,
 }: DetailFallbackProps) {
-  if (error === null || error === undefined) {
+  if (!missing && (error === null || error === undefined)) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
         <Skeleton className="h-10 w-72" />
@@ -32,7 +35,8 @@ export function DetailFallback({
       </div>
     );
   }
-  const gone = error instanceof ApiError && error.status === NOT_FOUND;
+  const gone =
+    missing || (error instanceof ApiError && error.status === NOT_FOUND);
   return (
     <EmptyState
       icon={icon}

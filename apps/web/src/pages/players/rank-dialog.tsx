@@ -7,7 +7,6 @@ import {
 } from "@ogcloud/api-client/react";
 import {
   DateTimePicker,
-  Dialog,
   Field,
   PERMANENT,
   Select,
@@ -16,7 +15,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DialogFooter } from "../../dialog-footer.tsx";
+import { ActionDialog } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { invalidatePaths } from "../../queries.ts";
 
@@ -76,19 +75,14 @@ export function RankDialog({ open, onOpenChange, player }: RankDialogProps) {
     );
 
   return (
-    <Dialog
+    <ActionDialog
       open={open}
       onOpenChange={onOpenChange}
       title={t("players.rank.title", { name: player.name })}
       description={t("players.rank.description")}
-      footer={
-        <DialogFooter
-          onCancel={() => onOpenChange(false)}
-          submitLabel={t("players.rank.submit")}
-          onSubmit={submit}
-          busy={setRank.isPending}
-        />
-      }
+      submitLabel={t("players.rank.submit")}
+      onSubmit={submit}
+      busy={setRank.isPending}
     >
       <Field label={t("players.rank.group")}>
         {(control) => (
@@ -115,6 +109,6 @@ export function RankDialog({ open, onOpenChange, player }: RankDialogProps) {
           />
         )}
       </Field>
-    </Dialog>
+    </ActionDialog>
   );
 }

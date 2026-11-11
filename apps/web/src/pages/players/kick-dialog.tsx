@@ -1,7 +1,6 @@
 import { usePlayerTransfer } from "@ogcloud/api-client/react";
 import {
   ChatPreview,
-  Dialog,
   Field,
   PreviewFrame,
   TagTextField,
@@ -9,7 +8,7 @@ import {
 } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DialogFooter } from "../../dialog-footer.tsx";
+import { ActionDialog } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { textProblem, useTextPreview } from "../../texts.ts";
 
@@ -44,21 +43,16 @@ export function KickDialog({ open, onOpenChange, player }: KickDialogProps) {
     );
 
   return (
-    <Dialog
+    <ActionDialog
       open={open}
       onOpenChange={onOpenChange}
       title={t("players.kick.title", { name: player.name })}
       description={t("players.kick.description")}
-      footer={
-        <DialogFooter
-          onCancel={() => onOpenChange(false)}
-          submitLabel={t("players.kick.submit")}
-          onSubmit={submit}
-          disabled={message.trim() === "" || problems.length > 0}
-          busy={kick.isPending}
-          kind="danger"
-        />
-      }
+      submitLabel={t("players.kick.submit")}
+      onSubmit={submit}
+      disabled={message.trim() === "" || problems.length > 0}
+      busy={kick.isPending}
+      kind="danger"
     >
       <Field
         label={t("players.kick.message")}
@@ -80,6 +74,6 @@ export function KickDialog({ open, onOpenChange, player }: KickDialogProps) {
           <ChatPreview lines={[preview.data.rendering.modern]} />
         </PreviewFrame>
       )}
-    </Dialog>
+    </ActionDialog>
   );
 }

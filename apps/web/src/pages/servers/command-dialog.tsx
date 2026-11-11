@@ -1,9 +1,9 @@
 import type { ConsoleCommandRequestTarget } from "@ogcloud/api-client";
 import { useCommandRun } from "@ogcloud/api-client/react";
-import { Dialog, Field, Input, Segmented, useToast } from "@ogcloud/ui";
+import { Field, Input, Segmented, useToast } from "@ogcloud/ui";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DialogFooter } from "../../dialog-footer.tsx";
+import { ActionDialog } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -61,7 +61,7 @@ export function CommandDialog({
   };
 
   return (
-    <Dialog
+    <ActionDialog
       open={open}
       onOpenChange={onOpenChange}
       title={
@@ -70,15 +70,10 @@ export function CommandDialog({
           : t("servers.command.title")
       }
       description={t("servers.command.description")}
-      footer={
-        <DialogFooter
-          onCancel={() => onOpenChange(false)}
-          submitLabel={t("servers.command.submit")}
-          form="console-command"
-          disabled={!ready}
-          busy={run.isPending}
-        />
-      }
+      submitLabel={t("servers.command.submit")}
+      form="console-command"
+      disabled={!ready}
+      busy={run.isPending}
     >
       <form
         id="console-command"
@@ -123,6 +118,6 @@ export function CommandDialog({
           )}
         </Field>
       </form>
-    </Dialog>
+    </ActionDialog>
   );
 }

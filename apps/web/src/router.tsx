@@ -5,8 +5,11 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { CALLBACK_PATH } from "./auth.ts";
+import { AccountPage } from "./pages/account/account-page.tsx";
 import { ActivityPage } from "./pages/activity/activity-page.tsx";
 import { Callback } from "./pages/callback.tsx";
+import { ClientPage } from "./pages/clients/client-page.tsx";
+import { ClientsPage } from "./pages/clients/clients-page.tsx";
 import { GroupCreatePage } from "./pages/groups/group-create-page.tsx";
 import { GroupPage } from "./pages/groups/group-page.tsx";
 import { GroupsPage } from "./pages/groups/groups-page.tsx";
@@ -18,11 +21,15 @@ import { NpcsPage } from "./pages/npcs/npcs-page.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { PermissionGroupPage } from "./pages/permissions/permission-group-page.tsx";
 import { PermissionGroupsPage } from "./pages/permissions/permission-groups-page.tsx";
-import { Placeholder } from "./pages/placeholder.tsx";
 import { PlayerPage } from "./pages/players/player-page.tsx";
 import { PlayersPage } from "./pages/players/players-page.tsx";
+import { PrivacyPage } from "./pages/privacy/privacy-page.tsx";
+import { RolePage } from "./pages/roles/role-page.tsx";
+import { RolesPage } from "./pages/roles/roles-page.tsx";
 import { ServerPage } from "./pages/servers/server-page.tsx";
 import { ServersPage } from "./pages/servers/servers-page.tsx";
+import { UserPage } from "./pages/users/user-page.tsx";
+import { UsersPage } from "./pages/users/users-page.tsx";
 import { AppShell } from "./shell/app-shell.tsx";
 
 const root = createRootRoute({
@@ -121,27 +128,42 @@ const activity = createRoute({
 const users = createRoute({
   getParentRoute: () => app,
   path: "/users",
-  component: () => <Placeholder label="users" />,
+  component: UsersPage,
+});
+const user = createRoute({
+  getParentRoute: () => app,
+  path: "/users/$userId",
+  component: UserPage,
 });
 const roles = createRoute({
   getParentRoute: () => app,
   path: "/roles",
-  component: () => <Placeholder label="roles" />,
+  component: RolesPage,
+});
+const role = createRoute({
+  getParentRoute: () => app,
+  path: "/roles/$roleId",
+  component: RolePage,
 });
 const clients = createRoute({
   getParentRoute: () => app,
   path: "/clients",
-  component: () => <Placeholder label="clients" />,
+  component: ClientsPage,
+});
+const client = createRoute({
+  getParentRoute: () => app,
+  path: "/clients/$clientId",
+  component: ClientPage,
 });
 const privacy = createRoute({
   getParentRoute: () => app,
   path: "/privacy",
-  component: () => <Placeholder label="privacy" />,
+  component: PrivacyPage,
 });
 const account = createRoute({
   getParentRoute: () => app,
   path: "/account",
-  component: () => <Placeholder label="account" />,
+  component: AccountPage,
 });
 
 const routeTree = root.addChildren([
@@ -163,8 +185,11 @@ const routeTree = root.addChildren([
     npc,
     activity,
     users,
+    user,
     roles,
+    role,
     clients,
+    client,
     privacy,
     account,
   ]),

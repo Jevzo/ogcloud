@@ -1,4 +1,159 @@
 {
+  "access": {
+    "actions": {
+      "command": "Command",
+      "erase": "Erase",
+      "export": "Export",
+      "read": "View",
+      "write": "Change"
+    },
+    "areas": {
+      "groups": {
+        "description": "Groups with their scaling, resources and restarts.",
+        "name": "Groups"
+      },
+      "logs": {
+        "description": "The audit and scaling logs and jobs.",
+        "name": "Activity"
+      },
+      "network": {
+        "description": "Network texts, maintenance, limits, runtimes and the EULA.",
+        "name": "Network"
+      },
+      "npcs": {
+        "description": "Characters in the lobbies and where they send players.",
+        "name": "NPCs"
+      },
+      "oauth-clients": {
+        "description": "Machine clients for scripts, bots and CI.",
+        "name": "OAuth clients"
+      },
+      "overview": {
+        "description": "Players, servers and capacity at a glance.",
+        "name": "Overview"
+      },
+      "permissions": {
+        "description": "Ranks and what they allow in game.",
+        "name": "Permission groups"
+      },
+      "players": {
+        "description": "Players and their sessions; changing covers ranks, moves and kicks.",
+        "name": "Players"
+      },
+      "privacy": {
+        "description": "A person's data: exports and erasure.",
+        "name": "Privacy"
+      },
+      "roles": {
+        "description": "Roles and their permissions.",
+        "name": "Roles"
+      },
+      "servers": {
+        "description": "Live servers; commands start, stop and kill them and move their players.",
+        "name": "Servers"
+      },
+      "templates": {
+        "description": "Template versions: uploads, promotes and rollbacks.",
+        "name": "Templates"
+      },
+      "users": {
+        "description": "Dashboard users; changing covers passwords, access and sign-outs.",
+        "name": "Users"
+      }
+    },
+    "count_one": "{{count}} permission",
+    "count_other": "{{count}} permissions",
+    "title": "Permissions"
+  },
+  "account": {
+    "appearance": {
+      "device": "Remembered on this device.",
+      "title": "Appearance"
+    },
+    "description": "Your profile, how you sign in, and how the dashboard looks.",
+    "factors": {
+      "title": "Second factors"
+    },
+    "logins": {
+      "apps": {
+        "desktop": "Desktop app",
+        "grafana": "Grafana",
+        "mobile": "Mobile app",
+        "web": "Web dashboard"
+      },
+      "detail": "Signed in {{signedIn}}, active {{active}}",
+      "othersSignedOut": "Signed out your other devices",
+      "signOut": "Sign out",
+      "signOutOthers": "Sign out other devices",
+      "signOutOthersDescription_one": "{{count}} other login ends; that device has to sign in again.",
+      "signOutOthersDescription_other": "{{count}} other logins end; those devices have to sign in again.",
+      "signOutOthersTitle": "Sign out your other devices?",
+      "signedOut": "Signed out of {{app}}",
+      "thisDevice": "This device",
+      "title": "Signed-in devices"
+    },
+    "minecraft": {
+      "linked": "Your linked Minecraft account",
+      "title": "Minecraft",
+      "unlink": "Unlink",
+      "unlinkDescription": "Your username stops following your Minecraft name. If the network requires a link, you lose access until you link again.",
+      "unlinkDone": "Unlinked your Minecraft account",
+      "unlinkTitle": "Unlink your Minecraft account?",
+      "unlinked": "Not linked. Join the network, then link it here with a code sent to you in game."
+    },
+    "passkeys": {
+      "add": "Add passkey",
+      "detail": "Added {{added}}, last used {{used}}",
+      "name": "Name",
+      "none": "No passkeys yet.",
+      "remove": "Remove",
+      "removeDescription": "Enter your password to remove it. Owners keep at least one second factor.",
+      "removeTitle": "Remove {{name}}?",
+      "removed": "Removed {{name}}",
+      "rename": "Rename",
+      "renameDescription": "A name you will recognise, such as the device it lives on.",
+      "renameTitle": "Rename passkey",
+      "title": "Passkeys"
+    },
+    "password": {
+      "changed": "Password changed. Sign in with the new one.",
+      "current": "Current password",
+      "mismatch": "The passwords differ.",
+      "new": "New password",
+      "repeat": "Repeat the new password",
+      "signsOut": "Changing your password signs you out everywhere, here too.",
+      "submit": "Change password",
+      "title": "Password"
+    },
+    "profile": {
+      "byAdmin": "An administrator changes your name, email and role.",
+      "title": "Profile"
+    },
+    "sections": "Account sections",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security"
+    },
+    "title": "Account",
+    "totp": {
+      "added": "Authenticator app added",
+      "code": "Code from the app",
+      "confirm": "Confirm",
+      "offDetail": "Not set up.",
+      "on": "On",
+      "onDetail": "Codes from an app on your phone confirm your sign-ins.",
+      "remove": "Remove",
+      "removeDescription": "Enter the code your app shows now. Owners keep at least one second factor.",
+      "removeTitle": "Remove the authenticator app?",
+      "removed": "Authenticator app removed",
+      "scan": "QR code for your authenticator app",
+      "secret": "Secret",
+      "setUp": "Set up",
+      "setUpDescription": "Scan the code with your app or enter the secret by hand, then type the code it shows.",
+      "setUpTitle": "Set up an authenticator app",
+      "title": "Authenticator app"
+    }
+  },
   "actions": {
     "loadMore": "Load more",
     "more": "More actions"
@@ -71,6 +226,57 @@
   "alerts": {
     "crashLoopPaused": "{{subject}} is paused after repeated failed starts",
     "other": "{{kind}} on {{subject}}"
+  },
+  "clients": {
+    "columns": {
+      "clientId": "Client id",
+      "created": "Created",
+      "kind": "Kind",
+      "name": "Name",
+      "permissions": "Permissions"
+    },
+    "create": {
+      "description": "Name it after what will use it, and give it only the permissions it needs.",
+      "submit": "Create client",
+      "title": "Create client"
+    },
+    "description": "Machine clients call the API with a secret, for scripts, bots and CI. OgCloud's own apps are listed too.",
+    "detail": {
+      "back": "Back to OAuth clients",
+      "delete": "Delete client",
+      "deleteDescription": "The client and its tokens stop working for good.",
+      "deleteTitle": "Delete {{name}}?",
+      "deleted": "Deleted {{name}}",
+      "description": "Calls the API with the client credentials grant.",
+      "failed": "The client could not be loaded",
+      "firstPartyNote": "One of OgCloud's own apps. It acts with the signed-in user's permissions, so it cannot be changed here.",
+      "gone": "This client does not exist",
+      "goneDescription": "It may have been deleted.",
+      "identity": "Identity",
+      "ownerOnly": "Only owners change OAuth clients.",
+      "rotate": "Rotate secret",
+      "rotateDescription": "The old secret stops working at once; tokens it already got last until they expire. Give the client the new secret.",
+      "rotateTitle": "Rotate {{name}}'s secret?"
+    },
+    "empty": "No clients",
+    "emptyDescription": "Create one for a script or bot that calls the API.",
+    "firstParty": "OgCloud app",
+    "form": {
+      "basics": "Client",
+      "name": "Name",
+      "nameHint": "Shown here and in the audit log.",
+      "namePlaceholder": "Discord bot"
+    },
+    "fromUser": "Signs users in",
+    "machine": "Machine",
+    "open": "Open client",
+    "secret": {
+      "description": "The client signs in with its id and this secret through the client credentials grant.",
+      "done": "Done",
+      "once": "Copy the secret now. OgCloud keeps only its hash and cannot show it again.",
+      "secret": "Client secret",
+      "title": "{{name}}'s secret"
+    }
   },
   "editing": {
     "cancel": "Cancel",
@@ -456,10 +662,6 @@
     },
     "startMaintenance": "Start maintenance"
   },
-  "pages": {
-    "account": "Account",
-    "placeholder": "This page is being built."
-  },
   "palette": {
     "groups": "Groups",
     "noResults": "Nothing matches",
@@ -603,6 +805,66 @@
       "to": "Move to"
     },
     "view": "Show"
+  },
+  "privacy": {
+    "description": "Export or erase what OgCloud stores about a player or a dashboard user.",
+    "erase": "Erase data",
+    "erasePlayerDescription": "Their player record, rank and profile go for good. A player who is online cannot be erased.",
+    "eraseTitle": "Erase {{name}}'s data?",
+    "eraseUserDescription": "Their account, passkeys, authenticator and logins go for good.",
+    "erased": "Erased {{name}}'s data",
+    "export": "Export data",
+    "exported": "Exported {{name}}'s data",
+    "findPlayer": "Player name",
+    "findUser": "Username or email",
+    "kept": "Erasing deletes the person's records. Audit entries and authorships stay under a pseudonym; events, logs and backups expire within 14 days.",
+    "noMatch": "Nobody found",
+    "noMatchDescription": "Players are found by the start of their name.",
+    "players": "Players",
+    "users": "Dashboard users"
+  },
+  "roles": {
+    "builtIn": "Built in",
+    "columns": {
+      "id": "Id",
+      "kind": "Kind",
+      "name": "Role",
+      "permissions": "Permissions"
+    },
+    "create": {
+      "description": "Name the role and give it an id; you pick its permissions on its page.",
+      "done": "Created {{name}}",
+      "submit": "Create role",
+      "title": "Create role"
+    },
+    "custom": "Custom",
+    "description": "What dashboard users may do. Only owners create and change roles.",
+    "detail": {
+      "back": "Back to roles",
+      "builtInNote": "Built-in roles keep their permissions in OgCloud's code. Create a role to choose your own.",
+      "delete": "Delete role",
+      "deleteDescription": "The role goes for good. A role that users still hold cannot be deleted.",
+      "deleteTitle": "Delete {{name}}?",
+      "deleted": "Deleted {{name}}",
+      "description": "Id {{id}}",
+      "failed": "The role could not be loaded",
+      "gone": "This role does not exist",
+      "goneDescription": "It may have been deleted.",
+      "members_one": "{{count}} member",
+      "members_other": "{{count}} members",
+      "noMembers": "Nobody holds this role.",
+      "ownerOnly": "Only owners change roles."
+    },
+    "empty": "No roles",
+    "emptyDescription": "The four built-in roles always exist; create your own for narrower access.",
+    "form": {
+      "basics": "Role",
+      "id": "Id",
+      "idHint": "Lowercase letters, digits and dashes, starting with a letter. It cannot change later.",
+      "name": "Name",
+      "namePlaceholder": "Support"
+    },
+    "open": "Open role"
   },
   "servers": {
     "actions": {
@@ -783,5 +1045,78 @@
     },
     "moreProblems_one": "{{problem}} One more problem is marked.",
     "moreProblems_other": "{{problem}} {{count}} more problems are marked."
+  },
+  "users": {
+    "actions": {
+      "delete": "Delete user",
+      "deleteDescription": "The account, its passkeys and its logins go for good. The audit log keeps their id.",
+      "deleteTitle": "Delete {{name}}?",
+      "deleted": "Deleted {{name}}",
+      "reset": "Reset password",
+      "resetDescription": "Set a new password and pass it on. Their logins end.",
+      "resetDone": "Reset {{name}}'s password",
+      "resetTitle": "Reset {{name}}'s password?",
+      "signOut": "Sign out everywhere",
+      "signOutDescription": "Every app and device of theirs has to sign in again.",
+      "signOutDone": "Signed {{name}} out",
+      "signOutTitle": "Sign {{name}} out everywhere?",
+      "unlink": "Unlink Minecraft",
+      "unlinkDescription": "{{player}} is no longer linked. If the network requires a link, they lose access until they link again.",
+      "unlinkDone": "Unlinked {{name}}",
+      "unlinkTitle": "Unlink {{name}}'s Minecraft account?"
+    },
+    "columns": {
+      "created": "Created",
+      "email": "Email",
+      "minecraft": "Minecraft",
+      "role": "Role",
+      "status": "Status",
+      "user": "User"
+    },
+    "create": {
+      "description": "The user signs in with this password and can change it in their account.",
+      "done": "Added {{name}}",
+      "submit": "Add user",
+      "title": "Add user"
+    },
+    "description": "Everyone who signs in to the dashboard.",
+    "detail": {
+      "access": "Access",
+      "account": "Account",
+      "back": "Back to users",
+      "description": "{{role}}",
+      "failed": "The user could not be loaded",
+      "gone": "This user does not exist",
+      "goneDescription": "They may have been deleted.",
+      "id": "User id",
+      "ownerOnly": "Only owners manage owners.",
+      "profile": "Profile",
+      "readOnly": "You can view this user but not change them."
+    },
+    "empty": "No users",
+    "emptyDescription": "Owners add users with a first password.",
+    "form": {
+      "email": "Email",
+      "enabled": "Can sign in",
+      "enabledHint": "Turning this off signs the user out everywhere.",
+      "role": "Role",
+      "roleHint": "Changing the role signs the user out everywhere.",
+      "roleOwnerOnly": "Only owners change roles.",
+      "rolePlaceholder": "Choose a role",
+      "username": "Username",
+      "usernameHint": "Follows the Minecraft name once the account is linked."
+    },
+    "notLinked": "Not linked",
+    "open": "Open user",
+    "password": {
+      "generate": "Generate",
+      "hint": "12 to 72 characters.",
+      "label": "Password"
+    },
+    "status": {
+      "disabled": "Disabled",
+      "enabled": "Active"
+    },
+    "you": "You"
   }
 }

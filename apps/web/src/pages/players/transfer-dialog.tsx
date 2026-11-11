@@ -1,8 +1,8 @@
 import { usePlayerTransfer, useServerList } from "@ogcloud/api-client/react";
-import { Combobox, Dialog, Field, Segmented, useToast } from "@ogcloud/ui";
+import { Combobox, Field, Segmented, useToast } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DialogFooter } from "../../dialog-footer.tsx";
+import { ActionDialog } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -50,20 +50,15 @@ export function TransferDialog({
   };
 
   return (
-    <Dialog
+    <ActionDialog
       open={open}
       onOpenChange={onOpenChange}
       title={t("players.transfer.title", { name: player.name })}
       description={t("players.transfer.description")}
-      footer={
-        <DialogFooter
-          onCancel={() => onOpenChange(false)}
-          submitLabel={t("players.transfer.submit")}
-          onSubmit={submit}
-          disabled={chosen === undefined}
-          busy={transfer.isPending}
-        />
-      }
+      submitLabel={t("players.transfer.submit")}
+      onSubmit={submit}
+      disabled={chosen === undefined}
+      busy={transfer.isPending}
     >
       <Segmented
         label={t("players.transfer.to")}
@@ -101,6 +96,6 @@ export function TransferDialog({
           )}
         </Field>
       )}
-    </Dialog>
+    </ActionDialog>
   );
 }

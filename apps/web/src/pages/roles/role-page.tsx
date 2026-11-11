@@ -1,0 +1,194 @@
+import type { RoleView, UpdateRoleRequest } from "@ogcloud/api-client";
+import {
+  getRoleListQueryKey,
+  useRoleDelete,
+  useRoleList,
+  useRoleUpdate,
+  useUserList,
+} from "@ogcloud/api-client/react";
+import { RoleUpdateBody } from "@ogcloud/api-client/zod";
+import { Badge, Card, Note, PageHeader, useToast } from "@ogcloud/ui";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { KeyRound, Lock } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { z } from "zod";
+import { useDeleteAction } from "../../delete-action.tsx";
+import { DetailFallback } from "../../detail-fallback.tsx";
+import { EditorForm, useSavedInList, useSaveFailure } from "../../editing.tsx";
+import { useFailureToast } from "../../errors.ts";
+import { contractSchema, useSettingsForm } from "../../form.tsx";
+import { MoreMenu } from "../../more-menu.tsx";
+import { useCan, useIsOwner } from "../../permissions.ts";
+import { invalidatePaths } from "../../queries.ts";
+import { PermissionsCard } from "./permission-picker.tsx";
+
+type RoleSettings = Pick<UpdateRoleRequest, "name" | "permissions">;
+
+const SettingsForm = contractSchema<{ settings: RoleSettings }>(
+  z.object({
+    settings: RoleUpdateBody.pick({ name: true, permissions: true }),
+  }),
+);
+// Enough for the members panel of a small network; the users page lists everyone.
+const MEMBERS_LIMIT = 200;
+
+/** One role: its name and permissions, edited in place by owners (D-0094); built-in roles are fixed (D-0089). */
+export function RolePage() {
+  const { t } = useTranslation("web");
+  const { roleId } = useParams({ from: "/app/roles/$roleId" });
+  const roles = useRoleList();
+  const role = roles.data?.data.find((candidate) => candidate.id === roleId);
+
+  if (role === undefined) {
+    return (
+      <DetailFallback
+        error={roles.error}
+        missing={roles.isSuccess}
+        icon={KeyRound}
+        goneTitle={t("roles.detail.gone")}
+        goneDescription={t("roles.detail.goneDescription")}
+        failedTitle={t("roles.detail.failed")}
+        back={
+          <Link to="/roles" className="font-label text-accent-text">
+            {t("roles.detail.back")}
+          </Link>
+        }
+      />
+    );
+  }
+  return <RoleEditor key={role.version} role={role} />;
+}
+
+function RoleEditor({ role }: { role: RoleView }) {
+  const { t } = useTranslation("web");
+  const _toast = useToast();
+  const _failed = useFailureToast();
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const isOwner = useIsOwner();
+  const canWrite = isOwner && !role.builtIn;
+  const update = useRoleUpdate();
+  const remove = useRoleDelete({
+    mutation: {
+      onSettled: () => invalidatePaths(client, [getRoleListQueryKey()[0]]),
+    },
+  });
+  const deletion = useDeleteAction({
+    label: t("roles.detail.delete"),
+    title: t("roles.detail.deleteTitle", { name: role.name }),
+    description: t("roles.detail.deleteDescription"),
+    typedName: role.id,
+    done: t("roles.detail.deleted", { name: role.name }),
+    remove: () => remove.mutateAsync({ id: role.id }),
+    onDeleted: () => void navigate({ to: "/roles" }),
+  });
+  const saved = useSavedInList(getRoleListQueryKey()[0]);
+  const saveFailed = useSaveFailure(
+    () => void invalidatePaths(client, [getRoleListQueryKey()[0]]),
+  );
+
+  const { form, changes, saving } = useSettingsForm({
+    settings: { name: role.name, permissions: role.permissions },
+    schema: SettingsForm,
+    save: (settings) =>
+      update
+        .mutateAsync({
+          id: role.id,
+          data: { ...settings, version: role.version },
+        })
+        .then(saved, saveFailed),
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-3">
+            {role.name}
+            {role.builtIn ? (
+              <Badge tone="neutral" icon={Lock}>
+                {t("roles.builtIn")}
+              </Badge>
+            ) : null}
+          </span>
+        }
+        description={t("roles.detail.description", { id: role.id })}
+        actions={canWrite ? <MoreMenu groups={[[deletion.item]]} /> : undefined}
+      />
+      <EditorForm
+        form={form}
+        canWrite={canWrite}
+        changes={changes}
+        saving={saving}
+        aside={<MembersCard roleId={role.id} />}
+      >
+        {role.builtIn ? (
+          <Note tone="info" icon={Lock}>
+            {t("roles.detail.builtInNote")}
+          </Note>
+        ) : isOwner ? null : (
+          <Note tone="info" icon={Lock}>
+            {t("roles.detail.ownerOnly")}
+          </Note>
+        )}
+        <Card title={t("roles.form.basics")}>
+          <form.AppField name="settings.name">
+            {(field) => <field.TextField label={t("roles.form.name")} />}
+          </form.AppField>
+        </Card>
+        <form.Field name="settings.permissions">
+          {(field) => (
+            <PermissionsCard
+              value={field.state.value}
+              onChange={field.handleChange}
+              disabled={!canWrite}
+            />
+          )}
+        </form.Field>
+      </EditorForm>
+      {deletion.dialog}
+    </div>
+  );
+}
+
+/** Who holds the role, for readers of users; the users page has everyone. */
+function MembersCard({ roleId }: { roleId: string }) {
+  const { t } = useTranslation("web");
+  const canRead = useCan("users:read");
+  const users = useUserList(
+    { limit: MEMBERS_LIMIT },
+    { query: { enabled: canRead } },
+  );
+  if (!canRead) return null;
+  const members = (users.data?.data.items ?? []).filter(
+    (user) => user.roleId === roleId,
+  );
+  return (
+    <Card title={t("roles.detail.members", { count: members.length })}>
+      {members.length === 0 ? (
+        <p className="text-text-3">{t("roles.detail.noMembers")}</p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {members.map((user) => (
+            <li
+              key={user.id}
+              className="flex items-center justify-between gap-3"
+            >
+              <Link
+                to="/users/$userId"
+                params={{ userId: user.id }}
+                className="font-label hover:underline"
+              >
+                {user.username}
+              </Link>
+              <span className="truncate text-meta text-text-3">
+                {user.email}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}

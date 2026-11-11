@@ -2,14 +2,15 @@ import { useMeGet } from "@ogcloud/api-client/react";
 import { Card, useToast } from "@ogcloud/ui";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertsContext, useAlertList } from "../alerts.ts";
 import { type Alert, useLiveEvents } from "../live.ts";
-import { PermissionsContext } from "../permissions.ts";
+import { MeContext } from "../permissions.ts";
 import {
   applyPreferences,
   type Preferences,
+  PreferencesContext,
   readPreferences,
   writePreferences,
 } from "../preferences.ts";
@@ -47,11 +48,15 @@ export function AppShell() {
     [t, toast, alerts.add],
   );
   const live = useLiveEvents(session !== null, onAlert);
-  const changePreferences = (next: Preferences) => {
+  const changePreferences = useCallback((next: Preferences) => {
     setPreferences(next);
     writePreferences(next);
     applyPreferences(next);
-  };
+  }, []);
+  const preferenceState = useMemo(
+    () => ({ preferences, change: changePreferences }),
+    [preferences, changePreferences],
+  );
 
   if (me.isPending) return <main aria-busy="true" className="min-h-screen" />;
   if (me.isError) {
@@ -70,39 +75,34 @@ export function AppShell() {
 
   return (
     <AlertsContext.Provider value={alerts}>
-      <PermissionsContext.Provider value={profile.permissions}>
-        <div className="flex min-h-screen">
-          <Sidebar
-            permissions={profile.permissions}
-            collapsed={collapsed}
-            onToggle={() => setCollapsed((value) => !value)}
-            account={
-              <AccountMenu
-                me={profile}
-                collapsed={collapsed}
-                preferences={preferences}
-                onPreferences={changePreferences}
-              />
-            }
-          />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <Header live={live} onSearch={() => setSearching(true)} />
-            <motion.main
-              key={pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex-1 px-4 pt-2 pb-6"
-            >
-              <Outlet />
-            </motion.main>
+      <MeContext.Provider value={profile}>
+        <PreferencesContext.Provider value={preferenceState}>
+          <div className="flex min-h-screen">
+            <Sidebar
+              permissions={profile.permissions}
+              collapsed={collapsed}
+              onToggle={() => setCollapsed((value) => !value)}
+              account={<AccountMenu me={profile} collapsed={collapsed} />}
+            />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <Header live={live} onSearch={() => setSearching(true)} />
+              <motion.main
+                key={pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex-1 px-4 pt-2 pb-6"
+              >
+                <Outlet />
+              </motion.main>
+            </div>
           </div>
-        </div>
-        <CommandPalette
-          open={searching}
-          onOpenChange={setSearching}
-          permissions={profile.permissions}
-        />
-      </PermissionsContext.Provider>
+          <CommandPalette
+            open={searching}
+            onOpenChange={setSearching}
+            permissions={profile.permissions}
+          />
+        </PreferencesContext.Provider>
+      </MeContext.Provider>
     </AlertsContext.Provider>
   );
 }

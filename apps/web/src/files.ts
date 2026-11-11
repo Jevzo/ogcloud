@@ -54,7 +54,19 @@ export async function downloadFile(
     const text = await response.text();
     throw new ApiError("GET", path, response.status, undefined, text);
   }
-  const url = URL.createObjectURL(await response.blob());
+  saveBlob(await response.blob(), filename);
+}
+
+/** Saves data as an indented JSON file, such as a privacy export (D-0107). */
+export function saveJson(data: unknown, filename: string): void {
+  saveBlob(
+    new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+    filename,
+  );
+}
+
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;

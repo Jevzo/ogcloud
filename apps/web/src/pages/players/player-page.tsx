@@ -13,6 +13,8 @@ import { useTranslation } from "react-i18next";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
+import { MoreMenu } from "../../more-menu.tsx";
+import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
 import { useServerNames } from "../servers/server-names.ts";
 import { usePlayerActions } from "./player-actions.tsx";
 
@@ -28,6 +30,7 @@ export function PlayerPage() {
   });
   const servers = useServerNames();
   const actions = usePlayerActions();
+  const privacy = usePrivacyActions();
 
   if (player.data === undefined) {
     return (
@@ -78,33 +81,44 @@ export function PlayerPage() {
           ago: format.ago(new Date(view.firstSeenAt), now),
         })}
         actions={
-          actions.canWrite ? (
-            <>
-              {session === null ? null : (
-                <>
-                  <Button
-                    icon={LogOut}
-                    onClick={() => actions.open("kick", ref)}
-                  >
-                    {t("players.actions.kick")}
-                  </Button>
-                  <Button
-                    icon={ArrowRightLeft}
-                    onClick={() => actions.open("transfer", ref)}
-                  >
-                    {t("players.actions.transfer")}
-                  </Button>
-                </>
-              )}
-              <Button
-                kind="primary"
-                icon={Crown}
-                onClick={() => actions.open("rank", ref)}
-              >
-                {t("players.actions.rank")}
-              </Button>
-            </>
-          ) : undefined
+          <>
+            <MoreMenu
+              groups={[
+                privacy.itemsFor({
+                  kind: "player",
+                  id: view.uuid,
+                  name: view.name,
+                }),
+              ]}
+            />
+            {actions.canWrite ? (
+              <>
+                {session === null ? null : (
+                  <>
+                    <Button
+                      icon={LogOut}
+                      onClick={() => actions.open("kick", ref)}
+                    >
+                      {t("players.actions.kick")}
+                    </Button>
+                    <Button
+                      icon={ArrowRightLeft}
+                      onClick={() => actions.open("transfer", ref)}
+                    >
+                      {t("players.actions.transfer")}
+                    </Button>
+                  </>
+                )}
+                <Button
+                  kind="primary"
+                  icon={Crown}
+                  onClick={() => actions.open("rank", ref)}
+                >
+                  {t("players.actions.rank")}
+                </Button>
+              </>
+            ) : null}
+          </>
         }
       />
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(320px,0.6fr)] items-start gap-4">
@@ -154,6 +168,7 @@ export function PlayerPage() {
         </Card>
       </div>
       {actions.dialogs}
+      {privacy.dialogs}
     </div>
   );
 }

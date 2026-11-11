@@ -5,6 +5,7 @@ import { useBlocker } from "@tanstack/react-router";
 import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "./errors.ts";
+import { invalidatePaths } from "./queries.ts";
 
 const CONFLICT = 409;
 
@@ -66,6 +67,17 @@ export function useSaveFailure(reload: () => void): (error: unknown) => void {
         : failed(error),
     [t, toast, failed, reload],
   );
+}
+
+/** After a save of something the page reads from a list: the list reloads, and the page says it saved. */
+export function useSavedInList(path: string): () => void {
+  const { t } = useTranslation("web");
+  const toast = useToast();
+  const client = useQueryClient();
+  return useCallback(() => {
+    void invalidatePaths(client, [path]);
+    toast({ message: t("editing.saved") });
+  }, [client, path, t, toast]);
 }
 
 /** After a save: the page shows what the API answered at once, and says it saved. */

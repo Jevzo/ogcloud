@@ -123,9 +123,16 @@ interface SelectFieldProps {
   hint?: string;
   options: readonly SelectOption<string>[];
   placeholder?: string;
+  disabled?: boolean;
 }
 
-function SelectField({ label, hint, options, placeholder }: SelectFieldProps) {
+function SelectField({
+  label,
+  hint,
+  options,
+  placeholder,
+  disabled = false,
+}: SelectFieldProps) {
   const field = useFieldContext<string>();
   return (
     <Field label={label} hint={hint} error={useFieldError()}>
@@ -134,6 +141,7 @@ function SelectField({ label, hint, options, placeholder }: SelectFieldProps) {
           {...control}
           options={options}
           placeholder={placeholder}
+          disabled={disabled}
           value={field.state.value === "" ? undefined : field.state.value}
           onValueChange={field.handleChange}
         />

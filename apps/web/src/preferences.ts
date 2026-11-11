@@ -1,4 +1,5 @@
 import { type DensityName, defaultDensity } from "@ogcloud/tokens";
+import { createContext, useContext } from "react";
 
 /** The theme follows the system unless the user picked one; both are remembered on this device (D-0209). */
 export type ThemeChoice = "system" | "light" | "dark";
@@ -33,6 +34,16 @@ export function writePreferences(
   } catch (error) {
     console.warn("Could not keep the display preferences", error);
   }
+}
+
+/** The display preferences and how to change them, shared by the account menu and the account page. */
+export const PreferencesContext = createContext<{
+  preferences: Preferences;
+  change: (next: Preferences) => void;
+}>({ preferences: DEFAULTS, change: () => undefined });
+
+export function usePreferences() {
+  return useContext(PreferencesContext);
 }
 
 /** The tokens' stylesheet switches on these attributes (D-0216). */

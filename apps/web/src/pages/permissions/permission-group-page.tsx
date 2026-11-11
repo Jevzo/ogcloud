@@ -10,14 +10,14 @@ import {
   usePermissionGroupUpdate,
 } from "@ogcloud/api-client/react";
 import { PermissionGroupUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Card, ConfirmDialog, PageHeader, useToast } from "@ogcloud/ui";
+import { Badge, Card, PageHeader, useToast } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { Shield, Star, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Shield, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
@@ -67,18 +67,26 @@ export function PermissionGroupPage() {
 
 function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
   const { t } = useTranslation("web");
-  const toast = useToast();
-  const failed = useFailureToast();
+  const _toast = useToast();
+  const _failed = useFailureToast();
   const navigate = useNavigate();
   const client = useQueryClient();
   const canWrite = useCan("permissions:write");
-  const [deleting, setDeleting] = useState(false);
   const update = usePermissionGroupUpdate();
   const remove = usePermissionGroupDelete({
     mutation: {
       onSettled: () =>
         invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]),
     },
+  });
+  const deletion = useDeleteAction({
+    label: t("permissions.detail.delete"),
+    title: t("permissions.detail.deleteTitle", { name: view.settings.name }),
+    description: t("permissions.detail.deleteDescription"),
+    typedName: view.id,
+    done: t("permissions.detail.deleted", { name: view.settings.name }),
+    remove: () => remove.mutateAsync({ id: view.id }),
+    onDeleted: () => void navigate({ to: "/permissions" }),
   });
   const saved = useSaved(getPermissionGroupGetQueryKey(view.id));
   const saveFailed = useSaveFailure(() =>
@@ -125,18 +133,7 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
         description={t("permissions.detail.description", { id: view.id })}
         actions={
           canWrite && !view.settings.defaultGroup ? (
-            <MoreMenu
-              groups={[
-                [
-                  {
-                    label: t("permissions.detail.delete"),
-                    icon: Trash2,
-                    danger: true,
-                    onSelect: () => setDeleting(true),
-                  },
-                ],
-              ]}
-            />
+            <MoreMenu groups={[[deletion.item]]} />
           ) : undefined
         }
       />
@@ -241,26 +238,7 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
           </form.Field>
         </Card>
       </EditorForm>
-      <ConfirmDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        title={t("permissions.detail.deleteTitle", {
-          name: view.settings.name,
-        })}
-        description={t("permissions.detail.deleteDescription")}
-        confirmLabel={t("permissions.detail.delete")}
-        typedName={view.id}
-        onConfirm={() =>
-          remove.mutateAsync({ id: view.id }).then(() => {
-            toast({
-              message: t("permissions.detail.deleted", {
-                name: view.settings.name,
-              }),
-            });
-            void navigate({ to: "/permissions" });
-          }, failed)
-        }
-      />
+      {deletion.dialog}
     </div>
   );
 }

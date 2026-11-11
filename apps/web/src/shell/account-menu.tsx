@@ -4,23 +4,17 @@ import { Menu, useToast } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Preferences, ThemeChoice } from "../preferences.ts";
+import { type ThemeChoice, usePreferences } from "../preferences.ts";
 import { useSession } from "../session-context.ts";
 
 interface AccountMenuProps {
   me: MeView;
   collapsed: boolean;
-  preferences: Preferences;
-  onPreferences: (next: Preferences) => void;
 }
 
-export function AccountMenu({
-  me,
-  collapsed,
-  preferences,
-  onPreferences,
-}: AccountMenuProps) {
+export function AccountMenu({ me, collapsed }: AccountMenuProps) {
   const { t } = useTranslation("web");
+  const { preferences, change: onPreferences } = usePreferences();
   const session = useSession();
   const toast = useToast();
   const navigate = useNavigate();

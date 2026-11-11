@@ -1,6 +1,5 @@
-import { Dialog } from "@ogcloud/ui";
 import { useState } from "react";
-import { DialogFooter } from "../../dialog-footer.tsx";
+import { ActionDialog } from "../../action-dialog.tsx";
 import { GroupSelectField } from "./group-select-field.tsx";
 
 interface GroupPickerDialogProps {
@@ -30,20 +29,15 @@ export function GroupPickerDialog({
   const [group, setGroup] = useState<string>();
 
   return (
-    <Dialog
+    <ActionDialog
       open={open}
       onOpenChange={onOpenChange}
       title={title}
       description={description}
-      footer={
-        <DialogFooter
-          onCancel={() => onOpenChange(false)}
-          submitLabel={submitLabel}
-          onSubmit={() => (group === undefined ? undefined : onPick(group))}
-          disabled={group === undefined}
-          busy={busy}
-        />
-      }
+      submitLabel={submitLabel}
+      onSubmit={() => (group === undefined ? undefined : onPick(group))}
+      disabled={group === undefined}
+      busy={busy}
     >
       <GroupSelectField
         label={fieldLabel}
@@ -51,6 +45,6 @@ export function GroupPickerDialog({
         value={group}
         onValueChange={setGroup}
       />
-    </Dialog>
+    </ActionDialog>
   );
 }

@@ -1,6 +1,11 @@
 import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
-import { MOCK_NOW, onlinePlayers, servers } from "../src/mocks/fixtures.ts";
+import {
+  MOCK_NOW,
+  onlinePlayers,
+  servers,
+  users,
+} from "../src/mocks/fixtures.ts";
 
 // The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0216).
 const OUT = new URL("../../../build/screenshots/web/", import.meta.url)
@@ -24,6 +29,13 @@ const PAGES = [
   "/npcs",
   "/npcs/0195b1d2-7c4e-7a10-9f3e-0000000a0001",
   "/users",
+  `/users/${users[2]?.id}`,
+  "/roles",
+  "/roles/builder",
+  "/clients",
+  "/clients/oc_2f6b9d1c8e4a",
+  "/privacy",
+  "/account",
 ] as const;
 
 async function open(
@@ -56,7 +68,13 @@ const slug = (path: string) =>
         ? "player"
         : path.startsWith("/npcs/")
           ? "npc"
-          : path.slice(1).replaceAll("/", "-");
+          : path.startsWith("/users/")
+            ? "user"
+            : path.startsWith("/roles/")
+              ? "role"
+              : path.startsWith("/clients/")
+                ? "client"
+                : path.slice(1).replaceAll("/", "-");
 
 for (const theme of THEMES) {
   for (const viewport of VIEWPORTS) {
@@ -119,6 +137,41 @@ for (const theme of THEMES) {
     await page.getByRole("tab", { name: "Templates" }).click();
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}templates-${theme}.png` });
+  });
+
+  test(`administration flows, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/account", theme);
+    await page.getByRole("tab", { name: "Security" }).click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}account-security-${theme}.png` });
+    await page.getByRole("button", { name: "Remove" }).first().click();
+    await page.getByRole("dialog").waitFor();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${OUT}account-remove-totp-${theme}.png` });
+  });
+
+  test(`privacy search and new client, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/privacy", theme);
+    await page.getByRole("searchbox", { name: "Player name" }).fill("ki");
+    await page.getByRole("searchbox", { name: "Username or email" }).fill("j");
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${OUT}privacy-search-${theme}.png` });
+    await page.goto("/clients");
+    await page.getByRole("button", { name: "Create client" }).click();
+    await page.getByRole("dialog").waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}clients-create-${theme}.png` });
+  });
+
+  test(`a new user, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/users", theme);
+    await page.getByRole("button", { name: "Add user" }).click();
+    await page.getByRole("button", { name: "Generate" }).click();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${OUT}users-create-${theme}.png` });
   });
 
   test(`activity, ${theme}`, async ({ page }) => {
