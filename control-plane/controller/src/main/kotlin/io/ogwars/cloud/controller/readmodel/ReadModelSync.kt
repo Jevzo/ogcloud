@@ -13,7 +13,11 @@ import io.ogwars.cloud.domain.store.ReadModelKind
 import io.ogwars.cloud.domain.store.ReadModelStore
 import io.ogwars.cloud.domain.store.SessionStore
 import io.ogwars.cloud.livestate.ValkeyKeys
+import io.ogwars.cloud.text.TextError
+import io.ogwars.cloud.text.describe
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Writes read models from PostgreSQL and tells the nodes (D-0077). An announced change always broadcasts; a resync
@@ -31,6 +35,9 @@ class ReadModelSync(
     private val sessions: SessionStore,
     private val templates: TemplateVersions,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+    private val reportedTexts = ConcurrentHashMap.newKeySet<Pair<String, String>>()
+
     fun group(
         id: GroupId,
         deleted: Boolean = false,
@@ -70,9 +77,20 @@ class ReadModelSync(
         if (changed || !resync) broadcasts.group(message)
     }
 
+    /** Each invalid stored text is reported once, not on every resync (D-0205); saves refuse new ones. */
+    private fun reportInvalid(
+        label: String,
+        source: String,
+        errors: List<TextError>,
+    ) {
+        if (reportedTexts.add(label to source)) {
+            log.warn("The network's {} is shown as written, since it is not valid: {}", label, errors.describe())
+        }
+    }
+
     fun networkSettings(resync: Boolean = false) {
         val stored = readModels.get(ReadModelKind.NETWORK_SETTINGS, ValkeyKeys.NETWORK_SETTINGS_ID)
-        val message = ReadModelMessages.networkSettings(network.load())
+        val message = ReadModelMessages.networkSettings(network.load(), ::reportInvalid)
         val write = if (resync) ReadModelWrite.Replace(stored) else ReadModelWrite.Overwrite
         if (!readModels.write(
                 ReadModelKind.NETWORK_SETTINGS,

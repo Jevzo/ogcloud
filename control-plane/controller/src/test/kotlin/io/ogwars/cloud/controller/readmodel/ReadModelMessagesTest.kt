@@ -17,7 +17,12 @@ class ReadModelMessagesTest {
                 maintenanceVersionName = "<#aa0000>Maintenance",
             )
 
-        val texts = ReadModelMessages.networkSettings(Revisioned(settings, 3)).serverList
+        val texts =
+            ReadModelMessages
+                .networkSettings(
+                    Revisioned(settings, 3),
+                ) { _, _, _ -> error("all valid") }
+                .serverList
 
         texts.motdJson shouldBe
             """{"text":"","extra":[{"text":"O","color":"#ff0000"},{"text":"g","color":"#800080"},""" +
@@ -31,10 +36,15 @@ class ReadModelMessagesTest {
 
     @Test
     fun `a stored text from before a rule is shown as written instead of failing the read model`() {
+        val reported = mutableListOf<String>()
         val texts =
-            ReadModelMessages.networkSettings(Revisioned(networkSettings(motd = "I <3 OgCloud"), 1)).serverList
+            ReadModelMessages
+                .networkSettings(Revisioned(networkSettings(motd = "I <3 OgCloud"), 1)) { label, _, _ ->
+                    reported += label
+                }.serverList
 
         texts.motdJson shouldBe """{"text":"","extra":[{"text":"I <3 OgCloud"}]}"""
         texts.motdLegacy shouldBe "I <3 OgCloud"
+        reported shouldBe listOf("motd")
     }
 }
