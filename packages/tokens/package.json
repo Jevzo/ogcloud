@@ -1,0 +1,19 @@
+{
+  "name": "@ogcloud/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/generated/tokens.css"
+  },
+  "scripts": {
+    "generate": "node src/generate.ts",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --test src/"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
