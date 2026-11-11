@@ -30,15 +30,18 @@ const mocksMode = import.meta.env.MODE === "mocks";
 async function start(container: HTMLElement) {
   applyPreferences(readPreferences());
   const session = mocksMode ? null : createSession();
+  // Every query that finds the login gone asks; one sign-in goes out, since each would replace the pending PKCE state.
+  let signingIn = false;
   const queryClient = createQueryClient(session, () => {
-    if (session !== null) {
-      signInOrSetUp(
-        session,
-        () => void router.navigate({ to: SETUP_PATH }),
-      ).catch((error: unknown) =>
-        console.error("Could not send the browser to sign in", error),
-      );
-    }
+    if (session === null || signingIn) return;
+    signingIn = true;
+    signInOrSetUp(session, () => {
+      signingIn = false;
+      void router.navigate({ to: SETUP_PATH });
+    }).catch((error: unknown) => {
+      signingIn = false;
+      console.error("Could not send the browser to sign in", error);
+    });
   });
   if (mocksMode) {
     const { startMocks } = await import("./mocks/browser.ts");
