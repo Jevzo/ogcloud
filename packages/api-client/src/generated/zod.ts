@@ -220,8 +220,12 @@ export const MeRenamePasskeyParams = zod.object({
   "id": zod.string()
 })
 
+export const meRenamePasskeyBodyLabelMax = 64;
+
+
+
 export const MeRenamePasskeyBody = zod.object({
-  "label": zod.string()
+  "label": zod.string().min(1).max(meRenamePasskeyBodyLabelMax)
 })
 
 export const MeRenamePasskeyResponse = zod.unknown()

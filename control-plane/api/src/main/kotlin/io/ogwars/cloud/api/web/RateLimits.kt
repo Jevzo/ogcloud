@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.web
 
+import io.ogwars.cloud.api.auth.login.LoginPages
 import io.ogwars.cloud.domain.store.RateLimit
 import io.ogwars.cloud.domain.store.RateLimiter
 import jakarta.servlet.FilterChain
@@ -25,6 +26,8 @@ import java.time.Clock
 data class RateLimitProperties(
     /** Sign-in, second factor, token, setup, passkey, password-change and Minecraft-link endpoints. */
     val auth: RateLimit = RateLimit(capacity = 20, perMinute = 10),
+    /** Loading the sign-in pages and their state, which starts a login session (D-0222). */
+    val pages: RateLimit = RateLimit(capacity = 60, perMinute = 60),
     val api: RateLimit = RateLimit(capacity = 600, perMinute = 600),
 )
 
@@ -39,7 +42,16 @@ class RateLimitFilter(
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        val (bucket, limit) = if (SIGN_IN.matches(request)) AUTH_BUCKET to limits.auth else API_BUCKET to limits.api
+        if (ASSETS.matches(request)) {
+            chain.doFilter(request, response)
+            return
+        }
+        val (bucket, limit) =
+            when {
+                SIGN_IN.matches(request) -> AUTH_BUCKET to limits.auth
+                SIGN_IN_PAGES.matches(request) -> PAGES_BUCKET to limits.pages
+                else -> API_BUCKET to limits.api
+            }
         val decision = limiter.tryAcquire(bucket, request.remoteAddr, limit, clock.instant())
         if (decision.allowed) {
             chain.doFilter(request, response)
@@ -56,13 +68,14 @@ class RateLimitFilter(
 
     companion object {
         const val AUTH_BUCKET = "auth"
+        const val PAGES_BUCKET = "pages"
         const val API_BUCKET = "api"
         private const val MILLIS_PER_SECOND = 1000L
         private val paths = PathPatternRequestMatcher.withDefaults()
 
         val SIGN_IN: RequestMatcher =
             OrRequestMatcher(
-                // The pages, their assets and state are reads; what a brute force sends is a POST (D-0212).
+                // What a brute force sends is a POST (D-0212); the totp-setup GET creates a pending secret.
                 paths.matcher(HttpMethod.POST, "/login"),
                 paths.matcher(HttpMethod.POST, "/login/**"),
                 paths.matcher("/login/mfa/totp-setup"),
@@ -76,6 +89,13 @@ class RateLimitFilter(
                 paths.matcher(HttpMethod.DELETE, "/api/v1/me/passkeys/*"),
                 paths.matcher(HttpMethod.POST, "/api/v1/me/minecraft-link/**"),
             )
+
+        /** The sign-in pages and their state; each load starts a login session (D-0222). */
+        val SIGN_IN_PAGES: RequestMatcher =
+            OrRequestMatcher(paths.matcher(HttpMethod.GET, "/login"), paths.matcher(HttpMethod.GET, "/login/**"))
+
+        // The pages' hashed scripts, styles and fonts: static, cached for a year, never limited.
+        private val ASSETS: RequestMatcher = paths.matcher(HttpMethod.GET, LoginPages.ASSETS)
     }
 }
 

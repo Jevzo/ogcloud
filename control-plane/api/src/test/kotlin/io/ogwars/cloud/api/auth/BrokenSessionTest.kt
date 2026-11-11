@@ -54,6 +54,7 @@ class BrokenSessionTest(
             ).accessToken
             .shouldNotBeNull()
         valkey.hasKey(sessionKey(broken)) shouldBe false
+        valkey.hasKey(expiryKey(broken)) shouldBe false
     }
 
     @Test
@@ -78,11 +79,14 @@ class BrokenSessionTest(
     private fun breakSession(principal: String): String {
         val id = UUID.randomUUID().toString()
         valkey.opsForHash<String, Any>().put(sessionKey(id), "lastAccessedTime", Instant.now().toEpochMilli())
+        valkey.opsForValue().set(expiryKey(id), "")
         valkey.opsForSet().add("${ValkeyKeys.WEB_SESSION_NAMESPACE}:index:$PRINCIPAL_INDEX:$principal", id)
         return id
     }
 
     private fun sessionKey(id: String) = "${ValkeyKeys.WEB_SESSION_NAMESPACE}:sessions:$id"
+
+    private fun expiryKey(id: String) = "${ValkeyKeys.WEB_SESSION_NAMESPACE}:sessions:expires:$id"
 
     private companion object {
         const val CALLBACK = "$TEST_ISSUER/auth/callback"

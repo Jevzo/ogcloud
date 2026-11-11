@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.auth.login
 import io.ogwars.cloud.api.auth.AuthProperties
 import io.ogwars.cloud.api.auth.mfa.MfaEndpoints
 import io.ogwars.cloud.api.auth.mfa.MfaRequirements
+import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.user.MfaRequirement
 import io.ogwars.cloud.service.SecretGenerator
 import jakarta.servlet.http.HttpServletRequest
@@ -46,7 +47,9 @@ data class LoginCsrf(
     val headerName: String,
     val parameterName: String,
     val token: String,
-)
+) {
+    override fun toString() = "LoginCsrf(headerName=$headerName, parameterName=$parameterName, token=$REDACTED)"
+}
 
 data class LoginState(
     val step: LoginStep,
@@ -62,11 +65,12 @@ class LoginPages(
     properties: AuthProperties,
     private val nonces: SecretGenerator,
 ) {
+    // Configured pages that are missing fail the start, so a broken image never passes its probes.
     private val index: String? =
-        properties.loginPages
-            ?.resolve(INDEX)
-            ?.takeIf(Files::isRegularFile)
-            ?.let(Files::readString)
+        properties.loginPages?.resolve(INDEX)?.let { file ->
+            check(Files.isRegularFile(file)) { "ogcloud.auth.login-pages names no login pages: $file is missing" }
+            Files.readString(file)
+        }
 
     @GetMapping(LOGIN_PAGE, MfaEndpoints.PATH, ADD_PASSKEY_PAGE, produces = [MediaType.TEXT_HTML_VALUE])
     @ResponseBody
@@ -115,7 +119,9 @@ class LoginStateController(
 ) {
     @GetMapping("/state", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun state(request: HttpServletRequest): ResponseEntity<LoginState> {
-        val csrf = request.getAttribute(CsrfToken::class.java.name) as CsrfToken
+        val csrf =
+            request.getAttribute(CsrfToken::class.java.name) as? CsrfToken
+                ?: error("Spring Security's CSRF filter did not run for ${request.requestURI}")
         val login = SecurityContextHolder.getContext().authentication
         val step =
             if (login == null || !login.isAuthenticated || login is AnonymousAuthenticationToken) {

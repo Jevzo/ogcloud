@@ -16,6 +16,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.transaction.IllegalTransactionStateException
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
@@ -172,6 +173,20 @@ class WebUserStoreTest(
             other.get() shouldBe false
         } finally {
             jdbc.sql("delete from web_users where id in (:ids)").param("ids", listOf(first.id, second.id)).update()
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    fun `a user's row is locked only inside a transaction`() {
+        val locked = user.copy(id = UUID(4, 1), username = "locked", email = "locked@example.com")
+        users.create(locked)
+        try {
+            // Outside a transaction the lock would end at once, so the caller's checks would not be guarded.
+            shouldThrow<IllegalTransactionStateException> { users.lockForUpdate(locked.id) }
+            transactions.executeWithoutResult { users.lockForUpdate(locked.id) }
+        } finally {
+            jdbc.sql("delete from web_users where id = :id").param("id", locked.id).update()
         }
     }
 

@@ -2,6 +2,7 @@ package io.ogwars.cloud.api.auth.users
 
 import io.ogwars.cloud.api.audit.CurrentActor
 import io.ogwars.cloud.api.auth.Logins
+import io.ogwars.cloud.api.auth.TokenClaims
 import io.ogwars.cloud.api.auth.UserPermissions
 import io.ogwars.cloud.api.auth.mfa.PasskeyManagement
 import io.ogwars.cloud.api.auth.mfa.PasskeyView
@@ -185,7 +186,7 @@ class MeController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun confirmTotp(
         @RequestBody request: TotpCodeRequest,
-    ) = totp.confirm(users.self(actors.current()).id, request.code)
+    ) = require(totp.confirm(users.self(actors.current()).id, request.code)) { "Wrong code" }
 
     /** Needs a current code from the authenticator (D-0108). */
     @AnyCaller
@@ -220,9 +221,8 @@ class MeController(
     fun listLogins(
         @AuthenticationPrincipal token: Jwt,
     ): List<LoginView> {
-        val userId = users.self(actors.current()).id
-        val current = logins.idOf(userId, token.tokenValue)
-        return logins.signedIn(userId).map { LoginView.of(it, it.id == current) }
+        val current = token.getClaimAsString(TokenClaims.LOGIN_CLAIM)
+        return logins.signedIn(users.self(actors.current()).id).map { LoginView.of(it, it.id == current) }
     }
 
     /** Signs that device out; it signs in again with its credentials. */

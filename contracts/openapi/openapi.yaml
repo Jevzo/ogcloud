@@ -2119,6 +2119,8 @@ components:
       properties:
         label:
           type: string
+          maxLength: 64
+          minLength: 1
       required:
       - label
     PasskeyView:
@@ -3284,26 +3286,23 @@ components:
         clientId:
           type: string
         signedInAt:
-          type:
-          - string
-          - "null"
+          type: string
           format: date-time
         lastActiveAt:
-          type:
-          - string
-          - "null"
+          type: string
           format: date-time
         expiresAt:
-          type:
-          - string
-          - "null"
+          type: string
           format: date-time
         current:
           type: boolean
       required:
       - clientId
       - current
+      - expiresAt
       - id
+      - lastActiveAt
+      - signedInAt
     PageScalingLogView:
       type: object
       properties:

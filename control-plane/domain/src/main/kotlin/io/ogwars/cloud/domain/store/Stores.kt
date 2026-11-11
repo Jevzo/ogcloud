@@ -307,6 +307,9 @@ interface WebUserStore {
 
     fun ownerExists(): Boolean
 
+    /** Holds the user's row until the caller's transaction ends, so changes to their sign-in factors take turns. */
+    fun lockForUpdate(id: UUID)
+
     /**
      * Replaces the user if it still has [expectedVersion], else throws [StaleUpdateException]. Throws
      * [ConflictException] if the change would leave no enabled owner or reuse a taken username or email.

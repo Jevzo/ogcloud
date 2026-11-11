@@ -13,6 +13,7 @@ import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
+import com.microsoft.playwright.Route
 import com.microsoft.playwright.options.AriaRole
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -54,8 +55,12 @@ class BrowserLoginTest(
     // What the pages' CSP refused (D-0219); any refusal fails the test that caused it.
     private val refused = mutableListOf<String>()
 
+    // The app callbacks the browser was sent to, oldest first; the web app that would serve them is not running here.
+    private val callbacks = ArrayDeque<String>()
+
     @AfterEach
     fun nothingWasRefused() {
+        callbacks.clear()
         val seen = refused.toList()
         refused.clear()
         seen.shouldBeEmpty()
@@ -132,13 +137,16 @@ class BrowserLoginTest(
 
             page.getByLabel("Passkey name").fill("Desk key")
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Register passkey")).click()
-            page.waitForURL("**/account")
+            page.waitForURL("**$ACCOUNT_PATH")
         }
         passkeys.list(user.id).map { it.label } shouldBe listOf("Desk key")
     }
 
     private fun pageIn(context: BrowserContext): Page =
         context.newPage().apply {
+            onRequest { request -> if (URI(request.url()).path == CALLBACK_PATH) callbacks += request.url() }
+            // The web app serves it in a cluster (D-0098); here the API alone would send the page to sign in.
+            route({ URI(it).path == ACCOUNT_PATH }) { it.fulfill(Route.FulfillOptions().setBody("account")) }
             onConsoleMessage { message ->
                 if (message.text().contains("Content Security Policy")) refused += message.text()
             }
@@ -155,9 +163,10 @@ class BrowserLoginTest(
         page.waitForLoadState()
     }
 
+    /** The code of the next app callback; the API answers the callback itself with a redirect to sign in. */
     private fun callbackCode(page: Page): String? {
-        page.waitForURL("**/auth/callback?**")
-        return OAuthHttp.query(URI(page.url()))["code"]
+        page.waitForCondition { callbacks.isNotEmpty() }
+        return OAuthHttp.query(URI(callbacks.removeFirst()))["code"]
     }
 
     private fun addVirtualAuthenticator(
@@ -180,11 +189,13 @@ class BrowserLoginTest(
 
     private fun authorizeUrl(): String =
         "$origin/oauth2/authorize?response_type=code&client_id=${FirstPartyClients.WEB}&scope=openid&state=s" +
-            "&redirect_uri=$origin/auth/callback&code_challenge=${OAuthHttp.challenge(
+            "&redirect_uri=$origin$CALLBACK_PATH&code_challenge=${OAuthHttp.challenge(
                 verifier,
             )}&code_challenge_method=S256"
 
     companion object {
+        private const val CALLBACK_PATH = "/auth/callback"
+        private const val ACCOUNT_PATH = "/account"
         private val port = ServerSocket(0).use { it.localPort }
         private val origin = "http://localhost:$port"
 

@@ -6,5 +6,9 @@
  */
 
 export interface PasskeyRename {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
   label: string;
 }

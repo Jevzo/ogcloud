@@ -8,6 +8,33 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
+const val MAX_PASSKEY_LABEL = 64
+
+/** A passkey's name as the user gave it at registration or rename: trimmed, 1 to [MAX_PASSKEY_LABEL] characters. */
+fun passkeyLabel(raw: String): String =
+    raw.trim().also {
+        require(it.length in 1..MAX_PASSKEY_LABEL) { "A passkey's name has 1 to $MAX_PASSKEY_LABEL characters" }
+    }
+
+/**
+ * Spring's credential store, which checks a new passkey's name as a rename does. Sign-ins save existing passkeys too;
+ * those pass unchecked, so a name stored before the rule never blocks a sign-in.
+ */
+class LabelledCredentials(
+    private val delegate: UserCredentialRepository,
+) : UserCredentialRepository by delegate {
+    override fun save(record: CredentialRecord) {
+        val fresh = delegate.findByCredentialId(record.credentialId) == null
+        delegate.save(
+            if (fresh) {
+                ImmutableCredentialRecord.fromCredentialRecord(record).label(passkeyLabel(record.label)).build()
+            } else {
+                record
+            },
+        )
+    }
+}
+
 /** A passkey as the API shows it; the id is its credential id in base64url. */
 data class PasskeyView(
     val id: String,

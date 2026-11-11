@@ -13,6 +13,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.util.UUID
@@ -92,6 +93,15 @@ class JdbcWebUserStore(
         if (ownerExists()) return false
         create(owner)
         return true
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    override fun lockForUpdate(id: UUID) {
+        jdbc
+            .sql("select id from web_users where id = :id for update")
+            .param("id", id)
+            .query()
+            .listOfRows()
     }
 
     override fun ownerExists(): Boolean =

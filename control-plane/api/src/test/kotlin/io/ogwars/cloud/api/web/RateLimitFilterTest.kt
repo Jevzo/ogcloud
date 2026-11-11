@@ -39,6 +39,27 @@ class RateLimitFilterTest {
     }
 
     @Test
+    fun `password checks behind a token use the strict bucket`() {
+        run("DELETE", "/api/v1/me/passkeys/mCrA7k1y0bMq")
+        run("PUT", "/api/v1/me/password")
+        run("GET", "/login/mfa/totp-setup")
+        run("PUT", "/api/v1/me/passkeys/mCrA7k1y0bMq")
+
+        taken.map { it.first } shouldBe listOf("auth", "auth", "auth", "api")
+    }
+
+    @Test
+    fun `loading the sign-in pages uses their own bucket, and their assets none`() {
+        run("GET", "/login")
+        run("GET", "/login/state")
+        run("GET", "/login/passkeys/new")
+        run("GET", "/login/assets/index-Bjo2N0NT.js")
+
+        taken.map { it.first } shouldBe listOf("pages", "pages", "pages")
+        taken.first().third shouldBe limits.pages
+    }
+
+    @Test
     fun `an empty bucket answers 429 with Retry-After`() {
         decision = RateDecision(false, Duration.ofMillis(1500))
 

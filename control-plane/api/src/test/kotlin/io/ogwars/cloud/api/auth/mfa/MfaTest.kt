@@ -5,6 +5,7 @@ import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TEST_ISSUER
 import io.ogwars.cloud.apitest.TEST_TOTP_KEY_ID
+import io.ogwars.cloud.apitest.TestAuthenticators
 import io.ogwars.cloud.apitest.TestPasskeys
 import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.domain.store.WebUserStore
@@ -38,15 +39,15 @@ class MfaTest(
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
     private val passkeys = TestPasskeys(entities, credentials)
-    private val totp = Totp()
+    private val authenticators = TestAuthenticators(oauth, testUsers)
 
     @Test
     fun `an enrolled authenticator is asked for after the password, and a code works once`() {
         val user = testUsers.create()
-        val secret = enroll(user)
+        val secret = authenticators.enroll(user)
 
         authorize(user, totpCode = null).path shouldBe OAuthHttp.MFA_PAGE
-        val code = code(secret)
+        val code = authenticators.code(secret)
         authorize(user) { code }.toString() shouldStartWith WEB_REDIRECT
         authorize(user) { code }.query shouldContain "error"
     }
@@ -54,7 +55,7 @@ class MfaTest(
     @Test
     fun `a password alone cannot add a second factor while one is due`() {
         val user = testUsers.create()
-        enroll(user)
+        authenticators.enroll(user)
         val owner = testUsers.create(BuiltInRole.OWNER.id)
         passkeys.register(owner.id)
 
@@ -73,9 +74,9 @@ class MfaTest(
     @Test
     fun `removing an authenticator needs a current code, and owners keep one unless a passkey stands in`() {
         val user = testUsers.create()
-        val secret = enroll(user)
+        val secret = authenticators.enroll(user)
         val owner = testUsers.create(BuiltInRole.OWNER.id)
-        val ownerSecret = enroll(owner)
+        val ownerSecret = authenticators.enroll(owner)
 
         oauth.call("DELETE", "$ME/totp", testUsers.token(user), mapOf("code" to "000000")).statusCode() shouldBe
             BAD_REQUEST
@@ -84,10 +85,16 @@ class MfaTest(
                 "DELETE",
                 "$ME/totp",
                 testUsers.token(owner),
-                mapOf("code" to code(ownerSecret)),
+                mapOf("code" to authenticators.code(ownerSecret)),
             ).statusCode() shouldBe
             CONFLICT
-        oauth.call("DELETE", "$ME/totp", testUsers.token(user), mapOf("code" to code(secret))).statusCode() shouldBe
+        oauth
+            .call(
+                "DELETE",
+                "$ME/totp",
+                testUsers.token(user),
+                mapOf("code" to authenticators.code(secret)),
+            ).statusCode() shouldBe
             NO_CONTENT
         oauth.json(oauth.call("GET", ME, testUsers.token(user)))["totpEnabled"] shouldBe false
     }
@@ -95,7 +102,7 @@ class MfaTest(
     @Test
     fun `adding a passkey waits for the second factor`() {
         val user = testUsers.create()
-        enroll(user)
+        authenticators.enroll(user)
         val unprotected = testUsers.create()
 
         oauth.openAfterSignIn(ADD_PASSKEY, user.username, TestUsers.PASSWORD) shouldBe OAuthHttp.MFA_PAGE
@@ -105,7 +112,7 @@ class MfaTest(
     @Test
     fun `a wrong code sends the user back`() {
         val user = testUsers.create()
-        enroll(user)
+        authenticators.enroll(user)
 
         authorize(user) { "000000" }.query shouldContain "error"
     }
@@ -123,7 +130,7 @@ class MfaTest(
                 TestUsers.PASSWORD,
                 verifier,
             ) { secret ->
-                code(Base32.decode(secret))
+                authenticators.code(Base32.decode(secret))
             }
 
         callback.toString() shouldStartWith WEB_REDIRECT
@@ -140,7 +147,7 @@ class MfaTest(
     @Test
     fun `secrets are stored encrypted under the active key`() {
         val user = testUsers.create()
-        val secret = enroll(user)
+        val secret = authenticators.enroll(user)
 
         val stored =
             jdbc
@@ -158,7 +165,7 @@ class MfaTest(
     @Test
     fun `an enrolled authenticator is not replaced`() {
         val user = testUsers.create()
-        enroll(user)
+        authenticators.enroll(user)
         val token = testUsers.token(user)
 
         oauth.call("POST", "$ME/totp", token).statusCode() shouldBe CONFLICT
@@ -172,20 +179,6 @@ class MfaTest(
         options.statusCode() shouldBe OK
         oauth.json(options)["rpId"] shouldBe "ogcloud.test"
     }
-
-    /** Enrolls an authenticator through the API and returns its secret. */
-    private fun enroll(user: WebUser): ByteArray {
-        val token = testUsers.token(user)
-        val enrollment = oauth.json(oauth.call("POST", "$ME/totp", token))
-        val secret = Base32.decode(enrollment["secret"] as String)
-        oauth.call("POST", "$ME/totp/confirm", token, mapOf("code" to "000000")).statusCode() shouldBe BAD_REQUEST
-        val current = totp.code(secret, totp.step(Instant.now()))
-        oauth.call("POST", "$ME/totp/confirm", token, mapOf("code" to current)).statusCode() shouldBe NO_CONTENT
-        return secret
-    }
-
-    // The next step's code: newer than the one the enrollment used, and still accepted if a step boundary passes.
-    private fun code(secret: ByteArray) = totp.code(secret, totp.step(Instant.now()) + 1)
 
     private val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
 

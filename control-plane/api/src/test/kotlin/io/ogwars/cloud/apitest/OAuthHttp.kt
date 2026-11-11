@@ -118,6 +118,40 @@ class OAuthHttp(
         return if (landed.statusCode() == FOUND) landed.location().path else target.path
     }
 
+    /** As [authorize] without a second factor, but the browser stays: its cookies still hold the login session. */
+    fun signInBrowser(
+        clientId: String,
+        redirectUri: String,
+        login: String,
+        password: String,
+        verifier: String,
+    ): SignedInBrowser {
+        val browser = Browser()
+        val callback = browser.signIn(clientId, redirectUri, login, password, verifier)
+        return SignedInBrowser(browser, clientId, redirectUri, callback)
+    }
+
+    /** A browser after a sign-in that ended at [callback]. */
+    inner class SignedInBrowser internal constructor(
+        private val browser: Browser,
+        private val clientId: String,
+        private val redirectUri: String,
+        val callback: URI,
+    ) {
+        /** The login session's id, from the cookie Spring Session set (base64 of the id). */
+        val sessionId: String get() = browser.sessionId()
+
+        /** Where `/oauth2/authorize` sends this browser now: back to the app while its login session lives. */
+        fun authorizeAgain(verifier: String): URI =
+            browser.startAuthorize(clientId, redirectUri, verifier, "openid").location()
+
+        /** An API call from this browser: the dashboard's calls carry the session cookie next to the token. */
+        fun call(
+            path: String,
+            accessToken: String,
+        ): HttpResponse<String> = browser.getWithToken(path, accessToken)
+    }
+
     /** The passkey sign-in options the login page's script requests. */
     fun passkeyOptions(): HttpResponse<String> {
         val browser = Browser()
@@ -311,7 +345,7 @@ class OAuthHttp(
     private fun uri(path: String): URI = if (path.startsWith("http")) URI(path) else URI("http://localhost:$port$path")
 
     /** Keeps the session cookie across requests, as a browser would. */
-    private inner class Browser {
+    internal inner class Browser {
         private val cookies = mutableMapOf<String, String>()
 
         fun signIn(
@@ -322,6 +356,19 @@ class OAuthHttp(
             verifier: String?,
             scope: String = "openid",
         ): URI {
+            val toLogin = startAuthorize(clientId, redirectUri, verifier, scope)
+            if (toLogin.statusCode() != FOUND || !toLogin.location().path.endsWith("/login")) return toLogin.location()
+            val afterLogin =
+                post("/login", form(listOf("username" to login, "password" to password, "_csrf" to csrf())))
+            return get(afterLogin.location().toString()).location()
+        }
+
+        fun startAuthorize(
+            clientId: String,
+            redirectUri: String,
+            verifier: String?,
+            scope: String,
+        ): HttpResponse<String> {
             val parameters =
                 listOfNotNull(
                     "response_type" to "code",
@@ -332,14 +379,18 @@ class OAuthHttp(
                     verifier?.let { "code_challenge" to challenge(it) },
                     verifier?.let { "code_challenge_method" to "S256" },
                 )
-            val toLogin = get("/oauth2/authorize?${form(parameters)}")
-            if (toLogin.statusCode() != FOUND || !toLogin.location().path.endsWith("/login")) return toLogin.location()
-            val afterLogin =
-                post("/login", form(listOf("username" to login, "password" to password, "_csrf" to csrf())))
-            return get(afterLogin.location().toString()).location()
+            return get("/oauth2/authorize?${form(parameters)}")
         }
 
         fun get(path: String) = exchange(HttpRequest.newBuilder(uri(path)).header("Accept", "text/html").GET())
+
+        fun getWithToken(
+            path: String,
+            accessToken: String,
+        ) = exchange(HttpRequest.newBuilder(uri(path)).header("Authorization", "Bearer $accessToken").GET())
+
+        fun sessionId(): String =
+            cookies[SESSION_COOKIE]?.let { String(Base64.getDecoder().decode(it)) } ?: error("No login session cookie")
 
         fun getJson(path: String) =
             exchange(HttpRequest.newBuilder(uri(path)).header("Accept", "application/json").GET())
@@ -393,6 +444,7 @@ class OAuthHttp(
     companion object {
         const val STATE = "test-state"
         const val MFA_PAGE = "/login/mfa"
+        private const val SESSION_COOKIE = "SESSION"
         private const val OK = 200
         private const val FOUND = 302
         private const val FORM = "application/x-www-form-urlencoded"

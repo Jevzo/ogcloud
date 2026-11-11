@@ -30,7 +30,7 @@ data class TotpEnrollment(
 @Service
 class TotpService(
     private val totps: TotpStore,
-    private val passkeys: Passkeys,
+    private val guard: FactorGuard,
     private val cipher: SecretCipher,
     private val secrets: SecretGenerator,
     private val properties: AuthProperties,
@@ -55,17 +55,18 @@ class TotpService(
         return enrollment(user.username, secret)
     }
 
+    /** Confirms the pending authenticator with its first code; false for a wrong code, a conflict if none is pending. */
     fun confirm(
         userId: UUID,
         code: String,
-    ) {
+    ): Boolean {
         val pending =
             totps.find(userId)?.takeIf { it.confirmedAt == null }
-                ?: throw IllegalArgumentException("Nothing to confirm")
+                ?: throw ConflictException("No authenticator is waiting for its first code")
         val now = clock.instant()
-        val step =
-            totp.verify(open(pending), code, now, lastUsedStep = null) ?: throw IllegalArgumentException("Wrong code")
+        val step = totp.verify(open(pending), code, now, lastUsedStep = null) ?: return false
         if (!totps.confirm(userId, now, step)) throw ConflictException("The authenticator was confirmed meanwhile")
+        return true
     }
 
     /** True once per valid code: a code used before is refused. */
@@ -82,10 +83,7 @@ class TotpService(
     fun remove(
         user: WebUser,
         code: String,
-    ) {
-        if (user.isOwner && !passkeys.exist(user.id)) {
-            throw ConflictException("Owners need a second factor; add a passkey before removing the authenticator")
-        }
+    ) = guard.remove(user) {
         require(verify(user.id, code)) { "Wrong code" }
         totps.delete(user.id)
     }

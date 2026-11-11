@@ -1,6 +1,7 @@
 package io.ogwars.cloud.api.auth.mfa
 
 import io.ogwars.cloud.domain.common.REDACTED
+import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.MfaRequirement
 import io.swagger.v3.oas.annotations.Hidden
@@ -72,13 +73,15 @@ class MfaEndpoints(
         response: HttpServletResponse,
         @RequestParam code: String,
     ) {
-        try {
-            totp.confirm(userId(), code)
-        } catch (_: IllegalArgumentException) {
-            response.sendRedirect("$PATH?error")
-            return
-        }
-        completeSecondFactor(request, response)
+        val confirmed =
+            try {
+                totp.confirm(userId(), code)
+            } catch (_: ConflictException) {
+                // Another tab confirmed it: this login now owes a code from it, which the page asks for.
+                response.sendRedirect(PATH)
+                return
+            }
+        if (confirmed) completeSecondFactor(request, response) else response.sendRedirect("$PATH?error")
     }
 
     /** Where the pages go once nothing is missing, such as after registering a passkey. */

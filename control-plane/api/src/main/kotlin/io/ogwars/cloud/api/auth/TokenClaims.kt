@@ -19,7 +19,7 @@ import java.util.UUID
 
 /**
  * Signs with the active key and puts the caller and its permissions into access tokens (D-0090, D-0092); Grafana's
- * carry none (D-0185). A user's ID token carries the role and permissions too, Grafana's only the role Grafana takes
+ * carry none (D-0185); a user's names its login (D-0221). A user's ID token carries the role and permissions too, Grafana's only the role Grafana takes
  * (D-0153), and the username and email when the profile and email scopes were granted.
  */
 class TokenClaims(
@@ -45,6 +45,8 @@ class TokenClaims(
                     if (forGrafana(context)) emptySet() else permissions.of(user)
             }
         context.claims.claim(ACTOR_CLAIM, actor.toString()).claim(PERMISSIONS_CLAIM, granted.map { it.scope }.sorted())
+        // Every token of one sign-in names it, whichever tab refreshed last, so /me/logins marks it (D-0221).
+        if (actor.type == ActorType.USER) context.authorization?.id?.let { context.claims.claim(LOGIN_CLAIM, it) }
     }
 
     private fun identify(context: JwtEncodingContext) {
@@ -78,6 +80,9 @@ class TokenClaims(
     companion object {
         const val ACTOR_CLAIM = "actor"
         const val PERMISSIONS_CLAIM = "permissions"
+
+        /** The id of the authorization (login) a user's access token belongs to (D-0221). */
+        const val LOGIN_CLAIM = "login_id"
         const val ROLE_CLAIM = "role"
         const val GRAFANA_ROLE_CLAIM = "grafana_role"
         const val USERNAME_CLAIM = "preferred_username"

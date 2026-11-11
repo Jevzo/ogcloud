@@ -67,7 +67,16 @@ class LogController(
         @RequestParam cursor: String?,
         @RequestParam limit: Int?,
     ): Page<AuditEntryView> {
-        val filter = AuditFilter(actor?.let(Actor::parse), action, targetType, targetId, from, until)
+        // An empty query parameter filters nothing, as if it were left out.
+        val filter =
+            AuditFilter(
+                actor?.ifBlank { null }?.let(Actor::parse),
+                action?.ifBlank { null },
+                targetType?.ifBlank { null },
+                targetId?.ifBlank { null },
+                from,
+                until,
+            )
         val size = Cursors.limit(limit)
         val page = Cursors.page(audit.list(filter, cursor?.let(Cursors::decode), size + 1), size) { it.id }
         return Page(page.items.map { it.toView() }, page.nextCursor)

@@ -1,9 +1,11 @@
 package io.ogwars.cloud.api.auth.users
 
-import io.ogwars.cloud.api.auth.ActiveLogin
+import io.ogwars.cloud.api.auth.SignedInLogin
+import io.ogwars.cloud.api.auth.mfa.MAX_PASSKEY_LABEL
 import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.WebUser
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.UUID
 
@@ -77,6 +79,7 @@ data class MeView(
 )
 
 data class PasskeyRename(
+    @field:Schema(minLength = 1, maxLength = MAX_PASSKEY_LABEL)
     val label: String,
 )
 
@@ -86,18 +89,18 @@ data class PasskeyRemoval(
     override fun toString() = "PasskeyRemoval(password=$REDACTED)"
 }
 
-/** One of the caller's sign-ins; [current] marks the one whose token made this request. */
+/** One of the caller's sign-ins; [current] marks the one whose token made this request (D-0221). */
 data class LoginView(
     val id: String,
     val clientId: String,
-    val signedInAt: Instant?,
-    val lastActiveAt: Instant?,
-    val expiresAt: Instant?,
+    val signedInAt: Instant,
+    val lastActiveAt: Instant,
+    val expiresAt: Instant,
     val current: Boolean,
 ) {
     companion object {
         fun of(
-            login: ActiveLogin,
+            login: SignedInLogin,
             current: Boolean,
         ) = LoginView(login.id, login.clientId, login.signedInAt, login.lastActiveAt, login.expiresAt, current)
     }

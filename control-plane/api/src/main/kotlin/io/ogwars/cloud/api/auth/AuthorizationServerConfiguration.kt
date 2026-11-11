@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.api.auth.mfa.LabelledCredentials
 import io.ogwars.cloud.domain.store.RotatedTokenStore
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.service.SecretGenerator
@@ -129,5 +130,6 @@ class AuthorizationServerConfiguration {
         JdbcPublicKeyCredentialUserEntityRepository(jdbc)
 
     @Bean
-    fun passkeyCredentials(jdbc: JdbcOperations): UserCredentialRepository = JdbcUserCredentialRepository(jdbc)
+    fun passkeyCredentials(jdbc: JdbcOperations): UserCredentialRepository =
+        LabelledCredentials(JdbcUserCredentialRepository(jdbc))
 }

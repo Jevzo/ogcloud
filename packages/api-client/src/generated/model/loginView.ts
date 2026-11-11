@@ -8,11 +8,8 @@
 export interface LoginView {
   id: string;
   clientId: string;
-  /** @nullable */
-  signedInAt?: string | null;
-  /** @nullable */
-  lastActiveAt?: string | null;
-  /** @nullable */
-  expiresAt?: string | null;
+  signedInAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
   current: boolean;
 }

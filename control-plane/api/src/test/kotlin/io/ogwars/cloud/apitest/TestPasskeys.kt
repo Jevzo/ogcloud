@@ -1,6 +1,7 @@
 package io.ogwars.cloud.apitest
 
 import org.springframework.security.web.webauthn.api.Bytes
+import org.springframework.security.web.webauthn.api.CredentialRecord
 import org.springframework.security.web.webauthn.api.ImmutableCredentialRecord
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCose
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity
@@ -27,12 +28,22 @@ class TestPasskeys(
                     .displayName(userId.toString())
                     .build()
                     .also(entities::save)
-        credentials.save(
+        credentials.save(record(entity.id))
+        return entity.id.toBase64UrlString()
+    }
+
+    companion object {
+        /** A credential record as Spring's registration stores it, for [user]'s entity. */
+        fun record(
+            user: Bytes,
+            label: String = "test key",
+            credentialId: Bytes = Bytes.random(),
+        ): CredentialRecord =
             ImmutableCredentialRecord
                 .builder()
                 .credentialType(PublicKeyCredentialType.PUBLIC_KEY)
-                .credentialId(Bytes.random())
-                .userEntityUserId(entity.id)
+                .credentialId(credentialId)
+                .userEntityUserId(user)
                 .publicKey(ImmutablePublicKeyCose(Bytes.random().bytes))
                 .signatureCount(0)
                 .uvInitialized(true)
@@ -43,9 +54,7 @@ class TestPasskeys(
                 .attestationClientDataJSON(Bytes.random())
                 .created(Instant.now())
                 .lastUsed(Instant.now())
-                .label("test key")
-                .build(),
-        )
-        return entity.id.toBase64UrlString()
+                .label(label)
+                .build()
     }
 }

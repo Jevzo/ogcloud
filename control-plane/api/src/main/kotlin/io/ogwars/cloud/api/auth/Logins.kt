@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
 
-/** An app holding tokens for a user: one sign-in on one device. */
+/** An app holding tokens for a user: one sign-in on one device, or one still in progress (no tokens yet). */
 data class ActiveLogin(
     val id: String,
     val clientId: String,
@@ -17,6 +17,28 @@ data class ActiveLogin(
     val lastActiveAt: Instant?,
     val expiresAt: Instant?,
 )
+
+/** A finished sign-in, which has its tokens and so all its times. */
+data class SignedInLogin(
+    val id: String,
+    val clientId: String,
+    val signedInAt: Instant,
+    val lastActiveAt: Instant,
+    val expiresAt: Instant,
+) {
+    companion object {
+        fun of(login: ActiveLogin): SignedInLogin {
+            fun Instant?.known(name: String) = requireNotNull(this) { "Login ${login.id} holds tokens but no $name" }
+            return SignedInLogin(
+                login.id,
+                login.clientId,
+                login.signedInAt.known("sign-in time"),
+                login.lastActiveAt.known("token issue time"),
+                login.expiresAt.known("expiry"),
+            )
+        }
+    }
+}
 
 /** Authorizations by user or client, plus a user's login sessions via the index; revoking a user ends both (D-0094, D-0095). */
 @Component
@@ -39,21 +61,7 @@ class Logins(
     fun stored(userId: UUID): List<ActiveLogin> = query(userId, completedOnly = false)
 
     /** The user's finished sign-ins, newest activity first (D-0213). */
-    fun signedIn(userId: UUID): List<ActiveLogin> = query(userId, completedOnly = true)
-
-    /** Which of the user's logins issued this access token, if any. */
-    fun idOf(
-        userId: UUID,
-        accessToken: String,
-    ): String? =
-        jdbc
-            .sql(
-                "select id from oauth2_authorization where principal_name = :principal and access_token_value = :token",
-            ).param("principal", userId.toString())
-            .param("token", accessToken)
-            .query(String::class.java)
-            .optional()
-            .orElse(null)
+    fun signedIn(userId: UUID): List<SignedInLogin> = query(userId, completedOnly = true).map(SignedInLogin::of)
 
     /**
      * Ends one of the user's logins. The user's login sessions end too: one of them could sign that device in again
