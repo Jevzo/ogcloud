@@ -23,10 +23,11 @@
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 	}
 
-	# Ready only while there is an app to serve.
+	# Ready only while there is an app to serve; the page itself goes out only with its CSP, below.
+	@app file /index.html
 	handle /healthz {
-		rewrite * /index.html
-		file_server
+		respond @app 200
+		respond 503
 	}
 
 	# Vite hashes these names, so a file never changes under one and browsers keep it a year.

@@ -39,6 +39,16 @@ class WebImageTest {
     }
 
     @Test
+    fun `the health check answers without the page, which goes out only with its CSP`() {
+        web().use { web ->
+            val health = get(web, "/healthz")
+
+            health.statusCode() shouldBe OK
+            health.body() shouldBe ""
+        }
+    }
+
+    @Test
     fun `hashed assets are cached for a year`() {
         web().use { web ->
             val script =
