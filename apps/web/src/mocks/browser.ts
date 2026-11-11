@@ -17,6 +17,7 @@ import {
   getRuntimeListMockHandler,
   getServerGetMockHandler,
   getServerListMockHandler,
+  getTemplateListMockHandler,
   getTextPreviewMockHandler,
 } from "@ogcloud/api-client/mocks";
 import { setupWorker } from "msw/browser";
@@ -37,6 +38,7 @@ import {
   runtimeProfiles,
   serverById,
   servers,
+  templatesOf,
 } from "./fixtures.ts";
 
 // The generated mocks draw from faker; one seed keeps every screenshot run identical.
@@ -53,6 +55,9 @@ export async function startMocks(): Promise<void> {
     getGroupDeletedMockHandler(deletedGroups),
     getGroupGetMockHandler(({ params }) => groupById(String(params.id))),
     getRuntimeListMockHandler(runtimeProfiles),
+    getTemplateListMockHandler(({ params }) =>
+      templatesOf(String(params.groupId)),
+    ),
     getNetworkGetMockHandler(networkSettings),
     getPlayerOnlineMockHandler({ items: onlinePlayers, nextCursor: null }),
     getPlayerKnownMockHandler({ items: knownPlayers, nextCursor: null }),

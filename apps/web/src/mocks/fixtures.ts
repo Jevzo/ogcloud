@@ -11,6 +11,7 @@ import type {
   RuntimeProfileView,
   ScalingLogView,
   ServerView,
+  TemplateVersionView,
   TextPreview,
   TextPreviewRequest,
 } from "@ogcloud/api-client";
@@ -617,3 +618,30 @@ export const networkSettings: NetworkSettingsView = {
     requireMinecraftLink: false,
   },
 };
+
+/** Template versions of a group: the newest pushed by its server, an upload, and an older one. */
+export function templatesOf(groupId: string): TemplateVersionView[] {
+  const version = (
+    n: number,
+    minutes: number,
+    source: TemplateVersionView["source"],
+    active: boolean,
+  ) => ({
+    id: `0195b1d2-7c4e-7a10-9f3e-00000000${n.toString().padStart(4, "0")}`,
+    sha256:
+      `${groupId.length}${n}c4e7a1b3d5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c`.slice(
+        0,
+        64,
+      ),
+    sizeBytes: 182_000_000 + n * 7_300_000,
+    source,
+    createdBy: source === "PUSH" ? "system:template-agent" : "user:mira",
+    createdAt: minutesAgo(minutes),
+    active,
+  });
+  return [
+    version(3, 45, "PUSH", true),
+    version(2, 60 * 26, "UPLOAD", false),
+    version(1, 60 * 24 * 9, "UPLOAD", false),
+  ];
+}

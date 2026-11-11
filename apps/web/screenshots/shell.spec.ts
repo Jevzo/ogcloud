@@ -109,6 +109,14 @@ for (const theme of THEMES) {
     await page.screenshot({ path: `${OUT}kick-dialog-${theme}.png` });
   });
 
+  test(`templates, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/groups/smp", theme);
+    await page.getByRole("tab", { name: "Templates" }).click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}templates-${theme}.png` });
+  });
+
   test(`a typed confirmation, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, `/servers/${SERVER}`, theme);

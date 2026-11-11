@@ -80,7 +80,10 @@
       "failed": "This group could not be loaded",
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
-      "live": "Right now"
+      "live": "Right now",
+      "sections": "Sections",
+      "settings": "Settings",
+      "templates": "Templates"
     },
     "form": {
       "basics": "Name and type",
@@ -598,6 +601,41 @@
     "failed": "Signing in did not finish: {{detail}}",
     "redirecting": "Taking you to sign in",
     "retry": "Sign in again"
+  },
+  "templates": {
+    "activate": "Make active",
+    "activateDescription": "New servers of the group start from this version; running servers keep theirs until they are replaced.",
+    "activateTitle": "Make {{version}} the active version?",
+    "activated": "Active version changed",
+    "active": "Active",
+    "columns": {
+      "by": "By",
+      "created": "Created",
+      "size": "Size",
+      "source": "From",
+      "version": "Version"
+    },
+    "delete": "Delete version",
+    "deleteDescription": "The archive is deleted for good. The active version cannot be deleted.",
+    "deleteTitle": "Delete this version?",
+    "deleted": "Version deleted",
+    "descriptionDynamic": "Each server starts from the active version. An upload becomes a new version you make active when you are ready.",
+    "descriptionStatic": "The server's files start from the active version. Uploads become active at once, and the server pushes its files when it stops.",
+    "download": "Download",
+    "empty": "No template yet",
+    "emptyDescription": "Upload a .tar.gz of the server folder: worlds, configs and plugins. OgCloud adds its own plugins itself.",
+    "rollbackDescription": "This version is older than the active one; new servers start from it again. Newer versions stay kept until retention removes them.",
+    "source": {
+      "IMPORT": "Import",
+      "PUSH": "Server push",
+      "UPLOAD": "Upload"
+    },
+    "staticWarning": "This static server is running. When it stops it pushes its files, and that push becomes the active version, replacing an upload or a change made now. Change templates while it is stopped.",
+    "title": "Template versions",
+    "upload": "Upload template",
+    "uploaded": "Uploaded a new version; make it active to use it",
+    "uploadedActive": "Uploaded and made active",
+    "uploading": "Uploading {{percent}} %"
   },
   "texts": {
     "errors": {

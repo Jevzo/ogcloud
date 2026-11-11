@@ -18,6 +18,7 @@ import {
   Meter,
   PageHeader,
   Skeleton,
+  Tabs,
   TimeSeriesChart,
 } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,6 +44,7 @@ import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
 import { useGroupActions } from "./group-actions.tsx";
 import { GroupSettingsFields } from "./group-settings-fields.tsx";
 import { GroupStatusBadge } from "./group-status.tsx";
+import { TemplatesPanel } from "./templates-panel.tsx";
 
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
@@ -92,6 +94,7 @@ function GroupEditor({ view }: { view: GroupView }) {
     onDeleted: () => void navigate({ to: "/groups" }),
   });
   const [requesting, setRequesting] = useState(false);
+  const [tab, setTab] = useState<"settings" | "templates">("settings");
   const update = useGroupUpdate();
   const live = overview.data?.data.groups.find((group) => group.id === view.id);
   const saved = useSaved(getGroupGetQueryKey(view.id));
@@ -180,20 +183,44 @@ function GroupEditor({ view }: { view: GroupView }) {
           </>
         }
       />
-      <EditorForm
-        form={form}
-        canWrite={canWrite}
-        changes={changes}
-        saving={saving}
-        aside={<LivePanel groupId={view.id} live={live} />}
-      >
-        <GroupSettingsFields
-          form={form}
-          fields="settings"
-          type={view.type}
-          profiles={runtime.data?.data ?? []}
-        />
-      </EditorForm>
+      <Tabs
+        label={t("groups.detail.sections")}
+        value={tab}
+        onValueChange={setTab}
+        tabs={[
+          {
+            value: "settings",
+            label: t("groups.detail.settings"),
+            content: (
+              <EditorForm
+                form={form}
+                canWrite={canWrite}
+                changes={changes}
+                saving={saving}
+                aside={<LivePanel groupId={view.id} live={live} />}
+              >
+                <GroupSettingsFields
+                  form={form}
+                  fields="settings"
+                  type={view.type}
+                  profiles={runtime.data?.data ?? []}
+                />
+              </EditorForm>
+            ),
+          },
+          {
+            value: "templates",
+            label: t("groups.detail.templates"),
+            content: (
+              <TemplatesPanel
+                groupId={view.id}
+                type={view.type}
+                staticRunning={(live?.running ?? 0) + (live?.pending ?? 0) > 0}
+              />
+            ),
+          },
+        ]}
+      />
       {actions.dialogs}
       <RequestServerDialog
         open={requesting}
