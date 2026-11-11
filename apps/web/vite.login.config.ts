@@ -14,6 +14,8 @@ export default defineConfig({
     alias: [{ find: /^\/src\//, replacement: `${import.meta.dirname}/src/` }],
   },
   publicDir: false,
+  // Its own dependency cache: the app's dev server runs beside it and would otherwise rewrite the shared one.
+  cacheDir: `${import.meta.dirname}/node_modules/.vite-login`,
   server: { port: LOGIN_DEV_PORT, strictPort: true },
   build: {
     outDir: `${import.meta.dirname}/dist-login`,
