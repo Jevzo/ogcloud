@@ -5,7 +5,10 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts",
+    "./zod": "./src/generated/zod.ts",
+    "./mocks": "./src/generated/query.msw.ts"
   },
   "scripts": {
     "generate": "orval --config orval.config.ts",
@@ -13,8 +16,30 @@
     "test:unit": "node --test src/"
   },
   "devDependencies": {
+    "@faker-js/faker": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "msw": "catalog:",
     "orval": "catalog:",
-    "typescript": "catalog:"
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
   }
 }
