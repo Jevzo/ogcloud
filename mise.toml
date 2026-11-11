@@ -42,6 +42,10 @@ run = [
 description = "Build the login pages the API serves (D-0212) into apps/web/dist-login"
 run = ["pnpm install --frozen-lockfile", "pnpm --filter @ogcloud/web exec vite build --config vite.login.config.ts"]
 
+[tasks."build:web"]
+description = "Build the dashboard the web image serves (D-0214) into apps/web/dist"
+run = ["pnpm install --frozen-lockfile", "pnpm --filter @ogcloud/web exec vite build"]
+
 [tasks."check:jvm"]
 description = "Kotlin format check, compile with warnings as errors, tests, build-logic convention tests"
 # The API's browser login test drives the real login pages.
@@ -82,6 +86,9 @@ done
 # The API serves the login pages from /app/login (D-0212).
 mise run build:login
 cp -R apps/web/dist-login "$out/login"
+# The web image serves the dashboard (D-0214).
+mise run build:web
+cp -R apps/web/dist "$out/web"
 # The controller ships OgCloud's plugins as ogcloud-<platform>.jar (D-0079).
 cp integrations/paper/build/libs/paper-all.jar "$out/plugins/ogcloud-paper.jar"
 cp integrations/legacy-paper/build/libs/legacy-paper-all.jar "$out/plugins/ogcloud-pandaspigot.jar"
@@ -110,7 +117,7 @@ run = """
 set -euo pipefail
 mise run images:build
 ./gradlew :images:smoke-test:test -Pogcloud.smoke
-for image in api controller gateway loadbalancer template-loader bootstrap backup; do
+for image in api controller gateway loadbalancer template-loader bootstrap backup web; do
   trivy image --severity CRITICAL --ignore-unfixed --exit-code 1 --quiet "$REGISTRY/$image:$VERSION"
 done
 """

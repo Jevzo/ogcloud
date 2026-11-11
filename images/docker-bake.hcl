@@ -1,7 +1,7 @@
 # Platform images (D-0128) from the artifacts `mise run images:build` stages in build/images. REGISTRY and VERSION
 # come from docker-bake.json, which is always passed first; tags follow the controller's image names.
 group "platform" {
-  targets = ["spring", "go"]
+  targets = ["spring", "go", "web"]
 }
 
 # Test-only images, built for `mise run check:images` and never published.
@@ -30,6 +30,12 @@ target "go" {
   target   = "go"
   args     = { BINARY = binary }
   tags     = ["${REGISTRY}/${binary}:${VERSION}"]
+}
+
+target "web" {
+  inherits = ["_platform"]
+  target   = "web"
+  tags     = ["${REGISTRY}/web:${VERSION}"]
 }
 
 # The gateway built with the contracttest tag for the cross-language contract test (T-0510).

@@ -1,0 +1,45 @@
+# The dashboard's server (D-0214): static files, the app's routes on index.html, and the security headers.
+{
+	admin off
+	persist_config off
+	auto_https off
+	log {
+		output stdout
+		format json
+	}
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Resource-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+	}
+
+	handle /healthz {
+		respond 200
+	}
+
+	# Vite hashes these names, so a file never changes under one and browsers keep it a year.
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Every other path is one of the app's routes. Each response gets a fresh nonce in index.html and in the CSP,
+	# so the styles the app inserts load and nothing else inline does (D-0219).
+	handle {
+		header Cache-Control no-store
+		header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'nonce-{http.request.uuid}'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		rewrite * /index.html
+		templates
+		file_server
+	}
+}

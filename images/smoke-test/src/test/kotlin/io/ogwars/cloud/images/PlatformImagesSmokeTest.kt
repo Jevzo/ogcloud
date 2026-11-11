@@ -41,7 +41,9 @@ class PlatformImagesSmokeTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["api", "controller", "gateway", "loadbalancer", "template-loader", "bootstrap", "backup"])
+    @ValueSource(
+        strings = ["api", "controller", "gateway", "loadbalancer", "template-loader", "bootstrap", "backup", "web"],
+    )
     fun `every platform image runs as uid 1000`(image: String) {
         docker
             .inspectImageCmd(imageOf(image))
