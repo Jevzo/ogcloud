@@ -120,6 +120,10 @@ function staticTheme(): Declaration[] {
     ["--container-branded", px(layout.brandedWidth)],
     ["--container-setup", px(layout.setupWidth)],
     ["--container-colour-picker", px(layout.colourPickerWidth)],
+    ["--container-aside-min", px(layout.asideMinWidth)],
+    ["--container-aside", px(layout.asideWidth)],
+    ["--container-side-min", px(layout.sideMinWidth)],
+    ["--container-number-field", px(layout.numberFieldWidth)],
   ];
 }
 

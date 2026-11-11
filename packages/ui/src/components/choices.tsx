@@ -39,7 +39,7 @@ export function Switch({
       <SwitchPrimitive.Root
         id={id}
         {...props}
-        className="relative mt-0.5 h-5 w-9 shrink-0 cursor-pointer rounded-full bg-surface-3 shadow-[inset_0_0_0_1px_var(--og-border-control)] transition-colors disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:bg-accent data-[state=checked]:shadow-none"
+        className="relative mt-0.5 h-5 w-9 shrink-0 cursor-pointer rounded-full bg-surface-3 shadow-[inset_0_0_0_1px_var(--og-border-control)] disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:bg-accent data-[state=checked]:shadow-none"
       >
         <SwitchPrimitive.Thumb className="block size-4 translate-x-0.5 rounded-full bg-on-accent shadow-raised transition-transform data-[state=checked]:translate-x-4.5" />
       </SwitchPrimitive.Root>

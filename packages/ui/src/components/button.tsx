@@ -10,7 +10,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 const ICON_SIZES: Record<ButtonSize, number> = { sm: 15, md: 16, lg: 18 };
 
 const button = cva(
-  "inline-flex shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-control border font-label transition-[background-color,border-color,box-shadow,color] disabled:cursor-not-allowed disabled:opacity-45 aria-busy:cursor-progress [&_svg]:shrink-0",
+  "inline-flex shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-control border font-label disabled:cursor-not-allowed disabled:opacity-45 aria-busy:cursor-progress [&_svg]:shrink-0",
   {
     variants: {
       kind: {

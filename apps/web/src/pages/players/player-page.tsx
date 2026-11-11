@@ -123,7 +123,7 @@ export function PlayerPage() {
           </>
         }
       />
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(320px,0.6fr)] items-start gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] items-start gap-4">
         <Card title={t("players.detail.status")}>
           <Details>
             {session === null ? (

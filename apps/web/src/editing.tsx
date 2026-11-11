@@ -150,7 +150,7 @@ export function EditorForm({
 }: EditorFormProps) {
   const save = () => void form.handleSubmit();
   return (
-    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(280px,440px)] items-start gap-4">
+    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-4">
       <form
         className="flex min-w-0 flex-col gap-4"
         onSubmit={(event) => {

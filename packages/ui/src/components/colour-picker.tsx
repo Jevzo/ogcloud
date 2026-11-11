@@ -92,7 +92,7 @@ export function ColourPicker({
                 aria-pressed={index === stopIndex}
                 onClick={() => setStopIndex(index)}
                 className={cn(
-                  "size-6 cursor-pointer rounded-small shadow-[inset_0_0_0_1px_rgba(127,127,127,0.35)]",
+                  "size-6 cursor-pointer rounded-small shadow-swatch",
                   index === stopIndex &&
                     "outline-2 outline-accent outline-offset-2",
                 )}
@@ -164,7 +164,7 @@ export function ColourPicker({
                   : setEditing(hex)
               }
               className={cn(
-                "aspect-square cursor-pointer rounded-small shadow-[inset_0_0_0_1px_rgba(127,127,127,0.35)]",
+                "aspect-square cursor-pointer rounded-small shadow-swatch",
                 mode === "solid" &&
                   solid.kind === "named" &&
                   solid.name === name &&
@@ -187,7 +187,7 @@ export function ColourPicker({
                 type="button"
                 aria-label={hex}
                 onClick={() => setEditing(hex)}
-                className="size-6 cursor-pointer rounded-small shadow-[inset_0_0_0_1px_rgba(127,127,127,0.35)]"
+                className="size-6 cursor-pointer rounded-small shadow-swatch"
                 style={{ backgroundColor: hex }}
               />
             ))}

@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
         <ToggleGroup.Item
           key={option.value}
           value={option.value}
-          className="h-6 cursor-pointer rounded-[calc(var(--radius-control)-2px)] px-2.5 font-label text-meta text-text-2 transition-colors hover:text-text data-[state=on]:bg-surface data-[state=on]:text-text data-[state=on]:shadow-raised"
+          className="h-6 cursor-pointer rounded-[calc(var(--radius-control)-2px)] px-2.5 font-label text-meta text-text-2 hover:text-text data-[state=on]:bg-surface data-[state=on]:text-text data-[state=on]:shadow-raised"
         >
           {option.label}
         </ToggleGroup.Item>

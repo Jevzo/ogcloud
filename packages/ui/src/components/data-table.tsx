@@ -223,7 +223,7 @@ export function DataTable<T extends RowData>({
                     data-index={virtual ? row.index : undefined}
                     ref={virtual ? virtualizer.measureElement : undefined}
                     className={cn(
-                      "group transition-colors hover:bg-surface-2 focus-within:bg-surface-2",
+                      "group hover:bg-surface-2 focus-within:bg-surface-2",
                       highlighted?.(row.original) && "bg-accent-soft/60",
                     )}
                   >

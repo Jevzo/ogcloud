@@ -36,7 +36,7 @@ export function Tabs<T extends string>({
           <Primitive.Trigger
             key={tab.value}
             value={tab.value}
-            className="-mb-px cursor-pointer border-transparent border-b-2 px-3 pb-2 font-label text-text-2 outline-none transition-colors hover:text-text focus-visible:text-text data-[state=active]:border-accent data-[state=active]:text-text"
+            className="-mb-px cursor-pointer border-transparent border-b-2 px-3 pb-2 font-label text-text-2 outline-none hover:text-text focus-visible:text-text data-[state=active]:border-accent data-[state=active]:text-text"
           >
             {tab.label}
           </Primitive.Trigger>

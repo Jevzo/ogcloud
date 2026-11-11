@@ -241,7 +241,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
                 />
               )}
             </form.AppField>
-            <div className="grid grid-cols-[minmax(0,1fr)_160px] gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_var(--container-number-field)] gap-4">
               <form.AppField
                 name="settings.versionName"
                 validators={validators.versionName}

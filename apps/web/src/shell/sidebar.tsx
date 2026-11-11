@@ -113,7 +113,7 @@ function NavLink({
       activeOptions={{ exact: item.path === "/" }}
       aria-label={collapsed ? label : undefined}
       className={cn(
-        "group flex h-nav-item items-center gap-2.5 rounded-control px-2.5 text-text-2 transition-colors hover:bg-surface-3 hover:text-text",
+        "group flex h-nav-item items-center gap-2.5 rounded-control px-2.5 text-text-2 hover:bg-surface-3 hover:text-text",
         "aria-[current=page]:bg-accent-soft aria-[current=page]:font-label aria-[current=page]:text-accent-text",
         collapsed && "justify-center px-0",
       )}

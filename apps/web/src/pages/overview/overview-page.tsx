@@ -22,7 +22,8 @@ import { PlayersCard } from "./players-card.tsx";
 import { ScalingCard } from "./scaling-card.tsx";
 import { ServersCard } from "./servers-card.tsx";
 
-const GRID = "grid grid-cols-[minmax(0,2fr)_minmax(300px,1fr)] gap-4";
+const GRID =
+  "grid grid-cols-[minmax(0,2fr)_minmax(var(--container-side-min),1fr)] gap-4";
 
 /** The network at a glance (D-0104): players, servers, groups and the autoscaler's latest decisions. */
 export function OverviewPage() {

@@ -56,6 +56,8 @@ export interface ThemeShadows {
   card: string;
   popover: string;
   raised: string;
+  /** Outlines a colour swatch so white and black ones stay visible on any surface. */
+  swatch: string;
 }
 
 /** Every theme names the same colours and shadows, so a theme missing one does not compile. */
@@ -112,6 +114,7 @@ export const themes: Record<ThemeName, Theme> = {
       popover:
         "0 2px 6px rgba(29, 27, 24, 0.06), 0 18px 40px -16px rgba(29, 27, 24, 0.22)",
       raised: "0 1px 2px rgba(29, 27, 24, 0.1)",
+      swatch: "inset 0 0 0 1px rgba(127, 127, 127, 0.35)",
     },
   },
   dark: {
@@ -161,6 +164,7 @@ export const themes: Record<ThemeName, Theme> = {
       popover: "0 24px 56px -20px rgba(0, 0, 0, 0.8)",
       raised:
         "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5)",
+      swatch: "inset 0 0 0 1px rgba(127, 127, 127, 0.35)",
     },
   },
 };
@@ -283,6 +287,13 @@ export const layout = {
   setupWidth: 800,
   /** The colour picker's popover, sized to its colour area. */
   colourPickerWidth: 284,
+  /** The side panel beside a settings form, between these widths (D-0210). */
+  asideMinWidth: 280,
+  asideWidth: 440,
+  /** The narrower column of a detail page or the overview. */
+  sideMinWidth: 320,
+  /** A number field beside a text field, such as a weight or a player limit. */
+  numberFieldWidth: 160,
   /** Screenshot reviews run at the smallest layout and on a large monitor (AGENTS.md §13, D-0170). */
   reviewViewports: [
     { name: "laptop", width: 1280, height: 800 },

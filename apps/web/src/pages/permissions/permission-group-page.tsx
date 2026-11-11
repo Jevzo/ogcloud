@@ -142,7 +142,7 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
       >
         <Card title={t("permissions.form.basics")}>
           <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-[minmax(0,1fr)_160px] gap-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_var(--container-number-field)] gap-4">
               <form.AppField name="settings.name">
                 {(field) => (
                   <field.TextField label={t("permissions.form.name")} />
