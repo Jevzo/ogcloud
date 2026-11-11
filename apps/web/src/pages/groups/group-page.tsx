@@ -1,8 +1,7 @@
-import {
-  ApiError,
-  type GroupOverview,
-  type GroupSettings,
-  type GroupView,
+import type {
+  GroupOverview,
+  GroupSettings,
+  GroupView,
 } from "@ogcloud/api-client";
 import {
   getGroupGetQueryKey,
@@ -16,13 +15,11 @@ import { GroupUpdateBody } from "@ogcloud/api-client/zod";
 import {
   Button,
   Card,
-  EmptyState,
   Menu,
   Meter,
   PageHeader,
   Skeleton,
   TimeSeriesChart,
-  useToast,
 } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,7 +36,8 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { EditGuard, useSaveFailure } from "../../editing.tsx";
+import { DetailFallback } from "../../detail-fallback.tsx";
+import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
 import { contractSchema, countChanges, useAppForm } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
 import { useCan } from "../../permissions.ts";
@@ -48,7 +46,6 @@ import { useGroupActions } from "./group-actions.tsx";
 import { GroupSettingsFields } from "./group-settings-fields.tsx";
 import { GroupStatusBadge } from "./group-status.tsx";
 
-const NOT_FOUND = 404;
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
 const CHART_HEIGHT = 120;
@@ -63,29 +60,15 @@ export function GroupPage() {
   const { groupId } = useParams({ from: "/app/groups/$groupId" });
   const group = useGroupGet(groupId);
 
-  if (group.isPending) {
+  if (group.data === undefined) {
     return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-96 max-w-form rounded-card" />
-      </div>
-    );
-  }
-  if (group.isError) {
-    const gone =
-      group.error instanceof ApiError && group.error.status === NOT_FOUND;
-    return (
-      <EmptyState
+      <DetailFallback
+        error={group.error}
         icon={Layers}
-        title={gone ? t("groups.detail.gone") : t("groups.detail.failed")}
-        description={
-          gone
-            ? t("groups.detail.goneDescription")
-            : group.error instanceof Error
-              ? group.error.message
-              : ""
-        }
-        action={
+        goneTitle={t("groups.detail.gone")}
+        goneDescription={t("groups.detail.goneDescription")}
+        failedTitle={t("groups.detail.failed")}
+        back={
           <Link to="/groups" className="font-label text-accent-text">
             {t("groups.detail.back")}
           </Link>
@@ -99,7 +82,6 @@ export function GroupPage() {
 
 function GroupEditor({ view }: { view: GroupView }) {
   const { t } = useTranslation("web");
-  const toast = useToast();
   const navigate = useNavigate();
   const client = useQueryClient();
   const canWrite = useCan("groups:write");
@@ -114,6 +96,7 @@ function GroupEditor({ view }: { view: GroupView }) {
   const [requesting, setRequesting] = useState(false);
   const update = useGroupUpdate();
   const live = overview.data?.data.groups.find((group) => group.id === view.id);
+  const saved = useSaved(getGroupGetQueryKey(view.id));
   const saveFailed = useSaveFailure(() =>
     client.invalidateQueries({ queryKey: getGroupGetQueryKey(view.id) }),
   );
@@ -133,14 +116,12 @@ function GroupEditor({ view }: { view: GroupView }) {
             version: view.version,
           },
         })
-        .then((saved) => {
-          client.setQueryData(getGroupGetQueryKey(view.id), saved);
-          toast({ message: t("editing.saved") });
-        }, saveFailed),
+        .then(saved, saveFailed),
   });
   const changes = useStore(form.store, (state) =>
     countChanges(view.settings, state.values.settings),
   );
+  const saving = useStore(form.store, (state) => state.isSubmitting);
 
   const menu = canWrite
     ? [
@@ -218,34 +199,20 @@ function GroupEditor({ view }: { view: GroupView }) {
         }
       />
       <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(240px,440px)] items-start gap-4">
-        <form
-          className="flex min-w-0 flex-col gap-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void form.handleSubmit();
-          }}
+        <EditorForm
+          canWrite={canWrite}
+          changes={changes}
+          saving={saving}
+          onSave={() => void form.handleSubmit()}
+          onDiscard={() => form.reset()}
         >
-          <fieldset disabled={!canWrite} className="m-0 min-w-0 border-0 p-0">
-            <GroupSettingsFields
-              form={form}
-              fields="settings"
-              type={view.type}
-              profiles={runtime.data?.data ?? []}
-            />
-          </fieldset>
-          {canWrite ? (
-            <form.Subscribe selector={(state) => state.isSubmitting}>
-              {(saving) => (
-                <EditGuard
-                  changes={changes}
-                  saving={saving}
-                  onDiscard={() => form.reset()}
-                  onSave={() => void form.handleSubmit()}
-                />
-              )}
-            </form.Subscribe>
-          ) : null}
-        </form>
+          <GroupSettingsFields
+            form={form}
+            fields="settings"
+            type={view.type}
+            profiles={runtime.data?.data ?? []}
+          />
+        </EditorForm>
         <LivePanel groupId={view.id} live={live} />
       </div>
       {actions.dialogs}

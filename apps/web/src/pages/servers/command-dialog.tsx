@@ -1,8 +1,9 @@
 import type { ConsoleCommandRequestTarget } from "@ogcloud/api-client";
 import { useCommandRun } from "@ogcloud/api-client/react";
-import { Button, Dialog, Field, Input, Segmented, useToast } from "@ogcloud/ui";
+import { Dialog, Field, Input, Segmented, useToast } from "@ogcloud/ui";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../../dialog-footer.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -26,7 +27,6 @@ export function CommandDialog({
   target,
 }: CommandDialogProps) {
   const { t } = useTranslation("web");
-  const { t: ui } = useTranslation("ui");
   const toast = useToast();
   const failed = useFailureToast();
   const [scope, setScope] = useState<Scope>("ALL");
@@ -71,20 +71,13 @@ export function CommandDialog({
       }
       description={t("servers.command.description")}
       footer={
-        <>
-          <Button kind="secondary" onClick={() => onOpenChange(false)}>
-            {ui("actions.cancel")}
-          </Button>
-          <Button
-            kind="primary"
-            type="submit"
-            form="console-command"
-            disabled={!ready}
-            loading={run.isPending}
-          >
-            {t("servers.command.submit")}
-          </Button>
-        </>
+        <DialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitLabel={t("servers.command.submit")}
+          form="console-command"
+          disabled={!ready}
+          busy={run.isPending}
+        />
       }
     >
       <form

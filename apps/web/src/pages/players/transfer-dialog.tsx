@@ -1,14 +1,8 @@
 import { usePlayerTransfer, useServerList } from "@ogcloud/api-client/react";
-import {
-  Button,
-  Combobox,
-  Dialog,
-  Field,
-  Segmented,
-  useToast,
-} from "@ogcloud/ui";
+import { Combobox, Dialog, Field, Segmented, useToast } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../../dialog-footer.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -29,7 +23,6 @@ export function TransferDialog({
   groupIds,
 }: TransferDialogProps) {
   const { t } = useTranslation("web");
-  const { t: ui } = useTranslation("ui");
   const toast = useToast();
   const failed = useFailureToast();
   const servers = useServerList();
@@ -63,19 +56,13 @@ export function TransferDialog({
       title={t("players.transfer.title", { name: player.name })}
       description={t("players.transfer.description")}
       footer={
-        <>
-          <Button kind="secondary" onClick={() => onOpenChange(false)}>
-            {ui("actions.cancel")}
-          </Button>
-          <Button
-            kind="primary"
-            onClick={submit}
-            disabled={chosen === undefined}
-            loading={transfer.isPending}
-          >
-            {t("players.transfer.submit")}
-          </Button>
-        </>
+        <DialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitLabel={t("players.transfer.submit")}
+          onSubmit={submit}
+          disabled={chosen === undefined}
+          busy={transfer.isPending}
+        />
       }
     >
       <Segmented

@@ -1,14 +1,5 @@
-import { ApiError } from "@ogcloud/api-client";
 import { usePlayerGet } from "@ogcloud/api-client/react";
-import {
-  Badge,
-  Button,
-  Card,
-  CopyField,
-  EmptyState,
-  PageHeader,
-  Skeleton,
-} from "@ogcloud/ui";
+import { Badge, Button, Card, CopyField, PageHeader } from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -19,12 +10,12 @@ import {
   UserX,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
 import { useServerNames } from "../servers/server-names.ts";
 import { usePlayerActions } from "./player-actions.tsx";
 
-const NOT_FOUND = 404;
 const REFRESH_MS = 10_000;
 
 /** One player: where they are, their rank and since when the network knows them. */
@@ -38,31 +29,15 @@ export function PlayerPage() {
   const servers = useServerNames();
   const actions = usePlayerActions();
 
-  if (player.isPending) {
+  if (player.data === undefined) {
     return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-48 rounded-card" />
-      </div>
-    );
-  }
-  if (player.isError) {
-    const unknown =
-      player.error instanceof ApiError && player.error.status === NOT_FOUND;
-    return (
-      <EmptyState
+      <DetailFallback
+        error={player.error}
         icon={UserX}
-        title={
-          unknown ? t("players.detail.unknown") : t("players.detail.failed")
-        }
-        description={
-          unknown
-            ? t("players.detail.unknownDescription")
-            : player.error instanceof Error
-              ? player.error.message
-              : ""
-        }
-        action={
+        goneTitle={t("players.detail.unknown")}
+        goneDescription={t("players.detail.unknownDescription")}
+        failedTitle={t("players.detail.failed")}
+        back={
           <Link to="/players" className="font-label text-accent-text">
             {t("players.detail.back")}
           </Link>

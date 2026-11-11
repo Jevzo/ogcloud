@@ -1,6 +1,5 @@
 import { usePlayerTransfer } from "@ogcloud/api-client/react";
 import {
-  Button,
   ChatPreview,
   Dialog,
   Field,
@@ -10,6 +9,7 @@ import {
 } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../../dialog-footer.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { textProblem, useTextPreview } from "../../texts.ts";
 
@@ -22,7 +22,6 @@ interface KickDialogProps {
 /** Disconnects a player with a message in the tag format (D-0206); they can join again. */
 export function KickDialog({ open, onOpenChange, player }: KickDialogProps) {
   const { t } = useTranslation("web");
-  const { t: ui } = useTranslation("ui");
   const toast = useToast();
   const failed = useFailureToast();
   const [message, setMessage] = useState("");
@@ -51,19 +50,14 @@ export function KickDialog({ open, onOpenChange, player }: KickDialogProps) {
       title={t("players.kick.title", { name: player.name })}
       description={t("players.kick.description")}
       footer={
-        <>
-          <Button kind="secondary" onClick={() => onOpenChange(false)}>
-            {ui("actions.cancel")}
-          </Button>
-          <Button
-            kind="danger"
-            onClick={submit}
-            disabled={message.trim() === "" || problems.length > 0}
-            loading={kick.isPending}
-          >
-            {t("players.kick.submit")}
-          </Button>
-        </>
+        <DialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitLabel={t("players.kick.submit")}
+          onSubmit={submit}
+          disabled={message.trim() === "" || problems.length > 0}
+          busy={kick.isPending}
+          kind="danger"
+        />
       }
     >
       <Field

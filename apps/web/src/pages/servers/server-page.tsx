@@ -1,15 +1,5 @@
-import { ApiError } from "@ogcloud/api-client";
 import { useOverviewGet, useServerGet } from "@ogcloud/api-client/react";
-import {
-  Button,
-  Card,
-  CopyField,
-  EmptyState,
-  Menu,
-  Meter,
-  PageHeader,
-  Skeleton,
-} from "@ogcloud/ui";
+import { Button, Card, CopyField, Menu, Meter, PageHeader } from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -21,6 +11,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -28,7 +19,6 @@ import { useServerActions } from "./server-actions.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
 
 const REFRESH_MS = 10_000;
-const NOT_FOUND = 404;
 
 /** One server: where it is in its life, its players, and what can be done to it. */
 export function ServerPage() {
@@ -43,29 +33,15 @@ export function ServerPage() {
     overview.data?.data.groups.map((group) => group.id) ?? [],
   );
 
-  if (server.isPending) {
+  if (server.data === undefined) {
     return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-64 rounded-card" />
-      </div>
-    );
-  }
-  if (server.isError) {
-    const gone =
-      server.error instanceof ApiError && server.error.status === NOT_FOUND;
-    return (
-      <EmptyState
+      <DetailFallback
+        error={server.error}
         icon={ServerOff}
-        title={gone ? t("servers.detail.gone") : t("servers.detail.failed")}
-        description={
-          gone
-            ? t("servers.detail.goneDescription")
-            : server.error instanceof Error
-              ? server.error.message
-              : ""
-        }
-        action={
+        goneTitle={t("servers.detail.gone")}
+        goneDescription={t("servers.detail.goneDescription")}
+        failedTitle={t("servers.detail.failed")}
+        back={
           <Link to="/servers" className="font-label text-accent-text">
             {t("servers.detail.back")}
           </Link>

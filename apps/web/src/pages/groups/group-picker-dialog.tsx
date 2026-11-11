@@ -1,6 +1,6 @@
-import { Button, Dialog } from "@ogcloud/ui";
+import { Dialog } from "@ogcloud/ui";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../../dialog-footer.tsx";
 import { GroupSelectField } from "./group-select-field.tsx";
 
 interface GroupPickerDialogProps {
@@ -27,7 +27,6 @@ export function GroupPickerDialog({
   busy,
   onPick,
 }: GroupPickerDialogProps) {
-  const { t: ui } = useTranslation("ui");
   const [group, setGroup] = useState<string>();
 
   return (
@@ -37,19 +36,13 @@ export function GroupPickerDialog({
       title={title}
       description={description}
       footer={
-        <>
-          <Button kind="secondary" onClick={() => onOpenChange(false)}>
-            {ui("actions.cancel")}
-          </Button>
-          <Button
-            kind="primary"
-            onClick={() => (group === undefined ? undefined : onPick(group))}
-            disabled={group === undefined}
-            loading={busy}
-          >
-            {submitLabel}
-          </Button>
-        </>
+        <DialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitLabel={submitLabel}
+          onSubmit={() => (group === undefined ? undefined : onPick(group))}
+          disabled={group === undefined}
+          busy={busy}
+        />
       }
     >
       <GroupSelectField

@@ -1,7 +1,8 @@
 import { ApiError } from "@ogcloud/api-client";
 import { ConfirmDialog, SaveBar, useToast } from "@ogcloud/ui";
+import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "./errors.ts";
 
@@ -64,5 +65,63 @@ export function useSaveFailure(reload: () => void): (error: unknown) => void {
           })
         : failed(error),
     [t, toast, failed, reload],
+  );
+}
+
+/** After a save: the page shows what the API answered at once, and says it saved. */
+export function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
+  const { t } = useTranslation("web");
+  const toast = useToast();
+  const client = useQueryClient();
+  return useCallback(
+    (saved: T) => {
+      client.setQueryData(queryKey, saved);
+      toast({ message: t("editing.saved") });
+    },
+    [client, queryKey, t, toast],
+  );
+}
+
+interface EditorFormProps {
+  canWrite: boolean;
+  changes: number;
+  saving: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
+  children: ReactNode;
+}
+
+/** A page's settings form: read-only without the write permission, otherwise with its save bar and leave guard. */
+export function EditorForm({
+  canWrite,
+  changes,
+  saving,
+  onSave,
+  onDiscard,
+  children,
+}: EditorFormProps) {
+  return (
+    <form
+      className="flex min-w-0 flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave();
+      }}
+    >
+      <fieldset
+        disabled={!canWrite}
+        className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0"
+      >
+        {children}
+      </fieldset>
+      {canWrite ? (
+        <EditGuard
+          changes={changes}
+          saving={saving}
+          onDiscard={onDiscard}
+          onSave={onSave}
+        />
+      ) : null}
+    </form>
   );
 }

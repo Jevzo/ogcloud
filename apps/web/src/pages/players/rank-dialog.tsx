@@ -6,7 +6,6 @@ import {
   useRankSet,
 } from "@ogcloud/api-client/react";
 import {
-  Button,
   DateTimePicker,
   Dialog,
   Field,
@@ -17,6 +16,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../../dialog-footer.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { invalidatePaths } from "../../queries.ts";
 
@@ -38,7 +38,6 @@ interface RankDialogProps {
 /** Gives a player a permission group, permanently or until a time; online players get it at once. */
 export function RankDialog({ open, onOpenChange, player }: RankDialogProps) {
   const { t } = useTranslation("web");
-  const { t: ui } = useTranslation("ui");
   const toast = useToast();
   const failed = useFailureToast();
   const client = useQueryClient();
@@ -83,14 +82,12 @@ export function RankDialog({ open, onOpenChange, player }: RankDialogProps) {
       title={t("players.rank.title", { name: player.name })}
       description={t("players.rank.description")}
       footer={
-        <>
-          <Button kind="secondary" onClick={() => onOpenChange(false)}>
-            {ui("actions.cancel")}
-          </Button>
-          <Button kind="primary" onClick={submit} loading={setRank.isPending}>
-            {t("players.rank.submit")}
-          </Button>
-        </>
+        <DialogFooter
+          onCancel={() => onOpenChange(false)}
+          submitLabel={t("players.rank.submit")}
+          onSubmit={submit}
+          busy={setRank.isPending}
+        />
       }
     >
       <Field label={t("players.rank.group")}>
