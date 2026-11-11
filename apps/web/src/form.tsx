@@ -37,6 +37,8 @@ interface TextFieldProps {
   mono?: boolean;
   placeholder?: string;
   suffix?: ReactNode;
+  /** Empty means none: the value becomes null, e.g. no CPU limit. */
+  optional?: boolean;
 }
 
 function TextField({
@@ -45,32 +47,7 @@ function TextField({
   mono = false,
   placeholder,
   suffix,
-}: TextFieldProps) {
-  const field = useFieldContext<string>();
-  return (
-    <Field label={label} hint={hint} error={useFieldError()}>
-      {(control) => (
-        <Input
-          {...control}
-          mono={mono}
-          placeholder={placeholder}
-          suffix={suffix}
-          value={field.state.value}
-          onBlur={field.handleBlur}
-          onChange={(event) => field.handleChange(event.target.value)}
-        />
-      )}
-    </Field>
-  );
-}
-
-/** Text that may be left out: an empty field means none, e.g. no CPU limit. */
-function OptionalTextField({
-  label,
-  hint,
-  mono = false,
-  placeholder,
-  suffix,
+  optional = false,
 }: TextFieldProps) {
   const field = useFieldContext<string | null | undefined>();
   return (
@@ -85,7 +62,7 @@ function OptionalTextField({
           onBlur={field.handleBlur}
           onChange={(event) =>
             field.handleChange(
-              event.target.value === "" ? null : event.target.value,
+              optional && event.target.value === "" ? null : event.target.value,
             )
           }
         />
@@ -168,7 +145,7 @@ export function contractSchema<T>(
 export const { useAppForm, withFieldGroup } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, OptionalTextField, NumberField, SelectField },
+  fieldComponents: { TextField, NumberField, SelectField },
   formComponents: {},
 });
 

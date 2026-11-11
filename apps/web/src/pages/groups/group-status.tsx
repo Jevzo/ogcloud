@@ -1,5 +1,6 @@
 import type { GroupOverview } from "@ogcloud/api-client";
 import { Badge, type Tone } from "@ogcloud/ui";
+import { Link } from "@tanstack/react-router";
 import {
   CircleCheck,
   CircleDashed,
@@ -29,4 +30,17 @@ export function GroupStatusBadge({ group }: { group: GroupOverview }) {
   const { t } = useTranslation("web");
   const status = statusOf(group);
   return <Badge {...STATUS_LOOK[status]}>{t(`groups.status.${status}`)}</Badge>;
+}
+
+/** A group's name, linking to its page. */
+export function GroupLink({ id }: { id: string }) {
+  return (
+    <Link
+      to="/groups/$groupId"
+      params={{ groupId: id }}
+      className="font-label hover:underline"
+    >
+      {id}
+    </Link>
+  );
 }

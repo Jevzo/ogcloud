@@ -13,13 +13,13 @@ import {
   Meter,
   PageHeader,
 } from "@ogcloud/ui";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
 import { useGroupActions } from "./group-actions.tsx";
-import { GroupStatusBadge } from "./group-status.tsx";
+import { GroupLink, GroupStatusBadge } from "./group-status.tsx";
 
 /** A group's settings with what runs of it right now. */
 interface GroupRow {
@@ -59,15 +59,7 @@ export function GroupsPage() {
       columns.columns([
         columns.accessor("view.id", {
           header: () => t("groups.columns.group"),
-          cell: (cell) => (
-            <Link
-              to="/groups/$groupId"
-              params={{ groupId: cell.getValue() }}
-              className="font-label hover:underline"
-            >
-              {cell.getValue()}
-            </Link>
-          ),
+          cell: (cell) => <GroupLink id={cell.getValue()} />,
         }),
         columns.accessor("view.type", {
           header: () => t("groups.columns.type"),

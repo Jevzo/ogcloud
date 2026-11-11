@@ -12,7 +12,7 @@ import { Layers } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
-import { GroupStatusBadge } from "../groups/group-status.tsx";
+import { GroupLink, GroupStatusBadge } from "../groups/group-status.tsx";
 
 const columns = columnsFor<GroupOverview>();
 
@@ -31,15 +31,7 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
       columns.columns([
         columns.accessor("id", {
           header: () => t("groups.columns.group"),
-          cell: (cell) => (
-            <Link
-              to="/groups/$groupId"
-              params={{ groupId: cell.getValue() }}
-              className="font-label hover:underline"
-            >
-              {cell.getValue()}
-            </Link>
-          ),
+          cell: (cell) => <GroupLink id={cell.getValue()} />,
         }),
         columns.accessor("type", {
           header: () => t("groups.columns.type"),

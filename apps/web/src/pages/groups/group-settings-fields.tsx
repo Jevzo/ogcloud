@@ -131,7 +131,8 @@ export const GroupSettingsFields = withFieldGroup({
             </group.AppField>
             <group.AppField name="resources.cpuLimit">
               {(field) => (
-                <field.OptionalTextField
+                <field.TextField
+                  optional
                   mono
                   label={t("groups.form.cpuLimit")}
                   hint={t("groups.form.cpuLimitHint")}
@@ -164,7 +165,8 @@ export const GroupSettingsFields = withFieldGroup({
             {type === "STATIC" ? (
               <group.AppField name="storageSize">
                 {(field) => (
-                  <field.OptionalTextField
+                  <field.TextField
+                    optional
                     mono
                     label={t("groups.form.storage")}
                     hint={t("groups.form.storageHint")}
