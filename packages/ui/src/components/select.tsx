@@ -2,6 +2,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { Select as Primitive } from "radix-ui";
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn.ts";
+import { useNonce } from "../nonce.ts";
 import { controlFrame } from "./input.tsx";
 import { popoverSurface } from "./popover.tsx";
 
@@ -33,6 +34,8 @@ export function Select<T extends string>({
   className,
   ...trigger
 }: SelectProps<T>) {
+  // Radix hides the viewport's scrollbar with a <style> of its own, which the CSP admits by nonce (D-0219).
+  const nonce = useNonce();
   return (
     <Primitive.Root
       value={value}
@@ -62,7 +65,7 @@ export function Select<T extends string>({
             "max-h-(--radix-select-content-available-height) min-w-(--radix-select-trigger-width) p-1",
           )}
         >
-          <Primitive.Viewport>
+          <Primitive.Viewport nonce={nonce}>
             {options.map((option) => (
               <Primitive.Item
                 key={option.value}
