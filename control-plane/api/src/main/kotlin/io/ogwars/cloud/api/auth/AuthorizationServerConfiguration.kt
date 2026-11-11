@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.jackson.SecurityJacksonModules
 import org.springframework.security.oauth2.core.OAuth2Token
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtEncoder
@@ -29,10 +30,13 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator
 import org.springframework.security.oauth2.server.authorization.token.JwtGenerator
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator
+import org.springframework.security.web.webauthn.jackson.WebauthnJacksonModule
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository
 import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository
 import org.springframework.security.web.webauthn.management.UserCredentialRepository
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator
 import java.security.SecureRandom
 import java.time.Clock
 
@@ -85,7 +89,33 @@ class AuthorizationServerConfiguration {
         clients: RegisteredClientRepository,
         rotated: RotatedTokenStore,
         clock: Clock,
-    ): OAuth2AuthorizationService = RefreshTokenRotation(JdbcOAuth2AuthorizationService(jdbc, clients), rotated, clock)
+    ): OAuth2AuthorizationService {
+        val stored = authorizationJson()
+        val service =
+            JdbcOAuth2AuthorizationService(jdbc, clients).apply {
+                setAuthorizationRowMapper(
+                    JdbcOAuth2AuthorizationService.JsonMapperOAuth2AuthorizationRowMapper(clients, stored),
+                )
+                setAuthorizationParametersMapper(
+                    JdbcOAuth2AuthorizationService.JsonMapperOAuth2AuthorizationParametersMapper(stored),
+                )
+            }
+        return RefreshTokenRotation(service, rotated, clock)
+    }
+
+    /**
+     * The JSON an authorization is stored in. Spring's defaults leave out WebAuthn's module, so the principal of a
+     * passkey sign-in could be written but never read back, and its code exchange failed.
+     */
+    private fun authorizationJson(): JsonMapper {
+        val webauthn = WebauthnJacksonModule()
+        val allowed = BasicPolymorphicTypeValidator.builder().also(webauthn::configurePolymorphicTypeValidator)
+        return JsonMapper
+            .builder()
+            .addModules(SecurityJacksonModules.getModules(javaClass.classLoader, allowed))
+            .addModule(webauthn)
+            .build()
+    }
 
     @Bean
     fun authorizationConsentService(

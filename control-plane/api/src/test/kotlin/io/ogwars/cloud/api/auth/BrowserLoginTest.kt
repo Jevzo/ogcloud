@@ -51,6 +51,7 @@ class BrowserLoginTest(
     private val browser: Browser = playwright.chromium().launch()
     private val totp = Totp()
     private val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
+    private val oauth = OAuthHttp(port)
 
     // What the pages' CSP refused (D-0219); any refusal fails the test that caused it.
     private val refused = mutableListOf<String>()
@@ -101,7 +102,7 @@ class BrowserLoginTest(
             page.getByLabel("Code from the app").fill(totp.code(secret, totp.step(Instant.now())))
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Confirm")).click()
 
-            callbackCode(page).shouldNotBeNull()
+            redeem(callbackCode(page))
         }
     }
 
@@ -117,12 +118,12 @@ class BrowserLoginTest(
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Passkey")).click()
             page.getByLabel("Passkey name").fill("Test passkey")
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Register passkey")).click()
-            callbackCode(page).shouldNotBeNull()
+            redeem(callbackCode(page))
 
             context.clearCookies()
             page.navigate(authorizeUrl())
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Sign in with a passkey")).click()
-            callbackCode(page).shouldNotBeNull()
+            redeem(callbackCode(page))
         }
     }
 
@@ -168,6 +169,10 @@ class BrowserLoginTest(
         page.waitForCondition { callbacks.isNotEmpty() }
         return OAuthHttp.query(URI(callbacks.removeFirst()))["code"]
     }
+
+    /** Redeems a callback's code as the web app would, which reads back everything the sign-in stored. */
+    private fun redeem(code: String?) =
+        oauth.exchange(FirstPartyClients.WEB, code.shouldNotBeNull(), "$origin$CALLBACK_PATH", verifier).accessToken
 
     private fun addVirtualAuthenticator(
         context: BrowserContext,
