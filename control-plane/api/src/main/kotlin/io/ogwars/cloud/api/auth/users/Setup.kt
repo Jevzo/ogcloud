@@ -9,11 +9,16 @@ import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.ogwars.cloud.domain.user.PasswordPolicy
 import io.ogwars.cloud.domain.user.WebUser
-import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
 import java.time.Clock
+
+/**
+ * The setup token did not match. Not an AccessDeniedException, which Spring answers for anonymous callers with 401 and
+ * no body, so the wizard could not tell a wrong token from any other failure.
+ */
+class WrongSetupTokenException : RuntimeException("Wrong setup token")
 
 /** A fresh install's first owner, created with the setup token from Infisical (D-0094). */
 @Service
@@ -35,7 +40,7 @@ class Setup(
         val expected = properties.setupToken ?: throw ConflictException("This installation has no setup token")
         // Comparing digests keeps the comparison constant-time whatever the input's length.
         if (!MessageDigest.isEqual(sha256Hex(setupToken).toByteArray(), sha256Hex(expected).toByteArray())) {
-            throw AccessDeniedException("Wrong setup token")
+            throw WrongSetupTokenException()
         }
         PasswordPolicy.validate(password)
         val owner =

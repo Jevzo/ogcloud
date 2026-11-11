@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.web
 
+import io.ogwars.cloud.api.auth.users.WrongSetupTokenException
 import io.ogwars.cloud.api.templates.UploadTooLargeException
 import io.ogwars.cloud.api.text.TextErrorView
 import io.ogwars.cloud.domain.store.ConflictException
@@ -42,6 +43,9 @@ class ApiErrors {
     /** A command could not be handed to Kafka; nothing was saved, so retrying is safe. */
     @ExceptionHandler(PublishException::class)
     fun unavailable(e: PublishException): ProblemDetail = problem(HttpStatus.SERVICE_UNAVAILABLE, e)
+
+    @ExceptionHandler(WrongSetupTokenException::class)
+    fun wrongSetupToken(e: WrongSetupTokenException): ProblemDetail = problem(HttpStatus.FORBIDDEN, e)
 
     @ExceptionHandler(UploadTooLargeException::class)
     fun tooLarge(e: UploadTooLargeException): ProblemDetail = problem(HttpStatus.CONTENT_TOO_LARGE, e)

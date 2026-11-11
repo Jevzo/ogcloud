@@ -32,7 +32,9 @@ class SetupTest(
         try {
             oauth.json(oauth.call("GET", SETUP, null))["pending"] shouldBe true
 
-            oauth.call("POST", SETUP, null, request("not-the-token", username)).statusCode() shouldBe UNAUTHORIZED
+            val refused = oauth.call("POST", SETUP, null, request("not-the-token", username))
+            refused.statusCode() shouldBe FORBIDDEN
+            oauth.json(refused)["detail"] shouldBe "Wrong setup token"
             oauth
                 .call(
                     "POST",
@@ -70,7 +72,7 @@ class SetupTest(
         const val SUFFIX = 8
         const val CREATED = 201
         const val BAD_REQUEST = 400
-        const val UNAUTHORIZED = 401
+        const val FORBIDDEN = 403
         const val CONFLICT = 409
     }
 }
