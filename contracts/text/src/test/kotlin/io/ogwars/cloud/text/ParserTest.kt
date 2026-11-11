@@ -75,6 +75,19 @@ class ParserTest {
     }
 
     @Test
+    fun `inserted texts keep their own formatting, and texts join without leaking tags`() {
+        val prefix = RichText.parseValid("<gold>[VIP] ")
+        val joined =
+            RichText.parseValid("{prefix}Eve").insert(mapOf("prefix" to prefix)) + RichText.parseValid("<red>!")
+        joined.runs() shouldBe
+            listOf(
+                Run("[VIP] ", Color.NAMED.getValue("gold"), emptySet()),
+                Run("Eve", null, emptySet()),
+                Run("!", Color.NAMED.getValue("red"), emptySet()),
+            )
+    }
+
+    @Test
     fun `an unfilled placeholder shows as written`() {
         RichText.parseValid("hi {name}").toPlain() shouldBe "hi {name}"
     }

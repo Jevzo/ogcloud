@@ -58,7 +58,7 @@ internal class Parser(
             return
         }
         stack.last().flush()
-        stack.last().children += Node.Placeholder(match.groupValues[1])
+        stack.last().children += Node.Placeholder(match.groupValues[1], position)
         position = match.range.last + 1
     }
 

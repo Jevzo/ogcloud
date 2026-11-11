@@ -8,12 +8,20 @@ class RichText internal constructor(
     internal val nodes: List<Node>,
 ) {
     /** The placeholders the text uses, such as `name` for `{name}`. */
-    fun placeholders(): Set<String> = buildSet { collectPlaceholders(nodes, this) }
+    fun placeholders(): Set<String> = placeholderNodes().mapTo(mutableSetOf()) { it.name }
+
+    internal fun placeholderNodes(): List<Node.Placeholder> = buildList { collectPlaceholders(nodes, this) }
 
     /** The text with the named placeholders filled in as literal text, which is never read as tags. */
-    fun fill(values: Map<String, String>): RichText = RichText(fillNodes(nodes, values))
+    fun fill(values: Map<String, String>): RichText = insert(values.mapValues { plain(it.value) })
 
     fun fill(vararg values: Pair<String, String>): RichText = fill(values.toMap())
+
+    /** The text with the named placeholders replaced by texts of their own, such as a group's prefix. */
+    fun insert(values: Map<String, RichText>): RichText = RichText(insertNodes(nodes, values))
+
+    /** This text followed by [other]; tags left open in either end with it. */
+    operator fun plus(other: RichText): RichText = RichText(nodes + other.nodes)
 
     override fun equals(other: Any?): Boolean = other is RichText && other.nodes == nodes
 
@@ -61,8 +69,10 @@ internal sealed interface Node {
         val text: String,
     ) : Node
 
+    /** `{name}` at [offset] in the source. */
     data class Placeholder(
         val name: String,
+        val offset: Int,
     ) : Node
 
     data class Styled(
@@ -89,25 +99,25 @@ internal sealed interface Style {
 
 private fun collectPlaceholders(
     nodes: List<Node>,
-    into: MutableSet<String>,
+    into: MutableList<Node.Placeholder>,
 ) {
     for (node in nodes) {
         when (node) {
-            is Node.Placeholder -> into += node.name
+            is Node.Placeholder -> into += node
             is Node.Styled -> collectPlaceholders(node.children, into)
             is Node.Literal -> Unit
         }
     }
 }
 
-private fun fillNodes(
+private fun insertNodes(
     nodes: List<Node>,
-    values: Map<String, String>,
+    values: Map<String, RichText>,
 ): List<Node> =
-    nodes.map { node ->
+    nodes.flatMap { node ->
         when (node) {
-            is Node.Placeholder -> values[node.name]?.let(Node::Literal) ?: node
-            is Node.Styled -> node.copy(children = fillNodes(node.children, values))
-            is Node.Literal -> node
+            is Node.Placeholder -> values[node.name]?.nodes ?: listOf(node)
+            is Node.Styled -> listOf(node.copy(children = insertNodes(node.children, values)))
+            is Node.Literal -> listOf(node)
         }
     }
