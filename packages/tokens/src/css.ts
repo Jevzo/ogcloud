@@ -1,3 +1,4 @@
+import { kebab } from "./names.ts";
 import {
   buttonHeights,
   type Density,
@@ -30,10 +31,6 @@ const GENERIC_FAMILIES = new Set([
 ]);
 
 const px = (value: number) => `${value}px`;
-
-// surface2 -> surface-2, accentSoft -> accent-soft
-const kebab = (name: string) =>
-  name.replace(/([a-z])([A-Z0-9])/g, "$1-$2").toLowerCase();
 
 function block(
   selector: string,

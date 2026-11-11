@@ -32,6 +32,9 @@
   --text-body: 14px;
   --text-body--line-height: 20px;
   --text-body--font-weight: 400;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-small--font-weight: 400;
   --text-meta: 12px;
   --text-meta--line-height: 16px;
   --text-meta--font-weight: 400;

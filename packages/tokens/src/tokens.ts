@@ -219,13 +219,15 @@ export interface TypeStyle {
 
 /** Table text follows the density; everything else is fixed. */
 export const typeScale: Record<
-  "display" | "title" | "heading" | "body" | "meta" | "mono",
+  "display" | "title" | "heading" | "body" | "small" | "meta" | "mono",
   TypeStyle
 > = {
   display: { size: 34, lineHeight: 40, weight: 750, tracking: "-0.02em" },
   title: { size: 22, lineHeight: 28, weight: 750, tracking: "-0.01em" },
   heading: { size: 15, lineHeight: 20, weight: 700 },
   body: { size: 14, lineHeight: 20, weight: 400 },
+  /** Small buttons, hints and field help. */
+  small: { size: 13, lineHeight: 18, weight: 400 },
   meta: { size: 12, lineHeight: 16, weight: 400 },
   mono: { size: 13, lineHeight: 18, weight: 400 },
 };
