@@ -1,11 +1,11 @@
 import type { MeView } from "@ogcloud/api-client";
 import type { DensityName } from "@ogcloud/tokens";
-import { Menu, useToast } from "@ogcloud/ui";
+import { Menu } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type ThemeChoice, usePreferences } from "../preferences.ts";
-import { useSession } from "../session-context.ts";
+import { useSignOut } from "../session-context.ts";
 
 interface AccountMenuProps {
   me: MeView;
@@ -15,20 +15,9 @@ interface AccountMenuProps {
 export function AccountMenu({ me, collapsed }: AccountMenuProps) {
   const { t } = useTranslation("web");
   const { preferences, change: onPreferences } = usePreferences();
-  const session = useSession();
-  const toast = useToast();
+  const signOut = useSignOut();
   const navigate = useNavigate();
   const initials = me.username.slice(0, 2).toUpperCase();
-
-  const signOut = async () => {
-    if (session === null) return;
-    try {
-      window.location.assign(await session.signOut());
-    } catch (error) {
-      console.warn("Signing out failed", error);
-      toast({ message: t("shell.signOutFailed") });
-    }
-  };
 
   return (
     <Menu

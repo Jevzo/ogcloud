@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
-import { useSession } from "../../session-context.ts";
+import { useSignOut } from "../../session-context.ts";
 import { isValidPassword } from "../users/new-password-field.tsx";
 
 /** Changes the user's own password; that ends every login, this one too, so the dashboard signs in again. */
@@ -12,7 +12,7 @@ export function PasswordCard() {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
-  const session = useSession();
+  const signOut = useSignOut();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [repeated, setRepeated] = useState("");
@@ -25,9 +25,9 @@ export function PasswordCard() {
     change.mutate(
       { data: { currentPassword: current, newPassword: next } },
       {
-        onSuccess: async () => {
+        onSuccess: () => {
           toast({ message: t("account.password.changed") });
-          if (session !== null) window.location.assign(await session.signOut());
+          void signOut();
         },
         onError: failed,
       },
