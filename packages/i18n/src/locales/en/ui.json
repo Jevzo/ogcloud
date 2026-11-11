@@ -51,6 +51,7 @@
   },
   "date": {
     "nextMonth": "Next month",
+    "none": "Pick a time",
     "permanent": "Permanent",
     "previousMonth": "Previous month",
     "quick": {

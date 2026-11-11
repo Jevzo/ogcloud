@@ -27,6 +27,8 @@ interface DateTimePickerProps {
   /** Quick picks count from here; injected so pages and tests share one clock (AGENTS.md §10). */
   now: Date;
   allowPermanent?: boolean;
+  /** Shown while no time is picked and permanence is not offered, e.g. "Any time" in a filter. */
+  placeholder?: string;
   "aria-describedby"?: string | undefined;
   "aria-invalid"?: true | undefined;
 }
@@ -37,6 +39,7 @@ export function DateTimePicker({
   onChange,
   now,
   allowPermanent = false,
+  placeholder,
   ...trigger
 }: DateTimePickerProps) {
   const { t, i18n } = useTranslation("ui");
@@ -88,7 +91,11 @@ export function DateTimePicker({
             className="text-text-2"
           />
           <span className="flex-1 truncate tabular-nums">
-            {value === null ? t("date.permanent") : format.format(value)}
+            {value === null
+              ? allowPermanent
+                ? t("date.permanent")
+                : (placeholder ?? t("date.none"))
+              : format.format(value)}
           </span>
         </button>
       }
