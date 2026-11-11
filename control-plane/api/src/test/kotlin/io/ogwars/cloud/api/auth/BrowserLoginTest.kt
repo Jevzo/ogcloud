@@ -14,10 +14,12 @@ import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.options.AriaRole
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,6 +51,16 @@ class BrowserLoginTest(
     private val totp = Totp()
     private val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
 
+    // What the pages' CSP refused (D-0219); any refusal fails the test that caused it.
+    private val refused = mutableListOf<String>()
+
+    @AfterEach
+    fun nothingWasRefused() {
+        val seen = refused.toList()
+        refused.clear()
+        seen.shouldBeEmpty()
+    }
+
     @AfterAll
     fun close() {
         browser.close()
@@ -59,7 +71,7 @@ class BrowserLoginTest(
     fun `a wrong password stays on the login page and says so`() {
         val user = testUsers.create()
         browser.newContext().use { context ->
-            val page = context.newPage()
+            val page = pageIn(context)
             page.navigate(authorizeUrl())
             signIn(page, user.username, "not the password")
 
@@ -72,7 +84,7 @@ class BrowserLoginTest(
     fun `an owner enrolls an authenticator app and continues to the app`() {
         val owner = testUsers.create(BuiltInRole.OWNER.id)
         browser.newContext().use { context ->
-            val page = context.newPage()
+            val page = pageIn(context)
             page.navigate(authorizeUrl())
             signIn(page, owner.username, TestUsers.PASSWORD)
 
@@ -92,7 +104,7 @@ class BrowserLoginTest(
     fun `an owner enrolls a passkey and then signs in with it alone`() {
         val owner = testUsers.create(BuiltInRole.OWNER.id)
         browser.newContext().use { context ->
-            val page = context.newPage()
+            val page = pageIn(context)
             addVirtualAuthenticator(context, page)
             page.navigate(authorizeUrl())
             signIn(page, owner.username, TestUsers.PASSWORD)
@@ -113,7 +125,7 @@ class BrowserLoginTest(
     fun `a user adds a passkey after signing in and goes back to their account`() {
         val user = testUsers.create()
         browser.newContext().use { context ->
-            val page = context.newPage()
+            val page = pageIn(context)
             addVirtualAuthenticator(context, page)
             page.navigate("$origin/login/passkeys/new")
             signIn(page, user.username, TestUsers.PASSWORD)
@@ -124,6 +136,13 @@ class BrowserLoginTest(
         }
         passkeys.list(user.id).map { it.label } shouldBe listOf("Desk key")
     }
+
+    private fun pageIn(context: BrowserContext): Page =
+        context.newPage().apply {
+            onConsoleMessage { message ->
+                if (message.text().contains("Content Security Policy")) refused += message.text()
+            }
+        }
 
     private fun signIn(
         page: Page,

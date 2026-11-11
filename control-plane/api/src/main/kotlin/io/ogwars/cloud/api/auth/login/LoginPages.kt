@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.auth.AuthProperties
 import io.ogwars.cloud.api.auth.mfa.MfaEndpoints
 import io.ogwars.cloud.api.auth.mfa.MfaRequirements
 import io.ogwars.cloud.domain.user.MfaRequirement
+import io.ogwars.cloud.service.SecretGenerator
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.CacheControl
@@ -59,6 +60,7 @@ data class LoginState(
 @Controller
 class LoginPages(
     properties: AuthProperties,
+    private val nonces: SecretGenerator,
 ) {
     private val index: String? =
         properties.loginPages
@@ -68,12 +70,21 @@ class LoginPages(
 
     @GetMapping(LOGIN_PAGE, MfaEndpoints.PATH, ADD_PASSKEY_PAGE, produces = [MediaType.TEXT_HTML_VALUE])
     @ResponseBody
-    fun page(): ResponseEntity<String> =
-        if (index == null) {
-            ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("The login pages are not installed.")
-        } else {
-            ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(index)
-        }
+    fun page(): ResponseEntity<String> {
+        val page =
+            index
+                ?: return ResponseEntity
+                    .status(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                    ).body("The login pages are not installed.")
+        // A fresh nonce for every response, in the page and its CSP, so only the page's own styles load (D-0219).
+        val nonce = nonces.next()
+        return ResponseEntity
+            .ok()
+            .cacheControl(CacheControl.noStore())
+            .header(CONTENT_SECURITY_POLICY, policy(nonce))
+            .body(page.replace(NONCE_PLACEHOLDER, nonce))
+    }
 
     companion object {
         const val LOGIN_PAGE = "/login"
@@ -82,7 +93,17 @@ class LoginPages(
         const val ADD_PASSKEY_PAGE = "/login/passkeys/new"
         const val STATE_PATH = "/login/state"
         const val ASSETS = "/login/assets/**"
+        const val CONTENT_SECURITY_POLICY = "Content-Security-Policy"
         private const val INDEX = "index.html"
+
+        /** Where the built page takes its nonce, in `<meta name="csp-nonce">`. */
+        private const val NONCE_PLACEHOLDER = "{{cspNonce}}"
+
+        // No form-action: a sign-in's redirects end at each app's own address, such as the desktop app's loopback
+        // port or Grafana's host, and browsers hold a form's redirects to it.
+        private fun policy(nonce: String) =
+            "default-src 'none'; script-src 'self'; style-src 'self' 'nonce-$nonce'; img-src 'self' data:; " +
+                "font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
     }
 }
 
