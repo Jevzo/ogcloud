@@ -38,3 +38,18 @@ export function useFailureToast(): (error: unknown) => void {
     [t, toast],
   );
 }
+
+/**
+ * For confirmation dialogs: says why the action failed, then rejects, so the dialog stays open with what was typed and
+ * the action can be tried again.
+ */
+export function useConfirmFailure(): (error: unknown) => never {
+  const failed = useFailureToast();
+  return useCallback(
+    (error: unknown) => {
+      failed(error);
+      throw error;
+    },
+    [failed],
+  );
+}

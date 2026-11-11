@@ -1,7 +1,7 @@
 import { ConfirmDialog, type MenuItem, useToast } from "@ogcloud/ui";
 import { Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { useFailureToast } from "./errors.ts";
+import { useConfirmFailure } from "./errors.ts";
 
 interface DeleteActionOptions {
   label: string;
@@ -26,7 +26,7 @@ export function useDeleteAction({
   onDeleted,
 }: DeleteActionOptions): { item: MenuItem; dialog: ReactNode } {
   const toast = useToast();
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const [open, setOpen] = useState(false);
   return {
     item: { label, icon: Trash2, danger: true, onSelect: () => setOpen(true) },
@@ -42,7 +42,7 @@ export function useDeleteAction({
           remove().then(() => {
             toast({ message: done });
             onDeleted();
-          }, failed)
+          }, keepOpen)
         }
       />
     ),

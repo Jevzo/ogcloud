@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Download, Eraser } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import { saveJson } from "../../files.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan, useIsOwner } from "../../permissions.ts";
@@ -40,6 +40,7 @@ export function usePrivacyActions(
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const queries = useQueryClient();
   const canExport = useCan("privacy:export");
   const canErase = useCan("privacy:erase");
@@ -69,7 +70,7 @@ export function usePrivacyActions(
       toast({ message: t("privacy.erased", { name: subject.name }) });
       void queries.invalidateQueries();
       onErased(subject);
-    }, failed);
+    }, keepOpen);
 
   const subject = pending.target;
   return {

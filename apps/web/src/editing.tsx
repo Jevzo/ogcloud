@@ -51,19 +51,19 @@ export function EditGuard({
  * Says a save failed. A stale version (409, D-0069) offers a reload that shows the newer state, keeping nothing of
  * the edits silently (D-0210).
  */
-function useSaveFailure(reload: () => void): (error: unknown) => void {
+function useSaveFailure(): (error: unknown, reload: () => void) => void {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
   return useCallback(
-    (error: unknown) =>
+    (error: unknown, reload: () => void) =>
       statusOf(error) === HttpStatus.CONFLICT
         ? toast({
             message: t("editing.stale"),
             action: { label: t("editing.reload"), onPress: reload },
           })
         : failed(error),
-    [t, toast, failed, reload],
+    [t, toast, failed],
   );
 }
 
@@ -94,24 +94,35 @@ function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
 
 interface SaveOutcome<T> {
   onSaved: (saved: T) => void;
-  onFailed: (error: unknown) => void;
+  /** `showLatest` drops the edits for the newer state, which a stale save's Reload asks for. */
+  onFailed: (error: unknown, showLatest: () => void) => void;
 }
 
 /** A detail page's save outcomes: it shows the API's answer at once, and reads again after a failed or stale save. */
 export function useDetailSave<T>(queryKey: QueryKey): SaveOutcome<T> {
   const client = useQueryClient();
+  const failed = useSaveFailure();
   return {
     onSaved: useSaved<T>(queryKey),
-    onFailed: useSaveFailure(() => void client.invalidateQueries({ queryKey })),
+    onFailed: (error, showLatest) =>
+      failed(error, () => {
+        showLatest();
+        void client.invalidateQueries({ queryKey });
+      }),
   };
 }
 
 /** The save outcomes of a page that reads its subject from a list under `path`: the list reads again either way. */
 export function useListSave(path: string): SaveOutcome<unknown> {
   const client = useQueryClient();
+  const failed = useSaveFailure();
   return {
     onSaved: useSavedInList(path),
-    onFailed: useSaveFailure(() => void invalidatePaths(client, [path])),
+    onFailed: (error, showLatest) =>
+      failed(error, () => {
+        showLatest();
+        void invalidatePaths(client, [path]);
+      }),
   };
 }
 

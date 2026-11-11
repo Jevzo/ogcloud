@@ -35,7 +35,7 @@ import { z } from "zod";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useDetailSave } from "../../editing.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import {
   contractSchema,
   keepingMaintenance,
@@ -86,6 +86,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const canWrite = useCan("network:write");
   const callerIsOwner = useIsOwner();
   const overview = useOverviewGet();
@@ -394,7 +395,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         onConfirm={() =>
           maintenance
             .mutateAsync(true)
-            .then(started(t("overview.maintenanceStarted")), failed)
+            .then(started(t("overview.maintenanceStarted")), keepOpen)
         }
       />
       <ConfirmDialog
@@ -407,7 +408,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         onConfirm={() =>
           restart
             .mutateAsync({ data: {} })
-            .then(started(t("network.restart.started")), failed)
+            .then(started(t("network.restart.started")), keepOpen)
         }
       />
       <ConfirmDialog
@@ -420,7 +421,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         onConfirm={() =>
           rotate
             .mutateAsync()
-            .then(started(t("network.rotate.started")), failed)
+            .then(started(t("network.rotate.started")), keepOpen)
         }
       />
     </div>

@@ -10,7 +10,11 @@ import { AppWindow, LogOut, MonitorSmartphone } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { WEB_CLIENT } from "../../auth.ts";
-import { loadFailure, useFailureToast } from "../../errors.ts";
+import {
+  loadFailure,
+  useConfirmFailure,
+  useFailureToast,
+} from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 
@@ -34,6 +38,7 @@ export function LoginsCard() {
   const format = useFormat();
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const queries = useQueryClient();
   const logins = useMeListLogins();
   const revoke = useMeRevokeLogin();
@@ -123,7 +128,7 @@ export function LoginsCard() {
         })}
         confirmLabel={t("account.logins.signOutOthers")}
         onConfirm={async () => {
-          // Every device is tried, and the list shows what is left even when one sign-out failed.
+          // Every device is tried, and the list shows what is left even when one sign-out keepOpen.
           const outcomes = await Promise.allSettled(
             others.map((login) => revoke.mutateAsync({ id: login.id })),
           );
@@ -134,7 +139,7 @@ export function LoginsCard() {
           if (refused === undefined) {
             toast({ message: t("account.logins.othersSignedOut") });
           } else {
-            failed(refused.reason);
+            keepOpen(refused.reason);
           }
         }}
       />

@@ -31,7 +31,7 @@ import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { EditorForm, useListSave } from "../../editing.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useIsOwner } from "../../permissions.ts";
@@ -75,7 +75,7 @@ export function ClientPage() {
 
 function ClientEditor({ client }: { client: OAuthClientView }) {
   const { t } = useTranslation("web");
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const navigate = useNavigate();
   const queries = useQueryClient();
   const isOwner = useIsOwner();
@@ -191,7 +191,7 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
         onConfirm={() =>
           rotate
             .mutateAsync({ clientId: client.clientId })
-            .then((answer) => setRotated(answer.data), failed)
+            .then((answer) => setRotated(answer.data), keepOpen)
         }
       />
       {deletion.dialog}

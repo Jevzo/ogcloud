@@ -3,7 +3,7 @@ import { ConfirmDialog, useToast } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { invalidatePaths } from "../../queries.ts";
 
@@ -17,7 +17,7 @@ export function useDeleteNpc(onDeleted?: () => void): {
 } {
   const { t } = useTranslation("web");
   const toast = useToast();
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const client = useQueryClient();
   const pending = usePendingAction<"delete", string>();
   const remove = useNpcDelete({
@@ -40,7 +40,7 @@ export function useDeleteNpc(onDeleted?: () => void): {
           remove.mutateAsync({ id }).then(() => {
             toast({ message: t("npcs.delete.done") });
             onDeleted?.();
-          }, failed)
+          }, keepOpen)
         }
       />
     ),

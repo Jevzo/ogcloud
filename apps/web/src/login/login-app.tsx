@@ -1,4 +1,5 @@
 import type { LoginCsrf, LoginState, TotpSetup } from "@ogcloud/api-client";
+import { meRenamePasskeyBodyLabelMax } from "@ogcloud/api-client/zod";
 import { Button, CopyField, Field, Input, Note } from "@ogcloud/ui";
 import {
   ArrowLeft,
@@ -449,6 +450,8 @@ function PasskeySetup({
             {...control}
             value={label}
             onChange={(event) => setLabel(event.target.value)}
+            // The API refuses longer names only after the device made the passkey.
+            maxLength={meRenamePasskeyBodyLabelMax}
             required
             autoFocus
           />

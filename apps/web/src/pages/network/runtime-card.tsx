@@ -12,7 +12,7 @@ import { Package, RefreshCw } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
-import { loadFailure, useFailureToast } from "../../errors.ts";
+import { loadFailure, useConfirmFailure } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 
@@ -22,7 +22,7 @@ const columns = columnsFor<RuntimeProfileView>();
 export function RuntimeCard() {
   const { t } = useTranslation("web");
   const toast = useToast();
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const canWrite = useCan("network:write");
   const runtime = useRuntimeList();
   const rollout = useRuntimeRollout();
@@ -121,7 +121,7 @@ export function RuntimeCard() {
             .mutateAsync({ profileId: id, data: {} })
             .then(
               () => toast({ message: t("network.runtime.started", { id }) }),
-              failed,
+              keepOpen,
             )
         }
       />

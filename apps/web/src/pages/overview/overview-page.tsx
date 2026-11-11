@@ -12,7 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { Construction, FileWarning, Play, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
 import { useGroupActions } from "../groups/group-actions.tsx";
 import { useNetworkMaintenance } from "../network/network-actions.ts";
@@ -116,6 +116,7 @@ function OverviewActions({
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const canMaintain = useCan("network:write");
   const canRequest = useCan("servers:command");
   const setMaintenance = useNetworkMaintenance();
@@ -161,7 +162,7 @@ function OverviewActions({
             .mutateAsync(true)
             .then(
               () => toast({ message: t("overview.maintenanceStarted") }),
-              failed,
+              keepOpen,
             )
         }
       />

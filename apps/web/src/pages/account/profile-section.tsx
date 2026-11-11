@@ -6,7 +6,7 @@ import { Unlink } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DetailRow, Details } from "../../details.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure } from "../../errors.ts";
 import { useMe } from "../../permissions.ts";
 import { type ThemeChoice, usePreferences } from "../../preferences.ts";
 import { useSession } from "../../session-context.ts";
@@ -39,7 +39,7 @@ export function MinecraftCard() {
   const { t } = useTranslation("web");
   const me = useMe();
   const toast = useToast();
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const session = useSession();
   const queries = useQueryClient();
   const [unlinking, setUnlinking] = useState(false);
@@ -76,7 +76,7 @@ export function MinecraftCard() {
             // Permissions that depend on the link change with the next token (D-0106).
             session?.forgetAccessToken();
             void queries.invalidateQueries();
-          }, failed)
+          }, keepOpen)
         }
       />
     </Card>

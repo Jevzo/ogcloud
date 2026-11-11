@@ -14,7 +14,13 @@ import {
   useStore,
 } from "@tanstack/react-form";
 import type { TFunction } from "i18next";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { textProblem, useTextPreview } from "./texts.ts";
@@ -289,7 +295,8 @@ interface SettingsFormOptions<V, S extends object, A> {
   schema: StandardSchemaV1<{ settings: S }>;
   save: (settings: S, base: V) => Promise<A>;
   onSaved: (answer: A) => void;
-  onFailed: (error: unknown) => void;
+  /** `showLatest` makes the form take the newest view the page reads, dropping the edits. */
+  onFailed: (error: unknown, showLatest: () => void) => void;
 }
 
 /**
@@ -308,6 +315,12 @@ export function useSettingsForm<V, S extends object, A>({
 }: SettingsFormOptions<V, S, A>) {
   const [base, setBase] = useState(view);
   const adoptNext = useRef(false);
+  // Bumped to take the newest view even when the page holds it already, as after a refetch during the edits.
+  const [reloads, setReloads] = useState(0);
+  const showLatest = useCallback(() => {
+    adoptNext.current = true;
+    setReloads((count) => count + 1);
+  }, []);
   const form = useAppForm({
     defaultValues: { settings: settingsOf(base) },
     validators: { onChange: schema },
@@ -317,7 +330,7 @@ export function useSettingsForm<V, S extends object, A>({
         adoptNext.current = true;
         onSaved(answer);
       } catch (error) {
-        onFailed(error);
+        onFailed(error, showLatest);
       }
     },
   });
@@ -325,12 +338,13 @@ export function useSettingsForm<V, S extends object, A>({
     countChanges(settingsOf(base), state.values.settings),
   );
   const saving = useStore(form.store, (state) => state.isSubmitting);
+  // `reloads` re-runs it after a Reload when the page holds the newest view already.
   useEffect(() => {
     if (view === base || (changes > 0 && !adoptNext.current)) return;
     adoptNext.current = false;
     setBase(view);
     form.reset({ settings: settingsOf(view) });
-  }, [view, base, changes, form, settingsOf]);
+  }, [view, base, changes, form, settingsOf, reloads]);
   return { form, changes, saving, base };
 }
 

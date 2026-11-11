@@ -18,7 +18,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { isOwner, useCan, useIsOwner } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -51,6 +51,7 @@ export function useUserActions(onDeleted: () => void = () => undefined): {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const queries = useQueryClient();
   const canWrite = useCan("users:write");
   const callerIsOwner = useIsOwner();
@@ -124,7 +125,10 @@ export function useUserActions(onDeleted: () => void = () => undefined): {
               ? undefined
               : signOut
                   .mutateAsync({ id: user.id })
-                  .then(done(t("users.actions.signOutDone", { name })), failed)
+                  .then(
+                    done(t("users.actions.signOutDone", { name })),
+                    keepOpen,
+                  )
           }
         />
         <ConfirmDialog
@@ -140,7 +144,7 @@ export function useUserActions(onDeleted: () => void = () => undefined): {
               ? undefined
               : unlink
                   .mutateAsync({ id: user.id })
-                  .then(done(t("users.actions.unlinkDone", { name })), failed)
+                  .then(done(t("users.actions.unlinkDone", { name })), keepOpen)
           }
         />
         <ConfirmDialog
@@ -156,7 +160,7 @@ export function useUserActions(onDeleted: () => void = () => undefined): {
               : remove.mutateAsync({ id: user.id }).then(() => {
                   toast({ message: t("users.actions.deleted", { name }) });
                   onDeleted();
-                }, failed)
+                }, keepOpen)
           }
         />
       </>

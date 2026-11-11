@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -54,7 +54,7 @@ export function useServerActions(groupIds: readonly string[]): {
 } {
   const { t } = useTranslation("web");
   const toast = useToast();
-  const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const navigate = useNavigate();
   const client = useQueryClient();
   const can = {
@@ -131,7 +131,7 @@ export function useServerActions(groupIds: readonly string[]): {
   const confirmed =
     (message: string) =>
     (call: Promise<unknown>): Promise<void> =>
-      call.then(() => toast({ message }), failed);
+      call.then(() => toast({ message }), keepOpen);
 
   const dialogs =
     server === undefined ? null : (

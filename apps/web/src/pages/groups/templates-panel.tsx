@@ -36,7 +36,11 @@ import {
 import { type ChangeEvent, useContext, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
-import { loadFailure, useFailureToast } from "../../errors.ts";
+import {
+  loadFailure,
+  useConfirmFailure,
+  useFailureToast,
+} from "../../errors.ts";
 import { downloadFile, uploadWithProgress } from "../../files.ts";
 import { useFormat } from "../../format.ts";
 import { usePendingAction } from "../../pending-action.ts";
@@ -63,6 +67,7 @@ export function TemplatesPanel({
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const format = useFormat();
   const client = useQueryClient();
   const connection = useContext(ApiConnectionContext);
@@ -301,7 +306,7 @@ export function TemplatesPanel({
                 })
                 .then(
                   () => toast({ message: t("templates.activated") }),
-                  failed,
+                  keepOpen,
                 )
         }
       />
@@ -317,7 +322,10 @@ export function TemplatesPanel({
             ? undefined
             : remove
                 .mutateAsync({ groupId, versionId: pending.target.id })
-                .then(() => toast({ message: t("templates.deleted") }), failed)
+                .then(
+                  () => toast({ message: t("templates.deleted") }),
+                  keepOpen,
+                )
         }
       />
     </div>

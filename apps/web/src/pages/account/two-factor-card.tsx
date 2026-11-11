@@ -9,6 +9,7 @@ import {
   useMeRenamePasskey,
   useMeStartTotp,
 } from "@ogcloud/api-client/react";
+import { meRenamePasskeyBodyLabelMax } from "@ogcloud/api-client/zod";
 import {
   Badge,
   Button,
@@ -371,6 +372,7 @@ function RenamePasskeyDialog({
             {...control}
             value={value}
             onChange={(event) => setLabel(event.target.value)}
+            maxLength={meRenamePasskeyBodyLabelMax}
           />
         )}
       </Field>

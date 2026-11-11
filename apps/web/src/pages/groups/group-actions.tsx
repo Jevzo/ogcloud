@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useFailureToast } from "../../errors.ts";
+import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -110,6 +110,7 @@ export function useGroupActions(options: { onDeleted?: () => void } = {}): {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const keepOpen = useConfirmFailure();
   const navigate = useNavigate();
   const canWrite = useCan("groups:write");
   const mutations = useGroupMutations({
@@ -221,7 +222,10 @@ export function useGroupActions(options: { onDeleted?: () => void } = {}): {
         onConfirm={() =>
           mutations.maintenance
             .mutateAsync({ id, on: true })
-            .then(done(t("groups.actions.maintenanceStarted", { id })), failed)
+            .then(
+              done(t("groups.actions.maintenanceStarted", { id })),
+              keepOpen,
+            )
         }
       />
       <ConfirmDialog
@@ -233,7 +237,7 @@ export function useGroupActions(options: { onDeleted?: () => void } = {}): {
         onConfirm={() =>
           mutations.restart
             .mutateAsync(id)
-            .then(done(t("groups.actions.restarting", { id })), failed)
+            .then(done(t("groups.actions.restarting", { id })), keepOpen)
         }
       />
       <ConfirmDialog
@@ -252,7 +256,7 @@ export function useGroupActions(options: { onDeleted?: () => void } = {}): {
               },
             });
             options.onDeleted?.();
-          }, failed)
+          }, keepOpen)
         }
       />
     </>
