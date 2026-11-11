@@ -9,11 +9,11 @@ interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
-  description?: ReactNode;
+  description?: ReactNode | undefined;
   children?: ReactNode;
   /** The actions, right-aligned with the primary one last (D-0210). */
   footer: ReactNode;
-  className?: string;
+  className?: string | undefined;
 }
 
 export function Dialog({
@@ -31,7 +31,7 @@ export function Dialog({
         <Primitive.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Primitive.Content
           className={cn(
-            "fixed top-1/2 left-1/2 z-50 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-surface p-5 shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
+            "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-surface p-5 shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
             className,
           )}
         >
@@ -41,7 +41,12 @@ export function Dialog({
               {description}
             </Primitive.Description>
           )}
-          {children}
+          {/* Long content scrolls between the title and the actions; the padding keeps focus rings unclipped. */}
+          {children == null ? null : (
+            <div className="-mx-5 -my-1 flex min-h-0 flex-col gap-3 overflow-y-auto px-5 py-1">
+              {children}
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">{footer}</div>
         </Primitive.Content>
       </Primitive.Portal>
