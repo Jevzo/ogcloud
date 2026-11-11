@@ -116,16 +116,8 @@ kubectl -n kube-system get jobs -o go-template='{{range .items}}{{.metadata.name
 # client-side apply keeps.
 kubectl apply --server-side -f "$work/manifest.yaml" >/dev/null
 
-# Done once the chart's job succeeded, and for a changed chart only once that job is a new one.
-installed() {
-  local chart=$1 job prior
-  job=$(kubectl -n kube-system get job "helm-install-$chart" -o jsonpath='{.metadata.uid} {.status.succeeded}' 2>/dev/null) ||
-    return 1
-  [ "${job#* }" = 1 ] || return 1
-  grep -qx "$chart" "$work/changed.txt" || return 0
-  prior=$(sed -n "s/^helm-install-$chart //p" "$work/jobs-before.txt")
-  [ "${job% *}" != "$prior" ]
-}
+# shellcheck source=deploy/k3s/helmcharts.sh
+source deploy/k3s/helmcharts.sh
 
 for chart in $(kubectl -n kube-system get helmcharts -o jsonpath='{.items[*].metadata.name}'); do
   until installed "$chart"; do
