@@ -21,7 +21,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Plus, UserRound, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { agoColumn } from "../../columns.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
@@ -196,6 +196,12 @@ function CreateUserDialog({
   const [email, setEmail] = useState("");
   const [roleId, setRoleId] = useState<string | undefined>(undefined);
   const [password, setPassword] = useState("");
+  useOnOpen(open, () => {
+    setUsername("");
+    setEmail("");
+    setRoleId(undefined);
+    setPassword("");
+  });
   const create = useUserCreate({
     mutation: {
       onSettled: () => invalidatePaths(queries, [getUserListQueryKey()[0]]),

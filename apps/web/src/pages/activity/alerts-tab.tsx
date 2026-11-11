@@ -2,10 +2,8 @@ import { Card, EmptyState } from "@ogcloud/ui";
 import { BellOff, TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useAlerts } from "../../alerts.ts";
+import { alertMessage, useAlerts } from "../../alerts.ts";
 import { useFormat } from "../../format.ts";
-
-const CRASH_LOOP_PAUSED = "group.crash-loop-paused";
 
 /** Alerts that arrived while the dashboard was open; opening this marks them seen. */
 export function AlertsTab() {
@@ -36,14 +34,7 @@ export function AlertsTab() {
               size={16}
               className="shrink-0 text-danger-text"
             />
-            <span className="flex-1">
-              {alert.kind === CRASH_LOOP_PAUSED
-                ? t("alerts.crashLoopPaused", { subject: alert.subjectId })
-                : t("alerts.other", {
-                    kind: alert.kind,
-                    subject: alert.subjectId,
-                  })}
-            </span>
+            <span className="flex-1">{alertMessage(t, alert)}</span>
             <span className="text-meta text-text-3">
               {format.ago(new Date(alert.at), Date.now())}
             </span>

@@ -2,7 +2,7 @@ import { usePlayerTransfer, useServerList } from "@ogcloud/api-client/react";
 import { Combobox, Field, Segmented, useToast } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -29,6 +29,11 @@ export function TransferDialog({
   const [target, setTarget] = useState<Target>("group");
   const [group, setGroup] = useState<string>();
   const [server, setServer] = useState<string>();
+  useOnOpen(open, () => {
+    setTarget("group");
+    setGroup(undefined);
+    setServer(undefined);
+  });
   const transfer = usePlayerTransfer();
   const chosen = target === "group" ? group : server;
 

@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import {
   createContext,
   useCallback,
@@ -28,6 +29,15 @@ export const AlertsContext = createContext<Alerts>({
   add: () => undefined,
   markSeen: () => undefined,
 });
+
+const CRASH_LOOP_PAUSED = "group.crash-loop-paused";
+
+/** What an alert says, in the catalog's words where its kind has some. */
+export function alertMessage(t: TFunction<"web">, alert: Alert): string {
+  return alert.kind === CRASH_LOOP_PAUSED
+    ? t("alerts.crashLoopPaused", { subject: alert.subjectId })
+    : t("alerts.other", { kind: alert.kind, subject: alert.subjectId });
+}
 
 export function useAlerts(): Alerts {
   return useContext(AlertsContext);

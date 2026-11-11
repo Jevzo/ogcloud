@@ -4,7 +4,7 @@ import { Outlet, useLocation } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertsContext, useAlertList } from "../alerts.ts";
+import { AlertsContext, alertMessage, useAlertList } from "../alerts.ts";
 import { type Alert, useLiveEvents } from "../live.ts";
 import { MeContext } from "../permissions.ts";
 import {
@@ -21,8 +21,6 @@ import { Header } from "./header.tsx";
 import { LinkRequired } from "./link-required.tsx";
 import { Sidebar } from "./sidebar.tsx";
 
-const CRASH_LOOP_PAUSED = "group.crash-loop-paused";
-
 /** Everything behind sign-in: the sidebar, the header with search and live state, and the page. */
 export function AppShell() {
   const { t } = useTranslation("web");
@@ -38,12 +36,7 @@ export function AppShell() {
   const onAlert = useCallback(
     (alert: Alert) => {
       alerts.add(alert);
-      toast({
-        message:
-          alert.kind === CRASH_LOOP_PAUSED
-            ? t("alerts.crashLoopPaused", { subject: alert.subjectId })
-            : t("alerts.other", { kind: alert.kind, subject: alert.subjectId }),
-      });
+      toast({ message: alertMessage(t, alert) });
     },
     [t, toast, alerts.add],
   );

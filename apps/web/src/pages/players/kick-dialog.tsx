@@ -8,7 +8,7 @@ import {
 } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { textProblem, useTextPreview } from "../../texts.ts";
 
@@ -24,6 +24,9 @@ export function KickDialog({ open, onOpenChange, player }: KickDialogProps) {
   const toast = useToast();
   const failed = useFailureToast();
   const [message, setMessage] = useState("");
+  useOnOpen(open, () => {
+    setMessage("");
+  });
   const preview = useTextPreview("KICK_MESSAGE", message);
   const problems = preview.data?.errors ?? [];
   const first = problems[0];

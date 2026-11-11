@@ -3,7 +3,7 @@ import { useCommandRun } from "@ogcloud/api-client/react";
 import { Field, Input, Segmented, useToast } from "@ogcloud/ui";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { GroupSelectField } from "../groups/group-select-field.tsx";
 
@@ -32,6 +32,11 @@ export function CommandDialog({
   const [scope, setScope] = useState<Scope>("ALL");
   const [group, setGroup] = useState<string>();
   const [command, setCommand] = useState("");
+  useOnOpen(open, () => {
+    setScope("ALL");
+    setGroup(undefined);
+    setCommand("");
+  });
   const run = useCommandRun();
 
   const request =

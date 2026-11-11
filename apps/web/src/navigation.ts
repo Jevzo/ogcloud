@@ -46,8 +46,8 @@ export interface NavItem {
   path: NavPath;
   label: NavLabel;
   icon: LucideIcon;
-  /** The API permission that opens the page (D-0092); the item is hidden without it. */
-  permission: string;
+  /** The API permissions that open the page, any one of them (D-0092); the item is hidden without one. */
+  permissions: readonly string[];
 }
 
 export const PRIMARY_NAV: readonly NavItem[] = [
@@ -55,56 +55,71 @@ export const PRIMARY_NAV: readonly NavItem[] = [
     path: "/",
     label: "overview",
     icon: LayoutDashboard,
-    permission: "overview:read",
+    permissions: ["overview:read"],
   },
   {
     path: "/servers",
     label: "servers",
     icon: Server,
-    permission: "servers:read",
+    permissions: ["servers:read"],
   },
-  { path: "/groups", label: "groups", icon: Layers, permission: "groups:read" },
+  {
+    path: "/groups",
+    label: "groups",
+    icon: Layers,
+    permissions: ["groups:read"],
+  },
   {
     path: "/players",
     label: "players",
     icon: Users,
-    permission: "players:read",
+    permissions: ["players:read"],
   },
   {
     path: "/permissions",
     label: "permissions",
     icon: Shield,
-    permission: "permissions:read",
+    permissions: ["permissions:read"],
   },
   {
     path: "/network",
     label: "network",
     icon: Globe,
-    permission: "network:read",
+    permissions: ["network:read"],
   },
-  { path: "/npcs", label: "npcs", icon: Bot, permission: "npcs:read" },
+  { path: "/npcs", label: "npcs", icon: Bot, permissions: ["npcs:read"] },
   {
     path: "/activity",
     label: "activity",
     icon: Activity,
-    permission: "logs:read",
+    permissions: ["logs:read"],
   },
 ];
 
 export const ADMIN_NAV: readonly NavItem[] = [
-  { path: "/users", label: "users", icon: UserCog, permission: "users:read" },
-  { path: "/roles", label: "roles", icon: KeyRound, permission: "roles:read" },
+  {
+    path: "/users",
+    label: "users",
+    icon: UserCog,
+    permissions: ["users:read"],
+  },
+  {
+    path: "/roles",
+    label: "roles",
+    icon: KeyRound,
+    permissions: ["roles:read"],
+  },
   {
     path: "/clients",
     label: "clients",
     icon: Plug,
-    permission: "oauth-clients:read",
+    permissions: ["oauth-clients:read"],
   },
   {
     path: "/privacy",
     label: "privacy",
     icon: Lock,
-    permission: "privacy:export",
+    permissions: ["privacy:export", "privacy:erase"],
   },
 ];
 
@@ -114,5 +129,7 @@ export function allowed(
   items: readonly NavItem[],
   permissions: readonly string[],
 ): NavItem[] {
-  return items.filter((item) => permissions.includes(item.permission));
+  return items.filter((item) =>
+    item.permissions.some((permission) => permissions.includes(permission)),
+  );
 }

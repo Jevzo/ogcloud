@@ -16,6 +16,8 @@ export function SecretDialog({
     <Dialog
       open={credentials !== null}
       onOpenChange={(open) => (open ? undefined : onClose())}
+      // The secret is shown only here, once; only Done, after it was copied, closes it.
+      dismissible={false}
       title={t("clients.secret.title", { name: credentials?.name ?? "" })}
       description={t("clients.secret.description")}
       footer={

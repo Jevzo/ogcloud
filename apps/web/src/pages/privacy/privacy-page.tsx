@@ -3,11 +3,10 @@ import { Button, Card, EmptyState, Input, Note, PageHeader } from "@ogcloud/ui";
 import { Download, Eraser, Info, UserRoundSearch } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDebounced } from "../../debounce.ts";
+import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { isOwner, useCan } from "../../permissions.ts";
 import { type PrivacySubject, usePrivacyActions } from "./privacy-actions.tsx";
 
-const TYPING_MS = 300;
 const MATCHES = 8;
 // Enough for a network's dashboard users; the users page pages through everyone.
 const USERS_LIMIT = 200;
@@ -39,7 +38,7 @@ type Privacy = ReturnType<typeof usePrivacyActions>;
 function PlayerSearch({ privacy }: { privacy: Privacy }) {
   const { t } = useTranslation("web");
   const [query, setQuery] = useState("");
-  const name = useDebounced(query.trim(), TYPING_MS);
+  const name = useDebounced(query.trim(), TYPING_PAUSE_MS);
   const players = usePlayerKnown(
     { name, limit: MATCHES },
     { query: { enabled: name !== "" } },

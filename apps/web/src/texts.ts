@@ -12,11 +12,10 @@ import {
 } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { useDebounced } from "./debounce.ts";
+import { TYPING_PAUSE_MS, useDebounced } from "./debounce.ts";
 
 // In-game texts are checked and drawn by the API, never parsed here (D-0202).
 
-const DEBOUNCE_MS = 300;
 const PREVIEW_KEY = "text-preview";
 
 type Preview = (
@@ -45,7 +44,7 @@ function cached(
 /** How a text looks to modern and older clients, or what keeps it from being saved; asked once the typing pauses. */
 export function useTextPreview(field: TextPreviewRequestField, text: string) {
   const preview = usePreview();
-  const settled = useDebounced(text, DEBOUNCE_MS);
+  const settled = useDebounced(text, TYPING_PAUSE_MS);
   return useQuery({
     queryKey: [PREVIEW_KEY, field, settled],
     queryFn: () => preview(field, settled),
@@ -60,7 +59,7 @@ export function useTextValidator(field: TextPreviewRequestField) {
   const client = useQueryClient();
   const preview = usePreview();
   return {
-    onChangeAsyncDebounceMs: DEBOUNCE_MS,
+    onChangeAsyncDebounceMs: TYPING_PAUSE_MS,
     onChangeAsync: async ({ value }: { value: string }) => {
       try {
         const first = (await cached(client, preview, field, value)).errors[0];

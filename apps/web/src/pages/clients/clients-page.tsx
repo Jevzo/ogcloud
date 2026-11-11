@@ -22,7 +22,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { AppWindow, ArrowUpRight, Bot, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { agoColumn, monoColumn } from "../../columns.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useIsOwner } from "../../permissions.ts";
@@ -179,6 +179,10 @@ function CreateClientDialog({
   const client = useQueryClient();
   const [name, setName] = useState("");
   const [scopes, setScopes] = useState<string[]>([]);
+  useOnOpen(open, () => {
+    setName("");
+    setScopes([]);
+  });
   const create = useOauthClientCreate({
     mutation: {
       onSettled: () =>

@@ -51,9 +51,7 @@ export function Sidebar({
         {collapsed ? null : (
           <>
             <img src={mascot} alt="" className="size-7.5" />
-            <span className="flex-1 font-heavy text-[17px] tracking-tight">
-              OgCloud
-            </span>
+            <span className="flex-1 text-wordmark">OgCloud</span>
           </>
         )}
         <Button

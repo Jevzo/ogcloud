@@ -1,4 +1,4 @@
-import { ApiError, type MeView } from "@ogcloud/api-client";
+import type { MeView } from "@ogcloud/api-client";
 import {
   useMeConfirmMinecraftLink,
   useMeRequestMinecraftLink,
@@ -10,11 +10,8 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import mascot from "../assets/mascot-256.png";
 import { problemOf } from "../errors.ts";
+import { HttpStatus, statusOf } from "../http.ts";
 import { useSession } from "../session-context.ts";
-
-const BAD_REQUEST = 400;
-const NOT_FOUND = 404;
-const CONFLICT = 409;
 
 /**
  * A user whose token carries no permissions: either the network requires a linked Minecraft account and this one
@@ -79,16 +76,16 @@ export function LinkFlow() {
   const requestError =
     request.error === null
       ? undefined
-      : statusOf(request.error) === NOT_FOUND
+      : statusOf(request.error) === HttpStatus.NOT_FOUND
         ? t("link.offline", { name: name.trim() })
         : (problemOf(request.error) ?? t("errors.action"));
   // A wrong or expired code answers 400 and is gone (D-0106); anything else is not the code's fault.
   const confirmError =
     confirm.error === null
       ? undefined
-      : statusOf(confirm.error) === BAD_REQUEST
+      : statusOf(confirm.error) === HttpStatus.BAD_REQUEST
         ? t("link.wrongCode")
-        : statusOf(confirm.error) === CONFLICT
+        : statusOf(confirm.error) === HttpStatus.CONFLICT
           ? t("link.taken")
           : (problemOf(confirm.error) ?? t("errors.action"));
 
@@ -131,7 +128,7 @@ export function LinkFlow() {
           />
         )}
       </Field>
-      {statusOf(confirm.error) === BAD_REQUEST ? (
+      {statusOf(confirm.error) === HttpStatus.BAD_REQUEST ? (
         <Button
           kind="ghost"
           icon={RotateCcw}
@@ -152,8 +149,4 @@ export function LinkFlow() {
       </Button>
     </form>
   );
-}
-
-function statusOf(error: unknown): number | undefined {
-  return error instanceof ApiError ? error.status : undefined;
 }

@@ -1,5 +1,5 @@
 import { Button, Dialog } from "@ogcloud/ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface ActionDialogProps {
@@ -63,4 +63,16 @@ export function ActionDialog({
       {children}
     </Dialog>
   );
+}
+
+/**
+ * Runs `reset` as a dialog opens, so it never shows what was typed before a cancel; resetting on open rather than on
+ * close keeps the content in place while the dialog animates out.
+ */
+export function useOnOpen(open: boolean, reset: () => void): void {
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) reset();
+  }
 }

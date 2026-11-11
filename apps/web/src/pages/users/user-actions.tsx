@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { isOwner, useCan, useIsOwner } from "../../permissions.ts";
@@ -179,6 +179,9 @@ function ResetPasswordDialog({
 }) {
   const { t } = useTranslation("web");
   const [password, setPassword] = useState("");
+  useOnOpen(open, () => {
+    setPassword("");
+  });
   return (
     <ActionDialog
       open={open}

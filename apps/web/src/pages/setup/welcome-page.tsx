@@ -18,12 +18,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { MINECRAFT_EULA_URL } from "../../links.ts";
 import { isOwner } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { newGroupSettings } from "../groups/group-defaults.ts";
 import { SetupFrame, StepActions, StepHeading } from "./setup-frame.tsx";
-
-const EULA_URL = "https://aka.ms/MinecraftEULA";
 
 /** The groups a network needs to take its first players: a proxy and the lobby they land in. */
 const STARTERS: readonly { id: "proxy" | "lobby"; type: GroupViewType }[] = [
@@ -65,7 +64,7 @@ function EulaStep({ onNext }: { onNext: () => void }) {
         description={t("setup.eula.description")}
       />
       <a
-        href={EULA_URL}
+        href={MINECRAFT_EULA_URL}
         target="_blank"
         rel="noreferrer"
         className="inline-flex w-fit items-center gap-1.5 font-label text-accent-text hover:underline"

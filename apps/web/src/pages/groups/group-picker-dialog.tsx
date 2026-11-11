@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { GroupSelectField } from "./group-select-field.tsx";
 
 interface GroupPickerDialogProps {
@@ -27,6 +27,9 @@ export function GroupPickerDialog({
   onPick,
 }: GroupPickerDialogProps) {
   const [group, setGroup] = useState<string>();
+  useOnOpen(open, () => {
+    setGroup(undefined);
+  });
 
   return (
     <ActionDialog

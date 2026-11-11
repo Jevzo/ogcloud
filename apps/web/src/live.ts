@@ -2,6 +2,7 @@ import { type AlertEvent, eventTicket } from "@ogcloud/api-client";
 import {
   type ApiConnection,
   ApiConnectionContext,
+  callOptions,
 } from "@ogcloud/api-client/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
@@ -47,10 +48,10 @@ function isAlert(value: unknown): value is Alert {
 }
 
 async function openStream(connection: ApiConnection): Promise<EventSource> {
-  const token = await connection.accessToken();
-  const ticket = await eventTicket(token === undefined ? {} : { token });
+  const call = await callOptions(connection);
+  const ticket = await eventTicket(call);
   return new EventSource(
-    `/api/v1/events?ticket=${encodeURIComponent(ticket.data.ticket)}`,
+    `${call.origin ?? ""}/api/v1/events?ticket=${encodeURIComponent(ticket.data.ticket)}`,
   );
 }
 

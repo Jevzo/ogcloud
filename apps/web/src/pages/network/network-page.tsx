@@ -4,7 +4,6 @@ import type {
 } from "@ogcloud/api-client";
 import {
   getNetworkGetQueryKey,
-  useMeGet,
   useNetworkAcceptEula,
   useNetworkGet,
   useNetworkRestart,
@@ -42,9 +41,10 @@ import {
   keepingMaintenance,
   useViewSettingsForm,
 } from "../../form.tsx";
+import { MINECRAFT_EULA_URL } from "../../links.ts";
 import { MoreMenu } from "../../more-menu.tsx";
 import { usePendingAction } from "../../pending-action.ts";
-import { useCan } from "../../permissions.ts";
+import { useCan, useIsOwner } from "../../permissions.ts";
 import { useTextValidator } from "../../texts.ts";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { useNetworkMaintenance } from "./network-actions.ts";
@@ -52,7 +52,6 @@ import { NetworkLook } from "./network-look.tsx";
 import { ROUTING_STRATEGIES } from "./routing.ts";
 import { RuntimeCard } from "./runtime-card.tsx";
 
-const OWNER = "owner";
 // Maintenance has its own action in the header, so the form leaves it out.
 const SettingsForm = contractSchema<{ settings: NetworkSettingsFields }>(
   z.object({ settings: NetworkUpdateBody.shape.settings }),
@@ -88,7 +87,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const toast = useToast();
   const failed = useFailureToast();
   const canWrite = useCan("network:write");
-  const me = useMeGet();
+  const callerIsOwner = useIsOwner();
   const overview = useOverviewGet();
   const update = useNetworkUpdate();
   const maintenance = useNetworkMaintenance();
@@ -180,7 +179,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
           tone="warning"
           icon={FileWarning}
           action={
-            me.data?.data.roleId === OWNER ? (
+            callerIsOwner ? (
               <Button
                 size="sm"
                 loading={eula.isPending}
@@ -199,7 +198,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
           <span className="font-label">{t("overview.eula")}</span>{" "}
           {t("network.eula.description")}{" "}
           <a
-            href="https://aka.ms/MinecraftEULA"
+            href={MINECRAFT_EULA_URL}
             target="_blank"
             rel="noreferrer"
             className="text-accent-text underline-offset-2 hover:underline"

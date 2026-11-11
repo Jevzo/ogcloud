@@ -1,6 +1,6 @@
 import { Field, Input, useToast } from "@ogcloud/ui";
 import { useState } from "react";
-import { ActionDialog } from "./action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "./action-dialog.tsx";
 import { useFailureToast } from "./errors.ts";
 
 interface NameIdDialogProps {
@@ -36,6 +36,10 @@ export function NameIdDialog({
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  useOnOpen(open, () => {
+    setId("");
+    setName("");
+  });
   const submit = () => {
     const trimmed = name.trim();
     setBusy(true);

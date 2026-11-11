@@ -13,11 +13,10 @@ export function QrCode({ value, label }: { value: string; label: string }) {
       role="img"
       aria-label={label}
       viewBox={`${-QUIET_ZONE} ${-QUIET_ZONE} ${size} ${size}`}
-      className="size-44 rounded-control bg-on-accent"
+      className="size-44 rounded-control bg-qr-ground"
       shapeRendering="crispEdges"
     >
-      {/* Black on white in both themes: scanners read dark modules on a light ground. */}
-      <path d={toSvgPath(code)} fill="#000000" />
+      <path d={toSvgPath(code)} className="fill-qr-ink" />
     </svg>
   );
 }

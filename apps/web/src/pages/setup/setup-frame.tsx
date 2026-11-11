@@ -25,7 +25,7 @@ export function SetupFrame({
   const { t } = useTranslation("web");
   const current = SETUP_STEPS.indexOf(step);
   return (
-    <BrandedPage className="grid max-w-[50rem] grid-cols-[12rem_minmax(0,1fr)] gap-8">
+    <BrandedPage className="grid max-w-setup grid-cols-[12rem_minmax(0,1fr)] gap-8">
       <ol aria-label={t("setup.progress")} className="flex flex-col gap-1">
         {SETUP_STEPS.map((name, index) => (
           <li

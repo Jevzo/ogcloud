@@ -1,4 +1,4 @@
-import { ApiError, setupStatus } from "@ogcloud/api-client";
+import { setupStatus } from "@ogcloud/api-client";
 import type { ApiConnection } from "@ogcloud/api-client/react";
 import {
   AuthSession,
@@ -6,11 +6,12 @@ import {
   SignInRequired,
 } from "@ogcloud/auth";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { HttpStatus, statusOf } from "./http.ts";
 
-const WEB_CLIENT = "ogcloud-web";
+/** The dashboard's OAuth client (D-0012). */
+export const WEB_CLIENT = "ogcloud-web";
 const CALLBACK_PATH = "/auth/callback";
 const STALE_MS = 15_000;
-const SERVER_ERROR = 500;
 const RETRIES = 2;
 
 /** The dashboard's login with the API's authorization server, on this same origin (D-0098, D-0212). */
@@ -86,11 +87,12 @@ export function createQueryClient(
         staleTime: STALE_MS,
         retry: (failures, error) => {
           if (error instanceof SignInRequired) return false;
-          if (error instanceof ApiError && error.status === 401) {
+          const status = statusOf(error);
+          if (status === HttpStatus.UNAUTHORIZED) {
             session?.forgetAccessToken();
             return failures < 1;
           }
-          if (error instanceof ApiError && error.status < SERVER_ERROR)
+          if (status !== undefined && status < HttpStatus.SERVER_ERROR)
             return false;
           return failures < RETRIES;
         },

@@ -15,7 +15,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActionDialog } from "../../action-dialog.tsx";
+import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { invalidatePaths } from "../../queries.ts";
 
@@ -43,6 +43,10 @@ export function RankDialog({ open, onOpenChange, player }: RankDialogProps) {
   const groups = usePermissionGroupList();
   const [group, setGroup] = useState(player.permissionGroupId);
   const [until, setUntil] = useState<Date | null>(PERMANENT);
+  useOnOpen(open, () => {
+    setGroup(player.permissionGroupId);
+    setUntil(PERMANENT);
+  });
   const setRank = useRankSet({
     mutation: {
       onSettled: () =>

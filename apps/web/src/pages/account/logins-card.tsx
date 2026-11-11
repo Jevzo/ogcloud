@@ -9,13 +9,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppWindow, LogOut, MonitorSmartphone } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { WEB_CLIENT } from "../../auth.ts";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 
 // OgCloud's own apps by client id (D-0040); any other client shows its id.
 const APPS = {
-  "ogcloud-web": "web",
+  [WEB_CLIENT]: "web",
   "ogcloud-desktop": "desktop",
   "ogcloud-mobile": "mobile",
   "ogcloud-grafana": "grafana",
@@ -75,7 +76,7 @@ export function LoginsCard() {
             key={login.id}
             className="flex items-center gap-3 border-border-subtle border-t py-2.5 first:border-t-0 first:pt-0"
           >
-            {login.clientId === "ogcloud-web" ? (
+            {login.clientId === WEB_CLIENT ? (
               <AppWindow
                 aria-hidden="true"
                 size={18}

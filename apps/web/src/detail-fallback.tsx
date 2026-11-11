@@ -1,10 +1,8 @@
-import { ApiError } from "@ogcloud/api-client";
 import { EmptyState, Skeleton } from "@ogcloud/ui";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { messageOf } from "./errors.ts";
-
-const NOT_FOUND = 404;
+import { HttpStatus, statusOf } from "./http.ts";
 
 interface DetailFallbackProps {
   error: unknown;
@@ -36,8 +34,7 @@ export function DetailFallback({
       </div>
     );
   }
-  const gone =
-    missing || (error instanceof ApiError && error.status === NOT_FOUND);
+  const gone = missing || statusOf(error) === HttpStatus.NOT_FOUND;
   return (
     <EmptyState
       icon={icon}

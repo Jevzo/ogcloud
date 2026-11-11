@@ -18,6 +18,7 @@ import {
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
+import { HttpStatus, statusOf } from "../../http.ts";
 import { useSession } from "../../session-context.ts";
 import { isValidPassword } from "../users/new-password-field.tsx";
 import {
@@ -28,9 +29,7 @@ import {
 } from "./setup-frame.tsx";
 
 // Nobody can sign in before the first owner exists, so these calls go out without a token (D-0094).
-const ANONYMOUS: ApiConnection = { accessToken: async () => undefined };
-const FORBIDDEN = 403;
-const CONFLICT = 409;
+const ANONYMOUS: ApiConnection = {};
 // Where the API Secret holds the token Infisical generated; the chart's default namespace.
 const TOKEN_COMMAND =
   "kubectl -n ogcloud get secret ogcloud-api-config -o jsonpath='{.data.ogcloud\\.auth\\.setup-token}' | base64 -d";
@@ -219,8 +218,7 @@ function OwnerStep({
       {
         onSuccess: onCreated,
         onError: (error) => {
-          if (error instanceof ApiError && error.status === FORBIDDEN)
-            onTokenRefused();
+          if (statusOf(error) === HttpStatus.FORBIDDEN) onTokenRefused();
         },
       },
     );
@@ -310,8 +308,8 @@ function OwnerStep({
 function ownerProblem(error: unknown, t: TFunction<"web">): string | null {
   if (!(error instanceof Error)) return null;
   if (!(error instanceof ApiError)) return t("errors.action");
-  if (error.status === FORBIDDEN) return null;
-  if (error.status === CONFLICT)
+  if (error.status === HttpStatus.FORBIDDEN) return null;
+  if (error.status === HttpStatus.CONFLICT)
     return error.problem?.detail ?? t("setup.owner.taken");
   return error.problem?.detail ?? t("errors.action");
 }

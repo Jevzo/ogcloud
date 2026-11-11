@@ -26,7 +26,7 @@ export function Header({
       >
         <Search aria-hidden="true" size={15} strokeWidth={1.75} />
         <span className="flex-1">{t("shell.search")}</span>
-        <kbd className="rounded-[5px] border border-border bg-surface-2 px-1.5 font-sans text-meta">
+        <kbd className="rounded-small border border-border bg-surface-2 px-1.5 font-sans text-meta">
           ⌘K
         </kbd>
       </button>

@@ -1,13 +1,11 @@
-import { ApiError } from "@ogcloud/api-client";
 import { Button, ConfirmDialog, SaveBar, useToast } from "@ogcloud/ui";
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "./errors.ts";
+import { HttpStatus, statusOf } from "./http.ts";
 import { invalidatePaths } from "./queries.ts";
-
-const CONFLICT = 409;
 
 interface EditGuardProps {
   changes: number;
@@ -59,7 +57,7 @@ function useSaveFailure(reload: () => void): (error: unknown) => void {
   const failed = useFailureToast();
   return useCallback(
     (error: unknown) =>
-      error instanceof ApiError && error.status === CONFLICT
+      statusOf(error) === HttpStatus.CONFLICT
         ? toast({
             message: t("editing.stale"),
             action: { label: t("editing.reload"), onPress: reload },

@@ -1,5 +1,5 @@
 import { ApiError, problemIn } from "@ogcloud/api-client";
-import type { ApiConnection } from "@ogcloud/api-client/react";
+import { type ApiConnection, callOptions } from "@ogcloud/api-client/react";
 
 /**
  * Sends a file as a request body and reports how much went out; fetch cannot report upload progress, so this uses
@@ -12,13 +12,12 @@ export async function uploadWithProgress<T>(
   contentType: string,
   onProgress: (sent: number, total: number) => void,
 ): Promise<T> {
-  const headers = await authorization(connection);
+  const call = await callOptions(connection);
   return new Promise<T>((resolve, reject) => {
     const request = new XMLHttpRequest();
-    request.open("POST", `${connection.origin ?? ""}${path}`);
-    for (const [name, value] of Object.entries(headers)) {
-      request.setRequestHeader(name, value);
-    }
+    request.open("POST", `${call.origin ?? ""}${path}`);
+    if (call.token !== undefined)
+      request.setRequestHeader("Authorization", `Bearer ${call.token}`);
     request.setRequestHeader("Content-Type", contentType);
     request.upload.onprogress = (event) =>
       onProgress(event.loaded, event.total);
@@ -52,21 +51,16 @@ export async function downloadFile(
   path: string,
   filename: string,
 ): Promise<void> {
-  const response = await fetch(`${connection.origin ?? ""}${path}`, {
-    headers: await authorization(connection),
+  const call = await callOptions(connection);
+  const response = await fetch(`${call.origin ?? ""}${path}`, {
+    headers:
+      call.token === undefined ? {} : { Authorization: `Bearer ${call.token}` },
   });
   if (!response.ok) {
     const text = await response.text();
     throw new ApiError("GET", path, response.status, problemIn(text), text);
   }
   saveBlob(await response.blob(), filename);
-}
-
-async function authorization(
-  connection: ApiConnection,
-): Promise<Record<string, string>> {
-  const token = await connection.accessToken();
-  return token === undefined ? {} : { Authorization: `Bearer ${token}` };
 }
 
 /** Saves data as an indented JSON file, such as a privacy export (D-0107). */

@@ -16,12 +16,11 @@ import { ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
-import { useDebounced } from "../../debounce.ts";
+import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 
-const TYPING_MS = 400;
 const columns = columnsFor<AuditEntryView>();
 
 interface Filters {
@@ -61,7 +60,7 @@ export function AuditTab() {
   });
   const [from, setFrom] = useState<Date | null>(null);
   const [until, setUntil] = useState<Date | null>(null);
-  const settled = useDebounced(filters, TYPING_MS);
+  const settled = useDebounced(filters, TYPING_PAUSE_MS);
   const params = paramsOf(settled, from, until);
   const audit = usePaged(
     getLogAuditQueryKey(params),

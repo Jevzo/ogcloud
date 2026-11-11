@@ -18,6 +18,7 @@ import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
+import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadMore } from "../../load-more.tsx";
@@ -104,6 +105,8 @@ export function PlayersPage() {
   const { t } = useTranslation("web");
   const [view, setView] = useState<View>("online");
   const [search, setSearch] = useState("");
+  // The known players are searched by the API, so it is asked once typing pauses.
+  const settled = useDebounced(search.trim(), TYPING_PAUSE_MS);
   const actions = usePlayerActions();
 
   return (
@@ -135,7 +138,7 @@ export function PlayersPage() {
         {view === "online" ? (
           <OnlineTable search={search.trim().toLowerCase()} actions={actions} />
         ) : (
-          <KnownTable search={search.trim()} actions={actions} />
+          <KnownTable search={settled} actions={actions} />
         )}
       </section>
       {actions.dialogs}

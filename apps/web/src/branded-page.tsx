@@ -15,9 +15,9 @@ export function BrandedPage({
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
       <div className="flex items-center gap-3">
         <img src={mascot} alt="" className="size-14" />
-        <span className="font-heavy text-[26px] tracking-tight">OgCloud</span>
+        <span className="text-wordmark-large">OgCloud</span>
       </div>
-      <Card className={cn("w-full max-w-[26rem] p-6", className)}>
+      <Card className={cn("w-full max-w-branded p-6", className)}>
         {children}
       </Card>
     </main>
