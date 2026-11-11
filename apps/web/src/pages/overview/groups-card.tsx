@@ -1,47 +1,24 @@
 import type { GroupOverview } from "@ogcloud/api-client";
 import {
-  Badge,
   Card,
   columnsFor,
   DataTable,
   EmptyState,
   Meter,
   type RowActions,
-  type Tone,
 } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
-import {
-  CircleCheck,
-  CircleDashed,
-  Construction,
-  Layers,
-  type LucideIcon,
-  OctagonPause,
-} from "lucide-react";
+import { Layers } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
-
-type GroupStatus = "paused" | "maintenance" | "online" | "idle";
-
-const STATUS_LOOK: Record<GroupStatus, { tone: Tone; icon: LucideIcon }> = {
-  paused: { tone: "danger", icon: OctagonPause },
-  maintenance: { tone: "warning", icon: Construction },
-  online: { tone: "success", icon: CircleCheck },
-  idle: { tone: "neutral", icon: CircleDashed },
-};
-
-function statusOf(group: GroupOverview): GroupStatus {
-  if (group.crashLoopPaused) return "paused";
-  if (group.maintenance) return "maintenance";
-  return group.running > 0 ? "online" : "idle";
-}
+import { GroupStatusBadge } from "../groups/group-status.tsx";
 
 const columns = columnsFor<GroupOverview>();
 
 interface GroupsCardProps {
   groups: readonly GroupOverview[];
-  actionsFor: ((group: GroupOverview) => RowActions) | undefined;
+  actionsFor: (group: GroupOverview) => RowActions;
 }
 
 /** Every group with its servers, players against capacity, and state. */
@@ -54,7 +31,15 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
       columns.columns([
         columns.accessor("id", {
           header: () => t("groups.columns.group"),
-          cell: (cell) => <span className="font-label">{cell.getValue()}</span>,
+          cell: (cell) => (
+            <Link
+              to="/groups/$groupId"
+              params={{ groupId: cell.getValue() }}
+              className="font-label hover:underline"
+            >
+              {cell.getValue()}
+            </Link>
+          ),
         }),
         columns.accessor("type", {
           header: () => t("groups.columns.type"),
@@ -93,14 +78,7 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
         columns.display({
           id: "status",
           header: () => t("groups.columns.state"),
-          cell: (cell) => {
-            const status = statusOf(cell.row.original);
-            return (
-              <Badge {...STATUS_LOOK[status]}>
-                {t(`groups.status.${status}`)}
-              </Badge>
-            );
-          },
+          cell: (cell) => <GroupStatusBadge group={cell.row.original} />,
         }),
       ]),
     [t, format],

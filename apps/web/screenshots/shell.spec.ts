@@ -9,7 +9,15 @@ const VIEWPORTS = layout.reviewViewports;
 const THEMES = themeNames;
 // A busy bedwars server for the server page.
 const SERVER = servers.find((server) => server.gameState === "INGAME")?.id;
-const PAGES = ["/", "/servers", `/servers/${SERVER}`, "/users"] as const;
+const PAGES = [
+  "/",
+  "/servers",
+  `/servers/${SERVER}`,
+  "/groups",
+  "/groups/new",
+  "/groups/bedwars",
+  "/users",
+] as const;
 
 async function open(
   page: Page,
@@ -37,7 +45,7 @@ const slug = (path: string) =>
     ? "overview"
     : path.startsWith("/servers/")
       ? "server"
-      : path.slice(1);
+      : path.slice(1).replaceAll("/", "-");
 
 for (const theme of THEMES) {
   for (const viewport of VIEWPORTS) {
@@ -68,5 +76,24 @@ for (const theme of THEMES) {
     await page.getByRole("button", { name: "Collapse the sidebar" }).click();
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}collapsed-${theme}.png` });
+  });
+
+  test(`unsaved edits, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, "/groups/bedwars", theme);
+    await page.getByLabel("Fewest servers").fill("3");
+    await page.getByLabel("Most servers").fill("24");
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}save-bar-${theme}.png` });
+  });
+
+  test(`a typed confirmation, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, `/servers/${SERVER}`, theme);
+    await page.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Kill" }).click();
+    await page.getByRole("dialog").waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}kill-dialog-${theme}.png` });
   });
 }

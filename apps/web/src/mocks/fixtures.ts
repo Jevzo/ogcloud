@@ -1,7 +1,10 @@
 import type {
+  DeletedGroupView,
+  GroupView,
   LoadHistoryView,
   MeView,
   OverviewView,
+  RuntimeProfileView,
   ScalingLogView,
   ServerView,
 } from "@ogcloud/api-client";
@@ -254,3 +257,105 @@ export function serverById(id: string): ServerView {
   if (found === undefined) throw new Error("The server fixture is empty");
   return found;
 }
+
+export const runtimeProfiles: RuntimeProfileView[] = [
+  {
+    id: "paper-26.3",
+    platform: "PAPER",
+    role: "BACKEND",
+    version: "26.3",
+    protocol: 777,
+    javaVersion: 25,
+    artifacts: [],
+  },
+  {
+    id: "pandaspigot-1.8.8",
+    platform: "PANDASPIGOT",
+    role: "BACKEND",
+    version: "1.8.8",
+    protocol: 47,
+    javaVersion: 25,
+    artifacts: [],
+  },
+  {
+    id: "velocity-4.3.0",
+    platform: "VELOCITY",
+    role: "PROXY",
+    version: "4.3.0",
+    protocol: 0,
+    javaVersion: 25,
+    artifacts: [],
+  },
+];
+
+/** The overview's groups with settings a real network might use. */
+export const groups: GroupView[] = FLEETS.map((fleet, index) => ({
+  id: fleet.group,
+  type: fleet.type,
+  version: 3 + index,
+  activeTemplateVersionId: null,
+  settings: {
+    profileId: fleet.profile,
+    scaling: {
+      minOnline: fleet.type === "DYNAMIC" ? 2 : 1,
+      maxInstances:
+        fleet.type === "STATIC" ? 1 : fleet.type === "PROXY" ? 4 : 20,
+      playersPerServer: fleet.maxPlayers,
+      scaleUpThreshold: 0.8,
+      scaleDownThreshold: 0.3,
+      cooldownSeconds: 60,
+    },
+    drainTimeoutSeconds: 60,
+    maintenance: fleet.group === "build",
+    resources: {
+      memoryRequest: fleet.type === "PROXY" ? "1Gi" : "2Gi",
+      memoryLimit: fleet.type === "PROXY" ? "1Gi" : "2Gi",
+      cpuRequest: "1",
+      cpuLimit: null,
+    },
+    jvmFlags: fleet.type === "PROXY" ? "" : "-XX:+UseZGC -XX:+ZGenerational",
+    image: null,
+    storageSize: fleet.type === "STATIC" ? "10Gi" : null,
+  },
+})).concat({
+  id: "skywars",
+  type: "DYNAMIC",
+  version: 9,
+  activeTemplateVersionId: null,
+  settings: {
+    profileId: "paper-26.3",
+    scaling: {
+      minOnline: 2,
+      maxInstances: 12,
+      playersPerServer: 16,
+      scaleUpThreshold: 0.75,
+      scaleDownThreshold: 0.25,
+      cooldownSeconds: 45,
+    },
+    drainTimeoutSeconds: 30,
+    maintenance: false,
+    resources: {
+      memoryRequest: "2Gi",
+      memoryLimit: "2Gi",
+      cpuRequest: "1",
+      cpuLimit: null,
+    },
+    jvmFlags: "",
+    image: null,
+    storageSize: null,
+  },
+});
+
+/** A group by id; unknown ids get the first one. */
+export function groupById(id: string): GroupView {
+  const found = groups.find((group) => group.id === id) ?? groups[0];
+  if (found === undefined) throw new Error("The group fixture is empty");
+  return found;
+}
+
+export const deletedGroups: DeletedGroupView[] = [
+  {
+    group: { ...groupById("lobby"), id: "halloween" },
+    deletedAt: minutesAgo(190),
+  },
+];

@@ -1,15 +1,31 @@
 import {
+  getGroupDeletedQueryKey,
   getGroupListQueryKey,
   getJobListQueryKey,
   getOverviewGetQueryKey,
   useCrashLoopResumeHook,
+  useGroupDeleteHook,
   useGroupGetHook,
   useGroupRestartHook,
+  useGroupRestoreHook,
   useGroupUpdateHook,
 } from "@ogcloud/api-client/react";
-import { ConfirmDialog, type RowActions, useToast } from "@ogcloud/ui";
+import {
+  ConfirmDialog,
+  type MenuItem,
+  type RowActions,
+  useToast,
+} from "@ogcloud/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Construction, Play, RotateCw } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  ArrowUpRight,
+  Construction,
+  type LucideIcon,
+  Play,
+  RotateCw,
+  Trash2,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
@@ -24,130 +40,181 @@ export interface GroupState {
   crashLoopPaused: boolean;
 }
 
+export type GroupAction =
+  | "startMaintenance"
+  | "endMaintenance"
+  | "restart"
+  | "resume"
+  | "delete"
+  | "restore";
+
 function useGroupMutations() {
   const read = useGroupGetHook();
   const update = useGroupUpdateHook();
   const restart = useGroupRestartHook();
   const resume = useCrashLoopResumeHook();
+  const remove = useGroupDeleteHook();
+  const restore = useGroupRestoreHook();
   const client = useQueryClient();
   const refresh = () =>
     invalidatePaths(client, [
       getGroupListQueryKey()[0],
+      getGroupDeletedQueryKey()[0],
       getOverviewGetQueryKey()[0],
       getJobListQueryKey()[0],
     ]);
+  const settle = { onSettled: refresh };
   return {
     maintenance: useMutation({
-      mutationFn: async (change: { id: string; maintenance: boolean }) => {
+      mutationFn: async (change: { id: string; on: boolean }) => {
+        // Read just before writing, so the change carries the current version (D-0069).
         const { data } = await read(change.id);
         await update(change.id, {
-          settings: { ...data.settings, maintenance: change.maintenance },
+          settings: { ...data.settings, maintenance: change.on },
           version: data.version,
         });
       },
-      onSettled: refresh,
+      ...settle,
     }),
     restart: useMutation({
       mutationFn: (id: string) => restart(id, {}),
-      onSettled: refresh,
+      ...settle,
     }),
-    resume: useMutation({
-      mutationFn: (id: string) => resume(id),
-      onSettled: refresh,
+    resume: useMutation({ mutationFn: (id: string) => resume(id), ...settle }),
+    remove: useMutation({ mutationFn: (id: string) => remove(id), ...settle }),
+    restore: useMutation({
+      mutationFn: (id: string) => restore(id),
+      ...settle,
     }),
   };
 }
 
 /**
- * A group's actions as table row actions, with the confirmations they need (D-0210); the overview and the groups
- * list share them. Restarting needs maintenance first, as the API requires.
+ * A group's actions with the confirmations they need (D-0210): maintenance asks first, a restart needs maintenance
+ * (as the API requires), and a delete can be undone, since deleted groups stay restorable for a while (D-0043). The
+ * overview, the groups list and a group's page share them.
  */
-export function useGroupActions(): {
-  /** Undefined without `groups:write`, so tables leave out the actions column. */
-  actionsFor: ((group: GroupState) => RowActions) | undefined;
-  /** Lets a group paused by the crash-loop breaker start servers again. */
-  resume: (id: string) => void;
+export function useGroupActions(options: { onDeleted?: () => void } = {}): {
+  actionsFor: (group: GroupState) => RowActions;
+  request: (action: GroupAction, id: string) => void;
+  canWrite: boolean;
   dialogs: ReactNode;
 } {
   const { t } = useTranslation("web");
   const toast = useToast();
   const failed = useFailureToast();
+  const navigate = useNavigate();
   const canWrite = useCan("groups:write");
   const mutations = useGroupMutations();
-  const confirming = usePendingAction<"maintenance" | "restart", string>();
+  const confirming = usePendingAction<
+    "startMaintenance" | "restart" | "delete",
+    string
+  >();
 
-  const endMaintenance = (id: string) =>
-    mutations.maintenance.mutate(
-      { id, maintenance: false },
-      {
-        onSuccess: () =>
-          toast({ message: t("groups.actions.maintenanceEnded", { id }) }),
-        onError: failed,
-      },
-    );
-  const resume = (id: string) =>
-    mutations.resume.mutate(id, {
-      onSuccess: () => toast({ message: t("groups.actions.resumed", { id }) }),
+  const restore = (id: string) =>
+    mutations.restore.mutate(id, {
+      onSuccess: () => toast({ message: t("groups.actions.restored", { id }) }),
       onError: failed,
     });
+  const request = (action: GroupAction, id: string) => {
+    switch (action) {
+      case "endMaintenance":
+        mutations.maintenance.mutate(
+          { id, on: false },
+          {
+            onSuccess: () =>
+              toast({ message: t("groups.actions.maintenanceEnded", { id }) }),
+            onError: failed,
+          },
+        );
+        return;
+      case "resume":
+        mutations.resume.mutate(id, {
+          onSuccess: () =>
+            toast({ message: t("groups.actions.resumed", { id }) }),
+          onError: failed,
+        });
+        return;
+      case "restore":
+        restore(id);
+        return;
+      default:
+        confirming.open(action, id);
+    }
+  };
+  const item = (
+    action: GroupAction,
+    id: string,
+    icon: LucideIcon,
+    danger = false,
+  ): MenuItem => ({
+    label: t(`groups.actions.${action}`),
+    icon,
+    danger,
+    onSelect: () => request(action, id),
+  });
 
-  const actionsOf = (group: GroupState): RowActions => {
-    const maintenance = group.maintenance
-      ? {
-          label: t("groups.actions.endMaintenance"),
-          icon: Play,
-          onPress: () => endMaintenance(group.id),
-        }
-      : {
-          label: t("groups.actions.startMaintenance"),
-          icon: Construction,
-          onPress: () => confirming.open("maintenance", group.id),
-        };
-    const restart = {
-      label: t("groups.actions.restart"),
-      icon: RotateCw,
-      onSelect: () => confirming.open("restart", group.id),
-    };
+  const actionsFor = (group: GroupState): RowActions => {
+    const [toggle, toggleIcon] = group.maintenance
+      ? (["endMaintenance", Play] as const)
+      : (["startMaintenance", Construction] as const);
+    const maintenance = item(toggle, group.id, toggleIcon);
     return {
-      inline: [maintenance],
+      ...(canWrite
+        ? {
+            inline: [
+              {
+                label: maintenance.label,
+                icon: toggleIcon,
+                onPress: maintenance.onSelect,
+              },
+            ],
+          }
+        : {}),
       menu: [
         [
-          { ...maintenance, onSelect: maintenance.onPress },
-          ...(group.maintenance ? [restart] : []),
+          {
+            label: t("groups.actions.open"),
+            icon: ArrowUpRight,
+            onSelect: () =>
+              navigate({
+                to: "/groups/$groupId",
+                params: { groupId: group.id },
+              }),
+          },
         ],
-        ...(group.crashLoopPaused
+        ...(canWrite
           ? [
               [
-                {
-                  label: t("groups.actions.resume"),
-                  icon: Play,
-                  onSelect: () => resume(group.id),
-                },
+                maintenance,
+                ...(group.maintenance
+                  ? [item("restart", group.id, RotateCw)]
+                  : []),
+                ...(group.crashLoopPaused
+                  ? [item("resume", group.id, Play)]
+                  : []),
               ],
+              [item("delete", group.id, Trash2, true)],
             ]
           : []),
       ],
     };
   };
 
-  const actionsFor = canWrite ? actionsOf : undefined;
   const id = confirming.target ?? "";
+  const done = (message: string) => () => toast({ message });
   const dialogs = (
     <>
       <ConfirmDialog
-        open={confirming.isOpen("maintenance")}
+        open={confirming.isOpen("startMaintenance")}
         onOpenChange={confirming.onOpenChange}
         title={t("groups.confirm.maintenanceTitle", { id })}
         description={t("groups.confirm.maintenanceDescription", { id })}
         confirmLabel={t("groups.actions.startMaintenance")}
         onConfirm={() =>
-          mutations.maintenance.mutateAsync({ id, maintenance: true }).then(
-            () =>
-              toast({
-                message: t("groups.actions.maintenanceStarted", { id }),
-              }),
-            failed,
-          )
+          mutations.maintenance
+            .mutateAsync({ id, on: true })
+            .then(done(t("groups.actions.maintenanceStarted", { id })), failed)
         }
       />
       <ConfirmDialog
@@ -159,13 +226,29 @@ export function useGroupActions(): {
         onConfirm={() =>
           mutations.restart
             .mutateAsync(id)
-            .then(
-              () => toast({ message: t("groups.actions.restarting", { id }) }),
-              failed,
-            )
+            .then(done(t("groups.actions.restarting", { id })), failed)
+        }
+      />
+      <ConfirmDialog
+        open={confirming.isOpen("delete")}
+        onOpenChange={confirming.onOpenChange}
+        title={t("groups.confirm.deleteTitle", { id })}
+        description={t("groups.confirm.deleteDescription")}
+        confirmLabel={t("groups.actions.delete")}
+        onConfirm={() =>
+          mutations.remove.mutateAsync(id).then(() => {
+            toast({
+              message: t("groups.actions.deleted", { id }),
+              action: {
+                label: t("groups.actions.undo"),
+                onPress: () => restore(id),
+              },
+            });
+            options.onDeleted?.();
+          }, failed)
         }
       />
     </>
   );
-  return { actionsFor, resume, dialogs };
+  return { actionsFor, request, canWrite, dialogs };
 }

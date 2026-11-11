@@ -16,6 +16,7 @@ import {
   createSession,
   signIn,
 } from "./auth.ts";
+import { localizeValidation } from "./form.tsx";
 import { applyPreferences, readPreferences } from "./preferences.ts";
 import { router } from "./router.tsx";
 import { SessionContext } from "./session-context.ts";
@@ -35,9 +36,11 @@ async function start(container: HTMLElement) {
     const { startMocks } = await import("./mocks/browser.ts");
     await startMocks();
   }
+  const i18n = createI18n();
+  localizeValidation(i18n.getFixedT(null, "web"));
   createRoot(container).render(
     <StrictMode>
-      <I18nextProvider i18n={createI18n()}>
+      <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
           <ApiConnectionContext.Provider
             value={session === null ? MOCK_CONNECTION : connectionFor(session)}

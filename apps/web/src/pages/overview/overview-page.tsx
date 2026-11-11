@@ -95,7 +95,7 @@ export function OverviewPage() {
         <ServersCard
           byState={data.serversByState}
           paused={data.groups.filter((group) => group.crashLoopPaused)}
-          onResume={groupActions.resume}
+          onResume={(id) => groupActions.request("resume", id)}
         />
         <GroupsCard groups={data.groups} actionsFor={groupActions.actionsFor} />
         <ScalingCard entries={data.recentScaling} />

@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-router";
 import { CALLBACK_PATH } from "./auth.ts";
 import { Callback } from "./pages/callback.tsx";
+import { GroupCreatePage } from "./pages/groups/group-create-page.tsx";
+import { GroupPage } from "./pages/groups/group-page.tsx";
+import { GroupsPage } from "./pages/groups/groups-page.tsx";
 import { NotFound } from "./pages/not-found.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { Placeholder } from "./pages/placeholder.tsx";
@@ -49,7 +52,17 @@ const server = createRoute({
 const groups = createRoute({
   getParentRoute: () => app,
   path: "/groups",
-  component: () => <Placeholder label="groups" />,
+  component: GroupsPage,
+});
+const groupCreate = createRoute({
+  getParentRoute: () => app,
+  path: "/groups/new",
+  component: GroupCreatePage,
+});
+const group = createRoute({
+  getParentRoute: () => app,
+  path: "/groups/$groupId",
+  component: GroupPage,
 });
 const players = createRoute({
   getParentRoute: () => app,
@@ -109,6 +122,8 @@ const routeTree = root.addChildren([
     servers,
     server,
     groups,
+    groupCreate,
+    group,
     players,
     permissions,
     network,

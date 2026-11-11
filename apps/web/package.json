@@ -17,6 +17,7 @@
     "@ogcloud/i18n": "workspace:*",
     "@ogcloud/tokens": "workspace:*",
     "@ogcloud/ui": "workspace:*",
+    "@tanstack/react-form": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "cmdk": "catalog:",
@@ -27,7 +28,8 @@
     "radix-ui": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-i18next": "catalog:"
+    "react-i18next": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",
