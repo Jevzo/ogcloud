@@ -101,7 +101,8 @@ export class AuthSession {
       redirect_uri: this.config.redirectUri,
       code_verifier: pending.verifier,
     });
-    await this.keep(tokens);
+    // Under the renewals' lock, so a renewal another tab began with an older token cannot erase this login.
+    await this.deps.exclusively(() => this.keep(tokens));
     return pending.returnTo;
   }
 

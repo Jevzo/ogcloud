@@ -29,7 +29,7 @@ class FakeServer {
   revoked: string[] = [];
   refuseRevocation = false;
   unavailable = false;
-  /** While set, token responses wait for it, so a test can act in the middle of a renewal. */
+  /** While set, renewals wait for it, so a test can act in the middle of one. */
   hold: Promise<void> | undefined;
   private issued = 0;
 
@@ -44,9 +44,9 @@ class FakeServer {
       this.revoked.push(fields.token ?? "");
       return new Response("", { status: 200 });
     }
-    await this.hold;
     if (this.unavailable) return new Response("", { status: 503 });
     if (fields.grant_type === "refresh_token") {
+      await this.hold;
       if (
         fields.refresh_token !== this.current ||
         this.used.has(fields.refresh_token)
@@ -303,6 +303,31 @@ test("signing out while another tab renews revokes the token that renewal stored
 
   assert.deepEqual(server.revoked, ["refresh-1"]);
   assert.equal(await logins.read(), undefined);
+});
+
+test("a sign-in that finishes while another tab's renewal is refused keeps its login", async () => {
+  const server = new FakeServer();
+  server.current = "rotated-elsewhere";
+  let release = () => {};
+  server.hold = new Promise((resolve) => {
+    release = resolve;
+  });
+  const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
+  const tab = tabsSharing(server, logins);
+  const renewing = tab().accessToken();
+  const signingIn = tab();
+  const state = (await signingIn.beginSignIn("/")).searchParams.get("state");
+
+  const finished = signingIn.completeSignIn(
+    new URL(`${CONFIG.redirectUri}?code=abc&state=${state}`),
+  );
+  // One turn of the event loop: the code exchange answers at once, while the renewal still waits.
+  await Promise.race([finished, new Promise((next) => setImmediate(next))]);
+  release();
+  await assert.rejects(renewing, SignInRequired);
+  await finished;
+
+  assert.equal((await logins.read())?.refreshToken, server.current);
 });
 
 test("signing out revokes the refresh token, forgets the login and ends the API's login session", async () => {
