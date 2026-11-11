@@ -7,6 +7,7 @@
 import type { PermissionGroupSettings } from './permissionGroupSettings.ts';
 
 export interface CreatePermissionGroupRequest {
+  /** @pattern ^[a-z][a-z0-9_-]{0,31}$ */
   id: string;
   settings: PermissionGroupSettings;
 }

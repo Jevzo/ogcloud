@@ -10,7 +10,13 @@ interface NameIdDialogProps {
   description: string;
   submitLabel: string;
   name: { label: string; placeholder: string };
-  id: { label: string; hint: string; placeholder: string; pattern: RegExp };
+  /** `schema` is the contract's rule for the id, as orval generates it (D-0011). */
+  id: {
+    label: string;
+    hint: string;
+    placeholder: string;
+    schema: { safeParse: (value: string) => { success: boolean } };
+  };
   create: (id: string, name: string) => Promise<unknown>;
   /** The toast once it exists. */
   done: (name: string) => string;
@@ -59,7 +65,7 @@ export function NameIdDialog({
       description={description}
       submitLabel={submitLabel}
       onSubmit={submit}
-      disabled={!idField.pattern.test(id) || name.trim() === ""}
+      disabled={!idField.schema.safeParse(id).success || name.trim() === ""}
       busy={busy}
     >
       <Field label={nameField.label}>

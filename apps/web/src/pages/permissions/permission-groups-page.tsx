@@ -4,6 +4,7 @@ import {
   usePermissionGroupCreate,
   usePermissionGroupList,
 } from "@ogcloud/api-client/react";
+import { PermissionGroupCreateBody } from "@ogcloud/api-client/zod";
 import {
   Badge,
   Button,
@@ -154,7 +155,7 @@ export function PermissionGroupsPage() {
           label: t("permissions.form.id"),
           hint: t("permissions.form.idHint"),
           placeholder: "vip",
-          pattern: ID,
+          schema: PermissionGroupCreateBody.shape.id,
         }}
         create={(id, name) =>
           create.mutateAsync({ data: { id, settings: blankGroup(name) } })
@@ -170,8 +171,6 @@ export function PermissionGroupsPage() {
     </div>
   );
 }
-
-const ID = /^[a-z0-9][a-z0-9-]*$/;
 
 /** A new permission group starts plain: no permissions, the player's name as it is. */
 const blankGroup = (name: string) => ({

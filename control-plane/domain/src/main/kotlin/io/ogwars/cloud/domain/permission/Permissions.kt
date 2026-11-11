@@ -48,9 +48,11 @@ data class PermissionGroup(
     /** Exact permission nodes, or everything for `*` (v1 semantics). */
     fun grants(permission: String): Boolean = WILDCARD in permissions || permission in permissions
 
-    private companion object {
-        const val WILDCARD = "*"
-        val ID = Regex("^[a-z][a-z0-9_-]{0,31}$")
+    companion object {
+        /** The id rule, also published in the API contract for the apps' forms. */
+        const val ID_PATTERN = "^[a-z][a-z0-9_-]{0,31}$"
+        private const val WILDCARD = "*"
+        private val ID = Regex(ID_PATTERN)
     }
 }
 

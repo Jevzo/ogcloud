@@ -4,6 +4,7 @@ import {
   useRoleCreate,
   useRoleList,
 } from "@ogcloud/api-client/react";
+import { RoleCreateBody } from "@ogcloud/api-client/zod";
 import {
   Badge,
   Button,
@@ -138,7 +139,7 @@ export function RolesPage() {
           label: t("roles.form.id"),
           hint: t("roles.form.idHint"),
           placeholder: "support",
-          pattern: ID,
+          schema: RoleCreateBody.shape.id,
         }}
         create={(id, name) =>
           create.mutateAsync({ data: { id, name, permissions: [] } })
@@ -151,6 +152,3 @@ export function RolesPage() {
     </div>
   );
 }
-
-// As the API checks role ids: a lowercase letter, then letters, digits and dashes.
-const ID = /^[a-z][a-z0-9-]{0,30}$/;

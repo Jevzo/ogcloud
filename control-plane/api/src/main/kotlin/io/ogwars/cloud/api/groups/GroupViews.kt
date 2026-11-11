@@ -8,6 +8,7 @@ import io.ogwars.cloud.domain.group.ResourceSpec
 import io.ogwars.cloud.domain.group.ScalingPolicy
 import io.ogwars.cloud.domain.store.DeletedGroup
 import io.ogwars.cloud.domain.store.Revisioned
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -60,6 +61,7 @@ data class GroupSettings(
 )
 
 data class CreateGroupRequest(
+    @field:Schema(pattern = GroupId.PATTERN)
     val id: String,
     val type: GroupType,
     val settings: GroupSettings,

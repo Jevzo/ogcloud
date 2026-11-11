@@ -5,6 +5,7 @@ import io.ogwars.cloud.api.web.Requires
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.ApiPermission
 import io.ogwars.cloud.domain.user.Role
+import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,6 +26,7 @@ data class RoleView(
 )
 
 data class CreateRoleRequest(
+    @field:Schema(pattern = Role.ID_PATTERN)
     val id: String,
     val name: String,
     val permissions: List<String>,

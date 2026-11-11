@@ -6,6 +6,7 @@
  */
 
 export interface CreateRoleRequest {
+  /** @pattern ^[a-z][a-z0-9-]{0,30}$ */
   id: string;
   name: string;
   permissions: string[];

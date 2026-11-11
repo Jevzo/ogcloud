@@ -406,8 +406,11 @@ export const RuntimeRolloutResponse = zod.void()
 export const RoleListResponse = zod.unknown()
 
 
+export const roleCreateBodyIdRegExp = new RegExp('^[a-z][a-z0-9-]{0,30}$');
+
+
 export const RoleCreateBody = zod.object({
-  "id": zod.string(),
+  "id": zod.string().regex(roleCreateBodyIdRegExp),
   "name": zod.string(),
   "permissions": zod.array(zod.string())
 })
@@ -446,8 +449,11 @@ export const PlayerTransferResponse = zod.void()
 export const PermissionGroupListResponse = zod.unknown()
 
 
+export const permissionGroupCreateBodyIdRegExp = new RegExp('^[a-z][a-z0-9_-]{0,31}$');
+
+
 export const PermissionGroupCreateBody = zod.object({
-  "id": zod.string(),
+  "id": zod.string().regex(permissionGroupCreateBodyIdRegExp),
   "settings": zod.object({
   "name": zod.string(),
   "weight": zod.int(),
@@ -570,8 +576,11 @@ export const MeConfirmMinecraftLinkResponse = zod.unknown()
 export const GroupListResponse = zod.unknown()
 
 
+export const groupCreateBodyIdRegExp = new RegExp('^[a-z]([a-z0-9-]{0,28}[a-z0-9])?$');
+
+
 export const GroupCreateBody = zod.object({
-  "id": zod.string(),
+  "id": zod.string().regex(groupCreateBodyIdRegExp),
   "type": zod.enum(['DYNAMIC', 'STATIC', 'PROXY']),
   "settings": zod.object({
   "profileId": zod.string(),

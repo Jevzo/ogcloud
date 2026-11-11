@@ -18,7 +18,7 @@ value class GroupId(
     val value: String,
 ) {
     init {
-        require(PATTERN.matches(value)) {
+        require(ID.matches(value)) {
             "Group id '$value' must be 1–$MAX_LENGTH lowercase letters, digits or '-', starting with a letter"
         }
     }
@@ -28,7 +28,11 @@ value class GroupId(
     companion object {
         /** Pod names are `<group>-<32 hex>` and Kubernetes caps them at 63 characters. */
         const val MAX_LENGTH = 30
-        private val PATTERN = Regex("^[a-z]([a-z0-9-]{0,${MAX_LENGTH - 2}}[a-z0-9])?$")
+        private const val INNER_LENGTH = MAX_LENGTH - 2
+
+        /** The id rule, also published in the API contract for the apps' forms. */
+        const val PATTERN = "^[a-z]([a-z0-9-]{0,$INNER_LENGTH}[a-z0-9])?$"
+        private val ID = Regex(PATTERN)
     }
 }
 

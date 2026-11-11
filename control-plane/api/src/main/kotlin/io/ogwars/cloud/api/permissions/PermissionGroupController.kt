@@ -8,6 +8,7 @@ import io.ogwars.cloud.domain.permission.PlayerRank
 import io.ogwars.cloud.domain.permission.RankDisplay
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.ApiPermission
+import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -57,6 +58,7 @@ data class PermissionGroupView(
 )
 
 data class CreatePermissionGroupRequest(
+    @field:Schema(pattern = PermissionGroup.ID_PATTERN)
     val id: String,
     val settings: PermissionGroupSettings,
 )

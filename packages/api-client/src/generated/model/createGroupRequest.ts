@@ -8,6 +8,7 @@ import type { CreateGroupRequestType } from './createGroupRequestType.ts';
 import type { GroupSettings } from './groupSettings.ts';
 
 export interface CreateGroupRequest {
+  /** @pattern ^[a-z]([a-z0-9-]{0,28}[a-z0-9])?$ */
   id: string;
   type: CreateGroupRequestType;
   settings: GroupSettings;

@@ -46,8 +46,10 @@ data class Role(
         ) { "'$id' is ${if (builtIn) "not" else "already"} a built-in role" }
     }
 
-    private companion object {
-        val ID = Regex("^[a-z][a-z0-9-]{0,30}$")
+    companion object {
+        /** The id rule, also published in the API contract for the apps' forms. */
+        const val ID_PATTERN = "^[a-z][a-z0-9-]{0,30}$"
+        private val ID = Regex(ID_PATTERN)
     }
 }
 
