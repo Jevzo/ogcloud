@@ -56,3 +56,6 @@ go.work.sum
 
 # Tilt
 .tiltbuild/
+
+# The API client generator's scratch folder, left only by an interrupted run.
+packages/api-client/src/.generated-next/

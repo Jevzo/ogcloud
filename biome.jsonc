@@ -12,7 +12,8 @@
     "includes": [
       "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,jsonc}",
       "!images/docker-bake.json",
-      "!packages/api-client/src/generated"
+      "!packages/api-client/src/generated",
+      "!packages/api-client/src/.generated-next"
     ]
   },
   "formatter": {
