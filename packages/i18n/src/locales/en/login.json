@@ -1,4 +1,9 @@
 {
+  "add": {
+    "back": "Cancel",
+    "description": "Use your device's fingerprint, face or PIN, or a security key, to sign in without typing your password.",
+    "title": "Add a passkey"
+  },
   "credentials": {
     "description": "Manage your network's servers, players and settings.",
     "error": "That username and password do not match.",

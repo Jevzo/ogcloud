@@ -93,6 +93,16 @@ class MfaTest(
     }
 
     @Test
+    fun `adding a passkey waits for the second factor`() {
+        val user = testUsers.create()
+        enroll(user)
+        val unprotected = testUsers.create()
+
+        oauth.openAfterSignIn(ADD_PASSKEY, user.username, TestUsers.PASSWORD) shouldBe OAuthHttp.MFA_PAGE
+        oauth.openAfterSignIn(ADD_PASSKEY, unprotected.username, TestUsers.PASSWORD) shouldBe ADD_PASSKEY
+    }
+
+    @Test
     fun `a wrong code sends the user back`() {
         val user = testUsers.create()
         enroll(user)
@@ -186,6 +196,7 @@ class MfaTest(
 
     private companion object {
         const val ME = "/api/v1/me"
+        const val ADD_PASSKEY = "/login/passkeys/new"
         const val WEB_REDIRECT = "$TEST_ISSUER/auth/callback"
         const val OK = 200
         const val NO_CONTENT = 204

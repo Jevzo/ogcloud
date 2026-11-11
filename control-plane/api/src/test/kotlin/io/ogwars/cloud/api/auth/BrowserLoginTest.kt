@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.api.auth.mfa.Passkeys
 import io.ogwars.cloud.apitest.ApiTestSetup
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TestUsers
@@ -40,6 +41,7 @@ import java.util.UUID
 class BrowserLoginTest(
     @Autowired users: WebUserStore,
     @Autowired passwords: PasswordEncoder,
+    @Autowired private val passkeys: Passkeys,
 ) {
     private val testUsers = TestUsers(users, passwords)
     private val playwright = Playwright.create()
@@ -105,6 +107,22 @@ class BrowserLoginTest(
             page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Sign in with a passkey")).click()
             callbackCode(page).shouldNotBeNull()
         }
+    }
+
+    @Test
+    fun `a user adds a passkey after signing in and goes back to their account`() {
+        val user = testUsers.create()
+        browser.newContext().use { context ->
+            val page = context.newPage()
+            addVirtualAuthenticator(context, page)
+            page.navigate("$origin/login/passkeys/new")
+            signIn(page, user.username, TestUsers.PASSWORD)
+
+            page.getByLabel("Passkey name").fill("Desk key")
+            page.getByRole(AriaRole.BUTTON, Page.GetByRoleOptions().setName("Register passkey")).click()
+            page.waitForURL("**/account")
+        }
+        passkeys.list(user.id).map { it.label } shouldBe listOf("Desk key")
     }
 
     private fun signIn(

@@ -66,7 +66,7 @@ class LoginPages(
             ?.takeIf(Files::isRegularFile)
             ?.let(Files::readString)
 
-    @GetMapping(LOGIN_PAGE, MfaEndpoints.PATH, produces = [MediaType.TEXT_HTML_VALUE])
+    @GetMapping(LOGIN_PAGE, MfaEndpoints.PATH, ADD_PASSKEY_PAGE, produces = [MediaType.TEXT_HTML_VALUE])
     @ResponseBody
     fun page(): ResponseEntity<String> =
         if (index == null) {
@@ -77,6 +77,9 @@ class LoginPages(
 
     companion object {
         const val LOGIN_PAGE = "/login"
+
+        /** Adds a passkey for a full login, then returns to the dashboard's account page (D-0218). */
+        const val ADD_PASSKEY_PAGE = "/login/passkeys/new"
         const val STATE_PATH = "/login/state"
         const val ASSETS = "/login/assets/**"
         private const val INDEX = "index.html"

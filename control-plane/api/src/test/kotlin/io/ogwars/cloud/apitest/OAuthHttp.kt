@@ -96,6 +96,28 @@ class OAuthHttp(
         )
     }
 
+    /**
+     * Opens a login-chain page in a fresh browser, which sends it to sign in with the password first, and returns the
+     * path it ends on: the page itself, or the MFA page while a second factor is due.
+     */
+    fun openAfterSignIn(
+        path: String,
+        login: String,
+        password: String,
+    ): String {
+        val browser = Browser()
+        val toLogin = browser.get(path)
+        check(
+            toLogin.statusCode() == FOUND && toLogin.location().path == "/login",
+        ) { "$path did not ask for a sign-in" }
+        val target =
+            browser
+                .post("/login", form(listOf("username" to login, "password" to password, "_csrf" to browser.csrf())))
+                .location()
+        val landed = browser.get(target.toString())
+        return if (landed.statusCode() == FOUND) landed.location().path else target.path
+    }
+
     /** The passkey sign-in options the login page's script requests. */
     fun passkeyOptions(): HttpResponse<String> {
         val browser = Browser()

@@ -20,6 +20,9 @@ export interface LoginSource {
 }
 
 const CONTINUE = "/login/mfa/continue";
+// The account page sends users here to add a passkey, and gets them back (D-0218).
+const ADD_PASSKEY = "/login/passkeys/new";
+const ACCOUNT = "/account";
 
 /** The branded sign-in (D-0212): plain form posts to Spring's endpoints, and WebAuthn for passkeys. */
 export function LoginApp({ source }: { source: LoginSource }) {
@@ -27,6 +30,7 @@ export function LoginApp({ source }: { source: LoginSource }) {
   const [state, setState] = useState<LoginState | null>(null);
   const [failed, setFailed] = useState(false);
   const rejected = new URLSearchParams(window.location.search).has("error");
+  const adding = window.location.pathname === ADD_PASSKEY;
 
   useEffect(() => {
     source.state().then(setState, (error: unknown) => {
@@ -36,8 +40,8 @@ export function LoginApp({ source }: { source: LoginSource }) {
   }, [source]);
 
   useEffect(() => {
-    if (state?.step === "DONE") window.location.replace(CONTINUE);
-  }, [state]);
+    if (state?.step === "DONE" && !adding) window.location.replace(CONTINUE);
+  }, [state, adding]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
@@ -50,8 +54,10 @@ export function LoginApp({ source }: { source: LoginSource }) {
           <Note tone="danger" icon={TriangleAlert}>
             {t("unavailable")}
           </Note>
-        ) : state === null || state.step === "DONE" ? (
+        ) : state === null || (state.step === "DONE" && !adding) ? (
           <div aria-busy="true" className="h-40" />
+        ) : state.step === "DONE" ? (
+          <AddPasskey csrf={state.csrf} />
         ) : state.step === "CREDENTIALS" ? (
           <Credentials csrf={state.csrf} rejected={rejected} />
         ) : state.step === "TOTP" ? (
@@ -299,7 +305,14 @@ function Enrolment({
           back={back}
         />
       ) : (
-        <PasskeySetup csrf={csrf} back={back} />
+        <PasskeySetup
+          csrf={csrf}
+          back={back}
+          // With a passkey, a password login still owes a passkey sign-in (D-0097), so it signs in at once.
+          onRegistered={async () =>
+            window.location.assign(await signInWithPasskey(csrf))
+          }
+        />
       )}
     </>
   );
@@ -380,13 +393,39 @@ function AuthenticatorSetup({
   );
 }
 
-function PasskeySetup({ csrf, back }: { csrf: LoginCsrf; back: ReactNode }) {
+/** A signed-in user adds a passkey from their account page, then goes back to it (D-0218). */
+function AddPasskey({ csrf }: { csrf: LoginCsrf }) {
+  const { t } = useTranslation("login");
+  return (
+    <>
+      <Heading title={t("add.title")} description={t("add.description")} />
+      <PasskeySetup
+        csrf={csrf}
+        back={
+          <Button kind="ghost" onClick={() => window.location.assign(ACCOUNT)}>
+            {t("add.back")}
+          </Button>
+        }
+        onRegistered={async () => window.location.assign(ACCOUNT)}
+      />
+    </>
+  );
+}
+
+function PasskeySetup({
+  csrf,
+  back,
+  onRegistered,
+}: {
+  csrf: LoginCsrf;
+  back: ReactNode;
+  onRegistered: () => Promise<void>;
+}) {
   const { t } = useTranslation("login");
   const [label, setLabel] = useState("");
-  // With a passkey, a password login still owes a passkey sign-in (D-0097), so the new passkey signs in at once.
   const passkey = usePasskey(async () => {
     await registerPasskey(csrf, label.trim());
-    window.location.assign(await signInWithPasskey(csrf));
+    await onRegistered();
   });
   return (
     <form

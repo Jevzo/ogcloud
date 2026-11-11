@@ -114,6 +114,11 @@ class SecurityConfiguration {
                     mfa,
                 ),
                 SecurityContextHolderFilter::class.java,
+            )
+            // Adding a passkey waits for the second factor, like an app's authorization request (D-0218).
+            .addFilterAfter(
+                MfaGate(paths.matcher(HttpMethod.GET, LoginPages.ADD_PASSKEY_PAGE), mfa),
+                SecurityContextHolderFilter::class.java,
             ).formLogin { it.loginPage(LoginPages.LOGIN_PAGE).permitAll() }
             // Passkeys belong to the public origin (D-0085, D-0098); the login pages register them (D-0212).
             .webAuthn {

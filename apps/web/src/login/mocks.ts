@@ -1,7 +1,7 @@
 import type { LoginState, TotpSetup } from "@ogcloud/api-client";
 import type { LoginSource } from "./login-app.tsx";
 
-const STEPS = ["CREDENTIALS", "TOTP", "PASSKEY", "ENROLMENT"] as const;
+const STEPS = ["CREDENTIALS", "TOTP", "PASSKEY", "ENROLMENT", "DONE"] as const;
 const SETUP: TotpSetup = {
   secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
   uri: "otpauth://totp/OgCloud:mira?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=OgCloud",
