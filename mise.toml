@@ -28,7 +28,7 @@ protoc-gen-go-grpc = "1.6.2"
 # `check` aggregates them through `depends`.
 [tasks.check]
 description = "Run every quality gate: lint, format check, tests, secret scan"
-depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:shell", "check:duplication", "check:proto", "check:terraform", "check:generated", "check:vulns", "check:actions", "check:commits"]
+depends = ["check:secrets", "check:jvm", "check:go", "check:ts", "check:chart", "check:shell", "check:duplication", "check:text", "check:proto", "check:terraform", "check:generated", "check:vulns", "check:actions", "check:commits"]
 
 [tasks."check:secrets"]
 description = "Scan the working tree and git history for committed secrets"
@@ -247,6 +247,21 @@ run = "pnpm exec biome check --write"
 [tasks."check:duplication"]
 description = "Duplicate-code check across Kotlin, Go and TypeScript (AGENTS.md §15)"
 run = "pnpm exec jscpd ."
+
+[tasks."check:text"]
+description = "No rendering of v2's old & colour codes comes back (D-0201); V1 and V5 still name the old column"
+shell = "bash -c"
+run = """
+set -euo pipefail
+if git grep -nE 'translateAlternateColorCodes|legacyAmpersand|LegacyComponentSerializer|ColorCodes|legacyColors|ChatColor|name_color' -- \
+  ':!mise.toml' ':!docs/' ':!*.pb.go' ':!contracts/proto/' \
+  ':!control-plane/persistence/src/main/resources/db/migration/V1__core_schema.sql' \
+  ':!control-plane/persistence/src/main/resources/db/migration/V5__rich_text.sql' \
+  ':!control-plane/persistence/src/test/kotlin/io/ogwars/cloud/persistence/RichTextMigrationTest.kt'; then
+  echo "In-game texts render through contracts/text only (D-0202); the lines above use the old & rendering." >&2
+  exit 1
+fi
+"""
 
 [tasks."check:proto"]
 description = "buf lint and format check for contracts/proto"

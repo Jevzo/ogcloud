@@ -95,6 +95,7 @@ jobs:
       - run: mise run check:actions
       - run: mise run check:shell
       - run: mise run check:duplication
+      - run: mise run check:text
       - run: mise run check:proto
       - run: mise run check:generated
       - run: mise run check:vulns
