@@ -54,7 +54,7 @@ func TestTheRefresherFollowsValkeyAndDropsLeavingProxiesAtOnce(t *testing.T) {
 	refresher.Handle(context.Background(), kafkatopics.ServerLifecycle, draining)
 
 	settings, online := pool.Status()
-	if settings.GetMotd() != network.GetMotd() || online != 7 || testutil.ToFloat64(metrics.proxies) != 2 {
+	if settings.GetServerList().GetMotdJson() != network.GetServerList().GetMotdJson() || online != 7 || testutil.ToFloat64(metrics.proxies) != 2 {
 		t.Errorf("status %v %d, proxies %v", settings, online, testutil.ToFloat64(metrics.proxies))
 	}
 	for range 3 {

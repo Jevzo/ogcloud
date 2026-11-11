@@ -20,7 +20,7 @@ class HubRuntimeNpcsTest {
             npcs
                 .create("guide")
                 .location("world", 1.0, 64.0, 1.0, 0f, 0f)
-                .title("&eGuide")
+                .title("<yellow>Guide")
                 .onClick { clicks += it.rightClick }
                 .spawn()
         hub.shownIds() shouldBe setOf(NpcHub.RUNTIME + "guide")

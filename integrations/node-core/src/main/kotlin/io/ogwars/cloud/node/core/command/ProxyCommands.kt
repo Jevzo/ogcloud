@@ -27,6 +27,8 @@ import io.ogwars.cloud.node.core.state.ServerDirectory
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
 import io.ogwars.cloud.node.core.text.reason
+import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.RichText
 import java.time.Clock
 import java.time.Duration
 import java.util.UUID
@@ -342,7 +344,7 @@ class ProxyCommands(
         reply(call, Message.NETWORK_INFO_MAINTENANCE, "maintenance" to yesNo(settings.maintenance))
         reply(call, Message.NETWORK_INFO_MAX_PLAYERS, "max" to settings.maxPlayers)
         reply(call, Message.NETWORK_INFO_DEFAULT_GROUP, "group" to settings.defaultGroupId)
-        reply(call, Message.NETWORK_INFO_MOTD, "motd" to settings.motd)
+        reply(call, Message.NETWORK_INFO_MOTD, "motd" to storedText(settings.motd))
         reply(call, Message.NETWORK_INFO_VERSION, "version" to settings.versionName)
     }
 
@@ -371,8 +373,8 @@ class ProxyCommands(
             reply(call, Message.PERM_GROUP_INFO_NAME, "name" to group.name)
             reply(call, Message.PERM_GROUP_INFO_WEIGHT, "weight" to group.weight)
             reply(call, Message.PERM_GROUP_INFO_DEFAULT, "default" to yesNo(group.isDefault))
-            reply(call, Message.PERM_GROUP_INFO_PREFIX, "prefix" to group.chatPrefix)
-            reply(call, Message.PERM_GROUP_INFO_SUFFIX, "suffix" to group.chatSuffix)
+            reply(call, Message.PERM_GROUP_INFO_PREFIX, "prefix" to storedText(group.chatPrefix))
+            reply(call, Message.PERM_GROUP_INFO_SUFFIX, "suffix" to storedText(group.chatSuffix))
             reply(call, Message.PERM_GROUP_INFO_NODES, "count" to group.permissionsCount)
             group.permissionsList.sorted().forEach { reply(call, Message.PERM_GROUP_INFO_NODE, "node" to it) }
         }
@@ -482,7 +484,7 @@ class ProxyCommands(
 
     private fun failed(
         call: Invocation,
-        error: String,
+        error: RichText,
     ) = reply(call, Message.FAILED, "error" to error)
 
     private fun reply(

@@ -792,6 +792,7 @@ func (x *GetPermissionGroupResponse) GetPermissionGroup() *PermissionGroup {
 	return nil
 }
 
+// The display texts are in OgCloud's tag format (D-0200).
 type PermissionGroup struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	PermissionGroupId string                 `protobuf:"bytes,1,opt,name=permission_group_id,json=permissionGroupId,proto3" json:"permission_group_id,omitempty"`
@@ -801,11 +802,12 @@ type PermissionGroup struct {
 	Permissions []string `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	ChatPrefix  string   `protobuf:"bytes,5,opt,name=chat_prefix,json=chatPrefix,proto3" json:"chat_prefix,omitempty"`
 	ChatSuffix  string   `protobuf:"bytes,6,opt,name=chat_suffix,json=chatSuffix,proto3" json:"chat_suffix,omitempty"`
-	NameColor   string   `protobuf:"bytes,7,opt,name=name_color,json=nameColor,proto3" json:"name_color,omitempty"`
 	TabPrefix   string   `protobuf:"bytes,8,opt,name=tab_prefix,json=tabPrefix,proto3" json:"tab_prefix,omitempty"`
 	Version     uint64   `protobuf:"varint,9,opt,name=version,proto3" json:"version,omitempty"`
 	// Players without a rank get the default group.
-	IsDefault     bool `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	IsDefault bool `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	// The player's name, shown as {name}; empty for the catalog's default (D-0203).
+	NameFormat    string `protobuf:"bytes,11,opt,name=name_format,json=nameFormat,proto3" json:"name_format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -882,13 +884,6 @@ func (x *PermissionGroup) GetChatSuffix() string {
 	return ""
 }
 
-func (x *PermissionGroup) GetNameColor() string {
-	if x != nil {
-		return x.NameColor
-	}
-	return ""
-}
-
 func (x *PermissionGroup) GetTabPrefix() string {
 	if x != nil {
 		return x.TabPrefix
@@ -908,6 +903,13 @@ func (x *PermissionGroup) GetIsDefault() bool {
 		return x.IsDefault
 	}
 	return false
+}
+
+func (x *PermissionGroup) GetNameFormat() string {
+	if x != nil {
+		return x.NameFormat
+	}
+	return ""
 }
 
 type ListNpcsRequest struct {
@@ -1836,7 +1838,7 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\x19GetPermissionGroupRequest\x12.\n" +
 	"\x13permission_group_id\x18\x01 \x01(\tR\x11permissionGroupId\"i\n" +
 	"\x1aGetPermissionGroupResponse\x12K\n" +
-	"\x10permission_group\x18\x01 \x01(\v2 .ogcloud.node.v1.PermissionGroupR\x0fpermissionGroup\"\xc8\x02\n" +
+	"\x10permission_group\x18\x01 \x01(\v2 .ogcloud.node.v1.PermissionGroupR\x0fpermissionGroup\"\xdc\x02\n" +
 	"\x0fPermissionGroup\x12.\n" +
 	"\x13permission_group_id\x18\x01 \x01(\tR\x11permissionGroupId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -1847,13 +1849,14 @@ const file_ogcloud_node_v1_query_proto_rawDesc = "" +
 	"\vchat_suffix\x18\x06 \x01(\tR\n" +
 	"chatSuffix\x12\x1d\n" +
 	"\n" +
-	"name_color\x18\a \x01(\tR\tnameColor\x12\x1d\n" +
-	"\n" +
 	"tab_prefix\x18\b \x01(\tR\ttabPrefix\x12\x18\n" +
 	"\aversion\x18\t \x01(\x04R\aversion\x12\x1d\n" +
 	"\n" +
 	"is_default\x18\n" +
-	" \x01(\bR\tisDefault\",\n" +
+	" \x01(\bR\tisDefault\x12\x1f\n" +
+	"\vname_format\x18\v \x01(\tR\n" +
+	"nameFormatJ\x04\b\a\x10\bR\n" +
+	"name_color\",\n" +
 	"\x0fListNpcsRequest\x12\x19\n" +
 	"\bgroup_id\x18\x01 \x01(\tR\agroupId\"<\n" +
 	"\x10ListNpcsResponse\x12(\n" +

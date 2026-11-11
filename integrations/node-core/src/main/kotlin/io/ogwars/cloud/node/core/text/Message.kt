@@ -101,7 +101,7 @@ enum class Message(
     NOTIFY_GROUP_MAINTENANCE("notify.group-maintenance", "group", "status"),
     STATUS_ENABLED("status.enabled"),
     STATUS_DISABLED("status.disabled"),
-    CHAT_NAME_COLOR("chat.name-color"),
+    CHAT_NAME_FORMAT("chat.name-format", "name"),
     CHAT_SUFFIX("chat.suffix"),
     NPC_LIST_EMPTY("npc.list.empty"),
     NPC_LIST_HEADER("npc.list.header", "count"),

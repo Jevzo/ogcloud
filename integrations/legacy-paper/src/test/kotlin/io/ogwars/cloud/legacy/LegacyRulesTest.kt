@@ -28,16 +28,27 @@ class LegacyRulesTest {
         PermissionGroup
             .newBuilder()
             .setPermissionGroupId("admin")
-            .setChatPrefix("&c&l[Admin] ")
-            .setNameColor("&c")
-            .setTabPrefix("&c&l[Administrator] ")
+            .setChatPrefix("<red><bold>[Admin] ")
+            .setNameFormat("<red>{name}")
+            .setTabPrefix("<red><bold>[Administrator] ")
             .build()
 
     @Test
     fun `team prefixes end with the name colour and fit 1_8's 16 characters`() {
-        LegacyLine.teamPrefix(admins.toBuilder().setTabPrefix("&7[VIP] ").build()) shouldBe "§7[VIP] §c"
+        LegacyLine.teamPrefix(admins.toBuilder().setTabPrefix("<gray>[VIP] ").build()) shouldBe "§7[VIP] §c"
         LegacyLine.teamPrefix(admins) shouldBe "§c§l[Administrat"
-        LegacyLine.teamPrefix(admins.toBuilder().setTabPrefix("&c[Admin]123456").build()) shouldBe "§c[Admin]123456"
+        LegacyLine.teamPrefix(admins.toBuilder().setTabPrefix("<red>[Admin]123456").build()) shouldBe "§c[Admin]123456"
+    }
+
+    @Test
+    fun `gradients in a team prefix take their first colour, so it fits (D-0204)`() {
+        val vip =
+            admins
+                .toBuilder()
+                .setTabPrefix("<gradient:#ff5555:#5555ff>[VIP]</gradient> ")
+                .setNameFormat("<gradient:#55ff55:#5555ff>{name}</gradient>")
+                .build()
+        LegacyLine.teamPrefix(vip) shouldBe "§c[VIP]§r §a"
     }
 
     @Test
@@ -52,8 +63,8 @@ class LegacyRulesTest {
 
         LegacyChat(runtime).onChat(event)
 
-        val suffix = messages.text(Message.CHAT_SUFFIX)
-        event.format shouldBe "§c§l[Admin] §cSteve${suffix.replace('&', '§')}§r§${suffix.last()}%2\$s"
+        // The catalog's suffix is <gray>: <white>, so the message continues in white.
+        event.format shouldBe "§c§l[Admin] §cSteve§7: §f§r§f%2\$s"
         String.format(event.format, "Steve", event.message).endsWith("100% &ahi") shouldBe true
     }
 

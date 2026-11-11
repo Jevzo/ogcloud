@@ -1,8 +1,11 @@
 package io.ogwars.cloud.node.core.format
 
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
+import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.Placeholders
+import io.ogwars.cloud.text.RichText
 
-/** What the network's tablist header and footer may show, with v1's placeholder names. */
+/** What the network's tablist header and footer may show, under v1's placeholder names. */
 data class TablistValues(
     val server: String,
     val group: String,
@@ -14,26 +17,21 @@ data class TablistValues(
 )
 
 object Tablist {
-    private val PLACEHOLDER = Regex("%([A-Za-z]+)%")
-
-    /** Fills [template] in one pass; unknown placeholders stay. */
+    /** The tablist header or footer with its placeholders filled in (D-0200). */
     @JvmStatic
     fun fill(
         template: String,
         values: TablistValues,
-    ): String {
-        val byName =
-            mapOf(
-                "server" to values.server,
-                "group" to values.group,
-                "proxy" to values.proxy,
-                "onlinePlayers" to values.onlinePlayers.toString(),
-                "maxPlayers" to values.maxPlayers.toString(),
-                "ping" to values.ping.toString(),
-                "permissionGroup" to values.permissionGroup,
-            )
-        return PLACEHOLDER.replace(template) { byName[it.groupValues[1]] ?: it.value }
-    }
+    ): RichText =
+        storedText(template).fill(
+            Placeholders.SERVER to values.server,
+            Placeholders.GROUP to values.group,
+            Placeholders.PROXY to values.proxy,
+            Placeholders.ONLINE_PLAYERS to values.onlinePlayers.toString(),
+            Placeholders.MAX_PLAYERS to values.maxPlayers.toString(),
+            Placeholders.PING to values.ping.toString(),
+            Placeholders.PERMISSION_GROUP to values.permissionGroup,
+        )
 
     /**
      * The scoreboard team of a permission group. Clients sort teams by name, so the name starts with the weight

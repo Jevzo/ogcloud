@@ -104,6 +104,14 @@ class RenderTest {
     }
 
     @Test
+    fun `an empty colour tag at the end sets the colour that follows, and nowhere else leaves a trace`() {
+        val suffix = RichText.parseValid("<gray>: <white>")
+        suffix.endColor() shouldBe Color.NAMED.getValue("white")
+        suffix.toLegacy() shouldBe "§7: §f"
+        RichText.parseValid("<red></red>x").runs() shouldBe listOf(Run("x", null, emptySet()))
+    }
+
+    @Test
     fun `a hex colour's nearest named colour comes from Adventure`() {
         Color.Hex(0xFF5555).nearestNamed() shouldBe NamedTextColor.RED
         Color.Hex(0x010101).nearestNamed() shouldBe NamedTextColor.BLACK

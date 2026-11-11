@@ -11,6 +11,9 @@ sourceSets {
 
 dependencies {
     implementation(libs.fabric8.kubernetes.client)
+    // Renders the load balancer's server-list texts (D-0202); legacy text's nearest colours come from Adventure.
+    implementation(project(":contracts:text"))
+    implementation(libs.adventure.api)
     implementation("org.springframework.boot:spring-boot-starter-grpc-server")
 
     testImplementation("org.testcontainers:testcontainers-k3s")

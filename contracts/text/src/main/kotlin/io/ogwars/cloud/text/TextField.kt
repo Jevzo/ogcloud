@@ -27,12 +27,14 @@ enum class TextField(
 
     val placeholders: Set<String> get() = samples.keys
 
-    /** What keeps [source] from being stored in this field; empty when it may be. */
-    fun validate(source: String): List<TextError> =
-        when (val result = RichText.parse(source)) {
+    /** What keeps [source] from being stored in this field; empty when it may be. An empty text is always allowed. */
+    fun validate(source: String): List<TextError> {
+        if (source.isEmpty()) return emptyList()
+        return when (val result = RichText.parse(source)) {
             is ParseResult.Invalid -> result.errors
             is ParseResult.Valid -> placeholderErrors(result.text)
         }
+    }
 
     private fun placeholderErrors(text: RichText): List<TextError> {
         val used = text.placeholderNodes()

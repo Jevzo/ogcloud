@@ -19,6 +19,7 @@ import io.ogwars.cloud.node.core.runtime.NodeIdentity
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.text.RichText
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -50,11 +51,11 @@ class ProxyCommandsTest {
     private class Admin(
         override val player: UUID?,
     ) : CommandSender {
-        val replies = mutableListOf<String>()
+        val replies = mutableListOf<RichText>()
 
         override fun hasPermission(node: String) = true
 
-        override fun reply(text: String) {
+        override fun reply(text: RichText) {
             replies += text
         }
     }
@@ -93,7 +94,7 @@ class ProxyCommandsTest {
     private fun said(
         message: Message,
         vararg values: Pair<String, Any?>,
-    ) = messages.text(Message.PREFIX) + " " + messages.text(message, *values)
+    ) = messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values)
 
     @Test
     fun `servers are listed and found by display name`() {

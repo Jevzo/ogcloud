@@ -2,6 +2,8 @@ package io.ogwars.cloud.domain.npc
 
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.network.RoutingStrategy
+import io.ogwars.cloud.domain.text.requireText
+import io.ogwars.cloud.text.TextField
 import java.util.UUID
 
 data class Location(
@@ -37,4 +39,9 @@ data class Npc(
     val lookAtPlayers: Boolean = true,
     val leftClick: NpcAction? = null,
     val rightClick: NpcAction? = null,
-)
+) {
+    init {
+        requireText("title", TextField.NPC_TITLE, title)
+        requireText("subtitle", TextField.NPC_SUBTITLE, subtitle)
+    }
+}

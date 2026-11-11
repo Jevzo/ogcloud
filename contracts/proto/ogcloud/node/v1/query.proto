@@ -89,7 +89,11 @@ message GetPermissionGroupResponse {
   PermissionGroup permission_group = 1;
 }
 
+// The display texts are in OgCloud's tag format (D-0200).
 message PermissionGroup {
+  reserved 7;
+  reserved "name_color";
+
   string permission_group_id = 1;
   string name = 2;
   // Higher weights sort first in the tablist.
@@ -97,11 +101,12 @@ message PermissionGroup {
   repeated string permissions = 4;
   string chat_prefix = 5;
   string chat_suffix = 6;
-  string name_color = 7;
   string tab_prefix = 8;
   uint64 version = 9;
   // Players without a rank get the default group.
   bool is_default = 10;
+  // The player's name, shown as {name}; empty for the catalog's default (D-0203).
+  string name_format = 11;
 }
 
 message ListNpcsRequest {

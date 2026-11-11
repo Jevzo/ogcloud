@@ -6,6 +6,7 @@ import io.ogwars.cloud.node.core.routing.Route
 import io.ogwars.cloud.node.core.runtime.LoginDecision
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.text.Message
+import io.ogwars.cloud.text.toComponent
 import com.velocitypowered.api.event.EventTask
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.Subscribe
@@ -43,7 +44,7 @@ internal class VelocityListeners(
         val decided =
             login.thenAccept { decision ->
                 if (decision is LoginDecision.Denied) {
-                    event.result = ResultedEvent.ComponentResult.denied(legacyText(decision.message))
+                    event.result = ResultedEvent.ComponentResult.denied(decision.message.toComponent())
                 }
             }
         return EventTask.resumeWhenComplete(decided)
@@ -147,7 +148,7 @@ internal class VelocityListeners(
         if (isBackendCommand(event.command)) event.result = CommandExecuteEvent.CommandResult.forwardToServer()
     }
 
-    private fun text(message: Message) = legacyText(runtime.messages.text(message))
+    private fun text(message: Message) = runtime.messages.text(message).toComponent()
 
     companion object {
         // Vanilla's reason when a server is at its player limit, and the text 1.8 servers such as PandaSpigot send.

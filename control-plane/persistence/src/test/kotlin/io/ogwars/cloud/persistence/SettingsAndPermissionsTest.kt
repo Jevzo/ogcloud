@@ -104,7 +104,7 @@ class SettingsAndPermissionsTest(
         id.replaceFirstChar(Char::uppercase),
         weight,
         permissions,
-        RankDisplay(chatPrefix = "&6[$id] "),
+        RankDisplay(chatPrefix = "<gold>[$id] "),
         isDefault,
     )
 }

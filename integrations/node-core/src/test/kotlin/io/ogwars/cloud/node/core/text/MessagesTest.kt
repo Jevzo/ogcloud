@@ -1,5 +1,7 @@
 package io.ogwars.cloud.node.core.text
 
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toLegacy
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -17,24 +19,33 @@ class MessagesTest {
     }
 
     @Test
-    fun `every text uses exactly its declared placeholders`() {
+    fun `every text is a valid tag text using exactly its declared placeholders`() {
         Message.entries.forEach { message ->
-            val used =
-                Messages.PLACEHOLDER
-                    .findAll(bundle.getString(message.key))
-                    .map { it.groupValues[1] }
-                    .toSet()
-            withClue(message.key) { used shouldBe message.placeholders }
+            withClue(message.key) {
+                RichText.parseValid(bundle.getString(message.key)).placeholders() shouldBe message.placeholders
+            }
         }
     }
 
     @Test
-    fun `placeholders are filled once, so values stay as they are`() {
+    fun `values are literal text, filled once`() {
         val messages = Messages.load()
 
-        messages.text(Message.PLAYER_TRANSFERRING, "player" to "Steve", "target" to "{player}") shouldBe
-            "&aSending Steve to {player}."
-        messages.text(Message.GROUP_LIST_MAINTENANCE) shouldBe " &c[MAINT]"
+        messages.text(Message.PLAYER_TRANSFERRING, "player" to "<red>Steve", "target" to "{player}").toLegacy() shouldBe
+            "§aSending <red>Steve to {player}."
+        messages.text(Message.GROUP_LIST_MAINTENANCE).toLegacy() shouldBe " §c[MAINT]"
+    }
+
+    @Test
+    fun `a value that is itself a text keeps its formatting`() {
+        val messages = Messages.load()
+
+        messages
+            .text(
+                Message.PERM_GROUP_INFO_PREFIX,
+                "prefix" to RichText.parseValid("<gold>[VIP]"),
+            ).toLegacy() shouldBe
+            "§7Prefix: §6[VIP]"
     }
 
     @Test

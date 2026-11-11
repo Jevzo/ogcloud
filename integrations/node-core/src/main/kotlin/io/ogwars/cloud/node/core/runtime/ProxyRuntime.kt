@@ -30,7 +30,9 @@ import io.ogwars.cloud.node.core.state.Backend
 import io.ogwars.cloud.node.core.state.ServerDirectory
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.storedText
 import io.ogwars.cloud.sdk.OgCloudProxy
+import io.ogwars.cloud.text.RichText
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -48,7 +50,7 @@ sealed interface LoginDecision {
     data object Allowed : LoginDecision
 
     data class Denied(
-        val message: String,
+        val message: RichText,
     ) : LoginDecision
 }
 
@@ -106,7 +108,7 @@ class ProxyRuntime(
         }
         val settings = network.settings
         if (settings.maintenance && !settings.permissionSystemEnabled && !bypass()) {
-            return CompletableFuture.completedFuture(LoginDecision.Denied(settings.maintenanceKickMessage))
+            return CompletableFuture.completedFuture(LoginDecision.Denied(storedText(settings.maintenanceKickMessage)))
         }
         val request =
             ResolveLoginRequest
@@ -120,7 +122,7 @@ class ProxyRuntime(
             .resolveLogin(request)
             .thenCompose { response ->
                 if (!response.allowed) {
-                    CompletableFuture.completedFuture(LoginDecision.Denied(response.kickMessage))
+                    CompletableFuture.completedFuture(LoginDecision.Denied(storedText(response.kickMessage)))
                 } else {
                     loadRank(player, response.profile).thenApply { LoginDecision.Allowed }
                 }
@@ -229,7 +231,7 @@ class ProxyRuntime(
                     bypass(
                         it.uuid,
                     )
-                }.forEach { platform.kick(it.uuid, now.maintenanceKickMessage) }
+                }.forEach { platform.kick(it.uuid, storedText(now.maintenanceKickMessage)) }
         }
     }
 
@@ -299,7 +301,7 @@ class ProxyRuntime(
         }
         when (request.destinationCase) {
             TransferRequested.DestinationCase.KICK_MESSAGE -> {
-                players.forEach { platform.kick(it.uuid, request.kickMessage) }
+                players.forEach { platform.kick(it.uuid, storedText(request.kickMessage)) }
             }
 
             TransferRequested.DestinationCase.SERVER_ID -> {
@@ -380,7 +382,7 @@ class ProxyRuntime(
         session.send(SessionRequest.newBuilder().setPlayerActivity(report).build())
     }
 
-    private fun notifyAdmins(text: String) =
+    private fun notifyAdmins(text: RichText) =
         platform
             .onlinePlayers()
             .filter {

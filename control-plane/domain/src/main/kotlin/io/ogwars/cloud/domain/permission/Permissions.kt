@@ -1,16 +1,28 @@
 package io.ogwars.cloud.domain.permission
 
+import io.ogwars.cloud.domain.text.requireText
+import io.ogwars.cloud.text.TextField
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-/** How a rank appears in chat and the tablist; colours use `&` codes. */
+/**
+ * How a rank appears in chat and the tablist, in the tag format (D-0200). The name format shows `{name}`; empty, the
+ * catalog's default applies (D-0203).
+ */
 data class RankDisplay(
     val chatPrefix: String = "",
     val chatSuffix: String = "",
-    val nameColor: String = "",
+    val nameFormat: String = "",
     val tabPrefix: String = "",
-)
+) {
+    init {
+        requireText("chatPrefix", TextField.CHAT_PREFIX, chatPrefix)
+        requireText("chatSuffix", TextField.CHAT_SUFFIX, chatSuffix)
+        requireText("nameFormat", TextField.NAME_FORMAT, nameFormat)
+        requireText("tabPrefix", TextField.TAB_PREFIX, tabPrefix)
+    }
+}
 
 data class PermissionGroup(
     val id: String,

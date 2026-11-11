@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 
 	eventsv1 "github.com/jevzo/ogcloud/data-plane/pkg/gen/proto/ogcloud/events/v1"
 	"github.com/jevzo/ogcloud/data-plane/pkg/runtimeprofiles"
@@ -46,9 +45,9 @@ func supported(protocol int32) bool {
 }
 
 type statusResponse struct {
-	Version     statusVersion `json:"version"`
-	Players     statusPlayers `json:"players"`
-	Description textComponent `json:"description"`
+	Version     statusVersion   `json:"version"`
+	Players     statusPlayers   `json:"players"`
+	Description json.RawMessage `json:"description"`
 }
 
 type statusVersion struct {
@@ -65,22 +64,49 @@ type textComponent struct {
 	Text string `json:"text"`
 }
 
-// status builds the server-list entry: maintenance texts while in maintenance, the supported range for
-// clients outside it, the network's texts otherwise.
+// firstHexProtocol is 1.16's, the first whose chat components take hex colours.
+const firstHexProtocol = 735
+
+// status builds the server-list entry from the texts the controller rendered, so no tags are parsed here (D-0202):
+// maintenance texts while in maintenance, the supported range for clients outside it, the network's texts otherwise.
+// Clients before 1.16 get the legacy texts, whose colours are the nearest named ones (D-0204).
 func status(network *eventsv1.NetworkSettingsUpdated, online uint32, clientProtocol int32) statusResponse {
+	texts := network.GetServerList()
+	motd, maintenanceMotd := texts.GetMotdJson(), texts.GetMaintenanceMotdJson()
+	if clientProtocol < firstHexProtocol {
+		motd, maintenanceMotd = legacyComponent(texts.GetMotdLegacy()), legacyComponent(texts.GetMaintenanceMotdLegacy())
+	}
 	response := statusResponse{
-		Version:     statusVersion{Name: network.GetVersionName(), Protocol: clientProtocol},
+		Version:     statusVersion{Name: texts.GetVersionNameLegacy(), Protocol: clientProtocol},
 		Players:     statusPlayers{Max: network.GetMaxPlayers(), Online: online},
-		Description: textComponent{Text: legacyColors(network.GetMotd())},
+		Description: component(motd),
 	}
 	switch {
 	case network.GetMaintenance():
-		response.Version = statusVersion{Name: legacyColors(network.GetMaintenanceVersionName()), Protocol: incompatibleProtocol}
-		response.Description.Text = legacyColors(network.GetMaintenanceMotd())
+		response.Version = statusVersion{Name: texts.GetMaintenanceVersionNameLegacy(), Protocol: incompatibleProtocol}
+		response.Description = component(maintenanceMotd)
 	case !supported(clientProtocol):
 		response.Version = statusVersion{Name: supportedVersions, Protocol: incompatibleProtocol}
 	}
 	return response
+}
+
+// legacyComponent wraps legacy text in a component, as clients before 1.16 read their description.
+func legacyComponent(text string) string {
+	body, err := json.Marshal(textComponent{Text: text})
+	if err != nil {
+		// A struct of one string always encodes.
+		panic(fmt.Sprintf("encode %q: %v", text, err))
+	}
+	return string(body)
+}
+
+// component is the rendered JSON, or an empty text before the controller has rendered any.
+func component(rendered string) json.RawMessage {
+	if rendered == "" {
+		return json.RawMessage(`{"text":""}`)
+	}
+	return json.RawMessage(rendered)
 }
 
 // answerStatus serves the status exchange: the status request, then an optional ping echoed as pong.
@@ -117,18 +143,4 @@ func refuseLogin(w io.Writer, message string) error {
 		return fmt.Errorf("encode disconnect: %w", err)
 	}
 	return writePacket(w, packetLoginDisconnect, appendString(nil, string(body)))
-}
-
-// legacyColors turns the settings' & colour codes into the § codes clients render.
-func legacyColors(text string) string {
-	var b strings.Builder
-	runes := []rune(text)
-	for i := 0; i < len(runes); i++ {
-		if runes[i] == '&' && i+1 < len(runes) && strings.ContainsRune("0123456789abcdefklmnorABCDEFKLMNOR", runes[i+1]) {
-			b.WriteRune('§')
-			continue
-		}
-		b.WriteRune(runes[i])
-	}
-	return b.String()
 }

@@ -8,6 +8,7 @@ import io.ogwars.cloud.node.core.command.CommandTree
 import io.ogwars.cloud.node.core.query.NodeQueries
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.text.RichText
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -27,7 +28,7 @@ class NpcCommandsTest {
             .setNpcId("0192d2c1-0000-7000-8000-4a1b2c3d4e5f")
             .setGroupId("lobby")
             .setLocation(Location.newBuilder().setWorld("world").setY(64.0))
-            .setTitle("&aShop")
+            .setTitle("<green>Shop")
             .build()
 
     // Created in the same minute, so both ids start with the same timestamp.
@@ -35,7 +36,7 @@ class NpcCommandsTest {
         shop
             .toBuilder()
             .setNpcId("0192d2c1-0003-7000-8000-9f8e7d6c5b4a")
-            .setTitle("&eGuide")
+            .setTitle("<yellow>Guide")
             .build()
     private val portal =
         shop
@@ -70,11 +71,11 @@ class NpcCommandsTest {
     private class Admin(
         override val player: UUID?,
     ) : CommandSender {
-        val replies = mutableListOf<String>()
+        val replies = mutableListOf<RichText>()
 
         override fun hasPermission(node: String) = true
 
-        override fun reply(text: String) {
+        override fun reply(text: RichText) {
             replies += text
         }
     }
@@ -87,11 +88,11 @@ class NpcCommandsTest {
 
     @Test
     fun `a new NPC belongs to this group and stands where the admin stands`() {
-        run("npc create &eDaily Rewards")
+        run("npc create <yellow>Daily Rewards")
 
         val create = sent.single().create
         create.groupId shouldBe "lobby"
-        create.title shouldBe "&eDaily Rewards"
+        create.title shouldBe "<yellow>Daily Rewards"
         create.location.x shouldBe 10.5
         sent.single().actingPlayerUuid shouldBe admin.player.toString()
     }
@@ -152,5 +153,5 @@ class NpcCommandsTest {
     private fun prefixed(
         message: Message,
         vararg values: Pair<String, Any?>,
-    ) = messages.text(Message.PREFIX) + " " + messages.text(message, *values)
+    ) = messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values)
 }

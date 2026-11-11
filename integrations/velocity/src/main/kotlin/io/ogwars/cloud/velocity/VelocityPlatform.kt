@@ -4,6 +4,8 @@ import io.ogwars.cloud.node.core.runtime.HeartbeatSample
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ProxyPlatform
 import io.ogwars.cloud.node.core.state.Backend
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toComponent
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.proxy.server.ServerInfo
 import java.net.InetSocketAddress
@@ -42,10 +44,10 @@ internal class VelocityPlatform(
 
     override fun message(
         player: UUID,
-        text: String,
+        text: RichText,
     ): Boolean {
         val online = proxy.getPlayer(player).orElse(null) ?: return false
-        online.sendMessage(legacyText(text))
+        online.sendMessage(text.toComponent())
         return true
     }
 
@@ -74,8 +76,8 @@ internal class VelocityPlatform(
 
     override fun kick(
         player: UUID,
-        text: String,
+        text: RichText,
     ) {
-        proxy.getPlayer(player).ifPresent { it.disconnect(legacyText(text)) }
+        proxy.getPlayer(player).ifPresent { it.disconnect(text.toComponent()) }
     }
 }

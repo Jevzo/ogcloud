@@ -13,6 +13,7 @@ import io.papermc.paper.event.player.AsyncChatEvent
 import net.kyori.adventure.chat.SignedMessage
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -27,9 +28,9 @@ class PaperAdapterTest {
         PermissionGroup
             .newBuilder()
             .setPermissionGroupId("admin")
-            .setChatPrefix("&c[Admin] ")
-            .setNameColor("&c")
-            .setTabPrefix("&c")
+            .setChatPrefix("<red>[Admin] ")
+            .setNameFormat("<gradient:#ff5555:#5555ff>{name}</gradient>")
+            .setTabPrefix("<gradient:#000000:#ffffff>[A]</gradient>")
             .build()
     private val ranks = mutableMapOf<UUID, Rank>()
     private val runtime =
@@ -43,7 +44,7 @@ class PaperAdapterTest {
     fun unmock() = MockBukkit.unmock()
 
     @Test
-    fun `chat shows the rank's head and keeps typed colour codes literal`() {
+    fun `chat shows the rank's head and keeps typed tags literal`() {
         ranks[steve.uniqueId] = Rank(PlayerProfile.getDefaultInstance(), admins)
         val event =
             AsyncChatEvent(
@@ -51,15 +52,15 @@ class PaperAdapterTest {
                 steve,
                 mutableSetOf(),
                 ChatRenderer.defaultRenderer(),
-                Component.text("&ahi"),
-                Component.text("&ahi"),
+                Component.text("<green>hi"),
+                Component.text("<green>hi"),
                 mockk<SignedMessage>(),
             )
 
         PaperChat(runtime).onChat(event)
 
         val rendered = event.renderer().render(steve, steve.displayName(), event.message(), steve)
-        PlainTextComponentSerializer.plainText().serialize(rendered) shouldBe "[Admin] Steve: &ahi"
+        PlainTextComponentSerializer.plainText().serialize(rendered) shouldBe "[Admin] Steve: <green>hi"
     }
 
     @Test
@@ -68,7 +69,14 @@ class PaperAdapterTest {
 
         PaperLine(plugin).styleTeam(team, admins)
 
-        team.prefix() shouldBe Component.text("", NamedTextColor.RED)
+        // The prefix keeps its hex colours; the team colour is a named one, the name format's first (D-0203).
+        team.prefix() shouldBe
+            Component
+                .text()
+                .append(Component.text("[", TextColor.color(0x000000)))
+                .append(Component.text("A", TextColor.color(0x808080)))
+                .append(Component.text("]", TextColor.color(0xffffff)))
+                .build()
         team.color() shouldBe NamedTextColor.RED
     }
 }

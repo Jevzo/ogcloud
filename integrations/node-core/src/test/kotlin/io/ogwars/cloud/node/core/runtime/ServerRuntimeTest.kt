@@ -20,6 +20,7 @@ import io.ogwars.cloud.sdk.GroupType
 import io.ogwars.cloud.sdk.LiveMessage
 import io.ogwars.cloud.sdk.OgCloudException
 import io.ogwars.cloud.sdk.RoutingStrategy
+import io.ogwars.cloud.text.toPlain
 import com.google.protobuf.ByteString
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContainExactly
@@ -76,7 +77,7 @@ class ServerRuntimeTest {
         shouldThrow<CompletionException> { api.requestServer("bedwars").join() }
             .cause
             .shouldBeInstanceOf<OgCloudException>()
-            .message shouldBe messages.text(Message.ERROR_NOT_PERMITTED)
+            .message shouldBe messages.text(Message.ERROR_NOT_PERMITTED).toPlain()
     }
 
     @Test

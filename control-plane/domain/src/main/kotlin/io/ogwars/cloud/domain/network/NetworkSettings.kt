@@ -1,6 +1,8 @@
 package io.ogwars.cloud.domain.network
 
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.text.requireText
+import io.ogwars.cloud.text.TextField
 import java.time.Instant
 
 enum class RoutingStrategy {
@@ -10,7 +12,7 @@ enum class RoutingStrategy {
     ROUND_ROBIN,
 }
 
-/** Network-wide settings; texts use `&` colour codes. */
+/** Network-wide settings; texts are in OgCloud's tag format (D-0200). */
 data class NetworkSettings(
     val maintenance: Boolean,
     val motd: String,
@@ -31,6 +33,13 @@ data class NetworkSettings(
 ) {
     init {
         require(maxPlayers > 0) { "maxPlayers must be positive" }
+        requireText("motd", TextField.MOTD, motd)
+        requireText("maintenanceMotd", TextField.MAINTENANCE_MOTD, maintenanceMotd)
+        requireText("versionName", TextField.VERSION_NAME, versionName)
+        requireText("maintenanceVersionName", TextField.MAINTENANCE_VERSION_NAME, maintenanceVersionName)
+        requireText("tablistHeader", TextField.TABLIST_HEADER, tablistHeader)
+        requireText("tablistFooter", TextField.TABLIST_FOOTER, tablistFooter)
+        requireText("maintenanceKickMessage", TextField.MAINTENANCE_KICK_MESSAGE, maintenanceKickMessage)
     }
 
     val eulaAccepted: Boolean get() = eulaAcceptedAt != null

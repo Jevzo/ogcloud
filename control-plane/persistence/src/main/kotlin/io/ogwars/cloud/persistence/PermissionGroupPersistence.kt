@@ -31,7 +31,7 @@ data class PermissionGroupRecord(
     val isDefault: Boolean,
     val chatPrefix: String,
     val chatSuffix: String,
-    val nameColor: String,
+    val nameFormat: String,
     val tabPrefix: String,
     @MappedCollection(idColumn = "permission_group_id")
     val permissions: Set<PermissionRecord>,
@@ -142,7 +142,7 @@ class JdbcPermissionGroupStore(
         isDefault = group.isDefault,
         chatPrefix = group.display.chatPrefix,
         chatSuffix = group.display.chatSuffix,
-        nameColor = group.display.nameColor,
+        nameFormat = group.display.nameFormat,
         tabPrefix = group.display.tabPrefix,
         permissions = group.permissions.map { (node, description) -> PermissionRecord(node, description) }.toSet(),
         createdAt = createdAt,
@@ -156,7 +156,7 @@ class JdbcPermissionGroupStore(
             name = record.name,
             weight = record.weight,
             permissions = record.permissions.associate { it.permission to it.description },
-            display = RankDisplay(record.chatPrefix, record.chatSuffix, record.nameColor, record.tabPrefix),
+            display = RankDisplay(record.chatPrefix, record.chatSuffix, record.nameFormat, record.tabPrefix),
             isDefault = record.isDefault,
         )
 }

@@ -21,7 +21,7 @@ class NpcMessagesTest {
                 UUID.randomUUID(),
                 GroupId("lobby"),
                 Location("world", 1.5, 64.0, -3.25, 90f, 10f),
-                "&aShop",
+                "<green>Shop",
                 "%players% online",
                 NpcSkin("texture", "signature"),
                 lookAtPlayers = false,

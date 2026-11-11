@@ -32,7 +32,7 @@ data class NpcViewer(
     val user: User,
 )
 
-/** What an NPC shows and what a click does; [title] and [subtitle] are `&`-coded, blank lines are left out. */
+/** What an NPC shows and what a click does; [title] and [subtitle] are tag texts (D-0200), blank lines are left out. */
 data class NpcSpec(
     val id: String,
     val location: NpcLocation,
@@ -41,6 +41,6 @@ data class NpcSpec(
     val skin: NpcSkin?,
     val lookAtPlayers: Boolean,
     val onClick: (player: UUID, rightClick: Boolean) -> Unit,
-    /** The group whose live counts fill `%players%` and `%servers%` in the text, if any. */
+    /** The group whose live counts fill `{players}` and `{servers}` in the text, if any. */
     val countsOf: String? = null,
 )

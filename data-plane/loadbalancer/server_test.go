@@ -150,7 +150,8 @@ func TestStatusPingsAreAnsweredWithoutAProxy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response := decodeStatus(t, body); response.Description.Text != "§aWelcome" || response.Version.Protocol != 47 {
+	// 1.8 reads legacy text (D-0204).
+	if response := decodeStatus(t, body); string(response.Description) != `{"text":"§6Welcome"}` || response.Version.Protocol != 47 {
 		t.Errorf("status %+v", response)
 	}
 	if _, pong, _, err := readPacket(reader, 64); err != nil || len(pong) != 8 {

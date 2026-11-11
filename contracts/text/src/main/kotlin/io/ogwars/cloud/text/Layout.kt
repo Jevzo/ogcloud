@@ -29,10 +29,11 @@ internal fun RichText.runs(collapseGradients: Boolean = false): List<Run> {
         text.append(glyph.text)
     }
     current?.let { runs += Run(text.toString(), it.first, it.second) }
-    return runs
+    // An empty colour tag matters only at the end, where what follows (a typed chat message) continues in it.
+    return runs.filterIndexed { index, run -> run.text.isNotEmpty() || index == runs.lastIndex }
 }
 
-/** The colour in effect at the end, which a typed chat message continues in; null for the default. */
+/** The colour in effect at the end, an empty colour tag's included, which a typed chat message continues in. */
 fun RichText.endColor(): Color? = runs().lastOrNull()?.color
 
 /** The colour of the first character, which gives a team its nearest named colour; null for the default. */
@@ -99,7 +100,10 @@ private fun layout(
                     }
 
                     is Style.Solid -> {
+                        val before = into.size
                         layout(node.children, Paint.Fixed(style.color), decorations, collapse, into)
+                        // An empty colour tag still sets the colour in effect after it.
+                        if (into.size == before) into += Glyph("", Paint.Fixed(style.color), 0, decorations)
                     }
 
                     is Style.Gradient, Style.Rainbow -> {

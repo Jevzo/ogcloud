@@ -1,8 +1,8 @@
 package io.ogwars.cloud.legacy
 
-import io.ogwars.cloud.bukkit.BukkitPlatform
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.text.toLegacy
 import org.bukkit.Server
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -21,7 +21,7 @@ internal class PlayerLimit(
             server.onlinePlayers.size >= maxPlayers -> {
                 event.disallow(
                     PlayerLoginEvent.Result.KICK_FULL,
-                    BukkitPlatform.legacy(messages.text(Message.KICK_SERVER_FULL)),
+                    messages.text(Message.KICK_SERVER_FULL).toLegacy(),
                 )
             }
 

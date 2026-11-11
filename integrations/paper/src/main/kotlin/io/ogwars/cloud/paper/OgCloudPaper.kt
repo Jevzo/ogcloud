@@ -13,7 +13,7 @@ class OgCloudPaper : JavaPlugin() {
         enableOrStop(server, logger) {
             // Kept before starting, so onDisable closes it even when starting fails.
             val started =
-                BackendNode(this, PaperLine(this), ModernNpcPackets(::legacyText), pluginMeta.version).also {
+                BackendNode(this, PaperLine(this), ModernNpcPackets(), pluginMeta.version).also {
                     node =
                         it
                 }

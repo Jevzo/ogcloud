@@ -26,8 +26,10 @@ interface RuntimeNpc {
             pitch: Float,
         ): Builder
 
+        /** In OgCloud's tag format, as `<gold>BedWars`; `\<` writes a literal `<`. */
         fun title(title: String): Builder
 
+        /** In OgCloud's tag format, like [title]. */
         fun subtitle(subtitle: String): Builder
 
         /** A signed skin texture, as Mojang's session servers return it. */

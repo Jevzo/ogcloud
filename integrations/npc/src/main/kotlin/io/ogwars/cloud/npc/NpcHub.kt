@@ -2,7 +2,10 @@ package io.ogwars.cloud.npc
 
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.node.core.query.NodeQueries
+import io.ogwars.cloud.node.core.text.storedText
 import io.ogwars.cloud.sdk.RoutingStrategy
+import io.ogwars.cloud.text.Placeholders
+import io.ogwars.cloud.text.RichText
 import com.github.retrooper.packetevents.protocol.player.UserProfile
 import java.lang.System.Logger.Level.WARNING
 import java.time.Clock
@@ -233,11 +236,16 @@ class NpcHub(
         }
 
     /** The NPC's non-blank lines with the live counts filled in. */
-    private fun lines(spec: NpcSpec): List<String> {
+    private fun lines(spec: NpcSpec): List<RichText> {
         val (players, servers) = spec.countsOf?.let(counts::get) ?: (0 to 0)
         return listOf(spec.title, spec.subtitle)
             .filter(String::isNotBlank)
-            .map { it.replace("%players%", players.toString()).replace("%servers%", servers.toString()) }
+            .map {
+                storedText(it).fill(
+                    Placeholders.PLAYERS to players.toString(),
+                    Placeholders.SERVERS to servers.toString(),
+                )
+            }
     }
 
     private fun managedSpec(npc: ManagedNpc): NpcSpec {

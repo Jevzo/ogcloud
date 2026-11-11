@@ -24,6 +24,7 @@ import io.ogwars.cloud.sdk.PlayerLocation
 import io.ogwars.cloud.sdk.RoutingStrategy
 import io.ogwars.cloud.sdk.RuntimeNpcs
 import io.ogwars.cloud.sdk.ServerInfo
+import io.ogwars.cloud.text.toPlain
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -93,12 +94,12 @@ internal open class NodeApi(
         }
     }
 
-    /** Sends a server command; a refusal fails the future with an [OgCloudException] in the catalog's words. */
+    /** Sends a server command; a refusal fails the future with an [OgCloudException] in the catalog's plain words. */
     protected fun command(request: ServerCommandRequest.Builder): CompletableFuture<ServerCommandResult> =
         session.serverCommand(request).handleAsync({ result, error ->
             when {
-                error != null -> throw OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED), error)
-                result.error.isNotEmpty() -> throw OgCloudException(messages.reason(result.error))
+                error != null -> throw OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED).toPlain(), error)
+                result.error.isNotEmpty() -> throw OgCloudException(messages.reason(result.error).toPlain())
                 else -> result
             }
         }, callbacks)
@@ -107,7 +108,7 @@ internal open class NodeApi(
         if (session.send(SessionRequest.newBuilder().setTransfer(request).build())) {
             CompletableFuture.completedFuture(null)
         } else {
-            CompletableFuture.failedFuture(OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED)))
+            CompletableFuture.failedFuture(OgCloudException(messages.text(Message.ERROR_NOT_CONNECTED).toPlain()))
         }
 }
 

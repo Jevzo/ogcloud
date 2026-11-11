@@ -12,6 +12,8 @@ import io.ogwars.cloud.node.core.command.Subcommand
 import io.ogwars.cloud.node.core.command.say
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.RichText
 import java.util.Locale
 import java.util.UUID
 import io.ogwars.cloud.contracts.events.v1.RoutingStrategy as ProtoRoutingStrategy
@@ -133,7 +135,7 @@ class NpcCommands(
                 messages,
                 Message.NPC_LIST_ENTRY,
                 "npc" to short(it.npcId),
-                "title" to it.title,
+                "title" to storedText(it.title),
                 "world" to it.location.world,
                 "x" to round(it.location.x),
                 "y" to round(it.location.y),
@@ -153,8 +155,8 @@ class NpcCommands(
                 ?: return call.sender.say(messages, Message.NPC_NOT_LOOKING)
         val say = { message: Message, values: Array<Pair<String, Any?>> -> call.sender.say(messages, message, *values) }
         say(Message.NPC_INFO_HEADER, arrayOf("npc" to target.npcId))
-        say(Message.NPC_INFO_TITLE, arrayOf("title" to target.title))
-        say(Message.NPC_INFO_SUBTITLE, arrayOf("subtitle" to target.subtitle))
+        say(Message.NPC_INFO_TITLE, arrayOf("title" to storedText(target.title)))
+        say(Message.NPC_INFO_SUBTITLE, arrayOf("subtitle" to storedText(target.subtitle)))
         val at = target.location
         say(
             Message.NPC_INFO_LOCATION,
@@ -229,7 +231,7 @@ class NpcCommands(
     private fun text(call: Invocation): String =
         call.word("text").takeUnless { it.equals(OFF, ignoreCase = true) }.orEmpty()
 
-    private fun describe(action: NpcAction): String =
+    private fun describe(action: NpcAction): RichText =
         if (!action.hasTransfer()) {
             messages.text(Message.NONE)
         } else {

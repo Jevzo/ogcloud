@@ -18,6 +18,8 @@ class TextFieldTest {
     fun `a name format must show the name`() {
         TextField.NAME_FORMAT.validate("<gradient:red:blue>{name}</gradient>").shouldBeEmpty()
         TextField.NAME_FORMAT.validate("<red>") shouldBe listOf(TextError(0, "this text must show {name}"))
+        // Empty: the catalog's default name format.
+        TextField.NAME_FORMAT.validate("").shouldBeEmpty()
     }
 
     @Test

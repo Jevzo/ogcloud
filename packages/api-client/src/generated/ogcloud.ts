@@ -61,7 +61,7 @@ export type PermissionGroupSettingsPermissions = {[key: string]: string};
 export interface RankDisplayView {
   chatPrefix: string;
   chatSuffix: string;
-  nameColor: string;
+  nameFormat: string;
   tabPrefix: string;
 }
 

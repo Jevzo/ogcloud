@@ -52,7 +52,7 @@ data class NpcSettings(
     /** Every server of this group shows the NPC. */
     val groupId: String,
     val location: LocationView,
-    /** `&` colour codes; `%players%` and `%servers%` show the live counts of the click target's group. */
+    /** In the tag format (D-0200); `{players}` and `{servers}` show the live counts of the click target's group. */
     val title: String,
     val subtitle: String,
     val skin: SkinView?,

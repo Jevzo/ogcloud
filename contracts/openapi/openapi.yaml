@@ -1685,14 +1685,14 @@ components:
           type: string
         chatSuffix:
           type: string
-        nameColor:
+        nameFormat:
           type: string
         tabPrefix:
           type: string
       required:
       - chatPrefix
       - chatSuffix
-      - nameColor
+      - nameFormat
       - tabPrefix
     UpdatePermissionGroupRequest:
       type: object

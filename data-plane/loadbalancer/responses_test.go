@@ -12,25 +12,60 @@ import (
 )
 
 var network = &eventsv1.NetworkSettingsUpdated{
-	Motd: "&aWelcome", MaintenanceMotd: "&cMaintenance", VersionName: "OgWars", MaintenanceVersionName: "&4Closed", MaxPlayers: 500,
+	MaxPlayers: 500,
+	ServerList: &eventsv1.ServerListTexts{
+		MotdJson:                     `{"text":"","extra":[{"text":"Welcome","color":"#ff8800"}]}`,
+		MotdLegacy:                   "§6Welcome",
+		MaintenanceMotdJson:          `{"text":"","extra":[{"text":"Maintenance","color":"red"}]}`,
+		MaintenanceMotdLegacy:        "§cMaintenance",
+		VersionNameLegacy:            "OgWars",
+		MaintenanceVersionNameLegacy: "§4Closed",
+	},
 }
 
 func TestStatusShowsTheNetworkOrWhyAClientCannotJoin(t *testing.T) {
-	closed := &eventsv1.NetworkSettingsUpdated{Maintenance: true, Motd: network.GetMotd(), MaintenanceMotd: network.GetMaintenanceMotd(), MaintenanceVersionName: "&4Closed"}
+	closed := &eventsv1.NetworkSettingsUpdated{Maintenance: true, ServerList: network.GetServerList()}
 	tests := []struct {
 		name     string
 		network  *eventsv1.NetworkSettingsUpdated
 		protocol int32
-		want     statusResponse
+		want     string
 	}{
-		{"open", network, 777, statusResponse{statusVersion{"OgWars", 777}, statusPlayers{500, 42}, textComponent{"§aWelcome"}}},
-		{"too old", network, 5, statusResponse{statusVersion{"1.8.8-26.3", -1}, statusPlayers{500, 42}, textComponent{"§aWelcome"}}},
-		{"maintenance", closed, 777, statusResponse{statusVersion{"§4Closed", -1}, statusPlayers{0, 42}, textComponent{"§cMaintenance"}}},
+		{
+			"open, 1.16 or newer", network, 777,
+			`{"version":{"name":"OgWars","protocol":777},"players":{"max":500,"online":42},` +
+				`"description":{"text":"","extra":[{"text":"Welcome","color":"#ff8800"}]}}`,
+		},
+		{
+			"open, before 1.16", network, 47,
+			`{"version":{"name":"OgWars","protocol":47},"players":{"max":500,"online":42},"description":{"text":"§6Welcome"}}`,
+		},
+		{
+			"too old", network, 5,
+			`{"version":{"name":"1.8.8-26.3","protocol":-1},"players":{"max":500,"online":42},"description":{"text":"§6Welcome"}}`,
+		},
+		{
+			"maintenance", closed, 777,
+			`{"version":{"name":"§4Closed","protocol":-1},"players":{"max":0,"online":42},` +
+				`"description":{"text":"","extra":[{"text":"Maintenance","color":"red"}]}}`,
+		},
+		{
+			"maintenance, before 1.16", closed, 47,
+			`{"version":{"name":"§4Closed","protocol":-1},"players":{"max":0,"online":42},"description":{"text":"§cMaintenance"}}`,
+		},
+		{
+			"nothing rendered yet", &eventsv1.NetworkSettingsUpdated{MaxPlayers: 5}, 777,
+			`{"version":{"name":"","protocol":777},"players":{"max":5,"online":42},"description":{"text":""}}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := status(tt.network, 42, tt.protocol); got != tt.want {
-				t.Errorf("got %+v, want %+v", got, tt.want)
+			got, err := json.Marshal(status(tt.network, 42, tt.protocol))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != tt.want {
+				t.Errorf("got  %s\nwant %s", got, tt.want)
 			}
 		})
 	}
@@ -66,12 +101,6 @@ func TestUnsupportedVersionsAreNamedFromTheCatalog(t *testing.T) {
 	}
 	if supported(runtimeprofiles.MinClientProtocol-1) || !supported(runtimeprofiles.MaxClientProtocol) {
 		t.Error("the protocol range is off")
-	}
-}
-
-func TestColourCodes(t *testing.T) {
-	if got := legacyColors("&aA & B &zC &&lD"); got != "§aA & B &zC &§lD" {
-		t.Errorf("got %q", got)
 	}
 }
 

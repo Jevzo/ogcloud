@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 
-/** The settings an operator edits; texts use `&` colour codes. */
+/** The settings an operator edits; texts are in OgCloud's tag format (D-0200). */
 data class NetworkSettingsFields(
     val maintenance: Boolean,
     val motd: String,

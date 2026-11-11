@@ -40,12 +40,22 @@ class NetworkAdministrationTest(
 
     @Test
     fun `settings change against their version and keep the EULA acceptance`() {
-        val motd = "&aWelcome ${System.nanoTime()}"
+        val motd = "<green>Welcome ${System.nanoTime()}"
         val changed = update(mapOf("motd" to motd))
 
         oauth.call("PUT", NETWORK, admin, changed).statusCode() shouldBe OK
         oauth.call("PUT", NETWORK, admin, changed).statusCode() shouldBe CONFLICT
         fields()["motd"] shouldBe motd
+    }
+
+    @Test
+    fun `texts are refused unless they are valid tag texts with their own placeholders (D-0200)`() {
+        val refused = oauth.call("PUT", NETWORK, admin, update(mapOf("tablistHeader" to "{players} online")))
+
+        refused.statusCode() shouldBe BAD_REQUEST
+        oauth.json(refused)["detail"] shouldBe
+            "tablistHeader: {players} is no placeholder here; this text offers {server}, {group}, {proxy}, " +
+            "{onlinePlayers}, {maxPlayers}, {ping}, {permissionGroup} (at character 0)"
     }
 
     @Test

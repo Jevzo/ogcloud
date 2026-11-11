@@ -3,6 +3,7 @@ package io.ogwars.cloud.velocity
 import io.ogwars.cloud.node.core.format.Tablist
 import io.ogwars.cloud.node.core.format.TablistValues
 import io.ogwars.cloud.node.core.runtime.ProxyRuntime
+import io.ogwars.cloud.text.toComponent
 import com.velocitypowered.api.proxy.ProxyServer
 
 /** The network's tablist header and footer, refreshed on a timer as in v1, or cleared once when switched off. */
@@ -41,8 +42,8 @@ internal class TablistUpdater(
                             .orEmpty(),
                 )
             player.sendPlayerListHeaderAndFooter(
-                legacyText(Tablist.fill(settings.tablistHeader, values)),
-                legacyText(Tablist.fill(settings.tablistFooter, values)),
+                Tablist.fill(settings.tablistHeader, values).toComponent(),
+                Tablist.fill(settings.tablistFooter, values).toComponent(),
             )
         }
     }

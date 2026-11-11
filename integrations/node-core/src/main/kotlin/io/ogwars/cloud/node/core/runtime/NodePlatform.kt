@@ -4,6 +4,7 @@ import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
 import io.ogwars.cloud.contracts.events.v1.NpcUpdated
 import io.ogwars.cloud.node.core.state.Backend
 import io.ogwars.cloud.node.core.state.ServerDirectory
+import io.ogwars.cloud.text.RichText
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -38,10 +39,10 @@ interface NodePlatform {
         node: String,
     ): Boolean
 
-    /** Shows `&`-coded text to an online player; false when the player is not here. */
+    /** Shows text to an online player; false when the player is not here. */
     fun message(
         player: UUID,
-        text: String,
+        text: RichText,
     ): Boolean
 
     /** Runs a console command; completes with whether the platform knew it. */
@@ -64,7 +65,7 @@ interface ProxyPlatform :
 
     fun kick(
         player: UUID,
-        text: String,
+        text: RichText,
     )
 }
 

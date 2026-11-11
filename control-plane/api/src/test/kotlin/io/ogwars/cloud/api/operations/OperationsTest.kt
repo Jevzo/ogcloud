@@ -149,7 +149,7 @@ class OperationsTest(
     ) = mapOf(
         "groupId" to groupId,
         "location" to mapOf("world" to "world", "x" to 0.5, "y" to 64.0, "z" to 0.5, "yaw" to 90.0, "pitch" to 0.0),
-        "title" to "&aPlay",
+        "title" to "<green>Play",
         "subtitle" to "%players% playing",
         "skin" to null,
         "lookAtPlayers" to true,

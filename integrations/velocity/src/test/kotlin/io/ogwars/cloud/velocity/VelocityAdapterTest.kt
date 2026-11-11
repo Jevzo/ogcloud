@@ -10,6 +10,8 @@ import io.ogwars.cloud.node.core.runtime.ProxyRuntime
 import io.ogwars.cloud.node.core.state.Backend
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.storedText
+import io.ogwars.cloud.text.toPlain
 import com.velocitypowered.api.event.ResultedEvent
 import com.velocitypowered.api.event.connection.DisconnectEvent
 import com.velocitypowered.api.event.connection.LoginEvent
@@ -144,7 +146,7 @@ class VelocityAdapterTest {
         val runtime = mockk<ProxyRuntime>()
         val bypass = slot<() -> Boolean>()
         every { runtime.login(steve, "Steve", 47, "1.2.3.4", capture(bypass)) } returns
-            CompletableFuture.completedFuture(LoginDecision.Denied("&cMaintenance"))
+            CompletableFuture.completedFuture(LoginDecision.Denied(storedText("<red>Maintenance")))
         val listeners = VelocityListeners(mockk(), runtime)
         val player = player(currentServer = null)
         val event = LoginEvent(player, "")
@@ -188,7 +190,7 @@ class VelocityAdapterTest {
 
         (banned.result as KickedFromServerEvent.Notify).messageComponent shouldBe Component.empty()
         plain((elsewhere.result as KickedFromServerEvent.Notify).messageComponent) shouldBe
-            plain(legacyText(Messages.load().text(Message.KICK_SERVER_DOWN)))
+            Messages.load().text(Message.KICK_SERVER_DOWN).toPlain()
         (redirected.result as KickedFromServerEvent.RedirectPlayer).server shouldBe other
         redirected.result.shouldBeInstanceOf<KickedFromServerEvent.RedirectPlayer>()
         stranded.result.shouldBeInstanceOf<KickedFromServerEvent.DisconnectPlayer>()

@@ -36,6 +36,7 @@ message NodeBroadcast {
   }
 }
 
+// The texts are in OgCloud's tag format (D-0200).
 message NetworkSettingsUpdated {
   // Read-model version; nodes ignore anything older than what they hold.
   uint64 version = 1;
@@ -52,6 +53,19 @@ message NetworkSettingsUpdated {
   string tablist_header = 12;
   string tablist_footer = 13;
   string maintenance_kick_message = 14;
+  ServerListTexts server_list = 15;
+}
+
+// What the load balancer answers status pings with, rendered by the controller so the load balancer parses no tags
+// (D-0202): the MOTDs as chat-component JSON for 1.16 and newer clients and as legacy text for older ones, whose
+// colours are the nearest named ones (D-0204); the version names, a plain string in the status answer, always legacy.
+message ServerListTexts {
+  string motd_json = 1;
+  string motd_legacy = 2;
+  string maintenance_motd_json = 3;
+  string maintenance_motd_legacy = 4;
+  string version_name_legacy = 5;
+  string maintenance_version_name_legacy = 6;
 }
 
 message GroupUpdated {

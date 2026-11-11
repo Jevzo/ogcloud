@@ -33,7 +33,7 @@ class BackendListenersTest {
             .newBuilder()
             .setPermissionGroupId("admin")
             .setWeight(900)
-            .setTabPrefix("&c[Admin] ")
+            .setTabPrefix("<red>[Admin] ")
             .addPermissions("vip.fly")
             .build()
     private val ranks = mutableMapOf<UUID, Rank>()

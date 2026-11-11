@@ -1,7 +1,9 @@
 package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.contracts.node.v1.PermissionGroup
+import io.ogwars.cloud.text.RichText
 import org.bukkit.Location
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.scoreboard.Team
 
@@ -23,6 +25,12 @@ interface BukkitLine {
 
     /** Sends a player's command tree again after their permissions changed; 1.8 clients have none. */
     fun refreshCommands(player: Player) = Unit
+
+    /** Sends text to a player or the console: components on the Paper line, nearest-colour legacy text on 1.8 (D-0204). */
+    fun send(
+        to: CommandSender,
+        text: RichText,
+    )
 
     /** Shows a permission group on its tablist team. */
     fun styleTeam(

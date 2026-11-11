@@ -9,6 +9,7 @@ import io.ogwars.cloud.contracts.node.v1.SessionRequest
 import io.ogwars.cloud.node.client.NodeSession
 import io.ogwars.cloud.node.client.SessionListener
 import io.ogwars.cloud.node.core.state.Backend
+import io.ogwars.cloud.text.RichText
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -83,7 +84,7 @@ class ManualScheduler {
 open class FakePlatform : NodePlatform {
     val players = mutableListOf<OnlinePlayer>()
     val granted = mutableMapOf<UUID, MutableSet<String>>()
-    val messages = mutableListOf<Pair<UUID, String>>()
+    val messages = mutableListOf<Pair<UUID, RichText>>()
     val consoleCommands = mutableListOf<String>()
     val rankChanges = mutableListOf<Set<UUID>>()
     var sample = HeartbeatSample(3, 19.9, 12.5, 512, 1024)
@@ -106,7 +107,7 @@ open class FakePlatform : NodePlatform {
 
     override fun message(
         player: UUID,
-        text: String,
+        text: RichText,
     ): Boolean {
         if (players.none { it.uuid == player }) return false
         messages += player to text
@@ -128,7 +129,7 @@ class FakeProxyPlatform :
     ProxyPlatform {
     val registered = mutableListOf<String>()
     val connects = mutableListOf<Pair<UUID, String>>()
-    val kicks = mutableListOf<Pair<UUID, String>>()
+    val kicks = mutableListOf<Pair<UUID, RichText>>()
 
     override fun registered(backend: Backend) {
         registered += backend.id
@@ -147,7 +148,7 @@ class FakeProxyPlatform :
 
     override fun kick(
         player: UUID,
-        text: String,
+        text: RichText,
     ) {
         kicks += player to text
     }

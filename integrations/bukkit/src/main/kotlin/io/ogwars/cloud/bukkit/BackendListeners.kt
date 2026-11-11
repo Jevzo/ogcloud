@@ -2,6 +2,7 @@ package io.ogwars.cloud.bukkit
 
 import io.ogwars.cloud.node.core.runtime.ServerRuntime
 import io.ogwars.cloud.node.core.text.Message
+import io.ogwars.cloud.text.toLegacy
 import com.destroystokyo.paper.event.player.PlayerHandshakeEvent
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -42,7 +43,8 @@ class BackendListeners(
             is HandshakeVerdict.Refused -> {
                 logger.warning("Refused a handshake from ${event.originalSocketAddressHostname}: ${verdict.reason}")
                 event.isFailed = true
-                event.failMessage = BukkitPlatform.legacy(runtime.messages.text(Message.KICK_LOGIN_FAILED))
+                // Both lines take a legacy string here.
+                event.failMessage = runtime.messages.text(Message.KICK_LOGIN_FAILED).toLegacy()
             }
         }
     }

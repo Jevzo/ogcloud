@@ -141,16 +141,16 @@ class PlayerAndNpcStoreTest(
                 id = UUID.randomUUID(),
                 groupId = GroupId("hub"),
                 location = Location("world", 1.5, 64.0, -3.5, 90f, 0f),
-                title = "&aBedwars",
+                title = "<green>Bedwars",
                 leftClick = NpcAction.Transfer(GroupId("bedwars"), RoutingStrategy.MOST_FILLED),
                 rightClick = NpcAction.Transfer(GroupId("bedwars"), null),
             )
 
         npcs.save(npc)
-        npcs.save(npc.copy(title = "&aBedwars 4x4"))
+        npcs.save(npc.copy(title = "<green>Bedwars 4x4"))
 
-        npcs.findByGroup(GroupId("hub")) shouldContainExactly listOf(npc.copy(title = "&aBedwars 4x4"))
-        npcs.findAll() shouldContainExactly listOf(npc.copy(title = "&aBedwars 4x4"))
+        npcs.findByGroup(GroupId("hub")) shouldContainExactly listOf(npc.copy(title = "<green>Bedwars 4x4"))
+        npcs.findAll() shouldContainExactly listOf(npc.copy(title = "<green>Bedwars 4x4"))
         npcs.delete(npc.id)
         npcs.find(npc.id) shouldBe null
     }

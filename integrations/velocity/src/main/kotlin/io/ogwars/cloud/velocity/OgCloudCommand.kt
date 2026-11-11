@@ -2,6 +2,8 @@ package io.ogwars.cloud.velocity
 
 import io.ogwars.cloud.node.core.command.CommandSender
 import io.ogwars.cloud.node.core.command.CommandTree
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toComponent
 import com.velocitypowered.api.command.CommandSource
 import com.velocitypowered.api.command.SimpleCommand
 import com.velocitypowered.api.proxy.Player
@@ -25,7 +27,7 @@ internal class OgCloudCommand(
 
         override fun hasPermission(node: String) = source.hasPermission(node)
 
-        override fun reply(text: String) = source.sendMessage(legacyText(text))
+        override fun reply(text: RichText) = source.sendMessage(text.toComponent())
     }
 
     companion object {

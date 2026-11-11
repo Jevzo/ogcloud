@@ -2,6 +2,7 @@ package io.ogwars.cloud.controller.readmodel
 
 import io.ogwars.cloud.contracts.events.v1.GroupUpdated
 import io.ogwars.cloud.contracts.events.v1.NetworkSettingsUpdated
+import io.ogwars.cloud.contracts.events.v1.ServerListTexts
 import io.ogwars.cloud.contracts.node.v1.GroupInfo
 import io.ogwars.cloud.contracts.node.v1.ListGroupsResponse
 import io.ogwars.cloud.contracts.node.v1.ListNpcsResponse
@@ -15,6 +16,9 @@ import io.ogwars.cloud.domain.npc.Npc
 import io.ogwars.cloud.domain.player.Player
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.livestate.toProto
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toJson
+import io.ogwars.cloud.text.toLegacy
 import io.ogwars.cloud.domain.permission.PermissionGroup as DomainPermissionGroup
 
 /**
@@ -40,6 +44,22 @@ object ReadModelMessages {
             .setTablistHeader(s.tablistHeader)
             .setTablistFooter(s.tablistFooter)
             .setMaintenanceKickMessage(s.maintenanceKickMessage)
+            .setServerList(serverList(s))
+            .build()
+    }
+
+    /** The status ping's texts, rendered here so the load balancer parses no tags (D-0202, D-0204). */
+    private fun serverList(s: NetworkSettings): ServerListTexts {
+        val motd = RichText.parseValid(s.motd)
+        val maintenanceMotd = RichText.parseValid(s.maintenanceMotd)
+        return ServerListTexts
+            .newBuilder()
+            .setMotdJson(motd.toJson())
+            .setMotdLegacy(motd.toLegacy())
+            .setMaintenanceMotdJson(maintenanceMotd.toJson())
+            .setMaintenanceMotdLegacy(maintenanceMotd.toLegacy())
+            .setVersionNameLegacy(RichText.parseValid(s.versionName).toLegacy())
+            .setMaintenanceVersionNameLegacy(RichText.parseValid(s.maintenanceVersionName).toLegacy())
             .build()
     }
 
@@ -80,7 +100,7 @@ object ReadModelMessages {
             .addAllPermissions(g.permissions.keys.sorted())
             .setChatPrefix(g.display.chatPrefix)
             .setChatSuffix(g.display.chatSuffix)
-            .setNameColor(g.display.nameColor)
+            .setNameFormat(g.display.nameFormat)
             .setTabPrefix(g.display.tabPrefix)
             .setVersion(group.revision)
             .setIsDefault(g.isDefault)

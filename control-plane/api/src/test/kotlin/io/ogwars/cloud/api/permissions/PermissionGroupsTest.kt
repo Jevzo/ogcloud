@@ -49,6 +49,20 @@ class PermissionGroupsTest(
     }
 
     @Test
+    fun `display texts are refused unless they are valid tag texts (D-0200)`() {
+        val refused =
+            oauth.call(
+                "POST",
+                GROUPS,
+                admin,
+                mapOf("id" to groupId(), "settings" to settings(chatPrefix = "<frog>VIP ")),
+            )
+
+        refused.statusCode() shouldBe BAD_REQUEST
+        oauth.json(refused)["detail"] shouldBe "chatPrefix: unknown tag <frog> (at character 0)"
+    }
+
+    @Test
     fun `a new default group takes the flag, and the default cannot be deleted`() {
         val id = groupId()
         val created = oauth.call("POST", GROUPS, admin, create(id))
@@ -129,11 +143,18 @@ class PermissionGroupsTest(
     private fun settings(
         name: String = "VIP",
         isDefault: Boolean = false,
+        chatPrefix: String = "<gold>VIP ",
     ) = mapOf(
         "name" to name,
         "weight" to WEIGHT,
         "defaultGroup" to isDefault,
-        "display" to mapOf("chatPrefix" to "&6VIP ", "chatSuffix" to "", "nameColor" to "&6", "tabPrefix" to "&6"),
+        "display" to
+            mapOf(
+                "chatPrefix" to chatPrefix,
+                "chatSuffix" to "",
+                "nameFormat" to "<gradient:gold:yellow>{name}</gradient>",
+                "tabPrefix" to "<gold>",
+            ),
         "permissions" to mapOf("ogcloud.fly" to "Fly in lobbies"),
     )
 

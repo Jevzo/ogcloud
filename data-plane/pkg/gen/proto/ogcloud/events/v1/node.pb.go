@@ -280,23 +280,25 @@ func (*NodeBroadcast_PlayerPermissions) isNodeBroadcast_Update() {}
 
 func (*NodeBroadcast_Npc) isNodeBroadcast_Update() {}
 
+// The texts are in OgCloud's tag format (D-0200).
 type NetworkSettingsUpdated struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Read-model version; nodes ignore anything older than what they hold.
-	Version                 uint64          `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	Maintenance             bool            `protobuf:"varint,2,opt,name=maintenance,proto3" json:"maintenance,omitempty"`
-	Motd                    string          `protobuf:"bytes,3,opt,name=motd,proto3" json:"motd,omitempty"`
-	MaintenanceMotd         string          `protobuf:"bytes,4,opt,name=maintenance_motd,json=maintenanceMotd,proto3" json:"maintenance_motd,omitempty"`
-	VersionName             string          `protobuf:"bytes,5,opt,name=version_name,json=versionName,proto3" json:"version_name,omitempty"`
-	MaintenanceVersionName  string          `protobuf:"bytes,6,opt,name=maintenance_version_name,json=maintenanceVersionName,proto3" json:"maintenance_version_name,omitempty"`
-	MaxPlayers              uint32          `protobuf:"varint,7,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
-	DefaultGroupId          string          `protobuf:"bytes,8,opt,name=default_group_id,json=defaultGroupId,proto3" json:"default_group_id,omitempty"`
-	RoutingStrategy         RoutingStrategy `protobuf:"varint,9,opt,name=routing_strategy,json=routingStrategy,proto3,enum=ogcloud.events.v1.RoutingStrategy" json:"routing_strategy,omitempty"`
-	PermissionSystemEnabled bool            `protobuf:"varint,10,opt,name=permission_system_enabled,json=permissionSystemEnabled,proto3" json:"permission_system_enabled,omitempty"`
-	TablistEnabled          bool            `protobuf:"varint,11,opt,name=tablist_enabled,json=tablistEnabled,proto3" json:"tablist_enabled,omitempty"`
-	TablistHeader           string          `protobuf:"bytes,12,opt,name=tablist_header,json=tablistHeader,proto3" json:"tablist_header,omitempty"`
-	TablistFooter           string          `protobuf:"bytes,13,opt,name=tablist_footer,json=tablistFooter,proto3" json:"tablist_footer,omitempty"`
-	MaintenanceKickMessage  string          `protobuf:"bytes,14,opt,name=maintenance_kick_message,json=maintenanceKickMessage,proto3" json:"maintenance_kick_message,omitempty"`
+	Version                 uint64           `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Maintenance             bool             `protobuf:"varint,2,opt,name=maintenance,proto3" json:"maintenance,omitempty"`
+	Motd                    string           `protobuf:"bytes,3,opt,name=motd,proto3" json:"motd,omitempty"`
+	MaintenanceMotd         string           `protobuf:"bytes,4,opt,name=maintenance_motd,json=maintenanceMotd,proto3" json:"maintenance_motd,omitempty"`
+	VersionName             string           `protobuf:"bytes,5,opt,name=version_name,json=versionName,proto3" json:"version_name,omitempty"`
+	MaintenanceVersionName  string           `protobuf:"bytes,6,opt,name=maintenance_version_name,json=maintenanceVersionName,proto3" json:"maintenance_version_name,omitempty"`
+	MaxPlayers              uint32           `protobuf:"varint,7,opt,name=max_players,json=maxPlayers,proto3" json:"max_players,omitempty"`
+	DefaultGroupId          string           `protobuf:"bytes,8,opt,name=default_group_id,json=defaultGroupId,proto3" json:"default_group_id,omitempty"`
+	RoutingStrategy         RoutingStrategy  `protobuf:"varint,9,opt,name=routing_strategy,json=routingStrategy,proto3,enum=ogcloud.events.v1.RoutingStrategy" json:"routing_strategy,omitempty"`
+	PermissionSystemEnabled bool             `protobuf:"varint,10,opt,name=permission_system_enabled,json=permissionSystemEnabled,proto3" json:"permission_system_enabled,omitempty"`
+	TablistEnabled          bool             `protobuf:"varint,11,opt,name=tablist_enabled,json=tablistEnabled,proto3" json:"tablist_enabled,omitempty"`
+	TablistHeader           string           `protobuf:"bytes,12,opt,name=tablist_header,json=tablistHeader,proto3" json:"tablist_header,omitempty"`
+	TablistFooter           string           `protobuf:"bytes,13,opt,name=tablist_footer,json=tablistFooter,proto3" json:"tablist_footer,omitempty"`
+	MaintenanceKickMessage  string           `protobuf:"bytes,14,opt,name=maintenance_kick_message,json=maintenanceKickMessage,proto3" json:"maintenance_kick_message,omitempty"`
+	ServerList              *ServerListTexts `protobuf:"bytes,15,opt,name=server_list,json=serverList,proto3" json:"server_list,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -429,6 +431,100 @@ func (x *NetworkSettingsUpdated) GetMaintenanceKickMessage() string {
 	return ""
 }
 
+func (x *NetworkSettingsUpdated) GetServerList() *ServerListTexts {
+	if x != nil {
+		return x.ServerList
+	}
+	return nil
+}
+
+// What the load balancer answers status pings with, rendered by the controller so the load balancer parses no tags
+// (D-0202): the MOTDs as chat-component JSON for 1.16 and newer clients and as legacy text for older ones, whose
+// colours are the nearest named ones (D-0204); the version names, a plain string in the status answer, always legacy.
+type ServerListTexts struct {
+	state                        protoimpl.MessageState `protogen:"open.v1"`
+	MotdJson                     string                 `protobuf:"bytes,1,opt,name=motd_json,json=motdJson,proto3" json:"motd_json,omitempty"`
+	MotdLegacy                   string                 `protobuf:"bytes,2,opt,name=motd_legacy,json=motdLegacy,proto3" json:"motd_legacy,omitempty"`
+	MaintenanceMotdJson          string                 `protobuf:"bytes,3,opt,name=maintenance_motd_json,json=maintenanceMotdJson,proto3" json:"maintenance_motd_json,omitempty"`
+	MaintenanceMotdLegacy        string                 `protobuf:"bytes,4,opt,name=maintenance_motd_legacy,json=maintenanceMotdLegacy,proto3" json:"maintenance_motd_legacy,omitempty"`
+	VersionNameLegacy            string                 `protobuf:"bytes,5,opt,name=version_name_legacy,json=versionNameLegacy,proto3" json:"version_name_legacy,omitempty"`
+	MaintenanceVersionNameLegacy string                 `protobuf:"bytes,6,opt,name=maintenance_version_name_legacy,json=maintenanceVersionNameLegacy,proto3" json:"maintenance_version_name_legacy,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
+}
+
+func (x *ServerListTexts) Reset() {
+	*x = ServerListTexts{}
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServerListTexts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerListTexts) ProtoMessage() {}
+
+func (x *ServerListTexts) ProtoReflect() protoreflect.Message {
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerListTexts.ProtoReflect.Descriptor instead.
+func (*ServerListTexts) Descriptor() ([]byte, []int) {
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ServerListTexts) GetMotdJson() string {
+	if x != nil {
+		return x.MotdJson
+	}
+	return ""
+}
+
+func (x *ServerListTexts) GetMotdLegacy() string {
+	if x != nil {
+		return x.MotdLegacy
+	}
+	return ""
+}
+
+func (x *ServerListTexts) GetMaintenanceMotdJson() string {
+	if x != nil {
+		return x.MaintenanceMotdJson
+	}
+	return ""
+}
+
+func (x *ServerListTexts) GetMaintenanceMotdLegacy() string {
+	if x != nil {
+		return x.MaintenanceMotdLegacy
+	}
+	return ""
+}
+
+func (x *ServerListTexts) GetVersionNameLegacy() string {
+	if x != nil {
+		return x.VersionNameLegacy
+	}
+	return ""
+}
+
+func (x *ServerListTexts) GetMaintenanceVersionNameLegacy() string {
+	if x != nil {
+		return x.MaintenanceVersionNameLegacy
+	}
+	return ""
+}
+
 type GroupUpdated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Version       uint64                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
@@ -442,7 +538,7 @@ type GroupUpdated struct {
 
 func (x *GroupUpdated) Reset() {
 	*x = GroupUpdated{}
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[3]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -454,7 +550,7 @@ func (x *GroupUpdated) String() string {
 func (*GroupUpdated) ProtoMessage() {}
 
 func (x *GroupUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[3]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -467,7 +563,7 @@ func (x *GroupUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupUpdated.ProtoReflect.Descriptor instead.
 func (*GroupUpdated) Descriptor() ([]byte, []int) {
-	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{3}
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GroupUpdated) GetVersion() uint64 {
@@ -516,7 +612,7 @@ type PermissionGroupUpdated struct {
 
 func (x *PermissionGroupUpdated) Reset() {
 	*x = PermissionGroupUpdated{}
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[4]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -528,7 +624,7 @@ func (x *PermissionGroupUpdated) String() string {
 func (*PermissionGroupUpdated) ProtoMessage() {}
 
 func (x *PermissionGroupUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[4]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +637,7 @@ func (x *PermissionGroupUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PermissionGroupUpdated.ProtoReflect.Descriptor instead.
 func (*PermissionGroupUpdated) Descriptor() ([]byte, []int) {
-	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{4}
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *PermissionGroupUpdated) GetVersion() uint64 {
@@ -576,7 +672,7 @@ type PlayerPermissionsUpdated struct {
 
 func (x *PlayerPermissionsUpdated) Reset() {
 	*x = PlayerPermissionsUpdated{}
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[5]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -588,7 +684,7 @@ func (x *PlayerPermissionsUpdated) String() string {
 func (*PlayerPermissionsUpdated) ProtoMessage() {}
 
 func (x *PlayerPermissionsUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[5]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -601,7 +697,7 @@ func (x *PlayerPermissionsUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerPermissionsUpdated.ProtoReflect.Descriptor instead.
 func (*PlayerPermissionsUpdated) Descriptor() ([]byte, []int) {
-	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{5}
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PlayerPermissionsUpdated) GetVersion() uint64 {
@@ -637,7 +733,7 @@ type NpcUpdated struct {
 
 func (x *NpcUpdated) Reset() {
 	*x = NpcUpdated{}
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[6]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -649,7 +745,7 @@ func (x *NpcUpdated) String() string {
 func (*NpcUpdated) ProtoMessage() {}
 
 func (x *NpcUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[6]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -662,7 +758,7 @@ func (x *NpcUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NpcUpdated.ProtoReflect.Descriptor instead.
 func (*NpcUpdated) Descriptor() ([]byte, []int) {
-	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{6}
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *NpcUpdated) GetVersion() uint64 {
@@ -710,7 +806,7 @@ type NodeCommand struct {
 
 func (x *NodeCommand) Reset() {
 	*x = NodeCommand{}
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[7]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -722,7 +818,7 @@ func (x *NodeCommand) String() string {
 func (*NodeCommand) ProtoMessage() {}
 
 func (x *NodeCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_ogcloud_events_v1_node_proto_msgTypes[7]
+	mi := &file_ogcloud_events_v1_node_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +831,7 @@ func (x *NodeCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeCommand.ProtoReflect.Descriptor instead.
 func (*NodeCommand) Descriptor() ([]byte, []int) {
-	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{7}
+	return file_ogcloud_events_v1_node_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *NodeCommand) GetMetadata() *EventMetadata {
@@ -833,7 +929,7 @@ const file_ogcloud_events_v1_node_proto_rawDesc = "" +
 	"\x10permission_group\x18\x05 \x01(\v2).ogcloud.events.v1.PermissionGroupUpdatedH\x00R\x0fpermissionGroup\x12\\\n" +
 	"\x12player_permissions\x18\x06 \x01(\v2+.ogcloud.events.v1.PlayerPermissionsUpdatedH\x00R\x11playerPermissions\x121\n" +
 	"\x03npc\x18\a \x01(\v2\x1d.ogcloud.events.v1.NpcUpdatedH\x00R\x03npcB\b\n" +
-	"\x06update\"\xf7\x04\n" +
+	"\x06update\"\xbc\x05\n" +
 	"\x16NetworkSettingsUpdated\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12 \n" +
 	"\vmaintenance\x18\x02 \x01(\bR\vmaintenance\x12\x12\n" +
@@ -850,7 +946,17 @@ const file_ogcloud_events_v1_node_proto_rawDesc = "" +
 	"\x0ftablist_enabled\x18\v \x01(\bR\x0etablistEnabled\x12%\n" +
 	"\x0etablist_header\x18\f \x01(\tR\rtablistHeader\x12%\n" +
 	"\x0etablist_footer\x18\r \x01(\tR\rtablistFooter\x128\n" +
-	"\x18maintenance_kick_message\x18\x0e \x01(\tR\x16maintenanceKickMessage\"\xbc\x01\n" +
+	"\x18maintenance_kick_message\x18\x0e \x01(\tR\x16maintenanceKickMessage\x12C\n" +
+	"\vserver_list\x18\x0f \x01(\v2\".ogcloud.events.v1.ServerListTextsR\n" +
+	"serverList\"\xb2\x02\n" +
+	"\x0fServerListTexts\x12\x1b\n" +
+	"\tmotd_json\x18\x01 \x01(\tR\bmotdJson\x12\x1f\n" +
+	"\vmotd_legacy\x18\x02 \x01(\tR\n" +
+	"motdLegacy\x122\n" +
+	"\x15maintenance_motd_json\x18\x03 \x01(\tR\x13maintenanceMotdJson\x126\n" +
+	"\x17maintenance_motd_legacy\x18\x04 \x01(\tR\x15maintenanceMotdLegacy\x12.\n" +
+	"\x13version_name_legacy\x18\x05 \x01(\tR\x11versionNameLegacy\x12E\n" +
+	"\x1fmaintenance_version_name_legacy\x18\x06 \x01(\tR\x1cmaintenanceVersionNameLegacy\"\xbc\x01\n" +
 	"\fGroupUpdated\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x04R\aversion\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12;\n" +
@@ -894,38 +1000,40 @@ func file_ogcloud_events_v1_node_proto_rawDescGZIP() []byte {
 	return file_ogcloud_events_v1_node_proto_rawDescData
 }
 
-var file_ogcloud_events_v1_node_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_ogcloud_events_v1_node_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_ogcloud_events_v1_node_proto_goTypes = []any{
 	(*NodeHeartbeat)(nil),            // 0: ogcloud.events.v1.NodeHeartbeat
 	(*NodeBroadcast)(nil),            // 1: ogcloud.events.v1.NodeBroadcast
 	(*NetworkSettingsUpdated)(nil),   // 2: ogcloud.events.v1.NetworkSettingsUpdated
-	(*GroupUpdated)(nil),             // 3: ogcloud.events.v1.GroupUpdated
-	(*PermissionGroupUpdated)(nil),   // 4: ogcloud.events.v1.PermissionGroupUpdated
-	(*PlayerPermissionsUpdated)(nil), // 5: ogcloud.events.v1.PlayerPermissionsUpdated
-	(*NpcUpdated)(nil),               // 6: ogcloud.events.v1.NpcUpdated
-	(*NodeCommand)(nil),              // 7: ogcloud.events.v1.NodeCommand
-	(*EventMetadata)(nil),            // 8: ogcloud.events.v1.EventMetadata
-	(NodeType)(0),                    // 9: ogcloud.events.v1.NodeType
-	(RoutingStrategy)(0),             // 10: ogcloud.events.v1.RoutingStrategy
-	(GroupType)(0),                   // 11: ogcloud.events.v1.GroupType
+	(*ServerListTexts)(nil),          // 3: ogcloud.events.v1.ServerListTexts
+	(*GroupUpdated)(nil),             // 4: ogcloud.events.v1.GroupUpdated
+	(*PermissionGroupUpdated)(nil),   // 5: ogcloud.events.v1.PermissionGroupUpdated
+	(*PlayerPermissionsUpdated)(nil), // 6: ogcloud.events.v1.PlayerPermissionsUpdated
+	(*NpcUpdated)(nil),               // 7: ogcloud.events.v1.NpcUpdated
+	(*NodeCommand)(nil),              // 8: ogcloud.events.v1.NodeCommand
+	(*EventMetadata)(nil),            // 9: ogcloud.events.v1.EventMetadata
+	(NodeType)(0),                    // 10: ogcloud.events.v1.NodeType
+	(RoutingStrategy)(0),             // 11: ogcloud.events.v1.RoutingStrategy
+	(GroupType)(0),                   // 12: ogcloud.events.v1.GroupType
 }
 var file_ogcloud_events_v1_node_proto_depIdxs = []int32{
-	8,  // 0: ogcloud.events.v1.NodeHeartbeat.metadata:type_name -> ogcloud.events.v1.EventMetadata
-	9,  // 1: ogcloud.events.v1.NodeHeartbeat.node_type:type_name -> ogcloud.events.v1.NodeType
-	8,  // 2: ogcloud.events.v1.NodeBroadcast.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	9,  // 0: ogcloud.events.v1.NodeHeartbeat.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	10, // 1: ogcloud.events.v1.NodeHeartbeat.node_type:type_name -> ogcloud.events.v1.NodeType
+	9,  // 2: ogcloud.events.v1.NodeBroadcast.metadata:type_name -> ogcloud.events.v1.EventMetadata
 	2,  // 3: ogcloud.events.v1.NodeBroadcast.network_settings:type_name -> ogcloud.events.v1.NetworkSettingsUpdated
-	3,  // 4: ogcloud.events.v1.NodeBroadcast.group:type_name -> ogcloud.events.v1.GroupUpdated
-	4,  // 5: ogcloud.events.v1.NodeBroadcast.permission_group:type_name -> ogcloud.events.v1.PermissionGroupUpdated
-	5,  // 6: ogcloud.events.v1.NodeBroadcast.player_permissions:type_name -> ogcloud.events.v1.PlayerPermissionsUpdated
-	6,  // 7: ogcloud.events.v1.NodeBroadcast.npc:type_name -> ogcloud.events.v1.NpcUpdated
-	10, // 8: ogcloud.events.v1.NetworkSettingsUpdated.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
-	11, // 9: ogcloud.events.v1.GroupUpdated.group_type:type_name -> ogcloud.events.v1.GroupType
-	8,  // 10: ogcloud.events.v1.NodeCommand.metadata:type_name -> ogcloud.events.v1.EventMetadata
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	4,  // 4: ogcloud.events.v1.NodeBroadcast.group:type_name -> ogcloud.events.v1.GroupUpdated
+	5,  // 5: ogcloud.events.v1.NodeBroadcast.permission_group:type_name -> ogcloud.events.v1.PermissionGroupUpdated
+	6,  // 6: ogcloud.events.v1.NodeBroadcast.player_permissions:type_name -> ogcloud.events.v1.PlayerPermissionsUpdated
+	7,  // 7: ogcloud.events.v1.NodeBroadcast.npc:type_name -> ogcloud.events.v1.NpcUpdated
+	11, // 8: ogcloud.events.v1.NetworkSettingsUpdated.routing_strategy:type_name -> ogcloud.events.v1.RoutingStrategy
+	3,  // 9: ogcloud.events.v1.NetworkSettingsUpdated.server_list:type_name -> ogcloud.events.v1.ServerListTexts
+	12, // 10: ogcloud.events.v1.GroupUpdated.group_type:type_name -> ogcloud.events.v1.GroupType
+	9,  // 11: ogcloud.events.v1.NodeCommand.metadata:type_name -> ogcloud.events.v1.EventMetadata
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_ogcloud_events_v1_node_proto_init() }
@@ -941,7 +1049,7 @@ func file_ogcloud_events_v1_node_proto_init() {
 		(*NodeBroadcast_PlayerPermissions)(nil),
 		(*NodeBroadcast_Npc)(nil),
 	}
-	file_ogcloud_events_v1_node_proto_msgTypes[7].OneofWrappers = []any{
+	file_ogcloud_events_v1_node_proto_msgTypes[8].OneofWrappers = []any{
 		(*NodeCommand_All)(nil),
 		(*NodeCommand_ServerId)(nil),
 		(*NodeCommand_GroupId)(nil),
@@ -952,7 +1060,7 @@ func file_ogcloud_events_v1_node_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ogcloud_events_v1_node_proto_rawDesc), len(file_ogcloud_events_v1_node_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

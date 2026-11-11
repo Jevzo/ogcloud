@@ -1,5 +1,8 @@
 package io.ogwars.cloud.npc
 
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toComponent
+import io.ogwars.cloud.text.toLegacy
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes
@@ -47,13 +50,13 @@ interface NpcPackets {
     fun spawn(
         user: User,
         npc: ShownNpc,
-        lines: List<String>,
+        lines: List<RichText>,
     )
 
     fun rename(
         user: User,
         lineId: Int,
-        text: String,
+        text: RichText,
     )
 
     fun look(
@@ -124,13 +127,11 @@ interface NpcPackets {
 }
 
 /** Paper 26.x: unlisted player info, players spawned like any entity, names as components. */
-class ModernNpcPackets(
-    private val component: (String) -> Component,
-) : NpcPackets {
+class ModernNpcPackets : NpcPackets {
     override fun spawn(
         user: User,
         npc: ShownNpc,
-        lines: List<String>,
+        lines: List<RichText>,
     ) {
         val location = npc.spec.location
         val info = WrapperPlayServerPlayerInfoUpdate.PlayerInfo(npc.profile, false, 0, GameMode.SURVIVAL, null, null)
@@ -181,7 +182,7 @@ class ModernNpcPackets(
     override fun rename(
         user: User,
         lineId: Int,
-        text: String,
+        text: RichText,
     ) = user.sendPacket(WrapperPlayServerEntityMetadata(lineId, line(text)))
 
     override fun despawn(
@@ -192,10 +193,11 @@ class ModernNpcPackets(
         user.sendPacket(WrapperPlayServerPlayerInfoRemove(npc.profile.uuid))
     }
 
-    private fun line(text: String): List<EntityData<*>> =
+    /** PacketEvents downsamples the colours for older clients (D-0204). */
+    private fun line(text: RichText): List<EntityData<*>> =
         listOf(
             EntityData(NpcPackets.FLAGS_INDEX, EntityDataTypes.BYTE, NpcPackets.INVISIBLE),
-            EntityData(NpcPackets.NAME_INDEX, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(component(text))),
+            EntityData(NpcPackets.NAME_INDEX, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(text.toComponent())),
             EntityData(NpcPackets.NAME_VISIBLE_INDEX, EntityDataTypes.BOOLEAN, true),
         )
 }
@@ -205,7 +207,7 @@ class LegacyNpcPackets : NpcPackets {
     override fun spawn(
         user: User,
         npc: ShownNpc,
-        lines: List<String>,
+        lines: List<RichText>,
     ) {
         val location = npc.spec.location
         user.sendPacket(WrapperPlayServerPlayerInfo(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, playerData(npc)))
@@ -234,7 +236,7 @@ class LegacyNpcPackets : NpcPackets {
     override fun rename(
         user: User,
         lineId: Int,
-        text: String,
+        text: RichText,
     ) = user.sendPacket(WrapperPlayServerEntityMetadata(lineId, line(text)))
 
     override fun unlist(
@@ -245,16 +247,11 @@ class LegacyNpcPackets : NpcPackets {
     private fun playerData(npc: ShownNpc) =
         WrapperPlayServerPlayerInfo.PlayerData(null, npc.profile, GameMode.SURVIVAL, 0)
 
-    private companion object {
-        /** `&` before a colour or format code, the only `&` that becomes `§`. */
-        val LEGACY_CODE = Regex("&(?=[0-9a-fk-orA-FK-OR])")
-    }
-
-    /** 1.8 has no components in metadata: names are `§`-coded strings and the name flag is a byte. */
-    private fun line(text: String): List<EntityData<*>> =
+    /** 1.8 has no components in metadata: names are `§`-coded strings with the nearest colours (D-0204). */
+    private fun line(text: RichText): List<EntityData<*>> =
         listOf(
             EntityData(NpcPackets.FLAGS_INDEX, EntityDataTypes.BYTE, NpcPackets.INVISIBLE),
-            EntityData(NpcPackets.NAME_INDEX, EntityDataTypes.STRING, LEGACY_CODE.replace(text, "§")),
+            EntityData(NpcPackets.NAME_INDEX, EntityDataTypes.STRING, text.toLegacy()),
             EntityData(NpcPackets.NAME_VISIBLE_INDEX, EntityDataTypes.BYTE, 1.toByte()),
         )
 }

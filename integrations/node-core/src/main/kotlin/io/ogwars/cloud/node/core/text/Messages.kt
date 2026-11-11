@@ -1,36 +1,51 @@
 package io.ogwars.cloud.node.core.text
 
+import io.ogwars.cloud.text.RichText
 import java.util.Locale
 import java.util.ResourceBundle
 
 /**
- * In-game texts from the message catalog (D-0050), `&`-coded. Placeholders are filled in one pass, so a value that
- * looks like a placeholder, e.g. in a player's chat, stays as it is.
+ * In-game texts from the message catalog (D-0050) in the tag format (D-0200), parsed once. A value is shown as plain
+ * text, so a player's chat or a server id never adds formatting; a value that is itself a [RichText], such as a
+ * group's prefix or another catalog text, keeps its own.
  */
 class Messages(
-    private val catalog: Map<String, String>,
+    catalog: Map<String, String>,
 ) {
+    private val texts: Map<Message, RichText>
+
     init {
         val missing = Message.entries.map { it.key }.filterNot(catalog::containsKey)
         require(missing.isEmpty()) { "The message catalog lacks $missing" }
+        texts =
+            Message.entries.associateWith { message ->
+                val text = RichText.parseValid(catalog.getValue(message.key))
+                require(text.placeholders() == message.placeholders) {
+                    "${message.key} uses ${text.placeholders()}, but takes ${message.placeholders}"
+                }
+                text
+            }
     }
 
     fun text(
         message: Message,
         vararg values: Pair<String, Any?>,
-    ): String {
+    ): RichText {
         val given = values.toMap()
         require(given.keys == message.placeholders) {
             "${message.key} takes ${message.placeholders}, got ${given.keys}"
         }
-        return PLACEHOLDER.replace(catalog.getValue(message.key)) { match ->
-            given[match.groupValues[1]]?.toString() ?: match.value
-        }
+        val filled =
+            given.mapNotNull { (name, value) ->
+                value?.let {
+                    name to
+                        (it as? RichText ?: RichText.plain(it.toString()))
+                }
+            }
+        return texts.getValue(message).insert(filled.toMap())
     }
 
     companion object {
-        /** `{name}`, as the catalog writes placeholders. */
-        val PLACEHOLDER = Regex("\\{([a-z_]+)}")
         private const val BUNDLE = "io.ogwars.cloud.node.core.messages"
 
         /** The catalog for [locale]; English is the only one that ships for now. */

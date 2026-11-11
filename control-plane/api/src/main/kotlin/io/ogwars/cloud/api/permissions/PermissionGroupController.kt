@@ -21,11 +21,11 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import java.util.UUID
 
-/** Colours use `&` codes. */
+/** In OgCloud's tag format (D-0200); the name format shows `{name}`, or is empty for the default (D-0203). */
 data class RankDisplayView(
     val chatPrefix: String,
     val chatSuffix: String,
-    val nameColor: String,
+    val nameFormat: String,
     val tabPrefix: String,
 )
 
@@ -45,7 +45,7 @@ data class PermissionGroupSettings(
             name,
             weight,
             permissions,
-            RankDisplay(display.chatPrefix, display.chatSuffix, display.nameColor, display.tabPrefix),
+            RankDisplay(display.chatPrefix, display.chatSuffix, display.nameFormat, display.tabPrefix),
             defaultGroup,
         )
 }
@@ -87,7 +87,7 @@ private fun Revisioned<PermissionGroup>.toView() =
                 name,
                 weight,
                 isDefault,
-                RankDisplayView(display.chatPrefix, display.chatSuffix, display.nameColor, display.tabPrefix),
+                RankDisplayView(display.chatPrefix, display.chatSuffix, display.nameFormat, display.tabPrefix),
                 permissions,
             ),
             revision,

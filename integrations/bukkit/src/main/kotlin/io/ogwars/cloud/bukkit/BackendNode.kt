@@ -75,7 +75,7 @@ class BackendNode(
             .forEach { server.pluginManager.registerEvents(it, plugin) }
         val npcCommands = NpcCommands(npcs, pod.messages, identity.groupId, tracker, runtime::requestNpcChange)
         val command = checkNotNull(server.getPluginCommand(COMMAND)) { "plugin.yml lacks /$COMMAND" }
-        command.executor = BukkitCommand(CommandTree(pod.messages, npcCommands.subcommands, Message.INFO))
+        command.executor = BukkitCommand(CommandTree(pod.messages, npcCommands.subcommands, Message.INFO), line)
         OgCloud.install(runtime.api)
         runtime.start()
         npcs.start()

@@ -7,6 +7,8 @@ import io.ogwars.cloud.contracts.node.v1.NpcAction
 import io.ogwars.cloud.contracts.node.v1.NpcTransfer
 import io.ogwars.cloud.contracts.node.v1.ServerInfo
 import io.ogwars.cloud.node.core.query.NodeQueries
+import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toLegacy
 import com.github.retrooper.packetevents.protocol.player.User
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -37,17 +39,17 @@ class RecordingPackets : NpcPackets {
     override fun spawn(
         user: User,
         npc: ShownNpc,
-        lines: List<String>,
+        lines: List<RichText>,
     ) {
-        sent += "spawn ${npc.spec.id} $lines"
+        sent += "spawn ${npc.spec.id} ${lines.map { it.toLegacy() }}"
     }
 
     override fun rename(
         user: User,
         lineId: Int,
-        text: String,
+        text: RichText,
     ) {
-        sent += "rename $text"
+        sent += "rename ${text.toLegacy()}"
     }
 
     override fun look(
@@ -113,8 +115,8 @@ class NpcHubTest {
                     .setX(0.0)
                     .setY(64.0)
                     .setZ(0.0),
-            ).setTitle("&aBedwars")
-            .setSubtitle("%players% playing on %servers%")
+            ).setTitle("<green>Bedwars")
+            .setSubtitle("{players} playing on {servers}")
             .setLookAtPlayers(true)
             .setRightClick(
                 NpcAction.newBuilder().setTransfer(
@@ -143,7 +145,7 @@ class NpcHubTest {
         hub.moved(viewer(3.0, world = "nether"))
 
         packets.sent shouldContainExactly
-            listOf("prepare", "spawn $shopId [&aBedwars, 0 playing on 0]", "look $shopId", "despawn $shopId")
+            listOf("prepare", "spawn $shopId [§aBedwars, 0 playing on 0]", "look $shopId", "despawn $shopId")
     }
 
     @Test
@@ -156,14 +158,14 @@ class NpcHubTest {
         npcs[0] =
             shop
                 .toBuilder()
-                .setTitle("&cBedwars")
+                .setTitle("<red>Bedwars")
                 .setSubtitle("")
                 .build()
         hub.reload().join()
         npcs.clear()
         hub.reload().join()
 
-        packets.sent shouldContainExactly listOf("despawn $shopId", "spawn $shopId [&cBedwars]", "despawn $shopId")
+        packets.sent shouldContainExactly listOf("despawn $shopId", "spawn $shopId [§cBedwars]", "despawn $shopId")
     }
 
     @Test
@@ -203,7 +205,7 @@ class NpcHubTest {
 
         tasks.forEach(Runnable::run)
 
-        packets.sent.takeLast(2) shouldContainExactly listOf("rename &aBedwars", "rename 7 playing on 1")
+        packets.sent.takeLast(2) shouldContainExactly listOf("rename §aBedwars", "rename 7 playing on 1")
     }
 
     @Test

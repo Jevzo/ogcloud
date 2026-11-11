@@ -6,7 +6,7 @@ import io.ogwars.cloud.node.core.runtime.HeartbeatSample
 import io.ogwars.cloud.node.core.runtime.OnlinePlayer
 import io.ogwars.cloud.node.core.runtime.ServerPlatform
 import io.ogwars.cloud.npc.NpcHub
-import org.bukkit.ChatColor
+import io.ogwars.cloud.text.RichText
 import org.bukkit.Server
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -46,10 +46,10 @@ class BukkitPlatform(
 
     override fun message(
         player: UUID,
-        text: String,
+        text: RichText,
     ): Boolean {
         val online = server.getPlayer(player) ?: return false
-        online.sendMessage(legacy(text))
+        line.send(online, text)
         return true
     }
 
@@ -89,9 +89,4 @@ class BukkitPlatform(
         line.global {
             tablist.enable(settings.tablistEnabled)
         }
-
-    companion object {
-        /** node-core's `&` codes as Bukkit's `§` text, which every Bukkit version shows. */
-        fun legacy(text: String): String = ChatColor.translateAlternateColorCodes('&', text)
-    }
 }

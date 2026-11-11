@@ -2,15 +2,16 @@ package io.ogwars.cloud.node.core.command
 
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.text.RichText
 import java.util.UUID
 
-/** Who runs a command: a player, or the console when [player] is null. Replies are `&`-coded. */
+/** Who runs a command: a player, or the console when [player] is null. */
 interface CommandSender {
     val player: UUID?
 
     fun hasPermission(node: String): Boolean
 
-    fun reply(text: String)
+    fun reply(text: RichText)
 }
 
 /** Replies with a catalog text behind OgCloud's prefix. */
@@ -18,7 +19,7 @@ fun CommandSender.say(
     messages: Messages,
     message: Message,
     vararg values: Pair<String, Any?>,
-) = reply(messages.text(Message.PREFIX) + " " + messages.text(message, *values))
+) = reply(messages.text(Message.PREFIX) + RichText.plain(" ") + messages.text(message, *values))
 
 class Argument(
     val name: String,

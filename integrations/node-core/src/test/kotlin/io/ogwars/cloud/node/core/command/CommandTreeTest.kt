@@ -2,6 +2,7 @@ package io.ogwars.cloud.node.core.command
 
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.text.RichText
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -45,11 +46,11 @@ class CommandTreeTest {
         override val player: UUID?,
         private val nodes: Set<String>,
     ) : CommandSender {
-        val replies = mutableListOf<String>()
+        val replies = mutableListOf<RichText>()
 
         override fun hasPermission(node: String) = node in nodes
 
-        override fun reply(text: String) {
+        override fun reply(text: RichText) {
             replies += text
         }
     }

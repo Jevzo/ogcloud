@@ -21,6 +21,7 @@ import io.ogwars.cloud.node.core.query.FakeQueries
 import io.ogwars.cloud.node.core.routing.Route
 import io.ogwars.cloud.node.core.text.Message
 import io.ogwars.cloud.node.core.text.Messages
+import io.ogwars.cloud.node.core.text.storedText
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -130,9 +131,10 @@ class ProxyRuntimeTest {
             ResolveLoginResponse
                 .newBuilder()
                 .setAllowed(false)
-                .setKickMessage("&cMaintenance")
+                .setKickMessage("<red>Maintenance")
                 .build()
-        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe LoginDecision.Denied("&cMaintenance")
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
+            LoginDecision.Denied(storedText("<red>Maintenance"))
 
         queries.login = null
         runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
@@ -166,7 +168,7 @@ class ProxyRuntimeTest {
                         .setVersion(2)
                         .setDefaultGroupId("lobby")
                         .setMaintenance(true)
-                        .setMaintenanceKickMessage("&cMaintenance")
+                        .setMaintenanceKickMessage("<red>Maintenance")
                         .setPermissionSystemEnabled(false),
                 ).build(),
         )
@@ -177,7 +179,8 @@ class ProxyRuntimeTest {
                 .setProfile(profile(steve))
                 .build()
 
-        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe LoginDecision.Denied("&cMaintenance")
+        runtime.login(steve, "Steve", 47, "1.2.3.4") { false }.join() shouldBe
+            LoginDecision.Denied(storedText("<red>Maintenance"))
         runtime.login(steve, "Steve", 47, "1.2.3.4") { true }.join() shouldBe LoginDecision.Allowed
     }
 
@@ -406,7 +409,7 @@ class ProxyRuntimeTest {
     @Test
     fun `transfers route each player, and a gone player fails the delivery`() {
         val toLobby = transfer { setPlayerUuid(steve.toString()).setGroupId("lobby") }
-        val everyone = transfer { setFromServerId("l-1").setKickMessage("&cBye") }
+        val everyone = transfer { setFromServerId("l-1").setKickMessage("<red>Bye") }
         val ghost = transfer { setPlayerUuid(UUID.randomUUID().toString()).setGroupId("lobby") }
 
         session.listener
@@ -422,7 +425,7 @@ class ProxyRuntimeTest {
             .join()
             .success shouldBe false
         platform.connects shouldContainExactly listOf(steve to "l-1")
-        platform.kicks shouldContainExactly listOf(admin to "&cBye")
+        platform.kicks shouldContainExactly listOf(admin to storedText("<red>Bye"))
     }
 
     @Test
@@ -452,11 +455,11 @@ class ProxyRuntimeTest {
                         .setVersion(2)
                         .setDefaultGroupId("lobby")
                         .setMaintenance(true)
-                        .setMaintenanceKickMessage("&cMaintenance"),
+                        .setMaintenanceKickMessage("<red>Maintenance"),
                 ).build(),
         )
 
-        platform.kicks shouldContainExactly listOf(steve to "&cMaintenance")
+        platform.kicks shouldContainExactly listOf(steve to storedText("<red>Maintenance"))
         platform.messages.map { it.first } shouldContainExactly listOf(admin)
     }
 
