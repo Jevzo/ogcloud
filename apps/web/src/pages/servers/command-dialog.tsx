@@ -1,17 +1,10 @@
 import type { ConsoleCommandRequestTarget } from "@ogcloud/api-client";
 import { useCommandRun } from "@ogcloud/api-client/react";
-import {
-  Button,
-  Dialog,
-  Field,
-  Input,
-  Segmented,
-  Select,
-  useToast,
-} from "@ogcloud/ui";
+import { Button, Dialog, Field, Input, Segmented, useToast } from "@ogcloud/ui";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
+import { GroupSelectField } from "../groups/group-select-field.tsx";
 
 /** Who a console command goes to: a fixed server, or a choice the dialog offers. */
 export type CommandTarget =
@@ -111,20 +104,12 @@ export function CommandDialog({
               onValueChange={setScope}
             />
             {scope === "GROUP" ? (
-              <Field label={t("servers.request.group")}>
-                {(control) => (
-                  <Select
-                    {...control}
-                    options={target.groupIds.map((id) => ({
-                      value: id,
-                      label: id,
-                    }))}
-                    value={group}
-                    onValueChange={setGroup}
-                    placeholder={t("servers.request.pickGroup")}
-                  />
-                )}
-              </Field>
+              <GroupSelectField
+                label={t("servers.request.group")}
+                groupIds={target.groupIds}
+                value={group}
+                onValueChange={setGroup}
+              />
             ) : null}
           </>
         ) : null}

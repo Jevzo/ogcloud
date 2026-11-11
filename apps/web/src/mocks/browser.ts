@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import type { TextPreviewRequest } from "@ogcloud/api-client";
 import {
   getGroupDeletedMockHandler,
   getGroupGetMockHandler,
@@ -7,18 +8,28 @@ import {
   getOgCloudAPIMock,
   getOverviewGetMockHandler,
   getOverviewHistoryMockHandler,
+  getPermissionGroupListMockHandler,
+  getPlayerGetMockHandler,
+  getPlayerKnownMockHandler,
+  getPlayerOnlineMockHandler,
   getRuntimeListMockHandler,
   getServerGetMockHandler,
   getServerListMockHandler,
+  getTextPreviewMockHandler,
 } from "@ogcloud/api-client/mocks";
 import { setupWorker } from "msw/browser";
 import {
   deletedGroups,
   groupById,
   groups,
+  knownPlayers,
   loadHistory,
   me,
+  onlinePlayers,
   overview,
+  permissionGroups,
+  playerById,
+  previewOf,
   runtimeProfiles,
   serverById,
   servers,
@@ -38,6 +49,13 @@ export async function startMocks(): Promise<void> {
     getGroupDeletedMockHandler(deletedGroups),
     getGroupGetMockHandler(({ params }) => groupById(String(params.id))),
     getRuntimeListMockHandler(runtimeProfiles),
+    getPlayerOnlineMockHandler({ items: onlinePlayers, nextCursor: null }),
+    getPlayerKnownMockHandler({ items: knownPlayers, nextCursor: null }),
+    getPlayerGetMockHandler(({ params }) => playerById(String(params.uuid))),
+    getPermissionGroupListMockHandler(permissionGroups),
+    getTextPreviewMockHandler(async ({ request }) =>
+      previewOf((await request.json()) as TextPreviewRequest),
+    ),
     getServerGetMockHandler(({ params }) => serverById(String(params.id))),
     ...getOgCloudAPIMock(),
   );

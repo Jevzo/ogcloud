@@ -246,6 +246,76 @@
     "players": "Players",
     "servers": "Servers"
   },
+  "players": {
+    "actions": {
+      "kick": "Kick",
+      "open": "Open",
+      "rank": "Set rank",
+      "transfer": "Move"
+    },
+    "columns": {
+      "connected": "Online since",
+      "firstSeen": "First seen",
+      "lastSeen": "Last seen",
+      "player": "Player",
+      "proxy": "Proxy",
+      "rank": "Rank",
+      "server": "Server"
+    },
+    "description": "Everyone online now, and every player the network has seen.",
+    "detail": {
+      "back": "Back to the players",
+      "description": "First joined {{ago}}",
+      "failed": "This player could not be loaded",
+      "identity": "Identity",
+      "offline": "Offline",
+      "onlineNow": "Online",
+      "permanent": "{{group}}, permanently",
+      "status": "Status",
+      "unknown": "This player never joined",
+      "unknownDescription": "The network knows only players who joined at least once.",
+      "uuid": "UUID"
+    },
+    "empty": {
+      "known": "No player matches",
+      "knownDescription": "Names match from their start; try fewer letters.",
+      "online": "Nobody is online",
+      "onlineDescription": "Players appear here as soon as they join through a proxy."
+    },
+    "everyone": "Everyone",
+    "kick": {
+      "description": "They are disconnected and see this message; they can join again.",
+      "done": "Kicked {{name}}",
+      "message": "Message",
+      "preview": "What the player sees",
+      "submit": "Kick",
+      "title": "Kick {{name}}?"
+    },
+    "loadMore": "Load more",
+    "online": "Online",
+    "rank": {
+      "description": "The new rank applies at once, on every server the player is on.",
+      "done": "{{name}} is now {{group}}",
+      "group": "Permission group",
+      "submit": "Set rank",
+      "title": "Set the rank of {{name}}",
+      "until": "Until",
+      "untilHint": "When it ends, the player falls back to the default group."
+    },
+    "rankUntil": "{{group}}, ends {{ago}}",
+    "search": "Search by name",
+    "transfer": {
+      "description": "A group places the player by the network's routing strategy; a server takes them directly.",
+      "done": "Moving {{name}}",
+      "group": "Group",
+      "pickServer": "Pick a server",
+      "server": "Server",
+      "submit": "Move player",
+      "title": "Move {{name}}",
+      "to": "Move to"
+    },
+    "view": "Show"
+  },
   "servers": {
     "actions": {
       "command": "Run command",
@@ -374,5 +444,22 @@
     "failed": "Signing in did not finish: {{detail}}",
     "redirecting": "Taking you to sign in",
     "retry": "Sign in again"
+  },
+  "texts": {
+    "errors": {
+      "BAD_COLOUR": "Not a colour: use a name such as red or a code such as #ff8800.",
+      "COLOUR_COUNT": "A colour tag takes exactly one colour.",
+      "GRADIENT_STOPS": "A gradient needs at least two colours.",
+      "LONE_ANGLE": "This < starts no tag; write \\< to show the character.",
+      "MISSING_PLACEHOLDER": "This text must show a placeholder it is missing, such as {name}.",
+      "SECTION_SIGN": "§ codes are not allowed; use tags instead.",
+      "TAG_ARGUMENTS": "This tag takes no values after a colon.",
+      "TOO_LONG": "Texts are at most 2,048 characters.",
+      "UNKNOWN_PLACEHOLDER": "This text offers no such placeholder.",
+      "UNKNOWN_TAG": "There is no such tag.",
+      "UNMATCHED_CLOSE": "This closing tag closes nothing."
+    },
+    "moreProblems_one": "{{problem}} One more problem is marked.",
+    "moreProblems_other": "{{problem}} {{count}} more problems are marked."
   }
 }

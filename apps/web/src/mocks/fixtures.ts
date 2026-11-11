@@ -3,10 +3,15 @@ import type {
   GroupView,
   LoadHistoryView,
   MeView,
+  OnlinePlayerView,
   OverviewView,
+  PermissionGroupView,
+  PlayerView,
   RuntimeProfileView,
   ScalingLogView,
   ServerView,
+  TextPreview,
+  TextPreviewRequest,
 } from "@ogcloud/api-client";
 
 // Fixed answers for the screenshots, so pages look the same on every run; everything else comes from orval's mocks.
@@ -359,3 +364,207 @@ export const deletedGroups: DeletedGroupView[] = [
     deletedAt: minutesAgo(190),
   },
 ];
+
+const NAMES = [
+  "mira",
+  "kiwibear",
+  "Tobbe04",
+  "redstoneRita",
+  "Nachtfalke",
+  "pixelpaul",
+  "Lumi_",
+  "creeperKarl",
+  "sunny_side",
+  "B4rt",
+  "frostbyte",
+  "Malachit",
+  "zoe_builds",
+  "Hexenmeister",
+  "tinyturtle",
+  "Orbital",
+  "jules",
+  "MossyStone",
+];
+const RANKS = [
+  "owner",
+  "admin",
+  "vip",
+  "default",
+  "default",
+  "default",
+  "vip",
+  "default",
+];
+const backends = servers.filter(
+  (server) => server.groupType !== "PROXY" && server.state === "RUNNING",
+);
+const proxies = servers.filter((server) => server.groupType === "PROXY");
+
+/** Players online now, spread over the running servers. */
+export const onlinePlayers: OnlinePlayerView[] = NAMES.map((name, index) => ({
+  uuid: `5f1c2a9e-3b7d-4e8f-a1c2-9d8e7f6a5b${index.toString(16).padStart(2, "0")}`,
+  name,
+  session: {
+    proxyId: proxies[index % proxies.length]?.id ?? "",
+    serverId: backends[(index * 5) % backends.length]?.id ?? null,
+    permissionGroupId: RANKS[index % RANKS.length] ?? "default",
+    connectedAt: minutesAgo(3 + index * 11),
+  },
+}));
+
+export const knownPlayers: PlayerView[] = onlinePlayers.map(
+  (player, index) => ({
+    uuid: player.uuid,
+    name: player.name,
+    permissionGroupId: player.session.permissionGroupId,
+    rankExpiresAt:
+      player.session.permissionGroupId === "vip"
+        ? new Date(MOCK_NOW + (index + 3) * 86_400_000).toISOString()
+        : null,
+    firstSeenAt: minutesAgo(60 * 24 * (20 + index * 9)),
+    lastSeenAt: minutesAgo(index * 7),
+    session: null,
+  }),
+);
+
+/** A player by id, online with their session when they are. */
+export function playerById(uuid: string): PlayerView {
+  const known =
+    knownPlayers.find((player) => player.uuid === uuid) ?? knownPlayers[0];
+  if (known === undefined) throw new Error("The player fixture is empty");
+  const online = onlinePlayers.find((player) => player.uuid === known.uuid);
+  return { ...known, session: online?.session ?? null };
+}
+
+export const permissionGroups: PermissionGroupView[] = [
+  {
+    id: "owner",
+    version: 4,
+    settings: {
+      name: "Owner",
+      weight: 1000,
+      defaultGroup: false,
+      display: {
+        chatPrefix: "<gradient:#ff5555:#ffaa00>[Owner]</gradient> ",
+        chatSuffix: "",
+        nameFormat: "<gold>{name}",
+        tabPrefix: "<gradient:#ff5555:#ffaa00>Owner</gradient> ",
+      },
+      permissions: {
+        "*": "Everything",
+        "ogcloud.admin.command": "Console commands",
+      },
+    },
+  },
+  {
+    id: "admin",
+    version: 3,
+    settings: {
+      name: "Admin",
+      weight: 500,
+      defaultGroup: false,
+      display: {
+        chatPrefix: "<red>[Admin]</red> ",
+        chatSuffix: "",
+        nameFormat: "<red>{name}",
+        tabPrefix: "<red>Admin ",
+      },
+      permissions: {
+        "ogcloud.admin.server": "Server commands",
+        "ogcloud.maintenance.bypass": "Join in maintenance",
+      },
+    },
+  },
+  {
+    id: "vip",
+    version: 2,
+    settings: {
+      name: "VIP",
+      weight: 100,
+      defaultGroup: false,
+      display: {
+        chatPrefix: "<green>[VIP]</green> ",
+        chatSuffix: "",
+        nameFormat: "<green>{name}",
+        tabPrefix: "<green>VIP ",
+      },
+      permissions: {
+        "lobby.fly": "Fly in the lobby",
+        "cosmetics.trails": "Particle trails",
+      },
+    },
+  },
+  {
+    id: "default",
+    version: 1,
+    settings: {
+      name: "Player",
+      weight: 0,
+      defaultGroup: true,
+      display: {
+        chatPrefix: "",
+        chatSuffix: "",
+        nameFormat: "<gray>{name}",
+        tabPrefix: "<gray>",
+      },
+      permissions: {},
+    },
+  },
+];
+
+const TAG = /<[^>]*>/g;
+const HEX = /#[0-9a-fA-F]{6}/;
+const NAMED: Record<string, string> = {
+  gold: "#FFAA00",
+  green: "#55FF55",
+  gray: "#AAAAAA",
+  red: "#FF5555",
+  yellow: "#FFFF55",
+  aqua: "#55FFFF",
+};
+const PLACEHOLDERS: Partial<Record<TextPreviewRequest["field"], string[]>> = {
+  NAME_FORMAT: ["name"],
+  TABLIST_HEADER: [
+    "onlinePlayers",
+    "maxPlayers",
+    "server",
+    "group",
+    "proxy",
+    "ping",
+    "permissionGroup",
+  ],
+  TABLIST_FOOTER: [
+    "onlinePlayers",
+    "maxPlayers",
+    "server",
+    "group",
+    "proxy",
+    "ping",
+    "permissionGroup",
+  ],
+};
+
+/** The mocks draw a text in its first colour with its tags removed; the real API renders every tag (D-0202). */
+export function previewOf(request: TextPreviewRequest): TextPreview {
+  const named = /<([a-z_]+)>/.exec(request.text)?.[1];
+  const color =
+    HEX.exec(request.text)?.[0] ??
+    (named === undefined ? null : (NAMED[named] ?? null));
+  const span = {
+    text: request.text
+      .replace(TAG, "")
+      .replaceAll("{name}", "Steve")
+      .replaceAll("{onlinePlayers}", "1,284"),
+    color,
+    bold: false,
+    italic: false,
+    underlined: false,
+    strikethrough: false,
+    obfuscated: false,
+  };
+  return {
+    errors: [],
+    rendering: { modern: [span], legacy: [span] },
+    placeholders: PLACEHOLDERS[request.field] ?? [],
+  };
+}

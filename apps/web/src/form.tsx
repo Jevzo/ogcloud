@@ -1,4 +1,11 @@
-import { Field, Input, Select, type SelectOption } from "@ogcloud/ui";
+import type { TextPreviewRequestField } from "@ogcloud/api-client";
+import {
+  Field,
+  Input,
+  Select,
+  type SelectOption,
+  TagTextField,
+} from "@ogcloud/ui";
 import {
   createFormHook,
   createFormHookContexts,
@@ -7,7 +14,9 @@ import {
 } from "@tanstack/react-form";
 import type { TFunction } from "i18next";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
+import { textProblem, useTextPreview } from "./texts.ts";
 
 // The dashboard's forms (D-0211): TanStack Form with the contract's zod schemas, drawn with the UI kit's fields.
 
@@ -132,6 +141,60 @@ function SelectField({ label, hint, options, placeholder }: SelectFieldProps) {
   );
 }
 
+interface TagTextFormFieldProps {
+  label: string;
+  hint?: string;
+  /** Which text it is, which decides its placeholders and checks (D-0200). */
+  field: TextPreviewRequestField;
+  multiline?: boolean;
+}
+
+const HEX_COLOUR = /#[0-9a-fA-F]{6}/g;
+
+/** An in-game text with its tags highlighted and the API's problems marked where they are. */
+function TagTextFormField({
+  label,
+  hint,
+  field: textField,
+  multiline = false,
+}: TagTextFormFieldProps) {
+  const { t } = useTranslation("web");
+  const field = useFieldContext<string>();
+  const preview = useTextPreview(textField, field.state.value);
+  const problems = preview.data?.errors ?? [];
+  const first = problems[0];
+  return (
+    <Field
+      label={label}
+      hint={hint}
+      error={
+        first === undefined
+          ? undefined
+          : problems.length > 1
+            ? t("texts.moreProblems", {
+                problem: textProblem(t, first),
+                count: problems.length - 1,
+              })
+            : textProblem(t, first)
+      }
+    >
+      {(control) => (
+        <TagTextField
+          {...control}
+          value={field.state.value}
+          onChange={field.handleChange}
+          problems={problems}
+          placeholders={preview.data?.placeholders ?? []}
+          recentColours={[
+            ...new Set(field.state.value.match(HEX_COLOUR) ?? []),
+          ]}
+          multiline={multiline}
+        />
+      )}
+    </Field>
+  );
+}
+
 /**
  * A contract zod schema as the validator of a form typed by the contract's TypeScript model. orval's two outputs
  * differ only in that zod's optional nulls also admit `undefined`, which the form never holds.
@@ -145,7 +208,7 @@ export function contractSchema<T>(
 export const { useAppForm, withFieldGroup } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, NumberField, SelectField },
+  fieldComponents: { TextField, NumberField, SelectField, TagTextFormField },
   formComponents: {},
 });
 

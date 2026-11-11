@@ -12,6 +12,8 @@ import { GroupsPage } from "./pages/groups/groups-page.tsx";
 import { NotFound } from "./pages/not-found.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { Placeholder } from "./pages/placeholder.tsx";
+import { PlayerPage } from "./pages/players/player-page.tsx";
+import { PlayersPage } from "./pages/players/players-page.tsx";
 import { ServerPage } from "./pages/servers/server-page.tsx";
 import { ServersPage } from "./pages/servers/servers-page.tsx";
 import { AppShell } from "./shell/app-shell.tsx";
@@ -67,7 +69,12 @@ const group = createRoute({
 const players = createRoute({
   getParentRoute: () => app,
   path: "/players",
-  component: () => <Placeholder label="players" />,
+  component: PlayersPage,
+});
+const player = createRoute({
+  getParentRoute: () => app,
+  path: "/players/$playerId",
+  component: PlayerPage,
 });
 const permissions = createRoute({
   getParentRoute: () => app,
@@ -125,6 +132,7 @@ const routeTree = root.addChildren([
     groupCreate,
     group,
     players,
+    player,
     permissions,
     network,
     npcs,

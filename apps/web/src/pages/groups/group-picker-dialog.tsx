@@ -1,6 +1,7 @@
-import { Button, Dialog, Field, Select } from "@ogcloud/ui";
+import { Button, Dialog } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { GroupSelectField } from "./group-select-field.tsx";
 
 interface GroupPickerDialogProps {
   open: boolean;
@@ -26,7 +27,6 @@ export function GroupPickerDialog({
   busy,
   onPick,
 }: GroupPickerDialogProps) {
-  const { t } = useTranslation("web");
   const { t: ui } = useTranslation("ui");
   const [group, setGroup] = useState<string>();
 
@@ -52,17 +52,12 @@ export function GroupPickerDialog({
         </>
       }
     >
-      <Field label={fieldLabel}>
-        {(control) => (
-          <Select
-            {...control}
-            options={groupIds.map((id) => ({ value: id, label: id }))}
-            value={group}
-            onValueChange={setGroup}
-            placeholder={t("servers.request.pickGroup")}
-          />
-        )}
-      </Field>
+      <GroupSelectField
+        label={fieldLabel}
+        groupIds={groupIds}
+        value={group}
+        onValueChange={setGroup}
+      />
     </Dialog>
   );
 }

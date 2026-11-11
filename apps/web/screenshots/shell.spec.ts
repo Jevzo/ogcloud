@@ -1,6 +1,6 @@
 import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
-import { MOCK_NOW, servers } from "../src/mocks/fixtures.ts";
+import { MOCK_NOW, onlinePlayers, servers } from "../src/mocks/fixtures.ts";
 
 // The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0216).
 const OUT = new URL("../../../build/screenshots/web/", import.meta.url)
@@ -16,6 +16,8 @@ const PAGES = [
   "/groups",
   "/groups/new",
   "/groups/bedwars",
+  "/players",
+  `/players/${onlinePlayers[1]?.uuid}`,
   "/users",
 ] as const;
 
@@ -45,7 +47,9 @@ const slug = (path: string) =>
     ? "overview"
     : path.startsWith("/servers/")
       ? "server"
-      : path.slice(1).replaceAll("/", "-");
+      : path.startsWith("/players/")
+        ? "player"
+        : path.slice(1).replaceAll("/", "-");
 
 for (const theme of THEMES) {
   for (const viewport of VIEWPORTS) {
@@ -85,6 +89,21 @@ for (const theme of THEMES) {
     await page.getByLabel("Most servers").fill("24");
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}save-bar-${theme}.png` });
+  });
+
+  test(`player dialogs, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await open(page, `/players/${onlinePlayers[1]?.uuid}`, theme);
+    await page.getByRole("button", { name: "Set rank" }).click();
+    await page.getByRole("dialog").waitFor();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}rank-dialog-${theme}.png` });
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Kick" }).click();
+    await page.getByRole("dialog").waitFor();
+    await page.getByLabel("Message").fill("<red>Back in 5 minutes");
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `${OUT}kick-dialog-${theme}.png` });
   });
 
   test(`a typed confirmation, ${theme}`, async ({ page }) => {

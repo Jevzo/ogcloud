@@ -15,6 +15,7 @@ import { Link } from "@tanstack/react-router";
 import { Plus, Server, SquareTerminal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { useFormat } from "../../format.ts";
 import { CommandDialog } from "./command-dialog.tsx";
 import { RequestServerDialog } from "./request-server-dialog.tsx";
@@ -62,9 +63,6 @@ export function ServersPage() {
   );
 
   const serverColumns = useMemo(() => {
-    // Read the clock per cell, so ages move on with every refetch.
-    const ago = (at: string | null | undefined) =>
-      at == null ? "—" : format.ago(new Date(at), Date.now());
     return columns.columns([
       columns.accessor("displayName", {
         header: () => t("servers.columns.server"),
@@ -111,15 +109,11 @@ export function ServersPage() {
       }),
       columns.accessor("startedAt", {
         header: () => t("servers.columns.started"),
-        cell: (cell) => (
-          <span className="text-text-2">{ago(cell.getValue())}</span>
-        ),
+        cell: (cell) => <Ago at={cell.getValue()} />,
       }),
       columns.accessor("lastHeartbeatAt", {
         header: () => t("servers.columns.heartbeat"),
-        cell: (cell) => (
-          <span className="text-text-2">{ago(cell.getValue())}</span>
-        ),
+        cell: (cell) => <Ago at={cell.getValue()} />,
       }),
     ]);
   }, [t, format]);

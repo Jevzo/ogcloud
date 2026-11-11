@@ -20,8 +20,8 @@ import {
   SquareTerminal,
   Upload,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
 import { GroupLink } from "../groups/group-status.tsx";
 import { useServerActions } from "./server-actions.tsx";
@@ -159,14 +159,14 @@ export function ServerPage() {
       />
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(320px,0.6fr)] gap-4">
         <Card title={t("servers.detail.status")}>
-          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-8 gap-y-3">
-            <Row label={t("servers.columns.state")}>
+          <Details>
+            <DetailRow label={t("servers.columns.state")}>
               <span className="flex items-center gap-2">
                 <ServerStateBadge state={view.state} />
                 <span className="text-text-3">{ago(view.stateSince)}</span>
               </span>
-            </Row>
-            <Row label={t("servers.columns.players")}>
+            </DetailRow>
+            <DetailRow label={t("servers.columns.players")}>
               <span className="inline-flex items-center gap-2.5">
                 <Meter value={view.players} max={view.maxPlayers} />
                 {t("groups.load", {
@@ -174,25 +174,25 @@ export function ServerPage() {
                   capacity: format.number(view.maxPlayers),
                 })}
               </span>
-            </Row>
+            </DetailRow>
             {view.gameState == null ? null : (
-              <Row label={t("servers.columns.game")}>
+              <DetailRow label={t("servers.columns.game")}>
                 {t(`servers.game.${view.gameState}`)}
-              </Row>
+              </DetailRow>
             )}
-            <Row label={t("servers.columns.started")}>
+            <DetailRow label={t("servers.columns.started")}>
               {ago(view.startedAt)}
-            </Row>
-            <Row label={t("servers.columns.heartbeat")}>
+            </DetailRow>
+            <DetailRow label={t("servers.columns.heartbeat")}>
               {ago(view.lastHeartbeatAt)}
-            </Row>
-            <Row label={t("servers.columns.group")}>
+            </DetailRow>
+            <DetailRow label={t("servers.columns.group")}>
               <GroupLink id={view.groupId} />
-            </Row>
-            <Row label={t("servers.detail.profile")}>
+            </DetailRow>
+            <DetailRow label={t("servers.detail.profile")}>
               <span className="font-mono text-mono">{view.profileId}</span>
-            </Row>
-          </dl>
+            </DetailRow>
+          </Details>
         </Card>
         <Card title={t("servers.detail.identity")}>
           <div className="flex flex-col gap-3">
@@ -208,14 +208,5 @@ export function ServerPage() {
       </div>
       {actions.dialogs}
     </div>
-  );
-}
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="text-text-3">{label}</dt>
-      <dd className="m-0">{children}</dd>
-    </>
   );
 }
