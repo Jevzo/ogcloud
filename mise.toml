@@ -299,6 +299,13 @@ if [ -z "$(find contracts/proto -name '*.proto' -print -quit)" ]; then
 fi
 buf lint
 buf format --diff --exit-code
+# Against the newest release HEAD builds on (D-0225); CI's baseline job checks out every tag.
+release=$(git describe --tags --abbrev=0 --match 'v2.*' HEAD 2>/dev/null || true)
+if [ -z "$release" ]; then
+  echo "no v2 release tag to compare with, skipping buf breaking"
+else
+  buf breaking --against ".git#tag=$release"
+fi
 """
 
 [tasks.gen]

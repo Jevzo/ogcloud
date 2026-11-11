@@ -4,6 +4,7 @@ modules:
 lint:
   use:
     - STANDARD
+# Against the last release (D-0225): wire and JSON compatibility, so fields may go once their number and name are reserved.
 breaking:
   use:
-    - FILE
+    - WIRE_JSON
