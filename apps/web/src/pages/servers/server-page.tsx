@@ -23,6 +23,7 @@ import {
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
+import { GroupLink } from "../groups/group-status.tsx";
 import { useServerActions } from "./server-actions.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
 
@@ -186,9 +187,7 @@ export function ServerPage() {
               {ago(view.lastHeartbeatAt)}
             </Row>
             <Row label={t("servers.columns.group")}>
-              <Link to="/groups" className="text-accent-text hover:underline">
-                {view.groupId}
-              </Link>
+              <GroupLink id={view.groupId} />
             </Row>
             <Row label={t("servers.detail.profile")}>
               <span className="font-mono text-mono">{view.profileId}</span>
