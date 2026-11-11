@@ -47,6 +47,9 @@ export interface ThemeColours {
   chart5: string;
   /** Dims the page behind dialogs, in both themes. */
   scrim: string;
+  /** A QR code's modules and ground: dark on light in both themes, as scanners read them. */
+  qrInk: string;
+  qrGround: string;
 }
 
 export interface ThemeShadows {
@@ -101,6 +104,8 @@ export const themes: Record<ThemeName, Theme> = {
       chart4: "#D97706",
       chart5: "#047857",
       scrim: "rgba(29, 27, 24, 0.35)",
+      qrInk: "#000000",
+      qrGround: "#FFFFFF",
     },
     shadows: {
       card: "0 1px 2px rgba(29, 27, 24, 0.05), 0 10px 28px -14px rgba(29, 27, 24, 0.16)",
@@ -148,6 +153,8 @@ export const themes: Record<ThemeName, Theme> = {
       chart4: "#C08414",
       chart5: "#2B9E6E",
       scrim: "rgba(0, 0, 0, 0.6)",
+      qrInk: "#000000",
+      qrGround: "#FFFFFF",
     },
     shadows: {
       card: "inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 34px -18px rgba(0, 0, 0, 0.7)",
@@ -189,7 +196,14 @@ export const densities: Record<DensityName, Density> = {
 
 export const defaultDensity: DensityName = "compact";
 
-export const radius = { control: 10, card: 16, popover: 20 } as const;
+/** `small` rounds keys, checkboxes and chart bars; `game` the frames of in-game previews. */
+export const radius = {
+  game: 2,
+  small: 4,
+  control: 10,
+  card: 16,
+  popover: 20,
+} as const;
 
 /** Small and large buttons; medium ones take the density's control height. */
 export const buttonHeights = { sm: 28, lg: 40 } as const;
@@ -223,7 +237,16 @@ export interface TypeStyle {
 
 /** Table text follows the density; everything else is fixed. */
 export const typeScale: Record<
-  "display" | "title" | "heading" | "body" | "small" | "meta" | "mono",
+  | "display"
+  | "title"
+  | "heading"
+  | "body"
+  | "small"
+  | "meta"
+  | "mono"
+  | "wordmark"
+  | "wordmarkLarge"
+  | "game",
   TypeStyle
 > = {
   display: { size: 34, lineHeight: 40, weight: 750, tracking: "-0.02em" },
@@ -234,6 +257,11 @@ export const typeScale: Record<
   small: { size: 13, lineHeight: 18, weight: 400 },
   meta: { size: 12, lineHeight: 16, weight: 400 },
   mono: { size: 13, lineHeight: 18, weight: 400 },
+  /** "OgCloud" beside the mascot: in the sidebar, and large on the sign-in and setup pages. */
+  wordmark: { size: 17, lineHeight: 24, weight: 750, tracking: "-0.02em" },
+  wordmarkLarge: { size: 26, lineHeight: 32, weight: 750, tracking: "-0.02em" },
+  /** In-game text in Monocraft, at the size the game draws it (D-0216). */
+  game: { size: 15, lineHeight: 22, weight: 400 },
 };
 
 /** Expressive but quick (D-0209): every transition settles within 400 ms, and none runs under reduced motion. */
@@ -250,6 +278,11 @@ export const layout = {
   sidebarInset: 8,
   headerHeight: 52,
   formWidth: 720,
+  /** The sign-in pages' card, and the setup wizard with its steps beside it. */
+  brandedWidth: 416,
+  setupWidth: 800,
+  /** The colour picker's popover, sized to its colour area. */
+  colourPickerWidth: 284,
   /** Screenshot reviews run at the smallest layout and on a large monitor (AGENTS.md §13, D-0170). */
   reviewViewports: [
     { name: "laptop", width: 1280, height: 800 },

@@ -34,7 +34,7 @@ export function CopyField({ value, label }: { value: string; label: string }) {
           type="button"
           aria-label={`${t("actions.copy")} ${label}`}
           onClick={copy}
-          className="grid size-[26px] cursor-pointer place-items-center rounded-[calc(var(--radius-control)-2px)] text-text-2 hover:bg-surface-3"
+          className="grid size-6.5 cursor-pointer place-items-center rounded-[calc(var(--radius-control)-2px)] text-text-2 hover:bg-surface-3"
         >
           {outcome === "copied" ? (
             <Check aria-hidden="true" size={15} />

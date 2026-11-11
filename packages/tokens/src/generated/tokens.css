@@ -15,6 +15,8 @@
   --font-weight-label: 650;
   --font-weight-bold: 700;
   --font-weight-heavy: 750;
+  --radius-game: 2px;
+  --radius-small: 4px;
   --radius-control: 10px;
   --radius-card: 16px;
   --radius-popover: 20px;
@@ -41,12 +43,26 @@
   --text-mono: 13px;
   --text-mono--line-height: 18px;
   --text-mono--font-weight: 400;
+  --text-wordmark: 17px;
+  --text-wordmark--line-height: 24px;
+  --text-wordmark--font-weight: 750;
+  --text-wordmark--letter-spacing: -0.02em;
+  --text-wordmark-large: 26px;
+  --text-wordmark-large--line-height: 32px;
+  --text-wordmark-large--font-weight: 750;
+  --text-wordmark-large--letter-spacing: -0.02em;
+  --text-game: 15px;
+  --text-game--line-height: 22px;
+  --text-game--font-weight: 400;
   --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
   --spacing-button-sm: 28px;
   --spacing-button-lg: 40px;
   --spacing-sidebar: 232px;
   --spacing-header: 52px;
   --container-form: 720px;
+  --container-branded: 416px;
+  --container-setup: 800px;
+  --container-colour-picker: 284px;
 }
 
 @theme inline {
@@ -87,6 +103,8 @@
   --color-chart-4: var(--og-chart-4);
   --color-chart-5: var(--og-chart-5);
   --color-scrim: var(--og-scrim);
+  --color-qr-ink: var(--og-qr-ink);
+  --color-qr-ground: var(--og-qr-ground);
   --shadow-card: var(--og-shadow-card);
   --shadow-popover: var(--og-shadow-popover);
   --shadow-raised: var(--og-shadow-raised);
@@ -136,6 +154,8 @@
   --og-chart-4: #D97706;
   --og-chart-5: #047857;
   --og-scrim: rgba(29, 27, 24, 0.35);
+  --og-qr-ink: #000000;
+  --og-qr-ground: #FFFFFF;
   --og-shadow-card: 0 1px 2px rgba(29, 27, 24, 0.05), 0 10px 28px -14px rgba(29, 27, 24, 0.16);
   --og-shadow-popover: 0 2px 6px rgba(29, 27, 24, 0.06), 0 18px 40px -16px rgba(29, 27, 24, 0.22);
   --og-shadow-raised: 0 1px 2px rgba(29, 27, 24, 0.1);
@@ -190,6 +210,8 @@
     --og-chart-4: #C08414;
     --og-chart-5: #2B9E6E;
     --og-scrim: rgba(0, 0, 0, 0.6);
+    --og-qr-ink: #000000;
+    --og-qr-ground: #FFFFFF;
     --og-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 34px -18px rgba(0, 0, 0, 0.7);
     --og-shadow-popover: 0 24px 56px -20px rgba(0, 0, 0, 0.8);
     --og-shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -235,6 +257,8 @@
   --og-chart-4: #C08414;
   --og-chart-5: #2B9E6E;
   --og-scrim: rgba(0, 0, 0, 0.6);
+  --og-qr-ink: #000000;
+  --og-qr-ground: #FFFFFF;
   --og-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 34px -18px rgba(0, 0, 0, 0.7);
   --og-shadow-popover: 0 24px 56px -20px rgba(0, 0, 0, 0.8);
   --og-shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5);

@@ -153,10 +153,10 @@ export function DateTimePicker({
             button_next:
               "grid size-7 cursor-pointer place-items-center rounded-control text-text-2 hover:bg-surface-3",
             month_grid: "border-separate border-spacing-0.5",
-            weekday: "h-6 w-[34px] font-normal text-meta text-text-3",
+            weekday: "h-6 w-8.5 font-normal text-meta text-text-3",
             day: "p-0",
             day_button:
-              "grid h-[30px] w-[34px] cursor-pointer place-items-center rounded-control text-small tabular-nums hover:bg-surface-3",
+              "grid h-7.5 w-8.5 cursor-pointer place-items-center rounded-control text-small tabular-nums hover:bg-surface-3",
             today:
               "font-bold [&>button]:shadow-[inset_0_0_0_1px_var(--og-border-control)]",
             selected:
@@ -175,7 +175,7 @@ export function DateTimePicker({
               onChange={(event) => setTime(event.target.value)}
               className={cn(
                 controlFrame,
-                "h-button-sm w-[72px] px-2 text-small tabular-nums outline-none",
+                "h-button-sm w-18 px-2 text-small tabular-nums outline-none",
               )}
             />
           </label>
@@ -214,7 +214,7 @@ function QuickPick({
       aria-pressed={active}
       onClick={onPress}
       className={cn(
-        "h-[30px] cursor-pointer rounded-control px-2 text-left text-small",
+        "h-7.5 cursor-pointer rounded-control px-2 text-left text-small",
         active
           ? "bg-accent-soft font-label text-accent-text"
           : "hover:bg-surface-3",

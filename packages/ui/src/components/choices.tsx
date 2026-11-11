@@ -61,7 +61,7 @@ export function Checkbox({
       <CheckboxPrimitive.Root
         id={id}
         {...props}
-        className="mt-0.5 grid size-4 shrink-0 cursor-pointer place-items-center rounded-[4px] border border-border-control bg-surface disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+        className="mt-0.5 grid size-4 shrink-0 cursor-pointer place-items-center rounded-small border border-border-control bg-surface disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:border-accent data-[state=checked]:bg-accent"
       >
         <CheckboxPrimitive.Indicator>
           <Check
@@ -112,7 +112,7 @@ export function RadioGroup<T extends string>({
             <RadioPrimitive.Item
               id={`${id}-${option.value}`}
               value={option.value}
-              className="mt-0.5 size-4 shrink-0 cursor-pointer rounded-full border border-border-control bg-surface data-[state=checked]:border-[5px] data-[state=checked]:border-accent"
+              className="mt-0.5 size-4 shrink-0 cursor-pointer rounded-full border border-border-control bg-surface data-[state=checked]:border-5 data-[state=checked]:border-accent"
             />
             <span className="flex flex-col">
               <label

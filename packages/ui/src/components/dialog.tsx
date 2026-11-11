@@ -14,7 +14,12 @@ interface DialogProps {
   /** The actions, right-aligned with the primary one last (D-0210). */
   footer: ReactNode;
   className?: string | undefined;
+  /** False keeps Escape and clicks outside from closing it, e.g. while it shows something only once. */
+  dismissible?: boolean;
 }
+
+// Radix closes on Escape and outside clicks unless their events are stopped.
+const stay = (event: Event) => event.preventDefault();
 
 export function Dialog({
   open,
@@ -24,12 +29,16 @@ export function Dialog({
   children,
   footer,
   className,
+  dismissible = true,
 }: DialogProps) {
   return (
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
       <Primitive.Portal>
         <Primitive.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Primitive.Content
+          {...(dismissible
+            ? {}
+            : { onEscapeKeyDown: stay, onInteractOutside: stay })}
           className={cn(
             "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-surface p-5 shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
             className,

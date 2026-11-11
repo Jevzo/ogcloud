@@ -77,14 +77,17 @@ function fontStack(stack: readonly string[]): string {
 // Tailwind's defaults go, so only OgCloud's tokens exist as utilities (AGENTS.md §13).
 function staticTheme(): Declaration[] {
   const type = Object.entries(typeScale).flatMap(
-    ([name, style]): Declaration[] => [
-      [`--text-${name}`, px(style.size)],
-      [`--text-${name}--line-height`, px(style.lineHeight)],
-      [`--text-${name}--font-weight`, String(style.weight)],
-      ...(style.tracking === undefined
-        ? []
-        : [[`--text-${name}--letter-spacing`, style.tracking] as const]),
-    ],
+    ([key, style]): Declaration[] => {
+      const name = kebab(key);
+      return [
+        [`--text-${name}`, px(style.size)],
+        [`--text-${name}--line-height`, px(style.lineHeight)],
+        [`--text-${name}--font-weight`, String(style.weight)],
+        ...(style.tracking === undefined
+          ? []
+          : [[`--text-${name}--letter-spacing`, style.tracking] as const]),
+      ];
+    },
   );
   const [x1, y1, x2, y2] = motion.easing.standard;
   return [
@@ -114,6 +117,9 @@ function staticTheme(): Declaration[] {
     ["--spacing-sidebar", px(layout.sidebarWidth)],
     ["--spacing-header", px(layout.headerHeight)],
     ["--container-form", px(layout.formWidth)],
+    ["--container-branded", px(layout.brandedWidth)],
+    ["--container-setup", px(layout.setupWidth)],
+    ["--container-colour-picker", px(layout.colourPickerWidth)],
   ];
 }
 

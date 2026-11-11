@@ -12,7 +12,7 @@ export type Tone =
   | "info";
 
 const badge = cva(
-  "inline-flex h-[22px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 font-label text-meta",
+  "inline-flex h-5.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 font-label text-meta",
   {
     variants: {
       tone: {

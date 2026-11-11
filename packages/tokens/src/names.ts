@@ -9,6 +9,6 @@ export const utilityNames = {
   colour: Object.keys(themes.light.colours).map(kebab),
   shadow: Object.keys(themes.light.shadows),
   radius: Object.keys(radius),
-  text: [...Object.keys(typeScale), "table"],
+  text: [...Object.keys(typeScale).map(kebab), "table"],
   fontWeight: Object.keys(fontWeights),
 } as const;

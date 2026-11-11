@@ -3,7 +3,7 @@ import { cn } from "../lib/cn.ts";
 import { type GameSpan, GameText } from "./game-text.tsx";
 import { gameLook } from "./minecraft.ts";
 
-const gameFont = "font-game text-[15px] leading-[22px]";
+const gameFont = "font-game text-game";
 
 /** A labelled preview of how one client version shows a text. */
 export function PreviewFrame({
@@ -37,7 +37,7 @@ export function ServerListPreview({
 }: ServerListPreviewProps) {
   return (
     <div
-      className={cn("flex gap-2.5 rounded-[2px] border-2 p-2", gameFont)}
+      className={cn("flex gap-2.5 rounded-game border-2 p-2", gameFont)}
       style={{ backgroundColor: gameLook.panel, borderColor: gameLook.edge }}
     >
       <img
@@ -74,7 +74,7 @@ export function ChatPreview({
 }) {
   return (
     <div
-      className={cn("rounded-[2px] px-2.5 py-2", gameFont)}
+      className={cn("rounded-game px-2.5 py-2", gameFont)}
       style={{ backgroundColor: gameLook.chat }}
     >
       {lines.map((spans, index) => (
@@ -132,7 +132,7 @@ export function NametagPreview({
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-1 rounded-[2px] px-2 py-4",
+        "flex flex-col items-center gap-1 rounded-game px-2 py-4",
         gameFont,
       )}
       style={{ backgroundColor: gameLook.sky }}

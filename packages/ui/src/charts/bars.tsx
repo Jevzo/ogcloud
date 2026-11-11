@@ -65,7 +65,7 @@ export function StackedBar({
     <span
       aria-hidden="true"
       className={cn(
-        "flex h-2.5 gap-0.5 overflow-hidden rounded-[4px]",
+        "flex h-2.5 gap-0.5 overflow-hidden rounded-small",
         className,
       )}
     >

@@ -329,6 +329,9 @@ function Type() {
     small: "text-small",
     meta: "text-meta",
     mono: "font-mono text-mono",
+    wordmark: "text-wordmark",
+    wordmarkLarge: "text-wordmark-large",
+    game: "font-game text-game",
   };
   const samples: Record<keyof typeof typeScale, string> = {
     display: "1,284 players online",
@@ -338,6 +341,9 @@ function Type() {
     small: "Lowercase letters, digits and dashes.",
     meta: "Started 14 min ago by the autoscaler",
     mono: "8f2c1e0a9b3d4c5e 0O 1lI 5S 2Z -XX:+UseG1GC",
+    wordmark: "OgCloud",
+    wordmarkLarge: "OgCloud",
+    game: "Welcome to the lobby!",
   };
   return (
     <Card>

@@ -53,7 +53,7 @@ function OptionList<T extends string>({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "grid size-4 shrink-0 place-items-center rounded-[4px] border",
+                    "grid size-4 shrink-0 place-items-center rounded-small border",
                     selected
                       ? "border-accent bg-accent"
                       : "border-border-control bg-surface",
@@ -197,7 +197,7 @@ export function MultiSelect<T extends string>({
         <div
           className={cn(
             controlFrame,
-            "flex min-h-control flex-wrap items-center gap-1.5 p-[3px]",
+            "flex min-h-control flex-wrap items-center gap-1.5 p-0.75",
             open && "border-accent ring-3 ring-accent/30",
           )}
         >
@@ -214,7 +214,7 @@ export function MultiSelect<T extends string>({
                 type="button"
                 aria-label={t("list.remove", { label: labelOf(value) })}
                 onClick={() => toggle(value)}
-                className="grid size-5 cursor-pointer place-items-center rounded-[4px] hover:bg-accent/15"
+                className="grid size-5 cursor-pointer place-items-center rounded-small hover:bg-accent/15"
               >
                 <X aria-hidden="true" size={12} strokeWidth={2.25} />
               </button>
