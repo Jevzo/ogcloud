@@ -129,10 +129,21 @@ test("the server list shows the MOTD in hex to 1.16+ clients and in named colour
         },
       );
       assert.match(modern, /"color":"#ff0000"/);
-      const { description } = await serverList(context.target, LEGACY_PROTOCOL);
-      assert.equal(shownText(description).replace(/§./g, ""), marker);
+      // Each load balancer replica refreshes on its own, so the old one may still be answering.
+      const legacy = await eventually(
+        "the 1.8 server list to show the new MOTD",
+        async () => {
+          const { description } = await serverList(
+            context.target,
+            LEGACY_PROTOCOL,
+          );
+          return shownText(description).replace(/§./g, "") === marker
+            ? JSON.stringify(description)
+            : undefined;
+        },
+      );
       assert.match(
-        JSON.stringify(description),
+        legacy,
         /^\{"text":"§4/,
         "1.8 reads legacy text in the nearest named colours",
       );
