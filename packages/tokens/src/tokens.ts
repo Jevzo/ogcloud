@@ -45,6 +45,8 @@ export interface ThemeColours {
   chart3: string;
   chart4: string;
   chart5: string;
+  /** Dims the page behind dialogs, in both themes. */
+  scrim: string;
 }
 
 export interface ThemeShadows {
@@ -98,6 +100,7 @@ export const themes: Record<ThemeName, Theme> = {
       chart3: "#0891B2",
       chart4: "#D97706",
       chart5: "#047857",
+      scrim: "rgba(29, 27, 24, 0.35)",
     },
     shadows: {
       card: "0 1px 2px rgba(29, 27, 24, 0.05), 0 10px 28px -14px rgba(29, 27, 24, 0.16)",
@@ -144,6 +147,7 @@ export const themes: Record<ThemeName, Theme> = {
       chart3: "#1FA5C0",
       chart4: "#C08414",
       chart5: "#2B9E6E",
+      scrim: "rgba(0, 0, 0, 0.6)",
     },
     shadows: {
       card: "inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 34px -18px rgba(0, 0, 0, 0.7)",

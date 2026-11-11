@@ -28,7 +28,7 @@ export function Dialog({
   return (
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
       <Primitive.Portal>
-        <Primitive.Overlay className="fixed inset-0 z-40 bg-text/35 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
+        <Primitive.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Primitive.Content
           className={cn(
             "fixed top-1/2 left-1/2 z-50 flex w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-surface p-5 shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
