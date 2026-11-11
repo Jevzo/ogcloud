@@ -12,6 +12,7 @@ import io.ogwars.cloud.contracts.events.v1.ScalingDecided
 import io.ogwars.cloud.contracts.events.v1.ServerLifecycleChanged
 import io.ogwars.cloud.contracts.events.v1.ServerState
 import io.ogwars.cloud.domain.audit.Actor
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.job.JobState
@@ -66,7 +67,8 @@ class LiveEventsTest(
         }
         oauth.events("not-a-ticket").use { it.statusCode() shouldBe UNAUTHORIZED }
         oauth.call("POST", TICKETS, token = null).statusCode() shouldBe UNAUTHORIZED
-        audit.list(before = null, limit = AUDIT_PAGE).map { it.action } shouldNotContain "POST $TICKETS"
+        audit.list(AuditFilter.NONE, before = null, limit = AUDIT_PAGE).map { it.action } shouldNotContain
+            "POST $TICKETS"
     }
 
     @Test

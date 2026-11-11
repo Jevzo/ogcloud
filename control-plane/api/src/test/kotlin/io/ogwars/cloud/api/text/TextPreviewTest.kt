@@ -3,6 +3,7 @@ package io.ogwars.cloud.api.text
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TestUsers
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.store.AuditLogStore
 import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.BuiltInRole
@@ -35,7 +36,8 @@ class TextPreviewTest(
         colours(legacy(preview)) shouldBe
             listOf("V" to "#aa0000", "I" to "#aa00aa", "P" to "#0000aa", " " to null, "!" to null)
         (modern(preview).last() as Map<*, *>)["bold"] shouldBe true
-        audit.list(before = null, limit = AUDIT_PAGE).map { it.action } shouldNotContain "POST $PREVIEW"
+        audit.list(AuditFilter.NONE, before = null, limit = AUDIT_PAGE).map { it.action } shouldNotContain
+            "POST $PREVIEW"
     }
 
     @Test

@@ -79,4 +79,4 @@ class SchemaTest(
 }
 
 /** Bump with every new migration file. */
-private const val LATEST_MIGRATION = 5
+private const val LATEST_MIGRATION = 6

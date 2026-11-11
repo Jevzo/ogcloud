@@ -22,12 +22,14 @@ import io.ogwars.cloud.domain.store.WebUserStore
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.ogwars.cloud.messaging.KafkaTopics
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.net.URLEncoder
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -48,7 +50,8 @@ class OperationsTest(
     private val oauth = OAuthHttp(port)
     private val probe = KafkaProbe(kafka)
     private val testUsers = TestUsers(users, passwords)
-    private val admin = testUsers.token(testUsers.create(BuiltInRole.ADMIN.id))
+    private val adminUser = testUsers.create(BuiltInRole.ADMIN.id)
+    private val admin = testUsers.token(adminUser)
 
     @Test
     fun `NPCs are managed per group and every change is announced`() {
@@ -124,6 +127,29 @@ class OperationsTest(
         (firstScaling["items"] as List<*>).size shouldBe 1
         secondScaling["nextCursor"] shouldBe null
         audit.map { (it as Map<*, *>)["action"] } shouldContain "POST /api/v1/npcs"
+    }
+
+    @Test
+    fun `the audit log is filtered by actor, action, target and time`() {
+        val since = Instant.now().minusSeconds(1)
+        val groupId = newGroup()
+        val id = oauth.json(oauth.call("POST", NPCS, admin, npc(groupId, clickTo = groupId)))["id"] as String
+        oauth.call("DELETE", "$NPCS/$id", admin)
+        val actor = "user:${adminUser.id}"
+        val create = URLEncoder.encode("POST /api/v1/npcs", Charsets.UTF_8)
+        val items = { query: String ->
+            (oauth.json(oauth.call("GET", "$LOGS/audit?$query", admin))["items"] as List<*>).map { it as Map<*, *> }
+        }
+
+        val created = items("actor=$actor&action=$create&from=$since")
+        val deleted = items("targetType=npcs&targetId=$id")
+        val earlier = items("actor=$actor&until=$since")
+
+        created.size shouldBe 1
+        deleted.map { it["action"] } shouldBe listOf("DELETE /api/v1/npcs/{id}")
+        earlier.map { it["targetId"] } shouldNotContain id
+        oauth.call("GET", "$LOGS/audit?actor=nobody", admin).statusCode() shouldBe BAD_REQUEST
+        oauth.call("GET", "$LOGS/audit?from=$since&until=$since", admin).statusCode() shouldBe BAD_REQUEST
     }
 
     @Test

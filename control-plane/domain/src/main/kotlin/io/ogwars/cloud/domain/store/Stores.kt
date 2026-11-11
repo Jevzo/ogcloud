@@ -1,6 +1,7 @@
 package io.ogwars.cloud.domain.store
 
 import io.ogwars.cloud.domain.audit.AuditEntry
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.job.Job
@@ -194,8 +195,9 @@ interface JobStore {
 interface AuditLogStore {
     fun append(entry: AuditEntry)
 
-    /** Newest first, below [before]; ids are UUIDv7 (D-0064). */
+    /** Entries matching [filter], newest first, below [before]; ids are UUIDv7 (D-0064). */
     fun list(
+        filter: AuditFilter,
         before: UUID?,
         limit: Int,
     ): List<AuditEntry>

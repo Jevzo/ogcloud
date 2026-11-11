@@ -3,6 +3,7 @@ package io.ogwars.cloud.persistence
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.audit.AuditEntry
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobState
@@ -97,6 +98,36 @@ class JobsLogsArtifactsTest(
     }
 
     @Test
+    fun `the audit log is filtered by actor, action, target and time`() {
+        val mira = Actor(ActorType.USER, "filter-mira")
+        val bot = Actor(ActorType.CLIENT, "filter-bot")
+
+        fun entry(
+            n: Long,
+            secondsAgo: Long,
+            actor: Actor,
+            action: String,
+            target: String,
+        ) = AuditEntry(UUID(0x0192d2c2_0000_7000L, n), NOW.minusSeconds(secondsAgo), actor, action, "group", target)
+        val entries =
+            listOf(
+                entry(1, secondsAgo = 300, mira, "PUT /filter/groups", "lobby"),
+                entry(2, secondsAgo = 200, mira, "DELETE /filter/npcs", "npc-1"),
+                entry(3, secondsAgo = 100, bot, "PUT /filter/groups", "bedwars"),
+            )
+        entries.forEach(audit::append)
+        val ids = { filter: AuditFilter -> audit.list(filter, before = null, limit = 10).map { it.id } }
+        val (first, second, third) = entries.map { it.id }
+
+        ids(AuditFilter(actor = mira)) shouldContainExactly listOf(second, first)
+        ids(AuditFilter(action = "PUT /filter/groups")) shouldContainExactly listOf(third, first)
+        ids(AuditFilter(targetType = "group", targetId = "lobby")) shouldContainExactly listOf(first)
+        ids(AuditFilter(actor = mira, from = NOW.minusSeconds(250), until = NOW)) shouldContainExactly listOf(second)
+        ids(AuditFilter(action = "PUT /filter/groups", until = NOW.minusSeconds(100))) shouldContainExactly
+            listOf(first)
+    }
+
+    @Test
     fun `logs are listed newest first, scaling entries per group`() {
         val ids = (1L..3L).map { UUID(0x0192d2c1_0000_7000L, it) }
         ids.forEach { id ->
@@ -132,8 +163,9 @@ class JobsLogsArtifactsTest(
             )
         }
 
-        audit.list(before = null, limit = 2).map { it.id } shouldContainExactly ids.reversed().take(2)
-        audit.list(before = ids[1], limit = 2).single().metadata shouldBe mapOf("k" to "v")
+        audit.list(AuditFilter.NONE, before = null, limit = 2).map { it.id } shouldContainExactly
+            ids.reversed().take(2)
+        audit.list(AuditFilter.NONE, before = ids[1], limit = 2).single().metadata shouldBe mapOf("k" to "v")
         scaling.list(GroupId("lobby"), before = null, limit = 10).map { it.id } shouldContainExactly
             listOf(ids[2], ids[0])
         scaling.list(groupId = null, before = ids[2], limit = 10).map { it.id } shouldContainExactly

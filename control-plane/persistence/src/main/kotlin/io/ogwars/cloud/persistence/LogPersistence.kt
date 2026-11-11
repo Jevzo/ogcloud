@@ -3,6 +3,7 @@ package io.ogwars.cloud.persistence
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.ActorType
 import io.ogwars.cloud.domain.audit.AuditEntry
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.retention.RetentionKind
 import io.ogwars.cloud.domain.scaling.ScalingAction
@@ -43,15 +44,37 @@ class JdbcAuditLogStore(
     }
 
     override fun list(
+        filter: AuditFilter,
         before: UUID?,
         limit: Int,
-    ): List<AuditEntry> =
-        jdbc
-            .sql("select * from audit_log where id < :before order by id desc limit :limit")
-            .param("before", before ?: MAX_ID)
-            .param("limit", limit)
+    ): List<AuditEntry> {
+        val conditions = mutableListOf("id < :before")
+        val params = mutableMapOf<String, Any>("before" to (before ?: MAX_ID), "limit" to limit)
+
+        fun match(
+            condition: String,
+            vararg values: Pair<String, Any?>,
+        ) {
+            if (values.any { it.second == null }) return
+            conditions += condition
+            values.forEach { (name, value) -> params[name] = requireNotNull(value) }
+        }
+        match(
+            "actor_type = :actorType and actor_id = :actorId",
+            "actorType" to filter.actor?.type?.name,
+            "actorId" to filter.actor?.id,
+        )
+        match("action = :action", "action" to filter.action)
+        match("target_type = :targetType", "targetType" to filter.targetType)
+        match("target_id = :targetId", "targetId" to filter.targetId)
+        match("occurred_at >= :from", "from" to filter.from?.toTimestamp())
+        match("occurred_at < :until", "until" to filter.until?.toTimestamp())
+        return jdbc
+            .sql("select * from audit_log where ${conditions.joinToString(" and ")} order by id desc limit :limit")
+            .params(params)
             .query(auditEntry)
             .list()
+    }
 
     override fun about(identifier: String): List<AuditEntry> =
         jdbc

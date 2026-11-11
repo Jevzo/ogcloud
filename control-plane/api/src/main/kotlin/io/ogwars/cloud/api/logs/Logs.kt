@@ -3,7 +3,9 @@ package io.ogwars.cloud.api.logs
 import io.ogwars.cloud.api.web.Cursors
 import io.ogwars.cloud.api.web.Page
 import io.ogwars.cloud.api.web.Requires
+import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.audit.AuditEntry
+import io.ogwars.cloud.domain.audit.AuditFilter
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.scaling.ScalingAction
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
@@ -52,14 +54,22 @@ class LogController(
     private val audit: AuditLogStore,
     private val scaling: ScalingLogStore,
 ) {
+    /** Narrowed by any of: who acted (`user:<id>` as entries show it), the exact action, the target, a time range. */
     @Requires(ApiPermission.LOGS_READ)
     @GetMapping("/audit")
     fun audit(
+        @RequestParam actor: String?,
+        @RequestParam action: String?,
+        @RequestParam targetType: String?,
+        @RequestParam targetId: String?,
+        @RequestParam from: Instant?,
+        @RequestParam until: Instant?,
         @RequestParam cursor: String?,
         @RequestParam limit: Int?,
     ): Page<AuditEntryView> {
+        val filter = AuditFilter(actor?.let(Actor::parse), action, targetType, targetId, from, until)
         val size = Cursors.limit(limit)
-        val page = Cursors.page(audit.list(cursor?.let(Cursors::decode), size + 1), size) { it.id }
+        val page = Cursors.page(audit.list(filter, cursor?.let(Cursors::decode), size + 1), size) { it.id }
         return Page(page.items.map { it.toView() }, page.nextCursor)
     }
 

@@ -725,6 +725,12 @@ export const LogScalingResponse = zod.unknown()
 
 
 export const LogAuditQueryParams = zod.object({
+  "actor": zod.string().optional(),
+  "action": zod.string().optional(),
+  "targetType": zod.string().optional(),
+  "targetId": zod.string().optional(),
+  "from": zod.iso.datetime({"offset":true}).optional(),
+  "until": zod.iso.datetime({"offset":true}).optional(),
   "cursor": zod.string().optional(),
   "limit": zod.int().optional()
 })

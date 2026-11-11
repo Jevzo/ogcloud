@@ -6,6 +6,12 @@
  */
 
 export type LogAuditParams = {
+  actor?: string;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  from?: string;
+  until?: string;
   cursor?: string;
   limit?: number;
 };
