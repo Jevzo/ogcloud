@@ -23,6 +23,8 @@ type Cluster struct {
 	Client kubernetes.Interface
 	// The admin REST config; its CAData is the API server's CA.
 	Config *rest.Config
+	// The same admin access as a kubeconfig, for tools such as helm.
+	Kubeconfig []byte
 }
 
 // Start runs k3s customized by opts, e.g. a network alias that other containers reach it by.
@@ -50,7 +52,7 @@ func Start(t *testing.T, opts ...testcontainers.ContainerCustomizer) *Cluster {
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}
-	return &Cluster{Client: client, Config: config}
+	return &Cluster{Client: client, Config: config, Kubeconfig: kubeconfig}
 }
 
 // Token requests a service-account token as the kubelet projects one (D-0013): for audience (the API

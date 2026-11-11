@@ -31,8 +31,10 @@ spec:
       labels:
         {{- include "ogcloud.selector" (dict "root" $ "component" "bootstrap") | nindent 8 }}
     spec:
-      {{- /* The root stage runs before the release's PriorityClasses exist. */}}
-      {{- include "ogcloud.platformPod" (dict "root" $ "serviceAccount" "ogcloud-bootstrap" "restartPolicy" "OnFailure" "withoutPriority" (eq $stage "root")) | nindent 6 }}
+      {{- /* The root stage runs before the release's PriorityClasses exist on a first install, and a pod naming a
+      missing class is refused; once they exist, it outranks the game servers that may fill the node (D-0056). */}}
+      {{- $classExists := lookup "scheduling.k8s.io/v1" "PriorityClass" "" $.Values.priorityClasses.platform.name }}
+      {{- include "ogcloud.platformPod" (dict "root" $ "serviceAccount" "ogcloud-bootstrap" "restartPolicy" "OnFailure" "withoutPriority" (and (eq $stage "root") (not $classExists))) | nindent 6 }}
       containers:
         - name: bootstrap
           image: {{ include "ogcloud.image" (dict "root" $ "name" "bootstrap") }}

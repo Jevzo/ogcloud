@@ -340,7 +340,7 @@ merged on top, so a key both name appears once, as Spring requires, and the inst
 
 {{/*
 What every OgCloud pod's spec starts with: its service account if it has one, no automounted token, the platform's
-priority (but with "withoutPriority", as bootstrap's root stage, which runs before the PriorityClasses exist) and the
+priority (but with "withoutPriority", as bootstrap's root stage until the PriorityClasses exist) and the
 restricted pod security. Service links stay off: they put a variable per Service into each container, such as
 OGCLOUD_VALKEY_PORT=tcp://…, which OgCloud's own settings would read. (dict "root" $ ["serviceAccount" name]
 ["restartPolicy" policy] ["withoutPriority" bool])
