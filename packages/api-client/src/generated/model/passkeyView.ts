@@ -6,6 +6,7 @@
  */
 
 export interface PasskeyView {
+  id: string;
   label: string;
   createdAt: string;
   lastUsedAt: string;

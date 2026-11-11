@@ -25,6 +25,7 @@ import type {
   LogAuditParams,
   LogScalingParams,
   LoginState,
+  LoginView,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -43,6 +44,9 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
+  PasskeyRemoval,
+  PasskeyRename,
+  PasskeyView,
   PasswordRequest,
   PermissionGroupView,
   PlayerExport,
@@ -805,6 +809,102 @@ return request<meChangePasswordResponse>(getMeChangePasswordUrl(),
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(changePasswordRequest)
+  }
+);}
+
+
+
+export type meRenamePasskeyResponse200 = {
+  data: PasskeyView
+  status: 200
+}
+
+export type meRenamePasskeyResponseSuccess = (meRenamePasskeyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meRenamePasskeyResponse = (meRenamePasskeyResponseSuccess)
+
+export const getMeRenamePasskeyUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/passkeys/${id}`
+}
+
+export const meRenamePasskey = async (id: string,
+    passkeyRename: PasskeyRename, options?: Parameters<typeof request>[1]): Promise<meRenamePasskeyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return request<meRenamePasskeyResponse>(getMeRenamePasskeyUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passkeyRename)
+  }
+);}
+
+
+
+export type meRemovePasskeyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type meRemovePasskeyResponseSuccess = (meRemovePasskeyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type meRemovePasskeyResponse = (meRemovePasskeyResponseSuccess)
+
+export const getMeRemovePasskeyUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/passkeys/${id}`
+}
+
+export const meRemovePasskey = async (id: string,
+    passkeyRemoval: PasskeyRemoval, options?: Parameters<typeof request>[1]): Promise<meRemovePasskeyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return request<meRemovePasskeyResponse>(getMeRemovePasskeyUrl(id),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passkeyRemoval)
   }
 );}
 
@@ -3154,6 +3254,72 @@ export const meGet = async ( options?: Parameters<typeof request>[1]): Promise<m
 
 
 
+export type meListPasskeysResponse200 = {
+  data: PasskeyView[]
+  status: 200
+}
+
+export type meListPasskeysResponseSuccess = (meListPasskeysResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meListPasskeysResponse = (meListPasskeysResponseSuccess)
+
+export const getMeListPasskeysUrl = () => {
+
+
+
+
+  return `/api/v1/me/passkeys`
+}
+
+export const meListPasskeys = async ( options?: Parameters<typeof request>[1]): Promise<meListPasskeysResponse> => {
+
+  return request<meListPasskeysResponse>(getMeListPasskeysUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type meListLoginsResponse200 = {
+  data: LoginView[]
+  status: 200
+}
+
+export type meListLoginsResponseSuccess = (meListLoginsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meListLoginsResponse = (meListLoginsResponseSuccess)
+
+export const getMeListLoginsUrl = () => {
+
+
+
+
+  return `/api/v1/me/logins`
+}
+
+export const meListLogins = async ( options?: Parameters<typeof request>[1]): Promise<meListLoginsResponse> => {
+
+  return request<meListLoginsResponse>(getMeListLoginsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type logScalingResponse200 = {
   data: PageScalingLogView
   status: 200
@@ -3504,6 +3670,39 @@ export const getUserRevokeLoginsUrl = (id: string,) => {
 export const userRevokeLogins = async (id: string, options?: Parameters<typeof request>[1]): Promise<userRevokeLoginsResponse> => {
 
   return request<userRevokeLoginsResponse>(getUserRevokeLoginsUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type meRevokeLoginResponse204 = {
+  data: void
+  status: 204
+}
+
+export type meRevokeLoginResponseSuccess = (meRevokeLoginResponse204) & {
+  headers: Headers;
+};
+;
+
+export type meRevokeLoginResponse = (meRevokeLoginResponseSuccess)
+
+export const getMeRevokeLoginUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/logins/${id}`
+}
+
+export const meRevokeLogin = async (id: string, options?: Parameters<typeof request>[1]): Promise<meRevokeLoginResponse> => {
+
+  return request<meRevokeLoginResponse>(getMeRevokeLoginUrl(id),
   {
     ...options,
     method: 'DELETE'

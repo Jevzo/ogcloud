@@ -6,10 +6,13 @@
  */
 
 export interface ActiveLogin {
+  id: string;
   clientId: string;
   grantType: string;
   /** @nullable */
-  issuedAt?: string | null;
+  signedInAt?: string | null;
+  /** @nullable */
+  lastActiveAt?: string | null;
   /** @nullable */
   expiresAt?: string | null;
 }

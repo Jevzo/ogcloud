@@ -17,14 +17,16 @@ class TestPasskeys(
 ) {
     /** Returns the user entity's id as Spring stores it. */
     fun register(userId: UUID): String {
+        // A user's passkeys share one user entity, as with Spring's registration.
         val entity =
-            ImmutablePublicKeyCredentialUserEntity
-                .builder()
-                .name(userId.toString())
-                .id(Bytes.random())
-                .displayName(userId.toString())
-                .build()
-        entities.save(entity)
+            entities.findByUsername(userId.toString())
+                ?: ImmutablePublicKeyCredentialUserEntity
+                    .builder()
+                    .name(userId.toString())
+                    .id(Bytes.random())
+                    .displayName(userId.toString())
+                    .build()
+                    .also(entities::save)
         credentials.save(
             ImmutableCredentialRecord
                 .builder()

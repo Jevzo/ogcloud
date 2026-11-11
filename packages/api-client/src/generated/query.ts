@@ -44,6 +44,7 @@ import type {
   LogAuditParams,
   LogScalingParams,
   LoginState,
+  LoginView,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -62,6 +63,9 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
+  PasskeyRemoval,
+  PasskeyRename,
+  PasskeyView,
   PasswordRequest,
   PermissionGroupView,
   PlayerExport,
@@ -1895,6 +1899,208 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(useMeChangePasswordMutationOptions(options), queryClient);
+    }
+
+export type meRenamePasskeyResponse200 = {
+  data: PasskeyView
+  status: 200
+}
+
+export type meRenamePasskeyResponseSuccess = (meRenamePasskeyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meRenamePasskeyResponse = (meRenamePasskeyResponseSuccess)
+
+export const getMeRenamePasskeyUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/passkeys/${id}`
+}
+
+export const useMeRenamePasskeyHook = (): (id: string,
+    passkeyRename: PasskeyRename, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRenamePasskeyResponse> => {
+      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+
+      const customFetcher = useApiRequest();
+      return (id: string,
+    passkeyRename: PasskeyRename, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMeRenamePasskeyUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passkeyRename)
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMeRenamePasskeyMutationKey = () => ['meRenamePasskey'] as const;
+
+export const useMeRenamePasskeyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>, TError,MeRenamePasskeyMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>, TError,MeRenamePasskeyMutationVariables, TContext> => {
+
+const mutationKey = getMeRenamePasskeyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      const meRenamePasskey =  useMeRenamePasskeyHook()
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>, MeRenamePasskeyMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  meRenamePasskey(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MeRenamePasskeyMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>>
+    export type MeRenamePasskeyMutationBody = PasskeyRename
+    export type MeRenamePasskeyMutationError = unknown
+    export type MeRenamePasskeyMutationVariables = {id: string;data: PasskeyRename}
+
+    export const useMeRenamePasskey = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>, TError,MeRenamePasskeyMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useMeRenamePasskeyHook>>>,
+        TError,
+        MeRenamePasskeyMutationVariables,
+        TContext
+      > => {
+      return useMutation(useMeRenamePasskeyMutationOptions(options), queryClient);
+    }
+
+export type meRemovePasskeyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type meRemovePasskeyResponseSuccess = (meRemovePasskeyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type meRemovePasskeyResponse = (meRemovePasskeyResponseSuccess)
+
+export const getMeRemovePasskeyUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/passkeys/${id}`
+}
+
+export const useMeRemovePasskeyHook = (): (id: string,
+    passkeyRemoval: PasskeyRemoval, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRemovePasskeyResponse> => {
+      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+
+      const customFetcher = useApiRequest();
+      return (id: string,
+    passkeyRemoval: PasskeyRemoval, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMeRemovePasskeyUrl(id),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(passkeyRemoval)
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMeRemovePasskeyMutationKey = () => ['meRemovePasskey'] as const;
+
+export const useMeRemovePasskeyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>, TError,MeRemovePasskeyMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>, TError,MeRemovePasskeyMutationVariables, TContext> => {
+
+const mutationKey = getMeRemovePasskeyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      const meRemovePasskey =  useMeRemovePasskeyHook()
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>, MeRemovePasskeyMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  meRemovePasskey(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MeRemovePasskeyMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>>
+    export type MeRemovePasskeyMutationBody = PasskeyRemoval
+    export type MeRemovePasskeyMutationError = unknown
+    export type MeRemovePasskeyMutationVariables = {id: string;data: PasskeyRemoval}
+
+    export const useMeRemovePasskey = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>, TError,MeRemovePasskeyMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>,
+        TError,
+        MeRemovePasskeyMutationVariables,
+        TContext
+      > => {
+      return useMutation(useMeRemovePasskeyMutationOptions(options), queryClient);
     }
 
 export type groupGetResponse200 = {
@@ -7992,6 +8198,228 @@ export function useMeGet<TData = Awaited<ReturnType<ReturnType<typeof useMeGetHo
 
 
 
+export type meListPasskeysResponse200 = {
+  data: PasskeyView[]
+  status: 200
+}
+
+export type meListPasskeysResponseSuccess = (meListPasskeysResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meListPasskeysResponse = (meListPasskeysResponseSuccess)
+
+export const getMeListPasskeysUrl = () => {
+
+
+
+
+  return `/api/v1/me/passkeys`
+}
+
+export const useMeListPasskeysHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meListPasskeysResponse> => {
+
+      const customFetcher = useApiRequest();
+      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMeListPasskeysUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMeListPasskeysQueryKey = () => {
+    return [
+    `/api/v1/me/passkeys`
+    ] as const;
+    }
+
+
+export const useMeListPasskeysQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMeListPasskeysQueryKey();
+
+  const meListPasskeys =  useMeListPasskeysHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>> = ({ signal }) => meListPasskeys({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MeListPasskeysQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>>
+export type MeListPasskeysQueryError = unknown
+
+
+export function useMeListPasskeys<TData = Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListPasskeys<TData = Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListPasskeys<TData = Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListPasskeys<TData = Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListPasskeysHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useMeListPasskeysQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type meListLoginsResponse200 = {
+  data: LoginView[]
+  status: 200
+}
+
+export type meListLoginsResponseSuccess = (meListLoginsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type meListLoginsResponse = (meListLoginsResponseSuccess)
+
+export const getMeListLoginsUrl = () => {
+
+
+
+
+  return `/api/v1/me/logins`
+}
+
+export const useMeListLoginsHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meListLoginsResponse> => {
+
+      const customFetcher = useApiRequest();
+      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMeListLoginsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMeListLoginsQueryKey = () => {
+    return [
+    `/api/v1/me/logins`
+    ] as const;
+    }
+
+
+export const useMeListLoginsQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMeListLoginsQueryKey();
+
+  const meListLogins =  useMeListLoginsHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>> = ({ signal }) => meListLogins({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MeListLoginsQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>>
+export type MeListLoginsQueryError = unknown
+
+
+export function useMeListLogins<TData = Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListLogins<TData = Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListLogins<TData = Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMeListLogins<TData = Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useMeListLoginsHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useMeListLoginsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type logScalingResponse200 = {
   data: PageScalingLogView
   status: 200
@@ -9085,6 +9513,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(useUserRevokeLoginsMutationOptions(options), queryClient);
+    }
+
+export type meRevokeLoginResponse204 = {
+  data: void
+  status: 204
+}
+
+export type meRevokeLoginResponseSuccess = (meRevokeLoginResponse204) & {
+  headers: Headers;
+};
+;
+
+export type meRevokeLoginResponse = (meRevokeLoginResponseSuccess)
+
+export const getMeRevokeLoginUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/me/logins/${id}`
+}
+
+export const useMeRevokeLoginHook = (): (id: string, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRevokeLoginResponse> => {
+
+      const customFetcher = useApiRequest();
+      return (id: string, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getMeRevokeLoginUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getMeRevokeLoginMutationKey = () => ['meRevokeLogin'] as const;
+
+export const useMeRevokeLoginMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>, TError,MeRevokeLoginMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>, TError,MeRevokeLoginMutationVariables, TContext> => {
+
+const mutationKey = getMeRevokeLoginMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      const meRevokeLogin =  useMeRevokeLoginHook()
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>, MeRevokeLoginMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  meRevokeLogin(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MeRevokeLoginMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>>
+
+    export type MeRevokeLoginMutationError = unknown
+    export type MeRevokeLoginMutationVariables = {id: string}
+
+    export const useMeRevokeLogin = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>, TError,MeRevokeLoginMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useMeRevokeLoginHook>>>,
+        TError,
+        MeRevokeLoginMutationVariables,
+        TContext
+      > => {
+      return useMutation(useMeRevokeLoginMutationOptions(options), queryClient);
     }
 
 export type templateDeleteResponse204 = {

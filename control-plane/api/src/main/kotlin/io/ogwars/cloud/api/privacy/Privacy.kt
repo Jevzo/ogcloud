@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.audit.AuditTrail
 import io.ogwars.cloud.api.auth.ActiveLogin
 import io.ogwars.cloud.api.auth.Logins
 import io.ogwars.cloud.api.auth.Owners
+import io.ogwars.cloud.api.auth.mfa.PasskeyView
 import io.ogwars.cloud.api.auth.mfa.Passkeys
 import io.ogwars.cloud.api.auth.mfa.TotpService
 import io.ogwars.cloud.api.auth.users.UserView
@@ -32,12 +33,6 @@ data class PlayerExport(
     val player: PlayerView,
     val linkedUserId: UUID?,
     val auditEntries: List<AuditEntryView>,
-)
-
-data class PasskeyView(
-    val label: String,
-    val createdAt: Instant,
-    val lastUsedAt: Instant,
 )
 
 data class UserExport(
@@ -110,8 +105,8 @@ class Privacy(
             UserExport(
                 user.toView(links.linkedNames(listOf(user.value)).values.firstOrNull()),
                 totp.isEnrolled(id),
-                passkeys.list(id).map { PasskeyView(it.label, it.created, it.lastUsed) },
-                logins.active(id),
+                passkeys.list(id).map(PasskeyView::of),
+                logins.stored(id),
                 audit.about(id.toString()).map { it.toView() },
             )
         trail.record(actor, "GET $PRIVACY$USER", TARGET_TYPE, id.toString())

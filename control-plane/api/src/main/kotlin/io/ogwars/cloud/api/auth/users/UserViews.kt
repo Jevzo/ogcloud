@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth.users
 
+import io.ogwars.cloud.api.auth.ActiveLogin
 import io.ogwars.cloud.domain.common.REDACTED
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.WebUser
@@ -74,6 +75,33 @@ data class MeView(
     val linkedPlayerName: String?,
     val totpEnabled: Boolean,
 )
+
+data class PasskeyRename(
+    val label: String,
+)
+
+data class PasskeyRemoval(
+    val password: String,
+) {
+    override fun toString() = "PasskeyRemoval(password=$REDACTED)"
+}
+
+/** One of the caller's sign-ins; [current] marks the one whose token made this request. */
+data class LoginView(
+    val id: String,
+    val clientId: String,
+    val signedInAt: Instant?,
+    val lastActiveAt: Instant?,
+    val expiresAt: Instant?,
+    val current: Boolean,
+) {
+    companion object {
+        fun of(
+            login: ActiveLogin,
+            current: Boolean,
+        ) = LoginView(login.id, login.clientId, login.signedInAt, login.lastActiveAt, login.expiresAt, current)
+    }
+}
 
 data class TotpCodeRequest(
     val code: String,

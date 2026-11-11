@@ -216,6 +216,28 @@ export const MeChangePasswordBody = zod.object({
 export const MeChangePasswordResponse = zod.void()
 
 
+export const MeRenamePasskeyParams = zod.object({
+  "id": zod.string()
+})
+
+export const MeRenamePasskeyBody = zod.object({
+  "label": zod.string()
+})
+
+export const MeRenamePasskeyResponse = zod.unknown()
+
+
+export const MeRemovePasskeyParams = zod.object({
+  "id": zod.string()
+})
+
+export const MeRemovePasskeyBody = zod.object({
+  "password": zod.string()
+})
+
+export const MeRemovePasskeyResponse = zod.void()
+
+
 export const GroupGetParams = zod.object({
   "id": zod.string()
 })
@@ -715,6 +737,12 @@ export const OverviewHistoryResponse = zod.unknown()
 export const MeGetResponse = zod.unknown()
 
 
+export const MeListPasskeysResponse = zod.unknown()
+
+
+export const MeListLoginsResponse = zod.unknown()
+
+
 export const LogScalingQueryParams = zod.object({
   "groupId": zod.string().optional(),
   "cursor": zod.string().optional(),
@@ -790,6 +818,13 @@ export const UserRevokeLoginsParams = zod.object({
 })
 
 export const UserRevokeLoginsResponse = zod.void()
+
+
+export const MeRevokeLoginParams = zod.object({
+  "id": zod.string()
+})
+
+export const MeRevokeLoginResponse = zod.void()
 
 
 export const TemplateDeleteParams = zod.object({

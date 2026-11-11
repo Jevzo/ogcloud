@@ -336,6 +336,49 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/me/passkeys/{id}:
+    put:
+      tags:
+      - me-controller
+      operationId: meRenamePasskey
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyRename"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PasskeyView"
+    delete:
+      tags:
+      - me-controller
+      operationId: meRemovePasskey
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyRemoval"
+        required: true
+      responses:
+        "204":
+          description: No Content
   /api/v1/groups/{id}:
     get:
       tags:
@@ -1370,6 +1413,34 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/MeView"
+  /api/v1/me/passkeys:
+    get:
+      tags:
+      - me-controller
+      operationId: meListPasskeys
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PasskeyView"
+  /api/v1/me/logins:
+    get:
+      tags:
+      - me-controller
+      operationId: meListLogins
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoginView"
   /api/v1/logs/scaling:
     get:
       tags:
@@ -1599,6 +1670,20 @@ paths:
         schema:
           type: string
           format: uuid
+      responses:
+        "204":
+          description: No Content
+  /api/v1/me/logins/{id}:
+    delete:
+      tags:
+      - me-controller
+      operationId: meRevokeLogin
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "204":
           description: No Content
@@ -2029,6 +2114,31 @@ components:
       required:
       - currentPassword
       - newPassword
+    PasskeyRename:
+      type: object
+      properties:
+        label:
+          type: string
+      required:
+      - label
+    PasskeyView:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: string
+          format: date-time
+      required:
+      - createdAt
+      - id
+      - label
+      - lastUsedAt
     GroupSettings:
       type: object
       properties:
@@ -2838,11 +2948,18 @@ components:
     ActiveLogin:
       type: object
       properties:
+        id:
+          type: string
         clientId:
           type: string
         grantType:
           type: string
-        issuedAt:
+        signedInAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        lastActiveAt:
           type:
           - string
           - "null"
@@ -2855,6 +2972,7 @@ components:
       required:
       - clientId
       - grantType
+      - id
     AuditEntryView:
       type: object
       properties:
@@ -2887,21 +3005,6 @@ components:
       - summary
       - targetId
       - targetType
-    PasskeyView:
-      type: object
-      properties:
-        label:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        lastUsedAt:
-          type: string
-          format: date-time
-      required:
-      - createdAt
-      - label
-      - lastUsedAt
     UserExport:
       type: object
       properties:
@@ -3173,6 +3276,34 @@ components:
       - at
       - players
       - running
+    LoginView:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        signedInAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        lastActiveAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        expiresAt:
+          type:
+          - string
+          - "null"
+          format: date-time
+        current:
+          type: boolean
+      required:
+      - clientId
+      - current
+      - id
     PageScalingLogView:
       type: object
       properties:
@@ -3339,3 +3470,10 @@ components:
       - kind
       - severity
       - subjectId
+    PasskeyRemoval:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+      - password

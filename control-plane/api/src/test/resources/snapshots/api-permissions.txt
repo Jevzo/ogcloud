@@ -1,6 +1,8 @@
 DELETE /api/v1/groups/{groupId}/templates/{versionId} templates:write
 DELETE /api/v1/groups/{id} groups:write
+DELETE /api/v1/me/logins/{id} any-caller
 DELETE /api/v1/me/minecraft-link any-caller
+DELETE /api/v1/me/passkeys/{id} any-caller
 DELETE /api/v1/me/totp any-caller
 DELETE /api/v1/npcs/{id} npcs:write
 DELETE /api/v1/oauth-clients/{clientId} oauth-clients:write
@@ -21,6 +23,8 @@ GET /api/v1/jobs/{id} any-caller
 GET /api/v1/logs/audit logs:read
 GET /api/v1/logs/scaling logs:read
 GET /api/v1/me any-caller
+GET /api/v1/me/logins any-caller
+GET /api/v1/me/passkeys any-caller
 GET /api/v1/network network:read
 GET /api/v1/npcs npcs:read
 GET /api/v1/npcs/{id} npcs:read
@@ -76,6 +80,7 @@ POST /api/v1/text/preview any-caller
 POST /api/v1/users users:write
 PUT /api/v1/groups/{groupId}/templates/active templates:write
 PUT /api/v1/groups/{id} groups:write
+PUT /api/v1/me/passkeys/{id} any-caller
 PUT /api/v1/me/password any-caller
 PUT /api/v1/network network:write
 PUT /api/v1/npcs/{id} npcs:write

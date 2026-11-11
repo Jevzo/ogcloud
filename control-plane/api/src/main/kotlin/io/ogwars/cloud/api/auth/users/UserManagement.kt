@@ -96,10 +96,18 @@ class UserManagement(
         currentPassword: String,
         newPassword: String,
     ) {
+        setPassword(withOwnPassword(actor, currentPassword).id, newPassword)
+    }
+
+    /** The caller's account, once the password they gave matches (D-0217). */
+    fun withOwnPassword(
+        actor: Actor,
+        password: String,
+    ): WebUser {
         val user = self(actor)
         val hash = user.passwordHash ?: throw IllegalArgumentException("This account signs in with passkeys only")
-        require(passwords.matches(currentPassword, hash)) { "The current password is wrong" }
-        setPassword(user.id, newPassword)
+        require(passwords.matches(password, hash)) { "The current password is wrong" }
+        return user
     }
 
     fun revokeLogins(

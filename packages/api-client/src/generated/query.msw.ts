@@ -36,6 +36,7 @@ import type {
   LinkCodeSent,
   LoadHistoryView,
   LoginState,
+  LoginView,
   MeView,
   MinecraftLinkConfirmation,
   MinecraftLinkRequest,
@@ -52,6 +53,9 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
+  PasskeyRemoval,
+  PasskeyRename,
+  PasskeyView,
   PasswordRequest,
   PermissionGroupView,
   PlayerExport,
@@ -124,6 +128,8 @@ export const getNpcUpdateResponseMock = (overrideResponse: Partial<Extract<NpcVi
 export const getNetworkGetResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}}), requireMinecraftLink: faker.datatype.boolean()}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
 
 export const getNetworkUpdateResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}}), requireMinecraftLink: faker.datatype.boolean()}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
+
+export const getMeRenamePasskeyResponseMock = (overrideResponse: Partial<Extract<PasskeyView, object>> = {}): PasskeyView => ({id: faker.string.alpha({length: {min: 10, max: 20}}), label: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastUsedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getGroupGetResponseImageViewMock = (overrideResponse: Partial<ImageView> = {}): ImageView => ({...{image: faker.string.alpha({length: {min: 10, max: 20}}), pullSecretRef: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null])}, ...overrideResponse});
 
@@ -241,7 +247,7 @@ export const getRuntimeListResponseMock = (): RuntimeProfileView[] => (Array.fro
 
 export const getRolePermissionsResponseMock = (): string[] => (Array.from({length: faker.number.int({min: 1, max: 10})}, () => faker.word.sample()))
 
-export const getPrivacyExportUserResponseMock = (overrideResponse: Partial<Extract<UserExport, object>> = {}): UserExport => ({user: {id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), enabled: faker.datatype.boolean(), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', version: faker.number.int()}, totpEnabled: faker.datatype.boolean(), passkeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({label: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastUsedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), logins: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({clientId: faker.string.alpha({length: {min: 10, max: 20}}), grantType: faker.string.alpha({length: {min: 10, max: 20}}), issuedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), auditEntries: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', actor: faker.string.alpha({length: {min: 10, max: 20}}), action: faker.string.alpha({length: {min: 10, max: 20}}), targetType: faker.string.alpha({length: {min: 10, max: 20}}), targetId: faker.string.alpha({length: {min: 10, max: 20}}), summary: faker.string.alpha({length: {min: 10, max: 20}}), metadata: {
+export const getPrivacyExportUserResponseMock = (overrideResponse: Partial<Extract<UserExport, object>> = {}): UserExport => ({user: {id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), enabled: faker.datatype.boolean(), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', version: faker.number.int()}, totpEnabled: faker.datatype.boolean(), passkeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), label: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastUsedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})), logins: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), clientId: faker.string.alpha({length: {min: 10, max: 20}}), grantType: faker.string.alpha({length: {min: 10, max: 20}}), signedInAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActiveAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])})), auditEntries: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', actor: faker.string.alpha({length: {min: 10, max: 20}}), action: faker.string.alpha({length: {min: 10, max: 20}}), targetType: faker.string.alpha({length: {min: 10, max: 20}}), targetId: faker.string.alpha({length: {min: 10, max: 20}}), summary: faker.string.alpha({length: {min: 10, max: 20}}), metadata: {
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
       }})), ...overrideResponse})
 
@@ -268,6 +274,10 @@ export const getOverviewGetResponseMock = (overrideResponse: Partial<Extract<Ove
 export const getOverviewHistoryResponseMock = (overrideResponse: Partial<Extract<LoadHistoryView, object>> = {}): LoadHistoryView => ({intervalSeconds: faker.number.int(), points: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({at: faker.date.past().toISOString().slice(0, 19) + 'Z', players: faker.number.int(), running: faker.number.int()})), ...overrideResponse})
 
 export const getMeGetResponseMock = (overrideResponse: Partial<Extract<MeView, object>> = {}): MeView => ({id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), permissions: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), totpEnabled: faker.datatype.boolean(), ...overrideResponse})
+
+export const getMeListPasskeysResponseMock = (): PasskeyView[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), label: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastUsedAt: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
+
+export const getMeListLoginsResponseMock = (): LoginView[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.alpha({length: {min: 10, max: 20}}), clientId: faker.string.alpha({length: {min: 10, max: 20}}), signedInAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), lastActiveAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), current: faker.datatype.boolean()})))
 
 export const getLogScalingResponseMock = (overrideResponse: Partial<Extract<PageScalingLogView, object>> = {}): PageScalingLogView => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', groupId: faker.string.alpha({length: {min: 10, max: 20}}), action: faker.helpers.arrayElement(['START','DRAIN','UNDRAIN','STOP'] as const), serverId: faker.helpers.arrayElement([faker.string.uuid(), null]), reason: faker.helpers.arrayElement(['MIN_ONLINE','LOAD','SCALE_DOWN','STATIC'] as const), details: faker.string.alpha({length: {min: 10, max: 20}})})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
@@ -496,6 +506,28 @@ export const getNetworkUpdateMockHandler = (overrideResponse?: NetworkSettingsVi
 
 export const getMeChangePasswordMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<PathParams, ChangePasswordRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
   return http.put<PathParams, ChangePasswordRequest>('*/api/v1/me/password', async (info: Parameters<HttpResponseResolver<PathParams, ChangePasswordRequest>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getMeRenamePasskeyMockHandler = (overrideResponse?: PasskeyView | ((info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRename>>[0]) => Promise<PasskeyView> | PasskeyView), options?: RequestHandlerOptions) => {
+  return http.put<{ id: string }, PasskeyRename>('*/api/v1/me/passkeys/:id', async (info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRename>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMeRenamePasskeyResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMeRemovePasskeyMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRemoval>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ id: string }, PasskeyRemoval>('*/api/v1/me/passkeys/:id', async (info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRemoval>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -1202,6 +1234,30 @@ export const getMeGetMockHandler = (overrideResponse?: MeView | ((info: Paramete
   }, options)
 }
 
+export const getMeListPasskeysMockHandler = (overrideResponse?: PasskeyView[] | ((info: Parameters<HttpResponseResolver>[0]) => Promise<PasskeyView[]> | PasskeyView[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/v1/me/passkeys', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMeListPasskeysResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getMeListLoginsMockHandler = (overrideResponse?: LoginView[] | ((info: Parameters<HttpResponseResolver>[0]) => Promise<LoginView[]> | LoginView[]), options?: RequestHandlerOptions) => {
+  return http.get('*/api/v1/me/logins', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getMeListLoginsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getLogScalingMockHandler = (overrideResponse?: PageScalingLogView | ((info: Parameters<HttpResponseResolver>[0]) => Promise<PageScalingLogView> | PageScalingLogView), options?: RequestHandlerOptions) => {
   return http.get('*/api/v1/logs/scaling', async (info: Parameters<HttpResponseResolver>[0]) => {
 
@@ -1317,6 +1373,16 @@ export const getUserRevokeLoginsMockHandler = (overrideResponse?: void | ((info:
   }, options)
 }
 
+export const getMeRevokeLoginMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ id: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ id: string }>('*/api/v1/me/logins/:id', async (info: Parameters<HttpResponseResolver<{ id: string }>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
 export const getTemplateDeleteMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ groupId: string; versionId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
   return http.delete<{ groupId: string; versionId: string }>('*/api/v1/groups/:groupId/templates/:versionId', async (info: Parameters<HttpResponseResolver<{ groupId: string; versionId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
@@ -1345,6 +1411,8 @@ export const getOgCloudAPIMock = () => [
   getNetworkGetMockHandler(),
   getNetworkUpdateMockHandler(),
   getMeChangePasswordMockHandler(),
+  getMeRenamePasskeyMockHandler(),
+  getMeRemovePasskeyMockHandler(),
   getGroupGetMockHandler(),
   getGroupUpdateMockHandler(),
   getGroupDeleteMockHandler(),
@@ -1405,6 +1473,8 @@ export const getOgCloudAPIMock = () => [
   getOverviewGetMockHandler(),
   getOverviewHistoryMockHandler(),
   getMeGetMockHandler(),
+  getMeListPasskeysMockHandler(),
+  getMeListLoginsMockHandler(),
   getLogScalingMockHandler(),
   getLogAuditMockHandler(),
   getJobListMockHandler(),
@@ -1415,5 +1485,6 @@ export const getOgCloudAPIMock = () => [
   getEventStreamMockHandler(),
   getUserUnlinkMinecraftMockHandler(),
   getUserRevokeLoginsMockHandler(),
+  getMeRevokeLoginMockHandler(),
   getTemplateDeleteMockHandler()
 ]

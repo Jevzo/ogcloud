@@ -1,7 +1,10 @@
 package io.ogwars.cloud.api.auth.users
 
 import io.ogwars.cloud.api.audit.CurrentActor
+import io.ogwars.cloud.api.auth.Logins
 import io.ogwars.cloud.api.auth.UserPermissions
+import io.ogwars.cloud.api.auth.mfa.PasskeyManagement
+import io.ogwars.cloud.api.auth.mfa.PasskeyView
 import io.ogwars.cloud.api.auth.mfa.TotpEnrollment
 import io.ogwars.cloud.api.auth.mfa.TotpService
 import io.ogwars.cloud.api.link.LinkCodeSent
@@ -15,6 +18,8 @@ import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.user.ApiPermission
 import io.ogwars.cloud.domain.user.WebUser
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -120,6 +125,8 @@ class MeController(
     private val users: UserManagement,
     private val permissions: UserPermissions,
     private val totp: TotpService,
+    private val passkeys: PasskeyManagement,
+    private val logins: Logins,
     private val links: MinecraftLinks,
     private val actors: CurrentActor,
 ) {
@@ -187,6 +194,46 @@ class MeController(
     fun removeTotp(
         @RequestBody request: TotpCodeRequest,
     ) = totp.remove(users.self(actors.current()), request.code)
+
+    @AnyCaller
+    @GetMapping("/passkeys")
+    fun listPasskeys(): List<PasskeyView> = passkeys.list(actors.current())
+
+    @AnyCaller
+    @PutMapping("/passkeys/{id}")
+    fun renamePasskey(
+        @PathVariable id: String,
+        @RequestBody request: PasskeyRename,
+    ): PasskeyView = passkeys.rename(actors.current(), id, request.label)
+
+    /** Needs the current password (D-0217); an owner keeps a second factor (D-0097). */
+    @AnyCaller
+    @DeleteMapping("/passkeys/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun removePasskey(
+        @PathVariable id: String,
+        @RequestBody request: PasskeyRemoval,
+    ) = passkeys.remove(actors.current(), id, request.password)
+
+    @AnyCaller
+    @GetMapping("/logins")
+    fun listLogins(
+        @AuthenticationPrincipal token: Jwt,
+    ): List<LoginView> {
+        val userId = users.self(actors.current()).id
+        val current = logins.idOf(userId, token.tokenValue)
+        return logins.signedIn(userId).map { LoginView.of(it, it.id == current) }
+    }
+
+    /** Signs that device out; it signs in again with its credentials. */
+    @AnyCaller
+    @DeleteMapping("/logins/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun revokeLogin(
+        @PathVariable id: String,
+    ) {
+        if (!logins.revoke(users.self(actors.current()).id, id)) throw NoSuchElementException("No such login")
+    }
 
     @AnyCaller
     @PutMapping("/password")

@@ -72,6 +72,8 @@ class RateLimitFilter(
                 paths.matcher(HttpMethod.POST, "/api/v1/setup"),
                 paths.matcher("/api/v1/me/password"),
                 paths.matcher("/api/v1/me/totp/**"),
+                // Removing a passkey checks the password (D-0217).
+                paths.matcher(HttpMethod.DELETE, "/api/v1/me/passkeys/*"),
                 paths.matcher(HttpMethod.POST, "/api/v1/me/minecraft-link/**"),
             )
     }
