@@ -28,6 +28,9 @@ class FakeServer {
   requests: Record<string, string>[] = [];
   revoked: string[] = [];
   refuseRevocation = false;
+  unavailable = false;
+  /** While set, token responses wait for it, so a test can act in the middle of a renewal. */
+  hold: Promise<void> | undefined;
   private issued = 0;
 
   readonly fetch = async (
@@ -41,6 +44,8 @@ class FakeServer {
       this.revoked.push(fields.token ?? "");
       return new Response("", { status: 200 });
     }
+    await this.hold;
+    if (this.unavailable) return new Response("", { status: 503 });
     if (fields.grant_type === "refresh_token") {
       if (
         fields.refresh_token !== this.current ||
@@ -158,6 +163,33 @@ test("a callback whose state this tab did not send is refused", async () => {
   );
 });
 
+test("a sign-in the server turned down says why", async () => {
+  const { session } = setup(new FakeServer());
+  const state = (await session.beginSignIn("/")).searchParams.get("state");
+  await assert.rejects(
+    session.completeSignIn(
+      new URL(
+        `${CONFIG.redirectUri}?error=access_denied&error_description=Disabled&state=${state}`,
+      ),
+    ),
+    (error: unknown) =>
+      error instanceof SignInRequired &&
+      error.message.includes("access_denied") &&
+      error.message.includes("Disabled"),
+  );
+});
+
+test("a callback opened again after its sign-in is refused", async () => {
+  const server = new FakeServer();
+  const { session } = setup(server);
+  const state = (await session.beginSignIn("/")).searchParams.get("state");
+  const callback = new URL(`${CONFIG.redirectUri}?code=abc&state=${state}`);
+
+  await session.completeSignIn(callback);
+  await assert.rejects(session.completeSignIn(callback), SignInRequired);
+  assert.equal(server.requests.length, 1);
+});
+
 test("the access token is reused until 30 seconds before it expires, then renewed with the stored refresh token", async () => {
   const server = new FakeServer();
   const clock = { now: 0 };
@@ -231,6 +263,50 @@ test("a refused refresh token is forgotten and asks for a new sign-in", async ()
   await assert.rejects(session.accessToken(), SignInRequired);
   assert.equal(await logins.read(), undefined);
   await assert.rejects(session.accessToken(), SignInRequired);
+});
+
+test("a renewal the server cannot answer keeps the login for the next try", async () => {
+  const server = new FakeServer();
+  server.unavailable = true;
+  const { session, logins } = setup(server, {
+    refreshToken: "refresh-0",
+    idToken: undefined,
+  });
+
+  await assert.rejects(
+    session.accessToken(),
+    (error: unknown) => !(error instanceof SignInRequired),
+  );
+  assert.equal((await logins.read())?.refreshToken, "refresh-0");
+  server.unavailable = false;
+  assert.equal(await session.accessToken(), "access-1");
+});
+
+test("signing out while another tab renews revokes the token that renewal stored", async () => {
+  const server = new FakeServer();
+  let release = () => {};
+  server.hold = new Promise((resolve) => {
+    release = resolve;
+  });
+  const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
+  const lock = serialLock();
+  const tab = () =>
+    new AuthSession(CONFIG, {
+      fetch: server.fetch,
+      now: () => 0,
+      crypto: globalThis.crypto,
+      logins,
+      pending: memoryPending(),
+      exclusively: lock,
+    });
+
+  const renewing = tab().accessToken();
+  const signingOut = tab().signOut();
+  release();
+  await Promise.all([renewing, signingOut]);
+
+  assert.deepEqual(server.revoked, ["refresh-1"]);
+  assert.equal(await logins.read(), undefined);
 });
 
 test("signing out revokes the refresh token, forgets the login and ends the API's login session", async () => {

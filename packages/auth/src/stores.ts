@@ -25,11 +25,38 @@ const DATABASE = "ogcloud-auth";
 const TABLE = "login";
 const KEY = "current";
 
-function request<T>(operation: IDBRequest<T>): Promise<T> {
+function opened(opening: IDBOpenDBRequest): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    operation.onsuccess = () => resolve(operation.result);
-    operation.onerror = () =>
-      reject(operation.error ?? new Error("IndexedDB failed without an error"));
+    opening.onsuccess = () => resolve(opening.result);
+    opening.onerror = () =>
+      reject(opening.error ?? new Error("IndexedDB did not open"));
+  });
+}
+
+/** Runs one request in its own transaction and settles once that transaction committed or failed. */
+async function inTransaction<T>(
+  database: Promise<IDBDatabase>,
+  mode: IDBTransactionMode,
+  work: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
+  const connection = await database;
+  return new Promise((resolve, reject) => {
+    const transaction = connection.transaction(TABLE, mode);
+    const operation = work(transaction.objectStore(TABLE));
+    const fail = () => {
+      connection.close();
+      reject(
+        transaction.error ??
+          operation.error ??
+          new Error("IndexedDB failed without an error"),
+      );
+    };
+    transaction.oncomplete = () => {
+      connection.close();
+      resolve(operation.result);
+    };
+    transaction.onerror = fail;
+    transaction.onabort = fail;
   });
 }
 
@@ -40,21 +67,22 @@ export function indexedDbLoginStore(
   const open = () => {
     const opening = factory.open(DATABASE, 1);
     opening.onupgradeneeded = () => opening.result.createObjectStore(TABLE);
-    return request(opening);
+    return opened(opening);
   };
-  const table = async (mode: IDBTransactionMode) =>
-    (await open()).transaction(TABLE, mode).objectStore(TABLE);
   return {
     async read() {
-      const value: unknown = await request((await table("readonly")).get(KEY));
+      const value: unknown = await inTransaction(open(), "readonly", (store) =>
+        store.get(KEY),
+      );
       return isStoredLogin(value) ? value : undefined;
     },
     async write(login) {
-      const store = await table("readwrite");
       if (login === undefined) {
-        await request(store.delete(KEY));
+        await inTransaction(open(), "readwrite", (store) => store.delete(KEY));
       } else {
-        await request(store.put(login, KEY));
+        await inTransaction(open(), "readwrite", (store) =>
+          store.put(login, KEY),
+        );
       }
     },
   };

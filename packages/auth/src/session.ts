@@ -77,6 +77,14 @@ export class AuthSession {
   /** Finishes the sign-in on the callback URL and returns where to continue. */
   async completeSignIn(callback: URL): Promise<string> {
     const pending = this.deps.pending.take();
+    const refusal = callback.searchParams.get("error");
+    if (refusal !== null) {
+      // RFC 6749 §4.1.2.1: the server sends the browser back with why it ended the sign-in.
+      const detail = callback.searchParams.get("error_description");
+      throw new SignInRequired(
+        `The sign-in was turned down: ${refusal}${detail === null ? "" : ` (${detail})`}`,
+      );
+    }
     const code = callback.searchParams.get("code");
     if (
       pending === undefined ||
@@ -137,15 +145,19 @@ export class AuthSession {
    * revocation throws with the login kept, so signing out can be tried again.
    */
   async signOut(): Promise<URL> {
-    const login = await this.deps.logins.read();
-    if (login !== undefined) {
-      await this.post("/oauth2/revoke", {
-        token: login.refreshToken,
-        token_type_hint: "refresh_token",
-      });
-    }
-    this.access = undefined;
-    await this.deps.logins.write(undefined);
+    // Under the renewal's lock, so a renewal in another tab cannot store a fresh token after this one is revoked.
+    const login = await this.deps.exclusively(async () => {
+      const stored = await this.deps.logins.read();
+      if (stored !== undefined) {
+        await this.post("/oauth2/revoke", {
+          token: stored.refreshToken,
+          token_type_hint: "refresh_token",
+        });
+      }
+      this.access = undefined;
+      await this.deps.logins.write(undefined);
+      return stored;
+    });
     const logout = new URL("/oauth2/logout", this.config.origin);
     const query = new URLSearchParams({
       post_logout_redirect_uri: this.config.postLogoutRedirectUri,
