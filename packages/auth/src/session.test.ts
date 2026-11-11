@@ -106,6 +106,20 @@ function serialLock(): AuthDependencies["exclusively"] {
   };
 }
 
+/** Opens tabs that share one login store and one lock, as a browser's tabs share IndexedDB and the Web Lock. */
+function tabsSharing(server: FakeServer, logins: LoginStore) {
+  const lock = serialLock();
+  return () =>
+    new AuthSession(CONFIG, {
+      fetch: server.fetch,
+      now: () => 0,
+      crypto: globalThis.crypto,
+      logins,
+      pending: memoryPending(),
+      exclusively: lock,
+    });
+}
+
 function setup(
   server: FakeServer,
   login?: StoredLogin,
@@ -232,16 +246,7 @@ test("two tabs renewing together never present the same refresh token", async ()
     refreshToken: "refresh-0",
     idToken: undefined,
   });
-  const lock = serialLock();
-  const tab = () =>
-    new AuthSession(CONFIG, {
-      fetch: server.fetch,
-      now: () => 0,
-      crypto: globalThis.crypto,
-      logins,
-      pending: memoryPending(),
-      exclusively: lock,
-    });
+  const tab = tabsSharing(server, logins);
 
   const [first, second] = await Promise.all([
     tab().accessToken(),
@@ -289,16 +294,7 @@ test("signing out while another tab renews revokes the token that renewal stored
     release = resolve;
   });
   const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
-  const lock = serialLock();
-  const tab = () =>
-    new AuthSession(CONFIG, {
-      fetch: server.fetch,
-      now: () => 0,
-      crypto: globalThis.crypto,
-      logins,
-      pending: memoryPending(),
-      exclusively: lock,
-    });
+  const tab = tabsSharing(server, logins);
 
   const renewing = tab().accessToken();
   const signingOut = tab().signOut();
