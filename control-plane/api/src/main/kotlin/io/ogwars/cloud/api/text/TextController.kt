@@ -61,6 +61,8 @@ data class TextRendering(
 data class TextPreview(
     val errors: List<TextErrorView>,
     val rendering: TextRendering?,
+    /** The placeholders the field offers, without braces, so editors can insert them (D-0200). */
+    val placeholders: List<String>,
 ) {
     init {
         require(errors.isEmpty() == (rendering != null)) { "A preview has either errors or a rendering" }
@@ -82,16 +84,17 @@ class TextController {
         @RequestBody request: TextPreviewRequest,
     ): TextPreview {
         val field = request.field
+        val placeholders = field.samples.keys.toList()
         return when (val result = field.parse(request.text)) {
             is ParseResult.Invalid -> {
-                TextPreview(result.errors.map(TextErrorView::of), null)
+                TextPreview(result.errors.map(TextErrorView::of), null, placeholders)
             }
 
             is ParseResult.Valid -> {
                 val text = result.text.fill(field.samples)
                 val legacy = text.legacySpans(field.collapsesOnLegacy, field.legacyMaxLength).map { it.toView() }
                 val modern = if (field.legacyOnly) legacy else text.spans().map { it.toView() }
-                TextPreview(emptyList(), TextRendering(modern, legacy))
+                TextPreview(emptyList(), TextRendering(modern, legacy), placeholders)
             }
         }
     }

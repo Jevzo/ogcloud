@@ -10,4 +10,5 @@ import type { TextRendering } from './textRendering.ts';
 export interface TextPreview {
   errors: TextErrorView[];
   rendering?: TextRendering | null;
+  placeholders: string[];
 }

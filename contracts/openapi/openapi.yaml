@@ -2243,8 +2243,13 @@ components:
           oneOf:
           - $ref: "#/components/schemas/TextRendering"
           - type: "null"
+        placeholders:
+          type: array
+          items:
+            type: string
       required:
       - errors
+      - placeholders
     TextRendering:
       type: object
       properties:

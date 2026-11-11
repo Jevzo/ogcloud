@@ -48,6 +48,13 @@ class TextPreviewTest(
     }
 
     @Test
+    fun `a preview names the placeholders its field offers, valid or not`() {
+        preview("<gold>{name}", "NAME_FORMAT")["placeholders"] shouldBe listOf("name")
+        preview("<frog>", "NAME_FORMAT")["placeholders"] shouldBe listOf("name")
+        preview("hi", "MOTD")["placeholders"] shouldBe emptyList<String>()
+    }
+
+    @Test
     fun `version names show as every client sees them, in legacy colours`() {
         val version = preview("<gradient:#ff5555:#5555ff>OgW</gradient>", "VERSION_NAME")
 
