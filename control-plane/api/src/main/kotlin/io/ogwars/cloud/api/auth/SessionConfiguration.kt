@@ -10,10 +10,12 @@ import org.springframework.data.redis.connection.lettuce.LettuceClientConfigurat
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
 import org.springframework.security.core.session.SessionRegistry
 import org.springframework.session.FindByIndexNameSessionRepository
+import org.springframework.session.MapSession
 import org.springframework.session.Session
 import org.springframework.session.config.SessionRepositoryCustomizer
 import org.springframework.session.data.redis.RedisIndexedSessionRepository
 import org.springframework.session.security.SpringSessionBackedSessionRegistry
+import java.util.function.BiFunction
 
 /** Login sessions in Valkey, shared by every API replica and indexed by user (D-0091, D-0095). */
 @Configuration(proxyBeanMethods = false)
@@ -37,7 +39,17 @@ class SessionConfiguration {
 
     @Bean
     fun webSessionNamespace(): SessionRepositoryCustomizer<RedisIndexedSessionRepository> =
-        SessionRepositoryCustomizer { it.setRedisKeyNamespace(ValkeyKeys.WEB_SESSION_NAMESPACE) }
+        SessionRepositoryCustomizer { repository ->
+            repository.setRedisKeyNamespace(ValkeyKeys.WEB_SESSION_NAMESPACE)
+            val mapper =
+                RepairingSessionMapper { id ->
+                    repository.sessionRedisOperations.delete("${ValkeyKeys.WEB_SESSION_NAMESPACE}:sessions:$id")
+                }
+            // Spring's annotations say the mapper never answers null, but the repository reads null as no session,
+            // which is what its reference documentation's own repairing mapper relies on.
+            @Suppress("UNCHECKED_CAST")
+            repository.setRedisSessionMapper(mapper as BiFunction<String, Map<String, Any>, MapSession>)
+        }
 
     /** Lets OIDC logout find a user's sessions on any replica (D-0095). */
     @Bean
