@@ -144,6 +144,26 @@ class OwnSecurityTest(
     }
 
     @Test
+    fun `a login session cannot remove a passkey past the password and the factor rule`() {
+        val user = testUsers.create()
+        passkeys.register(user.id)
+        val token = testUsers.token(user)
+        val id = passkeyIds(token).single()
+        val verifier = verifier()
+        val browser =
+            oauth.signInBrowser(
+                FirstPartyClients.WEB,
+                WEB_REDIRECT,
+                user.username,
+                TestUsers.PASSWORD,
+                verifier,
+            )
+
+        browser.send("DELETE", "/webauthn/register/$id").statusCode() shouldBe FORBIDDEN
+        passkeyIds(token) shouldBe listOf(id)
+    }
+
+    @Test
     fun `an owner removing two passkeys at once keeps one`() {
         val owner = testUsers.create(BuiltInRole.OWNER.id)
         repeat(2) { passkeys.register(owner.id) }
@@ -215,6 +235,7 @@ class OwnSecurityTest(
         const val OK = 200
         const val NO_CONTENT = 204
         const val BAD_REQUEST = 400
+        const val FORBIDDEN = 403
         const val NOT_FOUND = 404
         const val CONFLICT = 409
     }

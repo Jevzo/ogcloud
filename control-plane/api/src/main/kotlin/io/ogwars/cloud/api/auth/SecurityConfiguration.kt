@@ -104,6 +104,9 @@ class SecurityConfiguration {
                 it.requestMatchers("/actuator/health/**", "/actuator/prometheus", "/error").permitAll()
                 // The state and the assets are open; formLogin opens /login, and the rest needs a login session (D-0212).
                 it.requestMatchers(HttpMethod.GET, LoginPages.STATE_PATH, LoginPages.ASSETS).permitAll()
+                // Spring's passkey removal skips the password (D-0217) and the owner's last factor (D-0097);
+                // passkeys are removed through /api/v1/me/passkeys only.
+                it.requestMatchers(HttpMethod.DELETE, "/webauthn/register/**").denyAll()
                 it.anyRequest().authenticated()
             }.addFilterAfter(
                 EnrollmentGate(

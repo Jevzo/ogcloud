@@ -150,6 +150,12 @@ class OAuthHttp(
             path: String,
             accessToken: String,
         ): HttpResponse<String> = browser.getWithToken(path, accessToken)
+
+        /** A request a login page's script could send: this browser's cookies and its CSRF token. */
+        fun send(
+            method: String,
+            path: String,
+        ): HttpResponse<String> = browser.sendWithCsrf(method, path)
     }
 
     /** The step `/login/state` names for a fresh browser, or for one that signed in with [login]'s password. */
@@ -427,6 +433,16 @@ class OAuthHttp(
 
         fun secondFactor(code: String): HttpResponse<String> =
             post("$MFA_PAGE/totp", form(listOf("code" to code, "_csrf" to csrf())))
+
+        fun sendWithCsrf(
+            method: String,
+            path: String,
+        ) = exchange(
+            HttpRequest
+                .newBuilder(uri(path))
+                .header("X-CSRF-TOKEN", csrf())
+                .method(method, HttpRequest.BodyPublishers.noBody()),
+        )
 
         fun postJson(
             path: String,
