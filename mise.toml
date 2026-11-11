@@ -240,6 +240,10 @@ done
 description = "Biome lint and format check, type-check every TS package, then their unit tests"
 run = ["pnpm exec biome ci", "pnpm -r --if-present run typecheck", "pnpm -r --if-present run test:unit"]
 
+[tasks."ui:screenshots"]
+description = "Screenshot the UI kit's component sheet in both themes and densities into build/screenshots/ui (AGENTS.md §13)"
+run = ["pnpm --filter @ogcloud/ui exec playwright install chromium", "pnpm --filter @ogcloud/ui run screenshots"]
+
 [tasks."fmt:ts"]
 description = "Format and fix TypeScript, JavaScript and JSON"
 run = "pnpm exec biome check --write"

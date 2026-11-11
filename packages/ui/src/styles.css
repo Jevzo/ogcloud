@@ -1,0 +1,119 @@
+/* The UI kit's stylesheet: Tailwind 4 on OgCloud's tokens (D-0216). Apps import it once from their entry CSS. */
+@import "tailwindcss";
+@import "@ogcloud/tokens/tokens.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource-variable/atkinson-hyperlegible-mono";
+
+@source "./";
+
+/* In-game previews use Monocraft (OFL-1.1, see fonts/Monocraft-LICENSE.txt), D-0209. */
+@font-face {
+  font-family: "Monocraft";
+  src: url("./fonts/Monocraft.ttf") format("truetype");
+  font-display: swap;
+}
+
+@theme {
+  --default-transition-duration: var(--og-duration-fast);
+  --default-transition-timing-function: var(--ease-standard);
+  --animate-pop-in: og-pop-in var(--og-duration-base) var(--ease-standard);
+  --animate-pop-out: og-pop-out var(--og-duration-fast) var(--ease-standard);
+  --animate-fade-in: og-fade-in var(--og-duration-base) var(--ease-standard);
+  --animate-fade-out: og-fade-out var(--og-duration-fast) var(--ease-standard);
+  --animate-slide-up: og-slide-up var(--og-duration-slow) var(--ease-standard);
+  --animate-spin: og-spin 900ms linear infinite;
+}
+
+@keyframes og-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+@keyframes og-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+@keyframes og-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes og-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes og-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes og-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--og-sunken);
+    color: var(--og-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--og-accent-soft);
+    color: var(--og-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--og-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* react-colorful injects unlayered base styles, so these stay unlayered and win by their two-class selectors. */
+.og-colour-picker.react-colorful {
+  width: 100%;
+  height: 9rem;
+}
+
+.og-colour-picker .react-colorful__saturation {
+  margin-bottom: 10px;
+  border-bottom: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+}
+
+.og-colour-picker .react-colorful__hue {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.og-colour-picker .react-colorful__pointer {
+  width: 16px;
+  height: 16px;
+}
+
+/* Every motion is decoration, so none runs for people who asked for less (AGENTS.md §13). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

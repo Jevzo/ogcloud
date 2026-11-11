@@ -1,0 +1,94 @@
+{
+  "actions": {
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "close": "Close",
+    "copied": "Copied",
+    "copy": "Copy",
+    "dismiss": "Dismiss",
+    "failed": "Copying failed",
+    "more": "More actions",
+    "undo": "Undo"
+  },
+  "chart": {
+    "showChart": "Show as chart",
+    "showTable": "Show as table",
+    "time": "Time"
+  },
+  "colour": {
+    "addStop": "Add a stop",
+    "gradient": "Gradient",
+    "hex": "Hex colour",
+    "hue": "Hue",
+    "insert": "Insert colour",
+    "minecraft": "Minecraft colours",
+    "recent": "Recent",
+    "removeStop": "Remove the selected stop",
+    "saturation": "Saturation and brightness",
+    "solid": "Solid",
+    "stop": "Stop {{index}}",
+    "names": {
+      "aqua": "Aqua",
+      "black": "Black",
+      "blue": "Blue",
+      "dark_aqua": "Dark aqua",
+      "dark_blue": "Dark blue",
+      "dark_gray": "Dark gray",
+      "dark_green": "Dark green",
+      "dark_purple": "Dark purple",
+      "dark_red": "Dark red",
+      "gold": "Gold",
+      "gray": "Gray",
+      "green": "Green",
+      "light_purple": "Light purple",
+      "red": "Red",
+      "white": "White",
+      "yellow": "Yellow"
+    }
+  },
+  "confirm": {
+    "typeName": "Type {{name}} to confirm"
+  },
+  "date": {
+    "nextMonth": "Next month",
+    "permanent": "Permanent",
+    "previousMonth": "Previous month",
+    "quick": {
+      "day": "1 day",
+      "hour": "1 hour",
+      "month": "30 days",
+      "week": "7 days"
+    },
+    "time": "Time"
+  },
+  "list": {
+    "matches_one": "{{count}} of {{total}} matches",
+    "matches_other": "{{count}} of {{total}} match",
+    "noResults": "No results",
+    "remove": "Remove {{label}}",
+    "search": "Search"
+  },
+  "saveBar": {
+    "changes_one": "{{count}} unsaved change",
+    "changes_other": "{{count}} unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes"
+  },
+  "table": {
+    "actions": "Actions",
+    "sortedAscending": "Sorted ascending",
+    "sortedDescending": "Sorted descending"
+  },
+  "tagText": {
+    "bold": "Bold",
+    "colour": "Colour",
+    "formatting": "Formatting",
+    "gradient": "Gradient",
+    "italic": "Italic",
+    "legacy": "1.8 to 1.15",
+    "modern": "1.16 and newer",
+    "placeholder": "Insert placeholder",
+    "strikethrough": "Strikethrough",
+    "underlined": "Underline"
+  }
+}

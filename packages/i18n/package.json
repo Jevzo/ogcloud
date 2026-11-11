@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./types": "./src/i18next.d.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
