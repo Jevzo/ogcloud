@@ -42,4 +42,19 @@ class ValkeyLoadHistoryStoreTest : ValkeyTest() {
         history.since(NOW.minus(Duration.ofDays(2))).map { it.players } shouldBe listOf(2)
         valkey.sync().pttl(ValkeyKeys.LOAD_HISTORY) shouldBeInRange (kept.toMillis() - 60_000)..kept.toMillis()
     }
+
+    @Test
+    fun `an unreadable sample is left out, not the whole day`() {
+        history.record(sample(minutesAgo = 2, players = 10), kept)
+        val oneMinuteAgo = NOW.minus(Duration.ofMinutes(1)).toEpochMilli().toDouble()
+        valkey.sync().zadd(ValkeyKeys.LOAD_HISTORY, oneMinuteAgo, NOT_A_SAMPLE)
+        history.record(sample(minutesAgo = 0, players = 9), kept)
+
+        history.since(NOW.minus(Duration.ofMinutes(5))).map { it.players } shouldBe listOf(10, 9)
+    }
+
+    private companion object {
+        // Wire type 7 does not exist, so no protobuf parser reads it.
+        val NOT_A_SAMPLE = byteArrayOf(-1, -1, -1)
+    }
 }
