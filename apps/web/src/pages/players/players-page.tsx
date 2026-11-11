@@ -136,7 +136,7 @@ export function PlayersPage() {
       </div>
       <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
         {view === "online" ? (
-          <OnlineTable search={search.trim().toLowerCase()} actions={actions} />
+          <OnlineTable search={settled} actions={actions} />
         ) : (
           <KnownTable search={settled} actions={actions} />
         )}
@@ -159,20 +159,19 @@ function OnlineTable({
   const format = useFormat();
   const servers = useServerNames();
   const fetchOnline = usePlayerOnlineHook();
+  // Names are matched by the API, by prefix like the known players' (D-0223).
+  const params = search === "" ? {} : { name: search };
   const online = usePaged(
-    getPlayerOnlineQueryKey(),
+    getPlayerOnlineQueryKey(params),
     async (cursor) =>
       (
         await fetchOnline({
+          ...params,
           limit: PAGE_SIZE,
           ...(cursor === undefined ? {} : { cursor }),
         })
       ).data,
     REFRESH_MS,
-  );
-  // The API pages by uuid, so names are matched among the pages loaded.
-  const shown = online.items.filter(
-    (player) => search === "" || player.name.toLowerCase().includes(search),
   );
 
   const columns = useMemo(
@@ -216,7 +215,7 @@ function OnlineTable({
     <PlayerTable
       label={t("players.online")}
       paged={online}
-      rows={shown}
+      rows={online.items}
       columns={columns}
       toRef={(player) => ({
         uuid: player.uuid,

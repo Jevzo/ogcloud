@@ -7,6 +7,7 @@ import io.ogwars.cloud.domain.store.OneTimeKind
 import io.ogwars.cloud.domain.store.RateDecision
 import io.ogwars.cloud.domain.store.RateLimit
 import io.ogwars.cloud.domain.store.ReadModelKind
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -105,6 +106,18 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
 
         sessions.listOnline(after = null, limit = 2).map { it.playerUuid } shouldContainExactly listOf(alice, carol)
         sessions.listOnline(after = alice, limit = 2).map { it.playerUuid } shouldContainExactly listOf(carol)
+    }
+
+    @Test
+    fun `online players are found by a name prefix, ignoring case, in pages`() {
+        val alfred = UUID(1, 4)
+        listOf(session(alice, "Alice"), session(bob, "Bob"), session(alfred, "Alfred")).forEach(sessions::put)
+
+        sessions.listOnline(after = null, limit = 1, namePrefix = "AL").map { it.playerUuid } shouldContainExactly
+            listOf(alice)
+        sessions.listOnline(after = alice, limit = 1, namePrefix = "al").map { it.playerUuid } shouldContainExactly
+            listOf(alfred)
+        sessions.listOnline(after = null, limit = 10, namePrefix = "z").shouldBeEmpty()
     }
 
     @Test

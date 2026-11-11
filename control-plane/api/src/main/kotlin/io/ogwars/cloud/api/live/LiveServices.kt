@@ -118,9 +118,10 @@ class LivePlayers(
     private val sessions: SessionStore,
 ) {
     fun online(
+        namePrefix: String?,
         after: UUID?,
         limit: Int,
-    ): Page<PlayerSession> = Cursors.page(sessions.listOnline(after, limit + 1), limit) { it.playerUuid }
+    ): Page<PlayerSession> = Cursors.page(sessions.listOnline(after, limit + 1, namePrefix), limit) { it.playerUuid }
 
     fun known(
         namePrefix: String?,

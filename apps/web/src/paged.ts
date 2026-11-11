@@ -8,7 +8,10 @@ interface Page<T> {
   nextCursor?: string | null;
 }
 
-/** A cursor-paged list, its pages joined; `loadMore` fetches the next page while there is one. */
+/**
+ * A cursor-paged list, its pages joined; `loadMore` fetches the next page while there is one. `refetchInterval`
+ * refreshes only while one page is loaded: a refresh refetches every loaded page, so a list read further stays put.
+ */
 export function usePaged<T>(
   queryKey: readonly unknown[],
   fetchPage: (cursor: string | undefined) => Promise<Page<T>>,
@@ -20,7 +23,11 @@ export function usePaged<T>(
     queryFn: ({ pageParam }) => fetchPage(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
-    ...(refetchInterval === undefined ? {} : { refetchInterval }),
+    refetchInterval: (current) =>
+      refetchInterval === undefined ||
+      (current.state.data?.pages.length ?? 0) > 1
+        ? false
+        : refetchInterval,
   });
   return {
     items: query.data?.pages.flatMap((page) => page.items) ?? [],

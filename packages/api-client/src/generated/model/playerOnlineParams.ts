@@ -6,6 +6,7 @@
  */
 
 export type PlayerOnlineParams = {
+  name?: string;
   cursor?: string;
   limit?: number;
 };

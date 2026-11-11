@@ -131,9 +131,13 @@ class LiveDataTest(
 
         val first = oauth.json(oauth.call("GET", "$PLAYERS?limit=1", admin))
         val known = oauth.json(oauth.call("GET", "$PLAYERS/known?name=pager1x&limit=10", admin))
+        val searched = oauth.json(oauth.call("GET", "$PLAYERS?name=PAGER2X&limit=10", admin))
 
         (first["items"] as List<*>).size shouldBe 1
         (known["items"] as List<*>).map { (it as Map<*, *>)["uuid"] } shouldContainExactly listOf(ids[1].toString())
+        // Online players are searched by name too, ignoring case (D-0223).
+        (searched["items"] as List<*>).map { (it as Map<*, *>)["uuid"] } shouldContainExactly
+            listOf(ids[2].toString())
         val profile = oauth.json(oauth.call("GET", "$PLAYERS/${ids[0]}", admin))
         (profile["session"] as Map<*, *>)["permissionGroupId"] shouldBe "default"
     }

@@ -59,10 +59,14 @@ interface SessionStore {
 
     fun onlinePlayers(): Set<UUID>
 
-    /** Online players ordered by uuid, starting after [after]; sessions that expired meanwhile are skipped. */
+    /**
+     * Online players ordered by uuid, starting after [after]; sessions that expired meanwhile are skipped. With
+     * [namePrefix], only names starting with it, ignoring case (D-0223).
+     */
     fun listOnline(
         after: UUID?,
         limit: Int,
+        namePrefix: String? = null,
     ): List<PlayerSession>
 }
 

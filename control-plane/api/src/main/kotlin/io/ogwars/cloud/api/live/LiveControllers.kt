@@ -100,14 +100,15 @@ class PlayerController(
     private val transfers: Transfers,
     private val actors: CurrentActor,
 ) {
-    /** Online players, ordered by uuid so the cursor stays valid while people come and go. */
+    /** Online players, ordered by uuid so the cursor stays valid while people come and go; [name] narrows by prefix. */
     @Requires(ApiPermission.PLAYERS_READ)
     @GetMapping
     fun online(
+        @RequestParam name: String?,
         @RequestParam cursor: String?,
         @RequestParam limit: Int?,
     ): Page<OnlinePlayerView> {
-        val page = players.online(cursor?.let(Cursors::decode), Cursors.limit(limit))
+        val page = players.online(name?.ifBlank { null }, cursor?.let(Cursors::decode), Cursors.limit(limit))
         return Page(page.items.map { it.toView() }, page.nextCursor)
     }
 

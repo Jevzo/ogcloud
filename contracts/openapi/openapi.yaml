@@ -1305,6 +1305,11 @@ paths:
       - player-controller
       operationId: playerOnline
       parameters:
+      - name: name
+        in: query
+        required: false
+        schema:
+          type: string
       - name: cursor
         in: query
         required: false

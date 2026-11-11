@@ -80,6 +80,7 @@ class ValkeySessionStore(
     override fun listOnline(
         after: UUID?,
         limit: Int,
+        namePrefix: String?,
     ): List<PlayerSession> {
         val candidates =
             valkey
@@ -93,10 +94,14 @@ class ValkeySessionStore(
         for (chunk in candidates.chunked(limit)) {
             val keys = chunk.map(ValkeyKeys::session)
             valkey.readRecords(keys).zip(keys).forEach { (record, key) ->
-                if (record != null && sessions.size < limit) sessions += RecordCodec.decodeSession(key, record.second)
+                val session = record?.let { RecordCodec.decodeSession(key, it.second) }
+                if (session != null && sessions.size < limit && session.named(namePrefix)) sessions += session
             }
             if (sessions.size == limit) break
         }
         return sessions
     }
 }
+
+private fun PlayerSession.named(prefix: String?): Boolean =
+    prefix == null || playerName.startsWith(prefix, ignoreCase = true)
