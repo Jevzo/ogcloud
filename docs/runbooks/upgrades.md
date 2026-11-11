@@ -73,6 +73,10 @@ restoring PostgreSQL. Its root Secrets never change on an upgrade.
   version it was built for, so it never runs against an old schema.
 - New plugins or configs in a runtime bundle make the controller replace that profile's servers through a rollout
   job (D-0079). New server images matter only for profiles that name them.
+- Upgrading from 2.0.0-alpha.1 or older moves every in-game text from `&` colour codes to the tag format (D-0200,
+  D-0201): migration V5 rewrites the stored network settings, permission groups and NPC titles, turns the groups'
+  name colours into name formats with `{name}` (D-0203) and the tablist's `%name%` placeholders into `{name}`. Until
+  the rollout replaces them, servers that still run the older plugins show the new texts' tags as written.
 - Rolling the chart back with Helm is safe only if no migration ran. Otherwise, restore the backup from above as in
   the restore drill (`mise run test:restore`).
 - The seed (Infisical's first admin, the Cloudflare token, the backup target's keys) is the Secret `ogcloud-seed`
