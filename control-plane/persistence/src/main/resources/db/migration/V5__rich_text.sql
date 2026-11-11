@@ -1,5 +1,6 @@
--- Every in-game text moves from v1's & colour codes to OgCloud's tag format (D-0200, D-0201): stored texts are
--- converted, permission groups get a name format holding {name} (D-0203), and placeholders become {name} too.
+-- Every in-game text moves from the & colour codes v2 used until now to OgCloud's tag format (D-0200, D-0201): stored
+-- texts are converted, permission groups get a name format holding {name} (D-0203), placeholders become {name} too,
+-- and name_color goes in this release (D-0206).
 
 -- A colour code ends every format before it, as it did in legacy text, so it becomes <reset> and the colour; the
 -- characters the tag format reads are escaped first.
@@ -27,9 +28,38 @@ begin
         loop
             result := regexp_replace(result, '&' || code.letter, code.tag, 'gi');
         end loop;
-    result := regexp_replace(result, '(<reset>)+', '<reset>', 'g');
-    return regexp_replace(result, '^<reset>', '');
+    -- Only generated resets merge; an escaped literal \<reset> from the source stays as it was.
+    result := regexp_replace(result, '(?<!\\)(<reset>)+', '<reset>', 'g');
+    result := regexp_replace(result, '^<reset>', '');
+    -- A text of nothing but codes keeps one reset, since an empty suffix or name format means the catalog's default.
+    return case when result = '' and source <> '' then '<reset>' else result end;
 end
+$$;
+
+-- v1's %name% placeholders become {name}, as every text writes them now (D-0200).
+create function pg_temp.braced(source text, names text) returns text
+    language sql
+    immutable
+as
+$$
+select regexp_replace(source, '%(' || names || ')%', '{\1}', 'g')
+$$;
+
+create function pg_temp.tablist_text(source text) returns text
+    language sql
+    immutable
+as
+$$
+select pg_temp.braced(pg_temp.ampersand_to_tags(source),
+                      'server|group|proxy|onlinePlayers|maxPlayers|ping|permissionGroup')
+$$;
+
+create function pg_temp.npc_text(source text) returns text
+    language sql
+    immutable
+as
+$$
+select pg_temp.braced(pg_temp.ampersand_to_tags(source), 'players|servers')
 $$;
 
 update network_settings
@@ -38,12 +68,8 @@ set motd                     = pg_temp.ampersand_to_tags(motd),
     version_name             = pg_temp.ampersand_to_tags(version_name),
     maintenance_version_name = pg_temp.ampersand_to_tags(maintenance_version_name),
     maintenance_kick_message = pg_temp.ampersand_to_tags(maintenance_kick_message),
-    tablist_header           = regexp_replace(pg_temp.ampersand_to_tags(tablist_header),
-                                              '%(server|group|proxy|onlinePlayers|maxPlayers|ping|permissionGroup)%',
-                                              '{\1}', 'g'),
-    tablist_footer           = regexp_replace(pg_temp.ampersand_to_tags(tablist_footer),
-                                              '%(server|group|proxy|onlinePlayers|maxPlayers|ping|permissionGroup)%',
-                                              '{\1}', 'g');
+    tablist_header           = pg_temp.tablist_text(tablist_header),
+    tablist_footer           = pg_temp.tablist_text(tablist_footer);
 
 alter table network_settings
     alter column motd set default '<green>An OgCloud network',
@@ -64,5 +90,5 @@ alter table permission_groups
     drop column name_color;
 
 update npcs
-set title    = regexp_replace(pg_temp.ampersand_to_tags(title), '%(players|servers)%', '{\1}', 'g'),
-    subtitle = regexp_replace(pg_temp.ampersand_to_tags(subtitle), '%(players|servers)%', '{\1}', 'g');
+set title    = pg_temp.npc_text(title),
+    subtitle = pg_temp.npc_text(subtitle);

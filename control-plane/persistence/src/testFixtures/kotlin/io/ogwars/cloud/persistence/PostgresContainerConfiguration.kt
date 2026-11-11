@@ -9,12 +9,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer
 class PostgresContainerConfiguration {
     @Bean
     @ServiceConnection
-    fun postgres(): PostgreSQLContainer =
-        PostgreSQLContainer(POSTGRES_IMAGE)
-            // Creates the controller role the migration grants data access to.
-            .withInitScript("db/test-init.sql")
+    fun postgres(): PostgreSQLContainer = postgresContainer()
 
     companion object {
+        /** PostgreSQL at the pinned image, with the controller role the migration grants data access to. */
+        fun postgresContainer(): PostgreSQLContainer =
+            PostgreSQLContainer(POSTGRES_IMAGE).withInitScript("db/test-init.sql")
+
         /** Pinned in testing/images.properties (D-0113). */
         val POSTGRES_IMAGE: String = System.getProperty("ogcloud.image.postgres")
 

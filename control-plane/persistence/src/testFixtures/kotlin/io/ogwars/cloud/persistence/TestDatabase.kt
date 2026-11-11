@@ -20,7 +20,7 @@ fun migrate(
         .migrate()
 }
 
-/** A data source for the container's database, with the container's own credentials. */
+/** A data source for the container's database. */
 fun PostgreSQLContainer.dataSource(): DataSource =
     PGSimpleDataSource().apply {
         setUrl(jdbcUrl)
@@ -31,12 +31,7 @@ fun PostgreSQLContainer.dataSource(): DataSource =
 /** One migrated database per test JVM, for tests that use stores without a Spring context. */
 object TestDatabase {
     val jdbc: JdbcClient by lazy {
-        val container =
-            PostgreSQLContainer(
-                PostgresContainerConfiguration.POSTGRES_IMAGE,
-            ).withInitScript("db/test-init.sql").also {
-                it.start()
-            }
+        val container = PostgresContainerConfiguration.postgresContainer().also { it.start() }
         val dataSource = container.dataSource()
         migrate(dataSource)
         JdbcClient.create(dataSource)

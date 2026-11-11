@@ -1,19 +1,17 @@
 package io.ogwars.cloud.persistence
 
+import io.ogwars.cloud.text.TextField
+import io.kotest.assertions.withClue
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.jdbc.core.simple.JdbcClient
-import org.testcontainers.postgresql.PostgreSQLContainer
 
 /** V5 turns stored `&` texts into tags (D-0201) and name colours into name formats (D-0203). */
 class RichTextMigrationTest {
     @Test
     fun `stored texts keep how they looked, as tags`() {
-        val database =
-            PostgreSQLContainer(
-                PostgresContainerConfiguration.POSTGRES_IMAGE,
-            ).withInitScript("db/test-init.sql")
-        database.use { container ->
+        PostgresContainerConfiguration.postgresContainer().use { container ->
             container.start()
             val dataSource = container.dataSource()
             val jdbc = JdbcClient.create(dataSource)
@@ -22,7 +20,8 @@ class RichTextMigrationTest {
                 .sql(
                     """
                     update network_settings set tablist_header = '&7%onlinePlayers%/%maxPlayers% &cI <3 {you}',
-                        tablist_footer = '%ping% ms on %server%', version_name = 'a\b'
+                        tablist_footer = '%ping% ms on %server%', version_name = 'a\b', motd = '&l<reset>&cX',
+                        maintenance_motd = '&L&R', maintenance_kick_message = '&c&r&cX'
                     """.trimIndent(),
                 ).update()
             jdbc
@@ -60,9 +59,10 @@ class RichTextMigrationTest {
                 ).query { row, _ -> (1..6).map(row::getString) }
                 .single() shouldBe
                 listOf(
-                    "<green>An OgCloud network",
-                    "<red>Maintenance",
-                    "<red>The network is in maintenance.",
+                    // A literal <reset> stays text, and the reset after it still ends the bold.
+                    "<bold>\\<reset><reset><red>X",
+                    "<bold><reset>",
+                    "<red><reset><red>X",
                     "<gray>{onlinePlayers}/{maxPlayers} <reset><red>I \\<3 \\{you}",
                     "{ping} ms on {server}",
                     "a\\\\b",
@@ -74,12 +74,46 @@ class RichTextMigrationTest {
                 .list() shouldBe
                 listOf(
                     listOf("", "", "", ""),
-                    listOf("<gold>[<bold>VIP<reset><gold>] ", "", "<red>{name}", "<bold><reset><gold>VIP "),
+                    // A suffix of only codes stays non-empty, so it still replaces the catalog's separator.
+                    listOf("<gold>[<bold>VIP<reset><gold>] ", "<reset>", "<red>{name}", "<bold><reset><gold>VIP "),
                 )
             jdbc
                 .sql("select title, subtitle from npcs")
                 .query { row, _ -> listOf(row.getString(1), row.getString(2)) }
                 .single() shouldBe listOf("<yellow>BedWars", "<gray>{players} players on {servers}")
+            migratedTextsAreValid(jdbc)
+        }
+    }
+
+    /** Every migrated text is one the API would store in its field (D-0205). */
+    private fun migratedTextsAreValid(jdbc: JdbcClient) {
+        val fields =
+            mapOf(
+                "network_settings" to
+                    mapOf(
+                        "motd" to TextField.MOTD,
+                        "maintenance_motd" to TextField.MAINTENANCE_MOTD,
+                        "version_name" to TextField.VERSION_NAME,
+                        "maintenance_version_name" to TextField.MAINTENANCE_VERSION_NAME,
+                        "tablist_header" to TextField.TABLIST_HEADER,
+                        "tablist_footer" to TextField.TABLIST_FOOTER,
+                        "maintenance_kick_message" to TextField.MAINTENANCE_KICK_MESSAGE,
+                    ),
+                "permission_groups" to
+                    mapOf(
+                        "chat_prefix" to TextField.CHAT_PREFIX,
+                        "chat_suffix" to TextField.CHAT_SUFFIX,
+                        "name_format" to TextField.NAME_FORMAT,
+                        "tab_prefix" to TextField.TAB_PREFIX,
+                    ),
+                "npcs" to mapOf("title" to TextField.NPC_TITLE, "subtitle" to TextField.NPC_SUBTITLE),
+            )
+        fields.forEach { (table, columns) ->
+            columns.forEach { (column, field) ->
+                jdbc.sql("select $column from $table").query { row, _ -> row.getString(1).orEmpty() }.list().forEach {
+                    withClue("$table.$column \"$it\"") { field.validate(it).shouldBeEmpty() }
+                }
+            }
         }
     }
 }
