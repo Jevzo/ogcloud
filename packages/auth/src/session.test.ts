@@ -351,6 +351,27 @@ test("signing out revokes the refresh token, forgets the login and ends the API'
   );
 });
 
+test("an app on the API's origin ends the login session itself, without an ID token", async () => {
+  const server = new FakeServer();
+  const { logins, deps } = setup(server, {
+    refreshToken: "refresh-0",
+    idToken: undefined,
+  });
+  const loginsWhenEnded: (StoredLogin | undefined)[] = [];
+  const session = new AuthSession(CONFIG, {
+    ...deps,
+    endLoginSession: async () => {
+      loginsWhenEnded.push(await logins.read());
+    },
+  });
+
+  const next = await session.signOut();
+
+  assert.deepEqual(server.revoked, ["refresh-0"]);
+  assert.deepEqual(loginsWhenEnded, [undefined]);
+  assert.equal(next.href, new URL(CONFIG.postLogoutRedirectUri).href);
+});
+
 test("a failed revocation keeps the login, so signing out can be tried again", async () => {
   const server = new FakeServer();
   server.refuseRevocation = true;

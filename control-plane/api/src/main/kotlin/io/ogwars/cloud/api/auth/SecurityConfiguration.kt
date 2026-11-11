@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -22,6 +23,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
+import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler
 import org.springframework.security.web.context.SecurityContextHolderFilter
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher
@@ -123,6 +125,11 @@ class SecurityConfiguration {
                 MfaGate(paths.matcher(HttpMethod.GET, LoginPages.ADD_PASSKEY_PAGE), mfa),
                 SecurityContextHolderFilter::class.java,
             ).formLogin { it.loginPage(LoginPages.LOGIN_PAGE).permitAll() }
+            // Spring's /logout reaches the web app, not the API (D-0098); the dashboard posts this one (D-0227).
+            .logout {
+                it.logoutRequestMatcher(paths.matcher(HttpMethod.POST, LoginPages.LOGOUT_PATH))
+                it.logoutSuccessHandler(HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT))
+            }
             // Passkeys belong to the public origin (D-0085, D-0098); the login pages register them (D-0212).
             .webAuthn {
                 it.rpName(RELYING_PARTY)

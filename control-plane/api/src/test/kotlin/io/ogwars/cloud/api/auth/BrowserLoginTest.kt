@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.auth
 
+import io.ogwars.cloud.api.auth.login.LoginPages
 import io.ogwars.cloud.api.auth.mfa.Passkeys
 import io.ogwars.cloud.apitest.ApiTestSetup
 import io.ogwars.cloud.apitest.OAuthHttp
@@ -9,15 +10,18 @@ import io.ogwars.cloud.domain.user.Base32
 import io.ogwars.cloud.domain.user.BuiltInRole
 import io.ogwars.cloud.domain.user.Totp
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.Route
 import com.microsoft.playwright.options.AriaRole
+import com.microsoft.playwright.options.RequestOptions
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -25,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -141,6 +146,74 @@ class BrowserLoginTest(
             page.waitForURL("**$ACCOUNT_PATH")
         }
         passkeys.list(user.id).map { it.label } shouldBe listOf("Desk key")
+    }
+
+    @Test
+    fun `signing out through the OIDC logout ends the login session`() {
+        signOutThenOpenAddPasskey { page, idToken ->
+            page.navigate("$origin/oauth2/logout?post_logout_redirect_uri=$origin&id_token_hint=$idToken")
+        }
+    }
+
+    @Test
+    fun `the dashboard's own sign-out ends the login session without an id token`() {
+        signOutThenOpenAddPasskey {
+            page,
+            _,
+            ->
+            postLogout(page.context(), withCsrf = true) shouldBe HttpStatus.NO_CONTENT.value()
+        }
+    }
+
+    @Test
+    fun `a sign-out without the login pages' CSRF token is refused`() {
+        val user = testUsers.create()
+        browser.newContext().use { context ->
+            val page = pageIn(context)
+            signInAndRedeem(page, user.username)
+
+            postLogout(context, withCsrf = false) shouldBe HttpStatus.FORBIDDEN.value()
+            page.navigate("$origin${LoginPages.ADD_PASSKEY_PAGE}")
+            page.getByLabel("Passkey name").waitFor()
+        }
+    }
+
+    /** Signs in, signs out with [signOut], then expects the add-passkey page to ask for a sign-in again. */
+    private fun signOutThenOpenAddPasskey(signOut: (Page, String) -> Unit) {
+        val user = testUsers.create()
+        browser.newContext().use { context ->
+            val page = pageIn(context)
+            signOut(page, signInAndRedeem(page, user.username))
+            page.navigate("$origin${LoginPages.ADD_PASSKEY_PAGE}")
+
+            page.getByLabel("Username or email").waitFor()
+            URI(page.url()).path shouldNotBe LoginPages.ADD_PASSKEY_PAGE
+        }
+    }
+
+    /** Signs in with the password, redeems the code and returns the ID token. */
+    private fun signInAndRedeem(
+        page: Page,
+        username: String,
+    ): String {
+        page.navigate(authorizeUrl())
+        signIn(page, username, TestUsers.PASSWORD)
+        return oauth
+            .exchange(FirstPartyClients.WEB, callbackCode(page).shouldNotBeNull(), "$origin$CALLBACK_PATH", verifier)
+            .idToken
+            .shouldNotBeNull()
+    }
+
+    /** Posts the login-chain logout with this browser's cookies, as the dashboard does (D-0227), and returns its status. */
+    private fun postLogout(
+        context: BrowserContext,
+        withCsrf: Boolean,
+    ): Int {
+        val state = JsonParser.parseString(context.request().get("$origin${LoginPages.STATE_PATH}").text()).asJsonObject
+        val csrf = state.getAsJsonObject("csrf")
+        val options = RequestOptions.create()
+        if (withCsrf) options.setHeader(csrf.get("headerName").asString, csrf.get("token").asString)
+        return context.request().post("$origin${LoginPages.LOGOUT_PATH}", options).status()
     }
 
     private fun pageIn(context: BrowserContext): Page =

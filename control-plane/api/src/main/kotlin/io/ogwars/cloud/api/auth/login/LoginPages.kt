@@ -96,6 +96,9 @@ class LoginPages(
         /** Adds a passkey for a full login, then returns to the dashboard's account page (D-0218). */
         const val ADD_PASSKEY_PAGE = "/login/passkeys/new"
         const val STATE_PATH = "/login/state"
+
+        /** Ends this browser's login session, with the pages' CSRF token; the dashboard's sign-out posts it (D-0227). */
+        const val LOGOUT_PATH = "/login/logout"
         const val ASSETS = "/login/assets/**"
         const val CONTENT_SECURITY_POLICY = "Content-Security-Policy"
         private const val INDEX = "index.html"

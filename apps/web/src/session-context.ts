@@ -10,7 +10,7 @@ export function useSession(): AuthSession | null {
   return useContext(SessionContext);
 }
 
-/** Ends this device's login and leaves through the API's logout; says so when that fails. */
+/** Ends this device's login and the API's login session, then reloads the dashboard; says so when that fails. */
 export function useSignOut(): () => Promise<void> {
   const { t } = useTranslation("web");
   const session = useSession();

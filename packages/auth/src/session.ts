@@ -19,6 +19,11 @@ export interface AuthDependencies {
   pending: PendingStore;
   /** Runs one task at a time across every tab, e.g. `navigator.locks.request` (D-0212). */
   exclusively: <T>(task: () => Promise<T>) => Promise<T>;
+  /**
+   * Ends the API's login session in this browser, for an app on the API's origin (D-0227). Without it, signing out
+   * goes through the OIDC logout, which needs the login's ID token.
+   */
+  endLoginSession?: () => Promise<void>;
 }
 
 /** No usable login: the app sends the user to sign in. */
@@ -142,8 +147,9 @@ export class AuthSession {
   }
 
   /**
-   * Revokes the refresh token, then forgets the login and returns the URL that ends the API's login session. A failed
-   * revocation throws with the login kept, so signing out can be tried again.
+   * Revokes the refresh token, forgets the login and returns where the browser goes next: the app itself once
+   * [AuthDependencies.endLoginSession] ended the login session, otherwise the OIDC logout. A failed revocation throws
+   * with the login kept, so signing out can be tried again.
    */
   async signOut(): Promise<URL> {
     // Under the renewal's lock, so a renewal in another tab cannot store a fresh token after this one is revoked.
@@ -159,6 +165,10 @@ export class AuthSession {
       await this.deps.logins.write(undefined);
       return stored;
     });
+    if (this.deps.endLoginSession !== undefined) {
+      await this.deps.endLoginSession();
+      return new URL(this.config.postLogoutRedirectUri);
+    }
     const logout = new URL("/oauth2/logout", this.config.origin);
     const query = new URLSearchParams({
       post_logout_redirect_uri: this.config.postLogoutRedirectUri,

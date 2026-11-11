@@ -1,4 +1,4 @@
-import { setupStatus } from "@ogcloud/api-client";
+import { loginState, setupStatus } from "@ogcloud/api-client";
 import type { ApiConnection } from "@ogcloud/api-client/react";
 import {
   AuthSession,
@@ -11,6 +11,8 @@ import { HttpStatus, statusOf } from "./http.ts";
 /** The dashboard's OAuth client (D-0012). */
 export const WEB_CLIENT = "ogcloud-web";
 const CALLBACK_PATH = "/auth/callback";
+// The login chain's logout, posted with the login pages' CSRF token (D-0227).
+const LOGOUT_PATH = "/login/logout";
 const STALE_MS = 15_000;
 const RETRIES = 2;
 
@@ -25,8 +27,23 @@ export function createSession(
       redirectUri: `${origin}${CALLBACK_PATH}`,
       postLogoutRedirectUri: origin,
     },
-    browserDependencies(),
+    {
+      ...browserDependencies(),
+      endLoginSession: () => endLoginSession(origin),
+    },
   );
+}
+
+/** Ends the API's login session in this browser, so signing out needs no ID token (D-0227). */
+async function endLoginSession(origin: string): Promise<void> {
+  const { csrf } = (await loginState({ origin })).data;
+  const response = await fetch(`${origin}${LOGOUT_PATH}`, {
+    method: "POST",
+    headers: { [csrf.headerName]: csrf.token },
+  });
+  if (!response.ok) {
+    throw new Error(`${LOGOUT_PATH} answered ${response.status}`);
+  }
 }
 
 /** A fresh install's setup (T-0710), open before anyone can sign in. */
