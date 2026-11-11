@@ -18,6 +18,8 @@ const PAGES = [
   "/groups/bedwars",
   "/players",
   `/players/${onlinePlayers[1]?.uuid}`,
+  "/permissions",
+  "/permissions/owner",
   "/users",
 ] as const;
 

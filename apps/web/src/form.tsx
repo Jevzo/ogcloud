@@ -4,6 +4,7 @@ import {
   Input,
   Select,
   type SelectOption,
+  Switch,
   TagTextField,
 } from "@ogcloud/ui";
 import {
@@ -141,6 +142,30 @@ function SelectField({ label, hint, options, placeholder }: SelectFieldProps) {
   );
 }
 
+interface SwitchFieldProps {
+  label: string;
+  description?: string;
+  disabled?: boolean;
+}
+
+/** An on-or-off setting with its label and what it does. */
+function SwitchField({
+  label,
+  description,
+  disabled = false,
+}: SwitchFieldProps) {
+  const field = useFieldContext<boolean>();
+  return (
+    <Switch
+      label={label}
+      description={description}
+      disabled={disabled}
+      checked={field.state.value}
+      onCheckedChange={field.handleChange}
+    />
+  );
+}
+
 interface TagTextFormFieldProps {
   label: string;
   hint?: string;
@@ -208,7 +233,13 @@ export function contractSchema<T>(
 export const { useAppForm, withFieldGroup } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, NumberField, SelectField, TagTextFormField },
+  fieldComponents: {
+    TextField,
+    NumberField,
+    SelectField,
+    SwitchField,
+    TagTextFormField,
+  },
   formComponents: {},
 });
 

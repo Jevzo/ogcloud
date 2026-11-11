@@ -248,6 +248,74 @@
     "players": "Players",
     "servers": "Servers"
   },
+  "permissions": {
+    "columns": {
+      "id": "Id",
+      "look": "In game",
+      "name": "Group",
+      "nodes": "Nodes",
+      "weight": "Weight"
+    },
+    "create": {
+      "description": "Name it here; its look, weight and permissions are set on its page.",
+      "done": "Created {{name}}",
+      "submit": "Create group",
+      "title": "Create permission group"
+    },
+    "default": "Default",
+    "description": "Ranks players hold: what they may do and how their names look in game.",
+    "detail": {
+      "back": "Back to the permission groups",
+      "delete": "Delete group",
+      "deleteDescription": "Its players move to the default group for good, and its look and nodes are gone.",
+      "deleteTitle": "Delete {{name}}?",
+      "deleted": "Deleted {{name}}",
+      "description": "Permission group {{id}}",
+      "failed": "This permission group could not be loaded",
+      "gone": "This permission group does not exist",
+      "goneDescription": "It may have been deleted; its players then hold the default group.",
+      "more": "More actions"
+    },
+    "empty": "No permission groups yet",
+    "emptyDescription": "Every network has a default group; create others for staff and supporters.",
+    "form": {
+      "basics": "Group",
+      "chatPrefix": "Chat prefix",
+      "chatSuffix": "Chat suffix",
+      "default": "Default group",
+      "defaultHint": "New players and expired ranks land here. Making another group the default replaces this one.",
+      "id": "Id",
+      "idHint": "Lowercase letters, digits and dashes; it cannot change later.",
+      "look": "Look",
+      "name": "Name",
+      "nameFormat": "Name",
+      "nameFormatHint": "How the player's name shows; it must contain {name}.",
+      "nodes": "Permissions",
+      "tabPrefix": "Tablist and nametag prefix",
+      "tabPrefixHint": "Older clients show its first colour only and cut it to fit.",
+      "weight": "Weight",
+      "weightHint": "Heavier groups list first."
+    },
+    "look": {
+      "chat": "Chat",
+      "client": "Client",
+      "legacy": "1.8 to 1.15",
+      "message": "see you in bedwars",
+      "modern": "1.16 and newer",
+      "nametag": "Over the player's head",
+      "tablist": "Tablist",
+      "title": "In game"
+    },
+    "nodes": {
+      "add": "Add",
+      "node": "Permission node",
+      "none": "This group grants no permissions of its own.",
+      "note": "What it allows",
+      "noteFor": "What {{node}} allows",
+      "remove": "Remove {{node}}"
+    },
+    "open": "Open"
+  },
   "players": {
     "actions": {
       "kick": "Kick",

@@ -11,6 +11,8 @@ import { GroupPage } from "./pages/groups/group-page.tsx";
 import { GroupsPage } from "./pages/groups/groups-page.tsx";
 import { NotFound } from "./pages/not-found.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
+import { PermissionGroupPage } from "./pages/permissions/permission-group-page.tsx";
+import { PermissionGroupsPage } from "./pages/permissions/permission-groups-page.tsx";
 import { Placeholder } from "./pages/placeholder.tsx";
 import { PlayerPage } from "./pages/players/player-page.tsx";
 import { PlayersPage } from "./pages/players/players-page.tsx";
@@ -79,7 +81,12 @@ const player = createRoute({
 const permissions = createRoute({
   getParentRoute: () => app,
   path: "/permissions",
-  component: () => <Placeholder label="permissions" />,
+  component: PermissionGroupsPage,
+});
+const permissionGroup = createRoute({
+  getParentRoute: () => app,
+  path: "/permissions/$permissionGroupId",
+  component: PermissionGroupPage,
 });
 const network = createRoute({
   getParentRoute: () => app,
@@ -134,6 +141,7 @@ const routeTree = root.addChildren([
     players,
     player,
     permissions,
+    permissionGroup,
     network,
     npcs,
     activity,

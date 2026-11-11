@@ -568,3 +568,12 @@ export function previewOf(request: TextPreviewRequest): TextPreview {
     placeholders: PLACEHOLDERS[request.field] ?? [],
   };
 }
+
+/** A permission group by id; unknown ids get the first one. */
+export function permissionGroupById(id: string): PermissionGroupView {
+  const found =
+    permissionGroups.find((group) => group.id === id) ?? permissionGroups[0];
+  if (found === undefined)
+    throw new Error("The permission group fixture is empty");
+  return found;
+}

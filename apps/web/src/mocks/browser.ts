@@ -8,6 +8,7 @@ import {
   getOgCloudAPIMock,
   getOverviewGetMockHandler,
   getOverviewHistoryMockHandler,
+  getPermissionGroupGetMockHandler,
   getPermissionGroupListMockHandler,
   getPlayerGetMockHandler,
   getPlayerKnownMockHandler,
@@ -27,6 +28,7 @@ import {
   me,
   onlinePlayers,
   overview,
+  permissionGroupById,
   permissionGroups,
   playerById,
   previewOf,
@@ -53,6 +55,9 @@ export async function startMocks(): Promise<void> {
     getPlayerKnownMockHandler({ items: knownPlayers, nextCursor: null }),
     getPlayerGetMockHandler(({ params }) => playerById(String(params.uuid))),
     getPermissionGroupListMockHandler(permissionGroups),
+    getPermissionGroupGetMockHandler(({ params }) =>
+      permissionGroupById(String(params.id)),
+    ),
     getTextPreviewMockHandler(async ({ request }) =>
       previewOf((await request.json()) as TextPreviewRequest),
     ),

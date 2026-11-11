@@ -1,0 +1,286 @@
+import type {
+  PermissionGroupSettings,
+  PermissionGroupView,
+} from "@ogcloud/api-client";
+import {
+  getPermissionGroupGetQueryKey,
+  getPermissionGroupListQueryKey,
+  usePermissionGroupDelete,
+  usePermissionGroupGet,
+  usePermissionGroupUpdate,
+} from "@ogcloud/api-client/react";
+import { PermissionGroupUpdateBody } from "@ogcloud/api-client/zod";
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  Menu,
+  PageHeader,
+  useToast,
+} from "@ogcloud/ui";
+import { useStore } from "@tanstack/react-form";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Ellipsis, Shield, Star, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { z } from "zod";
+import { DetailFallback } from "../../detail-fallback.tsx";
+import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
+import { useFailureToast } from "../../errors.ts";
+import { contractSchema, countChanges, useAppForm } from "../../form.tsx";
+import { useCan } from "../../permissions.ts";
+import { invalidatePaths } from "../../queries.ts";
+import { useTextValidator } from "../../texts.ts";
+import { PermissionsEditor } from "./permissions-editor.tsx";
+import { RankLook } from "./rank-look.tsx";
+
+const SettingsForm = contractSchema<{ settings: PermissionGroupSettings }>(
+  z.object({ settings: PermissionGroupUpdateBody.shape.settings }),
+);
+
+/** One permission group's page: its look and nodes edited in place, previewed as the game shows them. */
+export function PermissionGroupPage() {
+  const { t } = useTranslation("web");
+  const { permissionGroupId } = useParams({
+    from: "/app/permissions/$permissionGroupId",
+  });
+  const group = usePermissionGroupGet(permissionGroupId);
+
+  if (group.data === undefined) {
+    return (
+      <DetailFallback
+        error={group.error}
+        icon={Shield}
+        goneTitle={t("permissions.detail.gone")}
+        goneDescription={t("permissions.detail.goneDescription")}
+        failedTitle={t("permissions.detail.failed")}
+        back={
+          <Link to="/permissions" className="font-label text-accent-text">
+            {t("permissions.detail.back")}
+          </Link>
+        }
+      />
+    );
+  }
+  return (
+    <PermissionGroupEditor
+      key={group.data.data.version}
+      view={group.data.data}
+    />
+  );
+}
+
+function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
+  const { t } = useTranslation("web");
+  const toast = useToast();
+  const failed = useFailureToast();
+  const navigate = useNavigate();
+  const client = useQueryClient();
+  const canWrite = useCan("permissions:write");
+  const [deleting, setDeleting] = useState(false);
+  const update = usePermissionGroupUpdate();
+  const remove = usePermissionGroupDelete({
+    mutation: {
+      onSettled: () =>
+        invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]),
+    },
+  });
+  const saved = useSaved(getPermissionGroupGetQueryKey(view.id));
+  const saveFailed = useSaveFailure(() =>
+    client.invalidateQueries({
+      queryKey: getPermissionGroupGetQueryKey(view.id),
+    }),
+  );
+  const validators = {
+    chatPrefix: useTextValidator("CHAT_PREFIX"),
+    chatSuffix: useTextValidator("CHAT_SUFFIX"),
+    nameFormat: useTextValidator("NAME_FORMAT"),
+    tabPrefix: useTextValidator("TAB_PREFIX"),
+  };
+
+  const form = useAppForm({
+    defaultValues: { settings: view.settings },
+    validators: { onChange: SettingsForm },
+    onSubmit: ({ value }) =>
+      update
+        .mutateAsync({
+          id: view.id,
+          data: { settings: value.settings, version: view.version },
+        })
+        .then((answer) => {
+          void invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]);
+          saved(answer);
+        }, saveFailed),
+  });
+  const changes = useStore(form.store, (state) =>
+    countChanges(view.settings, state.values.settings),
+  );
+  const display = useStore(
+    form.store,
+    (state) => state.values.settings.display,
+  );
+  const saving = useStore(form.store, (state) => state.isSubmitting);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-3">
+            {view.settings.name}
+            {view.settings.defaultGroup ? (
+              <Badge tone="accent" icon={Star}>
+                {t("permissions.default")}
+              </Badge>
+            ) : null}
+          </span>
+        }
+        description={t("permissions.detail.description", { id: view.id })}
+        actions={
+          canWrite && !view.settings.defaultGroup ? (
+            <Menu
+              groups={[
+                [
+                  {
+                    label: t("permissions.detail.delete"),
+                    icon: Trash2,
+                    danger: true,
+                    onSelect: () => setDeleting(true),
+                  },
+                ],
+              ]}
+              trigger={
+                <Button icon={Ellipsis} iconOnly>
+                  {t("permissions.detail.more")}
+                </Button>
+              }
+            />
+          ) : undefined
+        }
+      />
+      <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(280px,440px)] items-start gap-4">
+        <EditorForm
+          canWrite={canWrite}
+          changes={changes}
+          saving={saving}
+          onSave={() => void form.handleSubmit()}
+          onDiscard={() => form.reset()}
+        >
+          <Card title={t("permissions.form.basics")}>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_160px] gap-4">
+                <form.AppField name="settings.name">
+                  {(field) => (
+                    <field.TextField label={t("permissions.form.name")} />
+                  )}
+                </form.AppField>
+                <form.AppField name="settings.weight">
+                  {(field) => (
+                    <field.NumberField
+                      label={t("permissions.form.weight")}
+                      hint={t("permissions.form.weightHint")}
+                    />
+                  )}
+                </form.AppField>
+              </div>
+              <form.AppField name="settings.defaultGroup">
+                {(field) => (
+                  <field.SwitchField
+                    label={t("permissions.form.default")}
+                    description={t("permissions.form.defaultHint")}
+                    disabled={view.settings.defaultGroup}
+                  />
+                )}
+              </form.AppField>
+            </div>
+          </Card>
+          <Card title={t("permissions.form.look")}>
+            <div className="flex flex-col gap-3">
+              <form.AppField
+                name="settings.display.chatPrefix"
+                validators={validators.chatPrefix}
+              >
+                {(field) => (
+                  <field.TagTextFormField
+                    field="CHAT_PREFIX"
+                    label={t("permissions.form.chatPrefix")}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField
+                name="settings.display.nameFormat"
+                validators={validators.nameFormat}
+              >
+                {(field) => (
+                  <field.TagTextFormField
+                    field="NAME_FORMAT"
+                    label={t("permissions.form.nameFormat")}
+                    hint={t("permissions.form.nameFormatHint")}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField
+                name="settings.display.chatSuffix"
+                validators={validators.chatSuffix}
+              >
+                {(field) => (
+                  <field.TagTextFormField
+                    field="CHAT_SUFFIX"
+                    label={t("permissions.form.chatSuffix")}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField
+                name="settings.display.tabPrefix"
+                validators={validators.tabPrefix}
+              >
+                {(field) => (
+                  <field.TagTextFormField
+                    field="TAB_PREFIX"
+                    label={t("permissions.form.tabPrefix")}
+                    hint={t("permissions.form.tabPrefixHint")}
+                  />
+                )}
+              </form.AppField>
+            </div>
+          </Card>
+          <Card title={t("permissions.form.nodes")}>
+            <form.Field name="settings.permissions">
+              {(field) => (
+                <PermissionsEditor
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                  disabled={!canWrite}
+                />
+              )}
+            </form.Field>
+          </Card>
+        </EditorForm>
+        <Card title={t("permissions.look.title")} className="sticky top-16">
+          <RankLook display={display} />
+        </Card>
+      </div>
+      <ConfirmDialog
+        open={deleting}
+        onOpenChange={setDeleting}
+        title={t("permissions.detail.deleteTitle", {
+          name: view.settings.name,
+        })}
+        description={t("permissions.detail.deleteDescription")}
+        confirmLabel={t("permissions.detail.delete")}
+        typedName={view.id}
+        onConfirm={() =>
+          remove.mutateAsync({ id: view.id }).then(() => {
+            toast({
+              message: t("permissions.detail.deleted", {
+                name: view.settings.name,
+              }),
+            });
+            void navigate({ to: "/permissions" });
+          }, failed)
+        }
+      />
+    </div>
+  );
+}
