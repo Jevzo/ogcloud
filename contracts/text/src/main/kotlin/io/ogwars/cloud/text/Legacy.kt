@@ -3,10 +3,8 @@ package io.ogwars.cloud.text
 import net.kyori.adventure.text.format.NamedTextColor
 
 /**
- * The text in legacy `§` codes, for 1.8 and the load balancer's older clients: each colour as its nearest named colour
- * (D-0204). A colour code clears the decorations before it, so they are written again after each one. With
- * [collapseGradients] a gradient or rainbow takes its first colour; [maxLength] cuts the text, codes included, and
- * never leaves codes without the text they colour.
+ * Legacy `§` text in nearest named colours (D-0204), decorations written again after each colour code, which clears
+ * them; [maxLength] cuts it, codes included, never leaving codes without text.
  */
 fun RichText.toLegacy(
     collapseGradients: Boolean = false,
@@ -75,7 +73,9 @@ private fun RichText.legacyRuns(
                 }
             }
         if (codes.length >= room) break
+        // A cut can leave nothing, as half a surrogate pair, and codes alone would colour nothing.
         val text = span.text.cutTo(room - codes.length)
+        if (text.isEmpty()) break
         val previous = runs.lastOrNull()
         runs +=
             if (codes.isEmpty() && previous != null) {

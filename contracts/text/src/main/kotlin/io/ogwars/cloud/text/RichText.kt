@@ -1,9 +1,8 @@
 package io.ogwars.cloud.text
 
 /**
- * A text in OgCloud's tag format (D-0200), parsed into a tree that the renderers turn into Adventure components,
- * legacy `§` text, chat-component JSON or plain text. The tree holds no Adventure types, so validation needs no
- * Adventure on the classpath. Two texts are equal when their trees are.
+ * A text in OgCloud's tag format (D-0200) as a tree without Adventure types, so checking a text needs no Adventure;
+ * two texts are equal when their trees are.
  */
 class RichText internal constructor(
     internal val nodes: List<Node>,

@@ -11,9 +11,8 @@ data class Span internal constructor(
 )
 
 /**
- * The text's spans, none of them empty. Gradients and rainbows colour each code point, counted over the characters
- * they colour with placeholders as filled in; an unfilled placeholder is shown as written. With [collapseGradients]
- * each takes its first colour. A '§' is dropped, so no literal or value adds legacy codes (D-0206).
+ * The text's non-empty spans: gradients colour each code point they span, placeholders as filled in, and '§' is
+ * dropped so no value adds legacy codes (D-0206). With [collapseGradients] a gradient takes its first colour.
  */
 fun RichText.spans(collapseGradients: Boolean = false): List<Span> {
     val spans = mutableListOf<Span>()

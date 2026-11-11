@@ -104,6 +104,11 @@ class RenderTest {
     }
 
     @Test
+    fun `a cut through a surrogate pair leaves no codes behind`() {
+        RichText.parseValid("<red>ab<blue>😀x").toLegacy(maxLength = 7) shouldBe "§cab"
+    }
+
+    @Test
     fun `a 1_8 team prefix keeps the name's colour by cutting the prefix first`() {
         val prefix = RichText.parseValid("<gradient:#ff5555:#5555ff>[Administrator]</gradient> ")
         legacyTeamPrefix(prefix, NamedColor.GOLD) shouldBe "§c[Administrat§6"

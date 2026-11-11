@@ -4,7 +4,6 @@ import io.ogwars.cloud.sdk.NpcClick
 import io.ogwars.cloud.sdk.RuntimeNpc
 import io.ogwars.cloud.sdk.RuntimeNpcs
 import io.ogwars.cloud.text.TextField
-import io.ogwars.cloud.text.describe
 import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -58,8 +57,9 @@ class HubRuntimeNpcs(
 
         override fun spawn(): RuntimeNpc {
             val at = checkNotNull(location) { "Runtime NPC $id needs a location before it spawns" }
-            requireText("title", TextField.NPC_TITLE, title)
-            requireText("subtitle", TextField.NPC_SUBTITLE, subtitle)
+            // Tag texts like stored titles, refused when invalid (D-0205).
+            TextField.NPC_TITLE.require("Runtime NPC $id title", title)
+            TextField.NPC_SUBTITLE.require("Runtime NPC $id subtitle", subtitle)
             val handler = onClick
             hub.put(
                 NpcSpec(
@@ -83,16 +83,6 @@ class HubRuntimeNpcs(
         override fun despawn() {
             if (npcs.remove(id, this)) hub.remove(NpcHub.RUNTIME + id)
         }
-    }
-
-    /** A title or subtitle in the tag format, refused when invalid (D-0205). */
-    private fun requireText(
-        label: String,
-        field: TextField,
-        text: String,
-    ) {
-        val errors = field.validate(text)
-        require(errors.isEmpty()) { "Runtime NPC $label \"$text\": ${errors.describe()}" }
     }
 
     private data class Click(

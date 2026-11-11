@@ -66,6 +66,15 @@ enum class TextField(
     /** What keeps [source] from being stored in this field; empty when it may be. */
     fun validate(source: String): List<TextError> = (parse(source) as? ParseResult.Invalid)?.errors.orEmpty()
 
+    /** Refuses [source] with an IllegalArgumentException naming [label] and each error. */
+    fun require(
+        label: String,
+        source: String,
+    ) {
+        val errors = validate(source)
+        require(errors.isEmpty()) { "$label: ${errors.describe()}" }
+    }
+
     private fun invalid(errors: List<TextError>) = ParseResult.Invalid(errors.sortedBy(TextError::offset))
 
     private fun placeholderErrors(

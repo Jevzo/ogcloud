@@ -74,7 +74,7 @@ class HubRuntimeNpcsTest {
         val builder = npcs.create("bad").location("world", 0.0, 64.0, 0.0, 0f, 0f)
 
         shouldThrow<IllegalArgumentException> { builder.title("<frog>Shop").spawn() }.message shouldBe
-            "Runtime NPC title \"<frog>Shop\": unknown tag <frog> (at character 0)"
+            "Runtime NPC bad title: unknown tag <frog> (at character 0)"
         shouldThrow<IllegalArgumentException> { builder.title("ok").subtitle("§cRed").spawn() }
         hub.shownIds() shouldBe emptySet()
     }

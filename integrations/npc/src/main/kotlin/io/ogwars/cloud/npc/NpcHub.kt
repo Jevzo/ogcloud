@@ -6,6 +6,7 @@ import io.ogwars.cloud.node.core.text.StoredTexts
 import io.ogwars.cloud.sdk.RoutingStrategy
 import io.ogwars.cloud.text.Placeholders
 import io.ogwars.cloud.text.RichText
+import io.ogwars.cloud.text.toPlain
 import com.github.retrooper.packetevents.protocol.player.UserProfile
 import java.lang.System.Logger.Level.WARNING
 import java.time.Clock
@@ -239,14 +240,11 @@ class NpcHub(
     /** The NPC's non-blank lines with the live counts filled in. */
     private fun lines(spec: NpcSpec): List<RichText> {
         val (players, servers) = spec.countsOf?.let(counts::get) ?: (0 to 0)
+        // A line that shows nothing, as `<gold>` alone, gets no armor stand of its own.
         return listOf(spec.title, spec.subtitle)
-            .filter(String::isNotBlank)
-            .map {
-                texts.parse(it).fill(
-                    Placeholders.PLAYERS to players.toString(),
-                    Placeholders.SERVERS to servers.toString(),
-                )
-            }
+            .map(texts::parse)
+            .filter { it.toPlain().isNotBlank() }
+            .map { it.fill(Placeholders.PLAYERS to players.toString(), Placeholders.SERVERS to servers.toString()) }
     }
 
     private fun managedSpec(npc: ManagedNpc): NpcSpec {

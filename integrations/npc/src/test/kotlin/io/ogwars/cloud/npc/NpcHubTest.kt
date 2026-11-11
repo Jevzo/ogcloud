@@ -160,7 +160,8 @@ class NpcHubTest {
             shop
                 .toBuilder()
                 .setTitle("<red>Bedwars")
-                .setSubtitle("")
+                // Shows nothing, so it gets no line of its own.
+                .setSubtitle("<gold>")
                 .build()
         hub.reload().join()
         npcs.clear()
