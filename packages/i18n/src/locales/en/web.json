@@ -3,6 +3,15 @@
     "crashLoopPaused": "{{subject}} is paused after repeated failed starts",
     "other": "{{kind}} on {{subject}}"
   },
+  "editing": {
+    "leave": "Leave without saving",
+    "leaveDescription_one": "Your change is lost if you leave now.",
+    "leaveDescription_other": "Your {{count}} changes are lost if you leave now.",
+    "leaveTitle": "Leave without saving?",
+    "reload": "Reload",
+    "saved": "Saved",
+    "stale": "Someone changed this meanwhile. Reload to see their version; your edits are not kept."
+  },
   "errors": {
     "action": "That did not go through. Try again in a moment.",
     "back": "Back to the overview",
@@ -68,15 +77,8 @@
       "failed": "This group could not be loaded",
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
-      "leave": "Leave without saving",
-      "leaveDescription_one": "Your change is lost if you leave now.",
-      "leaveDescription_other": "Your {{count}} changes are lost if you leave now.",
-      "leaveTitle": "Leave without saving?",
       "live": "Right now",
-      "more": "More actions",
-      "reload": "Reload",
-      "saved": "Saved",
-      "stale": "Someone changed this group meanwhile. Reload to see their version; your edits are not kept."
+      "more": "More actions"
     },
     "form": {
       "basics": "Name and type",

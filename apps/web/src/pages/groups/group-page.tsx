@@ -16,24 +16,17 @@ import { GroupUpdateBody } from "@ogcloud/api-client/zod";
 import {
   Button,
   Card,
-  ConfirmDialog,
   EmptyState,
   Menu,
   Meter,
   PageHeader,
-  SaveBar,
   Skeleton,
   TimeSeriesChart,
   useToast,
 } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Link,
-  useBlocker,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Construction,
   Ellipsis,
@@ -46,7 +39,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { useFailureToast } from "../../errors.ts";
+import { EditGuard, useSaveFailure } from "../../editing.tsx";
 import { contractSchema, countChanges, useAppForm } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
 import { useCan } from "../../permissions.ts";
@@ -56,7 +49,6 @@ import { GroupSettingsFields } from "./group-settings-fields.tsx";
 import { GroupStatusBadge } from "./group-status.tsx";
 
 const NOT_FOUND = 404;
-const CONFLICT = 409;
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
 const CHART_HEIGHT = 120;
@@ -108,7 +100,6 @@ export function GroupPage() {
 function GroupEditor({ view }: { view: GroupView }) {
   const { t } = useTranslation("web");
   const toast = useToast();
-  const failed = useFailureToast();
   const navigate = useNavigate();
   const client = useQueryClient();
   const canWrite = useCan("groups:write");
@@ -123,8 +114,9 @@ function GroupEditor({ view }: { view: GroupView }) {
   const [requesting, setRequesting] = useState(false);
   const update = useGroupUpdate();
   const live = overview.data?.data.groups.find((group) => group.id === view.id);
-  const reload = () =>
-    client.invalidateQueries({ queryKey: getGroupGetQueryKey(view.id) });
+  const saveFailed = useSaveFailure(() =>
+    client.invalidateQueries({ queryKey: getGroupGetQueryKey(view.id) }),
+  );
 
   const form = useAppForm({
     defaultValues: { settings: view.settings },
@@ -141,28 +133,14 @@ function GroupEditor({ view }: { view: GroupView }) {
             version: view.version,
           },
         })
-        .then(
-          (saved) => {
-            client.setQueryData(getGroupGetQueryKey(view.id), saved);
-            toast({ message: t("groups.detail.saved") });
-          },
-          (error: unknown) =>
-            error instanceof ApiError && error.status === CONFLICT
-              ? toast({
-                  message: t("groups.detail.stale"),
-                  action: { label: t("groups.detail.reload"), onPress: reload },
-                })
-              : failed(error),
-        ),
+        .then((saved) => {
+          client.setQueryData(getGroupGetQueryKey(view.id), saved);
+          toast({ message: t("editing.saved") });
+        }, saveFailed),
   });
   const changes = useStore(form.store, (state) =>
     countChanges(view.settings, state.values.settings),
   );
-  const blocker = useBlocker({
-    shouldBlockFn: () => changes > 0,
-    enableBeforeUnload: () => changes > 0,
-    withResolver: true,
-  });
 
   const menu = canWrite
     ? [
@@ -258,7 +236,7 @@ function GroupEditor({ view }: { view: GroupView }) {
           {canWrite ? (
             <form.Subscribe selector={(state) => state.isSubmitting}>
               {(saving) => (
-                <SaveBar
+                <EditGuard
                   changes={changes}
                   saving={saving}
                   onDiscard={() => form.reset()}
@@ -275,14 +253,6 @@ function GroupEditor({ view }: { view: GroupView }) {
         open={requesting}
         onOpenChange={setRequesting}
         groupIds={[view.id]}
-      />
-      <ConfirmDialog
-        open={blocker.status === "blocked"}
-        onOpenChange={(open) => (open ? undefined : blocker.reset?.())}
-        title={t("groups.detail.leaveTitle")}
-        description={t("groups.detail.leaveDescription", { count: changes })}
-        confirmLabel={t("groups.detail.leave")}
-        onConfirm={() => blocker.proceed?.()}
       />
     </div>
   );
