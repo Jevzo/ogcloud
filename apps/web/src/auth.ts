@@ -41,16 +41,25 @@ export async function signInOrSetUp(
   session: AuthSession,
   toSetup: () => void,
 ): Promise<void> {
-  const status = await setupStatus();
-  if (status.data.pending) toSetup();
+  const pending = await setupStatus().then(
+    (status) => status.data.pending,
+    (error: unknown) => {
+      // Without an answer the sign-in page is the better guess: it explains an API that is down.
+      console.error("Could not tell whether this install is set up", error);
+      return false;
+    },
+  );
+  if (pending) toSetup();
   else await signIn(session);
 }
 
-/** Sends the browser to sign in and back to where it was. */
+/** Sends the browser to sign in and back to where it was; a failed callback goes home afterwards, not to itself. */
 export async function signIn(session: AuthSession): Promise<void> {
-  const here = `${window.location.pathname}${window.location.search}`;
+  const { pathname, search } = window.location;
   window.location.assign(
-    await session.beginSignIn(here === CALLBACK_PATH ? "/" : here),
+    await session.beginSignIn(
+      pathname === CALLBACK_PATH ? "/" : `${pathname}${search}`,
+    ),
   );
 }
 

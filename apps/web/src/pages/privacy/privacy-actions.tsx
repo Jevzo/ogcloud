@@ -12,13 +12,15 @@ import { useTranslation } from "react-i18next";
 import { useFailureToast } from "../../errors.ts";
 import { saveJson } from "../../files.ts";
 import { usePendingAction } from "../../pending-action.ts";
-import { useCan } from "../../permissions.ts";
+import { useCan, useIsOwner } from "../../permissions.ts";
 
 /** Someone whose stored data can be exported or erased (D-0049): a player by uuid, a dashboard user by id. */
 export interface PrivacySubject {
   kind: "player" | "user";
   id: string;
   name: string;
+  /** An owner's account, which only owners may erase (D-0094). */
+  owner?: boolean;
 }
 
 /**
@@ -32,7 +34,7 @@ export function usePrivacyActions(
   exportData: (subject: PrivacySubject) => void;
   askErase: (subject: PrivacySubject) => void;
   canExport: boolean;
-  canErase: boolean;
+  mayErase: (subject: PrivacySubject) => boolean;
   dialogs: ReactNode;
 } {
   const { t } = useTranslation("web");
@@ -41,6 +43,9 @@ export function usePrivacyActions(
   const queries = useQueryClient();
   const canExport = useCan("privacy:export");
   const canErase = useCan("privacy:erase");
+  const callerIsOwner = useIsOwner();
+  const mayErase = (target: PrivacySubject) =>
+    canErase && (target.owner !== true || callerIsOwner);
   const exportPlayer = usePrivacyExportPlayerHook();
   const exportUser = usePrivacyExportUserHook();
   const erasePlayer = usePrivacyErasePlayer();
@@ -78,7 +83,7 @@ export function usePrivacyActions(
             },
           ]
         : []),
-      ...(canErase
+      ...(mayErase(target)
         ? [
             {
               label: t("privacy.erase"),
@@ -92,7 +97,7 @@ export function usePrivacyActions(
     exportData,
     askErase: (target) => pending.open("erase", target),
     canExport,
-    canErase,
+    mayErase,
     dialogs: (
       <ConfirmDialog
         open={pending.isOpen("erase")}

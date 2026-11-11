@@ -5,6 +5,8 @@ export interface Tab<T extends string> {
   value: T;
   label: string;
   content: ReactNode;
+  /** Stays mounted, hidden, while another tab shows: e.g. a form whose leave guard must keep watching its edits. */
+  keepMounted?: boolean;
 }
 
 interface TabsProps<T extends string> {
@@ -44,7 +46,8 @@ export function Tabs<T extends string>({
         <Primitive.Content
           key={tab.value}
           value={tab.value}
-          className="outline-none"
+          {...(tab.keepMounted === true ? { forceMount: true } : {})}
+          className="outline-none data-[state=inactive]:hidden"
         >
           {tab.content}
         </Primitive.Content>

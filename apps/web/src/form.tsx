@@ -14,7 +14,7 @@ import {
   useStore,
 } from "@tanstack/react-form";
 import type { TFunction } from "i18next";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { textProblem, useTextPreview } from "./texts.ts";
@@ -284,26 +284,49 @@ export function localizeValidation(t: TFunction<"web">): void {
 }
 
 /**
- * An in-place editor for a resource's settings: the form, how many values changed and whether it is saving.
- * [save] writes the settings against the version the page read (D-0069).
+ * An in-place editor for a resource's settings: the form, how many values changed and whether it is saving. Edits start
+ * from `view`; a newer view replaces it only while nothing is edited, or right after a save, so a refetch never drops
+ * edits. `save` writes against `base`, the view the edits started from, so a stale save is refused (D-0069, D-0210).
  */
-export function useSettingsForm<S extends object>({
-  settings,
+export function useSettingsForm<V, S extends object, A>({
+  view,
+  settingsOf,
   schema,
   save,
+  onSaved,
+  onFailed,
 }: {
-  settings: S;
+  view: V;
+  settingsOf: (view: V) => S;
   schema: StandardSchemaV1<{ settings: S }>;
-  save: (settings: S) => Promise<unknown>;
+  save: (settings: S, base: V) => Promise<A>;
+  onSaved: (answer: A) => void;
+  onFailed: (error: unknown) => void;
 }) {
+  const [base, setBase] = useState(view);
+  const adoptNext = useRef(false);
   const form = useAppForm({
-    defaultValues: { settings },
+    defaultValues: { settings: settingsOf(base) },
     validators: { onChange: schema },
-    onSubmit: ({ value }) => save(value.settings),
+    onSubmit: async ({ value }) => {
+      try {
+        const answer = await save(value.settings, base);
+        adoptNext.current = true;
+        onSaved(answer);
+      } catch (error) {
+        onFailed(error);
+      }
+    },
   });
   const changes = useStore(form.store, (state) =>
-    countChanges(settings, state.values.settings),
+    countChanges(settingsOf(base), state.values.settings),
   );
   const saving = useStore(form.store, (state) => state.isSubmitting);
-  return { form, changes, saving };
+  useEffect(() => {
+    if (view === base || (changes > 0 && !adoptNext.current)) return;
+    adoptNext.current = false;
+    setBase(view);
+    form.reset({ settings: settingsOf(view) });
+  }, [view, base, changes, form, settingsOf]);
+  return { form, changes, saving, base };
 }

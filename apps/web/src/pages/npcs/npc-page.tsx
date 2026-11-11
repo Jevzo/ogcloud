@@ -50,12 +50,7 @@ export function NpcPage() {
     );
   }
   // NPCs carry no version, so their saved settings decide when the form starts over.
-  return (
-    <NpcEditor
-      key={JSON.stringify(npc.data.data.settings)}
-      view={npc.data.data}
-    />
-  );
+  return <NpcEditor key={npc.data.data.id} view={npc.data.data} />;
 }
 
 function NpcEditor({ view }: { view: NpcView }) {
@@ -71,13 +66,16 @@ function NpcEditor({ view }: { view: NpcView }) {
   );
   const remove = useDeleteNpc(() => void navigate({ to: "/npcs" }));
   const { form, changes, saving } = useSettingsForm({
-    settings: view.settings,
+    view,
+    settingsOf: (npc) => npc.settings,
     schema: SettingsForm,
-    save: (settings) =>
-      update.mutateAsync({ id: view.id, data: settings }).then((answer) => {
-        void invalidatePaths(client, [getNpcListQueryKey()[0]]);
-        saved(answer);
-      }, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({ id: base.id, data: settings }),
+    onSaved: (answer) => {
+      void invalidatePaths(client, [getNpcListQueryKey()[0]]);
+      saved(answer);
+    },
+    onFailed: saveFailed,
   });
   const look = useStore(form.store, (state) => ({
     title: state.values.settings.title,

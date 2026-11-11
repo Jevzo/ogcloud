@@ -32,9 +32,11 @@ async function start(container: HTMLElement) {
   const session = mocksMode ? null : createSession();
   const queryClient = createQueryClient(session, () => {
     if (session !== null) {
-      void signInOrSetUp(
+      signInOrSetUp(
         session,
         () => void router.navigate({ to: SETUP_PATH }),
+      ).catch((error: unknown) =>
+        console.error("Could not send the browser to sign in", error),
       );
     }
   });

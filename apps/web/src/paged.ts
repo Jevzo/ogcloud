@@ -15,7 +15,8 @@ export function usePaged<T>(
   refetchInterval?: number,
 ) {
   const query = useInfiniteQuery({
-    queryKey: ["paged", ...queryKey],
+    // The path stays first, so invalidatePaths reaches the pages too; the marker keeps them apart from plain reads.
+    queryKey: [...queryKey, "paged"],
     queryFn: ({ pageParam }) => fetchPage(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,

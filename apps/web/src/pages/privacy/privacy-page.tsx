@@ -4,7 +4,7 @@ import { Download, Eraser, Info, UserRoundSearch } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebounced } from "../../debounce.ts";
-import { useCan } from "../../permissions.ts";
+import { isOwner, useCan } from "../../permissions.ts";
 import { type PrivacySubject, usePrivacyActions } from "./privacy-actions.tsx";
 
 const TYPING_MS = 300;
@@ -93,6 +93,7 @@ function UserSearch({ privacy }: { privacy: Privacy }) {
         kind: "user",
         id: user.id,
         name: user.username,
+        owner: isOwner(user),
         detail: user.email,
       }))}
       searched={needle !== "" && users.isSuccess}
@@ -159,7 +160,7 @@ function SearchCard({
                     {t("privacy.export")}
                   </Button>
                 ) : null}
-                {privacy.canErase ? (
+                {privacy.mayErase(subject) ? (
                   <Button
                     size="sm"
                     kind="danger"

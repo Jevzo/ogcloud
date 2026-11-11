@@ -60,7 +60,7 @@ export function UserPage() {
       />
     );
   }
-  return <UserEditor key={user.data.data.version} user={user.data.data} />;
+  return <UserEditor key={user.data.data.id} user={user.data.data} />;
 }
 
 function UserEditor({ user }: { user: UserView }) {
@@ -86,23 +86,29 @@ function UserEditor({ user }: { user: UserView }) {
   );
 
   const { form, changes, saving } = useSettingsForm({
-    settings: {
-      username: user.username,
-      email: user.email,
-      roleId: user.roleId,
-      enabled: user.enabled,
-    },
+    view: user,
+    settingsOf: ({ username, email, roleId, enabled }) => ({
+      username,
+      email,
+      roleId,
+      enabled,
+    }),
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({
-          id: user.id,
-          data: { ...settings, version: user.version },
-        })
-        .then(saved, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({
+        id: base.id,
+        data: { ...settings, version: base.version },
+      }),
+    onSaved: saved,
+    onFailed: saveFailed,
   });
   const items = actions.itemsFor(user);
-  const subject = { kind: "user" as const, id: user.id, name: user.username };
+  const subject = {
+    kind: "user" as const,
+    id: user.id,
+    name: user.username,
+    owner: isOwner(user),
+  };
 
   return (
     <div className="flex flex-col gap-4">

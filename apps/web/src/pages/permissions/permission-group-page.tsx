@@ -10,7 +10,7 @@ import {
   usePermissionGroupUpdate,
 } from "@ogcloud/api-client/react";
 import { PermissionGroupUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Card, PageHeader, useToast } from "@ogcloud/ui";
+import { Badge, Card, PageHeader } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -20,7 +20,6 @@ import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
-import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -58,17 +57,12 @@ export function PermissionGroupPage() {
     );
   }
   return (
-    <PermissionGroupEditor
-      key={group.data.data.version}
-      view={group.data.data}
-    />
+    <PermissionGroupEditor key={group.data.data.id} view={group.data.data} />
   );
 }
 
 function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
   const { t } = useTranslation("web");
-  const _toast = useToast();
-  const _failed = useFailureToast();
   const navigate = useNavigate();
   const client = useQueryClient();
   const canWrite = useCan("permissions:write");
@@ -102,15 +96,19 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
   };
 
   const { form, changes, saving } = useSettingsForm({
-    settings: view.settings,
+    view,
+    settingsOf: (group) => group.settings,
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({ id: view.id, data: { settings, version: view.version } })
-        .then((answer) => {
-          void invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]);
-          saved(answer);
-        }, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({
+        id: base.id,
+        data: { settings, version: base.version },
+      }),
+    onSaved: (answer) => {
+      void invalidatePaths(client, [getPermissionGroupListQueryKey()[0]]);
+      saved(answer);
+    },
+    onFailed: saveFailed,
   });
   const display = useStore(
     form.store,

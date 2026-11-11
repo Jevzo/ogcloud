@@ -76,8 +76,7 @@ export function GroupPage() {
       />
     );
   }
-  // A new version remounts the form, so a save or a reload starts it from what the API holds.
-  return <GroupEditor key={group.data.data.version} view={group.data.data} />;
+  return <GroupEditor key={group.data.data.id} view={group.data.data} />;
 }
 
 function GroupEditor({ view }: { view: GroupView }) {
@@ -103,18 +102,19 @@ function GroupEditor({ view }: { view: GroupView }) {
   );
 
   const { form, changes, saving } = useSettingsForm({
-    settings: view.settings,
+    view,
+    settingsOf: (group) => group.settings,
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({
-          id: view.id,
-          data: {
-            settings: { ...settings, maintenance: view.settings.maintenance },
-            version: view.version,
-          },
-        })
-        .then(saved, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({
+        id: base.id,
+        data: {
+          settings: { ...settings, maintenance: base.settings.maintenance },
+          version: base.version,
+        },
+      }),
+    onSaved: saved,
+    onFailed: saveFailed,
   });
 
   const menu = canWrite
@@ -191,6 +191,7 @@ function GroupEditor({ view }: { view: GroupView }) {
           {
             value: "settings",
             label: t("groups.detail.settings"),
+            keepMounted: true,
             content: (
               <EditorForm
                 form={form}

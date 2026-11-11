@@ -48,7 +48,13 @@ export type GroupAction =
   | "delete"
   | "restore";
 
-function useGroupMutations() {
+/** How a restore ended; it lives on the mutation, so the undo toast still reports after its page is gone. */
+interface RestoreOutcome {
+  onSuccess: (answer: unknown, id: string) => void;
+  onError: (error: unknown) => void;
+}
+
+function useGroupMutations(restoreOutcome: RestoreOutcome) {
   const read = useGroupGetHook();
   const update = useGroupUpdateHook();
   const restart = useGroupRestartHook();
@@ -85,6 +91,7 @@ function useGroupMutations() {
     restore: useMutation({
       mutationFn: (id: string) => restore(id),
       ...settle,
+      ...restoreOutcome,
     }),
   };
 }
@@ -105,17 +112,17 @@ export function useGroupActions(options: { onDeleted?: () => void } = {}): {
   const failed = useFailureToast();
   const navigate = useNavigate();
   const canWrite = useCan("groups:write");
-  const mutations = useGroupMutations();
+  const mutations = useGroupMutations({
+    onSuccess: (_, id) =>
+      toast({ message: t("groups.actions.restored", { id }) }),
+    onError: failed,
+  });
   const confirming = usePendingAction<
     "startMaintenance" | "restart" | "delete",
     string
   >();
 
-  const restore = (id: string) =>
-    mutations.restore.mutate(id, {
-      onSuccess: () => toast({ message: t("groups.actions.restored", { id }) }),
-      onError: failed,
-    });
+  const restore = (id: string) => mutations.restore.mutate(id);
   const request = (action: GroupAction, id: string) => {
     switch (action) {
       case "endMaintenance":

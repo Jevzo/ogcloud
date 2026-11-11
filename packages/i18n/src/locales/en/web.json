@@ -292,7 +292,8 @@
     "action": "That did not go through. Try again in a moment.",
     "back": "Back to the overview",
     "generic": "Something went wrong: {{detail}}",
-    "notFound": "There is no page here."
+    "notFound": "There is no page here.",
+    "retry": "Try again"
   },
   "forms": {
     "invalid": "Check this value",
@@ -1025,6 +1026,10 @@
       "refused": "That setup token is not this installation's. Copy it again from the cluster.",
       "title": "Set up OgCloud",
       "where": "Read it from the cluster"
+    },
+    "unreachable": {
+      "description": "OgCloud could not tell whether this install has an owner yet. Check that the API is running, then try again.",
+      "title": "The API did not answer"
     }
   },
   "shell": {

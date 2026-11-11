@@ -19,7 +19,6 @@ import {
   CopyField,
   Note,
   PageHeader,
-  useToast,
 } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -71,17 +70,11 @@ export function ClientPage() {
     );
   }
   // Clients carry no version; what they hold now keys the form, so a save or a reload starts it afresh.
-  return (
-    <ClientEditor
-      key={JSON.stringify([client.name, client.scopes])}
-      client={client}
-    />
-  );
+  return <ClientEditor key={client.clientId} client={client} />;
 }
 
 function ClientEditor({ client }: { client: OAuthClientView }) {
   const { t } = useTranslation("web");
-  const _toast = useToast();
   const failed = useFailureToast();
   const navigate = useNavigate();
   const queries = useQueryClient();
@@ -110,12 +103,13 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
   );
 
   const { form, changes, saving } = useSettingsForm({
-    settings: { name: client.name, scopes: client.scopes },
+    view: client,
+    settingsOf: ({ name, scopes }) => ({ name, scopes }),
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({ clientId: client.clientId, data: settings })
-        .then(saved, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({ clientId: base.clientId, data: settings }),
+    onSaved: saved,
+    onFailed: saveFailed,
   });
 
   return (
@@ -196,6 +190,8 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
         title={t("clients.detail.rotateTitle", { name: client.name })}
         description={t("clients.detail.rotateDescription")}
         confirmLabel={t("clients.detail.rotate")}
+        // The old secret stops working at once, which cannot be undone (D-0210).
+        typedName={client.clientId}
         onConfirm={() =>
           rotate
             .mutateAsync({ clientId: client.clientId })

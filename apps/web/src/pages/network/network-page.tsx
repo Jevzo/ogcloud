@@ -75,9 +75,7 @@ export function NetworkPage() {
       />
     );
   }
-  return (
-    <NetworkEditor key={network.data.data.version} view={network.data.data} />
-  );
+  return <NetworkEditor view={network.data.data} />;
 }
 
 type NetworkAction = "restart" | "rotate" | "maintenance";
@@ -112,17 +110,18 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const groupIds = useBackendGroupIds();
 
   const { form, changes, saving } = useSettingsForm({
-    settings: view.settings,
+    view,
+    settingsOf: (network) => network.settings,
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({
-          data: {
-            settings: { ...settings, maintenance: view.settings.maintenance },
-            version: view.version,
-          },
-        })
-        .then(saved, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({
+        data: {
+          settings: { ...settings, maintenance: base.settings.maintenance },
+          version: base.version,
+        },
+      }),
+    onSaved: saved,
+    onFailed: saveFailed,
   });
   const settings = useStore(form.store, (state) => state.values.settings);
   const started = (message: string) => () => toast({ message });

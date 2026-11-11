@@ -8,9 +8,16 @@ import {
 import { Button, CopyField, Field, Input, Note } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
-import { KeyRound, LogIn, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  KeyRound,
+  LogIn,
+  RotateCw,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useFailureToast } from "../../errors.ts";
 import { useSession } from "../../session-context.ts";
 import { isValidPassword } from "../users/new-password-field.tsx";
 import {
@@ -48,6 +55,26 @@ function Setup() {
   const [tokenRefused, setTokenRefused] = useState(false);
 
   if (status.isPending) return <SetupFrame step="token">{null}</SetupFrame>;
+  if (status.isError) {
+    return (
+      <SetupFrame step="token">
+        <StepHeading
+          title={t("setup.unreachable.title")}
+          description={t("setup.unreachable.description")}
+        />
+        <StepActions>
+          <Button
+            kind="primary"
+            icon={RotateCw}
+            loading={status.isFetching}
+            onClick={() => void status.refetch()}
+          >
+            {t("errors.retry")}
+          </Button>
+        </StepActions>
+      </SetupFrame>
+    );
+  }
   if (status.data?.data.pending !== true && step !== "signIn") {
     return (
       <SetupFrame step="signIn">
@@ -284,13 +311,15 @@ function ownerProblem(error: unknown, t: TFunction<"web">): string | null {
   if (!(error instanceof Error)) return null;
   if (!(error instanceof ApiError)) return t("errors.action");
   if (error.status === FORBIDDEN) return null;
-  if (error.status === CONFLICT) return t("setup.owner.taken");
+  if (error.status === CONFLICT)
+    return error.problem?.detail ?? t("setup.owner.taken");
   return error.problem?.detail ?? t("errors.action");
 }
 
 function SignInStep() {
   const { t } = useTranslation("web");
   const session = useSession();
+  const failed = useFailureToast();
   return (
     <>
       <StepHeading
@@ -310,7 +339,7 @@ function SignInStep() {
               ? undefined
               : void session
                   .beginSignIn(WELCOME_PATH)
-                  .then((url) => window.location.assign(url))
+                  .then((url) => window.location.assign(url), failed)
           }
         >
           {t("setup.signIn.action")}

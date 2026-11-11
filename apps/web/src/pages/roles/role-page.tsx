@@ -7,7 +7,7 @@ import {
   useUserList,
 } from "@ogcloud/api-client/react";
 import { RoleUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Card, Note, PageHeader, useToast } from "@ogcloud/ui";
+import { Badge, Card, Note, PageHeader } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { KeyRound, Lock } from "lucide-react";
@@ -16,7 +16,6 @@ import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useSavedInList, useSaveFailure } from "../../editing.tsx";
-import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan, useIsOwner } from "../../permissions.ts";
@@ -57,13 +56,11 @@ export function RolePage() {
       />
     );
   }
-  return <RoleEditor key={role.version} role={role} />;
+  return <RoleEditor key={role.id} role={role} />;
 }
 
 function RoleEditor({ role }: { role: RoleView }) {
   const { t } = useTranslation("web");
-  const _toast = useToast();
-  const _failed = useFailureToast();
   const navigate = useNavigate();
   const client = useQueryClient();
   const isOwner = useIsOwner();
@@ -89,15 +86,16 @@ function RoleEditor({ role }: { role: RoleView }) {
   );
 
   const { form, changes, saving } = useSettingsForm({
-    settings: { name: role.name, permissions: role.permissions },
+    view: role,
+    settingsOf: ({ name, permissions }) => ({ name, permissions }),
     schema: SettingsForm,
-    save: (settings) =>
-      update
-        .mutateAsync({
-          id: role.id,
-          data: { ...settings, version: role.version },
-        })
-        .then(saved, saveFailed),
+    save: (settings, base) =>
+      update.mutateAsync({
+        id: base.id,
+        data: { ...settings, version: base.version },
+      }),
+    onSaved: saved,
+    onFailed: saveFailed,
   });
 
   return (

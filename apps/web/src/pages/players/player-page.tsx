@@ -1,6 +1,6 @@
 import { usePlayerGet } from "@ogcloud/api-client/react";
 import { Badge, Button, Card, CopyField, PageHeader } from "@ogcloud/ui";
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
   CircleCheck,
@@ -30,7 +30,9 @@ export function PlayerPage() {
   });
   const servers = useServerNames();
   const actions = usePlayerActions();
-  const privacy = usePrivacyActions();
+  const navigate = useNavigate();
+  // An erased player is gone, so the page goes back to the list.
+  const privacy = usePrivacyActions(() => void navigate({ to: "/players" }));
 
   if (player.data === undefined) {
     return (

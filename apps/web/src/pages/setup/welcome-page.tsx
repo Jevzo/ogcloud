@@ -145,9 +145,7 @@ function GroupsStep() {
   const createChosen = async () => {
     setCreating(true);
     try {
-      for (const starter of missing.filter((candidate) =>
-        chosen.has(candidate.id),
-      )) {
+      for (const starter of toCreate) {
         await create.mutateAsync({
           data: {
             id: starter.id,
@@ -156,14 +154,15 @@ function GroupsStep() {
           },
         });
       }
-      await invalidatePaths(queries, [
-        getGroupListQueryKey()[0],
-        getOverviewGetQueryKey()[0],
-      ]);
       finish();
     } catch (error) {
       failed(error);
     } finally {
+      // Also after a partial failure, so a retry skips the groups that were created.
+      await invalidatePaths(queries, [
+        getGroupListQueryKey()[0],
+        getOverviewGetQueryKey()[0],
+      ]);
       setCreating(false);
     }
   };

@@ -7,7 +7,7 @@ import { Layers, Search, Server, UserRound } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type ReactNode, useDeferredValue, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ALL_NAV, allowed, type NavPath } from "../navigation.ts";
+import { ALL_NAV, allowed } from "../navigation.ts";
 import { useCan } from "../permissions.ts";
 
 const SEARCH_FROM_CHARACTERS = 2;
@@ -48,16 +48,17 @@ export function CommandPalette({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
 
-  const go = (path: NavPath) => {
+  // Closes the palette, then goes where the picked item leads.
+  const go = (navigation: () => Promise<void>) => {
     onOpenChange(false);
     setQuery("");
-    void navigate({ to: path });
+    void navigation();
   };
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-text/30 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Dialog.Content
           aria-describedby={undefined}
           className="fixed top-[12vh] left-1/2 z-50 w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-popover border border-border bg-surface shadow-popover data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in"
@@ -85,7 +86,7 @@ export function CommandPalette({
                     <Item
                       key={item.path}
                       value={`page:${item.path}`}
-                      onSelect={() => go(item.path)}
+                      onSelect={() => go(() => navigate({ to: item.path }))}
                       icon={<item.icon size={15} strokeWidth={1.75} />}
                     >
                       {t(`nav.${item.label}`)}
@@ -93,7 +94,7 @@ export function CommandPalette({
                   ))}
                 </Section>
               )}
-              <Results results={results} go={go} />
+              <Results results={results} go={go} navigate={navigate} />
             </Command.List>
           </Command>
         </Dialog.Content>
@@ -105,9 +106,11 @@ export function CommandPalette({
 function Results({
   results,
   go,
+  navigate,
 }: {
   results: SearchResult | undefined;
-  go: (path: NavPath) => void;
+  go: (navigation: () => Promise<void>) => void;
+  navigate: ReturnType<typeof useNavigate>;
 }) {
   const { t } = useTranslation("web");
   const groups = useCan("groups:read") ? (results?.groups ?? []) : [];
@@ -119,7 +122,14 @@ function Results({
             <Item
               key={group}
               value={`group:${group}`}
-              onSelect={() => go("/groups")}
+              onSelect={() =>
+                go(() =>
+                  navigate({
+                    to: "/groups/$groupId",
+                    params: { groupId: group },
+                  }),
+                )
+              }
               icon={<Layers size={15} strokeWidth={1.75} />}
             >
               {group}
@@ -133,7 +143,14 @@ function Results({
             <Item
               key={server.id}
               value={`server:${server.id}`}
-              onSelect={() => go("/servers")}
+              onSelect={() =>
+                go(() =>
+                  navigate({
+                    to: "/servers/$serverId",
+                    params: { serverId: server.id },
+                  }),
+                )
+              }
               icon={<Server size={15} strokeWidth={1.75} />}
             >
               <span className="min-w-0 flex-1 truncate font-mono text-mono">
@@ -150,7 +167,14 @@ function Results({
             <Item
               key={player.uuid}
               value={`player:${player.uuid}`}
-              onSelect={() => go("/players")}
+              onSelect={() =>
+                go(() =>
+                  navigate({
+                    to: "/players/$playerId",
+                    params: { playerId: player.uuid },
+                  }),
+                )
+              }
               icon={<UserRound size={15} strokeWidth={1.75} />}
             >
               {player.name}
