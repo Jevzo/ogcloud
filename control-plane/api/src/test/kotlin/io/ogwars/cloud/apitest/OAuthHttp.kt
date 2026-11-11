@@ -152,6 +152,20 @@ class OAuthHttp(
         ): HttpResponse<String> = browser.getWithToken(path, accessToken)
     }
 
+    /** The step `/login/state` names for a fresh browser, or for one that signed in with [login]'s password. */
+    fun loginStep(login: Pair<String, String>? = null): String {
+        val browser = Browser()
+        if (login != null) {
+            val (username, password) = login
+            browser.post(
+                "/login",
+                form(listOf("username" to username, "password" to password, "_csrf" to browser.csrf())),
+            )
+        }
+        return STEP.find(browser.getJson("/login/state").body())?.groupValues?.get(1)
+            ?: error("The login state names no step")
+    }
+
     /** The passkey sign-in options the login page's script requests. */
     fun passkeyOptions(): HttpResponse<String> {
         val browser = Browser()
@@ -449,6 +463,7 @@ class OAuthHttp(
         private const val FOUND = 302
         private const val FORM = "application/x-www-form-urlencoded"
         private val TOKEN = Regex(""""token":"([^"]+)"""")
+        private val STEP = Regex(""""step":"([A-Z]+)"""")
         private val SECRET = Regex(""""secret":"([A-Z2-7]+)"""")
 
         fun challenge(verifier: String): String =

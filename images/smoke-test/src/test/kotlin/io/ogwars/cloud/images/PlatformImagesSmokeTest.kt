@@ -4,6 +4,7 @@ import io.ogwars.cloud.domain.runtime.RuntimeProfiles
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.model.Frame
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -54,13 +55,25 @@ class PlatformImagesSmokeTest {
 
     @Test
     fun `the controller image carries OgCloud's plugins for the runtime bundles`() {
-        val id = docker.createContainerCmd(imageOf("controller")).exec().id
+        filesIn("controller", PLUGINS) shouldContainAll
+            RuntimeProfiles.ALL.map { "ogcloud-${it.platform.name.lowercase()}.jar" }
+    }
+
+    @Test
+    fun `the API image carries the login pages it serves`() {
+        filesIn("api", LOGIN_PAGES) shouldContain "index.html"
+    }
+
+    /** The names of the files under [path] in [image], read from a container that never starts. */
+    private fun filesIn(
+        image: String,
+        path: String,
+    ): List<String> {
+        val id = docker.createContainerCmd(imageOf(image)).exec().id
         try {
-            val entries =
-                TarArchiveInputStream(docker.copyArchiveFromContainerCmd(id, PLUGINS).exec()).use { tar ->
-                    generateSequence { tar.nextEntry }.map { it.name.substringAfterLast('/') }.toList()
-                }
-            entries shouldContainAll RuntimeProfiles.ALL.map { "ogcloud-${it.platform.name.lowercase()}.jar" }
+            return TarArchiveInputStream(docker.copyArchiveFromContainerCmd(id, path).exec()).use { tar ->
+                generateSequence { tar.nextEntry }.map { it.name.substringAfterLast('/') }.toList()
+            }
         } finally {
             docker.removeContainerCmd(id).withForce(true).exec()
         }
@@ -108,5 +121,8 @@ class PlatformImagesSmokeTest {
         const val SPRING_START_FAILED = 1
         const val RUN_SECONDS = 60L
         const val PLUGINS = "/opt/ogcloud/plugins"
+
+        // Where the API image keeps the built login pages (D-0212).
+        const val LOGIN_PAGES = "/app/login"
     }
 }

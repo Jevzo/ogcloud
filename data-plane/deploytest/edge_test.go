@@ -1,6 +1,7 @@
 package deploytest
 
 import (
+	"maps"
 	"slices"
 	"testing"
 )
@@ -39,6 +40,47 @@ func TestAdminSurfacesNeverAttachToThePublicGateway(t *testing.T) {
 			}
 			if values == hetznerValues && admin != 2 {
 				t.Errorf("the internal Gateway has %d routes, want Infisical's and Grafana's", admin)
+			}
+		})
+	}
+}
+
+// One host serves everything (D-0098): the sign-in and API paths go to the API, and the rest to the dashboard, which
+// Gateway API's longest-prefix rule keeps from taking the API's paths.
+func TestThePublicOriginIsSplitByPath(t *testing.T) {
+	want := map[string][]string{
+		"ogcloud-api": {"/.well-known", "/api", "/login", "/oauth2", "/webauthn"},
+		"ogcloud-web": {"/"},
+	}
+	for _, values := range valueSets(t) {
+		t.Run(values, func(t *testing.T) {
+			got := map[string][]string{}
+			for _, route := range render(t, values).all("HTTPRoute") {
+				refs, _ := get(route, "spec", "parentRefs").([]any)
+				if len(refs) == 0 || str(refs[0], "name") != "ogcloud-public" {
+					continue
+				}
+				rules, _ := get(route, "spec", "rules").([]any)
+				for _, rule := range rules {
+					backendRefs, _ := get(rule, "backendRefs").([]any)
+					matches, _ := get(rule, "matches").([]any)
+					for _, backend := range backendRefs {
+						for _, match := range matches {
+							if str(get(match, "path"), "type") != "PathPrefix" {
+								t.Errorf("route %s matches %v, want path prefixes", route.name(), match)
+							}
+							name := str(backend, "name")
+							got[name] = append(got[name], str(get(match, "path"), "value"))
+						}
+					}
+				}
+			}
+			for backend, paths := range got {
+				slices.Sort(paths)
+				got[backend] = paths
+			}
+			if !maps.EqualFunc(got, want, slices.Equal) {
+				t.Errorf("the public Gateway routes %v, want %v", got, want)
 			}
 		})
 	}

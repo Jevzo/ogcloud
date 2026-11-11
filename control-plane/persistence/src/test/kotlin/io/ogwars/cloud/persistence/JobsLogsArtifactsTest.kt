@@ -19,6 +19,7 @@ import io.ogwars.cloud.domain.store.RuntimeArtifactStore
 import io.ogwars.cloud.domain.store.ScalingLogStore
 import io.ogwars.cloud.domain.store.StaleUpdateException
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -125,6 +126,11 @@ class JobsLogsArtifactsTest(
         ids(AuditFilter(actor = mira, from = NOW.minusSeconds(250), until = NOW)) shouldContainExactly listOf(second)
         ids(AuditFilter(action = "PUT /filter/groups", until = NOW.minusSeconds(100))) shouldContainExactly
             listOf(first)
+        // A filter keeps applying on the next page, after the cursor.
+        val byGroups = AuditFilter(action = "PUT /filter/groups")
+        audit.list(byGroups, before = null, limit = 1).map { it.id } shouldContainExactly listOf(third)
+        audit.list(byGroups, before = third, limit = 1).map { it.id } shouldContainExactly listOf(first)
+        audit.list(byGroups, before = first, limit = 1).shouldBeEmpty()
     }
 
     @Test
