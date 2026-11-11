@@ -13,7 +13,7 @@ target design of the v2 rebuild; each section notes what is already built.
 
 | Module | Contents |
 | --- | --- |
-| `control-plane/domain` | Pure rules: server state machine and lifecycle deadlines, autoscaler, drain and game states, permissions and rank durations, restart planning, retention, crash-loop breaker, pseudonymizer; the store ports |
+| `control-plane/domain` | Pure rules: server state machine and lifecycle deadlines, autoscaler, drain and game states, permissions and rank durations, restart planning, retention, crash-loop breaker, pseudonymizer, the in-game text checks writes run (D-0205); the store ports |
 | `control-plane/persistence` | PostgreSQL 18 schema (Flyway) and stores (Spring Data JDBC, `JdbcClient`) |
 | `control-plane/livestate` | Valkey stores for servers, sessions, locks, cooldowns, crash failures and read models; Lua compare-and-set; Sentinel, ACL users and TLS with the private CA (`ogcloud.valkey.tls.ca-certificate-path`), applied to every Sentinel connection too |
 | `control-plane/messaging` | Kafka publisher (idempotent, observed results; the shared producer is replaced after an authentication failure, or once nothing but timeouts went through for the delivery timeout), listener error handling with retries and dead-letter topics, SCRAM and TLS settings |
@@ -34,7 +34,7 @@ target design of the v2 rebuild; each section notes what is already built.
 | `integrations/velocity` | Velocity plugin over node-core: backends registered under their server id with their protocol given to ViaVersion (D-0133), logins checked by the controller and refused when the proxy is full (D-0134), a player a full backend turns away mid-switch rerouted within its group (vanilla's key or PandaSpigot's plain text), OgCloud's permissions through Velocity's provider, the tablist header and footer, `/ogcloud` (`/oc`), and `/ogcloud npc` passed through to backends; the proxy stops if OgCloud cannot start |
 | `integrations/bukkit` | What Paper and PandaSpigot share (D-0138), built against the 1.8 API: the backend node (pod settings, gateway session, SDK, `/ogcloud` from plugin.yml), BungeeGuard tokens checked in the handshake from the mounted Secret (D-0065), OgCloud's nodes added to each player's permissions, tablist teams by weight, TPS and MSPT from tick events, and where players stand for the NPCs; a `BukkitLine` holds what differs per server line (threads, teleports, command trees, team looks) |
 | `integrations/paper` | Paper 26.3 plugin over the bukkit module: Paper's region-aware schedulers and async teleports only, so Folia can run it (D-0135), rank chat heads as components, team prefixes and colours, max players from the group, NPC packets for the current line |
-| `integrations/legacy-paper` | PandaSpigot 1.8.8 plugin over the bukkit module: the main thread, every text as legacy codes in the nearest named colours (D-0204), rank chat heads in the chat format, team prefixes with gradients collapsed and cut to 16 characters, the group's player limit checked at login (1.8 cannot set max players), NPC packets for 1.8 |
+| `integrations/legacy-paper` | PandaSpigot 1.8.8 plugin over the bukkit module: the main thread, every text as legacy codes in the nearest named colours (D-0204) by the Adventure the PacketEvents plugin brings, rank chat heads in the chat format, team prefixes with gradients collapsed and cut to 16 characters before the name colour, the group's player limit checked at login (1.8 cannot set max players), NPC packets for 1.8 |
 
 Each adapter ships a Spring Boot auto-configuration (`ogcloud.valkey.*`, `ogcloud.kafka.*`, `ogcloud.s3.*`, the DataSource), so a service gets its ports by adding the dependency (D-0074).
 
@@ -89,7 +89,7 @@ The controller builds every game server pod (`PodSpecBuilder`); images (T-0508) 
 | Live-channel limits, node refusal reasons | `contracts/live-channels.yaml`, `contracts/node-errors.yaml` | Generated Go and Kotlin constants for the gateway and the integrations |
 | Pod environment | `contracts/pod-env.yaml` | Generated Go and Kotlin names of the variables the controller sets and the loader and node client read |
 | Session keepalive | `contracts/session-keepalive.yaml` | Generated Go and Kotlin timings: node pings, their timeout, the gateway's minimum |
-| In-game texts | `contracts/text` (grammar in its README) | The one Kotlin parser and renderers (D-0202): Adventure components, legacy text, chat-component JSON; `TextField` names each stored text's placeholders. The API validates with it and serves `POST /api/v1/text/preview`; the plugins and the controller render with it |
+| In-game texts | `contracts/text`, its grammar in [text-format.md](text-format.md) | The one Kotlin parser and renderers (D-0202): Adventure components, legacy text, chat-component JSON; `TextField` names each stored text's placeholders and how old clients see it. The API checks every text on write (D-0205) and serves `POST /api/v1/text/preview` to any caller, unaudited; the plugins and the controller render with it, showing a bad stored text as written |
 
 Code generators live in `data-plane/pkg/cmd/codegen`; `mise run check:generated` fails when
 committed output is stale. `mise run check:images` (and its CI job) builds every image, boots the server images with
