@@ -2,6 +2,9 @@ import { randomBytes } from "node:crypto";
 import { after, before } from "node:test";
 import {
   type Call,
+  type NetworkSettingsFields,
+  networkGet,
+  networkUpdate,
   type OnlinePlayerView,
   playerOnline,
   playerTransfer,
@@ -120,4 +123,41 @@ export async function moveTo(
   await eventually(`${name} to reach ${groupId}`, async () =>
     (await groupOf(api, name)) === groupId ? groupId : undefined,
   );
+}
+
+/** Runs [body] with the network's settings changed by [change], [what], and puts them back afterwards. */
+export async function withNetworkSettings<T>(
+  api: Call,
+  change: Partial<NetworkSettingsFields>,
+  what: string,
+  body: () => Promise<T>,
+): Promise<T> {
+  const current = expectStatus(
+    await networkGet(api),
+    200,
+    "Reading the network",
+  );
+  const changed = expectStatus(
+    await networkUpdate(
+      {
+        settings: { ...current.settings, ...change },
+        version: current.version,
+      },
+      api,
+    ),
+    200,
+    what,
+  );
+  try {
+    return await body();
+  } finally {
+    expectStatus(
+      await networkUpdate(
+        { settings: current.settings, version: changed.version },
+        api,
+      ),
+      200,
+      `Undoing: ${what}`,
+    );
+  }
 }

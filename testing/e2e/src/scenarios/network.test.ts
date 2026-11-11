@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { networkGet, networkUpdate } from "@ogcloud/api-client";
-import { expectStatus } from "../api.ts";
 import { connect, join, LEGACY_VERSION } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import { moveTo, playerName, scenario } from "../suite.ts";
+import { moveTo, playerName, scenario, withNetworkSettings } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // Transfers through the API, the 1.8.8 backend behind the same proxies, and network maintenance (v1 parity, D-0004).
@@ -26,44 +24,20 @@ test("a 1.8 client plays on the 1.8.8 backend", async () => {
 });
 
 test("network maintenance turns new players away until it ends", async () => {
-  const current = expectStatus(
-    await networkGet(context.api),
-    200,
-    "Reading the network",
-  );
   const marker = `E2E maintenance ${playerName("")}`;
-  const during = expectStatus(
-    await networkUpdate(
-      {
-        settings: {
-          ...current.settings,
-          maintenance: true,
-          maintenanceKickMessage: marker,
-        },
-        version: current.version,
-      },
-      context.api,
-    ),
-    200,
+  await withNetworkSettings(
+    context.api,
+    { maintenance: true, maintenanceKickMessage: marker },
     "Starting maintenance",
+    async () => {
+      const refused = connect(context.target, playerName("maint"));
+      players.push(refused);
+      assert.match(
+        await eventually("the proxy to refuse the player", refused.kicked),
+        new RegExp(marker),
+      );
+    },
   );
-  try {
-    const refused = connect(context.target, playerName("maint"));
-    players.push(refused);
-    assert.match(
-      await eventually("the proxy to refuse the player", refused.kicked),
-      new RegExp(marker),
-    );
-  } finally {
-    expectStatus(
-      await networkUpdate(
-        { settings: current.settings, version: during.version },
-        context.api,
-      ),
-      200,
-      "Ending maintenance",
-    );
-  }
   // The load balancer and the proxies hear of the change a moment later.
   const name = playerName("after");
   players.push(

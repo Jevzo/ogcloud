@@ -9,6 +9,7 @@ const STATUS_STATE = 1;
 const VARINT_BITS = 7;
 const VARINT_MORE = 0x80;
 const VARINT_MASK = 0x7f;
+const TIMEOUT_MS = 10_000;
 
 /** The load balancer's answer to a status ping from a client of [protocol]: what the server list shows. */
 export function serverList(
@@ -17,17 +18,26 @@ export function serverList(
 ): Promise<{ description: unknown }> {
   return new Promise((resolve, reject) => {
     const socket = connect(target.minecraftPort, target.minecraftHost);
-    const port = Buffer.alloc(2);
-    port.writeUInt16BE(target.minecraftPort);
-    const handshake = Buffer.concat([
-      varInt(0),
-      varInt(protocol),
-      string(target.minecraftHost),
-      port,
-      varInt(STATUS_STATE),
-    ]);
-    socket.write(Buffer.concat([packet(handshake), packet(varInt(0))]));
     let received = Buffer.alloc(0);
+    let settled = false;
+    const settle = (finish: () => void) => {
+      if (!settled) {
+        settled = true;
+        socket.destroy();
+        finish();
+      }
+    };
+    const fail = (why: string) =>
+      settle(() =>
+        reject(new Error(`${why}; received ${received.toString("hex")}`)),
+      );
+    socket.setTimeout(TIMEOUT_MS, () =>
+      fail(`No status answer within ${TIMEOUT_MS} ms`),
+    );
+    socket.on("error", (error) => settle(() => reject(error)));
+    socket.on("close", () =>
+      fail("The load balancer closed before a whole status answer"),
+    );
     socket.on("data", (chunk) => {
       received = Buffer.concat([received, Buffer.from(chunk)]);
       const length = readVarInt(received, 0);
@@ -39,18 +49,34 @@ export function serverList(
       }
       const id = readVarInt(received, length.next);
       const size = id && readVarInt(received, id.next);
-      socket.end();
       if (id?.value !== 0 || size === undefined) {
-        reject(new Error(`Not a status response: ${received.toString("hex")}`));
+        fail("Not a status response");
         return;
       }
-      resolve(
-        JSON.parse(
-          received.toString("utf8", size.next, size.next + size.value),
-        ),
-      );
+      const json = received.toString("utf8", size.next, size.next + size.value);
+      try {
+        const answer = JSON.parse(json) as { description: unknown };
+        settle(() => resolve(answer));
+      } catch (error) {
+        settle(() =>
+          reject(
+            new Error(`The status answer is no JSON: ${json}`, {
+              cause: error,
+            }),
+          ),
+        );
+      }
     });
-    socket.on("error", reject);
+    const port = Buffer.alloc(2);
+    port.writeUInt16BE(target.minecraftPort);
+    const handshake = Buffer.concat([
+      varInt(0),
+      varInt(protocol),
+      string(target.minecraftHost),
+      port,
+      varInt(STATUS_STATE),
+    ]);
+    socket.write(Buffer.concat([packet(handshake), packet(varInt(0))]));
   });
 }
 
