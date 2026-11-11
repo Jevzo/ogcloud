@@ -329,6 +329,15 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
 
+  packages/auth:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   packages/i18n:
     dependencies:
       i18next:
