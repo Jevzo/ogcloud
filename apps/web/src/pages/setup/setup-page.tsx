@@ -30,7 +30,7 @@ import {
 
 // Nobody can sign in before the first owner exists, so these calls go out without a token (D-0094).
 const ANONYMOUS: ApiConnection = {};
-// Where the API Secret holds the token Infisical generated; the chart's default namespace.
+// Bootstrap puts the setup token into Infisical, which syncs it into the API's Secret; the chart's default namespace.
 const TOKEN_COMMAND =
   "kubectl -n ogcloud get secret ogcloud-api-config -o jsonpath='{.data.ogcloud\\.auth\\.setup-token}' | base64 -d";
 /** Where the new owner continues once signed in: the EULA and the starter groups. */

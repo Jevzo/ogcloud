@@ -225,7 +225,7 @@ class MeController(
         return logins.signedIn(users.self(actors.current()).id).map { LoginView.of(it, it.id == current) }
     }
 
-    /** Signs that device out; it signs in again with its credentials. */
+    /** Signs that device out and ends the user's sign-in sessions; it signs in again with its credentials. */
     @AnyCaller
     @DeleteMapping("/logins/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

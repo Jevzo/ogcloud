@@ -23,7 +23,7 @@ export async function callOptions(
 
 export const ApiConnectionContext = createContext<ApiConnection | null>(null);
 
-/** orval's mutator for the TanStack Query hooks: every call goes out as the signed-in user. */
+/** orval's mutator for the TanStack Query hooks: each call carries the connection's token, when it has one. */
 export function useApiRequest(): <T>(path: string, call: Call) => Promise<T> {
   const connection = useContext(ApiConnectionContext);
   if (connection === null) {

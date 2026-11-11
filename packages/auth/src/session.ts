@@ -205,7 +205,7 @@ export class AuthSession {
         }),
       },
     );
-    // OAuth answers a refused grant with 400 and `invalid_grant` (RFC 6749 §5.2): the login is over.
+    // A refused grant (400) or client (401) ends the login (RFC 6749 §5.2).
     if (response.status === 400 || response.status === 401) {
       throw new SignInRequired(
         `${path} refused the request with ${response.status}`,

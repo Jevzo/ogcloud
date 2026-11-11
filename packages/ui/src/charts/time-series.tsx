@@ -15,7 +15,7 @@ export interface Series {
   points: readonly Point[];
 }
 
-/** Series take the chart colours in this fixed order; a sixth folds into "Other" upstream. */
+/** Series take the chart colours in this fixed order; callers fold anything past five into "Other" (D-0216). */
 const SERIES_COLOURS = [
   "--og-chart-1",
   "--og-chart-2",

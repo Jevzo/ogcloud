@@ -32,7 +32,6 @@ export function GroupStatusBadge({ group }: { group: GroupOverview }) {
   return <Badge {...STATUS_LOOK[status]}>{t(`groups.status.${status}`)}</Badge>;
 }
 
-/** A group's name, linking to its page. */
 export function GroupLink({ id }: { id: string }) {
   return (
     <Link

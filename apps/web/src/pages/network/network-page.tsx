@@ -52,7 +52,7 @@ import { NetworkLook } from "./network-look.tsx";
 import { ROUTING_STRATEGIES } from "./routing.ts";
 import { RuntimeCard } from "./runtime-card.tsx";
 
-// Maintenance has its own action in the header, so the form leaves it out.
+// The header owns maintenance: the form shows no field for it, and a save keeps the value the edits began from.
 const SettingsForm = contractSchema<{ settings: NetworkSettingsFields }>(
   z.object({ settings: NetworkUpdateBody.shape.settings }),
 );

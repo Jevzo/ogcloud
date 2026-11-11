@@ -8,7 +8,6 @@ interface GroupSelectFieldProps {
   onValueChange: (groupId: string) => void;
 }
 
-/** A labelled choice of one group. */
 export function GroupSelectField({
   label,
   groupIds,

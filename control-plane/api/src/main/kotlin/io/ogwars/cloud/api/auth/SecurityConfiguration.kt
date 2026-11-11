@@ -102,7 +102,7 @@ class SecurityConfiguration {
         return http
             .authorizeHttpRequests {
                 it.requestMatchers("/actuator/health/**", "/actuator/prometheus", "/error").permitAll()
-                // The pages and their state are open; the forms they post are what checks a login (D-0212).
+                // The state and the assets are open; formLogin opens /login, and the rest needs a login session (D-0212).
                 it.requestMatchers(HttpMethod.GET, LoginPages.STATE_PATH, LoginPages.ASSETS).permitAll()
                 it.anyRequest().authenticated()
             }.addFilterAfter(

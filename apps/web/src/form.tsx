@@ -295,7 +295,8 @@ interface SettingsFormOptions<V, S extends object, A> {
 /**
  * An in-place editor for a resource's settings: the form, how many values changed and whether it is saving. Edits start
  * from `view`; a newer view replaces it only while nothing is edited, or right after a save, so a refetch never drops
- * edits. `save` writes against `base`, the view the edits started from, so a stale save is refused (D-0069, D-0210).
+ * edits. `save` gets `base`, the view the edits started from: versioned resources send its version, so a stale save is
+ * refused (D-0069, D-0210).
  */
 export function useSettingsForm<V, S extends object, A>({
   view,

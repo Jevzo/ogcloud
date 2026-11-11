@@ -30,7 +30,6 @@ export const tableFeatureSet = tableFeatures({
   sortFns,
 });
 
-/** Builds typed columns for a DataTable of `T`. */
 export const columnsFor = <T extends RowData>() =>
   createColumnHelper<typeof tableFeatureSet, T>();
 

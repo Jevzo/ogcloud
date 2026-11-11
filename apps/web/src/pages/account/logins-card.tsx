@@ -14,7 +14,7 @@ import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 
-// OgCloud's own apps by client id (D-0040); any other client shows its id.
+// OgCloud's own apps by client id (D-0012, D-0153); any other client shows its id.
 const APPS = {
   [WEB_CLIENT]: "web",
   "ogcloud-desktop": "desktop",
@@ -25,7 +25,10 @@ const APPS = {
 const isApp = (clientId: string): clientId is keyof typeof APPS =>
   clientId in APPS;
 
-/** Where the user is signed in, this device marked; signing one out also ends its sign-in session (D-0213). */
+/**
+ * Where the user is signed in, this device marked (D-0221); signing one out also ends every sign-in session of the
+ * user, so a device in the middle of signing in starts over (D-0213).
+ */
 export function LoginsCard() {
   const { t } = useTranslation("web");
   const format = useFormat();

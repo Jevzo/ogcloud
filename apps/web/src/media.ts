@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/** Whether a media query matches, following changes such as a resized window. */
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {

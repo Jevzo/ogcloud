@@ -54,7 +54,7 @@ import { TemplatesPanel } from "./templates-panel.tsx";
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
 const CHART_HEIGHT = 120;
-// Maintenance has its own action in the header, so the form leaves it out.
+// The header owns maintenance: the form shows no field for it, and a save keeps the value the edits began from.
 const SettingsForm = contractSchema<{ settings: GroupSettings }>(
   z.object({ settings: GroupUpdateBody.shape.settings }),
 );

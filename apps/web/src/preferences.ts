@@ -1,7 +1,7 @@
 import { type DensityName, defaultDensity } from "@ogcloud/tokens";
 import { createContext, useContext } from "react";
 
-/** The theme follows the system unless the user picked one; both are remembered on this device (D-0209). */
+/** The theme follows the system unless the user picked one; theme and density are remembered on this device (D-0209). */
 export type ThemeChoice = "system" | "light" | "dark";
 
 export interface Preferences {

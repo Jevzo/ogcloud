@@ -24,7 +24,7 @@ import { SessionContext } from "./session-context.ts";
 
 const MOCK_CONNECTION: ApiConnection = { accessToken: async () => "mocks" };
 
-// Compared inline, so production builds drop the mocks and their chunk entirely.
+// Vite replaces MODE at build time, so production builds drop the mocks and their chunk.
 const mocksMode = import.meta.env.MODE === "mocks";
 
 async function start(container: HTMLElement) {

@@ -45,7 +45,7 @@ const callback = createRoute({
   component: Callback,
 });
 
-// Every page behind sign-in shares the shell; pages arrive with T-0706 to T-0709.
+// Every page behind sign-in shares the shell.
 const app = createRoute({
   getParentRoute: () => root,
   id: "app",

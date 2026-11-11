@@ -23,7 +23,7 @@ import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 
-// Progress is also pushed over the event stream (D-0105); this catches steps between events.
+// Progress also arrives over the event stream; polling covers events lost to at-most-once delivery (D-0105).
 const RUNNING_REFRESH_MS = 3_000;
 const columns = columnsFor<JobView>();
 
@@ -34,7 +34,7 @@ const STATE_LOOK: Record<JobView["state"], { tone: Tone; icon: LucideIcon }> = {
   FAILED: { tone: "danger", icon: CircleX },
 };
 
-// The API names kinds as dotted strings (D-0039); the catalog cannot use dots in keys.
+// The API names kinds as dotted strings (the domain's JobKinds); the catalog cannot use dots in keys.
 const KINDS = {
   "group.restart": "groupRestart",
   "group.delete": "groupDelete",

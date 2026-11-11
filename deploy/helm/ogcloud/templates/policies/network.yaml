@@ -46,7 +46,7 @@ spec:
     {{- include "ogcloud.np.platformDependencies" . | nindent 4 }}
     {{- include "ogcloud.np.s3" . | nindent 4 }}
 ---
-{{- /* The dashboard: only Traefik reaches it, and it reaches nothing (D-0214). */}}
+{{- /* The dashboard: only Traefik reaches it, and it reaches nothing (D-0154, D-0108). */}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

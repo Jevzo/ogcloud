@@ -25,7 +25,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
-/** Where the login pages are in a sign-in, as the pages ask through [LoginPages.state]. */
+/** Where the login pages are in a sign-in, as the pages ask through [LoginStateController.state]. */
 enum class LoginStep {
     /** Nobody is signed in: a password or a passkey. */
     CREDENTIALS,
@@ -57,8 +57,8 @@ data class LoginState(
 )
 
 /**
- * Serves the branded login pages, built as a second entry of the web app (D-0212), and the state they render from.
- * Spring's form, TOTP and WebAuthn endpoints still take the sign-in itself.
+ * Serves the branded login pages, built as a second entry of the web app (D-0212), each with a fresh CSP nonce
+ * (D-0219); [LoginStateController] serves their state, and Spring's form, TOTP and WebAuthn endpoints take the sign-in.
  */
 @Controller
 class LoginPages(
@@ -100,11 +100,11 @@ class LoginPages(
         const val CONTENT_SECURITY_POLICY = "Content-Security-Policy"
         private const val INDEX = "index.html"
 
-        /** Where the built page takes its nonce, in `<meta name="csp-nonce">`. */
+        /** The placeholder in the built page's `<meta name="csp-nonce">`, replaced in every response. */
         private const val NONCE_PLACEHOLDER = "{{cspNonce}}"
 
-        // No form-action: a sign-in's redirects end at each app's own address, such as the desktop app's loopback
-        // port or Grafana's host, and browsers hold a form's redirects to it.
+        // No form-action: Chromium applies it to a form's redirects too, and a sign-in redirects to each app's own
+        // address, such as the desktop app's loopback port or Grafana's host.
         private fun policy(nonce: String) =
             "default-src 'none'; script-src 'self'; style-src 'self' 'nonce-$nonce'; img-src 'self' data:; " +
                 "font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"

@@ -35,8 +35,8 @@ import java.util.UUID
 
 /**
  * The login pages (D-0212, D-0099) in headless Chromium, as built by `mise run build:login`. Passkeys need the page's
- * origin to be the relying party, so this context serves the issuer itself on a fixed port, and a virtual
- * authenticator stands in for a device.
+ * origin to be the relying party, so this context serves the issuer itself on a free port picked before it starts,
+ * and a virtual authenticator stands in for a device.
  */
 @ApiTestSetup
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
