@@ -23,8 +23,10 @@
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 	}
 
+	# Ready only while there is an app to serve.
 	handle /healthz {
-		respond 200
+		rewrite * /index.html
+		file_server
 	}
 
 	# Vite hashes these names, so a file never changes under one and browsers keep it a year.
