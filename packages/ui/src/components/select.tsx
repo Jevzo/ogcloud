@@ -17,7 +17,7 @@ interface SelectProps<T extends string> {
   options: readonly SelectOption<T>[];
   value: T | undefined;
   onValueChange: (value: T) => void;
-  placeholder?: string;
+  placeholder?: string | undefined;
   disabled?: boolean;
   className?: string;
   "aria-describedby"?: string | undefined;

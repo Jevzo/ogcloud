@@ -25,7 +25,9 @@ const SERIES_COLOURS = [
 ] as const;
 const PADDING = { top: 8, right: 44, bottom: 22, left: 0 };
 const GRID_LINES = 4;
-const X_TICKS = 5;
+// Time labels need about this much room each, so narrow charts get fewer.
+const X_TICK_SPACING = 120;
+const MIN_X_TICKS = 2;
 
 interface TimeSeriesChartProps {
   /** Names the chart for screen readers and titles its table view. */
@@ -143,17 +145,19 @@ export function TimeSeriesChart({
                 </text>
               </g>
             ))}
-            {x.ticks(X_TICKS).map((tick) => (
-              <text
-                key={tick.getTime()}
-                x={x(tick)}
-                y={height - 4}
-                textAnchor="middle"
-                className="fill-text-3 text-meta tabular-nums"
-              >
-                {formatTime(tick)}
-              </text>
-            ))}
+            {x
+              .ticks(Math.max(MIN_X_TICKS, Math.floor(width / X_TICK_SPACING)))
+              .map((tick) => (
+                <text
+                  key={tick.getTime()}
+                  x={x(tick)}
+                  y={height - 4}
+                  textAnchor="middle"
+                  className="fill-text-3 text-meta tabular-nums"
+                >
+                  {formatTime(tick)}
+                </text>
+              ))}
             {series.map((s, index) => (
               <g key={s.name}>
                 {series.length === 1 ? (
