@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -31,6 +32,8 @@ type Refresher struct {
 	metrics *Metrics
 	logger  *slog.Logger
 	nudges  chan struct{}
+	// noServerList holds whether the missing server-list texts were reported.
+	noServerList atomic.Bool
 }
 
 // NewRefresher refreshes pool from source.
@@ -55,10 +58,23 @@ func (r *Refresher) Refresh(ctx context.Context) error {
 		if err := proto.Unmarshal(encoded, network); err != nil {
 			return fmt.Errorf("network settings: %w", err)
 		}
+		r.checkServerList(network)
 	}
 	r.pool.Update(since, records, network)
 	r.metrics.proxies.Set(float64(r.pool.size()))
 	return nil
+}
+
+// checkServerList warns once while the settings carry no rendered server-list texts, as from a controller older than
+// this load balancer during an upgrade: the server list shows an empty MOTD until it renders them (D-0202).
+func (r *Refresher) checkServerList(network *eventsv1.NetworkSettingsUpdated) {
+	missing := network.GetServerList() == nil
+	if missing && !r.noServerList.Swap(true) {
+		r.logger.Warn("the network settings carry no server-list texts; is the controller older than the load balancer?")
+	}
+	if !missing {
+		r.noServerList.Store(false)
+	}
 }
 
 // Run refreshes every interval and on nudges until ctx ends; failures keep the last state.

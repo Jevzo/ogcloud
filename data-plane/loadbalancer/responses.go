@@ -3,6 +3,7 @@ package loadbalancer
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -67,46 +68,47 @@ type textComponent struct {
 // firstHexProtocol is 1.16's, the first whose chat components take hex colours.
 const firstHexProtocol = 735
 
+// errEncode marks a status answer that could not be written, which points at the rendered texts, not the client.
+var errEncode = errors.New("encode status")
+
 // status builds the server-list entry from the texts the controller rendered, so no tags are parsed here (D-0202):
 // maintenance texts while in maintenance, the supported range for clients outside it, the network's texts otherwise.
-// Clients before 1.16 get the legacy texts, whose colours are the nearest named ones (D-0204).
-func status(network *eventsv1.NetworkSettingsUpdated, online uint32, clientProtocol int32) statusResponse {
+func status(network *eventsv1.NetworkSettingsUpdated, online uint32, clientProtocol int32) (statusResponse, error) {
 	texts := network.GetServerList()
-	motd, maintenanceMotd := texts.GetMotdJson(), texts.GetMaintenanceMotdJson()
-	if clientProtocol < firstHexProtocol {
-		motd, maintenanceMotd = legacyComponent(texts.GetMotdLegacy()), legacyComponent(texts.GetMaintenanceMotdLegacy())
-	}
-	response := statusResponse{
-		Version:     statusVersion{Name: texts.GetVersionNameLegacy(), Protocol: clientProtocol},
-		Players:     statusPlayers{Max: network.GetMaxPlayers(), Online: online},
-		Description: component(motd),
-	}
+	motdJSON, motdLegacy := texts.GetMotdJson(), texts.GetMotdLegacy()
+	version := statusVersion{Name: texts.GetVersionNameLegacy(), Protocol: clientProtocol}
 	switch {
 	case network.GetMaintenance():
-		response.Version = statusVersion{Name: texts.GetMaintenanceVersionNameLegacy(), Protocol: incompatibleProtocol}
-		response.Description = component(maintenanceMotd)
+		motdJSON, motdLegacy = texts.GetMaintenanceMotdJson(), texts.GetMaintenanceMotdLegacy()
+		version = statusVersion{Name: texts.GetMaintenanceVersionNameLegacy(), Protocol: incompatibleProtocol}
 	case !supported(clientProtocol):
-		response.Version = statusVersion{Name: supportedVersions, Protocol: incompatibleProtocol}
+		version = statusVersion{Name: supportedVersions, Protocol: incompatibleProtocol}
 	}
-	return response
-}
-
-// legacyComponent wraps legacy text in a component, as clients before 1.16 read their description.
-func legacyComponent(text string) string {
-	body, err := json.Marshal(textComponent{Text: text})
+	description, err := descriptionFor(motdJSON, motdLegacy, clientProtocol)
 	if err != nil {
-		// A struct of one string always encodes.
-		panic(fmt.Sprintf("encode %q: %v", text, err))
+		return statusResponse{}, err
 	}
-	return string(body)
+	return statusResponse{
+		Version:     version,
+		Players:     statusPlayers{Max: network.GetMaxPlayers(), Online: online},
+		Description: description,
+	}, nil
 }
 
-// component is the rendered JSON, or an empty text before the controller has rendered any.
-func component(rendered string) json.RawMessage {
-	if rendered == "" {
-		return json.RawMessage(`{"text":""}`)
+// descriptionFor is a MOTD as a client of clientProtocol reads it: the controller's component JSON from 1.16 on, its
+// legacy text in a component before (D-0204), and an empty text before the controller has rendered any.
+func descriptionFor(componentJSON, legacy string, clientProtocol int32) (json.RawMessage, error) {
+	if clientProtocol < firstHexProtocol {
+		body, err := json.Marshal(textComponent{Text: legacy})
+		if err != nil {
+			return nil, fmt.Errorf("%w: legacy MOTD: %w", errEncode, err)
+		}
+		return body, nil
 	}
-	return json.RawMessage(rendered)
+	if componentJSON == "" {
+		return json.RawMessage(`{"text":""}`), nil
+	}
+	return json.RawMessage(componentJSON), nil
 }
 
 // answerStatus serves the status exchange: the status request, then an optional ping echoed as pong.
@@ -120,7 +122,7 @@ func answerStatus(r *bufio.Reader, w io.Writer, response statusResponse) error {
 	}
 	body, err := json.Marshal(response)
 	if err != nil {
-		return fmt.Errorf("encode status: %w", err)
+		return fmt.Errorf("%w: %w", errEncode, err)
 	}
 	if err := writePacket(w, packetStatusResponse, appendString(nil, string(body))); err != nil {
 		return err

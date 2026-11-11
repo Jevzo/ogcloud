@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -41,6 +42,20 @@ func TestStatusShowsTheNetworkOrWhyAClientCannotJoin(t *testing.T) {
 			`{"version":{"name":"OgWars","protocol":47},"players":{"max":500,"online":42},"description":{"text":"§6Welcome"}}`,
 		},
 		{
+			"1.15.2, the last before hex", network, firstHexProtocol - 1,
+			`{"version":{"name":"OgWars","protocol":734},"players":{"max":500,"online":42},"description":{"text":"§6Welcome"}}`,
+		},
+		{
+			"1.16, the first with hex", network, firstHexProtocol,
+			`{"version":{"name":"OgWars","protocol":735},"players":{"max":500,"online":42},` +
+				`"description":{"text":"","extra":[{"text":"Welcome","color":"#ff8800"}]}}`,
+		},
+		{
+			"newer than the catalog", network, runtimeprofiles.MaxClientProtocol + 1,
+			`{"version":{"name":"1.8.8-26.3","protocol":-1},"players":{"max":500,"online":42},` +
+				`"description":{"text":"","extra":[{"text":"Welcome","color":"#ff8800"}]}}`,
+		},
+		{
 			"too old", network, 5,
 			`{"version":{"name":"1.8.8-26.3","protocol":-1},"players":{"max":500,"online":42},"description":{"text":"§6Welcome"}}`,
 		},
@@ -60,7 +75,11 @@ func TestStatusShowsTheNetworkOrWhyAClientCannotJoin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := json.Marshal(status(tt.network, 42, tt.protocol))
+			response, err := status(tt.network, 42, tt.protocol)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := json.Marshal(response)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,7 +95,11 @@ func TestTheStatusExchangeEchoesThePing(t *testing.T) {
 	client := append(frame(appendVarInt(nil, packetStatusRequest)), frame(append(appendVarInt(nil, packetPing), ping...))...)
 	var out bytes.Buffer
 
-	err := answerStatus(bufio.NewReader(bytes.NewReader(client)), &out, status(network, 1, 777))
+	response, err := status(network, 1, 777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = answerStatus(bufio.NewReader(bytes.NewReader(client)), &out, response)
 
 	if err != nil {
 		t.Fatalf("answerStatus: %v", err)
@@ -117,4 +140,19 @@ func decodeStatus(t *testing.T, payload []byte) statusResponse {
 		t.Fatalf("status JSON: %v", err)
 	}
 	return response
+}
+
+func TestAStatusWhoseRenderedTextsAreNoJSONFailsToEncode(t *testing.T) {
+	broken := &eventsv1.NetworkSettingsUpdated{ServerList: &eventsv1.ServerListTexts{MotdJson: "{"}}
+	response, err := status(broken, 0, firstHexProtocol)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := frame(appendVarInt(nil, packetStatusRequest))
+
+	err = answerStatus(bufio.NewReader(bytes.NewReader(client)), &bytes.Buffer{}, response)
+
+	if !errors.Is(err, errEncode) {
+		t.Errorf("err = %v, want errEncode", err)
+	}
 }

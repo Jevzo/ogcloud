@@ -144,11 +144,19 @@ func (s *Server) handle(ctx context.Context, conn net.Conn) {
 	switch handshake.NextState {
 	case nextStatus:
 		network, online := s.pool.Status()
-		if err := answerStatus(reader, conn, status(network, online, handshake.Protocol)); err != nil {
-			s.metrics.outcome(outcomeMalformed)
-			return
+		response, err := status(network, online, handshake.Protocol)
+		if err == nil {
+			err = answerStatus(reader, conn, response)
 		}
-		s.metrics.outcome(outcomeStatus)
+		switch {
+		case errors.Is(err, errEncode):
+			s.metrics.outcome(outcomeStatusFailed)
+			s.logger.Error("could not answer a status ping; are the controller's server-list texts valid JSON?", "error", err)
+		case err != nil:
+			s.metrics.outcome(outcomeMalformed)
+		default:
+			s.metrics.outcome(outcomeStatus)
+		}
 	case nextLogin, nextTransfer:
 		s.login(ctx, conn, reader, handshake, raw)
 	default:

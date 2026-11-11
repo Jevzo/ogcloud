@@ -1,9 +1,11 @@
 package loadbalancer
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,5 +68,20 @@ func TestTheRefresherFollowsValkeyAndDropsLeavingProxiesAtOnce(t *testing.T) {
 	case <-refresher.nudges:
 	default:
 		t.Error("the event did not nudge a refresh")
+	}
+}
+
+func TestMissingServerListTextsAreReportedOncePerGap(t *testing.T) {
+	var logs bytes.Buffer
+	refresher := NewRefresher(nil, NewPool(), nil, slog.New(slog.NewTextHandler(&logs, nil)))
+	old := &eventsv1.NetworkSettingsUpdated{}
+	rendered := &eventsv1.NetworkSettingsUpdated{ServerList: &eventsv1.ServerListTexts{}}
+
+	for _, settings := range []*eventsv1.NetworkSettingsUpdated{old, old, rendered, old} {
+		refresher.checkServerList(settings)
+	}
+
+	if got := strings.Count(logs.String(), "no server-list texts"); got != 2 {
+		t.Errorf("warnings = %d, want 2:\n%s", got, logs.String())
 	}
 }
