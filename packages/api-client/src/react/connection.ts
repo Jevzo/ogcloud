@@ -1,10 +1,13 @@
 import { createContext, useContext } from "react";
 import { type Call, request } from "../request.ts";
 
-/** How the dashboard reaches the API: its origin, and an access token that is fresh whenever it is read. */
+/**
+ * How the dashboard reaches the API: its origin, and an access token that is fresh whenever it is read, or none for
+ * the few anonymous calls, such as a fresh install's first-owner setup.
+ */
 export interface ApiConnection {
   readonly origin?: string;
-  readonly accessToken: () => Promise<string>;
+  readonly accessToken: () => Promise<string | undefined>;
 }
 
 export const ApiConnectionContext = createContext<ApiConnection | null>(null);
@@ -15,10 +18,12 @@ export function useApiRequest(): <T>(path: string, call: Call) => Promise<T> {
   if (connection === null) {
     throw new Error("The API hooks need an ApiConnectionContext provider");
   }
-  return async <T>(path: string, call: Call) =>
-    request<T>(path, {
+  return async <T>(path: string, call: Call) => {
+    const token = await connection.accessToken();
+    return request<T>(path, {
       ...call,
       ...(connection.origin === undefined ? {} : { origin: connection.origin }),
-      token: await connection.accessToken(),
+      ...(token === undefined ? {} : { token }),
     });
+  };
 }
