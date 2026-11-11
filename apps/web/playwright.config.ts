@@ -10,6 +10,8 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     baseURL: `http://localhost:${DEV_PORT}`,
+    // Clock labels in screenshots match the fixtures' UTC times on every machine.
+    timezoneId: "UTC",
   },
   webServer: [
     {

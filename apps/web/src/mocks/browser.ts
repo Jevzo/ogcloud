@@ -3,9 +3,10 @@ import {
   getMeGetMockHandler,
   getOgCloudAPIMock,
   getOverviewGetMockHandler,
+  getOverviewHistoryMockHandler,
 } from "@ogcloud/api-client/mocks";
 import { setupWorker } from "msw/browser";
-import { me, overview } from "./fixtures.ts";
+import { loadHistory, me, overview } from "./fixtures.ts";
 
 // The generated mocks draw from faker; one seed keeps every screenshot run identical.
 const SEED = 20261111;
@@ -15,6 +16,7 @@ export async function startMocks(): Promise<void> {
   const worker = setupWorker(
     getMeGetMockHandler(me),
     getOverviewGetMockHandler(overview),
+    getOverviewHistoryMockHandler(loadHistory),
     ...getOgCloudAPIMock(),
   );
   await worker.start({ quiet: true });

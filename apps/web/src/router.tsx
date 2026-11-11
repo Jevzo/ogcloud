@@ -7,6 +7,7 @@ import {
 import { CALLBACK_PATH } from "./auth.ts";
 import { Callback } from "./pages/callback.tsx";
 import { NotFound } from "./pages/not-found.tsx";
+import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { Placeholder } from "./pages/placeholder.tsx";
 import { AppShell } from "./shell/app-shell.tsx";
 
@@ -31,7 +32,7 @@ const app = createRoute({
 const overview = createRoute({
   getParentRoute: () => app,
   path: "/",
-  component: () => <Placeholder label="overview" />,
+  component: OverviewPage,
 });
 const servers = createRoute({
   getParentRoute: () => app,

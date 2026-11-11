@@ -5,6 +5,7 @@ import { PanelLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import mascot from "../assets/mascot-64.png";
+import { useFormat } from "../format.ts";
 import {
   ADMIN_NAV,
   allowed,
@@ -145,20 +146,19 @@ function NavLink({
 
 /** Live counts beside Servers and Players, for those who may read the overview. */
 function useNavCounts(): Partial<Record<NavItem["path"], string>> {
-  const { i18n } = useTranslation();
+  const format = useFormat();
   const enabled = useCan("overview:read");
   const overview = useOverviewGet({
     query: { enabled, refetchInterval: COUNTS_REFRESH_MS },
   });
   const data = overview.data?.data;
   if (data === undefined) return {};
-  const number = new Intl.NumberFormat(i18n.language);
   const servers = Object.values(data.serversByState).reduce(
     (sum, count) => sum + count,
     0,
   );
   return {
-    "/servers": number.format(servers),
-    "/players": number.format(data.playersOnline),
+    "/servers": format.number(servers),
+    "/players": format.number(data.playersOnline),
   };
 }

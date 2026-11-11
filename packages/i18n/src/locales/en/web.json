@@ -4,9 +4,48 @@
     "other": "{{kind}} on {{subject}}"
   },
   "errors": {
+    "action": "That did not go through. Try again in a moment.",
     "back": "Back to the overview",
     "generic": "Something went wrong: {{detail}}",
     "notFound": "There is no page here."
+  },
+  "groups": {
+    "actions": {
+      "endMaintenance": "End maintenance",
+      "maintenanceEnded": "Maintenance ended for {{id}}",
+      "maintenanceStarted": "Maintenance started for {{id}}",
+      "restart": "Restart",
+      "restarting": "Restarting {{id}}; follow it under Activity",
+      "resume": "Resume starts",
+      "resumed": "{{id}} starts servers again",
+      "startMaintenance": "Start maintenance"
+    },
+    "columns": {
+      "group": "Group",
+      "players": "Players",
+      "servers": "Servers",
+      "state": "State",
+      "type": "Type"
+    },
+    "confirm": {
+      "maintenanceDescription": "Players without the bypass permission move to the default group, and the autoscaler leaves {{id}} alone until maintenance ends.",
+      "maintenanceTitle": "Start maintenance for {{id}}?",
+      "restartDescription": "Every server of {{id}} stops and is replaced, a batch at a time. The restart runs as a job under Activity.",
+      "restartTitle": "Restart {{id}}?"
+    },
+    "load": "{{players}} / {{capacity}}",
+    "starting": "+{{count}} starting",
+    "status": {
+      "idle": "Idle",
+      "maintenance": "Maintenance",
+      "online": "Online",
+      "paused": "Starts paused"
+    },
+    "type": {
+      "DYNAMIC": "Dynamic",
+      "PROXY": "Proxy",
+      "STATIC": "Static"
+    }
   },
   "link": {
     "code": "Code from the game",
@@ -39,6 +78,64 @@
     "servers": "Servers",
     "users": "Users"
   },
+  "overview": {
+    "endMaintenance": "End maintenance",
+    "eula": "Servers will not start until an owner accepts the Minecraft EULA.",
+    "eulaAction": "Review the EULA",
+    "groups": {
+      "all": "All groups",
+      "empty": "No groups yet",
+      "emptyDescription": "Create a proxy group and a lobby to let players in.",
+      "title": "Groups"
+    },
+    "maintenanceDescription": "Only players with the bypass permission can join, and everyone else is disconnected. The autoscaler pauses until maintenance ends.",
+    "maintenanceEnded": "Network maintenance ended",
+    "maintenanceOff": "Open to players",
+    "maintenanceOn": "In maintenance: only players with the bypass permission can join",
+    "maintenanceStarted": "Network maintenance started",
+    "maintenanceTitle": "Start network maintenance?",
+    "players": {
+      "change": "{{change}} in the last hour",
+      "chart": "Players online over the last {{range}}",
+      "empty": "The history fills in once the controller has sampled for a few minutes.",
+      "of": "of {{max}} slots",
+      "range": "Time range",
+      "ranges": {
+        "1h": "1 h",
+        "24h": "24 h",
+        "6h": "6 h"
+      },
+      "series": "Players",
+      "title": "Players online"
+    },
+    "scaling": {
+      "actions": {
+        "DRAIN": "Draining a server in {{group}}",
+        "START": "Started a server in {{group}}",
+        "STOP": "Stopped a server in {{group}}",
+        "UNDRAIN": "Kept a draining server in {{group}}"
+      },
+      "all": "Open activity",
+      "empty": "No scaling decisions yet.",
+      "reasons": {
+        "LOAD": "Players above the scale-up threshold",
+        "MIN_ONLINE": "Below the group's minimum online",
+        "SCALE_DOWN": "Players below the scale-down threshold",
+        "STATIC": "A static group keeps its one server"
+      },
+      "title": "Recent scaling"
+    },
+    "servers": {
+      "draining": "Draining",
+      "paused": "{{id}} stopped starting servers",
+      "pausedReason": "Its servers kept failing to start. Fix the cause, then resume.",
+      "running": "Running",
+      "starting": "Starting",
+      "title": "Servers",
+      "total": "{{count}} total"
+    },
+    "startMaintenance": "Start maintenance"
+  },
   "pages": {
     "account": "Account",
     "placeholder": "This page is being built."
@@ -50,6 +147,16 @@
     "placeholder": "Search or go to a page",
     "players": "Players",
     "servers": "Servers"
+  },
+  "servers": {
+    "request": {
+      "description": "One more server of the group starts as soon as the controller gets to it.",
+      "done": "Requested a server in {{group}}",
+      "group": "Group",
+      "pickGroup": "Pick a group",
+      "submit": "Request server",
+      "title": "Request a server"
+    }
   },
   "shell": {
     "account": "Account settings",
@@ -75,7 +182,7 @@
   },
   "signIn": {
     "failed": "Signing in did not finish: {{detail}}",
-    "retry": "Sign in again",
-    "redirecting": "Taking you to sign in"
+    "redirecting": "Taking you to sign in",
+    "retry": "Sign in again"
   }
 }

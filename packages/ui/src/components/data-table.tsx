@@ -55,7 +55,7 @@ interface DataTableProps<T extends RowData> {
   data: readonly T[];
   columns: Columns<T>;
   getRowId: (row: T) => string;
-  actions?: (row: T) => RowActions;
+  actions?: ((row: T) => RowActions) | undefined;
   loading?: boolean;
   empty: ReactNode;
   /** The height long lists scroll within, e.g. `calc(100vh - 14rem)`. */

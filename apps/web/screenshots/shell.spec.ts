@@ -1,5 +1,6 @@
 import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
+import { MOCK_NOW } from "../src/mocks/fixtures.ts";
 
 // The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0216).
 const OUT = new URL("../../../build/screenshots/web/", import.meta.url)
@@ -22,6 +23,7 @@ async function open(
       ),
     [theme, density],
   );
+  await page.clock.setFixedTime(MOCK_NOW);
   await page.goto(path);
   await page.getByRole("navigation").first().waitFor();
   await page.evaluate(() => document.fonts.ready);

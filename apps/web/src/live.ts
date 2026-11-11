@@ -3,8 +3,9 @@ import {
   type ApiConnection,
   ApiConnectionContext,
 } from "@ogcloud/api-client/react";
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
+import { invalidatePaths } from "./queries.ts";
 
 export type LiveState = "connecting" | "connected" | "reconnecting";
 
@@ -22,13 +23,6 @@ const STALE_AFTER: Record<string, readonly string[]> = {
 };
 const FIRST_RETRY_MS = 1_000;
 const LONGEST_RETRY_MS = 30_000;
-
-function invalidate(client: QueryClient, prefixes: readonly string[]) {
-  void client.invalidateQueries({
-    predicate: (query) =>
-      prefixes.some((prefix) => String(query.queryKey[0]).startsWith(prefix)),
-  });
-}
 
 async function openStream(connection: ApiConnection): Promise<EventSource> {
   const ticket = await eventTicket({ token: await connection.accessToken() });
@@ -76,12 +70,14 @@ export function useLiveEvents(
           opened.onopen = () => {
             setState("connected");
             pause = FIRST_RETRY_MS;
-            invalidate(client, [...new Set(Object.values(STALE_AFTER).flat())]);
+            void invalidatePaths(client, [
+              ...new Set(Object.values(STALE_AFTER).flat()),
+            ]);
           };
           opened.onerror = retry;
           for (const [name, prefixes] of Object.entries(STALE_AFTER)) {
             opened.addEventListener(name, (event) => {
-              invalidate(client, prefixes);
+              void invalidatePaths(client, prefixes);
               if (name === "alert")
                 onAlert(
                   JSON.parse((event as MessageEvent<string>).data) as Alert,
