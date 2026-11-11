@@ -94,7 +94,7 @@ EOF
 
 install() {
   OGCLOUD_TAG=$tag OGCLOUD_PUBLIC_ORIGIN=https://ogcloud.localhost:8443 OGCLOUD_PROXY_ONLINE_MODE=false \
-    OGCLOUD_VALUES="$*" OGCLOUD_SEED_FILES="$PWD/$work/backup-seed.yaml" deploy/k3s/install.sh
+    OGCLOUD_VALUES="$k3d_values $*" OGCLOUD_SEED_FILES="$PWD/$work/backup-seed.yaml" deploy/k3s/install.sh
   forward_ogcloud "$work"
 }
 

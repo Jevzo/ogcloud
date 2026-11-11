@@ -43,7 +43,7 @@ trap finish EXIT
 
 install() {
   OGCLOUD_TAG=$1 OGCLOUD_PUBLIC_ORIGIN=https://ogcloud.localhost:8443 OGCLOUD_PROXY_ONLINE_MODE=false \
-    deploy/k3s/install.sh
+    OGCLOUD_VALUES=$k3d_values deploy/k3s/install.sh
 }
 
 echo "== N-1: $from ($(git rev-parse --short "$from^{commit}"))"

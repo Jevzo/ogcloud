@@ -1,0 +1,32 @@
+# The k3d test clusters (the ordering, restore and upgrade tests) on top of values.yaml. On a CI runner they share
+# four CPUs with the seeded servers, the end-to-end scenarios and, during an upgrade, the new pods next to the old,
+# which the chart's requests left no room for. Only requests shrink; limits stay as they are.
+postgres:
+  resources:
+    requests:
+      cpu: 100m
+kafka:
+  nodes:
+    resources:
+      requests:
+        cpu: 100m
+infisical:
+  resources:
+    requests:
+      cpu: 100m
+api:
+  resources:
+    requests:
+      cpu: 200m
+controller:
+  resources:
+    requests:
+      cpu: 200m
+gateway:
+  resources:
+    requests:
+      cpu: 100m
+loadbalancer:
+  resources:
+    requests:
+      cpu: 100m

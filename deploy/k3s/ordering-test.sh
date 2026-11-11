@@ -31,7 +31,7 @@ k3d_images "$cluster"
 
 # The origin carries the port the suite reaches Traefik on, so the dashboard's registered callback matches.
 OGCLOUD_TAG=$tag OGCLOUD_PUBLIC_ORIGIN=https://ogcloud.localhost:8443 OGCLOUD_PROXY_ONLINE_MODE=false \
-  deploy/k3s/install.sh
+  OGCLOUD_VALUES=$k3d_values deploy/k3s/install.sh
 
 # The same documents again, as every later Terraform apply sends them: nothing that k3s rewrote may conflict.
 kubectl apply --server-side -f "$work/manifest.yaml" >/dev/null

@@ -4,6 +4,9 @@
 
 registry=ogcloud-local
 tag=k3s
+# Smaller CPU requests for the k3d test clusters, which a CI runner's four CPUs must hold.
+# shellcheck disable=SC2034 # read by the test scripts that source this file
+k3d_values="$PWD/deploy/k3s/k3d.yaml"
 
 # k3d_cluster <name> [network]: a fresh single-node cluster at the k3s line the Kotlin and Go tests pin (D-0070,
 # D-0113). k3s's own Traefik and Gateway API CRDs stay off, since platform-deps brings both.
