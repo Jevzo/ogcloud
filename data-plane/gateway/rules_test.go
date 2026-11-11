@@ -157,7 +157,7 @@ func TestNodeEventsArePublishedWithTheirKeys(t *testing.T) {
 	}}})
 	fromProxy := h.settle(t, proxy)
 	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_Transfer{Transfer: &eventsv1.TransferRequested{
-		Subject: &eventsv1.TransferRequested_FromServerId{FromServerId: "s-lobby"}, Destination: toLobby,
+		Subject: &eventsv1.TransferRequested_PlayerUuid{PlayerUuid: visitorUUID}, Destination: toLobby,
 	}}})
 	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_GameState{GameState: &nodev1.GameStateUpdate{GameState: eventsv1.GameState_GAME_STATE_INGAME}}})
 	fromBackend := h.settle(t, backend)
@@ -166,8 +166,67 @@ func TestNodeEventsArePublishedWithTheirKeys(t *testing.T) {
 		fromProxy[1].event.(*eventsv1.PlayerActivity).GetDisconnected().GetProxyId() != "s-proxy" {
 		t.Errorf("from the proxy %+v; a transfer without destination is invalid and the proxy id is the pod's", fromProxy)
 	}
-	if len(fromBackend) != 2 || fromBackend[0].key != "s-lobby" || fromBackend[1].topic != kafkatopics.ServerGamestate || fromBackend[1].key != "s-lobby" {
+	if len(fromBackend) != 2 || fromBackend[0].key != visitorUUID || fromBackend[1].topic != kafkatopics.ServerGamestate || fromBackend[1].key != "s-lobby" {
 		t.Errorf("from the backend %+v", fromBackend)
+	}
+}
+
+func TestNodesKickOnlyWhomTheirNodeTypeMayAndNeverMoveAWholeServer(t *testing.T) {
+	h := start(t, patience)
+	h.state.sessions[visitorUUID] = &internalv1.PlayerSession{PlayerUuid: visitorUUID, ProxyId: "s-other-proxy", ServerId: "s-lobby"}
+	h.state.sessions[adminUUID] = &internalv1.PlayerSession{PlayerUuid: adminUUID, ProxyId: "s-proxy", ServerId: "s-other"}
+	proxy := h.welcomed(t, proxyToken, eventsv1.NodeType_NODE_TYPE_PROXY)
+	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
+	kick := func(player string) *nodev1.SessionRequest {
+		return &nodev1.SessionRequest{Message: &nodev1.SessionRequest_Transfer{Transfer: &eventsv1.TransferRequested{
+			Subject:     &eventsv1.TransferRequested_PlayerUuid{PlayerUuid: player},
+			Destination: &eventsv1.TransferRequested_KickMessage{KickMessage: "<red>Banned"},
+		}}}
+	}
+	wholeServer := &nodev1.SessionRequest{Message: &nodev1.SessionRequest_Transfer{Transfer: &eventsv1.TransferRequested{
+		Subject: &eventsv1.TransferRequested_FromServerId{FromServerId: "s-lobby"}, Destination: &eventsv1.TransferRequested_GroupId{GroupId: "lobby"},
+	}}}
+
+	// A proxy kicks anyone, also a player on another proxy; a backend only the player on it.
+	send(t, proxy, kick(visitorUUID))
+	send(t, proxy, kick(adminUUID))
+	send(t, proxy, wholeServer)
+	fromProxy := h.settle(t, proxy)
+	send(t, backend, kick(visitorUUID))
+	send(t, backend, kick(adminUUID))
+	send(t, backend, kick("0192d2c1-0000-7000-8000-0000000000ff"))
+	send(t, backend, wholeServer)
+	fromBackend := h.settle(t, backend)
+
+	if len(fromProxy) != 2 || fromProxy[0].key != visitorUUID || fromProxy[1].key != adminUUID {
+		t.Errorf("from the proxy %+v", fromProxy)
+	}
+	if len(fromBackend) != 1 || fromBackend[0].key != visitorUUID {
+		t.Errorf("from the backend %+v; only its own player may be kicked", fromBackend)
+	}
+	if got := testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageTransfer, rejectNotOwnServer)); got != 2 {
+		t.Errorf("not-own-server refusals = %v, want 2 (another backend's player, an offline one)", got)
+	}
+	if got := testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageTransfer, rejectNodeType)); got != 2 {
+		t.Errorf("whole-server refusals = %v, want 2", got)
+	}
+}
+
+func TestABackendKickIsRefusedWhileSessionsCannotBeRead(t *testing.T) {
+	h := start(t, patience)
+	h.state.sessionErr = errors.New("valkey down")
+	backend := h.welcomed(t, lobbyToken, eventsv1.NodeType_NODE_TYPE_BACKEND)
+
+	send(t, backend, &nodev1.SessionRequest{Message: &nodev1.SessionRequest_Transfer{Transfer: &eventsv1.TransferRequested{
+		Subject:     &eventsv1.TransferRequested_PlayerUuid{PlayerUuid: visitorUUID},
+		Destination: &eventsv1.TransferRequested_KickMessage{KickMessage: "Bye"},
+	}}})
+
+	if published := h.settle(t, backend); len(published) != 0 {
+		t.Errorf("published %+v", published)
+	}
+	if testutil.ToFloat64(h.metrics.rejected.WithLabelValues(messageTransfer, rejectUnavailable)) != 1 {
+		t.Error("the refusal was not counted as unavailable")
 	}
 }
 

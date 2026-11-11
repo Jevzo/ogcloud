@@ -39,11 +39,12 @@ const (
 
 // Why a node message was dropped.
 const (
-	rejectNodeType    = nodeerrors.NodeType
-	rejectInvalid     = nodeerrors.Invalid
-	rejectUnsupported = "unsupported"
-	rejectUnknown     = "unknown_delivery"
-	rejectUnavailable = nodeerrors.Unavailable
+	rejectNodeType     = nodeerrors.NodeType
+	rejectInvalid      = nodeerrors.Invalid
+	rejectUnsupported  = "unsupported"
+	rejectUnknown      = "unknown_delivery"
+	rejectUnavailable  = nodeerrors.Unavailable
+	rejectNotOwnServer = nodeerrors.NotOwnServer
 )
 
 var (
@@ -190,19 +191,40 @@ func (s *Service) playerActivity(ctx context.Context, session *Session, report *
 }
 
 func (s *Service) transfer(ctx context.Context, session *Session, transfer *eventsv1.TransferRequested) {
-	key := transfer.GetPlayerUuid()
-	if key == "" {
-		key = transfer.GetFromServerId()
-	}
-	if key == "" || transfer.GetDestination() == nil {
+	switch {
+	case transfer.GetFromServerId() != "":
+		// Only the controller moves everyone off a server or proxy (D-0208).
+		s.reject(session, messageTransfer, rejectNodeType)
+		return
+	case transfer.GetPlayerUuid() == "" || transfer.GetDestination() == nil:
 		s.reject(session, messageTransfer, rejectInvalid)
 		return
+	case !s.mayKick(ctx, session, transfer):
+		return
 	}
-	s.emit(ctx, session, messageTransfer, kafkatopics.PlayerTransfer, key, events.System(component),
+	s.emit(ctx, session, messageTransfer, kafkatopics.PlayerTransfer, transfer.GetPlayerUuid(), events.System(component),
 		func(metadata *eventsv1.EventMetadata) proto.Message {
 			transfer.Metadata = metadata
 			return transfer
 		})
+}
+
+// mayKick lets a proxy kick any player and a backend only a player on it (D-0208); other transfers pass.
+func (s *Service) mayKick(ctx context.Context, session *Session, transfer *eventsv1.TransferRequested) bool {
+	if _, kick := transfer.GetDestination().(*eventsv1.TransferRequested_KickMessage); !kick || isProxy(session) {
+		return true
+	}
+	player, err := s.State.Session(ctx, transfer.GetPlayerUuid())
+	switch {
+	case err != nil:
+		s.Logger.Warn("could not check a backend's kick", "serverId", session.Peer.ServerID, "error", err)
+		s.reject(session, messageTransfer, rejectUnavailable)
+		return false
+	case !holds(session, player):
+		s.reject(session, messageTransfer, rejectNotOwnServer)
+		return false
+	}
+	return true
 }
 
 // nodeCommand publishes a console command for an in-game admin connected through the sending proxy (D-0115).
