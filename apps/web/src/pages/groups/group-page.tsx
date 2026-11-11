@@ -16,6 +16,7 @@ import {
   Button,
   Card,
   Meter,
+  Note,
   PageHeader,
   Skeleton,
   Tabs,
@@ -24,6 +25,7 @@ import {
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Construction,
+  Info,
   Layers,
   Play,
   Plus,
@@ -90,8 +92,10 @@ function GroupEditor({ view }: { view: GroupView }) {
   const canWrite = useCan("groups:write");
   const canRequest = useCan("servers:command");
   const runtime = useRuntimeList();
+  // Live load comes from the overview, which a role may lack beside groups:read.
+  const canSeeLoad = useCan("overview:read");
   const overview = useOverviewGet({
-    query: { refetchInterval: LIVE_REFRESH_MS },
+    query: { refetchInterval: LIVE_REFRESH_MS, enabled: canSeeLoad },
   });
   const actions = useGroupActions({
     onDeleted: () => void navigate({ to: "/groups" }),
@@ -194,7 +198,15 @@ function GroupEditor({ view }: { view: GroupView }) {
                 canWrite={canWrite}
                 changes={changes}
                 saving={saving}
-                aside={<LivePanel groupId={view.id} live={live} />}
+                aside={
+                  canSeeLoad ? (
+                    <LivePanel groupId={view.id} live={live} />
+                  ) : (
+                    <Note tone="info" icon={Info}>
+                      {t("groups.detail.liveHidden")}
+                    </Note>
+                  )
+                }
               >
                 <GroupSettingsFields
                   form={form}
@@ -212,7 +224,10 @@ function GroupEditor({ view }: { view: GroupView }) {
               <TemplatesPanel
                 groupId={view.id}
                 type={view.type}
-                staticRunning={(live?.running ?? 0) + (live?.pending ?? 0) > 0}
+                // Without the live load the warning shows, since a running server cannot be ruled out.
+                staticRunning={
+                  !canSeeLoad || (live?.running ?? 0) + (live?.pending ?? 0) > 0
+                }
               />
             ),
           },

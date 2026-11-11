@@ -355,6 +355,7 @@
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
       "live": "Right now",
+      "liveHidden": "Live servers and players show to roles that can read the overview.",
       "sections": "Sections",
       "settings": "Settings",
       "templates": "Templates"
