@@ -33,5 +33,5 @@ mise run gen             # regenerate code from contracts/
 
 ## License
 
-OgCloud is licensed under the [OgCloud License v1.0](LICENSE). The developer
+OgCloud is licensed under the [OgCloud License v1.1](LICENSE). The developer
 SDK, public APIs and generated clients are licensed under [MIT](LICENSE-MIT).
