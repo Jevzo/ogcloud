@@ -4,6 +4,7 @@ import {
   type Call,
   type OnlinePlayerView,
   playerOnline,
+  playerTransfer,
   serverGet,
 } from "@ogcloud/api-client";
 import { asClient, expectStatus } from "./api.ts";
@@ -11,6 +12,7 @@ import { leave, type Player } from "./bots.ts";
 import { trustInternalCa } from "./cluster.ts";
 import { loadState, type SeedState } from "./state.ts";
 import { type Target, targetFromEnv } from "./target.ts";
+import { eventually } from "./wait.ts";
 
 /** What every scenario starts from: the target, the seed's logins, and the API as the suite's machine client. */
 export interface Suite {
@@ -99,4 +101,23 @@ export async function groupOf(
     200,
     `Reading server ${serverId}`,
   ).groupId;
+}
+
+/** Moves the named player to [groupId] through the API and waits until they are there. */
+export async function moveTo(
+  api: Call,
+  name: string,
+  groupId: string,
+): Promise<void> {
+  const player = await eventually(`${name} to be online`, () =>
+    onlinePlayer(api, name),
+  );
+  expectStatus(
+    await playerTransfer(player.uuid, { groupId }, api),
+    202,
+    `Moving ${name} to ${groupId}`,
+  );
+  await eventually(`${name} to reach ${groupId}`, async () =>
+    (await groupOf(api, name)) === groupId ? groupId : undefined,
+  );
 }

@@ -12,11 +12,12 @@ export const CURRENT_VERSION = "26.1";
 export const STEADY_VERSION = "1.20.4";
 export const LEGACY_VERSION = "1.8.8";
 
-/** A bot and what happened to it: chat in arrival order, and why it was disconnected. */
+/** A bot and what happened to it: chat in arrival order, as text and as its components' JSON, and why it was disconnected. */
 export interface Player {
   readonly name: string;
   readonly bot: Bot;
   readonly messages: readonly string[];
+  readonly components: readonly string[];
   readonly kicked: () => string | undefined;
 }
 
@@ -73,14 +74,25 @@ export function connect(
   });
   dropPlayPacketsWhileConfiguring(bot);
   const messages: string[] = [];
+  const components: string[] = [];
   let kickReason: string | undefined;
   bot.on("messagestr", (message) => {
     messages.push(message);
   });
+  bot.on("message", (message) => {
+    components.push(JSON.stringify(message.json));
+  });
+  // Since 1.19 a server's chat renderer travels as a player chat's unsigned content, which clients show instead of
+  // the plain message; mineflayer reports only the plain one.
+  bot._client.on("player_chat", (packet: { unsignedChatContent?: unknown }) => {
+    if (packet.unsignedChatContent !== undefined) {
+      components.push(JSON.stringify(packet.unsignedChatContent));
+    }
+  });
   bot.on("kicked", (reason) => {
     kickReason = text(reason);
   });
-  return { name, bot, messages, kicked: () => kickReason };
+  return { name, bot, messages, components, kicked: () => kickReason };
 }
 
 /**

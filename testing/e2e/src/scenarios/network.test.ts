@@ -1,46 +1,28 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { networkGet, networkUpdate, playerTransfer } from "@ogcloud/api-client";
+import { networkGet, networkUpdate } from "@ogcloud/api-client";
 import { expectStatus } from "../api.ts";
 import { connect, join, LEGACY_VERSION } from "../bots.ts";
 import { GROUPS } from "../seed.ts";
-import { groupOf, onlinePlayer, playerName, scenario } from "../suite.ts";
+import { moveTo, playerName, scenario } from "../suite.ts";
 import { eventually } from "../wait.ts";
 
 // Transfers through the API, the 1.8.8 backend behind the same proxies, and network maintenance (v1 parity, D-0004).
 const { context, players } = scenario();
 
-async function moveTo(name: string, groupId: string): Promise<void> {
-  const player = await eventually(`${name} to be online`, () =>
-    onlinePlayer(context.api, name),
-  );
-  expectStatus(
-    await playerTransfer(player.uuid, { groupId }, context.api),
-    202,
-    `Moving ${name} to ${groupId}`,
-  );
-  assert.equal(
-    await eventually(`${name} to reach ${groupId}`, async () => {
-      const group = await groupOf(context.api, name);
-      return group === groupId ? group : undefined;
-    }),
-    groupId,
-  );
-}
-
 test("the API moves a player to the 1.8.8 backend and back to the lobby", async () => {
   const name = playerName("move");
   players.push(await join(context.target, name));
 
-  await moveTo(name, GROUPS.legacy);
-  await moveTo(name, GROUPS.lobby);
+  await moveTo(context.api, name, GROUPS.legacy);
+  await moveTo(context.api, name, GROUPS.lobby);
 });
 
 test("a 1.8 client plays on the 1.8.8 backend", async () => {
   const name = playerName("eight");
   players.push(await join(context.target, name, LEGACY_VERSION));
 
-  await moveTo(name, GROUPS.legacy);
+  await moveTo(context.api, name, GROUPS.legacy);
 });
 
 test("network maintenance turns new players away until it ends", async () => {
