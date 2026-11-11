@@ -7,14 +7,14 @@ import {
   oauthClientCreate,
   rolePermissions,
   serverList,
-  setupComplete,
   setupStatus,
   templateList,
   templateUpload,
 } from "@ogcloud/api-client";
 import { anonymous, as, asClient, expectStatus } from "./api.ts";
 import { secretValue, trustInternalCa } from "./cluster.ts";
-import { signIn, type UserLogin } from "./login.ts";
+import { signIn } from "./login.ts";
+import { setUpThroughWizard } from "./setup-wizard.ts";
 import { loadState, type SeedState, saveState } from "./state.ts";
 import { tarGz } from "./tar.ts";
 import { type Target, targetFromEnv } from "./target.ts";
@@ -222,7 +222,8 @@ async function createClient(
   };
 }
 
-// The first owner comes from the setup token bootstrap put into Infisical (D-0094); later runs reuse the saved login.
+// The first owner comes from the setup token bootstrap put into Infisical (D-0094), through the dashboard's setup
+// wizard; later runs reuse the saved login.
 async function ensureOwner(
   target: Target,
   state: SeedState | undefined,
@@ -240,22 +241,15 @@ async function ensureOwner(
     }
     return state;
   }
-  const owner: UserLogin = {
-    username: OWNER.username,
-    password: randomBytes(24).toString("base64url"),
-  };
   const setupToken = await secretValue(
     target,
     "ogcloud-api-config",
     "ogcloud.auth.setup-token",
   );
-  expectStatus(
-    await setupComplete(
-      { setupToken, ...OWNER, password: owner.password },
-      anonymous(target),
-    ),
-    201,
-    "Creating the owner",
+  const owner = await setUpThroughWizard(
+    target,
+    { ...OWNER, password: randomBytes(24).toString("base64url") },
+    setupToken,
   );
   console.log(`Created the owner ${owner.username}`);
   const created: SeedState = { owner };

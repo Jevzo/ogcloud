@@ -568,6 +568,9 @@ importers:
       '@ogcloud/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.65.0
       mineflayer:
         specifier: 'catalog:'
         version: 4.39.0

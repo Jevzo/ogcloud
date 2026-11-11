@@ -160,7 +160,8 @@ run = 'deploy/backup/root-key.sh import {{usage.file}}'
 # OGCLOUD_E2E_* point it elsewhere.
 [tasks.seed]
 description = "Create the owner, the suite's machine client, the groups and the lobby template (T-0606)"
-run = "pnpm --filter @ogcloud/e2e run seed"
+# A fresh install's owner comes through the setup wizard in Chromium (T-0710).
+run = ["pnpm --filter @ogcloud/e2e exec playwright install chromium", "pnpm --filter @ogcloud/e2e run seed"]
 
 [tasks."test:e2e"]
 description = "Run the end-to-end suite against a seeded cluster (T-0606)"

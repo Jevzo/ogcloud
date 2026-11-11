@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@ogcloud/api-client": "workspace:*",
+    "@playwright/test": "catalog:",
     "mineflayer": "catalog:"
   },
   "devDependencies": {
