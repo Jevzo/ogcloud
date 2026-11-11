@@ -9,6 +9,7 @@ import { Callback } from "./pages/callback.tsx";
 import { GroupCreatePage } from "./pages/groups/group-create-page.tsx";
 import { GroupPage } from "./pages/groups/group-page.tsx";
 import { GroupsPage } from "./pages/groups/groups-page.tsx";
+import { NetworkPage } from "./pages/network/network-page.tsx";
 import { NotFound } from "./pages/not-found.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { PermissionGroupPage } from "./pages/permissions/permission-group-page.tsx";
@@ -91,7 +92,7 @@ const permissionGroup = createRoute({
 const network = createRoute({
   getParentRoute: () => app,
   path: "/network",
-  component: () => <Placeholder label="network" />,
+  component: NetworkPage,
 });
 const npcs = createRoute({
   getParentRoute: () => app,

@@ -15,18 +15,15 @@ import { GroupUpdateBody } from "@ogcloud/api-client/zod";
 import {
   Button,
   Card,
-  Menu,
   Meter,
   PageHeader,
   Skeleton,
   TimeSeriesChart,
 } from "@ogcloud/ui";
-import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   Construction,
-  Ellipsis,
   Layers,
   Play,
   Plus,
@@ -38,8 +35,9 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useSaved, useSaveFailure } from "../../editing.tsx";
-import { contractSchema, countChanges, useAppForm } from "../../form.tsx";
+import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
+import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
 import { useGroupActions } from "./group-actions.tsx";
@@ -101,27 +99,20 @@ function GroupEditor({ view }: { view: GroupView }) {
     client.invalidateQueries({ queryKey: getGroupGetQueryKey(view.id) }),
   );
 
-  const form = useAppForm({
-    defaultValues: { settings: view.settings },
-    validators: { onChange: SettingsForm },
-    onSubmit: ({ value }) =>
+  const { form, changes, saving } = useSettingsForm({
+    settings: view.settings,
+    schema: SettingsForm,
+    save: (settings) =>
       update
         .mutateAsync({
           id: view.id,
           data: {
-            settings: {
-              ...value.settings,
-              maintenance: view.settings.maintenance,
-            },
+            settings: { ...settings, maintenance: view.settings.maintenance },
             version: view.version,
           },
         })
         .then(saved, saveFailed),
   });
-  const changes = useStore(form.store, (state) =>
-    countChanges(view.settings, state.values.settings),
-  );
-  const saving = useStore(form.store, (state) => state.isSubmitting);
 
   const menu = canWrite
     ? [
@@ -151,16 +142,7 @@ function GroupEditor({ view }: { view: GroupView }) {
         })}
         actions={
           <>
-            {menu.length > 0 ? (
-              <Menu
-                groups={menu}
-                trigger={
-                  <Button icon={Ellipsis} iconOnly>
-                    {t("groups.detail.more")}
-                  </Button>
-                }
-              />
-            ) : null}
+            <MoreMenu groups={menu} />
             {canWrite && view.settings.maintenance ? (
               <Button
                 icon={RotateCw}
@@ -198,23 +180,20 @@ function GroupEditor({ view }: { view: GroupView }) {
           </>
         }
       />
-      <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(240px,440px)] items-start gap-4">
-        <EditorForm
-          canWrite={canWrite}
-          changes={changes}
-          saving={saving}
-          onSave={() => void form.handleSubmit()}
-          onDiscard={() => form.reset()}
-        >
-          <GroupSettingsFields
-            form={form}
-            fields="settings"
-            type={view.type}
-            profiles={runtime.data?.data ?? []}
-          />
-        </EditorForm>
-        <LivePanel groupId={view.id} live={live} />
-      </div>
+      <EditorForm
+        form={form}
+        canWrite={canWrite}
+        changes={changes}
+        saving={saving}
+        aside={<LivePanel groupId={view.id} live={live} />}
+      >
+        <GroupSettingsFields
+          form={form}
+          fields="settings"
+          type={view.type}
+          profiles={runtime.data?.data ?? []}
+        />
+      </EditorForm>
       {actions.dialogs}
       <RequestServerDialog
         open={requesting}
@@ -245,7 +224,7 @@ function LivePanel({
   }));
 
   return (
-    <Card title={t("groups.detail.live")} className="sticky top-16">
+    <Card title={t("groups.detail.live")}>
       {live === undefined ? (
         <Skeleton className="h-24" />
       ) : (

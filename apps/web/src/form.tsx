@@ -274,3 +274,28 @@ export function localizeValidation(t: TFunction<"web">): void {
     },
   });
 }
+
+/**
+ * An in-place editor for a resource's settings: the form, how many values changed and whether it is saving.
+ * [save] writes the settings against the version the page read (D-0069).
+ */
+export function useSettingsForm<S extends object>({
+  settings,
+  schema,
+  save,
+}: {
+  settings: S;
+  schema: StandardSchemaV1<{ settings: S }>;
+  save: (settings: S) => Promise<unknown>;
+}) {
+  const form = useAppForm({
+    defaultValues: { settings },
+    validators: { onChange: schema },
+    onSubmit: ({ value }) => save(value.settings),
+  });
+  const changes = useStore(form.store, (state) =>
+    countChanges(settings, state.values.settings),
+  );
+  const saving = useStore(form.store, (state) => state.isSubmitting);
+  return { form, changes, saving };
+}

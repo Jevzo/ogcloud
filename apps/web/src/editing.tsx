@@ -83,45 +83,53 @@ export function useSaved<T>(queryKey: QueryKey): (saved: T) => void {
 }
 
 interface EditorFormProps {
+  form: { handleSubmit: () => Promise<void>; reset: () => void };
   canWrite: boolean;
   changes: number;
   saving: boolean;
-  onSave: () => void;
-  onDiscard: () => void;
+  /** Beside the form on wide screens, such as live status or a preview (D-0210). */
+  aside: ReactNode;
   children: ReactNode;
 }
 
-/** A page's settings form: read-only without the write permission, otherwise with its save bar and leave guard. */
+/**
+ * A page's settings form, about 720 px wide with its side panel: read-only without the write permission, otherwise
+ * with its save bar and leave guard.
+ */
 export function EditorForm({
+  form,
   canWrite,
   changes,
   saving,
-  onSave,
-  onDiscard,
+  aside,
   children,
 }: EditorFormProps) {
+  const save = () => void form.handleSubmit();
   return (
-    <form
-      className="flex min-w-0 flex-col gap-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave();
-      }}
-    >
-      <fieldset
-        disabled={!canWrite}
-        className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0"
+    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(280px,440px)] items-start gap-4">
+      <form
+        className="flex min-w-0 flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          save();
+        }}
       >
-        {children}
-      </fieldset>
-      {canWrite ? (
-        <EditGuard
-          changes={changes}
-          saving={saving}
-          onDiscard={onDiscard}
-          onSave={onSave}
-        />
-      ) : null}
-    </form>
+        <fieldset
+          disabled={!canWrite}
+          className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0"
+        >
+          {children}
+        </fieldset>
+        {canWrite ? (
+          <EditGuard
+            changes={changes}
+            saving={saving}
+            onDiscard={() => form.reset()}
+            onSave={save}
+          />
+        ) : null}
+      </form>
+      <div className="sticky top-16 flex min-w-0 flex-col gap-4">{aside}</div>
+    </div>
   );
 }

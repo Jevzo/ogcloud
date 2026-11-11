@@ -3,6 +3,7 @@ import type {
   GroupView,
   LoadHistoryView,
   MeView,
+  NetworkSettingsView,
   OnlinePlayerView,
   OverviewView,
   PermissionGroupView,
@@ -263,6 +264,14 @@ export function serverById(id: string): ServerView {
   return found;
 }
 
+const ARTIFACT = (path: string, minutes: number) => ({
+  path,
+  sha256: "9f2c4e7a1b3d5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4",
+  sizeBytes: 4_812_345,
+  sourceUrl: `https://cdn.modrinth.com/${path}`,
+  storedAt: minutesAgo(minutes),
+});
+
 export const runtimeProfiles: RuntimeProfileView[] = [
   {
     id: "paper-26.3",
@@ -271,7 +280,10 @@ export const runtimeProfiles: RuntimeProfileView[] = [
     version: "26.3",
     protocol: 777,
     javaVersion: 25,
-    artifacts: [],
+    artifacts: [
+      ARTIFACT("plugins/ogcloud-paper.jar", 300),
+      ARTIFACT("plugins/packetevents.jar", 4000),
+    ],
   },
   {
     id: "pandaspigot-1.8.8",
@@ -289,7 +301,12 @@ export const runtimeProfiles: RuntimeProfileView[] = [
     version: "4.3.0",
     protocol: 0,
     javaVersion: 25,
-    artifacts: [],
+    artifacts: [
+      ARTIFACT("plugins/ogcloud-velocity.jar", 300),
+      ARTIFACT("plugins/ViaVersion.jar", 9000),
+      ARTIFACT("plugins/ViaBackwards.jar", 9000),
+      ARTIFACT("velocity.toml", 300),
+    ],
   },
 ];
 
@@ -577,3 +594,26 @@ export function permissionGroupById(id: string): PermissionGroupView {
     throw new Error("The permission group fixture is empty");
   return found;
 }
+
+export const networkSettings: NetworkSettingsView = {
+  version: 12,
+  eulaAcceptedAt: minutesAgo(60 * 24 * 40),
+  settings: {
+    maintenance: false,
+    motd: "<gradient:#ff8800:#ff3d7f>OgWars Network</gradient> <gray>1.8 to 26.3\n<yellow>Bedwars season 4 is live",
+    maintenanceMotd:
+      "<red>We are updating the network\n<gray>Back in a few minutes",
+    versionName: "<gray>OgWars 1.8 to 26.3",
+    maintenanceVersionName: "<red>Maintenance",
+    maxPlayers: 5000,
+    defaultGroupId: "lobby",
+    routingStrategy: "BALANCED",
+    permissionSystemEnabled: true,
+    tablistEnabled: true,
+    tablistHeader:
+      "<gradient:#ff8800:#ff3d7f>OgWars Network</gradient>\n<gray>{server}",
+    tablistFooter: "<yellow>{onlinePlayers}<gray> players online",
+    maintenanceKickMessage: "<red>The network is in maintenance",
+    requireMinecraftLink: false,
+  },
+};

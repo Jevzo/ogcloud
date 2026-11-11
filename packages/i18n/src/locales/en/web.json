@@ -1,4 +1,7 @@
 {
+  "actions": {
+    "more": "More actions"
+  },
   "alerts": {
     "crashLoopPaused": "{{subject}} is paused after repeated failed starts",
     "other": "{{kind}} on {{subject}}"
@@ -77,8 +80,7 @@
       "failed": "This group could not be loaded",
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
-      "live": "Right now",
-      "more": "More actions"
+      "live": "Right now"
     },
     "form": {
       "basics": "Name and type",
@@ -178,6 +180,90 @@
     "servers": "Servers",
     "users": "Users"
   },
+  "network": {
+    "eula": {
+      "accept": "Accept the EULA",
+      "accepted": "Minecraft EULA accepted",
+      "description": "Accepting it is up to an owner and cannot be taken back.",
+      "read": "Read the EULA"
+    },
+    "failed": "The network settings could not be loaded",
+    "form": {
+      "defaultGroup": "Default group",
+      "defaultGroupHint": "Where players land when they join, and where they go when their server stops.",
+      "footer": "Footer",
+      "header": "Header",
+      "kickMessage": "Kick message",
+      "kickMessageHint": "What players without the bypass permission see when maintenance starts or they try to join.",
+      "link": "Require a linked Minecraft account",
+      "linkHint": "Dashboard users without a linked account see only the link flow.",
+      "maintenance": "In maintenance",
+      "maintenanceVersionHint": "Shown in place of the player count while the network is in maintenance.",
+      "maxPlayers": "Slots",
+      "maxPlayersHint": "The player limit the server list shows.",
+      "motd": "Message of the day",
+      "motdHint": "Two lines under the network's name in the server list.",
+      "permissions": "Permission system",
+      "permissionsHint": "Off, players keep no ranks or permissions from OgCloud.",
+      "players": "Players",
+      "routing": "Routing",
+      "serverList": "Server list",
+      "tablist": "Tablist",
+      "tablistEnabled": "Show OgCloud's tablist",
+      "tablistEnabledHint": "Off, the servers keep their own tablists.",
+      "versionName": "Version name",
+      "versionNameHint": "What clients see when their version is not supported."
+    },
+    "look": {
+      "maintenance": "In maintenance",
+      "open": "Open",
+      "serverList": "Server list",
+      "serverName": "Minecraft Server",
+      "state": "Network"
+    },
+    "restart": {
+      "action": "Restart network",
+      "description": "Proxies, then the default group, then every other group are replaced in batches. It runs as a job under Activity.",
+      "started": "Network restart started; follow it under Activity",
+      "title": "Restart the whole network?"
+    },
+    "rotate": {
+      "action": "Rotate forwarding token",
+      "description": "Proxies and servers get a new BungeeGuard token; proxies restart one by one while both tokens are accepted.",
+      "started": "Token rotation started; follow it under Activity",
+      "title": "Rotate the forwarding token?"
+    },
+    "routing": {
+      "BALANCED": "Players join the server with the lowest share of its slots in use.",
+      "LEAST_FILLED": "Players join the server with the fewest players, spreading them out.",
+      "MOST_FILLED": "Players join the fullest server that has room, filling servers before others start.",
+      "ROUND_ROBIN": "Players join the servers in turn.",
+      "names": {
+        "BALANCED": "Balanced",
+        "LEAST_FILLED": "Least filled",
+        "MOST_FILLED": "Most filled",
+        "ROUND_ROBIN": "Round robin"
+      }
+    },
+    "runtime": {
+      "bundle": "Bundle",
+      "confirmDescription": "Its servers are replaced one by one onto the current bundle. It runs as a job under Activity.",
+      "confirmTitle": "Roll out {{id}}?",
+      "description": "What groups can run. A rollout replaces a runtime's servers after its bundle changed.",
+      "empty": "No runtimes yet",
+      "emptyDescription": "The controller fills the bundles when it starts.",
+      "files_one": "{{count}} file",
+      "files_other": "{{count}} files",
+      "java": "Java",
+      "profile": "Runtime",
+      "rollout": "Roll out",
+      "started": "Rolling out {{id}}; follow it under Activity",
+      "stored": "Updated",
+      "title": "Runtimes",
+      "version": "Version"
+    },
+    "typed": "network"
+  },
   "overview": {
     "endMaintenance": "End maintenance",
     "eula": "Servers will not start until an owner accepts the Minecraft EULA.",
@@ -273,8 +359,7 @@
       "description": "Permission group {{id}}",
       "failed": "This permission group could not be loaded",
       "gone": "This permission group does not exist",
-      "goneDescription": "It may have been deleted; its players then hold the default group.",
-      "more": "More actions"
+      "goneDescription": "It may have been deleted; its players then hold the default group."
     },
     "empty": "No permission groups yet",
     "emptyDescription": "Every network has a default group; create others for staff and supporters.",
@@ -439,7 +524,6 @@
       "id": "Server id",
       "idHint": "Pods and logs carry this id; the short name above is the last six characters players see.",
       "identity": "Identity",
-      "more": "More actions",
       "profile": "Runtime profile",
       "status": "Status"
     },

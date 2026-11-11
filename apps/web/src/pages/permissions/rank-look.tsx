@@ -7,14 +7,12 @@ import {
   minecraftColours,
   NametagPreview,
   PreviewFrame,
-  Segmented,
   TablistPreview,
 } from "@ogcloud/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { type Client, ClientSwitch } from "../../client-switch.tsx";
 import { useTextPreview } from "../../texts.ts";
-
-type Client = "modern" | "legacy";
 
 /** A rank's texts as the API draws them for one kind of client (D-0202); invalid texts draw as nothing. */
 function useRankSpans(display: RankDisplayView, client: Client) {
@@ -45,15 +43,7 @@ export function RankLook({ display }: { display: RankDisplayView }) {
   ];
   return (
     <div className="flex flex-col gap-3">
-      <Segmented
-        label={t("permissions.look.client")}
-        options={[
-          { value: "modern", label: t("permissions.look.modern") },
-          { value: "legacy", label: t("permissions.look.legacy") },
-        ]}
-        value={client}
-        onValueChange={setClient}
-      />
+      <ClientSwitch value={client} onValueChange={setClient} />
       <PreviewFrame label={t("permissions.look.chat")}>
         <ChatPreview
           lines={[

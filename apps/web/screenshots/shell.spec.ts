@@ -20,6 +20,7 @@ const PAGES = [
   `/players/${onlinePlayers[1]?.uuid}`,
   "/permissions",
   "/permissions/owner",
+  "/network",
   "/users",
 ] as const;
 

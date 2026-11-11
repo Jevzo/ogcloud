@@ -1,9 +1,8 @@
 import { useOverviewGet, useServerGet } from "@ogcloud/api-client/react";
-import { Button, Card, CopyField, Menu, Meter, PageHeader } from "@ogcloud/ui";
+import { Button, Card, CopyField, Meter, PageHeader } from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
-  Ellipsis,
   OctagonX,
   ServerOff,
   Square,
@@ -14,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
+import { MoreMenu } from "../../more-menu.tsx";
 import { GroupLink } from "../groups/group-status.tsx";
 import { useServerActions } from "./server-actions.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
@@ -101,16 +101,7 @@ export function ServerPage() {
         })}
         actions={
           <>
-            {more.length > 0 ? (
-              <Menu
-                groups={more}
-                trigger={
-                  <Button icon={Ellipsis} iconOnly>
-                    {t("servers.detail.more")}
-                  </Button>
-                }
-              />
-            ) : null}
+            <MoreMenu groups={more} />
             {actions.can.command ? (
               <>
                 <Button
