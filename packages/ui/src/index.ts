@@ -43,7 +43,12 @@ export {
   PageHeader,
   Skeleton,
 } from "./components/layout.tsx";
-export { Menu, type MenuItem } from "./components/menu.tsx";
+export {
+  Menu,
+  type MenuChoice,
+  type MenuGroup,
+  type MenuItem,
+} from "./components/menu.tsx";
 export {
   Combobox,
   type ListOption,

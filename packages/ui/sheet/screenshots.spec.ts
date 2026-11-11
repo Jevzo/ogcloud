@@ -1,12 +1,10 @@
+import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
 
 // Screenshots for review (AGENTS.md §13), at the smallest layout and a large monitor (D-0170, D-0216).
 const OUT = new URL("../../../build/screenshots/ui/", import.meta.url).pathname;
-const VIEWPORTS = [
-  { name: "laptop", width: 1280, height: 800 },
-  { name: "monitor", width: 2560, height: 1440 },
-] as const;
-const THEMES = ["light", "dark"] as const;
+const VIEWPORTS = layout.reviewViewports;
+const THEMES = themeNames;
 const DENSITIES = ["compact", "comfortable"] as const;
 
 async function open(page: Page, theme: string, density: string) {

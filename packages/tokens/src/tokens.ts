@@ -246,4 +246,9 @@ export const layout = {
   sidebarInset: 8,
   headerHeight: 52,
   formWidth: 720,
+  /** Screenshot reviews run at the smallest layout and on a large monitor (AGENTS.md §13, D-0170). */
+  reviewViewports: [
+    { name: "laptop", width: 1280, height: 800 },
+    { name: "monitor", width: 2560, height: 1440 },
+  ],
 } as const;

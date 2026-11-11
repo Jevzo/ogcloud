@@ -263,3 +263,15 @@ test("a failed revocation keeps the login, so signing out can be tried again", a
   await assert.rejects(session.signOut());
   assert.equal((await logins.read())?.refreshToken, "refresh-0");
 });
+
+test("a forgotten access token is renewed on the next call", async () => {
+  const server = new FakeServer();
+  const { session } = setup(server, {
+    refreshToken: "refresh-0",
+    idToken: undefined,
+  });
+
+  assert.equal(await session.accessToken(), "access-1");
+  session.forgetAccessToken();
+  assert.equal(await session.accessToken(), "access-2");
+});

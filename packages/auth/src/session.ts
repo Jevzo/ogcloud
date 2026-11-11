@@ -127,6 +127,11 @@ export class AuthSession {
     return this.renewing;
   }
 
+  /** Drops the cached access token, so the next call carries fresh permissions, e.g. after a Minecraft link (D-0106). */
+  forgetAccessToken(): void {
+    this.access = undefined;
+  }
+
   /**
    * Revokes the refresh token, then forgets the login and returns the URL that ends the API's login session. A failed
    * revocation throws with the login kept, so signing out can be tried again.

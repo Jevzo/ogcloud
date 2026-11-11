@@ -244,6 +244,10 @@ run = ["pnpm exec biome ci", "pnpm -r --if-present run typecheck", "pnpm -r --if
 description = "Screenshot the UI kit's component sheet in both themes and densities into build/screenshots/ui (AGENTS.md §13)"
 run = ["pnpm --filter @ogcloud/ui exec playwright install chromium", "pnpm --filter @ogcloud/ui run screenshots"]
 
+[tasks."web:screenshots"]
+description = "Screenshot the dashboard against orval's mocks in both themes into build/screenshots/web (AGENTS.md §13)"
+run = ["pnpm --filter @ogcloud/web exec playwright install chromium", "pnpm --filter @ogcloud/web run screenshots"]
+
 [tasks."fmt:ts"]
 description = "Format and fix TypeScript, JavaScript and JSON"
 run = "pnpm exec biome check --write"

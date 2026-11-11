@@ -1,0 +1,43 @@
+{
+  "name": "@ogcloud/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "mocks": "msw init mocks/public --save=false && vite --mode mocks",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "screenshots": "msw init mocks/public --save=false && playwright test"
+  },
+  "dependencies": {
+    "@ogcloud/api-client": "workspace:*",
+    "@ogcloud/auth": "workspace:*",
+    "@ogcloud/i18n": "workspace:*",
+    "@ogcloud/tokens": "workspace:*",
+    "@ogcloud/ui": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "cmdk": "catalog:",
+    "i18next": "catalog:",
+    "lucide-react": "catalog:",
+    "motion": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "catalog:",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "msw": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

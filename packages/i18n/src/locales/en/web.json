@@ -1,0 +1,81 @@
+{
+  "alerts": {
+    "crashLoopPaused": "{{subject}} is paused after repeated failed starts",
+    "other": "{{kind}} on {{subject}}"
+  },
+  "errors": {
+    "back": "Back to the overview",
+    "generic": "Something went wrong: {{detail}}",
+    "notFound": "There is no page here."
+  },
+  "link": {
+    "code": "Code from the game",
+    "confirm": "Link account",
+    "description": "This network lets only players with a linked Minecraft account use the dashboard. Join the network, then enter your player name.",
+    "noAccess": "Your role gives you no access to this network's dashboard. Ask an owner for one.",
+    "noAccessTitle": "No access yet",
+    "offline": "{{name}} is not online. Join the network first, then send the code again.",
+    "playerName": "Player name",
+    "send": "Send a code",
+    "sent": "A code is waiting for {{name}} in the game's chat.",
+    "taken": "That player is linked to another user.",
+    "title": "Link your Minecraft account",
+    "wrongCode": "That code is wrong or has expired. Send a new one."
+  },
+  "nav": {
+    "activity": "Activity",
+    "administration": "Administration",
+    "clients": "OAuth clients",
+    "collapse": "Collapse the sidebar",
+    "expand": "Expand the sidebar",
+    "groups": "Groups",
+    "network": "Network",
+    "npcs": "NPCs",
+    "overview": "Overview",
+    "permissions": "Permissions",
+    "players": "Players",
+    "privacy": "Privacy",
+    "roles": "Roles",
+    "servers": "Servers",
+    "users": "Users"
+  },
+  "pages": {
+    "account": "Account",
+    "placeholder": "This page is being built."
+  },
+  "palette": {
+    "groups": "Groups",
+    "noResults": "Nothing matches",
+    "pages": "Pages",
+    "placeholder": "Search or go to a page",
+    "players": "Players",
+    "servers": "Servers"
+  },
+  "shell": {
+    "account": "Account settings",
+    "density": {
+      "comfortable": "Comfortable",
+      "compact": "Compact",
+      "label": "Density"
+    },
+    "live": {
+      "connected": "Live",
+      "connecting": "Connecting",
+      "reconnecting": "Reconnecting"
+    },
+    "search": "Search servers, players and groups",
+    "signOut": "Sign out",
+    "signOutFailed": "Signing out failed. Try again.",
+    "theme": {
+      "dark": "Dark",
+      "label": "Theme",
+      "light": "Light",
+      "system": "System"
+    }
+  },
+  "signIn": {
+    "failed": "Signing in did not finish: {{detail}}",
+    "retry": "Sign in again",
+    "redirecting": "Taking you to sign in"
+  }
+}
