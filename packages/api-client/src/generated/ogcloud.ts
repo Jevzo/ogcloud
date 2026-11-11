@@ -13,6 +13,7 @@ import type {
   CreatePermissionGroupRequest,
   CreateRoleRequest,
   CreateUserRequest,
+  CurrentPasswordRequest,
   DeletedGroupView,
   EventStreamParams,
   EventTicket,
@@ -44,7 +45,6 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
-  PasskeyRemoval,
   PasskeyRename,
   PasskeyView,
   PasswordRequest,
@@ -883,7 +883,7 @@ export const getMeRemovePasskeyUrl = (id: string,) => {
 }
 
 export const meRemovePasskey = async (id: string,
-    passkeyRemoval: PasskeyRemoval, options?: Parameters<typeof request>[1]): Promise<meRemovePasskeyResponse> => {
+    currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<typeof request>[1]): Promise<meRemovePasskeyResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -904,7 +904,7 @@ return request<meRemovePasskeyResponse>(getMeRemovePasskeyUrl(id),
     ...options,
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(passkeyRemoval)
+    body: JSON.stringify(currentPasswordRequest)
   }
 );}
 
@@ -2175,14 +2175,28 @@ export const getMeStartTotpUrl = () => {
   return `/api/v1/me/totp`
 }
 
-export const meStartTotp = async ( options?: Parameters<typeof request>[1]): Promise<meStartTotpResponse> => {
+export const meStartTotp = async (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<typeof request>[1]): Promise<meStartTotpResponse> => {
 
-  return request<meStartTotpResponse>(getMeStartTotpUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return request<meStartTotpResponse>(getMeStartTotpUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(currentPasswordRequest)
   }
 );}
 

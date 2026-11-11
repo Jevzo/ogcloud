@@ -28,7 +28,7 @@ import {
   Smartphone,
   Trash2,
 } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog } from "../../action-dialog.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
@@ -156,51 +156,68 @@ function useCodeDialog(
   return { code, setCode, close, finish };
 }
 
-/** Starts an authenticator for the user: a QR code and its secret, confirmed with a first code. */
+/**
+ * Starts an authenticator for the user: the current password first (D-0224), then a QR code and its secret, confirmed
+ * with a first code.
+ */
 function TotpSetupDialog({ open, onClose }: CodeDialogProps) {
   const { t } = useTranslation("web");
   const failed = useFailureToast();
+  const [password, setPassword] = useState("");
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
-  const forget = useCallback(() => setEnrollment(null), []);
+  const forget = useCallback(() => {
+    setPassword("");
+    setEnrollment(null);
+  }, []);
   const { code, setCode, close, finish } = useCodeDialog(onClose, forget);
   const start = useMeStartTotp();
   const confirm = useMeConfirmTotp();
-  const { mutate: begin } = start;
-  // Each opening asks the API for a new secret; nothing is enrolled until a code confirms it.
-  useEffect(() => {
-    if (!open) return;
-    begin(undefined, {
-      onSuccess: (answer) => setEnrollment(answer.data),
-      onError: (error) => {
-        failed(error);
-        close();
+  // Each start makes a new secret; nothing is enrolled until a code confirms it.
+  const begin = () =>
+    start.mutate(
+      { data: { password } },
+      {
+        onSuccess: (answer) => {
+          setPassword("");
+          setEnrollment(answer.data);
+        },
+        onError: failed,
       },
-    });
-  }, [open, begin, failed, close]);
+    );
+  const confirmCode = () =>
+    confirm.mutate(
+      { data: { code } },
+      {
+        onSuccess: () => finish(t("account.totp.added")),
+        onError: failed,
+      },
+    );
   return (
     <ActionDialog
       open={open}
       onOpenChange={(next) => (next ? undefined : close())}
       title={t("account.totp.setUpTitle")}
-      description={t("account.totp.setUpDescription")}
-      submitLabel={t("account.totp.confirm")}
-      disabled={code.length !== CODE_LENGTH || enrollment === null}
-      busy={confirm.isPending}
-      onSubmit={() =>
-        confirm.mutate(
-          { data: { code } },
-          {
-            onSuccess: () => finish(t("account.totp.added")),
-            onError: failed,
-          },
-        )
+      description={
+        enrollment === null
+          ? t("account.totp.passwordDescription")
+          : t("account.totp.setUpDescription")
       }
+      submitLabel={
+        enrollment === null
+          ? t("account.totp.continue")
+          : t("account.totp.confirm")
+      }
+      disabled={
+        enrollment === null ? password === "" : code.length !== CODE_LENGTH
+      }
+      busy={enrollment === null ? start.isPending : confirm.isPending}
+      onSubmit={enrollment === null ? begin : confirmCode}
     >
       {enrollment === null ? (
-        <div aria-busy="true" className="h-56" />
+        <CurrentPasswordField value={password} onChange={setPassword} />
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="self-center rounded-control bg-white p-3">
+          <div className="self-center rounded-control bg-qr-ground p-3">
             <QrCode value={enrollment.uri} label={t("account.totp.scan")} />
           </div>
           <CopyField
@@ -215,6 +232,30 @@ function TotpSetupDialog({ open, onClose }: CodeDialogProps) {
         </div>
       )}
     </ActionDialog>
+  );
+}
+
+/** The caller's current password, which changes to their second factors need (D-0217, D-0224). */
+function CurrentPasswordField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const { t } = useTranslation("web");
+  return (
+    <Field label={t("account.password.current")}>
+      {(control) => (
+        <Input
+          {...control}
+          type="password"
+          autoComplete="current-password"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      )}
+    </Field>
   );
 }
 
@@ -432,17 +473,7 @@ function RemovePasskeyDialog({
             )
       }
     >
-      <Field label={t("account.password.current")}>
-        {(control) => (
-          <Input
-            {...control}
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        )}
-      </Field>
+      <CurrentPasswordField value={password} onChange={setPassword} />
     </ActionDialog>
   );
 }

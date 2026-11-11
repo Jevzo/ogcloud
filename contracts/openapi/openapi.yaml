@@ -374,7 +374,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PasskeyRemoval"
+              $ref: "#/components/schemas/CurrentPasswordRequest"
         required: true
       responses:
         "204":
@@ -935,6 +935,12 @@ paths:
       tags:
       - me-controller
       operationId: meStartTotp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CurrentPasswordRequest"
+        required: true
       responses:
         "200":
           description: OK
@@ -2600,6 +2606,13 @@ components:
       - clientSecret
       - name
       - scopes
+    CurrentPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+      - password
     TotpEnrollment:
       type: object
       properties:
@@ -3477,10 +3490,3 @@ components:
       - kind
       - severity
       - subjectId
-    PasskeyRemoval:
-      type: object
-      properties:
-        password:
-          type: string
-      required:
-      - password

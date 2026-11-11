@@ -20,6 +20,7 @@ export * from './createGroupRequestType.ts';
 export * from './createPermissionGroupRequest.ts';
 export * from './createRoleRequest.ts';
 export * from './createUserRequest.ts';
+export * from './currentPasswordRequest.ts';
 export * from './deletedGroupView.ts';
 export * from './eventStreamParams.ts';
 export * from './eventTicket.ts';

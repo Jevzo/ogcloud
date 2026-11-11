@@ -539,6 +539,10 @@ export const NetworkRotateForwardingTokenResponse = zod.void()
 export const NetworkAcceptEulaResponse = zod.unknown()
 
 
+export const MeStartTotpBody = zod.object({
+  "password": zod.string()
+})
+
 export const MeStartTotpResponse = zod.unknown()
 
 

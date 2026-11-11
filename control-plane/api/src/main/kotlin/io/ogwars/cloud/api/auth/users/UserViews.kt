@@ -83,10 +83,11 @@ data class PasskeyRename(
     val label: String,
 )
 
-data class PasskeyRemoval(
+/** The caller's current password, which a change to their second factors needs (D-0217, D-0224). */
+data class CurrentPasswordRequest(
     val password: String,
 ) {
-    override fun toString() = "PasskeyRemoval(password=$REDACTED)"
+    override fun toString() = "CurrentPasswordRequest(password=$REDACTED)"
 }
 
 /** One of the caller's sign-ins; [current] marks the one whose token made this request (D-0221). */

@@ -27,6 +27,7 @@ import type {
   CreatePermissionGroupRequest,
   CreateRoleRequest,
   CreateUserRequest,
+  CurrentPasswordRequest,
   DeletedGroupView,
   EventTicket,
   GroupView,
@@ -53,7 +54,6 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
-  PasskeyRemoval,
   PasskeyRename,
   PasskeyView,
   PasswordRequest,
@@ -526,8 +526,8 @@ export const getMeRenamePasskeyMockHandler = (overrideResponse?: PasskeyView | (
   }, options)
 }
 
-export const getMeRemovePasskeyMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRemoval>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete<{ id: string }, PasskeyRemoval>('*/api/v1/me/passkeys/:id', async (info: Parameters<HttpResponseResolver<{ id: string }, PasskeyRemoval>>[0]) => {
+export const getMeRemovePasskeyMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ id: string }, CurrentPasswordRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ id: string }, CurrentPasswordRequest>('*/api/v1/me/passkeys/:id', async (info: Parameters<HttpResponseResolver<{ id: string }, CurrentPasswordRequest>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -894,8 +894,8 @@ export const getNetworkAcceptEulaMockHandler = (overrideResponse?: NetworkSettin
   }, options)
 }
 
-export const getMeStartTotpMockHandler = (overrideResponse?: TotpEnrollment | ((info: Parameters<HttpResponseResolver>[0]) => Promise<TotpEnrollment> | TotpEnrollment), options?: RequestHandlerOptions) => {
-  return http.post('*/api/v1/me/totp', async (info: Parameters<HttpResponseResolver>[0]) => {
+export const getMeStartTotpMockHandler = (overrideResponse?: TotpEnrollment | ((info: Parameters<HttpResponseResolver<PathParams, CurrentPasswordRequest>>[0]) => Promise<TotpEnrollment> | TotpEnrollment), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, CurrentPasswordRequest>('*/api/v1/me/totp', async (info: Parameters<HttpResponseResolver<PathParams, CurrentPasswordRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

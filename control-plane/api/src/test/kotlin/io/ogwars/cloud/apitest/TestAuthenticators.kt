@@ -16,7 +16,7 @@ class TestAuthenticators(
     /** Enrols one for [user], checking a wrong first code is refused, and returns its secret. */
     fun enroll(user: WebUser): ByteArray {
         val token = users.token(user)
-        val enrollment = oauth.json(oauth.call("POST", "$ME/totp", token))
+        val enrollment = oauth.json(oauth.call("POST", "$ME/totp", token, mapOf("password" to TestUsers.PASSWORD)))
         val secret = Base32.decode(enrollment["secret"] as String)
         oauth.call("POST", "$ME/totp/confirm", token, mapOf("code" to "000000")).statusCode() shouldBe BAD_REQUEST
         val current = totp.code(secret, totp.step(Instant.now()))

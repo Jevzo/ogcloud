@@ -4,6 +4,7 @@ import io.ogwars.cloud.api.auth.FirstPartyClients
 import io.ogwars.cloud.apitest.ApiTest
 import io.ogwars.cloud.apitest.OAuthHttp
 import io.ogwars.cloud.apitest.TEST_ISSUER
+import io.ogwars.cloud.apitest.TestAuthenticators
 import io.ogwars.cloud.apitest.TestPasskeys
 import io.ogwars.cloud.apitest.TestUsers
 import io.ogwars.cloud.domain.audit.Actor
@@ -61,6 +62,7 @@ class PrivacyTest(
 ) {
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
+    private val authenticators = TestAuthenticators(oauth, testUsers)
     private val passkeys = TestPasskeys(entities, credentials)
     private val owner = testUsers.token(testUsers.create(BuiltInRole.OWNER.id))
 
@@ -109,7 +111,7 @@ class PrivacyTest(
         audit.append(AuditEntry(UUID.randomUUID(), Instant.now(), actor, "POST /x", "x", "lobby"))
         jobs.create(job(actor))
         val login = signIn(user)
-        enrollTotp(user)
+        authenticators.enroll(user)
         val passkeyEntity = passkeys.register(user.id)
 
         val export = oauth.json(oauth.call("GET", "$USERS/${user.id}", owner))
@@ -152,13 +154,6 @@ class PrivacyTest(
         val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
         val callback = oauth.authorize(FirstPartyClients.WEB, WEB_REDIRECT, user.username, TestUsers.PASSWORD, verifier)
         return oauth.exchange(FirstPartyClients.WEB, oauth.codeFrom(callback), WEB_REDIRECT, verifier)
-    }
-
-    private fun enrollTotp(user: WebUser) {
-        val token = testUsers.token(user)
-        val secret = Base32.decode(oauth.json(oauth.call("POST", "/api/v1/me/totp", token))["secret"] as String)
-        val code = Totp().let { it.code(secret, it.step(Instant.now())) }
-        oauth.call("POST", "/api/v1/me/totp/confirm", token, mapOf("code" to code)).statusCode() shouldBe NO_CONTENT
     }
 
     /** Rows anywhere a person's data could be that still contain [id]. */

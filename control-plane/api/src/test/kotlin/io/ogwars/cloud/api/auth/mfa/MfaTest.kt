@@ -163,12 +163,24 @@ class MfaTest(
     }
 
     @Test
+    fun `starting an authenticator needs the current password`() {
+        val user = testUsers.create()
+        val token = testUsers.token(user)
+
+        oauth.call("POST", "$ME/totp", token).statusCode() shouldBe BAD_REQUEST
+        oauth.call("POST", "$ME/totp", token, mapOf("password" to "not the password")).statusCode() shouldBe
+            BAD_REQUEST
+        oauth.json(oauth.call("GET", ME, token))["totpEnabled"] shouldBe false
+        oauth.call("POST", "$ME/totp", token, password()).statusCode() shouldBe OK
+    }
+
+    @Test
     fun `an enrolled authenticator is not replaced`() {
         val user = testUsers.create()
         authenticators.enroll(user)
         val token = testUsers.token(user)
 
-        oauth.call("POST", "$ME/totp", token).statusCode() shouldBe CONFLICT
+        oauth.call("POST", "$ME/totp", token, password()).statusCode() shouldBe CONFLICT
         oauth.json(oauth.call("GET", ME, token))["totpEnabled"] shouldBe true
     }
 
@@ -179,6 +191,8 @@ class MfaTest(
         options.statusCode() shouldBe OK
         oauth.json(options)["rpId"] shouldBe "ogcloud.test"
     }
+
+    private fun password() = mapOf("password" to TestUsers.PASSWORD)
 
     private val verifier = "verifier-${UUID.randomUUID()}-${UUID.randomUUID()}"
 

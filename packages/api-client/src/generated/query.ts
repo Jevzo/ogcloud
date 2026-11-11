@@ -32,6 +32,7 @@ import type {
   CreatePermissionGroupRequest,
   CreateRoleRequest,
   CreateUserRequest,
+  CurrentPasswordRequest,
   DeletedGroupView,
   EventStreamParams,
   EventTicket,
@@ -63,7 +64,6 @@ import type {
   PagePlayerView,
   PageScalingLogView,
   PageUserView,
-  PasskeyRemoval,
   PasskeyRename,
   PasskeyView,
   PasswordRequest,
@@ -2023,7 +2023,7 @@ export const getMeRemovePasskeyUrl = (id: string,) => {
 }
 
 export const useMeRemovePasskeyHook = (): (id: string,
-    passkeyRemoval: PasskeyRemoval, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRemovePasskeyResponse> => {
+    currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRemovePasskeyResponse> => {
       const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
     if (h instanceof Headers) return Object.fromEntries(h.entries());
@@ -2041,14 +2041,14 @@ export const useMeRemovePasskeyHook = (): (id: string,
 
       const customFetcher = useApiRequest();
       return (id: string,
-    passkeyRemoval: PasskeyRemoval, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+    currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
 
         return customFetcher(getMeRemovePasskeyUrl(id),
   {
     ...options,
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(passkeyRemoval)
+    body: JSON.stringify(currentPasswordRequest)
   }
 );
       }
@@ -2088,9 +2088,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MeRemovePasskeyMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>>
-    export type MeRemovePasskeyMutationBody = PasskeyRemoval
+    export type MeRemovePasskeyMutationBody = CurrentPasswordRequest
     export type MeRemovePasskeyMutationError = unknown
-    export type MeRemovePasskeyMutationVariables = {id: string;data: PasskeyRemoval}
+    export type MeRemovePasskeyMutationVariables = {id: string;data: CurrentPasswordRequest}
 
     export const useMeRemovePasskey = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeRemovePasskeyHook>>>, TError,MeRemovePasskeyMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
@@ -5193,17 +5193,31 @@ export const getMeStartTotpUrl = () => {
   return `/api/v1/me/totp`
 }
 
-export const useMeStartTotpHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meStartTotpResponse> => {
+export const useMeStartTotpHook = (): (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meStartTotpResponse> => {
+      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
 
       const customFetcher = useApiRequest();
-      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+      return (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
 
         return customFetcher(getMeStartTotpUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(currentPasswordRequest)
   }
 );
       }
@@ -5216,8 +5230,8 @@ export const useMeStartTotpHook = (): ( options?: Parameters<ReturnType<typeof u
 export const getMeStartTotpMutationKey = () => ['meStartTotp'] as const;
 
 export const useMeStartTotpMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,void, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
-): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,MeStartTotpMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,MeStartTotpMutationVariables, TContext> => {
 
 const mutationKey = getMeStartTotpMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -5229,10 +5243,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       const meStartTotp =  useMeStartTotpHook()
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, MeStartTotpMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  meStartTotp(requestOptions)
+          return  meStartTotp(data,requestOptions)
         }
 
 
@@ -5243,16 +5257,16 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type MeStartTotpMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>>
-
+    export type MeStartTotpMutationBody = CurrentPasswordRequest
     export type MeStartTotpMutationError = unknown
-
+    export type MeStartTotpMutationVariables = {data: CurrentPasswordRequest}
 
     export const useMeStartTotp = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,void, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>, TError,MeStartTotpMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<ReturnType<typeof useMeStartTotpHook>>>,
         TError,
-        void,
+        MeStartTotpMutationVariables,
         TContext
       > => {
       return useMutation(useMeStartTotpMutationOptions(options), queryClient);

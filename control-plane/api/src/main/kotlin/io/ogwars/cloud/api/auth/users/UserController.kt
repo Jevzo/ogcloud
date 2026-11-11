@@ -176,10 +176,12 @@ class MeController(
         links.unlink(actor, users.self(actor).id)
     }
 
-    /** Starts adding an authenticator app; confirm it with a first code (D-0097). */
+    /** Starts adding an authenticator app with the current password (D-0224); confirm it with a first code (D-0097). */
     @AnyCaller
     @PostMapping("/totp")
-    fun startTotp(): TotpEnrollment = totp.startEnrollment(users.self(actors.current()))
+    fun startTotp(
+        @RequestBody request: CurrentPasswordRequest,
+    ): TotpEnrollment = totp.startEnrollment(users.withOwnPassword(actors.current(), request.password))
 
     @AnyCaller
     @PostMapping("/totp/confirm")
@@ -213,7 +215,7 @@ class MeController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun removePasskey(
         @PathVariable id: String,
-        @RequestBody request: PasskeyRemoval,
+        @RequestBody request: CurrentPasswordRequest,
     ) = passkeys.remove(actors.current(), id, request.password)
 
     @AnyCaller
