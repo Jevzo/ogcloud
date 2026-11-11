@@ -26,7 +26,8 @@ begin
                      ('f', '<reset><white>'), ('k', '<obfuscated>'), ('l', '<bold>'), ('m', '<strikethrough>'),
                      ('n', '<underlined>'), ('o', '<italic>'), ('r', '<reset>')) as codes (letter, tag)
         loop
-            result := regexp_replace(result, '&' || code.letter, code.tag, 'gi');
+            -- Legacy codes typed straight as § convert too, since saves now refuse '§' (D-0206).
+            result := regexp_replace(result, '[&§]' || code.letter, code.tag, 'gi');
         end loop;
     -- Only generated resets merge; an escaped literal \<reset> from the source stays as it was.
     result := regexp_replace(result, '(?<!\\)(<reset>)+', '<reset>', 'g');

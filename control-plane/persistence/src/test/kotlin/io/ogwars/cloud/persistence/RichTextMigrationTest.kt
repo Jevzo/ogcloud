@@ -44,7 +44,7 @@ class RichTextMigrationTest {
                 .sql(
                     """
                     insert into npcs (id, group_id, world, x, y, z, title, subtitle)
-                    values (gen_random_uuid(), 'lobby', 'world', 0, 0, 0, '&eBedWars', '&7%players% players on %servers%')
+                    values (gen_random_uuid(), 'lobby', 'world', 0, 0, 0, '§eBedWars', '&7%players% players on %servers%')
                     """.trimIndent(),
                 ).update()
 
