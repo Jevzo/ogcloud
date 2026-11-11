@@ -1,4 +1,3 @@
-import { useOverviewGet } from "@ogcloud/api-client/react";
 import type { RowActions } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRightLeft, ArrowUpRight, Crown, LogOut } from "lucide-react";
@@ -6,6 +5,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
+import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { KickDialog } from "./kick-dialog.tsx";
 import { RankDialog } from "./rank-dialog.tsx";
 import { TransferDialog } from "./transfer-dialog.tsx";
@@ -30,10 +30,7 @@ export function usePlayerActions(): {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
   const canWrite = useCan("players:write");
-  const overview = useOverviewGet();
-  const groupIds = (overview.data?.data.groups ?? [])
-    .filter((group) => group.type !== "PROXY")
-    .map((group) => group.id);
+  const groupIds = useBackendGroupIds();
   const pending = usePendingAction<PlayerAction, PlayerRef>();
 
   const actionsFor = (player: PlayerRef): RowActions => {

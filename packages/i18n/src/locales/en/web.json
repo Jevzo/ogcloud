@@ -7,6 +7,7 @@
     "other": "{{kind}} on {{subject}}"
   },
   "editing": {
+    "cancel": "Cancel",
     "leave": "Leave without saving",
     "leaveDescription_one": "Your change is lost if you leave now.",
     "leaveDescription_other": "Your {{count}} changes are lost if you leave now.",
@@ -61,7 +62,6 @@
       "restartTitle": "Restart {{id}}?"
     },
     "create": {
-      "cancel": "Cancel",
       "description": "Name the group and pick what it runs; everything else starts from defaults you can change.",
       "done": "Created {{id}}",
       "submit": "Create group",
@@ -266,6 +266,71 @@
       "version": "Version"
     },
     "typed": "network"
+  },
+  "npcs": {
+    "columns": {
+      "click": "On click",
+      "group": "Group",
+      "location": "Where",
+      "title": "NPC"
+    },
+    "create": {
+      "description": "Usually NPCs are placed in game with /ogcloud npc; here you set the place by its coordinates.",
+      "done": "NPC created",
+      "submit": "Create NPC",
+      "title": "Create NPC"
+    },
+    "delete": {
+      "action": "Delete NPC",
+      "description": "It disappears from every server of its group for good.",
+      "done": "NPC deleted",
+      "title": "Delete this NPC?"
+    },
+    "description": "Characters that stand on every server of their group and move players who click them.",
+    "detail": {
+      "back": "Back to the NPCs",
+      "description": "Stands in {{world}}",
+      "failed": "This NPC could not be loaded",
+      "gone": "This NPC does not exist",
+      "goneDescription": "It may have been deleted here or in game.",
+      "id": "NPC id",
+      "identity": "Identity",
+      "title": "NPC in {{group}}"
+    },
+    "empty": "No NPCs yet",
+    "emptyDescription": "Place one in game with /ogcloud npc create, or create one here.",
+    "form": {
+      "clicks": "Clicks",
+      "clicksHint": "A click can move the player to another group, placed by a routing strategy.",
+      "group": "Group",
+      "groupHint": "The NPC stands on every server of this group.",
+      "leftClick": "Left click",
+      "location": "Location",
+      "look": "Look",
+      "lookAt": "Look at nearby players",
+      "lookAtHint": "The NPC turns its head toward the closest player.",
+      "moveTo": "Move to {{group}}",
+      "networkStrategy": "Network's strategy",
+      "nothing": "Nothing",
+      "pitch": "Pitch",
+      "rightClick": "Right click",
+      "skinHint": "The texture value of a signed skin; empty uses the default model.",
+      "skinSignature": "Skin signature",
+      "skinTexture": "Skin texture",
+      "strategy": "Placed by",
+      "subtitle": "Subtitle",
+      "subtitleHint": "{players} and {servers} show the target group's live counts.",
+      "title": "Title",
+      "world": "World",
+      "x": "X",
+      "y": "Y",
+      "yaw": "Yaw",
+      "z": "Z"
+    },
+    "look": {
+      "over": "Over the NPC"
+    },
+    "open": "Open"
   },
   "overview": {
     "endMaintenance": "End maintenance",

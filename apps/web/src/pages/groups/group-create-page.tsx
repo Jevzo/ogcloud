@@ -6,18 +6,13 @@ import {
   useRuntimeList,
 } from "@ogcloud/api-client/react";
 import { GroupCreateBody } from "@ogcloud/api-client/zod";
-import {
-  Button,
-  Card,
-  Field,
-  PageHeader,
-  Segmented,
-  useToast,
-} from "@ogcloud/ui";
+import { Card, Field, PageHeader, Segmented, useToast } from "@ogcloud/ui";
+import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { CreateActions } from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useAppForm } from "../../form.tsx";
 import { invalidatePaths } from "../../queries.ts";
@@ -63,6 +58,7 @@ export function GroupCreatePage() {
         });
       }, failed),
   });
+  const submitting = useStore(form.store, (state) => state.isSubmitting);
 
   // The runtime list arrives after the form; pick the type's profile once it does.
   useEffect(() => {
@@ -136,21 +132,11 @@ export function GroupCreatePage() {
           />
         )}
       </form.Subscribe>
-      <div className="flex justify-end gap-2">
-        <Button
-          kind="secondary"
-          onClick={() => void navigate({ to: "/groups" })}
-        >
-          {t("groups.create.cancel")}
-        </Button>
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(submitting) => (
-            <Button kind="primary" type="submit" loading={submitting}>
-              {t("groups.create.submit")}
-            </Button>
-          )}
-        </form.Subscribe>
-      </div>
+      <CreateActions
+        onCancel={() => void navigate({ to: "/groups" })}
+        submitLabel={t("groups.create.submit")}
+        submitting={submitting}
+      />
     </form>
   );
 }

@@ -11,6 +11,9 @@ import { GroupPage } from "./pages/groups/group-page.tsx";
 import { GroupsPage } from "./pages/groups/groups-page.tsx";
 import { NetworkPage } from "./pages/network/network-page.tsx";
 import { NotFound } from "./pages/not-found.tsx";
+import { NpcCreatePage } from "./pages/npcs/npc-create-page.tsx";
+import { NpcPage } from "./pages/npcs/npc-page.tsx";
+import { NpcsPage } from "./pages/npcs/npcs-page.tsx";
 import { OverviewPage } from "./pages/overview/overview-page.tsx";
 import { PermissionGroupPage } from "./pages/permissions/permission-group-page.tsx";
 import { PermissionGroupsPage } from "./pages/permissions/permission-groups-page.tsx";
@@ -97,7 +100,17 @@ const network = createRoute({
 const npcs = createRoute({
   getParentRoute: () => app,
   path: "/npcs",
-  component: () => <Placeholder label="npcs" />,
+  component: NpcsPage,
+});
+const npcCreate = createRoute({
+  getParentRoute: () => app,
+  path: "/npcs/new",
+  component: NpcCreatePage,
+});
+const npc = createRoute({
+  getParentRoute: () => app,
+  path: "/npcs/$npcId",
+  component: NpcPage,
 });
 const activity = createRoute({
   getParentRoute: () => app,
@@ -145,6 +158,8 @@ const routeTree = root.addChildren([
     permissionGroup,
     network,
     npcs,
+    npcCreate,
+    npc,
     activity,
     users,
     roles,

@@ -4,6 +4,7 @@ import type {
   LoadHistoryView,
   MeView,
   NetworkSettingsView,
+  NpcView,
   OnlinePlayerView,
   OverviewView,
   PermissionGroupView,
@@ -644,4 +645,43 @@ export function templatesOf(groupId: string): TemplateVersionView[] {
     version(2, 60 * 26, "UPLOAD", false),
     version(1, 60 * 24 * 9, "UPLOAD", false),
   ];
+}
+
+const npc = (
+  n: number,
+  title: string,
+  subtitle: string,
+  x: number,
+  target: string | null,
+): NpcView => ({
+  id: `0195b1d2-7c4e-7a10-9f3e-0000000a${n.toString().padStart(4, "0")}`,
+  settings: {
+    groupId: "lobby",
+    location: { world: "world", x, y: 64, z: 12.5, yaw: 180, pitch: 0 },
+    title,
+    subtitle,
+    skin: null,
+    lookAtPlayers: true,
+    leftClick: null,
+    rightClick: target === null ? null : { groupId: target },
+  },
+});
+
+export const npcs: NpcView[] = [
+  npc(1, "<gold><bold>Bedwars", "<gray>{players} playing", -6.5, "bedwars"),
+  npc(2, "<aqua><bold>SkyWars", "<gray>{players} playing", 0.5, "skywars"),
+  npc(
+    3,
+    "<gradient:#55ff55:#ffff55>SMP",
+    "<gray>Survival, together",
+    7.5,
+    "smp",
+  ),
+];
+
+/** An NPC by id; unknown ids get the first one. */
+export function npcById(id: string): NpcView {
+  const found = npcs.find((candidate) => candidate.id === id) ?? npcs[0];
+  if (found === undefined) throw new Error("The NPC fixture is empty");
+  return found;
 }

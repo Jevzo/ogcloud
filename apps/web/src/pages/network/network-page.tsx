@@ -43,16 +43,12 @@ import { MoreMenu } from "../../more-menu.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
 import { useTextValidator } from "../../texts.ts";
+import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { useNetworkMaintenance } from "./network-actions.ts";
 import { NetworkLook } from "./network-look.tsx";
+import { ROUTING_STRATEGIES } from "./routing.ts";
 import { RuntimeCard } from "./runtime-card.tsx";
 
-const ROUTING = [
-  "BALANCED",
-  "LEAST_FILLED",
-  "MOST_FILLED",
-  "ROUND_ROBIN",
-] as const;
 const OWNER = "owner";
 // Maintenance has its own action in the header, so the form leaves it out.
 const SettingsForm = contractSchema<{ settings: NetworkSettingsFields }>(
@@ -113,9 +109,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
     tablistHeader: useTextValidator("TABLIST_HEADER"),
     tablistFooter: useTextValidator("TABLIST_FOOTER"),
   };
-  const groupIds = (overview.data?.data.groups ?? [])
-    .filter((group) => group.type !== "PROXY")
-    .map((group) => group.id);
+  const groupIds = useBackendGroupIds();
 
   const { form, changes, saving } = useSettingsForm({
     settings: view.settings,
@@ -375,7 +369,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
                   <field.SelectField
                     label={t("network.form.routing")}
                     hint={t(`network.routing.${field.state.value}`)}
-                    options={ROUTING.map((strategy) => ({
+                    options={ROUTING_STRATEGIES.map((strategy) => ({
                       value: strategy,
                       label: t(`network.routing.names.${strategy}`),
                     }))}

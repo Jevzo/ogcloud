@@ -1,5 +1,5 @@
 import { ApiError } from "@ogcloud/api-client";
-import { ConfirmDialog, SaveBar, useToast } from "@ogcloud/ui";
+import { Button, ConfirmDialog, SaveBar, useToast } from "@ogcloud/ui";
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useBlocker } from "@tanstack/react-router";
 import { type ReactNode, useCallback } from "react";
@@ -130,6 +130,29 @@ export function EditorForm({
         ) : null}
       </form>
       <div className="sticky top-16 flex min-w-0 flex-col gap-4">{aside}</div>
+    </div>
+  );
+}
+
+/** A create page's actions at the end of its form: Cancel, then the action itself, last (D-0210). */
+export function CreateActions({
+  onCancel,
+  submitLabel,
+  submitting,
+}: {
+  onCancel: () => void;
+  submitLabel: string;
+  submitting: boolean;
+}) {
+  const { t } = useTranslation("web");
+  return (
+    <div className="flex justify-end gap-2">
+      <Button kind="secondary" onClick={onCancel}>
+        {t("editing.cancel")}
+      </Button>
+      <Button kind="primary" type="submit" loading={submitting}>
+        {submitLabel}
+      </Button>
     </div>
   );
 }

@@ -9,7 +9,6 @@ import {
   Meter,
   PageHeader,
   Segmented,
-  Select,
 } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
 import { Plus, Server, SquareTerminal } from "lucide-react";
@@ -17,6 +16,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { useFormat } from "../../format.ts";
+import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { CommandDialog } from "./command-dialog.tsx";
 import { RequestServerDialog } from "./request-server-dialog.tsx";
 import { useServerActions } from "./server-actions.tsx";
@@ -31,8 +31,6 @@ const PHASES = {
   draining: ["DRAINING", "STOPPING"],
 } as const satisfies Record<string, readonly ServerViewState[]>;
 type Phase = keyof typeof PHASES;
-// No group id can be "*" (they are DNS labels), so it stands for every group.
-const ALL_GROUPS = "*";
 
 const columns = columnsFor<ServerView>();
 
@@ -150,13 +148,8 @@ export function ServersPage() {
           value={phase}
           onValueChange={setPhase}
         />
-        <Select
-          className="w-48"
-          aria-describedby={undefined}
-          options={[
-            { value: ALL_GROUPS, label: t("servers.filters.allGroups") },
-            ...groupIds.map((id) => ({ value: id, label: id })),
-          ]}
+        <GroupFilter
+          groupIds={groupIds}
           value={group}
           onValueChange={setGroup}
         />

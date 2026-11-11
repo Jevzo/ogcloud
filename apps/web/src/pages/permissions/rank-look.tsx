@@ -2,8 +2,6 @@ import type { RankDisplayView, TextPreview } from "@ogcloud/api-client";
 import {
   ChatPreview,
   type GameSpan,
-  GameText,
-  gameLook,
   minecraftColours,
   NametagPreview,
   PreviewFrame,
@@ -12,6 +10,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Client, ClientSwitch } from "../../client-switch.tsx";
+import { GameChip } from "../../game-chip.tsx";
 import { useTextPreview } from "../../texts.ts";
 
 /** A rank's texts as the API draws them for one kind of client (D-0202); invalid texts draw as nothing. */
@@ -65,18 +64,8 @@ export function RankLook({ display }: { display: RankDisplayView }) {
   );
 }
 
-/** A rank's chat prefix and name in one line, small, on the chat's dark backdrop, for tables. */
+/** A rank's chat prefix and name in one line, small, for tables. */
 export function RankChip({ display }: { display: RankDisplayView }) {
   const spans = useRankSpans(display, "modern");
-  return (
-    <span
-      className="inline-block rounded-[3px] px-1.5 py-0.5 font-game text-[13px] leading-[18px] whitespace-pre"
-      style={{ backgroundColor: gameLook.panel }}
-    >
-      <GameText
-        spans={[...spans.prefix, ...spans.name]}
-        defaultColour={gameLook.text}
-      />
-    </span>
-  );
+  return <GameChip spans={[...spans.prefix, ...spans.name]} />;
 }

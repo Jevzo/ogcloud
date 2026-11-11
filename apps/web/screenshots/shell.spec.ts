@@ -21,6 +21,8 @@ const PAGES = [
   "/permissions",
   "/permissions/owner",
   "/network",
+  "/npcs",
+  "/npcs/0195b1d2-7c4e-7a10-9f3e-0000000a0001",
   "/users",
 ] as const;
 
@@ -52,7 +54,9 @@ const slug = (path: string) =>
       ? "server"
       : path.startsWith("/players/")
         ? "player"
-        : path.slice(1).replaceAll("/", "-");
+        : path.startsWith("/npcs/")
+          ? "npc"
+          : path.slice(1).replaceAll("/", "-");
 
 for (const theme of THEMES) {
   for (const viewport of VIEWPORTS) {
