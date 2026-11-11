@@ -174,6 +174,37 @@ for (const theme of THEMES) {
     await page.screenshot({ path: `${OUT}users-create-${theme}.png` });
   });
 
+  test(`setup wizard, ${theme}`, async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS[0]);
+    await page.addInitScript(
+      (chosen) =>
+        localStorage.setItem(
+          "ogcloud.preferences",
+          JSON.stringify({ theme: chosen, density: "compact" }),
+        ),
+      theme,
+    );
+    await page.goto("/setup");
+    await page.getByLabel("Setup token", { exact: true }).waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    await page.screenshot({ path: `${OUT}setup-token-${theme}.png` });
+    await page
+      .getByLabel("Setup token", { exact: true })
+      .fill("Hk3x9QmZ0tLw7pVb2nRc5sYd8fJg1aE4");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByLabel("Username").fill("mira");
+    await page.getByLabel("Email").fill("mira@ogwars.io");
+    await page.screenshot({ path: `${OUT}setup-owner-${theme}.png` });
+    await page.goto("/welcome?eulaPending");
+    await page.getByRole("checkbox").waitFor();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${OUT}setup-eula-${theme}.png` });
+    await page.goto("/welcome");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}setup-groups-${theme}.png` });
+  });
+
   test(`activity, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, "/activity", theme);

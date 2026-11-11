@@ -12,11 +12,13 @@ export async function uploadWithProgress<T>(
   contentType: string,
   onProgress: (sent: number, total: number) => void,
 ): Promise<T> {
-  const token = await connection.accessToken();
+  const headers = await authorization(connection);
   return new Promise<T>((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("POST", `${connection.origin ?? ""}${path}`);
-    request.setRequestHeader("Authorization", `Bearer ${token}`);
+    for (const [name, value] of Object.entries(headers)) {
+      request.setRequestHeader(name, value);
+    }
     request.setRequestHeader("Content-Type", contentType);
     request.upload.onprogress = (event) =>
       onProgress(event.loaded, event.total);
@@ -48,13 +50,20 @@ export async function downloadFile(
   filename: string,
 ): Promise<void> {
   const response = await fetch(`${connection.origin ?? ""}${path}`, {
-    headers: { Authorization: `Bearer ${await connection.accessToken()}` },
+    headers: await authorization(connection),
   });
   if (!response.ok) {
     const text = await response.text();
     throw new ApiError("GET", path, response.status, undefined, text);
   }
   saveBlob(await response.blob(), filename);
+}
+
+async function authorization(
+  connection: ApiConnection,
+): Promise<Record<string, string>> {
+  const token = await connection.accessToken();
+  return token === undefined ? {} : { Authorization: `Bearer ${token}` };
 }
 
 /** Saves data as an indented JSON file, such as a privacy export (D-0107). */

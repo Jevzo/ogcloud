@@ -4,7 +4,7 @@ import {
   createRouter,
   Outlet,
 } from "@tanstack/react-router";
-import { CALLBACK_PATH } from "./auth.ts";
+import { CALLBACK_PATH, SETUP_PATH } from "./auth.ts";
 import { AccountPage } from "./pages/account/account-page.tsx";
 import { ActivityPage } from "./pages/activity/activity-page.tsx";
 import { Callback } from "./pages/callback.tsx";
@@ -28,6 +28,8 @@ import { RolePage } from "./pages/roles/role-page.tsx";
 import { RolesPage } from "./pages/roles/roles-page.tsx";
 import { ServerPage } from "./pages/servers/server-page.tsx";
 import { ServersPage } from "./pages/servers/servers-page.tsx";
+import { SetupPage, WELCOME_PATH } from "./pages/setup/setup-page.tsx";
+import { WelcomePage } from "./pages/setup/welcome-page.tsx";
 import { UserPage } from "./pages/users/user-page.tsx";
 import { UsersPage } from "./pages/users/users-page.tsx";
 import { AppShell } from "./shell/app-shell.tsx";
@@ -166,8 +168,21 @@ const account = createRoute({
   component: AccountPage,
 });
 
+const setup = createRoute({
+  getParentRoute: () => root,
+  path: SETUP_PATH,
+  component: SetupPage,
+});
+const welcome = createRoute({
+  getParentRoute: () => root,
+  path: WELCOME_PATH,
+  component: WelcomePage,
+});
+
 const routeTree = root.addChildren([
   callback,
+  setup,
+  welcome,
   app.addChildren([
     overview,
     servers,

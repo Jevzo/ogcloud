@@ -1,4 +1,4 @@
-import { ApiError } from "@ogcloud/api-client";
+import { ApiError, setupStatus } from "@ogcloud/api-client";
 import type { ApiConnection } from "@ogcloud/api-client/react";
 import {
   AuthSession,
@@ -28,7 +28,23 @@ export function createSession(
   );
 }
 
-export { CALLBACK_PATH };
+/** A fresh install's setup (T-0710), open before anyone can sign in. */
+const SETUP_PATH = "/setup";
+
+export { CALLBACK_PATH, SETUP_PATH };
+
+/**
+ * Before the first owner exists nobody can sign in, so a fresh install's visitor sets it up instead (D-0094);
+ * otherwise the browser signs in and comes back to where it was.
+ */
+export async function signInOrSetUp(
+  session: AuthSession,
+  toSetup: () => void,
+): Promise<void> {
+  const status = await setupStatus();
+  if (status.data.pending) toSetup();
+  else await signIn(session);
+}
 
 /** Sends the browser to sign in and back to where it was. */
 export async function signIn(session: AuthSession): Promise<void> {

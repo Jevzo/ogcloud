@@ -1,5 +1,5 @@
 import type { LoginCsrf, LoginState, TotpSetup } from "@ogcloud/api-client";
-import { Button, Card, CopyField, Field, Input, Note } from "@ogcloud/ui";
+import { Button, CopyField, Field, Input, Note } from "@ogcloud/ui";
 import {
   ArrowLeft,
   Fingerprint,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import mascot from "../assets/mascot-256.png";
+import { BrandedPage } from "../branded-page.tsx";
 import { QrCode } from "../qr-code.tsx";
 import { registerPasskey, signInWithPasskey } from "./webauthn.ts";
 
@@ -44,31 +44,25 @@ export function LoginApp({ source }: { source: LoginSource }) {
   }, [state, adding]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <div className="flex items-center gap-3">
-        <img src={mascot} alt="" className="size-14" />
-        <span className="font-heavy text-[26px] tracking-tight">OgCloud</span>
-      </div>
-      <Card className="w-full max-w-[26rem] p-6">
-        {failed ? (
-          <Note tone="danger" icon={TriangleAlert}>
-            {t("unavailable")}
-          </Note>
-        ) : state === null || (state.step === "DONE" && !adding) ? (
-          <div aria-busy="true" className="h-40" />
-        ) : state.step === "DONE" ? (
-          <AddPasskey csrf={state.csrf} />
-        ) : state.step === "CREDENTIALS" ? (
-          <Credentials csrf={state.csrf} rejected={rejected} />
-        ) : state.step === "TOTP" ? (
-          <TotpCode csrf={state.csrf} rejected={rejected} />
-        ) : state.step === "PASSKEY" ? (
-          <PasskeyFactor csrf={state.csrf} />
-        ) : (
-          <Enrolment csrf={state.csrf} rejected={rejected} source={source} />
-        )}
-      </Card>
-    </main>
+    <BrandedPage>
+      {failed ? (
+        <Note tone="danger" icon={TriangleAlert}>
+          {t("unavailable")}
+        </Note>
+      ) : state === null || (state.step === "DONE" && !adding) ? (
+        <div aria-busy="true" className="h-40" />
+      ) : state.step === "DONE" ? (
+        <AddPasskey csrf={state.csrf} />
+      ) : state.step === "CREDENTIALS" ? (
+        <Credentials csrf={state.csrf} rejected={rejected} />
+      ) : state.step === "TOTP" ? (
+        <TotpCode csrf={state.csrf} rejected={rejected} />
+      ) : state.step === "PASSKEY" ? (
+        <PasskeyFactor csrf={state.csrf} />
+      ) : (
+        <Enrolment csrf={state.csrf} rejected={rejected} source={source} />
+      )}
+    </BrandedPage>
   );
 }
 

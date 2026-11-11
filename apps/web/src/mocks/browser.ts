@@ -27,6 +27,7 @@ import {
   getRuntimeListMockHandler,
   getServerGetMockHandler,
   getServerListMockHandler,
+  getSetupStatusMockHandler,
   getTemplateListMockHandler,
   getTextPreviewMockHandler,
   getUserGetMockHandler,
@@ -81,7 +82,13 @@ export async function startMocks(): Promise<void> {
     getTemplateListMockHandler(({ params }) =>
       templatesOf(String(params.groupId)),
     ),
-    getNetworkGetMockHandler(networkSettings),
+    // `?eulaPending` shows a network whose owner has not accepted the EULA yet, for the setup's screenshots.
+    getNetworkGetMockHandler(() =>
+      new URLSearchParams(window.location.search).has("eulaPending")
+        ? { ...networkSettings, eulaAcceptedAt: null }
+        : networkSettings,
+    ),
+    getSetupStatusMockHandler({ pending: true }),
     getNpcListMockHandler(npcs),
     getLogAuditMockHandler({ items: auditEntries, nextCursor: null }),
     getLogScalingMockHandler({

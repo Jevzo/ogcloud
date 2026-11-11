@@ -25,7 +25,8 @@ const FIRST_RETRY_MS = 1_000;
 const LONGEST_RETRY_MS = 30_000;
 
 async function openStream(connection: ApiConnection): Promise<EventSource> {
-  const ticket = await eventTicket({ token: await connection.accessToken() });
+  const token = await connection.accessToken();
+  const ticket = await eventTicket(token === undefined ? {} : { token });
   return new EventSource(
     `/api/v1/events?ticket=${encodeURIComponent(ticket.data.ticket)}`,
   );

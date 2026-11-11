@@ -967,6 +967,66 @@
       "STOPPING": "Stopping"
     }
   },
+  "setup": {
+    "back": "Back",
+    "done": {
+      "description": "This network has an owner. Sign in to open the dashboard.",
+      "title": "OgCloud is set up"
+    },
+    "eula": {
+      "accept": "Accept and continue",
+      "accepted": "Accepted {{ago}}.",
+      "agree": "I accept the Minecraft EULA for this network",
+      "agreeHint": "It is recorded with your name and cannot be withdrawn here.",
+      "description": "Minecraft servers start only after the network's owner accepts Mojang's end user licence agreement.",
+      "read": "Read the Minecraft EULA",
+      "title": "Accept the Minecraft EULA"
+    },
+    "groups": {
+      "create": "Create and finish",
+      "description": "A network needs a proxy that players connect to and a lobby they land in.",
+      "exists": "Exists already.",
+      "finish": "Finish",
+      "later": "Both start with default settings and no template; change them on their group pages.",
+      "lobby": "Lobby group “lobby” on {{profile}}",
+      "lobbyHint": "Where players land: the network's default group.",
+      "proxy": "Proxy group “proxy” on {{profile}}",
+      "proxyHint": "Players connect here first; it sends them on to the lobby.",
+      "ready": "OgCloud is ready",
+      "skip": "Skip",
+      "title": "Create the starter groups"
+    },
+    "next": "Continue",
+    "owner": {
+      "description": "Owners have every permission and are the only ones who change roles and OAuth clients.",
+      "submit": "Create owner account",
+      "taken": "An owner exists already. Sign in instead.",
+      "title": "Create the owner account"
+    },
+    "progress": "Setup progress",
+    "signIn": {
+      "action": "Sign in",
+      "description": "Your account is ready. Sign in to finish the setup.",
+      "factor": "Owners confirm every sign-in with a second factor, so you will set up an authenticator app or a passkey next.",
+      "title": "Sign in as the owner"
+    },
+    "steps": {
+      "eula": "Minecraft EULA",
+      "groups": "Starter groups",
+      "owner": "Owner account",
+      "signIn": "Sign in",
+      "token": "Setup token"
+    },
+    "token": {
+      "command": "Command that prints the setup token",
+      "description": "This network has no owner yet. The setup token proves you run the installation.",
+      "infisical": "It is also the secret API_SETUP_TOKEN in Infisical's ogcloud project.",
+      "label": "Setup token",
+      "refused": "That setup token is not this installation's. Copy it again from the cluster.",
+      "title": "Set up OgCloud",
+      "where": "Read it from the cluster"
+    }
+  },
   "shell": {
     "account": "Account settings",
     "density": {

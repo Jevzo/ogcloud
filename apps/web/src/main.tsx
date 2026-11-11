@@ -14,7 +14,8 @@ import {
   connectionFor,
   createQueryClient,
   createSession,
-  signIn,
+  SETUP_PATH,
+  signInOrSetUp,
 } from "./auth.ts";
 import { localizeValidation } from "./form.tsx";
 import { applyPreferences, readPreferences } from "./preferences.ts";
@@ -30,7 +31,12 @@ async function start(container: HTMLElement) {
   applyPreferences(readPreferences());
   const session = mocksMode ? null : createSession();
   const queryClient = createQueryClient(session, () => {
-    if (session !== null) void signIn(session);
+    if (session !== null) {
+      void signInOrSetUp(
+        session,
+        () => void router.navigate({ to: SETUP_PATH }),
+      );
+    }
   });
   if (mocksMode) {
     const { startMocks } = await import("./mocks/browser.ts");
