@@ -222,6 +222,7 @@ export function TagTextField({
       </div>
       <div className="relative font-mono text-mono leading-[1.6]">
         <Highlight value={value} problems={problems} />
+        {/* Its text is see-through over the highlighted copy, and so is its selection, or selected text would vanish. */}
         <textarea
           ref={editor}
           {...field}
@@ -233,7 +234,7 @@ export function TagTextField({
           onKeyDown={(event) => {
             if (!multiline && event.key === "Enter") event.preventDefault();
           }}
-          className="relative block w-full resize-none bg-transparent px-2.5 py-2 text-transparent caret-text outline-none [field-sizing:content] selection:bg-accent-soft selection:text-transparent"
+          className="relative block w-full resize-none bg-transparent px-2.5 py-2 text-transparent caret-text outline-none [field-sizing:content] selection:bg-accent/25 selection:text-transparent"
         />
       </div>
     </div>

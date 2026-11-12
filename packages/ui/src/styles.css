@@ -85,6 +85,15 @@
   }
 }
 
+/* Selected game text keeps its own colours under a see-through accent: the colours are what a preview shows. */
+@utility game-selection {
+  &::selection,
+  & *::selection {
+    background-color: color-mix(in oklab, var(--og-accent) 40%, transparent);
+    color: currentColor;
+  }
+}
+
 /* react-colorful injects unlayered base styles, so these stay unlayered and win by their two-class selectors. */
 .og-colour-picker.react-colorful {
   width: 100%;

@@ -5,7 +5,7 @@ import { GameText, gameLook } from "@ogcloud/ui";
 export function GameChip({ spans }: { spans: readonly TextSpanView[] }) {
   return (
     <span
-      className="inline-block rounded-small px-1.5 py-0.5 font-game text-small whitespace-pre"
+      className="inline-block rounded-small px-1.5 py-0.5 font-game text-small whitespace-pre game-selection"
       style={{ backgroundColor: gameLook.panel }}
     >
       <GameText spans={spans} defaultColour={gameLook.text} />

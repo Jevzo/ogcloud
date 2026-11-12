@@ -3,7 +3,7 @@ import { cn } from "../lib/cn.ts";
 import { type GameSpan, GameText } from "./game-text.tsx";
 import { gameLook } from "./minecraft.ts";
 
-const gameFont = "font-game text-game";
+const gameFont = "font-game text-game game-selection";
 
 /** A labelled preview of how one client version shows a text. */
 export function PreviewFrame({
