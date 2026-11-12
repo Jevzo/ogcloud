@@ -90,26 +90,20 @@ export function AuditTab() {
           "actor",
           t("activity.audit.actor"),
           (entry) => entry.actor,
+          true,
         ),
-        columns.accessor("action", {
-          header: () => t("activity.audit.action"),
-          cell: (cell) => (
-            <span className="font-mono text-mono text-text-2">
-              {cell.getValue()}
-            </span>
-          ),
-        }),
-        columns.accessor(
+        monoColumn(
+          columns,
+          "action",
+          t("activity.audit.action"),
+          (entry) => entry.action,
+        ),
+        monoColumn(
+          columns,
+          "target",
+          t("activity.audit.target"),
           (entry) => `${entry.targetType} ${entry.targetId}`.trim(),
-          {
-            id: "target",
-            header: () => t("activity.audit.target"),
-            cell: (cell) => (
-              <span className="font-mono text-mono text-text-2">
-                {cell.getValue()}
-              </span>
-            ),
-          },
+          true,
         ),
       ]),
     [t],

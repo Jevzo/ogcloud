@@ -18,6 +18,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Plus, Shield, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useCan } from "../../permissions.ts";
@@ -66,14 +67,12 @@ export function PermissionGroupsPage() {
             </span>
           ),
         }),
-        columns.accessor("id", {
-          header: () => t("permissions.columns.id"),
-          cell: (cell) => (
-            <span className="font-mono text-mono text-text-2">
-              {cell.getValue()}
-            </span>
-          ),
-        }),
+        monoColumn(
+          columns,
+          "id",
+          t("permissions.columns.id"),
+          (group) => group.id,
+        ),
         columns.display({
           id: "look",
           header: () => t("permissions.columns.look"),

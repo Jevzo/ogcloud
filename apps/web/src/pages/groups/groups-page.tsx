@@ -17,6 +17,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { useGroupActions } from "./group-actions.tsx";
@@ -66,14 +67,12 @@ export function GroupsPage() {
           header: () => t("groups.columns.type"),
           cell: (cell) => t(`groups.type.${cell.getValue()}`),
         }),
-        columns.accessor("view.settings.profileId", {
-          header: () => t("groups.columns.profile"),
-          cell: (cell) => (
-            <span className="font-mono text-mono text-text-2">
-              {cell.getValue()}
-            </span>
-          ),
-        }),
+        monoColumn(
+          columns,
+          "profile",
+          t("groups.columns.profile"),
+          (row) => row.view.settings.profileId,
+        ),
         columns.accessor("live.running", {
           header: () => t("groups.columns.servers"),
           cell: (cell) => (

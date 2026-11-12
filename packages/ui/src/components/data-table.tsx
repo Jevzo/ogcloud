@@ -143,7 +143,7 @@ export function DataTable<T extends RowData>({
                           ? "descending"
                           : undefined
                     }
-                    className="h-row border-border-subtle border-b px-3 text-left font-label text-text-3 first:pl-4"
+                    className="h-row border-border-subtle border-b px-3 text-left font-label text-text-3 whitespace-nowrap first:pl-4"
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
                       <button
@@ -228,9 +228,10 @@ export function DataTable<T extends RowData>({
                     )}
                   >
                     {row.getAllCells().map((cell) => (
+                      // One line per row, so rows keep the density's height and the virtualiser's measure.
                       <td
                         key={cell.id}
-                        className="h-row border-border-subtle border-b px-3 first:pl-4"
+                        className="h-row border-border-subtle border-b px-3 whitespace-nowrap first:pl-4"
                       >
                         <table.FlexRender cell={cell} />
                       </td>
