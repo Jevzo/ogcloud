@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.util.Properties
 
 plugins {
@@ -36,4 +37,6 @@ val testImages =
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     testImages.forEach { (name, image) -> systemProperty("ogcloud.image.$name", image) }
+    // CI keeps only the console, so a failure prints its message and causes, not just the line it threw at.
+    testLogging { exceptionFormat = TestExceptionFormat.FULL }
 }
