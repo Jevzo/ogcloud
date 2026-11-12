@@ -4,6 +4,7 @@ export {
   type AuthDependencies,
   AuthSession,
   SignInRequired,
+  type SignOutChannel,
 } from "./session.ts";
 export type {
   LoginStore,

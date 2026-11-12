@@ -5,6 +5,7 @@ import {
   type AuthDependencies,
   AuthSession,
   SignInRequired,
+  type SignOutChannel,
 } from "./session.ts";
 import type {
   LoginStore,
@@ -111,6 +112,23 @@ function serialLock(): AuthDependencies["exclusively"] {
     const run = tail.then(task, task);
     tail = run.catch(() => undefined);
     return run;
+  };
+}
+
+/** Hands each tab its end of one channel, which, like a BroadcastChannel, reaches every tab but the sender. */
+function signOutChannels(): () => SignOutChannel {
+  const listeners: { tab: number; listener: () => void }[] = [];
+  let tabs = 0;
+  return () => {
+    const tab = tabs++;
+    return {
+      announce: () => {
+        for (const other of listeners) if (other.tab !== tab) other.listener();
+      },
+      listen: (listener) => {
+        listeners.push({ tab, listener });
+      },
+    };
   };
 }
 
@@ -351,25 +369,76 @@ test("signing out revokes the refresh token, forgets the login and ends the API'
   );
 });
 
-test("an app on the API's origin ends the login session itself, without an ID token", async () => {
+test("an app on the API's origin ends the login session itself, without an ID token, before revoking", async () => {
   const server = new FakeServer();
   const { logins, deps } = setup(server, {
     refreshToken: "refresh-0",
     idToken: undefined,
   });
-  const loginsWhenEnded: (StoredLogin | undefined)[] = [];
+  const revokedWhenEnded: string[][] = [];
   const session = new AuthSession(CONFIG, {
     ...deps,
     endLoginSession: async () => {
-      loginsWhenEnded.push(await logins.read());
+      revokedWhenEnded.push([...server.revoked]);
     },
   });
 
   const next = await session.signOut();
 
+  assert.deepEqual(revokedWhenEnded, [[]]);
   assert.deepEqual(server.revoked, ["refresh-0"]);
-  assert.deepEqual(loginsWhenEnded, [undefined]);
+  assert.equal(await logins.read(), undefined);
   assert.equal(next.href, new URL(CONFIG.postLogoutRedirectUri).href);
+});
+
+test("a login session that cannot end keeps the login, so the app never signs itself in again through it", async () => {
+  const server = new FakeServer();
+  const { logins, deps } = setup(server, {
+    refreshToken: "refresh-0",
+    idToken: undefined,
+  });
+  const session = new AuthSession(CONFIG, {
+    ...deps,
+    endLoginSession: () =>
+      Promise.reject(new Error("/login/logout answered 503")),
+  });
+
+  await assert.rejects(session.signOut());
+  assert.deepEqual(server.revoked, []);
+  assert.equal((await logins.read())?.refreshToken, "refresh-0");
+  assert.equal(await session.accessToken(), "access-1");
+});
+
+test("signing out tells the other tabs, which drop their access token at once", async () => {
+  const server = new FakeServer();
+  const logins = memoryLogins({ refreshToken: "refresh-0", idToken: "id-0" });
+  const channels = signOutChannels();
+  const tab = () =>
+    new AuthSession(CONFIG, {
+      fetch: server.fetch,
+      now: () => 0,
+      crypto: globalThis.crypto,
+      logins,
+      pending: memoryPending(),
+      exclusively: serialLock(),
+      endLoginSession: async () => {},
+      signOuts: channels(),
+    });
+  const leaving = tab();
+  const staying = tab();
+  assert.equal(await staying.accessToken(), "access-1");
+  let told = 0;
+  staying.onSignOutElsewhere(() => {
+    told += 1;
+  });
+  leaving.onSignOutElsewhere(() =>
+    assert.fail("the tab signing out is not told"),
+  );
+
+  await leaving.signOut();
+
+  assert.equal(told, 1);
+  await assert.rejects(staying.accessToken(), SignInRequired);
 });
 
 test("a failed revocation keeps the login, so signing out can be tried again", async () => {

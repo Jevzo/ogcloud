@@ -24,6 +24,14 @@ export interface AuthDependencies {
    * goes through the OIDC logout, which needs the login's ID token.
    */
   endLoginSession?: () => Promise<void>;
+  /** Reaches the other tabs sharing this login, so a sign-out in one leaves none working on its access token. */
+  signOuts?: SignOutChannel;
+}
+
+/** Carries sign-outs between the tabs that share one login, as a BroadcastChannel does: to every tab but the sender. */
+export interface SignOutChannel {
+  announce(): void;
+  listen(listener: () => void): void;
 }
 
 /** No usable login: the app sends the user to sign in. */
@@ -146,12 +154,22 @@ export class AuthSession {
     this.access = undefined;
   }
 
+  /** Calls [listener] when another tab signs out, after dropping this tab's access token so no request still uses it. */
+  onSignOutElsewhere(listener: () => void): void {
+    this.deps.signOuts?.listen(() => {
+      this.access = undefined;
+      listener();
+    });
+  }
+
   /**
-   * Revokes the refresh token, forgets the login and returns where the browser goes next: the app itself once
-   * [AuthDependencies.endLoginSession] ended the login session, otherwise the OIDC logout. A failed revocation throws
-   * with the login kept, so signing out can be tried again.
+   * Ends the login session through [AuthDependencies.endLoginSession] when given, revokes the refresh token, forgets
+   * the login, tells the other tabs and returns where the browser goes next: the app itself, or else the OIDC logout.
+   * A failure throws with the login kept, so signing out can be tried again.
    */
   async signOut(): Promise<URL> {
+    // First, so a failure here keeps the login: without it, the app would sign in again through this login session.
+    await this.deps.endLoginSession?.();
     // Under the renewal's lock, so a renewal in another tab cannot store a fresh token after this one is revoked.
     const login = await this.deps.exclusively(async () => {
       const stored = await this.deps.logins.read();
@@ -165,8 +183,8 @@ export class AuthSession {
       await this.deps.logins.write(undefined);
       return stored;
     });
+    this.deps.signOuts?.announce();
     if (this.deps.endLoginSession !== undefined) {
-      await this.deps.endLoginSession();
       return new URL(this.config.postLogoutRedirectUri);
     }
     const logout = new URL("/oauth2/logout", this.config.origin);

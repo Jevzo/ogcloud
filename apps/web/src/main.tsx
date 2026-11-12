@@ -30,6 +30,8 @@ const mocksMode = import.meta.env.MODE === "mocks";
 async function start(container: HTMLElement) {
   applyPreferences(readPreferences());
   const session = mocksMode ? null : createSession();
+  // Another tab signed out: this one reloads, finds no login and asks to sign in, rather than show the pages on.
+  session?.onSignOutElsewhere(() => window.location.reload());
   // Every query that finds the login gone asks; one sign-in goes out, since each would replace the pending PKCE state.
   let signingIn = false;
   const queryClient = createQueryClient(session, () => {
