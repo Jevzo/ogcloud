@@ -203,10 +203,10 @@ export const defaultDensity: DensityName = "compact";
 /** `small` rounds keys, checkboxes and chart bars; `game` the frames of in-game previews. */
 export const radius = {
   game: 2,
-  small: 4,
-  control: 10,
-  card: 16,
-  popover: 20,
+  small: 3,
+  control: 6,
+  card: 10,
+  popover: 12,
 } as const;
 
 /** Small and large buttons; medium ones take the density's control height. */

@@ -16,10 +16,10 @@
   --font-weight-bold: 700;
   --font-weight-heavy: 750;
   --radius-game: 2px;
-  --radius-small: 4px;
-  --radius-control: 10px;
-  --radius-card: 16px;
-  --radius-popover: 20px;
+  --radius-small: 3px;
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-popover: 12px;
   --text-display: 34px;
   --text-display--line-height: 40px;
   --text-display--font-weight: 750;
