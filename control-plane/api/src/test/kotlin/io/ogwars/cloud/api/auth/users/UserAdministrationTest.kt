@@ -19,7 +19,6 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.session.FindByIndexNameSessionRepository
@@ -32,7 +31,6 @@ class UserAdministrationTest(
     @Autowired users: WebUserStore,
     @Autowired passwords: PasswordEncoder,
     @Autowired private val sessions: FindByIndexNameSessionRepository<out Session>,
-    @Autowired private val jdbc: JdbcClient,
     @Autowired private val decoder: JwtDecoder,
 ) {
     private val oauth = OAuthHttp(port)
@@ -317,6 +315,20 @@ class UserAdministrationTest(
     }
 
     @Test
+    fun `sign-in rules are read with users read and changed by owners only (D-0229)`() {
+        val viewer = testUsers.token(testUsers.create(BuiltInRole.MODERATOR.id))
+
+        oauth.call("GET", SIGN_IN_RULES, viewer).statusCode() shouldBe FORBIDDEN
+        oauth.call("PUT", SIGN_IN_RULES, managerToken, rules(true)).statusCode() shouldBe FORBIDDEN
+        try {
+            oauth.json(oauth.call("PUT", SIGN_IN_RULES, ownerToken, rules(true)))["requireMinecraftLink"] shouldBe true
+            oauth.json(oauth.call("GET", SIGN_IN_RULES, managerToken))["requireMinecraftLink"] shouldBe true
+        } finally {
+            setRequireLink(false)
+        }
+    }
+
+    @Test
     fun `handlers that declare no permission are refused`() {
         oauth.call("GET", "/api/v1/probes/undeclared", ownerToken).statusCode() shouldBe FORBIDDEN
     }
@@ -341,8 +353,10 @@ class UserAdministrationTest(
         TestSigningKeys.accessToken(TestSigningKeys.key(TestSigningKeys.CURRENT), listOf("users:read"))
 
     private fun setRequireLink(required: Boolean) {
-        jdbc.sql("update network_settings set require_minecraft_link = :required").param("required", required).update()
+        oauth.call("PUT", SIGN_IN_RULES, ownerToken, rules(required)).statusCode() shouldBe OK
     }
+
+    private fun rules(requireMinecraftLink: Boolean) = mapOf("requireMinecraftLink" to requireMinecraftLink)
 
     private fun newUser(
         username: String,
@@ -366,6 +380,7 @@ class UserAdministrationTest(
         const val SUCCESS_CLASS = 2
         const val ROLES = "/api/v1/roles"
         const val ME = "/api/v1/me"
+        const val SIGN_IN_RULES = "/api/v1/users/sign-in-rules"
         const val WEB_REDIRECT = "$TEST_ISSUER/auth/callback"
         const val PASSWORD = TestUsers.PASSWORD
         const val NEW_PASSWORD = "another long password"

@@ -83,6 +83,35 @@ paths:
       responses:
         "204":
           description: No Content
+  /api/v1/users/sign-in-rules:
+    get:
+      tags:
+      - sign-in-rules-controller
+      operationId: signInRuleGet
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SignInRulesView"
+    put:
+      tags:
+      - sign-in-rules-controller
+      operationId: signInRuleUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInRulesView"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SignInRulesView"
   /api/v1/roles/{id}:
     put:
       tags:
@@ -1784,6 +1813,13 @@ components:
           type: string
       required:
       - password
+    SignInRulesView:
+      type: object
+      properties:
+        requireMinecraftLink:
+          type: boolean
+      required:
+      - requireMinecraftLink
     UpdateRoleRequest:
       type: object
       properties:
@@ -2071,8 +2107,6 @@ components:
           type: string
         maintenanceKickMessage:
           type: string
-        requireMinecraftLink:
-          type: boolean
       required:
       - defaultGroupId
       - maintenance
@@ -2082,7 +2116,6 @@ components:
       - maxPlayers
       - motd
       - permissionSystemEnabled
-      - requireMinecraftLink
       - routingStrategy
       - tablistEnabled
       - tablistFooter

@@ -26,15 +26,32 @@ class NetworkManagement(
 ) {
     fun get(): Revisioned<NetworkSettings> = network.load()
 
-    /** The EULA acceptance is kept as stored; only [recordEula] sets it, for an owner or the chart (D-0100). */
+    /**
+     * The EULA acceptance and the link requirement are kept as stored: only [recordEula] sets the one, for an owner or
+     * the chart (D-0100), and only [requireMinecraftLink] the other, for an owner (D-0229).
+     */
     fun update(
         actor: Actor,
         expectedVersion: Long,
         settings: NetworkSettings,
     ): Revisioned<NetworkSettings> {
         settings.requireValidTexts()
-        network.save(expectedVersion, settings.copy(eulaAcceptedAt = network.load().value.eulaAcceptedAt))
+        val stored = network.load().value
+        network.save(
+            expectedVersion,
+            settings.copy(eulaAcceptedAt = stored.eulaAcceptedAt, requireMinecraftLink = stored.requireMinecraftLink),
+        )
         announcements.networkSettings(actor)
+        return get()
+    }
+
+    /** Whether dashboard users must have linked a Minecraft account (D-0094); owners alone decide it (D-0229). */
+    fun requireMinecraftLink(
+        actor: Actor,
+        required: Boolean,
+    ): Revisioned<NetworkSettings> {
+        owners.requireOwner(actor)
+        change(actor) { if (it.requireMinecraftLink == required) null else it.copy(requireMinecraftLink = required) }
         return get()
     }
 

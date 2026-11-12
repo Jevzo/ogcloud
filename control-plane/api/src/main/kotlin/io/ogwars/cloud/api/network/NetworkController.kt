@@ -36,9 +36,11 @@ data class NetworkSettingsFields(
     val tablistHeader: String,
     val tablistFooter: String,
     val maintenanceKickMessage: String,
-    val requireMinecraftLink: Boolean,
 ) {
-    /** The EULA acceptance is not edited here; [NetworkManagement.update] keeps the stored one. */
+    /**
+     * The EULA acceptance and the Minecraft link requirement (D-0229) are not edited here; [NetworkManagement.update]
+     * keeps the stored ones.
+     */
     fun toDomain() =
         NetworkSettings(
             maintenance = maintenance,
@@ -55,7 +57,7 @@ data class NetworkSettingsFields(
             tablistFooter = tablistFooter,
             maintenanceKickMessage = maintenanceKickMessage,
             eulaAcceptedAt = null,
-            requireMinecraftLink = requireMinecraftLink,
+            requireMinecraftLink = false,
         )
 }
 
@@ -89,7 +91,6 @@ private fun Revisioned<NetworkSettings>.toView() =
                 tablistHeader,
                 tablistFooter,
                 maintenanceKickMessage,
-                requireMinecraftLink,
             ),
             eulaAcceptedAt,
             revision,

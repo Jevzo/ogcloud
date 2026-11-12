@@ -46,6 +46,7 @@ GET /api/v1/servers servers:read
 GET /api/v1/servers/{id} servers:read
 GET /api/v1/setup anonymous
 GET /api/v1/users users:read
+GET /api/v1/users/sign-in-rules users:read
 GET /api/v1/users/{id} users:read
 POST /api/v1/commands servers:command
 POST /api/v1/events/tickets any-caller
@@ -88,5 +89,6 @@ PUT /api/v1/oauth-clients/{clientId} oauth-clients:write
 PUT /api/v1/permission-groups/{id} permissions:write
 PUT /api/v1/players/{uuid}/rank permissions:write
 PUT /api/v1/roles/{id} roles:write
+PUT /api/v1/users/sign-in-rules users:write
 PUT /api/v1/users/{id} users:write
 PUT /api/v1/users/{id}/password users:write

@@ -27,6 +27,7 @@ class NetworkAdministrationTest(
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
     private val admin = testUsers.token(testUsers.create(BuiltInRole.ADMIN.id))
+    private val owner = testUsers.token(testUsers.create(BuiltInRole.OWNER.id))
 
     // The seeded settings name "lobby" as the default group, and updates check that it exists.
     @BeforeEach
@@ -46,6 +47,21 @@ class NetworkAdministrationTest(
         oauth.call("PUT", NETWORK, admin, changed).statusCode() shouldBe OK
         oauth.call("PUT", NETWORK, admin, changed).statusCode() shouldBe CONFLICT
         fields()["motd"] shouldBe motd
+    }
+
+    @Test
+    fun `a network save keeps the Minecraft link requirement, which is no network setting (D-0229)`() {
+        val required = mapOf("requireMinecraftLink" to true)
+        oauth.call("PUT", SIGN_IN_RULES, admin, required).statusCode() shouldBe FORBIDDEN
+        oauth.call("PUT", SIGN_IN_RULES, owner, required).statusCode() shouldBe OK
+        try {
+            oauth.call("PUT", NETWORK, admin, update(mapOf("motd" to "<gray>Kept"))).statusCode() shouldBe OK
+
+            oauth.json(oauth.call("GET", SIGN_IN_RULES, owner))["requireMinecraftLink"] shouldBe true
+            fields().containsKey("requireMinecraftLink") shouldBe false
+        } finally {
+            oauth.call("PUT", SIGN_IN_RULES, owner, mapOf("requireMinecraftLink" to false))
+        }
     }
 
     @Test
@@ -121,6 +137,7 @@ class NetworkAdministrationTest(
 
     private companion object {
         const val NETWORK = "/api/v1/network"
+        const val SIGN_IN_RULES = "/api/v1/users/sign-in-rules"
         const val OK = 200
         const val ACCEPTED = 202
         const val BAD_REQUEST = 400
