@@ -18,6 +18,7 @@ import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.Route
 import com.microsoft.playwright.options.AriaRole
 import com.microsoft.playwright.options.RequestOptions
+import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -161,7 +162,7 @@ class BrowserLoginTest(
             page,
             _,
             ->
-            postLogout(page.context(), withCsrf = true) shouldBe HttpStatus.NO_CONTENT.value()
+            postLogout(page.context(), withCsrf = true, HttpStatus.NO_CONTENT)
         }
     }
 
@@ -169,10 +170,10 @@ class BrowserLoginTest(
     fun `a sign-out without the login pages' CSRF token is refused`() {
         val user = testUsers.create()
         browser.newContext().use { context ->
-            val page = pageIn(context)
-            signInAndRedeem(page, user.username)
+            signInAndRedeem(context, user.username)
 
-            postLogout(context, withCsrf = false) shouldBe HttpStatus.FORBIDDEN.value()
+            postLogout(context, withCsrf = false, HttpStatus.FORBIDDEN)
+            val page = pageIn(context)
             page.navigate("$origin${LoginPages.ADD_PASSKEY_PAGE}")
             page.getByLabel("Passkey name").waitFor()
         }
@@ -182,8 +183,9 @@ class BrowserLoginTest(
     private fun signOutThenOpenAddPasskey(signOut: (Page, String) -> Unit) {
         val user = testUsers.create()
         browser.newContext().use { context ->
+            val idToken = signInAndRedeem(context, user.username)
             val page = pageIn(context)
-            signOut(page, signInAndRedeem(page, user.username))
+            signOut(page, idToken)
             page.navigate("$origin${LoginPages.ADD_PASSKEY_PAGE}")
 
             page.getByLabel("Username or email").waitFor()
@@ -191,29 +193,43 @@ class BrowserLoginTest(
         }
     }
 
-    /** Signs in with the password, redeems the code and returns the ID token. */
+    /**
+     * Signs in with the password on a page of its own, redeems the code and returns the ID token. Here the API answers
+     * the app's callback by sending the page back to sign in, whose state request makes the login's first CSRF token
+     * since the sign-in and whose finished step continues to the app again, over and over. The page is closed once
+     * that request is answered, so neither its token nor its navigations race the test's own requests.
+     */
     private fun signInAndRedeem(
-        page: Page,
+        context: BrowserContext,
         username: String,
     ): String {
+        val page = pageIn(context)
         page.navigate(authorizeUrl())
-        signIn(page, username, TestUsers.PASSWORD)
+        page.waitForResponse({ callbacks.isNotEmpty() && URI(it.url()).path == LoginPages.STATE_PATH }) {
+            signIn(page, username, TestUsers.PASSWORD)
+        }
+        val code = callbackCode(page).shouldNotBeNull()
+        page.close()
         return oauth
-            .exchange(FirstPartyClients.WEB, callbackCode(page).shouldNotBeNull(), "$origin$CALLBACK_PATH", verifier)
+            .exchange(FirstPartyClients.WEB, code, "$origin$CALLBACK_PATH", verifier)
             .idToken
             .shouldNotBeNull()
     }
 
-    /** Posts the login-chain logout with this browser's cookies, as the dashboard does (D-0227), and returns its status. */
+    /** Posts the login-chain logout with this browser's cookies, as the dashboard does (D-0227), and checks its answer. */
     private fun postLogout(
         context: BrowserContext,
         withCsrf: Boolean,
-    ): Int {
+        expected: HttpStatus,
+    ) {
         val state = JsonParser.parseString(context.request().get("$origin${LoginPages.STATE_PATH}").text()).asJsonObject
         val csrf = state.getAsJsonObject("csrf")
         val options = RequestOptions.create()
         if (withCsrf) options.setHeader(csrf.get("headerName").asString, csrf.get("token").asString)
-        return context.request().post("$origin${LoginPages.LOGOUT_PATH}", options).status()
+        val response = context.request().post("$origin${LoginPages.LOGOUT_PATH}", options)
+        withClue("The logout answered ${response.status()} (${response.text()}) to a login at ${state.get("step")}") {
+            response.status() shouldBe expected.value()
+        }
     }
 
     private fun pageIn(context: BrowserContext): Page =
