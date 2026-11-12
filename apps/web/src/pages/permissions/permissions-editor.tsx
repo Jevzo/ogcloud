@@ -39,18 +39,24 @@ export function PermissionsEditor({
   const describe = (key: string, text: string) =>
     onChange({ ...value, [key]: text });
 
+  // One grid for the granted rows and the add row, so their columns line up whatever the Add button's width.
   return (
-    <div className="flex flex-col gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] items-center gap-x-2 gap-y-2">
       {entries.length === 0 ? (
-        <p className="text-small text-text-3">{t("permissions.nodes.none")}</p>
+        <p className="col-span-full text-small text-text-3">
+          {t("permissions.nodes.none")}
+        </p>
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul className="col-span-full grid grid-cols-subgrid gap-y-1.5">
           {entries.map(([key, text]) => (
             <li
               key={key}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] items-center gap-2"
+              className="col-span-full grid grid-cols-subgrid items-center"
             >
-              <span className="truncate font-mono text-mono">{key}</span>
+              {/* An input's border and padding, so the node starts where the inputs' text does. */}
+              <span className="truncate border border-transparent px-2.5 font-mono text-mono">
+                {key}
+              </span>
               <Input
                 aria-label={t("permissions.nodes.noteFor", { node: key })}
                 placeholder={t("permissions.nodes.note")}
@@ -64,6 +70,7 @@ export function PermissionsEditor({
                 iconOnly
                 disabled={disabled}
                 onClick={() => remove(key)}
+                className="justify-self-end"
               >
                 {t("permissions.nodes.remove", { node: key })}
               </Button>
@@ -72,7 +79,7 @@ export function PermissionsEditor({
         </ul>
       )}
       {disabled ? null : (
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] items-center gap-2 border-border-subtle border-t pt-3">
+        <div className="col-span-full grid grid-cols-subgrid items-center border-border-subtle border-t pt-3">
           <Input
             mono
             aria-label={t("permissions.nodes.node")}

@@ -154,7 +154,7 @@ function Results({
               icon={<Server size={15} strokeWidth={1.75} />}
             >
               <span className="min-w-0 flex-1 truncate font-mono text-mono">
-                {server.id}
+                {server.displayName}
               </span>
               <span className="text-meta text-text-3">{server.groupId}</span>
             </Item>

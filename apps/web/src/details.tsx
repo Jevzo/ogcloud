@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 /** Labelled facts about one thing, label beside value. */
 export function Details({ children }: { children: ReactNode }) {
   return (
-    <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-8 gap-y-3">
+    <dl className="grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-8 gap-y-3">
       {children}
     </dl>
   );

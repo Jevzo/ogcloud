@@ -77,7 +77,7 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
           </span>
           {collapsed ? null : (
             <>
-              <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-label">{me.username}</span>
                 <span className="truncate text-meta text-text-3">
                   {me.roleId}
