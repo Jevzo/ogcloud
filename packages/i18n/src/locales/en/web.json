@@ -637,7 +637,8 @@
         "6h": "6 h"
       },
       "series": "Players",
-      "title": "Players online"
+      "title": "Players online",
+      "unchanged": "No change in the last hour"
     },
     "scaling": {
       "actions": {

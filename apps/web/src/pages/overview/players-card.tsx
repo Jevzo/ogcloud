@@ -42,6 +42,7 @@ export function PlayersCard({ online, max }: { online: number; max: number }) {
       title={t("overview.players.title")}
       actions={
         <Segmented
+          size="sm"
           label={t("overview.players.range")}
           options={Object.keys(RANGES).map((value) => ({
             value: value as Range,
@@ -61,9 +62,11 @@ export function PlayersCard({ online, max }: { online: number; max: number }) {
         </span>
         {hourAgo === undefined ? null : (
           <span className="ml-auto text-small text-text-3 tabular-nums">
-            {t("overview.players.change", {
-              change: format.signed(online - hourAgo.value),
-            })}
+            {online === hourAgo.value
+              ? t("overview.players.unchanged")
+              : t("overview.players.change", {
+                  change: format.signed(online - hourAgo.value),
+                })}
           </span>
         )}
       </div>

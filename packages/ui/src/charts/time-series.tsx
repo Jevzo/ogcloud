@@ -67,6 +67,13 @@ export function TimeSeriesChart({
     .domain([0, max])
     .nice(GRID_LINES)
     .range([height - PADDING.bottom, PADDING.top]);
+  // Counts get whole-number gridlines only: a scale showing 0.2 players reads as a fraction that never happens.
+  const counts = series.every((s) =>
+    s.points.every((point) => Number.isInteger(point.value)),
+  );
+  const yTicks = y
+    .ticks(GRID_LINES)
+    .filter((tick) => !counts || Number.isInteger(tick));
   const toLine = line<Point>()
     .x((point) => x(point.at))
     .y((point) => y(point.value))
@@ -125,7 +132,7 @@ export function TimeSeriesChart({
             onPointerLeave={() => setHover(null)}
             className="block overflow-visible"
           >
-            {y.ticks(GRID_LINES).map((tick) => (
+            {yTicks.map((tick) => (
               <g key={tick}>
                 <line
                   x1={PADDING.left}
