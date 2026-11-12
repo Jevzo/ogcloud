@@ -17,10 +17,7 @@ export function PrivacyPage() {
   const privacy = usePrivacyActions();
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t("nav.privacy")}
-        description={t("privacy.description")}
-      />
+      <PageHeader title={t("nav.privacy")} />
       <Note tone="info" icon={Info}>
         {t("privacy.kept")}
       </Note>

@@ -8,6 +8,7 @@ import { PermissionGroupCreateBody } from "@ogcloud/api-client/zod";
 import {
   Badge,
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -22,6 +23,7 @@ import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useCan } from "../../permissions.ts";
+import { placeholderPermissionGroup } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { RankChip } from "./rank-look.tsx";
 
@@ -98,7 +100,6 @@ export function PermissionGroupsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.permissions")}
-        description={t("permissions.description")}
         actions={
           canWrite ? (
             <Button
@@ -111,13 +112,14 @@ export function PermissionGroupsPage() {
           ) : undefined
         }
       />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.permissions")}
           data={rows}
           failure={loadFailure(groups)}
           columns={groupColumns}
           getRowId={(group) => group.id}
+          placeholder={placeholderPermissionGroup}
           actions={(group) => ({
             menu: [
               [
@@ -142,7 +144,7 @@ export function PermissionGroupsPage() {
             />
           }
         />
-      </section>
+      </Card>
       <NameIdDialog
         open={creating}
         onOpenChange={setCreating}

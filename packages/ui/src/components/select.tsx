@@ -42,6 +42,7 @@ export function Select<T extends string>({
       onValueChange={(next) => onValueChange(next as T)}
     >
       <Primitive.Trigger
+        data-skeleton=""
         {...trigger}
         className={cn(
           controlFrame,

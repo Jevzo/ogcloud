@@ -20,6 +20,7 @@ import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
+import { placeholderAudit } from "../../placeholders.ts";
 
 const columns = columnsFor<AuditEntryView>();
 
@@ -158,13 +159,14 @@ export function AuditTab() {
           </Field>
         </div>
       </Card>
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("activity.tabs.audit")}
           data={audit.items}
           failure={loadFailure(audit)}
           columns={auditColumns}
           getRowId={(entry) => entry.id}
+          placeholder={placeholderAudit}
           loading={audit.pending}
           maxHeight="calc(100vh - 24rem)"
           empty={
@@ -176,7 +178,7 @@ export function AuditTab() {
           }
         />
         <LoadMore paged={audit} />
-      </section>
+      </Card>
     </div>
   );
 }

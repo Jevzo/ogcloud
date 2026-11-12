@@ -45,6 +45,7 @@ import { downloadFile, uploadWithProgress } from "../../files.ts";
 import { useFormat } from "../../format.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
+import { placeholderTemplate } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 
 const GZIP = "application/gzip";
@@ -224,6 +225,7 @@ export function TemplatesPanel({
           failure={loadFailure(versions)}
           columns={versionColumns}
           getRowId={(version) => version.id}
+          placeholder={placeholderTemplate}
           actions={(version) => ({
             inline: [
               {

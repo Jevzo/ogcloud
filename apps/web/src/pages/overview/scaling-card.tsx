@@ -58,6 +58,7 @@ export function ScalingCard({
               <li key={entry.id} className="flex items-center gap-3 py-1.5">
                 <span
                   aria-hidden="true"
+                  data-skeleton=""
                   className={cn(
                     "grid size-7 shrink-0 place-items-center rounded-full",
                     tint,
@@ -66,10 +67,11 @@ export function ScalingCard({
                   <Icon size={14} strokeWidth={2} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate" title={title}>
+                  <span data-skeleton="" className="truncate" title={title}>
                     {title}
                   </span>
                   <span
+                    data-skeleton=""
                     className="truncate text-meta text-text-3"
                     title={reason}
                   >
@@ -77,6 +79,7 @@ export function ScalingCard({
                   </span>
                 </span>
                 <time
+                  data-skeleton=""
                   dateTime={entry.occurredAt}
                   className="shrink-0 text-meta text-text-3"
                 >

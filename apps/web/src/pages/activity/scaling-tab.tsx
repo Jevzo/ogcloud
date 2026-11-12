@@ -3,7 +3,7 @@ import {
   getLogScalingQueryKey,
   useLogScalingHook,
 } from "@ogcloud/api-client/react";
-import { columnsFor, DataTable, EmptyState } from "@ogcloud/ui";
+import { Card, columnsFor, DataTable, EmptyState } from "@ogcloud/ui";
 import { TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ import { agoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
+import { placeholderScaling } from "../../placeholders.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -74,13 +75,14 @@ export function ScalingTab() {
   return (
     <div className="flex flex-col gap-4">
       <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("activity.tabs.scaling")}
           data={scaling.items}
           failure={loadFailure(scaling)}
           columns={scalingColumns}
           getRowId={(entry) => entry.id}
+          placeholder={placeholderScaling}
           loading={scaling.pending}
           maxHeight="calc(100vh - 16rem)"
           empty={
@@ -92,7 +94,7 @@ export function ScalingTab() {
           }
         />
         <LoadMore paged={scaling} />
-      </section>
+      </Card>
     </div>
   );
 }

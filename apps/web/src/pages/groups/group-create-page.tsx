@@ -78,10 +78,7 @@ export function GroupCreatePage() {
         void form.handleSubmit();
       }}
     >
-      <PageHeader
-        title={t("groups.create.title")}
-        description={t("groups.create.description")}
-      />
+      <PageHeader title={t("groups.create.title")} />
       <Card title={t("groups.form.basics")}>
         <div className="flex flex-col gap-3">
           <form.AppField name="id">

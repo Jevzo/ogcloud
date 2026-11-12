@@ -18,10 +18,7 @@ export function ActivityPage() {
   );
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t("nav.activity")}
-        description={t("activity.description")}
-      />
+      <PageHeader title={t("nav.activity")} />
       <Tabs
         label={t("activity.sections")}
         value={section}

@@ -15,6 +15,7 @@ import { Ago } from "../../ago.tsx";
 import { loadFailure, useConfirmFailure } from "../../errors.ts";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan } from "../../permissions.ts";
+import { placeholderRuntime } from "../../placeholders.ts";
 
 const columns = columnsFor<RuntimeProfileView>();
 
@@ -79,6 +80,7 @@ export function RuntimeCard() {
         failure={loadFailure(runtime)}
         columns={profileColumns}
         getRowId={(profile) => profile.id}
+        placeholder={placeholderRuntime}
         actions={
           canWrite
             ? (profile) => ({

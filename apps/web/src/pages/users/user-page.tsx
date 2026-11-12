@@ -6,7 +6,16 @@ import {
   useUserUpdate,
 } from "@ogcloud/api-client/react";
 import { UserUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Button, Card, CopyField, Note, PageHeader } from "@ogcloud/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CopyField,
+  Loading,
+  Note,
+  PageHeader,
+  Value,
+} from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { KeyRound, Lock, LogOut, UserRound, Users } from "lucide-react";
@@ -19,6 +28,7 @@ import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { isOwner, useIsOwner, useMe } from "../../permissions.ts";
+import { placeholderUser } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
 import { useRoleNames } from "./role-names.ts";
@@ -44,7 +54,7 @@ export function UserPage() {
   const { userId } = useParams({ from: "/app/users/$userId" });
   const user = useUserGet(userId);
 
-  if (user.data === undefined) {
+  if (user.data === undefined && user.error !== null) {
     return (
       <DetailFallback
         error={user.error}
@@ -60,7 +70,16 @@ export function UserPage() {
       />
     );
   }
-  return <UserEditor key={user.data.data.id} user={user.data.data} />;
+  const view = user.data?.data;
+  // A new key when the data arrives, so the form starts from it rather than from the placeholder.
+  return (
+    <Loading when={view === undefined}>
+      <UserEditor
+        key={view === undefined ? "loading" : `loaded:${view.id}`}
+        user={view ?? placeholderUser}
+      />
+    </Loading>
+  );
 }
 
 function UserEditor({ user }: { user: UserView }) {
@@ -108,20 +127,17 @@ function UserEditor({ user }: { user: UserView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            {user.username}
+        title={<Value>{user.username}</Value>}
+        badges={
+          <>
             <UserStatusBadge enabled={user.enabled} />
             {user.id === me.id ? (
               <Badge tone="accent" icon={UserRound}>
                 {t("users.you")}
               </Badge>
             ) : null}
-          </span>
+          </>
         }
-        description={t("users.detail.description", {
-          role: roles.nameOf(user.roleId),
-        })}
         actions={
           <>
             <MoreMenu

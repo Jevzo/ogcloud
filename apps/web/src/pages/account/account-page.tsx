@@ -18,10 +18,7 @@ export function AccountPage() {
   const [section, setSection] = useState<Section>("profile");
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t("account.title")}
-        description={t("account.description")}
-      />
+      <PageHeader title={t("account.title")} />
       <Tabs
         label={t("account.sections")}
         value={section}

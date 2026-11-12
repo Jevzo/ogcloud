@@ -129,6 +129,7 @@ export function Combobox<T extends string>({
         <button
           type="button"
           role="combobox"
+          data-skeleton=""
           aria-expanded={open}
           {...trigger}
           className={cn(
@@ -195,6 +196,7 @@ export function MultiSelect<T extends string>({
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Anchor asChild>
         <div
+          data-skeleton=""
           className={cn(
             controlFrame,
             "flex min-h-control flex-wrap items-center gap-1.5 p-0.75",

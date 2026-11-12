@@ -23,7 +23,10 @@ export function CopyField({ value, label }: { value: string; label: string }) {
     );
 
   return (
-    <span className="flex h-control items-center gap-1 rounded-control border border-border bg-surface-2 pr-1 pl-2.5">
+    <span
+      data-skeleton=""
+      className="flex h-control items-center gap-1 rounded-control border border-border bg-surface-2 pr-1 pl-2.5"
+    >
       <span className="flex-1 truncate font-mono text-mono text-text-2">
         {value}
       </span>

@@ -1,3 +1,4 @@
+import { Value } from "@ogcloud/ui";
 import type { ReactNode } from "react";
 
 /** Labelled facts about one thing, label beside value. */
@@ -19,7 +20,9 @@ export function DetailRow({
   return (
     <>
       <dt className="text-text-3">{label}</dt>
-      <dd className="m-0">{children}</dd>
+      <dd className="m-0">
+        <Value>{children}</Value>
+      </dd>
     </>
   );
 }

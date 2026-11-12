@@ -1,6 +1,6 @@
 import { scaleLinear, scaleTime } from "d3-scale";
 import { area, curveMonotoneX, line } from "d3-shape";
-import { type PointerEvent, useId, useRef, useState } from "react";
+import { type PointerEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn.ts";
 import { useWidth } from "../lib/use-width.ts";
@@ -39,7 +39,7 @@ interface TimeSeriesChartProps {
   className?: string;
 }
 
-/** Values over time: a filled area for one series, lines for up to five, with a crosshair and a table view. */
+/** Values over time: a filled area for one series, lines for up to five, with a crosshair; screen readers get a table. */
 export function TimeSeriesChart({
   label,
   series,
@@ -51,8 +51,6 @@ export function TimeSeriesChart({
   const { t } = useTranslation("ui");
   const frame = useRef<HTMLDivElement>(null);
   const width = useWidth(frame);
-  const tableId = useId();
-  const [asTable, setAsTable] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
 
   const times = series[0]?.points.map((point) => point.at) ?? [];
@@ -92,17 +90,6 @@ export function TimeSeriesChart({
 
   return (
     <figure className={cn("relative m-0", className)}>
-      <div className="mb-1 flex justify-end">
-        <button
-          type="button"
-          aria-controls={tableId}
-          aria-expanded={asTable}
-          onClick={() => setAsTable((shown) => !shown)}
-          className="cursor-pointer rounded-control px-1.5 font-label text-accent-text text-meta hover:underline"
-        >
-          {asTable ? t("chart.showChart") : t("chart.showTable")}
-        </button>
-      </div>
       {series.length > 1 ? (
         <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-meta text-text-2">
           {series.map((s, index) => (
@@ -117,11 +104,7 @@ export function TimeSeriesChart({
           ))}
         </ul>
       ) : null}
-      <div
-        ref={frame}
-        className={cn("relative", asTable && "hidden")}
-        style={{ height }}
-      >
+      <div ref={frame} data-skeleton="" className="relative" style={{ height }}>
         {width > 0 ? (
           <svg
             width={width}
@@ -234,8 +217,8 @@ export function TimeSeriesChart({
           </div>
         )}
       </div>
-      <div className={cn(!asTable && "sr-only")}>
-        <table id={tableId} className="w-full text-table tabular-nums">
+      <div className="sr-only">
+        <table className="w-full text-table tabular-nums">
           <caption className="sr-only">{label}</caption>
           <thead>
             <tr>

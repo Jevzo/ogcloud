@@ -69,7 +69,7 @@ export function ServersCard({ byState, paused, onResume }: ServersCardProps) {
     <Card
       title={t("overview.servers.title")}
       actions={
-        <span className="text-small text-text-3 tabular-nums">
+        <span data-skeleton="" className="text-small text-text-3 tabular-nums">
           {t("overview.servers.total", { count: total })}
         </span>
       }
@@ -92,7 +92,7 @@ export function ServersCard({ byState, paused, onResume }: ServersCardProps) {
                 className={text}
               />
               <span className="flex-1">{t(`overview.servers.${key}`)}</span>
-              <span className="font-label tabular-nums">
+              <span data-skeleton="" className="font-label tabular-nums">
                 {format.number(count)}
               </span>
             </li>

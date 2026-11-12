@@ -38,6 +38,7 @@ export function Switch({
     <div className={cn("flex items-start gap-3", className)}>
       <SwitchPrimitive.Root
         id={id}
+        data-skeleton=""
         {...props}
         className="relative mt-0.5 h-5 w-9 shrink-0 cursor-pointer rounded-full bg-surface-3 shadow-[inset_0_0_0_1px_var(--og-border-control)] disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:bg-accent data-[state=checked]:shadow-none"
       >
@@ -59,6 +60,7 @@ export function Checkbox({
   return (
     <div className={cn("flex items-start gap-2.5", className)}>
       <CheckboxPrimitive.Root
+        data-skeleton=""
         id={id}
         {...props}
         className="mt-0.5 grid size-4 shrink-0 cursor-pointer place-items-center rounded-small border border-border-control bg-surface disabled:cursor-not-allowed disabled:opacity-45 data-[state=checked]:border-accent data-[state=checked]:bg-accent"

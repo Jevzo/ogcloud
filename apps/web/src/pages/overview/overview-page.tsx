@@ -3,9 +3,9 @@ import {
   Button,
   Card,
   ConfirmDialog,
+  Loading,
   Note,
   PageHeader,
-  Skeleton,
   useToast,
 } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
@@ -14,7 +14,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
+import { placeholderOverview } from "../../placeholders.ts";
 import { useGroupActions } from "../groups/group-actions.tsx";
+import { MaintenanceBadge } from "../network/maintenance-badge.tsx";
 import { useNetworkMaintenance } from "../network/network-actions.ts";
 import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
 import { GroupsCard } from "./groups-card.tsx";
@@ -31,20 +33,7 @@ export function OverviewPage() {
   const overview = useOverviewGet();
   const groupActions = useGroupActions();
 
-  if (overview.isPending) {
-    return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <PageHeader title={t("nav.overview")} />
-        <div className={GRID}>
-          <Skeleton className="h-64 rounded-card" />
-          <Skeleton className="h-64 rounded-card" />
-          <Skeleton className="h-72 rounded-card" />
-          <Skeleton className="h-72 rounded-card" />
-        </div>
-      </div>
-    );
-  }
-  if (overview.isError) {
+  if (overview.data === undefined && overview.isError) {
     return (
       <div className="flex flex-col gap-4">
         <PageHeader title={t("nav.overview")} />
@@ -57,52 +46,54 @@ export function OverviewPage() {
       </div>
     );
   }
-  const data = overview.data.data;
+  const loading = overview.data === undefined;
+  const data = overview.data?.data ?? placeholderOverview;
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t("nav.overview")}
-        description={
-          data.maintenance
-            ? t("overview.maintenanceOn")
-            : t("overview.maintenanceOff")
-        }
-        actions={
-          <OverviewActions
-            maintenance={data.maintenance}
-            groupIds={data.groups.map((group) => group.id)}
-          />
-        }
-      />
-      {data.eulaAccepted ? null : (
-        <Note
-          tone="warning"
-          icon={FileWarning}
-          action={
-            <Link
-              to="/network"
-              className="font-label text-small underline-offset-2 hover:underline"
-            >
-              {t("overview.eulaAction")}
-            </Link>
+    <Loading when={loading}>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t("nav.overview")}
+          badges={<MaintenanceBadge maintenance={data.maintenance} />}
+          actions={
+            <OverviewActions
+              maintenance={data.maintenance}
+              groupIds={data.groups.map((group) => group.id)}
+            />
           }
-        >
-          {t("overview.eula")}
-        </Note>
-      )}
-      <div className={GRID}>
-        <PlayersCard online={data.playersOnline} max={data.maxPlayers} />
-        <ServersCard
-          byState={data.serversByState}
-          paused={data.groups.filter((group) => group.crashLoopPaused)}
-          onResume={(id) => groupActions.request("resume", id)}
         />
-        <GroupsCard groups={data.groups} actionsFor={groupActions.actionsFor} />
-        <ScalingCard entries={data.recentScaling} />
+        {data.eulaAccepted ? null : (
+          <Note
+            tone="warning"
+            icon={FileWarning}
+            action={
+              <Link
+                to="/network"
+                className="font-label text-small underline-offset-2 hover:underline"
+              >
+                {t("overview.eulaAction")}
+              </Link>
+            }
+          >
+            {t("overview.eula")}
+          </Note>
+        )}
+        <div className={GRID}>
+          <PlayersCard online={data.playersOnline} max={data.maxPlayers} />
+          <ServersCard
+            byState={data.serversByState}
+            paused={data.groups.filter((group) => group.crashLoopPaused)}
+            onResume={(id) => groupActions.request("resume", id)}
+          />
+          <GroupsCard
+            groups={data.groups}
+            actionsFor={groupActions.actionsFor}
+          />
+          <ScalingCard entries={data.recentScaling} />
+        </div>
+        {groupActions.dialogs}
       </div>
-      {groupActions.dialogs}
-    </div>
+    </Loading>
   );
 }
 
@@ -136,13 +127,18 @@ function OverviewActions({
         maintenance ? (
           <Button
             icon={Play}
+            data-skeleton=""
             onClick={endMaintenance}
             loading={setMaintenance.isPending}
           >
             {t("overview.endMaintenance")}
           </Button>
         ) : (
-          <Button icon={Construction} onClick={() => setConfirming(true)}>
+          <Button
+            icon={Construction}
+            data-skeleton=""
+            onClick={() => setConfirming(true)}
+          >
             {t("overview.startMaintenance")}
           </Button>
         )

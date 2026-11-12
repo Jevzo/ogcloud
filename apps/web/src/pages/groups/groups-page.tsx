@@ -20,6 +20,10 @@ import { useTranslation } from "react-i18next";
 import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import {
+  placeholderGroup,
+  placeholderGroupOverview,
+} from "../../placeholders.ts";
 import { useGroupActions } from "./group-actions.tsx";
 import { GroupLink, GroupStatusBadge } from "./group-status.tsx";
 
@@ -30,6 +34,10 @@ interface GroupRow {
 }
 
 const columns = columnsFor<GroupRow>();
+const PLACEHOLDER_ROW: GroupRow = {
+  view: placeholderGroup,
+  live: placeholderGroupOverview,
+};
 const NO_LOAD = { running: 0, pending: 0, players: 0, capacity: 0 };
 
 /** Every group with its runtime, scaling range and live load, and the groups deleted recently. */
@@ -130,7 +138,6 @@ export function GroupsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.groups")}
-        description={t("groups.description", { count: rows.length })}
         actions={
           actions.canWrite ? (
             <Button
@@ -143,13 +150,14 @@ export function GroupsPage() {
           ) : undefined
         }
       />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.groups")}
           data={rows}
           failure={loadFailure(groups)}
           columns={groupColumns}
           getRowId={(row) => row.view.id}
+          placeholder={PLACEHOLDER_ROW}
           actions={(row) => actions.actionsFor(row.live)}
           loading={groups.isPending}
           empty={
@@ -160,7 +168,7 @@ export function GroupsPage() {
             />
           }
         />
-      </section>
+      </Card>
       {removed.length === 0 ? null : (
         <Card title={t("groups.deleted.title")}>
           <p className="mb-2 text-small text-text-3">

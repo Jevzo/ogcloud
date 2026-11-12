@@ -12,6 +12,7 @@ import { Layers } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
+import { placeholderGroupOverview } from "../../placeholders.ts";
 import { GroupLink, GroupStatusBadge } from "../groups/group-status.tsx";
 
 const columns = columnsFor<GroupOverview>();
@@ -94,6 +95,7 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
         data={groups}
         columns={groupColumns}
         getRowId={(group) => group.id}
+        placeholder={placeholderGroupOverview}
         actions={actionsFor}
         empty={
           <EmptyState

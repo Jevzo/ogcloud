@@ -16,11 +16,12 @@ import {
   RotateCw,
   TriangleAlert,
 } from "lucide-react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn.ts";
 import { Button } from "./button.tsx";
-import { EmptyState, Skeleton } from "./layout.tsx";
+import { EmptyState } from "./layout.tsx";
+import { Loading, useLoading, Value } from "./loading.tsx";
 import { Menu, type MenuItem } from "./menu.tsx";
 
 /** The features every OgCloud table registers: client-side sorting. */
@@ -69,6 +70,8 @@ interface DataTableProps<T extends RowData> {
   getRowId: (row: T) => string;
   actions?: ((row: T) => RowActions) | undefined;
   loading?: boolean;
+  /** A row as the contract shapes it, drawn as skeleton rows while the real ones load (D-0228). */
+  placeholder: T;
   empty: ReactNode;
   /** Set while the rows failed to load; with rows already shown, they stay. */
   failure?: TableFailure | undefined;
@@ -84,18 +87,25 @@ export function DataTable<T extends RowData>({
   columns,
   getRowId,
   actions,
-  loading = false,
+  loading: loadingRows = false,
+  placeholder,
   empty,
   failure,
   maxHeight,
   highlighted,
 }: DataTableProps<T>) {
   const { t } = useTranslation("ui");
+  // A loading view passes its own placeholder rows; a table loading alone draws a few of its placeholder.
+  const loading = useLoading() || loadingRows;
+  const placeholders = useMemo(
+    () => Array.from({ length: LOADING_ROWS }, () => placeholder),
+    [placeholder],
+  );
   const table = useTable({
     features: tableFeatureSet,
     columns,
-    data: data as T[],
-    getRowId: (row) => getRowId(row),
+    data: (loadingRows ? placeholders : data) as T[],
+    getRowId: (row, index) => (loading ? `loading-${index}` : getRowId(row)),
   });
   const scroller = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
@@ -118,166 +128,163 @@ export function DataTable<T extends RowData>({
   const columnCount = table.getAllLeafColumns().length + (actions ? 1 : 0);
 
   return (
-    <div
-      ref={scroller}
-      className="overflow-auto"
-      style={maxHeight === undefined ? undefined : { maxHeight }}
-    >
-      <table
-        aria-label={label}
-        className="w-full border-collapse text-table tabular-nums"
+    <Loading when={loading}>
+      <div
+        ref={scroller}
+        className="overflow-auto"
+        style={maxHeight === undefined ? undefined : { maxHeight }}
       >
-        <thead className="sticky top-0 z-10 bg-surface">
-          {table.getHeaderGroups().map((group) => (
-            <tr key={group.id}>
-              {group.headers.map((header) => {
-                const sorted = header.column.getIsSorted();
-                return (
-                  <th
-                    key={header.id}
-                    scope="col"
-                    aria-sort={
-                      sorted === "asc"
-                        ? "ascending"
-                        : sorted === "desc"
-                          ? "descending"
-                          : undefined
-                    }
-                    className="h-row border-border-subtle border-b px-3 text-left font-label text-text-3 whitespace-nowrap first:pl-4"
-                  >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        type="button"
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="inline-flex cursor-pointer items-center gap-1 hover:text-text"
-                      >
+        <table
+          aria-label={label}
+          className="w-full border-collapse text-table tabular-nums"
+        >
+          <thead className="sticky top-0 z-10 bg-surface">
+            {table.getHeaderGroups().map((group) => (
+              <tr key={group.id}>
+                {group.headers.map((header) => {
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <th
+                      key={header.id}
+                      scope="col"
+                      aria-sort={
+                        sorted === "asc"
+                          ? "ascending"
+                          : sorted === "desc"
+                            ? "descending"
+                            : undefined
+                      }
+                      className="h-row border-border-subtle border-b px-3 text-left font-label text-text-3 whitespace-nowrap first:pl-4"
+                    >
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="inline-flex cursor-pointer items-center gap-1 hover:text-text"
+                        >
+                          <table.FlexRender header={header} />
+                          {sorted === "asc" ? (
+                            <ArrowUp
+                              aria-label={t("table.sortedAscending")}
+                              size={13}
+                            />
+                          ) : sorted === "desc" ? (
+                            <ArrowDown
+                              aria-label={t("table.sortedDescending")}
+                              size={13}
+                            />
+                          ) : null}
+                        </button>
+                      ) : (
                         <table.FlexRender header={header} />
-                        {sorted === "asc" ? (
-                          <ArrowUp
-                            aria-label={t("table.sortedAscending")}
-                            size={13}
-                          />
-                        ) : sorted === "desc" ? (
-                          <ArrowDown
-                            aria-label={t("table.sortedDescending")}
-                            size={13}
-                          />
-                        ) : null}
-                      </button>
-                    ) : (
-                      <table.FlexRender header={header} />
-                    )}
+                      )}
+                    </th>
+                  );
+                })}
+                {actions ? (
+                  <th
+                    scope="col"
+                    className="w-px border-border-subtle border-b px-2"
+                  >
+                    <span className="sr-only">{t("table.actions")}</span>
                   </th>
-                );
-              })}
-              {actions ? (
-                <th
-                  scope="col"
-                  className="w-px border-border-subtle border-b px-2"
-                >
-                  <span className="sr-only">{t("table.actions")}</span>
-                </th>
-              ) : null}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {loading ? (
-            Array.from({ length: LOADING_ROWS }, (_, index) => (
-              <tr key={index}>
-                <td
-                  colSpan={columnCount}
-                  className="h-row border-border-subtle border-b px-4"
-                >
-                  <Skeleton className="h-3 w-2/3" />
+                ) : null}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={columnCount} className="p-4">
+                  {failure === undefined ? (
+                    empty
+                  ) : (
+                    <EmptyState
+                      icon={TriangleAlert}
+                      title={t("table.failed")}
+                      description={failure.message}
+                      action={
+                        <Button icon={RotateCw} onClick={failure.retry}>
+                          {t("table.retry")}
+                        </Button>
+                      }
+                    />
+                  )}
                 </td>
               </tr>
-            ))
-          ) : rows.length === 0 ? (
-            <tr>
-              <td colSpan={columnCount} className="p-4">
-                {failure === undefined ? (
-                  empty
-                ) : (
-                  <EmptyState
-                    icon={TriangleAlert}
-                    title={t("table.failed")}
-                    description={failure.message}
-                    action={
-                      <Button icon={RotateCw} onClick={failure.retry}>
-                        {t("table.retry")}
-                      </Button>
-                    }
-                  />
-                )}
-              </td>
-            </tr>
-          ) : (
-            <>
-              {paddingTop > 0 ? <tr style={{ height: paddingTop }} /> : null}
-              {visible.map((row) => {
-                const rowActions = actions?.(row.original);
-                return (
-                  <tr
-                    key={row.id}
-                    data-index={virtual ? row.index : undefined}
-                    ref={virtual ? virtualizer.measureElement : undefined}
-                    className={cn(
-                      "group hover:bg-surface-2 focus-within:bg-surface-2",
-                      highlighted?.(row.original) && "bg-accent-soft/60",
-                    )}
-                  >
-                    {row.getAllCells().map((cell) => (
-                      // One line per row, so rows keep the density's height and the virtualiser's measure.
-                      <td
-                        key={cell.id}
-                        className="h-row border-border-subtle border-b px-3 whitespace-nowrap first:pl-4"
-                      >
-                        <table.FlexRender cell={cell} />
-                      </td>
-                    ))}
-                    {rowActions ? (
-                      <td className="border-border-subtle border-b px-2 text-right whitespace-nowrap">
-                        <span className="inline-flex items-center gap-0.5">
-                          {rowActions.inline?.map((action) => (
-                            <Button
-                              key={action.label}
-                              kind="ghost"
-                              size="sm"
-                              icon={action.icon}
-                              iconOnly
-                              onClick={action.onPress}
-                              className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                            >
-                              {action.label}
-                            </Button>
-                          ))}
-                          <Menu
-                            groups={rowActions.menu}
-                            trigger={
+            ) : (
+              <>
+                {paddingTop > 0 ? <tr style={{ height: paddingTop }} /> : null}
+                {visible.map((row) => {
+                  const rowActions = actions?.(row.original);
+                  return (
+                    <tr
+                      key={row.id}
+                      data-index={virtual ? row.index : undefined}
+                      ref={virtual ? virtualizer.measureElement : undefined}
+                      className={cn(
+                        "group hover:bg-surface-2 focus-within:bg-surface-2",
+                        highlighted?.(row.original) && "bg-accent-soft/60",
+                      )}
+                    >
+                      {row.getAllCells().map((cell) => (
+                        // One line per row, so rows keep the density's height and the virtualiser's measure.
+                        <td
+                          key={cell.id}
+                          className="h-row border-border-subtle border-b px-3 whitespace-nowrap first:pl-4"
+                        >
+                          {loading ? (
+                            <Value className="align-middle">
+                              <table.FlexRender cell={cell} />
+                            </Value>
+                          ) : (
+                            <table.FlexRender cell={cell} />
+                          )}
+                        </td>
+                      ))}
+                      {rowActions ? (
+                        <td className="border-border-subtle border-b px-2 text-right whitespace-nowrap">
+                          <span className="inline-flex items-center gap-0.5">
+                            {rowActions.inline?.map((action) => (
                               <Button
+                                key={action.label}
                                 kind="ghost"
                                 size="sm"
-                                icon={Ellipsis}
+                                icon={action.icon}
                                 iconOnly
+                                onClick={action.onPress}
+                                className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                               >
-                                {t("actions.more")}
+                                {action.label}
                               </Button>
-                            }
-                          />
-                        </span>
-                      </td>
-                    ) : null}
-                  </tr>
-                );
-              })}
-              {paddingBottom > 0 ? (
-                <tr style={{ height: paddingBottom }} />
-              ) : null}
-            </>
-          )}
-        </tbody>
-      </table>
-    </div>
+                            ))}
+                            <Menu
+                              groups={rowActions.menu}
+                              trigger={
+                                <Button
+                                  kind="ghost"
+                                  size="sm"
+                                  icon={Ellipsis}
+                                  iconOnly
+                                >
+                                  {t("actions.more")}
+                                </Button>
+                              }
+                            />
+                          </span>
+                        </td>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+                {paddingBottom > 0 ? (
+                  <tr style={{ height: paddingBottom }} />
+                ) : null}
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Loading>
   );
 }

@@ -129,6 +129,8 @@ const SERVERS: ServerRow[] = [
     started: "6 h ago",
   },
 ];
+// Any row will do: while loading, the table draws it as skeletons.
+const PLACEHOLDER_SERVER = SERVERS[0] as ServerRow;
 
 const STATE_ICONS = {
   success: CircleCheck,
@@ -596,6 +598,7 @@ function Table() {
         data={SERVERS}
         columns={SERVER_COLUMNS}
         getRowId={(row) => row.id}
+        placeholder={PLACEHOLDER_SERVER}
         highlighted={(row) => row.id === "bedwars-5c1e09"}
         empty={null}
         actions={(row) => ({
@@ -657,6 +660,7 @@ function FailedTable() {
         data={[]}
         columns={SERVER_COLUMNS}
         getRowId={(row) => row.id}
+        placeholder={PLACEHOLDER_SERVER}
         empty={null}
         failure={{
           message:
@@ -924,7 +928,6 @@ export function Sheet() {
     <main className="mx-auto flex flex-col gap-8 p-8">
       <PageHeader
         title="OgCloud UI kit"
-        description="The Layered direction (D-0216) in every component, as the dashboard uses them."
         actions={
           <>
             <Button>Secondary action</Button>

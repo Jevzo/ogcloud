@@ -22,6 +22,7 @@ export function Meter({
   return (
     <span
       aria-hidden="true"
+      data-skeleton=""
       className={cn(
         "inline-block h-1.5 w-16 overflow-hidden rounded-full bg-surface-3",
         className,
@@ -64,6 +65,7 @@ export function StackedBar({
   return (
     <span
       aria-hidden="true"
+      data-skeleton=""
       className={cn(
         "flex h-2.5 gap-0.5 overflow-hidden rounded-small",
         className,

@@ -37,7 +37,7 @@ interface BadgeProps {
 
 export function Badge({ tone, icon: Icon, children, className }: BadgeProps) {
   return (
-    <span className={cn(badge({ tone }), className)}>
+    <span data-skeleton="" className={cn(badge({ tone }), className)}>
       {Icon ? (
         <Icon aria-hidden="true" size={13} strokeWidth={2} />
       ) : (

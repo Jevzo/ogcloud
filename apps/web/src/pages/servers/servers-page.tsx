@@ -2,6 +2,7 @@ import type { ServerView, ServerViewState } from "@ogcloud/api-client";
 import { useOverviewGet, useServerList } from "@ogcloud/api-client/react";
 import {
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -17,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { placeholderServer } from "../../placeholders.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { CommandDialog } from "./command-dialog.tsx";
 import { RequestServerDialog } from "./request-server-dialog.tsx";
@@ -121,7 +123,6 @@ export function ServersPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.servers")}
-        description={t("servers.description", { count: all.length })}
         actions={
           actions.can.command ? (
             <>
@@ -163,13 +164,14 @@ export function ServersPage() {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.servers")}
           data={shown}
           failure={loadFailure(servers)}
           columns={serverColumns}
           getRowId={(server) => server.id}
+          placeholder={placeholderServer}
           actions={actions.actionsFor}
           loading={servers.isPending}
           maxHeight="calc(100vh - 14rem)"
@@ -189,7 +191,7 @@ export function ServersPage() {
             />
           }
         />
-      </section>
+      </Card>
       {actions.dialogs}
       <RequestServerDialog
         open={requesting}

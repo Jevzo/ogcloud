@@ -125,6 +125,18 @@ export const ADMIN_NAV: readonly NavItem[] = [
 
 export const ALL_NAV: readonly NavItem[] = [...PRIMARY_NAV, ...ADMIN_NAV];
 
+/** Opens every primary page, so the sidebar's skeleton shows their items while the profile loads. */
+export const PRIMARY_PERMISSIONS: readonly string[] = PRIMARY_NAV.flatMap(
+  (item) => item.permissions,
+);
+
+/** The navigation item a path belongs to, such as Servers for a server's page. */
+export function navItemOf(pathname: string): NavItem | undefined {
+  return ALL_NAV.find((item) =>
+    item.path === "/" ? pathname === "/" : pathname.startsWith(item.path),
+  );
+}
+
 export function allowed(
   items: readonly NavItem[],
   permissions: readonly string[],

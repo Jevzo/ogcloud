@@ -16,6 +16,7 @@ import {
   Button,
   Card,
   ConfirmDialog,
+  Loading,
   Note,
   PageHeader,
   useToast,
@@ -45,8 +46,10 @@ import { MINECRAFT_EULA_URL } from "../../links.ts";
 import { MoreMenu } from "../../more-menu.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useCan, useIsOwner } from "../../permissions.ts";
+import { placeholderNetwork } from "../../placeholders.ts";
 import { useTextValidator } from "../../texts.ts";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
+import { MaintenanceBadge } from "./maintenance-badge.tsx";
 import { useNetworkMaintenance } from "./network-actions.ts";
 import { NetworkLook } from "./network-look.tsx";
 import { ROUTING_STRATEGIES } from "./routing.ts";
@@ -61,7 +64,7 @@ const SettingsForm = contractSchema<{ settings: NetworkSettingsFields }>(
 export function NetworkPage() {
   const { t } = useTranslation("web");
   const network = useNetworkGet();
-  if (network.data === undefined) {
+  if (network.data === undefined && network.error !== null) {
     return (
       <DetailFallback
         error={network.error}
@@ -77,7 +80,16 @@ export function NetworkPage() {
       />
     );
   }
-  return <NetworkEditor view={network.data.data} />;
+  const view = network.data?.data;
+  // A new key when the data arrives, so the form starts from it rather than from the placeholder.
+  return (
+    <Loading when={view === undefined}>
+      <NetworkEditor
+        key={view === undefined ? "loading" : "loaded"}
+        view={view ?? placeholderNetwork}
+      />
+    </Loading>
+  );
 }
 
 type NetworkAction = "restart" | "rotate" | "maintenance";
@@ -122,11 +134,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.network")}
-        description={
-          view.settings.maintenance
-            ? t("overview.maintenanceOn")
-            : t("overview.maintenanceOff")
-        }
+        badges={<MaintenanceBadge maintenance={view.settings.maintenance} />}
         actions={
           canWrite ? (
             <>
@@ -153,6 +161,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
               {view.settings.maintenance ? (
                 <Button
                   icon={Play}
+                  data-skeleton=""
                   loading={maintenance.isPending}
                   onClick={() =>
                     maintenance.mutate(false, {
@@ -166,6 +175,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
               ) : (
                 <Button
                   icon={Construction}
+                  data-skeleton=""
                   onClick={() => pending.open("maintenance", true)}
                 >
                   {t("overview.startMaintenance")}

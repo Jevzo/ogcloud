@@ -8,6 +8,7 @@ import { RoleCreateBody } from "@ogcloud/api-client/zod";
 import {
   Badge,
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -22,6 +23,7 @@ import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useIsOwner } from "../../permissions.ts";
+import { placeholderRole } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 
 const columns = columnsFor<RoleView>();
@@ -80,7 +82,6 @@ export function RolesPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.roles")}
-        description={t("roles.description")}
         actions={
           isOwner ? (
             <Button
@@ -93,13 +94,14 @@ export function RolesPage() {
           ) : undefined
         }
       />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.roles")}
           data={roles.data?.data ?? []}
           failure={loadFailure(roles)}
           columns={roleColumns}
           getRowId={(role) => role.id}
+          placeholder={placeholderRole}
           actions={(role) => ({
             menu: [
               [
@@ -124,7 +126,7 @@ export function RolesPage() {
             />
           }
         />
-      </section>
+      </Card>
       <NameIdDialog
         open={creating}
         onOpenChange={setCreating}

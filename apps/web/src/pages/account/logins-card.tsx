@@ -4,7 +4,14 @@ import {
   useMeListLogins,
   useMeRevokeLogin,
 } from "@ogcloud/api-client/react";
-import { Badge, Button, Card, ConfirmDialog, useToast } from "@ogcloud/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  Loading,
+  useToast,
+} from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppWindow, LogOut, MonitorSmartphone } from "lucide-react";
 import { useState } from "react";
@@ -17,8 +24,12 @@ import {
 } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
+import { placeholderLogin } from "../../placeholders.ts";
 
 // OgCloud's own apps by client id (D-0012, D-0153); any other client shows its id.
+// Two rows, as a signed-in user has at least this device and often another.
+const PLACEHOLDER_LOGINS = [placeholderLogin, placeholderLogin];
+
 const APPS = {
   [WEB_CLIENT]: "web",
   "ogcloud-desktop": "desktop",
@@ -43,9 +54,10 @@ export function LoginsCard() {
   const logins = useMeListLogins();
   const revoke = useMeRevokeLogin();
   const [signingOutOthers, setSigningOutOthers] = useState(false);
-  const list = logins.data?.data ?? [];
-  const others = list.filter((login) => !login.current);
   const failure = loadFailure(logins);
+  const loading = logins.data === undefined && failure === undefined;
+  const list = logins.data?.data ?? (loading ? PLACEHOLDER_LOGINS : []);
+  const others = list.filter((login) => !login.current);
   const now = Date.now();
   const refresh = () =>
     queries.invalidateQueries({ queryKey: getMeListLoginsQueryKey() });
@@ -66,7 +78,7 @@ export function LoginsCard() {
     <Card
       title={t("account.logins.title")}
       actions={
-        others.length > 0 ? (
+        others.length > 0 && !loading ? (
           <Button
             size="sm"
             icon={LogOut}
@@ -78,47 +90,57 @@ export function LoginsCard() {
       }
     >
       {failure === undefined ? null : <LoadFailed failure={failure} />}
-      <ul className="flex flex-col">
-        {list.map((login) => (
-          <li
-            key={login.id}
-            className="flex items-center gap-3 border-border-subtle border-t py-2.5 first:border-t-0 first:pt-0"
-          >
-            {login.clientId === WEB_CLIENT ? (
-              <AppWindow
-                aria-hidden="true"
-                size={18}
-                className="shrink-0 text-text-2"
-              />
-            ) : (
-              <MonitorSmartphone
-                aria-hidden="true"
-                size={18}
-                className="shrink-0 text-text-2"
-              />
-            )}
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="flex items-center gap-2 font-label">
-                {appOf(login)}
-                {login.current ? (
-                  <Badge tone="accent">{t("account.logins.thisDevice")}</Badge>
-                ) : null}
+      <Loading when={loading}>
+        <ul className="flex flex-col">
+          {list.map((login) => (
+            <li
+              key={login.id}
+              className="flex items-center gap-3 border-border-subtle border-t py-2.5 first:border-t-0 first:pt-0"
+            >
+              {login.clientId === WEB_CLIENT ? (
+                <AppWindow
+                  aria-hidden="true"
+                  size={18}
+                  className="shrink-0 text-text-2"
+                />
+              ) : (
+                <MonitorSmartphone
+                  aria-hidden="true"
+                  size={18}
+                  className="shrink-0 text-text-2"
+                />
+              )}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span
+                  data-skeleton=""
+                  className="flex items-center gap-2 self-start font-label"
+                >
+                  {appOf(login)}
+                  {login.current ? (
+                    <Badge tone="accent">
+                      {t("account.logins.thisDevice")}
+                    </Badge>
+                  ) : null}
+                </span>
+                <span
+                  data-skeleton=""
+                  className="self-start text-meta text-text-3"
+                >
+                  {t("account.logins.detail", {
+                    signedIn: ago(login.signedInAt),
+                    active: ago(login.lastActiveAt),
+                  })}
+                </span>
               </span>
-              <span className="text-meta text-text-3">
-                {t("account.logins.detail", {
-                  signedIn: ago(login.signedInAt),
-                  active: ago(login.lastActiveAt),
-                })}
-              </span>
-            </span>
-            {login.current ? null : (
-              <Button size="sm" onClick={() => void signOut(login)}>
-                {t("account.logins.signOut")}
-              </Button>
-            )}
-          </li>
-        ))}
-      </ul>
+              {login.current ? null : (
+                <Button size="sm" onClick={() => void signOut(login)}>
+                  {t("account.logins.signOut")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Loading>
       <ConfirmDialog
         open={signingOutOthers}
         onOpenChange={setSigningOutOthers}

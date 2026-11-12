@@ -71,6 +71,7 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
         >
           <span
             aria-hidden="true"
+            data-skeleton=""
             className="grid size-7.5 shrink-0 place-items-center rounded-full bg-accent-soft font-heavy text-accent-text text-meta"
           >
             {initials}
@@ -78,8 +79,13 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
           {collapsed ? null : (
             <>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-label">{me.username}</span>
-                <span className="truncate text-meta text-text-3">
+                <span data-skeleton="" className="truncate font-label">
+                  {me.username}
+                </span>
+                <span
+                  data-skeleton=""
+                  className="truncate text-meta text-text-3"
+                >
                   {me.roleId}
                 </span>
               </span>

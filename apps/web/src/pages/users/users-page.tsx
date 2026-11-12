@@ -7,6 +7,7 @@ import {
 import {
   Badge,
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -27,6 +28,7 @@ import { loadFailure, useFailureToast } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { useIsOwner, useMe } from "../../permissions.ts";
+import { placeholderUser } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { isValidPassword, NewPasswordField } from "./new-password-field.tsx";
 import { useRoleNames } from "./role-names.ts";
@@ -116,7 +118,6 @@ export function UsersPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.users")}
-        description={t("users.description")}
         actions={
           isOwner ? (
             <Button
@@ -129,13 +130,14 @@ export function UsersPage() {
           ) : undefined
         }
       />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.users")}
           data={users.items}
           failure={loadFailure(users)}
           columns={userColumns}
           getRowId={(user) => user.id}
+          placeholder={placeholderUser}
           actions={(user) => {
             const items = actions.itemsFor(user);
             return {
@@ -166,7 +168,7 @@ export function UsersPage() {
           }
         />
         <LoadMore paged={users} />
-      </section>
+      </Card>
       <CreateUserDialog
         open={creating}
         onOpenChange={setCreating}

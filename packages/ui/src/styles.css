@@ -85,6 +85,33 @@
   }
 }
 
+/*
+ * A loading view's data stands as skeletons of their own size (D-0228). The tint suits the page and the cards in
+ * both themes; elements without a radius of their own take the small one.
+ */
+@layer components {
+  [data-loading] [data-skeleton] {
+    border-radius: var(--radius-small);
+  }
+}
+
+[data-loading] [data-skeleton] {
+  color: transparent !important;
+  background: color-mix(in oklab, var(--og-text) 9%, transparent) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  animation: var(--animate-pulse);
+  user-select: none;
+
+  & * {
+    visibility: hidden;
+  }
+
+  &::placeholder {
+    color: transparent;
+  }
+}
+
 /* Selected game text keeps its own colours under a see-through accent: the colours are what a preview shows. */
 @utility game-selection {
   &::selection,

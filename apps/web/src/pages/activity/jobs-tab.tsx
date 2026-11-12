@@ -2,6 +2,7 @@ import type { JobView } from "@ogcloud/api-client";
 import { getJobListQueryKey, useJobListHook } from "@ogcloud/api-client/react";
 import {
   Badge,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -22,6 +23,7 @@ import { agoColumn, monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
+import { placeholderJob } from "../../placeholders.ts";
 
 // Progress also arrives over the event stream; polling covers events lost to at-most-once delivery (D-0105).
 const RUNNING_REFRESH_MS = 3_000;
@@ -125,13 +127,14 @@ export function JobsTab() {
   );
 
   return (
-    <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+    <Card flush>
       <DataTable
         label={t("activity.tabs.jobs")}
         data={jobs.items}
         failure={loadFailure(jobs)}
         columns={jobColumns}
         getRowId={(job) => job.id}
+        placeholder={placeholderJob}
         loading={jobs.pending}
         maxHeight="calc(100vh - 14rem)"
         empty={
@@ -143,6 +146,6 @@ export function JobsTab() {
         }
       />
       <LoadMore paged={jobs} />
-    </section>
+    </Card>
   );
 }

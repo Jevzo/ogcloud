@@ -6,6 +6,7 @@ import {
   usePlayerOnlineHook,
 } from "@ogcloud/api-client/react";
 import {
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -23,6 +24,10 @@ import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
+import {
+  placeholderOnlinePlayer,
+  placeholderPlayer,
+} from "../../placeholders.ts";
 import { useServerNames } from "../servers/server-names.ts";
 import { type PlayerRef, usePlayerActions } from "./player-actions.tsx";
 
@@ -58,6 +63,7 @@ interface PlayerTableProps<T extends Named> {
   label: string;
   paged: ReturnType<typeof usePaged<T>>;
   rows: readonly T[];
+  placeholder: T;
   columns: Parameters<typeof DataTable<T>>[0]["columns"];
   toRef: (row: T) => PlayerRef;
   actions: ReturnType<typeof usePlayerActions>;
@@ -70,6 +76,7 @@ function PlayerTable<T extends Named>({
   label,
   paged,
   rows,
+  placeholder,
   columns,
   toRef,
   actions,
@@ -84,6 +91,7 @@ function PlayerTable<T extends Named>({
         failure={loadFailure(paged)}
         columns={columns}
         getRowId={(player) => player.uuid}
+        placeholder={placeholder}
         actions={(player) => actions.actionsFor(toRef(player))}
         loading={paged.pending}
         maxHeight="calc(100vh - 16rem)"
@@ -111,10 +119,7 @@ export function PlayersPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title={t("nav.players")}
-        description={t("players.description")}
-      />
+      <PageHeader title={t("nav.players")} />
       <div className="flex flex-wrap items-center gap-2">
         <Segmented
           label={t("players.view")}
@@ -134,13 +139,13 @@ export function PlayersPage() {
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         {view === "online" ? (
           <OnlineTable search={settled} actions={actions} />
         ) : (
           <KnownTable search={settled} actions={actions} />
         )}
-      </section>
+      </Card>
       {actions.dialogs}
     </div>
   );
@@ -216,6 +221,7 @@ function OnlineTable({
       label={t("players.online")}
       paged={online}
       rows={online.items}
+      placeholder={placeholderOnlinePlayer}
       columns={columns}
       toRef={(player) => ({
         uuid: player.uuid,
@@ -292,6 +298,7 @@ function KnownTable({
       label={t("players.everyone")}
       paged={known}
       rows={known.items}
+      placeholder={placeholderPlayer}
       columns={columns}
       toRef={(player) => ({
         uuid: player.uuid,

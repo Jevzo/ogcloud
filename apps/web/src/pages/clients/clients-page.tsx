@@ -10,6 +10,7 @@ import {
 import {
   Badge,
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -26,6 +27,7 @@ import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { agoColumn, monoColumn } from "../../columns.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useIsOwner } from "../../permissions.ts";
+import { placeholderClient } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { PermissionPicker } from "../roles/permission-picker.tsx";
 import { SecretDialog } from "./secret-dialog.tsx";
@@ -97,7 +99,6 @@ export function ClientsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.clients")}
-        description={t("clients.description")}
         actions={
           isOwner ? (
             <Button
@@ -110,13 +111,14 @@ export function ClientsPage() {
           ) : undefined
         }
       />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.clients")}
           data={clients.data?.data ?? []}
           failure={loadFailure(clients)}
           columns={clientColumns}
           getRowId={(client) => client.clientId}
+          placeholder={placeholderClient}
           actions={(client) => ({
             menu: [
               [
@@ -141,7 +143,7 @@ export function ClientsPage() {
             />
           }
         />
-      </section>
+      </Card>
       <CreateClientDialog
         open={creating}
         onOpenChange={setCreating}

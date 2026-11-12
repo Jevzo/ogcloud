@@ -137,7 +137,7 @@ export function TagTextField({
   };
 
   return (
-    <div className={cn(controlFrame, "overflow-hidden")}>
+    <div data-skeleton="" className={cn(controlFrame, "overflow-hidden")}>
       <div
         role="toolbar"
         aria-label={t("tagText.formatting")}

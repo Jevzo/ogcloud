@@ -17,6 +17,7 @@ import {
   CopyField,
   Field,
   Input,
+  Loading,
   useToast,
 } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +37,7 @@ import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useMe } from "../../permissions.ts";
+import { placeholderPasskey } from "../../placeholders.ts";
 import { QrCode } from "../../qr-code.tsx";
 import { CODE_LENGTH, CodeField } from "./code-field.tsx";
 
@@ -81,8 +83,15 @@ function FactorRow({
     <div className="flex items-center gap-3 border-border-subtle border-t py-2.5 first:border-t-0 first:pt-0">
       <Icon aria-hidden="true" size={18} className="shrink-0 text-text-2" />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center gap-2 font-label">{title}</span>
-        <span className="text-meta text-text-3">{detail}</span>
+        <span
+          data-skeleton=""
+          className="flex items-center gap-2 self-start font-label"
+        >
+          {title}
+        </span>
+        <span data-skeleton="" className="self-start text-meta text-text-3">
+          {detail}
+        </span>
       </span>
       <span className="flex gap-1.5">{children}</span>
     </div>
@@ -302,10 +311,11 @@ function PasskeyRows() {
   const now = Date.now();
   const passkeys = useMeListPasskeys();
   const pending = usePendingAction<PasskeyAction, PasskeyView>();
-  const list = passkeys.data?.data ?? [];
   const failure = loadFailure(passkeys);
+  const loading = passkeys.data === undefined && failure === undefined;
+  const list = passkeys.data?.data ?? (loading ? [placeholderPasskey] : []);
   return (
-    <>
+    <Loading when={loading}>
       {failure !== undefined && list.length === 0 ? (
         <LoadFailed failure={failure} />
       ) : list.length === 0 ? (
@@ -358,7 +368,7 @@ function PasskeyRows() {
         open={pending.isOpen("remove")}
         onOpenChange={pending.onOpenChange}
       />
-    </>
+    </Loading>
   );
 }
 

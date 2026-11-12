@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn.ts";
 import { type GameSpan, GameText } from "./game-text.tsx";
-import { gameLook } from "./minecraft.ts";
+import { gameLook, splitToWidth } from "./minecraft.ts";
 
 const gameFont = "font-game text-game game-selection";
 
@@ -24,47 +24,109 @@ export function PreviewFrame({
 interface ServerListPreviewProps {
   icon: string;
   name: string;
-  /** The MOTD's lines; the game shows two. */
+  /** The MOTD's lines; the game wraps them to its width and shows two. */
   motd: readonly (readonly GameSpan[])[];
   players: string;
 }
 
+// The server list's row in game pixels: a 32 pixel icon, text from 35, the MOTD split at 271 pixels.
+const SERVER_ROW = {
+  width: 305,
+  icon: 32,
+  textGap: 3,
+  nameTop: 1,
+  motdGap: 2,
+  motdWidth: 271,
+  motdLines: 2,
+} as const;
+// Monocraft draws on nine units an em, caps seven high, and every glyph moves on six: one unit is a game pixel.
+const UNITS_PER_EM = 9;
+const MONOCRAFT_ADVANCE = 6;
+const ROW_PADDING = 2;
+
+const gamePixels = (pixels: number) => `${pixels / UNITS_PER_EM}em`;
+
+/**
+ * A server-list row drawn to the game's measure, scaled to the frame's width and no larger than other previews:
+ * the MOTD breaks where the game breaks it, and a line Monocraft draws wider than the game is narrowed to fit.
+ */
 export function ServerListPreview({
   icon,
   name,
   motd,
   players,
 }: ServerListPreviewProps) {
+  const lines = motd
+    .flatMap((line) => splitToWidth(line, SERVER_ROW.motdWidth))
+    .slice(0, SERVER_ROW.motdLines);
+  const rowWidth = SERVER_ROW.width + 2 * ROW_PADDING;
   return (
-    <div
-      className={cn("flex gap-2.5 rounded-game border-2 p-2", gameFont)}
-      style={{ backgroundColor: gameLook.panel, borderColor: gameLook.edge }}
-    >
-      <img
-        src={icon}
-        alt=""
-        width={60}
-        height={60}
-        className="size-15 shrink-0 [image-rendering:pixelated]"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex">
-          <span className="flex-1 truncate">
-            <GameText spans={[{ text: name }]} defaultColour={gameLook.text} />
-          </span>
-          <GameText
-            spans={[{ text: players }]}
-            defaultColour={gameLook.serverListText}
-          />
-        </div>
-        {motd.map((spans, index) => (
-          <div key={index} className="truncate whitespace-pre">
-            <GameText spans={spans} defaultColour={gameLook.serverListText} />
+    <div className="@container">
+      <div
+        data-skeleton=""
+        className={cn("flex rounded-game border-2", gameFont)}
+        style={{
+          fontSize: `min(var(--text-game), calc(100cqw * ${UNITS_PER_EM} / ${rowWidth}))`,
+          lineHeight: 1,
+          padding: gamePixels(ROW_PADDING),
+          gap: gamePixels(SERVER_ROW.textGap),
+          backgroundColor: gameLook.panel,
+          borderColor: gameLook.edge,
+        }}
+      >
+        <img
+          src={icon}
+          alt=""
+          className="shrink-0 [image-rendering:pixelated]"
+          style={{
+            width: gamePixels(SERVER_ROW.icon),
+            height: gamePixels(SERVER_ROW.icon),
+          }}
+        />
+        <div
+          className="min-w-0 flex-1"
+          style={{ paddingTop: gamePixels(SERVER_ROW.nameTop) }}
+        >
+          <div className="flex">
+            <span className="flex-1 truncate">
+              <GameText
+                spans={[{ text: name }]}
+                defaultColour={gameLook.text}
+              />
+            </span>
+            <GameText
+              spans={[{ text: players }]}
+              defaultColour={gameLook.serverListText}
+            />
           </div>
-        ))}
+          <div style={{ marginTop: gamePixels(SERVER_ROW.motdGap) }}>
+            {lines.map((spans, index) => (
+              <div key={index} className="overflow-hidden whitespace-pre">
+                <span
+                  className="inline-block origin-left"
+                  style={{ transform: `scaleX(${narrowing(spans)})` }}
+                >
+                  <GameText
+                    spans={spans}
+                    defaultColour={gameLook.serverListText}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
+}
+
+/** How much a line must narrow so Monocraft, whose glyphs are all six wide, fits it where the game does. */
+function narrowing(spans: readonly GameSpan[]): number {
+  const glyphs = spans.reduce(
+    (count, span) => count + Array.from(span.text).length,
+    0,
+  );
+  return Math.min(1, SERVER_ROW.motdWidth / (glyphs * MONOCRAFT_ADVANCE));
 }
 
 export function ChatPreview({
@@ -74,6 +136,7 @@ export function ChatPreview({
 }) {
   return (
     <div
+      data-skeleton=""
       className={cn("rounded-game px-2.5 py-2", gameFont)}
       style={{ backgroundColor: gameLook.chat }}
     >
@@ -99,6 +162,7 @@ export function TablistPreview({
 }: TablistPreviewProps) {
   return (
     <div
+      data-skeleton=""
       className={cn("border-2 px-2.5 py-2 text-center", gameFont)}
       style={{ backgroundColor: gameLook.tablist, borderColor: gameLook.edge }}
     >
@@ -131,6 +195,7 @@ export function NametagPreview({
 }) {
   return (
     <div
+      data-skeleton=""
       className={cn(
         "flex flex-col items-center gap-1 rounded-game px-2 py-4",
         gameFont,

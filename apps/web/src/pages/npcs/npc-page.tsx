@@ -6,7 +6,7 @@ import {
   useNpcUpdate,
 } from "@ogcloud/api-client/react";
 import { NpcUpdateBody } from "@ogcloud/api-client/zod";
-import { Card, CopyField, PageHeader } from "@ogcloud/ui";
+import { Card, CopyField, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -18,6 +18,7 @@ import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useViewSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
+import { placeholderNpc } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { useDeleteNpc } from "./npc-delete.tsx";
@@ -33,7 +34,7 @@ export function NpcPage() {
   const { t } = useTranslation("web");
   const { npcId } = useParams({ from: "/app/npcs/$npcId" });
   const npc = useNpcGet(npcId);
-  if (npc.data === undefined) {
+  if (npc.data === undefined && npc.error !== null) {
     return (
       <DetailFallback
         error={npc.error}
@@ -49,7 +50,16 @@ export function NpcPage() {
       />
     );
   }
-  return <NpcEditor key={npc.data.data.id} view={npc.data.data} />;
+  const view = npc.data?.data;
+  // A new key when the data arrives, so the form starts from it rather than from the placeholder.
+  return (
+    <Loading when={view === undefined}>
+      <NpcEditor
+        key={view === undefined ? "loading" : `loaded:${view.id}`}
+        view={view ?? placeholderNpc}
+      />
+    </Loading>
+  );
 }
 
 function NpcEditor({ view }: { view: NpcView }) {
@@ -80,10 +90,11 @@ function NpcEditor({ view }: { view: NpcView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={t("npcs.detail.title", { group: view.settings.groupId })}
-        description={t("npcs.detail.description", {
-          world: view.settings.location.world,
-        })}
+        title={
+          <Value>
+            {t("npcs.detail.title", { group: view.settings.groupId })}
+          </Value>
+        }
         actions={
           <MoreMenu
             groups={[

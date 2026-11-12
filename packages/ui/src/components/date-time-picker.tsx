@@ -77,6 +77,7 @@ export function DateTimePicker({
       trigger={
         <button
           type="button"
+          data-skeleton=""
           aria-expanded={open}
           {...trigger}
           className={cn(

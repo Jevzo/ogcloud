@@ -10,7 +10,7 @@ import {
   usePermissionGroupUpdate,
 } from "@ogcloud/api-client/react";
 import { PermissionGroupUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Card, PageHeader } from "@ogcloud/ui";
+import { Badge, Card, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -23,6 +23,7 @@ import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useViewSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
+import { placeholderPermissionGroup } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { useTextValidator } from "../../texts.ts";
 import { PermissionsEditor } from "./permissions-editor.tsx";
@@ -40,7 +41,7 @@ export function PermissionGroupPage() {
   });
   const group = usePermissionGroupGet(permissionGroupId);
 
-  if (group.data === undefined) {
+  if (group.data === undefined && group.error !== null) {
     return (
       <DetailFallback
         error={group.error}
@@ -56,8 +57,15 @@ export function PermissionGroupPage() {
       />
     );
   }
+  const view = group.data?.data;
+  // A new key when the data arrives, so the form starts from it rather than from the placeholder.
   return (
-    <PermissionGroupEditor key={group.data.data.id} view={group.data.data} />
+    <Loading when={view === undefined}>
+      <PermissionGroupEditor
+        key={view === undefined ? "loading" : `loaded:${view.id}`}
+        view={view ?? placeholderPermissionGroup}
+      />
+    </Loading>
   );
 }
 
@@ -112,17 +120,14 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            {view.settings.name}
-            {view.settings.defaultGroup ? (
-              <Badge tone="accent" icon={Star}>
-                {t("permissions.default")}
-              </Badge>
-            ) : null}
-          </span>
+        title={<Value>{view.settings.name}</Value>}
+        badges={
+          view.settings.defaultGroup ? (
+            <Badge tone="accent" icon={Star}>
+              {t("permissions.default")}
+            </Badge>
+          ) : null
         }
-        description={t("permissions.detail.description", { id: view.id })}
         actions={
           canWrite && !view.settings.defaultGroup ? (
             <MoreMenu groups={[[deletion.item]]} />

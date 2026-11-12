@@ -1,4 +1,4 @@
-import { EmptyState, Skeleton } from "@ogcloud/ui";
+import { EmptyState } from "@ogcloud/ui";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { messageOf } from "./errors.ts";
@@ -16,7 +16,7 @@ interface DetailFallbackProps {
   back: ReactNode;
 }
 
-/** A detail page while it loads (no error yet), or why its subject is missing, with the way back. */
+/** Why a detail page's subject is missing or failed to load, with the way back; while it loads, the page shows itself. */
 export function DetailFallback({
   error,
   missing = false,
@@ -26,14 +26,6 @@ export function DetailFallback({
   failedTitle,
   back,
 }: DetailFallbackProps) {
-  if (!missing && (error === null || error === undefined)) {
-    return (
-      <div className="flex flex-col gap-4" aria-busy="true">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-80 max-w-form rounded-card" />
-      </div>
-    );
-  }
   const gone = missing || statusOf(error) === HttpStatus.NOT_FOUND;
   return (
     <EmptyState

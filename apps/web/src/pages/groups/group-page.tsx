@@ -15,12 +15,13 @@ import { GroupUpdateBody } from "@ogcloud/api-client/zod";
 import {
   Button,
   Card,
+  Loading,
   Meter,
   Note,
   PageHeader,
-  Skeleton,
   Tabs,
   TimeSeriesChart,
+  Value,
 } from "@ogcloud/ui";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
@@ -47,6 +48,11 @@ import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
+import {
+  placeholderGroup,
+  placeholderGroupOverview,
+  placeholderHistory,
+} from "../../placeholders.ts";
 import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
 import { useGroupActions } from "./group-actions.tsx";
 import { GroupSettingsFields } from "./group-settings-fields.tsx";
@@ -67,7 +73,7 @@ export function GroupPage() {
   const { groupId } = useParams({ from: "/app/groups/$groupId" });
   const group = useGroupGet(groupId);
 
-  if (group.data === undefined) {
+  if (group.data === undefined && group.error !== null) {
     return (
       <DetailFallback
         error={group.error}
@@ -83,7 +89,16 @@ export function GroupPage() {
       />
     );
   }
-  return <GroupEditor key={group.data.data.id} view={group.data.data} />;
+  const view = group.data?.data;
+  // A new key when the data arrives, so the form starts from it rather than from the placeholder.
+  return (
+    <Loading when={view === undefined}>
+      <GroupEditor
+        key={view === undefined ? "loading" : `loaded:${view.id}`}
+        view={view ?? placeholderGroup}
+      />
+    </Loading>
+  );
 }
 
 function GroupEditor({ view }: { view: GroupView }) {
@@ -133,16 +148,8 @@ function GroupEditor({ view }: { view: GroupView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            {view.id}
-            {live === undefined ? null : <GroupStatusBadge group={live} />}
-          </span>
-        }
-        description={t("groups.detail.description", {
-          type: t(`groups.type.${view.type}`),
-          profile: view.settings.profileId,
-        })}
+        title={<Value>{view.id}</Value>}
+        badges={live === undefined ? null : <GroupStatusBadge group={live} />}
         actions={
           <>
             <MoreMenu groups={menu} />
@@ -158,6 +165,7 @@ function GroupEditor({ view }: { view: GroupView }) {
               view.settings.maintenance ? (
                 <Button
                   icon={Play}
+                  data-skeleton=""
                   onClick={() => actions.request("endMaintenance", view.id)}
                 >
                   {t("groups.actions.endMaintenance")}
@@ -165,6 +173,7 @@ function GroupEditor({ view }: { view: GroupView }) {
               ) : (
                 <Button
                   icon={Construction}
+                  data-skeleton=""
                   onClick={() => actions.request("startMaintenance", view.id)}
                 >
                   {t("groups.actions.startMaintenance")}
@@ -257,41 +266,49 @@ function LivePanel({
     { groupId },
     { query: { refetchInterval: HISTORY_REFRESH_MS } },
   );
-  const points = (history.data?.data.points ?? []).map((point) => ({
-    at: new Date(point.at),
-    value: point.players,
-  }));
+  const now = Date.now();
+  const points = (history.data?.data ?? placeholderHistory(now)).points.map(
+    (point) => ({
+      at: new Date(point.at),
+      value: point.players,
+    }),
+  );
   const failure = loadFailure(history);
+  const load = live ?? placeholderGroupOverview;
 
   return (
     <Card title={t("groups.detail.live")}>
-      {live === undefined ? (
-        <Skeleton className="h-24" />
-      ) : (
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
+        <Loading when={live === undefined}>
           <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2">
             <dt className="text-text-3">{t("groups.columns.servers")}</dt>
             <dd className="m-0">
-              {format.number(live.running)}
-              {live.pending > 0 ? (
-                <span className="text-text-3">
-                  {" "}
-                  {t("groups.starting", { count: live.pending })}
-                </span>
-              ) : null}
+              <Value>
+                {format.number(load.running)}
+                {load.pending > 0 ? (
+                  <span className="text-text-3">
+                    {" "}
+                    {t("groups.starting", { count: load.pending })}
+                  </span>
+                ) : null}
+              </Value>
             </dd>
             <dt className="text-text-3">{t("groups.columns.players")}</dt>
             <dd className="m-0 inline-flex items-center gap-2.5">
-              <Meter value={live.players} max={live.capacity} />
-              {t("groups.load", {
-                players: format.number(live.players),
-                capacity: format.number(live.capacity),
-              })}
+              <Meter value={load.players} max={load.capacity} />
+              <Value>
+                {t("groups.load", {
+                  players: format.number(load.players),
+                  capacity: format.number(load.capacity),
+                })}
+              </Value>
             </dd>
           </dl>
-          {failure !== undefined && points.length === 0 ? (
-            <LoadFailed failure={failure} />
-          ) : points.length < 2 ? null : (
+        </Loading>
+        {failure !== undefined && history.data === undefined ? (
+          <LoadFailed failure={failure} />
+        ) : points.length < 2 ? null : (
+          <Loading when={history.data === undefined}>
             <TimeSeriesChart
               label={t("groups.detail.chart", { id: groupId })}
               series={[{ name: t("overview.players.series"), points }]}
@@ -299,9 +316,9 @@ function LivePanel({
               formatValue={format.number}
               formatTime={format.clock}
             />
-          )}
-        </div>
-      )}
+          </Loading>
+        )}
+      </div>
     </Card>
   );
 }

@@ -17,8 +17,10 @@ import {
   Card,
   ConfirmDialog,
   CopyField,
+  Loading,
   Note,
   PageHeader,
+  Value,
 } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -35,6 +37,7 @@ import { useConfirmFailure } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useIsOwner } from "../../permissions.ts";
+import { placeholderClient } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { PermissionsCard } from "../roles/permission-picker.tsx";
 import { SecretDialog } from "./secret-dialog.tsx";
@@ -52,7 +55,7 @@ export function ClientPage() {
     (candidate) => candidate.clientId === clientId,
   );
 
-  if (client === undefined) {
+  if (client === undefined && !clients.isPending) {
     return (
       <DetailFallback
         error={clients.error}
@@ -70,7 +73,14 @@ export function ClientPage() {
     );
   }
   // Clients carry no version; what they hold now keys the form, so a save or a reload starts it afresh.
-  return <ClientEditor key={client.clientId} client={client} />;
+  return (
+    <Loading when={client === undefined}>
+      <ClientEditor
+        key={client === undefined ? "loading" : `loaded:${client.clientId}`}
+        client={client ?? placeholderClient}
+      />
+    </Loading>
+  );
 }
 
 function ClientEditor({ client }: { client: OAuthClientView }) {
@@ -111,17 +121,14 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            {client.name}
-            {client.firstParty ? (
-              <Badge tone="neutral" icon={AppWindow}>
-                {t("clients.firstParty")}
-              </Badge>
-            ) : null}
-          </span>
+        title={<Value>{client.name}</Value>}
+        badges={
+          client.firstParty ? (
+            <Badge tone="neutral" icon={AppWindow}>
+              {t("clients.firstParty")}
+            </Badge>
+          ) : null
         }
-        description={t("clients.detail.description")}
         actions={
           canWrite ? (
             <>

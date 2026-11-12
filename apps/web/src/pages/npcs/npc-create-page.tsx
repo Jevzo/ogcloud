@@ -72,10 +72,7 @@ export function NpcCreatePage() {
         void form.handleSubmit();
       }}
     >
-      <PageHeader
-        title={t("npcs.create.title")}
-        description={t("npcs.create.description")}
-      />
+      <PageHeader title={t("npcs.create.title")} />
       <NpcFields form={form} fields="settings" groupIds={groupIds} />
       <CreateActions
         onCancel={() => void navigate({ to: "/npcs" })}

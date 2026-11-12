@@ -7,7 +7,7 @@ import {
   useUserList,
 } from "@ogcloud/api-client/react";
 import { RoleUpdateBody } from "@ogcloud/api-client/zod";
-import { Badge, Card, Note, PageHeader } from "@ogcloud/ui";
+import { Badge, Card, Loading, Note, PageHeader, Value } from "@ogcloud/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { KeyRound, Lock } from "lucide-react";
@@ -19,6 +19,7 @@ import { EditorForm, useListSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan, useIsOwner } from "../../permissions.ts";
+import { placeholderRole } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { PermissionsCard } from "./permission-picker.tsx";
 
@@ -39,7 +40,7 @@ export function RolePage() {
   const roles = useRoleList();
   const role = roles.data?.data.find((candidate) => candidate.id === roleId);
 
-  if (role === undefined) {
+  if (role === undefined && !roles.isPending) {
     return (
       <DetailFallback
         error={roles.error}
@@ -56,7 +57,14 @@ export function RolePage() {
       />
     );
   }
-  return <RoleEditor key={role.id} role={role} />;
+  return (
+    <Loading when={role === undefined}>
+      <RoleEditor
+        key={role === undefined ? "loading" : `loaded:${role.id}`}
+        role={role ?? placeholderRole}
+      />
+    </Loading>
+  );
 }
 
 function RoleEditor({ role }: { role: RoleView }) {
@@ -97,17 +105,14 @@ function RoleEditor({ role }: { role: RoleView }) {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            {role.name}
-            {role.builtIn ? (
-              <Badge tone="neutral" icon={Lock}>
-                {t("roles.builtIn")}
-              </Badge>
-            ) : null}
-          </span>
+        title={<Value>{role.name}</Value>}
+        badges={
+          role.builtIn ? (
+            <Badge tone="neutral" icon={Lock}>
+              {t("roles.builtIn")}
+            </Badge>
+          ) : null
         }
-        description={t("roles.detail.description", { id: role.id })}
         actions={canWrite ? <MoreMenu groups={[[deletion.item]]} /> : undefined}
       />
       <EditorForm

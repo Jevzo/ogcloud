@@ -42,8 +42,8 @@ export {
   EmptyState,
   Note,
   PageHeader,
-  Skeleton,
 } from "./components/layout.tsx";
+export { Loading, useLoading, Value } from "./components/loading.tsx";
 export {
   Menu,
   type MenuChoice,

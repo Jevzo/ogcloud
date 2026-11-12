@@ -70,7 +70,6 @@
       "device": "Remembered on this device.",
       "title": "Appearance"
     },
-    "description": "Your profile, how you sign in, and how the dashboard looks.",
     "factors": {
       "title": "Second factors"
     },
@@ -188,7 +187,6 @@
       "target": "Target",
       "when": "When"
     },
-    "description": "Changes, scaling decisions, long operations and alerts across the network.",
     "jobs": {
       "empty": "No jobs yet",
       "emptyDescription": "Restarts, deletes, rollouts and token rotations run as jobs and show their progress here.",
@@ -242,14 +240,12 @@
       "submit": "Create client",
       "title": "Create client"
     },
-    "description": "Machine clients call the API with a secret, for scripts, bots and CI. OgCloud's own apps are listed too.",
     "detail": {
       "back": "Back to OAuth clients",
       "delete": "Delete client",
       "deleteDescription": "The client and its tokens stop working for good.",
       "deleteTitle": "Delete {{name}}?",
       "deleted": "Deleted {{name}}",
-      "description": "Calls the API with the client credentials grant.",
       "failed": "The client could not be loaded",
       "firstPartyNote": "One of OgCloud's own apps. It acts with the signed-in user's permissions, so it cannot be changed here.",
       "gone": "This client does not exist",
@@ -338,7 +334,6 @@
       "restartTitle": "Restart {{id}}?"
     },
     "create": {
-      "description": "Name the group and pick what it runs; everything else starts from defaults you can change.",
       "done": "Created {{id}}",
       "submit": "Create group",
       "title": "Create group"
@@ -348,11 +343,9 @@
       "title": "Recently deleted",
       "when": "Deleted {{ago}}"
     },
-    "description": "{{count}} groups",
     "detail": {
       "back": "Back to the groups",
       "chart": "Players in {{id}} over the last 24 hours",
-      "description": "{{type}} group on {{profile}}",
       "failed": "This group could not be loaded",
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
@@ -552,7 +545,6 @@
       "title": "NPC"
     },
     "create": {
-      "description": "Usually NPCs are placed in game with /ogcloud npc; here you set the place by its coordinates.",
       "done": "NPC created",
       "submit": "Create NPC",
       "title": "Create NPC"
@@ -563,10 +555,8 @@
       "done": "NPC deleted",
       "title": "Delete this NPC?"
     },
-    "description": "Characters that stand on every server of their group and move players who click them.",
     "detail": {
       "back": "Back to the NPCs",
-      "description": "Stands in {{world}}",
       "failed": "This NPC could not be loaded",
       "gone": "This NPC does not exist",
       "goneDescription": "It may have been deleted here or in game.",
@@ -621,8 +611,6 @@
     },
     "maintenanceDescription": "Only players with the bypass permission can join, and everyone else is disconnected. The autoscaler pauses until maintenance ends.",
     "maintenanceEnded": "Network maintenance ended",
-    "maintenanceOff": "Open to players",
-    "maintenanceOn": "In maintenance: only players with the bypass permission can join",
     "maintenanceStarted": "Network maintenance started",
     "maintenanceTitle": "Start network maintenance?",
     "players": {
@@ -691,14 +679,12 @@
       "title": "Create permission group"
     },
     "default": "Default",
-    "description": "Ranks players hold: what they may do and how their names look in game.",
     "detail": {
       "back": "Back to the permission groups",
       "delete": "Delete group",
       "deleteDescription": "Its players move to the default group for good, and its look and nodes are gone.",
       "deleteTitle": "Delete {{name}}?",
       "deleted": "Deleted {{name}}",
-      "description": "Permission group {{id}}",
       "failed": "This permission group could not be loaded",
       "gone": "This permission group does not exist",
       "goneDescription": "It may have been deleted; its players then hold the default group."
@@ -759,10 +745,8 @@
       "rank": "Rank",
       "server": "Server"
     },
-    "description": "Everyone online now, and every player the network has seen.",
     "detail": {
       "back": "Back to the players",
-      "description": "First joined {{ago}}",
       "failed": "This player could not be loaded",
       "identity": "Identity",
       "offline": "Offline",
@@ -813,7 +797,6 @@
     "view": "Show"
   },
   "privacy": {
-    "description": "Export or erase what OgCloud stores about a player or a dashboard user.",
     "erase": "Erase data",
     "erasePlayerDescription": "Their player record, rank and profile go for good. A player who is online cannot be erased.",
     "eraseTitle": "Erase {{name}}'s data?",
@@ -844,7 +827,6 @@
       "title": "Create role"
     },
     "custom": "Custom",
-    "description": "What dashboard users may do. Only owners create and change roles.",
     "detail": {
       "back": "Back to roles",
       "builtInNote": "Built-in roles keep their permissions in OgCloud's code. Create a role to choose your own.",
@@ -852,7 +834,6 @@
       "deleteDescription": "The role goes for good. A role that users still hold cannot be deleted.",
       "deleteTitle": "Delete {{name}}?",
       "deleted": "Deleted {{name}}",
-      "description": "Id {{id}}",
       "failed": "The role could not be loaded",
       "gone": "This role does not exist",
       "goneDescription": "It may have been deleted.",
@@ -915,10 +896,8 @@
       "stopDescription": "Players move to other servers first; an empty or starting server stops at once.",
       "stopTitle": "Stop {{name}}?"
     },
-    "description": "{{count}} live servers",
     "detail": {
       "back": "Back to the servers",
-      "description": "{{type}} server of {{group}} on {{profile}}",
       "failed": "This server could not be loaded",
       "gone": "This server is gone",
       "goneDescription": "It stopped and left the live state. Its group starts others as needed.",
@@ -1149,12 +1128,10 @@
       "submit": "Add user",
       "title": "Add user"
     },
-    "description": "Everyone who signs in to the dashboard.",
     "detail": {
       "access": "Access",
       "account": "Account",
       "back": "Back to users",
-      "description": "{{role}}",
       "failed": "The user could not be loaded",
       "gone": "This user does not exist",
       "goneDescription": "They may have been deleted.",

@@ -1,12 +1,21 @@
 import { useMeGet } from "@ogcloud/api-client/react";
-import { Card, type ToastTone, useToast } from "@ogcloud/ui";
+import {
+  Card,
+  Loading,
+  PageHeader,
+  type ToastTone,
+  useToast,
+  Value,
+} from "@ogcloud/ui";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertsContext, alertMessage, useAlertList } from "../alerts.ts";
 import { type Alert, useLiveEvents } from "../live.ts";
+import { navItemOf, PRIMARY_PERMISSIONS } from "../navigation.ts";
 import { MeContext } from "../permissions.ts";
+import { placeholderMe } from "../placeholders.ts";
 import {
   applyPreferences,
   type Preferences,
@@ -60,8 +69,7 @@ export function AppShell() {
     [preferences, changePreferences],
   );
 
-  if (me.isPending) return <main aria-busy="true" className="min-h-screen" />;
-  if (me.isError) {
+  if (me.isError && me.data === undefined) {
     return (
       <main className="grid min-h-screen place-items-center p-6">
         <Card className="max-w-md p-6">
@@ -72,20 +80,29 @@ export function AppShell() {
       </main>
     );
   }
-  const profile = me.data.data;
-  if (profile.permissions.length === 0) return <LinkRequired me={profile} />;
+  // Until the profile is in, the shell shows itself as skeletons; pages wait, since what they may load depends on it.
+  const loading = me.data === undefined;
+  const profile = me.data?.data ?? placeholderMe;
+  if (!loading && profile.permissions.length === 0) {
+    return <LinkRequired me={profile} />;
+  }
+  const section = navItemOf(pathname);
 
   return (
     <AlertsContext.Provider value={alerts}>
       <MeContext.Provider value={profile}>
         <PreferencesContext.Provider value={preferenceState}>
           <div className="flex min-h-screen">
-            <Sidebar
-              permissions={profile.permissions}
-              collapsed={collapsed}
-              onToggle={() => setCollapsed((value) => !value)}
-              account={<AccountMenu me={profile} collapsed={collapsed} />}
-            />
+            <Loading when={loading}>
+              <Sidebar
+                permissions={
+                  loading ? PRIMARY_PERMISSIONS : profile.permissions
+                }
+                collapsed={collapsed}
+                onToggle={() => setCollapsed((value) => !value)}
+                account={<AccountMenu me={profile} collapsed={collapsed} />}
+              />
+            </Loading>
             <div className="flex min-w-0 flex-1 flex-col">
               <Header live={live} onSearch={() => setSearching(true)} />
               <motion.main
@@ -94,7 +111,22 @@ export function AppShell() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex-1 px-4 pt-2 pb-6"
               >
-                <Outlet />
+                {loading ? (
+                  <Loading when>
+                    <PageHeader
+                      title={
+                        // A list's name is known now; a detail page's subject is not.
+                        section?.path === pathname ? (
+                          t(`nav.${section.label}`)
+                        ) : (
+                          <Value>{placeholderMe.username}</Value>
+                        )
+                      }
+                    />
+                  </Loading>
+                ) : (
+                  <Outlet />
+                )}
               </motion.main>
             </div>
           </div>

@@ -4,20 +4,21 @@ import { cn } from "../lib/cn.ts";
 import type { Tone } from "./badge.tsx";
 
 interface PageHeaderProps {
+  /** The page's name, or the subject's: a detail page wraps it in `Value`, so it loads as a skeleton. */
   title: ReactNode;
-  description?: ReactNode;
+  /** The subject's state beside its name, such as a server's Running. */
+  badges?: ReactNode;
   /** The page's actions, right-aligned with the primary one last (D-0210). */
   actions?: ReactNode;
 }
 
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+/** A page's title, state and actions; no subtitle, since the page itself says what it holds (D-0228). */
+export function PageHeader({ title, badges, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="min-w-60 flex-1">
+    <div className="flex min-h-button-lg flex-wrap items-center gap-3">
+      <div className="flex min-w-60 flex-1 items-center gap-3">
         <h1 className="text-title">{title}</h1>
-        {description === undefined ? null : (
-          <p className="mt-0.5 text-text-2">{description}</p>
-        )}
+        {badges}
       </div>
       {actions === undefined ? null : (
         <div className="flex items-center gap-2">{actions}</div>
@@ -30,7 +31,7 @@ interface CardProps {
   title?: ReactNode;
   /** Small actions or links on the right of the title. */
   actions?: ReactNode;
-  /** Tables reach the card's edges; everything else gets the card's padding. */
+  /** Tables reach the card's edges, clipped to its corners; everything else gets the card's padding. */
   flush?: boolean;
   className?: string;
   children: ReactNode;
@@ -43,16 +44,17 @@ export function Card({
   className,
   children,
 }: CardProps) {
+  const header = title !== undefined || actions !== undefined;
   return (
     <section
       className={cn(
         "min-w-0 rounded-card border border-border-subtle bg-surface shadow-card",
         // A flush card's title starts as far down as any other card's, so titles side by side line up.
-        flush ? "pt-4 pb-3" : "p-4",
+        flush ? cn("overflow-hidden pb-3", header ? "pt-4" : "pt-1") : "p-4",
         className,
       )}
     >
-      {title === undefined && actions === undefined ? null : (
+      {!header ? null : (
         <div className={cn("mb-3 flex items-center gap-2", flush && "px-4")}>
           <h2 className="flex-1 text-heading">{title}</h2>
           {/* Small buttons and switches overhang the title's line, so every card's header is as tall as its title. */}
@@ -130,17 +132,5 @@ export function Note({ tone, icon: Icon, children, action }: NoteProps) {
         <div className="self-center">{action}</div>
       )}
     </div>
-  );
-}
-
-export function Skeleton({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "block animate-pulse rounded-control bg-surface-3",
-        className,
-      )}
-    />
   );
 }

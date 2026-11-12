@@ -1,5 +1,13 @@
 import { useOverviewGet, useServerGet } from "@ogcloud/api-client/react";
-import { Button, Card, CopyField, Meter, PageHeader } from "@ogcloud/ui";
+import {
+  Button,
+  Card,
+  CopyField,
+  Loading,
+  Meter,
+  PageHeader,
+  Value,
+} from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -14,6 +22,7 @@ import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
 import { MoreMenu } from "../../more-menu.tsx";
+import { placeholderServer } from "../../placeholders.ts";
 import { GroupLink } from "../groups/group-status.tsx";
 import { useServerActions } from "./server-actions.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
@@ -33,7 +42,7 @@ export function ServerPage() {
     overview.data?.data.groups.map((group) => group.id) ?? [],
   );
 
-  if (server.data === undefined) {
+  if (server.data === undefined && server.error !== null) {
     return (
       <DetailFallback
         error={server.error}
@@ -49,7 +58,8 @@ export function ServerPage() {
       />
     );
   }
-  const view = server.data.data;
+  const loading = server.data === undefined;
+  const view = server.data?.data ?? placeholderServer;
   const ref = {
     id: view.id,
     displayName: view.displayName,
@@ -86,94 +96,90 @@ export function ServerPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            <span className="font-mono">{view.displayName}</span>
-            <ServerStateBadge state={view.state} />
-          </span>
-        }
-        description={t("servers.detail.description", {
-          type: t(`groups.type.${view.groupType}`),
-          group: view.groupId,
-          profile: view.profileId,
-        })}
-        actions={
-          <>
-            <MoreMenu groups={more} />
-            {actions.can.command ? (
-              <>
-                <Button
-                  icon={SquareTerminal}
-                  onClick={() => actions.open("command", ref)}
-                >
-                  {t("servers.actions.command")}
-                </Button>
-                <Button
-                  icon={ArrowRightLeft}
-                  onClick={() => actions.open("move", ref)}
-                >
-                  {t("servers.actions.move")}
-                </Button>
-                <Button icon={Square} onClick={() => actions.open("stop", ref)}>
-                  {t("servers.actions.stop")}
-                </Button>
-              </>
-            ) : null}
-          </>
-        }
-      />
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] gap-4">
-        <Card title={t("servers.detail.status")}>
-          <Details>
-            <DetailRow label={t("servers.columns.state")}>
-              <span className="flex items-center gap-2">
-                <ServerStateBadge state={view.state} />
-                <span className="text-text-3">{ago(view.stateSince)}</span>
-              </span>
-            </DetailRow>
-            <DetailRow label={t("servers.columns.players")}>
-              <span className="inline-flex items-center gap-2.5">
-                <Meter value={view.players} max={view.maxPlayers} />
-                {t("groups.load", {
-                  players: format.number(view.players),
-                  capacity: format.number(view.maxPlayers),
-                })}
-              </span>
-            </DetailRow>
-            {view.gameState == null ? null : (
-              <DetailRow label={t("servers.columns.game")}>
-                {t(`servers.game.${view.gameState}`)}
+    <Loading when={loading}>
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={<Value className="font-mono">{view.displayName}</Value>}
+          badges={<ServerStateBadge state={view.state} />}
+          actions={
+            <>
+              <MoreMenu groups={more} />
+              {actions.can.command ? (
+                <>
+                  <Button
+                    icon={SquareTerminal}
+                    onClick={() => actions.open("command", ref)}
+                  >
+                    {t("servers.actions.command")}
+                  </Button>
+                  <Button
+                    icon={ArrowRightLeft}
+                    onClick={() => actions.open("move", ref)}
+                  >
+                    {t("servers.actions.move")}
+                  </Button>
+                  <Button
+                    icon={Square}
+                    onClick={() => actions.open("stop", ref)}
+                  >
+                    {t("servers.actions.stop")}
+                  </Button>
+                </>
+              ) : null}
+            </>
+          }
+        />
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] gap-4">
+          <Card title={t("servers.detail.status")}>
+            <Details>
+              <DetailRow label={t("servers.columns.state")}>
+                <span className="flex items-center gap-2">
+                  <ServerStateBadge state={view.state} />
+                  <span className="text-text-3">{ago(view.stateSince)}</span>
+                </span>
               </DetailRow>
-            )}
-            <DetailRow label={t("servers.columns.started")}>
-              {ago(view.startedAt)}
-            </DetailRow>
-            <DetailRow label={t("servers.columns.heartbeat")}>
-              {ago(view.lastHeartbeatAt)}
-            </DetailRow>
-            <DetailRow label={t("servers.columns.group")}>
-              <GroupLink id={view.groupId} />
-            </DetailRow>
-            <DetailRow label={t("servers.detail.profile")}>
-              <span className="font-mono text-mono">{view.profileId}</span>
-            </DetailRow>
-          </Details>
-        </Card>
-        <Card title={t("servers.detail.identity")}>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-label">{t("servers.detail.id")}</span>
-              <CopyField value={view.id} label={t("servers.detail.id")} />
+              <DetailRow label={t("servers.columns.players")}>
+                <span className="inline-flex items-center gap-2.5">
+                  <Meter value={view.players} max={view.maxPlayers} />
+                  {t("groups.load", {
+                    players: format.number(view.players),
+                    capacity: format.number(view.maxPlayers),
+                  })}
+                </span>
+              </DetailRow>
+              {view.gameState == null ? null : (
+                <DetailRow label={t("servers.columns.game")}>
+                  {t(`servers.game.${view.gameState}`)}
+                </DetailRow>
+              )}
+              <DetailRow label={t("servers.columns.started")}>
+                {ago(view.startedAt)}
+              </DetailRow>
+              <DetailRow label={t("servers.columns.heartbeat")}>
+                {ago(view.lastHeartbeatAt)}
+              </DetailRow>
+              <DetailRow label={t("servers.columns.group")}>
+                <GroupLink id={view.groupId} />
+              </DetailRow>
+              <DetailRow label={t("servers.detail.profile")}>
+                <span className="font-mono text-mono">{view.profileId}</span>
+              </DetailRow>
+            </Details>
+          </Card>
+          <Card title={t("servers.detail.identity")}>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-label">{t("servers.detail.id")}</span>
+                <CopyField value={view.id} label={t("servers.detail.id")} />
+              </div>
+              <p className="text-small text-text-3">
+                {t("servers.detail.idHint")}
+              </p>
             </div>
-            <p className="text-small text-text-3">
-              {t("servers.detail.idHint")}
-            </p>
-          </div>
-        </Card>
+          </Card>
+        </div>
+        {actions.dialogs}
       </div>
-      {actions.dialogs}
-    </div>
+    </Loading>
   );
 }

@@ -2,6 +2,7 @@ import type { NpcView } from "@ogcloud/api-client";
 import { useNpcList } from "@ogcloud/api-client/react";
 import {
   Button,
+  Card,
   columnsFor,
   DataTable,
   EmptyState,
@@ -13,6 +14,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { loadFailure } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
+import { placeholderNpc } from "../../placeholders.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -95,7 +97,6 @@ export function NpcsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={t("nav.npcs")}
-        description={t("npcs.description")}
         actions={
           canWrite ? (
             <Button
@@ -109,13 +110,14 @@ export function NpcsPage() {
         }
       />
       <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
-      <section className="rounded-card border border-border-subtle bg-surface py-1 shadow-card">
+      <Card flush>
         <DataTable
           label={t("nav.npcs")}
           data={npcs.data?.data ?? []}
           failure={loadFailure(npcs)}
           columns={npcColumns}
           getRowId={(npc) => npc.id}
+          placeholder={placeholderNpc}
           actions={(npc) => ({
             menu: [
               [
@@ -148,7 +150,7 @@ export function NpcsPage() {
             />
           }
         />
-      </section>
+      </Card>
       {remove.dialog}
     </div>
   );

@@ -11,8 +11,6 @@
     "undo": "Undo"
   },
   "chart": {
-    "showChart": "Show as chart",
-    "showTable": "Show as table",
     "time": "Time"
   },
   "colour": {

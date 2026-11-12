@@ -4,7 +4,7 @@ import { useFormat } from "./format.ts";
 export function Ago({ at }: { at: string | null | undefined }) {
   const format = useFormat();
   return (
-    <span className="text-text-2">
+    <span data-skeleton="" className="text-text-2">
       {at == null ? "—" : format.ago(new Date(at), Date.now())}
     </span>
   );

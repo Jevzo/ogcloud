@@ -19,6 +19,7 @@ export function Input({
 }: InputProps) {
   return (
     <span
+      data-skeleton=""
       className={cn(
         controlFrame,
         "flex h-control items-center overflow-hidden",
