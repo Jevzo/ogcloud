@@ -9,6 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test:unit": "node --test src/",
     "sheet": "vite --config sheet/vite.config.ts",
     "screenshots": "playwright test --config sheet/playwright.config.ts"
   },
