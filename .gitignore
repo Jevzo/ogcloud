@@ -5,6 +5,7 @@
 /docs/memory/
 /docs/plan/
 /docs/reference/
+/.playwright-mcp/
 
 # IDE
 .idea/
