@@ -135,7 +135,7 @@ charts:
     namespace: cnpg-system
     repository: https://cloudnative-pg.github.io/charts
     chart: plugin-barman-cloud
-    version: 0.8.1
+    version: 0.9.0
 
   - name: infisical-secrets-operator
     namespace: infisical-operator
@@ -148,7 +148,7 @@ charts:
     namespace: monitoring
     repository: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    version: 93.1.0
+    version: 93.1.1
     values:
       # Monitors of every namespace count, OgCloud's PodMonitors included (T-0603).
       prometheus:
@@ -181,7 +181,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.0.0
+    version: 21.1.0
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
