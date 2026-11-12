@@ -47,14 +47,18 @@ export function Card({
     <section
       className={cn(
         "min-w-0 rounded-card border border-border-subtle bg-surface shadow-card",
-        flush ? "py-3" : "p-4",
+        // A flush card's title starts as far down as any other card's, so titles side by side line up.
+        flush ? "pt-4 pb-3" : "p-4",
         className,
       )}
     >
       {title === undefined && actions === undefined ? null : (
         <div className={cn("mb-3 flex items-center gap-2", flush && "px-4")}>
           <h2 className="flex-1 text-heading">{title}</h2>
-          {actions}
+          {/* Small buttons and switches overhang the title's line, so every card's header is as tall as its title. */}
+          {actions === undefined ? null : (
+            <div className="-my-1 flex items-center gap-2">{actions}</div>
+          )}
         </div>
       )}
       {children}
@@ -80,7 +84,7 @@ export function EmptyState({
     <div className="flex flex-col items-center gap-2 rounded-card border border-border-strong border-dashed px-5 py-7 text-center">
       <span
         aria-hidden="true"
-        className="grid size-11 place-items-center rounded-full bg-surface-3 text-text-2"
+        className="grid size-11 place-items-center rounded-full border border-border-subtle bg-surface text-text-2 shadow-raised"
       >
         <Icon size={22} strokeWidth={1.75} />
       </span>

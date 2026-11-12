@@ -30,7 +30,7 @@ export function Tabs<T extends string>({
     >
       <Primitive.List
         aria-label={label}
-        className="mb-4 flex gap-1 border-border-subtle border-b"
+        className="mb-4 flex gap-1 border-border border-b"
       >
         {tabs.map((tab) => (
           <Primitive.Trigger
