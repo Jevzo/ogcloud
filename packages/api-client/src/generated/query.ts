@@ -88,6 +88,7 @@ import type {
   SetRankRequest,
   SetupRequest,
   SetupStatus,
+  SignInRulesView,
   TemplateVersionView,
   TextPreview,
   TextPreviewRequest,
@@ -523,6 +524,216 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(useUserResetPasswordMutationOptions(options), queryClient);
+    }
+
+export type signInRuleGetResponse200 = {
+  data: SignInRulesView
+  status: 200
+}
+
+export type signInRuleGetResponseSuccess = (signInRuleGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type signInRuleGetResponse = (signInRuleGetResponseSuccess)
+
+export const getSignInRuleGetUrl = () => {
+
+
+
+
+  return `/api/v1/users/sign-in-rules`
+}
+
+export const useSignInRuleGetHook = (): ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<signInRuleGetResponse> => {
+
+      const customFetcher = useApiRequest();
+      return ( options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getSignInRuleGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getSignInRuleGetQueryKey = () => {
+    return [
+    `/api/v1/users/sign-in-rules`
+    ] as const;
+    }
+
+
+export const useSignInRuleGetQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSignInRuleGetQueryKey();
+
+  const signInRuleGet =  useSignInRuleGetHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>> = ({ signal }) => signInRuleGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SignInRuleGetQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>>
+export type SignInRuleGetQueryError = unknown
+
+
+export function useSignInRuleGet<TData = Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSignInRuleGet<TData = Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>
+        > , 'initialData'
+      >, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSignInRuleGet<TData = Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSignInRuleGet<TData = Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleGetHook>>>, TError, TData>>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = useSignInRuleGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type signInRuleUpdateResponse200 = {
+  data: SignInRulesView
+  status: 200
+}
+
+export type signInRuleUpdateResponseSuccess = (signInRuleUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type signInRuleUpdateResponse = (signInRuleUpdateResponseSuccess)
+
+export const getSignInRuleUpdateUrl = () => {
+
+
+
+
+  return `/api/v1/users/sign-in-rules`
+}
+
+export const useSignInRuleUpdateHook = (): (signInRulesView: SignInRulesView, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<signInRuleUpdateResponse> => {
+      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+
+      const customFetcher = useApiRequest();
+      return (signInRulesView: SignInRulesView, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
+
+        return customFetcher(getSignInRuleUpdateUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signInRulesView)
+  }
+);
+      }
+  }
+
+
+
+
+
+export const getSignInRuleUpdateMutationKey = () => ['signInRuleUpdate'] as const;
+
+export const useSignInRuleUpdateMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>, TError,SignInRuleUpdateMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>, TError,SignInRuleUpdateMutationVariables, TContext> => {
+
+const mutationKey = getSignInRuleUpdateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      const signInRuleUpdate =  useSignInRuleUpdateHook()
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>, SignInRuleUpdateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  signInRuleUpdate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignInRuleUpdateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>>
+    export type SignInRuleUpdateMutationBody = SignInRulesView
+    export type SignInRuleUpdateMutationError = unknown
+    export type SignInRuleUpdateMutationVariables = {data: SignInRulesView}
+
+    export const useSignInRuleUpdate = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>, TError,SignInRuleUpdateMutationVariables, TContext>, request?: SecondParameter<ReturnType<typeof useApiRequest>>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useSignInRuleUpdateHook>>>,
+        TError,
+        SignInRuleUpdateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useSignInRuleUpdateMutationOptions(options), queryClient);
     }
 
 export type roleUpdateResponse200 = {

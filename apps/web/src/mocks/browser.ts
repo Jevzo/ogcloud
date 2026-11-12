@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import type { TextPreviewRequest } from "@ogcloud/api-client";
+import type { SignInRulesView, TextPreviewRequest } from "@ogcloud/api-client";
 import {
   getGroupDeletedMockHandler,
   getGroupGetMockHandler,
@@ -28,6 +28,8 @@ import {
   getServerGetMockHandler,
   getServerListMockHandler,
   getSetupStatusMockHandler,
+  getSignInRuleGetMockHandler,
+  getSignInRuleUpdateMockHandler,
   getTemplateListMockHandler,
   getTextPreviewMockHandler,
   getUserGetMockHandler,
@@ -67,6 +69,9 @@ import {
 
 // The generated mocks draw from faker; one seed keeps every screenshot run identical.
 const SEED = 20261111;
+
+// Kept for the page's lifetime, so switching a sign-in rule shows on the next read.
+let signInRules: SignInRulesView = { requireMinecraftLink: false };
 
 export async function startMocks(): Promise<void> {
   faker.seed(SEED);
@@ -112,6 +117,12 @@ export async function startMocks(): Promise<void> {
     getRoleListMockHandler(roles),
     getRolePermissionsMockHandler(ALL_PERMISSIONS),
     getUserListMockHandler({ items: users, nextCursor: null }),
+    // Before the user handler, whose /users/{id} would take "sign-in-rules" for an id.
+    getSignInRuleGetMockHandler(() => signInRules),
+    getSignInRuleUpdateMockHandler(async ({ request }) => {
+      signInRules = (await request.json()) as SignInRulesView;
+      return signInRules;
+    }),
     getUserGetMockHandler(({ params }) => userById(String(params.id))),
     getOauthClientListMockHandler(oauthClients),
     getMeListPasskeysMockHandler(passkeys),

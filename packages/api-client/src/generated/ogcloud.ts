@@ -69,6 +69,7 @@ import type {
   SetRankRequest,
   SetupRequest,
   SetupStatus,
+  SignInRulesView,
   TemplateVersionView,
   TextPreview,
   TextPreviewRequest,
@@ -244,6 +245,86 @@ return request<userResetPasswordResponse>(getUserResetPasswordUrl(id),
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(passwordRequest)
+  }
+);}
+
+
+
+export type signInRuleGetResponse200 = {
+  data: SignInRulesView
+  status: 200
+}
+
+export type signInRuleGetResponseSuccess = (signInRuleGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type signInRuleGetResponse = (signInRuleGetResponseSuccess)
+
+export const getSignInRuleGetUrl = () => {
+
+
+
+
+  return `/api/v1/users/sign-in-rules`
+}
+
+export const signInRuleGet = async ( options?: Parameters<typeof request>[1]): Promise<signInRuleGetResponse> => {
+
+  return request<signInRuleGetResponse>(getSignInRuleGetUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type signInRuleUpdateResponse200 = {
+  data: SignInRulesView
+  status: 200
+}
+
+export type signInRuleUpdateResponseSuccess = (signInRuleUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type signInRuleUpdateResponse = (signInRuleUpdateResponseSuccess)
+
+export const getSignInRuleUpdateUrl = () => {
+
+
+
+
+  return `/api/v1/users/sign-in-rules`
+}
+
+export const signInRuleUpdate = async (signInRulesView: SignInRulesView, options?: Parameters<typeof request>[1]): Promise<signInRuleUpdateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return request<signInRuleUpdateResponse>(getSignInRuleUpdateUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(signInRulesView)
   }
 );}
 

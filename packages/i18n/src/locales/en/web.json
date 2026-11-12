@@ -468,8 +468,6 @@
       "header": "Header",
       "kickMessage": "Kick message",
       "kickMessageHint": "What players without the bypass permission see when maintenance starts or they try to join.",
-      "link": "Require a linked Minecraft account",
-      "linkHint": "Dashboard users without a linked account see only the link flow.",
       "maintenance": "In maintenance",
       "maintenanceVersionHint": "Shown in place of the player count while the network is in maintenance.",
       "maxPlayers": "Slots",
@@ -1159,6 +1157,18 @@
       "generate": "Generate",
       "hint": "12 to 72 characters.",
       "label": "Password"
+    },
+    "signInRules": {
+      "confirm": "Everyone without a linked Minecraft account loses the dashboard until they link one in game.",
+      "confirmLabel": "Require it",
+      "confirmTitle": "Require a linked Minecraft account?",
+      "confirmUnlinked": "Everyone without a linked Minecraft account, you included, loses the dashboard until they link one in game.",
+      "link": "Require a linked Minecraft account",
+      "linkHint": "Users without one see only the link flow until they link their account.",
+      "notRequired": "A linked Minecraft account is no longer required",
+      "ownersOnly": "Users without one see only the link flow. Only owners change sign-in rules.",
+      "required": "A linked Minecraft account is now required",
+      "title": "Sign-in rules"
     },
     "status": {
       "disabled": "Disabled",

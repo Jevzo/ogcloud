@@ -32,6 +32,7 @@ import { placeholderUser } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
 import { isValidPassword, NewPasswordField } from "./new-password-field.tsx";
 import { useRoleNames } from "./role-names.ts";
+import { SignInRulesCard } from "./sign-in-rules-card.tsx";
 import { groupsOf, useUserActions } from "./user-actions.tsx";
 import { UserStatusBadge } from "./user-status.tsx";
 
@@ -130,6 +131,7 @@ export function UsersPage() {
           ) : undefined
         }
       />
+      <SignInRulesCard />
       <Card flush>
         <DataTable
           label={t("nav.users")}

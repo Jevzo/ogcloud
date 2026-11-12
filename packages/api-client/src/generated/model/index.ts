@@ -113,6 +113,7 @@ export * from './sessionView.ts';
 export * from './setRankRequest.ts';
 export * from './setupRequest.ts';
 export * from './setupStatus.ts';
+export * from './signInRulesView.ts';
 export * from './skinView.ts';
 export * from './templateVersionView.ts';
 export * from './templateVersionViewSource.ts';

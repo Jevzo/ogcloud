@@ -384,14 +384,6 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
                 />
               )}
             </form.AppField>
-            <form.AppField name="settings.requireMinecraftLink">
-              {(field) => (
-                <field.SwitchField
-                  label={t("network.form.link")}
-                  description={t("network.form.linkHint")}
-                />
-              )}
-            </form.AppField>
           </div>
         </Card>
         <RuntimeCard />

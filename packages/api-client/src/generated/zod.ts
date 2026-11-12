@@ -46,6 +46,16 @@ export const UserResetPasswordBody = zod.object({
 export const UserResetPasswordResponse = zod.void()
 
 
+export const SignInRuleGetResponse = zod.unknown()
+
+
+export const SignInRuleUpdateBody = zod.object({
+  "requireMinecraftLink": zod.boolean()
+})
+
+export const SignInRuleUpdateResponse = zod.unknown()
+
+
 export const RoleUpdateParams = zod.object({
   "id": zod.string()
 })
@@ -199,8 +209,7 @@ export const NetworkUpdateBody = zod.object({
   "tablistEnabled": zod.boolean(),
   "tablistHeader": zod.string(),
   "tablistFooter": zod.string(),
-  "maintenanceKickMessage": zod.string(),
-  "requireMinecraftLink": zod.boolean()
+  "maintenanceKickMessage": zod.string()
 }),
   "version": zod.int()
 })

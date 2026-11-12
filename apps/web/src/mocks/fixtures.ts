@@ -624,7 +624,6 @@ export const networkSettings: NetworkSettingsView = {
       "<gradient:#ff8800:#ff3d7f>OgWars Network</gradient>\n<gray>{server}",
     tablistFooter: "<yellow>{onlinePlayers}<gray> players online",
     maintenanceKickMessage: "<red>The network is in maintenance",
-    requireMinecraftLink: false,
   },
 };
 

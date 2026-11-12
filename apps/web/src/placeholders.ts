@@ -232,7 +232,6 @@ export const placeholderNetwork: NetworkSettingsView = {
     tablistHeader: "",
     tablistFooter: "",
     maintenanceKickMessage: "",
-    requireMinecraftLink: false,
   },
   eulaAcceptedAt: AT,
   version: 0,

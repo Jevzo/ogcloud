@@ -20,5 +20,4 @@ export interface NetworkSettingsFields {
   tablistHeader: string;
   tablistFooter: string;
   maintenanceKickMessage: string;
-  requireMinecraftLink: boolean;
 }

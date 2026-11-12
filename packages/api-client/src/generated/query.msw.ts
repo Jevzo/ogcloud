@@ -75,6 +75,7 @@ import type {
   SetRankRequest,
   SetupRequest,
   SetupStatus,
+  SignInRulesView,
   SkinView,
   TemplateVersionView,
   TextPreview,
@@ -98,6 +99,10 @@ import type {
 export const getUserGetResponseMock = (overrideResponse: Partial<Extract<UserView, object>> = {}): UserView => ({id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), enabled: faker.datatype.boolean(), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', version: faker.number.int(), ...overrideResponse})
 
 export const getUserUpdateResponseMock = (overrideResponse: Partial<Extract<UserView, object>> = {}): UserView => ({id: faker.string.uuid(), username: faker.string.alpha({length: {min: 10, max: 20}}), email: faker.string.alpha({length: {min: 10, max: 20}}), roleId: faker.string.alpha({length: {min: 10, max: 20}}), enabled: faker.datatype.boolean(), linkedPlayerUuid: faker.helpers.arrayElement([faker.string.uuid(), null]), linkedPlayerName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', version: faker.number.int(), ...overrideResponse})
+
+export const getSignInRuleGetResponseMock = (overrideResponse: Partial<Extract<SignInRulesView, object>> = {}): SignInRulesView => ({requireMinecraftLink: faker.datatype.boolean(), ...overrideResponse})
+
+export const getSignInRuleUpdateResponseMock = (overrideResponse: Partial<Extract<SignInRulesView, object>> = {}): SignInRulesView => ({requireMinecraftLink: faker.datatype.boolean(), ...overrideResponse})
 
 export const getRoleUpdateResponseMock = (overrideResponse: Partial<Extract<RoleView, object>> = {}): RoleView => ({id: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean(), permissions: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), version: faker.number.int(), ...overrideResponse})
 
@@ -125,9 +130,9 @@ export const getNpcUpdateResponseTransferActionViewMock = (overrideResponse: Par
 
 export const getNpcUpdateResponseMock = (overrideResponse: Partial<Extract<NpcView, object>> = {}): NpcView => ({id: faker.string.uuid(), settings: {groupId: faker.string.alpha({length: {min: 10, max: 20}}), location: {world: faker.string.alpha({length: {min: 10, max: 20}}), x: faker.number.float({fractionDigits: 2}), y: faker.number.float({fractionDigits: 2}), z: faker.number.float({fractionDigits: 2}), yaw: faker.number.float({fractionDigits: 2}), pitch: faker.number.float({fractionDigits: 2})}, title: faker.string.alpha({length: {min: 10, max: 20}}), subtitle: faker.string.alpha({length: {min: 10, max: 20}}), skin: faker.helpers.arrayElement([{...getNpcUpdateResponseSkinViewMock()},null,]), lookAtPlayers: faker.datatype.boolean(), leftClick: faker.helpers.arrayElement([{...getNpcUpdateResponseTransferActionViewMock()},null,]), rightClick: faker.helpers.arrayElement([{...getNpcUpdateResponseTransferActionViewMock()},null,])}, ...overrideResponse})
 
-export const getNetworkGetResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}}), requireMinecraftLink: faker.datatype.boolean()}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
+export const getNetworkGetResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}})}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
 
-export const getNetworkUpdateResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}}), requireMinecraftLink: faker.datatype.boolean()}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
+export const getNetworkUpdateResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}})}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
 
 export const getMeRenamePasskeyResponseMock = (overrideResponse: Partial<Extract<PasskeyView, object>> = {}): PasskeyView => ({id: faker.string.alpha({length: {min: 10, max: 20}}), label: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastUsedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
@@ -203,7 +208,7 @@ export const getNetworkRotateForwardingTokenResponseMock = (overrideResponse: Pa
         [faker.string.alphanumeric(5)]: faker.string.alpha({length: {min: 10, max: 20}})
       }, completedSteps: faker.number.int(), totalSteps: faker.number.int(), message: faker.string.alpha({length: {min: 10, max: 20}}), createdBy: faker.string.alpha({length: {min: 10, max: 20}}), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', startedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finishedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
-export const getNetworkAcceptEulaResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}}), requireMinecraftLink: faker.datatype.boolean()}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
+export const getNetworkAcceptEulaResponseMock = (overrideResponse: Partial<Extract<NetworkSettingsView, object>> = {}): NetworkSettingsView => ({settings: {maintenance: faker.datatype.boolean(), motd: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceMotd: faker.string.alpha({length: {min: 10, max: 20}}), versionName: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceVersionName: faker.string.alpha({length: {min: 10, max: 20}}), maxPlayers: faker.number.int(), defaultGroupId: faker.string.alpha({length: {min: 10, max: 20}}), routingStrategy: faker.helpers.arrayElement(['LEAST_FILLED','MOST_FILLED','BALANCED','ROUND_ROBIN'] as const), permissionSystemEnabled: faker.datatype.boolean(), tablistEnabled: faker.datatype.boolean(), tablistHeader: faker.string.alpha({length: {min: 10, max: 20}}), tablistFooter: faker.string.alpha({length: {min: 10, max: 20}}), maintenanceKickMessage: faker.string.alpha({length: {min: 10, max: 20}})}, eulaAcceptedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), version: faker.number.int(), ...overrideResponse})
 
 export const getMeStartTotpResponseMock = (overrideResponse: Partial<Extract<TotpEnrollment, object>> = {}): TotpEnrollment => ({secret: faker.string.alpha({length: {min: 10, max: 20}}), uri: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
@@ -352,6 +357,30 @@ export const getUserResetPasswordMockHandler = (overrideResponse?: void | ((info
 
     return new HttpResponse(null,
       { status: 204
+      })
+  }, options)
+}
+
+export const getSignInRuleGetMockHandler = (overrideResponse?: SignInRulesView | ((info: Parameters<HttpResponseResolver>[0]) => Promise<SignInRulesView> | SignInRulesView), options?: RequestHandlerOptions) => {
+  return http.get('*/api/v1/users/sign-in-rules', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSignInRuleGetResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getSignInRuleUpdateMockHandler = (overrideResponse?: SignInRulesView | ((info: Parameters<HttpResponseResolver<PathParams, SignInRulesView>>[0]) => Promise<SignInRulesView> | SignInRulesView), options?: RequestHandlerOptions) => {
+  return http.put<PathParams, SignInRulesView>('*/api/v1/users/sign-in-rules', async (info: Parameters<HttpResponseResolver<PathParams, SignInRulesView>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSignInRuleUpdateResponseMock(),
+      { status: 200
       })
   }, options)
 }
@@ -1397,6 +1426,8 @@ export const getOgCloudAPIMock = () => [
   getUserUpdateMockHandler(),
   getUserDeleteMockHandler(),
   getUserResetPasswordMockHandler(),
+  getSignInRuleGetMockHandler(),
+  getSignInRuleUpdateMockHandler(),
   getRoleUpdateMockHandler(),
   getRoleDeleteMockHandler(),
   getRankSetMockHandler(),
