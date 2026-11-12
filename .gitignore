@@ -5,6 +5,7 @@
 /docs/memory/
 /docs/plan/
 /docs/reference/
+/DESIGN.md
 /.playwright-mcp/
 
 # IDE
