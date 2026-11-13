@@ -127,17 +127,23 @@ class LiveDataTest(
     @Test
     fun `online and known players are listed in pages`() {
         val ids = (1..3).map { UUID.randomUUID() }.sorted()
-        ids.forEachIndexed { index, uuid -> online(uuid, "Pager${index}x${uuid.toString().take(4)}") }
+        val server = UUID.randomUUID()
+        ids.forEachIndexed { index, uuid ->
+            online(uuid, "Pager${index}x${uuid.toString().take(4)}", server.takeIf { index == 1 })
+        }
 
         val first = oauth.json(oauth.call("GET", "$PLAYERS?limit=1", admin))
         val known = oauth.json(oauth.call("GET", "$PLAYERS/known?name=pager1x&limit=10", admin))
         val searched = oauth.json(oauth.call("GET", "$PLAYERS?name=PAGER2X&limit=10", admin))
+        val onServer = oauth.json(oauth.call("GET", "$PLAYERS?serverId=$server&limit=10", admin))
 
         (first["items"] as List<*>).size shouldBe 1
         (known["items"] as List<*>).map { (it as Map<*, *>)["uuid"] } shouldContainExactly listOf(ids[1].toString())
         // Online players are searched by name too, ignoring case (D-0223).
         (searched["items"] as List<*>).map { (it as Map<*, *>)["uuid"] } shouldContainExactly
             listOf(ids[2].toString())
+        // And by the server they are on (D-0232).
+        (onServer["items"] as List<*>).map { (it as Map<*, *>)["uuid"] } shouldContainExactly listOf(ids[1].toString())
         val profile = oauth.json(oauth.call("GET", "$PLAYERS/${ids[0]}", admin))
         (profile["session"] as Map<*, *>)["permissionGroupId"] shouldBe "default"
     }
@@ -207,9 +213,10 @@ class LiveDataTest(
     private fun online(
         uuid: UUID,
         name: String,
+        serverId: UUID? = null,
     ) {
         players.recordSeen(uuid, name, Instant.now(), PlayerRank(uuid, "default", null))
-        sessions.put(PlayerSession(uuid, name, UUID.randomUUID(), null, "default", 0, Instant.now()))
+        sessions.put(PlayerSession(uuid, name, UUID.randomUUID(), serverId, "default", 0, Instant.now()))
     }
 
     private fun command(

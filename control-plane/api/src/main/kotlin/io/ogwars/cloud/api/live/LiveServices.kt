@@ -13,6 +13,7 @@ import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.player.Player
 import io.ogwars.cloud.domain.server.Server
 import io.ogwars.cloud.domain.server.ServerState
+import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.domain.store.ConflictException
 import io.ogwars.cloud.domain.store.GroupStore
@@ -118,10 +119,10 @@ class LivePlayers(
     private val sessions: SessionStore,
 ) {
     fun online(
-        namePrefix: String?,
+        filter: OnlineFilter,
         after: UUID?,
         limit: Int,
-    ): Page<PlayerSession> = Cursors.page(sessions.listOnline(after, limit + 1, namePrefix), limit) { it.playerUuid }
+    ): Page<PlayerSession> = Cursors.page(sessions.listOnline(after, limit + 1, filter), limit) { it.playerUuid }
 
     fun known(
         namePrefix: String?,

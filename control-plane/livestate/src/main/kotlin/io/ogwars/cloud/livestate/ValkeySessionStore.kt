@@ -1,5 +1,6 @@
 package io.ogwars.cloud.livestate
 
+import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.domain.store.Revisioned
 import io.ogwars.cloud.domain.store.SessionStore
@@ -80,7 +81,7 @@ class ValkeySessionStore(
     override fun listOnline(
         after: UUID?,
         limit: Int,
-        namePrefix: String?,
+        filter: OnlineFilter,
     ): List<PlayerSession> {
         val candidates =
             valkey
@@ -95,13 +96,10 @@ class ValkeySessionStore(
             val keys = chunk.map(ValkeyKeys::session)
             valkey.readRecords(keys).zip(keys).forEach { (record, key) ->
                 val session = record?.let { RecordCodec.decodeSession(key, it.second) }
-                if (session != null && sessions.size < limit && session.named(namePrefix)) sessions += session
+                if (session != null && sessions.size < limit && filter.keeps(session)) sessions += session
             }
             if (sessions.size == limit) break
         }
         return sessions
     }
 }
-
-private fun PlayerSession.named(prefix: String?): Boolean =
-    prefix == null || playerName.startsWith(prefix, ignoreCase = true)

@@ -2,6 +2,7 @@ package io.ogwars.cloud.livestate
 
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.GroupId
+import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.session.PlayerSession
 import io.ogwars.cloud.domain.store.OneTimeKind
 import io.ogwars.cloud.domain.store.RateDecision
@@ -113,11 +114,44 @@ class ValkeySessionAndCoordinationTest : ValkeyTest() {
         val alfred = UUID(1, 4)
         listOf(session(alice, "Alice"), session(bob, "Bob"), session(alfred, "Alfred")).forEach(sessions::put)
 
-        sessions.listOnline(after = null, limit = 1, namePrefix = "AL").map { it.playerUuid } shouldContainExactly
+        sessions
+            .listOnline(
+                after = null,
+                limit = 1,
+                OnlineFilter(namePrefix = "AL"),
+            ).map { it.playerUuid } shouldContainExactly
             listOf(alice)
-        sessions.listOnline(after = alice, limit = 1, namePrefix = "al").map { it.playerUuid } shouldContainExactly
+        sessions.listOnline(after = alice, limit = 1, OnlineFilter(namePrefix = "al")).map {
+            it.playerUuid
+        } shouldContainExactly
             listOf(alfred)
-        sessions.listOnline(after = null, limit = 10, namePrefix = "z").shouldBeEmpty()
+        sessions.listOnline(after = null, limit = 10, OnlineFilter(namePrefix = "z")).shouldBeEmpty()
+    }
+
+    @Test
+    fun `online players are found by their server, in pages`() {
+        val lobby = UUID(3, 1)
+        val alfred = UUID(1, 4)
+        listOf(
+            session(alice, "Alice").copy(serverId = lobby),
+            session(bob, "Bob"),
+            session(alfred, "Alfred").copy(serverId = lobby),
+        ).forEach(sessions::put)
+
+        sessions
+            .listOnline(
+                after = null,
+                limit = 1,
+                OnlineFilter(serverId = lobby),
+            ).map { it.playerUuid } shouldContainExactly
+            listOf(alice)
+        sessions
+            .listOnline(
+                after = alice,
+                limit = 1,
+                OnlineFilter(serverId = lobby),
+            ).map { it.playerUuid } shouldContainExactly
+            listOf(alfred)
     }
 
     @Test

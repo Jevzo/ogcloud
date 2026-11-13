@@ -6,6 +6,7 @@ import io.ogwars.cloud.api.web.Page
 import io.ogwars.cloud.api.web.Requires
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.server.ServerState
+import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.store.CrashFailureStore
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.user.ApiPermission
@@ -100,15 +101,20 @@ class PlayerController(
     private val transfers: Transfers,
     private val actors: CurrentActor,
 ) {
-    /** Online players, ordered by uuid so the cursor stays valid while people come and go; [name] narrows by prefix. */
+    /**
+     * Online players, ordered by uuid so the cursor stays valid while people come and go; [name] narrows by prefix,
+     * [serverId] to one server's players, or a proxy's (D-0232).
+     */
     @Requires(ApiPermission.PLAYERS_READ)
     @GetMapping
     fun online(
         @RequestParam name: String?,
+        @RequestParam serverId: UUID?,
         @RequestParam cursor: String?,
         @RequestParam limit: Int?,
     ): Page<OnlinePlayerView> {
-        val page = players.online(name?.ifBlank { null }, cursor?.let(Cursors::decode), Cursors.limit(limit))
+        val filter = OnlineFilter(name?.ifBlank { null }, serverId)
+        val page = players.online(filter, cursor?.let(Cursors::decode), Cursors.limit(limit))
         return Page(page.items.map { it.toView() }, page.nextCursor)
     }
 

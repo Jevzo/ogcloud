@@ -3,6 +3,7 @@ package io.ogwars.cloud.domain.store
 import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.overview.LoadSample
 import io.ogwars.cloud.domain.server.Server
+import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.session.PlayerSession
 import java.time.Duration
 import java.time.Instant
@@ -59,14 +60,11 @@ interface SessionStore {
 
     fun onlinePlayers(): Set<UUID>
 
-    /**
-     * Online players ordered by uuid, starting after [after]; sessions that expired meanwhile are skipped. With
-     * [namePrefix], only names starting with it, ignoring case (D-0223).
-     */
+    /** Online players ordered by uuid, starting after [after], that [filter] keeps; expired sessions are skipped. */
     fun listOnline(
         after: UUID?,
         limit: Int,
-        namePrefix: String? = null,
+        filter: OnlineFilter = OnlineFilter.ALL,
     ): List<PlayerSession>
 }
 

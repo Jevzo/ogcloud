@@ -728,6 +728,7 @@ export const PrivacyExportPlayerResponse = zod.unknown()
 
 export const PlayerOnlineQueryParams = zod.object({
   "name": zod.string().optional(),
+  "serverId": zod.uuid().optional(),
   "cursor": zod.string().optional(),
   "limit": zod.int().optional()
 })

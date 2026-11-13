@@ -1345,6 +1345,12 @@ paths:
         required: false
         schema:
           type: string
+      - name: serverId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
       - name: cursor
         in: query
         required: false

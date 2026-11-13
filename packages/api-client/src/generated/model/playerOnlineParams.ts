@@ -7,6 +7,7 @@
 
 export type PlayerOnlineParams = {
   name?: string;
+  serverId?: string;
   cursor?: string;
   limit?: number;
 };
