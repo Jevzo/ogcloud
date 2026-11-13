@@ -343,11 +343,12 @@
     "detail": {
       "back": "Back to the groups",
       "chart": "Players in {{id}} over the last 24 hours",
+      "chartTitle": "Players, last 24 h",
       "failed": "This group could not be loaded",
       "gone": "This group does not exist",
       "goneDescription": "It may have been deleted; recently deleted groups are listed under Groups.",
-      "live": "Right now",
       "liveHidden": "Live servers and players show to roles that can read the overview.",
+      "maintenance": "Only players with the bypass permission stay here; everyone else goes to the default group. The autoscaler leaves the group alone until maintenance ends.",
       "sections": "Sections",
       "settings": "Settings",
       "templates": "Templates"

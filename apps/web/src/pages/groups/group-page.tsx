@@ -15,6 +15,8 @@ import { GroupUpdateBody } from "@ogcloud/api-client/zod";
 import {
   Button,
   Card,
+  type KpiDelta,
+  KpiTile,
   Loading,
   Note,
   PageHeader,
@@ -44,7 +46,6 @@ import {
   useViewSettingsForm,
 } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
-import { Load, ServerCount } from "../../load.tsx";
 import { LoadFailed } from "../../load-failed.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -61,7 +62,10 @@ import { TemplatesPanel } from "./templates-panel.tsx";
 
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
-const CHART_HEIGHT = 120;
+const CHART_HEIGHT = 140;
+const HOUR_MS = 3_600_000;
+// A group this full warns, like its capacity meters.
+const FULL_AT = 0.9;
 // The header owns maintenance: the form shows no field for it, and a save keeps the value the edits began from.
 const SettingsForm = contractSchema<{ settings: GroupSettings }>(
   z.object({ settings: GroupUpdateBody.shape.settings }),
@@ -161,24 +165,14 @@ function GroupEditor({ view }: { view: GroupView }) {
                 {t("groups.actions.restart")}
               </Button>
             ) : null}
-            {canWrite ? (
-              view.settings.maintenance ? (
-                <Button
-                  icon={Play}
-                  data-skeleton=""
-                  onClick={() => actions.request("endMaintenance", view.id)}
-                >
-                  {t("groups.actions.endMaintenance")}
-                </Button>
-              ) : (
-                <Button
-                  icon={Construction}
-                  data-skeleton=""
-                  onClick={() => actions.request("startMaintenance", view.id)}
-                >
-                  {t("groups.actions.startMaintenance")}
-                </Button>
-              )
+            {canWrite && !view.settings.maintenance ? (
+              <Button
+                icon={Construction}
+                data-skeleton=""
+                onClick={() => actions.request("startMaintenance", view.id)}
+              >
+                {t("groups.actions.startMaintenance")}
+              </Button>
             ) : null}
             {canRequest ? (
               <Button
@@ -192,6 +186,26 @@ function GroupEditor({ view }: { view: GroupView }) {
           </>
         }
       />
+      {view.settings.maintenance ? (
+        // The header's badge names the state; the note says what it means and carries the way out.
+        <Note
+          tone="warning"
+          icon={Construction}
+          action={
+            canWrite ? (
+              <Button
+                size="sm"
+                icon={Play}
+                onClick={() => actions.request("endMaintenance", view.id)}
+              >
+                {t("groups.actions.endMaintenance")}
+              </Button>
+            ) : undefined
+          }
+        >
+          {t("groups.detail.maintenance")}
+        </Note>
+      ) : null}
       <Tabs
         label={t("groups.detail.sections")}
         value={tab}
@@ -252,7 +266,7 @@ function GroupEditor({ view }: { view: GroupView }) {
   );
 }
 
-/** What the group runs right now and its players over the last day, beside the settings on wide screens. */
+/** What the group runs right now against an hour ago, and its players over the last day (D-0231). */
 function LivePanel({
   groupId,
   live,
@@ -267,33 +281,66 @@ function LivePanel({
     { query: { refetchInterval: HISTORY_REFRESH_MS } },
   );
   const now = Date.now();
-  const points = (history.data?.data ?? placeholderHistory(now)).points.map(
-    (point) => ({
-      at: new Date(point.at),
-      value: point.players,
-    }),
+  const samples = (history.data?.data ?? placeholderHistory(now)).points;
+  const points = samples.map((point) => ({
+    at: new Date(point.at),
+    value: point.players,
+  }));
+  const hourAgo = samples.find(
+    (point) => new Date(point.at).getTime() >= now - HOUR_MS,
   );
   const failure = loadFailure(history);
   const load = live ?? placeholderGroupOverview;
+  const delta = (change: number | undefined): KpiDelta | undefined =>
+    change === undefined
+      ? undefined
+      : {
+          change: format.signed(change),
+          basis: t("overview.kpi.basis"),
+          trend: change > 0 ? "up" : change < 0 ? "down" : "flat",
+        };
 
   return (
-    <Card title={t("groups.detail.live")}>
-      <div className="flex flex-col gap-3">
-        <Loading when={live === undefined}>
-          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2">
-            <dt className="text-text-3">{t("groups.columns.servers")}</dt>
-            <dd className="m-0">
-              <ServerCount running={load.running} pending={load.pending} />
-            </dd>
-            <dt className="text-text-3">{t("groups.columns.players")}</dt>
-            <dd className="m-0">
-              <Load value={load.players} max={load.capacity} />
-            </dd>
-          </dl>
-        </Loading>
+    <>
+      <Loading when={live === undefined}>
+        <div className="grid grid-cols-2 gap-6">
+          <KpiTile
+            label={t("groups.columns.servers")}
+            value={load.running}
+            format={format.number}
+            caption={
+              load.pending > 0
+                ? t("groups.starting", { count: load.pending })
+                : undefined
+            }
+            delta={delta(
+              hourAgo === undefined
+                ? undefined
+                : load.running - hourAgo.running,
+            )}
+          />
+          <KpiTile
+            label={t("groups.columns.players")}
+            value={load.players}
+            format={format.number}
+            caption={t("groups.limit", { max: format.number(load.capacity) })}
+            delta={delta(
+              hourAgo === undefined
+                ? undefined
+                : load.players - hourAgo.players,
+            )}
+            warn={load.capacity > 0 && load.players / load.capacity >= FULL_AT}
+          />
+        </div>
+      </Loading>
+      <Card title={t("groups.detail.chartTitle")}>
         {failure !== undefined && history.data === undefined ? (
           <LoadFailed failure={failure} />
-        ) : points.length < 2 ? null : (
+        ) : points.length < 2 ? (
+          <p className="text-small text-text-3">
+            {t("overview.players.empty")}
+          </p>
+        ) : (
           <Loading when={history.data === undefined}>
             <TimeSeriesChart
               label={t("groups.detail.chart", { id: groupId })}
@@ -304,7 +351,7 @@ function LivePanel({
             />
           </Loading>
         )}
-      </div>
-    </Card>
+      </Card>
+    </>
   );
 }

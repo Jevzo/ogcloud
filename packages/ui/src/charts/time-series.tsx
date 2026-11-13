@@ -1,6 +1,6 @@
 import { scaleLinear, scaleTime } from "d3-scale";
 import { area, curveMonotoneX, line } from "d3-shape";
-import { type PointerEvent, useRef, useState } from "react";
+import { type PointerEvent, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../lib/cn.ts";
 import { useWidth } from "../lib/use-width.ts";
@@ -28,6 +28,9 @@ const GRID_LINES = 4;
 // Time labels need about this much room each, so narrow charts get fewer.
 const X_TICK_SPACING = 120;
 const MIN_X_TICKS = 2;
+const DIMMED = 0.35;
+// A single series' fill fades from this opacity at the line down to nothing.
+const FILL_OPACITY = 0.2;
 
 interface TimeSeriesChartProps {
   /** Names the chart for screen readers and titles its table view. */
@@ -52,6 +55,11 @@ export function TimeSeriesChart({
   const frame = useRef<HTMLDivElement>(null);
   const width = useWidth(frame);
   const [hover, setHover] = useState<number | null>(null);
+  // The series under the pointer, in the chart or its legend; the others step back (D-0231).
+  const [focus, setFocus] = useState<string | null>(null);
+  // useId's characters are not valid in a url(#…) reference.
+  const id = `og-chart-${useId().replace(/[^\w-]/g, "")}`;
+  const dim = (name: string) => (focus !== null && focus !== name ? DIMMED : 1);
 
   const times = series[0]?.points.map((point) => point.at) ?? [];
   const max = Math.max(
@@ -93,7 +101,13 @@ export function TimeSeriesChart({
       {series.length > 1 ? (
         <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-meta text-text-2">
           {series.map((s, index) => (
-            <li key={s.name} className="flex items-center gap-1.5">
+            <li
+              key={s.name}
+              onPointerEnter={() => setFocus(s.name)}
+              onPointerLeave={() => setFocus(null)}
+              className="flex items-center gap-1.5 transition-opacity"
+              style={{ opacity: dim(s.name) }}
+            >
               <span
                 aria-hidden="true"
                 className="h-0.5 w-3 rounded-full"
@@ -115,6 +129,37 @@ export function TimeSeriesChart({
             onPointerLeave={() => setHover(null)}
             className="block overflow-visible"
           >
+            <defs>
+              {series.map((s, index) => (
+                <linearGradient
+                  key={s.name}
+                  id={`${id}-fill-${index}`}
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="0"
+                    stopColor={`var(${SERIES_COLOURS[index]})`}
+                    stopOpacity={FILL_OPACITY}
+                  />
+                  <stop
+                    offset="1"
+                    stopColor={`var(${SERIES_COLOURS[index]})`}
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              ))}
+              {/* The data draws in once, left to right, when the chart first appears. */}
+              <clipPath id={`${id}-reveal`}>
+                <rect
+                  width={width}
+                  height={height}
+                  className="origin-left animate-draw-in [transform-box:fill-box]"
+                />
+              </clipPath>
+            </defs>
             {yTicks.map((tick) => (
               <g key={tick}>
                 <line
@@ -149,12 +194,18 @@ export function TimeSeriesChart({
                 </text>
               ))}
             {series.map((s, index) => (
-              <g key={s.name}>
+              <g
+                key={s.name}
+                clipPath={`url(#${id}-reveal)`}
+                onPointerEnter={() => setFocus(s.name)}
+                onPointerLeave={() => setFocus(null)}
+                className="transition-opacity"
+                style={{ opacity: dim(s.name) }}
+              >
                 {series.length === 1 ? (
                   <path
                     d={toArea(s.points as Point[]) ?? ""}
-                    fill={`var(${SERIES_COLOURS[index]})`}
-                    fillOpacity={0.12}
+                    fill={`url(#${id}-fill-${index})`}
                   />
                 ) : null}
                 <path

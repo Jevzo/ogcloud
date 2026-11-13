@@ -29,6 +29,7 @@
   --animate-fade-out: og-fade-out calc(var(--og-duration-base) * var(--og-exit-ratio)) var(--ease-exit);
   --animate-slide-up: og-slide-up var(--og-duration-base) var(--ease-standard);
   --animate-flash: og-flash var(--og-duration-flash) var(--ease-exit);
+  --animate-draw-in: og-draw-in var(--og-duration-slow) var(--ease-standard);
   --animate-spin: og-spin 900ms linear infinite;
 }
 
@@ -84,6 +85,12 @@
   }
   to {
     opacity: 0;
+  }
+}
+
+@keyframes og-draw-in {
+  from {
+    transform: scaleX(0);
   }
 }
 
