@@ -79,7 +79,12 @@ export function PermissionsEditor({
         </ul>
       )}
       {disabled ? null : (
-        <div className="col-span-full grid grid-cols-subgrid items-center border-border-subtle border-t pt-3">
+        // A form row: its labels above the fields, the button on their line (D-0231).
+        <div className="col-span-full grid grid-cols-subgrid items-end gap-y-1.5 border-border-subtle border-t pt-3">
+          <span className="font-label">{t("permissions.nodes.node")}</span>
+          <span className="col-span-2 font-label">
+            {t("permissions.nodes.note")}
+          </span>
           <Input
             mono
             aria-label={t("permissions.nodes.node")}

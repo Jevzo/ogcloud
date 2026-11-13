@@ -1,5 +1,13 @@
 import { usePlayerKnown, useUserList } from "@ogcloud/api-client/react";
-import { Button, Card, EmptyState, Input, Note, PageHeader } from "@ogcloud/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Note,
+  PageHeader,
+} from "@ogcloud/ui";
 import { Download, Eraser, Info, UserRoundSearch } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -119,13 +127,16 @@ function SearchCard({
   return (
     <Card title={title}>
       <div className="flex flex-col gap-3">
-        <Input
-          aria-label={label}
-          placeholder={label}
-          type="search"
-          value={query}
-          onChange={(event) => onQuery(event.target.value)}
-        />
+        <Field label={label}>
+          {(control) => (
+            <Input
+              {...control}
+              type="search"
+              value={query}
+              onChange={(event) => onQuery(event.target.value)}
+            />
+          )}
+        </Field>
         {subjects.length === 0 ? (
           searched ? (
             <EmptyState
@@ -157,9 +168,9 @@ function SearchCard({
                   </Button>
                 ) : null}
                 {privacy.mayErase(subject) ? (
+                  // Neutral here; the danger colour waits for the typed confirmation (D-0210).
                   <Button
                     size="sm"
-                    kind="danger"
                     icon={Eraser}
                     onClick={() => privacy.askErase(subject)}
                   >
