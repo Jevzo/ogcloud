@@ -228,7 +228,8 @@ for (const theme of THEMES) {
   test(`a typed confirmation, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, `/servers/${SERVER}`, theme);
-    await page.getByRole("button", { name: "More actions" }).click();
+    // The header's menu comes first; the players listed below carry their own.
+    await page.getByRole("button", { name: "More actions" }).first().click();
     await page.getByRole("menuitem", { name: "Kill" }).click();
     await page.getByRole("dialog").waitFor();
     await page.waitForTimeout(400);

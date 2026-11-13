@@ -20,13 +20,12 @@ import { ArrowUpRight, Plus, Shield, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monoColumn } from "../../columns.tsx";
-import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useCan } from "../../permissions.ts";
 import { placeholderPermissionGroup } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
-import { RecordDrawer } from "../../record-drawer.tsx";
+import { PermissionGroupDrawer } from "./permission-group-drawer.tsx";
 import { RankChip } from "./rank-look.tsx";
 
 const columns = columnsFor<PermissionGroupView>();
@@ -151,38 +150,7 @@ export function PermissionGroupsPage() {
           }
         />
       </Card>
-      {opened === null ? null : (
-        <RecordDrawer
-          title={opened.settings.name}
-          badges={
-            opened.settings.defaultGroup ? (
-              <Badge tone="highlight" icon={Star}>
-                {t("permissions.default")}
-              </Badge>
-            ) : null
-          }
-          onClose={() => setOpened(null)}
-          onOpenPage={() =>
-            void navigate({
-              to: "/permissions/$permissionGroupId",
-              params: { permissionGroupId: opened.id },
-            })
-          }
-        >
-          <DetailRow label={t("permissions.columns.look")}>
-            <RankChip display={opened.settings.display} />
-          </DetailRow>
-          <DetailRow label={t("permissions.columns.id")}>
-            <span className="font-mono text-mono">{opened.id}</span>
-          </DetailRow>
-          <DetailRow label={t("permissions.columns.weight")}>
-            {opened.settings.weight}
-          </DetailRow>
-          <DetailRow label={t("permissions.columns.nodes")}>
-            {Object.keys(opened.settings.permissions).length}
-          </DetailRow>
-        </RecordDrawer>
-      )}
+      <PermissionGroupDrawer group={opened} onClose={() => setOpened(null)} />
       <NameIdDialog
         open={creating}
         onOpenChange={setCreating}

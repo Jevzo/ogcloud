@@ -16,7 +16,7 @@ import {
 } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
 import { Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
@@ -71,7 +71,8 @@ interface PlayerTableProps<T extends Named> {
   actions: ReturnType<typeof usePlayerActions>;
   emptyTitle: string;
   emptyDescription: string;
-  onRowOpen: (row: T) => void;
+  /** A row's facts in its drawer, as detail rows. */
+  details: (row: T) => ReactNode;
 }
 
 /** A page-wise loaded list of players with their row actions. */
@@ -85,8 +86,9 @@ function PlayerTable<T extends Named>({
   actions,
   emptyTitle,
   emptyDescription,
-  onRowOpen,
+  details,
 }: PlayerTableProps<T>) {
+  const [opened, setOpened] = useState<T | null>(null);
   return (
     <>
       <DataTable
@@ -97,7 +99,7 @@ function PlayerTable<T extends Named>({
         getRowId={(player) => player.uuid}
         placeholder={placeholder}
         actions={(player) => actions.actionsFor(toRef(player))}
-        onRowOpen={onRowOpen}
+        onRowOpen={setOpened}
         loading={paged.pending}
         maxHeight="calc(100vh - 16rem)"
         empty={
@@ -109,6 +111,13 @@ function PlayerTable<T extends Named>({
         }
       />
       <LoadMore paged={paged} />
+      <PlayerDrawer
+        player={opened === null ? null : toRef(opened)}
+        onClose={() => setOpened(null)}
+        actions={actions}
+      >
+        {opened === null ? null : details(opened)}
+      </PlayerDrawer>
     </>
   );
 }
@@ -172,7 +181,6 @@ export function OnlineTable({
   const { t } = useTranslation("web");
   const servers = useServerNames();
   const fetchOnline = usePlayerOnlineHook();
-  const [opened, setOpened] = useState<OnlinePlayerView | null>(null);
   const params = {
     ...(search === "" ? {} : { name: search }),
     ...(server === undefined ? {} : { serverId: server.id }),
@@ -243,48 +251,39 @@ export function OnlineTable({
   const where = (id: string) => servers.get(id) ?? id.slice(0, 8);
 
   return (
-    <>
-      <PlayerTable
-        label={t("players.online")}
-        paged={online}
-        rows={online.items}
-        placeholder={placeholderOnlinePlayer}
-        columns={columns}
-        toRef={toRef}
-        actions={actions}
-        emptyTitle={t("players.empty.online")}
-        emptyDescription={t("players.empty.onlineDescription")}
-        onRowOpen={setOpened}
-      />
-      <PlayerDrawer
-        player={opened === null ? null : toRef(opened)}
-        onClose={() => setOpened(null)}
-        actions={actions}
-      >
-        {opened === null ? null : (
-          <>
-            <DetailRow label={t("players.columns.rank")}>
-              <RankCell groupId={opened.session.permissionGroupId} />
-            </DetailRow>
-            <DetailRow label={t("players.columns.server")}>
-              <span className="font-mono text-mono">
-                {opened.session.serverId == null
-                  ? "—"
-                  : where(opened.session.serverId)}
-              </span>
-            </DetailRow>
-            <DetailRow label={t("players.columns.proxy")}>
-              <span className="font-mono text-mono">
-                {where(opened.session.proxyId)}
-              </span>
-            </DetailRow>
-            <DetailRow label={t("players.columns.connected")}>
-              <Ago at={opened.session.connectedAt} className="" />
-            </DetailRow>
-          </>
-        )}
-      </PlayerDrawer>
-    </>
+    <PlayerTable
+      label={t("players.online")}
+      paged={online}
+      rows={online.items}
+      placeholder={placeholderOnlinePlayer}
+      columns={columns}
+      toRef={toRef}
+      actions={actions}
+      emptyTitle={t("players.empty.online")}
+      emptyDescription={t("players.empty.onlineDescription")}
+      details={(player) => (
+        <>
+          <DetailRow label={t("players.columns.rank")}>
+            <RankCell groupId={player.session.permissionGroupId} />
+          </DetailRow>
+          <DetailRow label={t("players.columns.server")}>
+            <span className="font-mono text-mono">
+              {player.session.serverId == null
+                ? "—"
+                : where(player.session.serverId)}
+            </span>
+          </DetailRow>
+          <DetailRow label={t("players.columns.proxy")}>
+            <span className="font-mono text-mono">
+              {where(player.session.proxyId)}
+            </span>
+          </DetailRow>
+          <DetailRow label={t("players.columns.connected")}>
+            <Ago at={player.session.connectedAt} className="" />
+          </DetailRow>
+        </>
+      )}
+    />
   );
 }
 
@@ -299,7 +298,6 @@ function KnownTable({
 }) {
   const { t } = useTranslation("web");
   const fetchKnown = usePlayerKnownHook();
-  const [opened, setOpened] = useState<PlayerView | null>(null);
   const params = search === "" ? {} : { name: search };
   const known = usePaged(
     getPlayerKnownQueryKey(params),
@@ -346,41 +344,32 @@ function KnownTable({
   });
 
   return (
-    <>
-      <PlayerTable
-        label={t("players.everyone")}
-        paged={known}
-        rows={known.items}
-        placeholder={placeholderPlayer}
-        columns={columns}
-        toRef={toRef}
-        actions={actions}
-        emptyTitle={t("players.empty.known")}
-        emptyDescription={t("players.empty.knownDescription")}
-        onRowOpen={setOpened}
-      />
-      <PlayerDrawer
-        player={opened === null ? null : toRef(opened)}
-        onClose={() => setOpened(null)}
-        actions={actions}
-      >
-        {opened === null ? null : (
-          <>
-            <DetailRow label={t("players.columns.rank")}>
-              <RankCell
-                groupId={opened.permissionGroupId}
-                expiresAt={opened.rankExpiresAt}
-              />
-            </DetailRow>
-            <DetailRow label={t("players.columns.lastSeen")}>
-              <Ago at={opened.lastSeenAt} className="" />
-            </DetailRow>
-            <DetailRow label={t("players.columns.firstSeen")}>
-              <Ago at={opened.firstSeenAt} className="" />
-            </DetailRow>
-          </>
-        )}
-      </PlayerDrawer>
-    </>
+    <PlayerTable
+      label={t("players.everyone")}
+      paged={known}
+      rows={known.items}
+      placeholder={placeholderPlayer}
+      columns={columns}
+      toRef={toRef}
+      actions={actions}
+      emptyTitle={t("players.empty.known")}
+      emptyDescription={t("players.empty.knownDescription")}
+      details={(player) => (
+        <>
+          <DetailRow label={t("players.columns.rank")}>
+            <RankCell
+              groupId={player.permissionGroupId}
+              expiresAt={player.rankExpiresAt}
+            />
+          </DetailRow>
+          <DetailRow label={t("players.columns.lastSeen")}>
+            <Ago at={player.lastSeenAt} className="" />
+          </DetailRow>
+          <DetailRow label={t("players.columns.firstSeen")}>
+            <Ago at={player.firstSeenAt} className="" />
+          </DetailRow>
+        </>
+      )}
+    />
   );
 }

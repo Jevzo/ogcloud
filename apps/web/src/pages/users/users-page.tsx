@@ -23,20 +23,18 @@ import { ArrowUpRight, Plus, UserRound, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
-import { Ago } from "../../ago.tsx";
 import { agoColumn } from "../../columns.tsx";
-import { DetailRow } from "../../details.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { useIsOwner, useMe } from "../../permissions.ts";
 import { placeholderUser } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
-import { RecordDrawer } from "../../record-drawer.tsx";
 import { isValidPassword, NewPasswordField } from "./new-password-field.tsx";
 import { useRoleNames } from "./role-names.ts";
 import { SignInRulesCard } from "./sign-in-rules-card.tsx";
 import { groupsOf, useUserActions } from "./user-actions.tsx";
+import { UserDrawer } from "./user-drawer.tsx";
 import { UserStatusBadge } from "./user-status.tsx";
 
 const columns = columnsFor<UserView>();
@@ -176,36 +174,7 @@ export function UsersPage() {
         />
         <LoadMore paged={users} />
       </Card>
-      {opened === null ? null : (
-        <RecordDrawer
-          title={opened.username}
-          badges={<UserStatusBadge enabled={opened.enabled} />}
-          onClose={() => setOpened(null)}
-          onOpenPage={() =>
-            void navigate({
-              to: "/users/$userId",
-              params: { userId: opened.id },
-            })
-          }
-        >
-          <DetailRow label={t("users.columns.email")}>{opened.email}</DetailRow>
-          <DetailRow label={t("users.columns.role")}>
-            {roles.nameOf(opened.roleId)}
-          </DetailRow>
-          <DetailRow label={t("users.columns.minecraft")}>
-            {opened.linkedPlayerName == null ? (
-              <span className="text-text-3">{t("users.notLinked")}</span>
-            ) : (
-              <span className="font-mono text-mono">
-                {opened.linkedPlayerName}
-              </span>
-            )}
-          </DetailRow>
-          <DetailRow label={t("users.columns.created")}>
-            <Ago at={opened.createdAt} className="" />
-          </DetailRow>
-        </RecordDrawer>
-      )}
+      <UserDrawer user={opened} onClose={() => setOpened(null)} />
       <CreateUserDialog
         open={creating}
         onOpenChange={setCreating}
