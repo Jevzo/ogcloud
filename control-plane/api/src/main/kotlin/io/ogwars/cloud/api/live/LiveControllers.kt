@@ -10,6 +10,7 @@ import io.ogwars.cloud.domain.session.OnlineFilter
 import io.ogwars.cloud.domain.store.CrashFailureStore
 import io.ogwars.cloud.domain.store.GroupStore
 import io.ogwars.cloud.domain.user.ApiPermission
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -108,7 +109,13 @@ class PlayerController(
     @Requires(ApiPermission.PLAYERS_READ)
     @GetMapping
     fun online(
+        @Parameter(description = "Only players whose name starts with this, ignoring case.")
         @RequestParam name: String?,
+        @Parameter(
+            description =
+                "Only one server's players: a backend's id keeps the players on it, a proxy's id the players " +
+                    "connected through it.",
+        )
         @RequestParam serverId: UUID?,
         @RequestParam cursor: String?,
         @RequestParam limit: Int?,

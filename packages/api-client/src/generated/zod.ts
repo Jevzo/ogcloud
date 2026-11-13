@@ -727,8 +727,8 @@ export const PrivacyExportPlayerResponse = zod.unknown()
 
 
 export const PlayerOnlineQueryParams = zod.object({
-  "name": zod.string().optional(),
-  "serverId": zod.uuid().optional(),
+  "name": zod.string().optional().describe('Only players whose name starts with this, ignoring case.'),
+  "serverId": zod.uuid().optional().describe('Only one server\'s players: a backend\'s id keeps the players on it, a proxy\'s id the players connected through it.'),
   "cursor": zod.string().optional(),
   "limit": zod.int().optional()
 })

@@ -6,7 +6,9 @@
  */
 
 export type PlayerOnlineParams = {
+  /** Only players whose name starts with this, ignoring case. */
   name?: string;
+  /** Only one server's players: a backend's id keeps the players on it, a proxy's id the players connected through it. */
   serverId?: string;
   cursor?: string;
   limit?: number;
