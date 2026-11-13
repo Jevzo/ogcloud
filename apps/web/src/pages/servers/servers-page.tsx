@@ -6,6 +6,7 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
+  FilterBar,
   Input,
   PageHeader,
   Segmented,
@@ -18,10 +19,11 @@ import { Ago } from "../../ago.tsx";
 import { loadFailure } from "../../errors.ts";
 import { Load } from "../../load.tsx";
 import { placeholderServer } from "../../placeholders.ts";
-import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
+import { ALL_GROUPS, useGroupFilter } from "../groups/group-filter.tsx";
 import { CommandDialog } from "./command-dialog.tsx";
 import { RequestServerDialog } from "./request-server-dialog.tsx";
 import { useServerActions } from "./server-actions.tsx";
+import { ServerDrawer } from "./server-drawer.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
 
 // Player counts change with heartbeats, which send no events (D-0105).
@@ -46,7 +48,8 @@ export function ServersPage() {
   const groupIds = overview.data?.data.groups.map((group) => group.id) ?? [];
   const actions = useServerActions(groupIds);
   const [phase, setPhase] = useState<Phase>("all");
-  const [group, setGroup] = useState(ALL_GROUPS);
+  const { group, filter: groupFilter } = useGroupFilter(groupIds);
+  const [opened, setOpened] = useState<ServerView | null>(null);
   const [search, setSearch] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [commanding, setCommanding] = useState(false);
@@ -133,7 +136,7 @@ export function ServersPage() {
           ) : undefined
         }
       />
-      <div className="flex flex-wrap items-center gap-2">
+      <FilterBar filters={[groupFilter]}>
         <Segmented
           label={t("servers.filters.phase")}
           options={(Object.keys(PHASES) as Phase[]).map((value) => ({
@@ -143,11 +146,6 @@ export function ServersPage() {
           value={phase}
           onValueChange={setPhase}
         />
-        <GroupFilter
-          groupIds={groupIds}
-          value={group}
-          onValueChange={setGroup}
-        />
         <Input
           className="w-64"
           type="search"
@@ -156,7 +154,7 @@ export function ServersPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-      </div>
+      </FilterBar>
       <Card flush>
         <DataTable
           label={t("nav.servers")}
@@ -166,6 +164,7 @@ export function ServersPage() {
           getRowId={(server) => server.id}
           placeholder={placeholderServer}
           actions={actions.actionsFor}
+          onRowOpen={setOpened}
           loading={servers.isPending}
           maxHeight="calc(100vh - 14rem)"
           empty={
@@ -185,6 +184,16 @@ export function ServersPage() {
           }
         />
       </Card>
+      <ServerDrawer
+        server={
+          // The drawer follows the live list, and closes when its server is gone.
+          opened === null
+            ? null
+            : (all.find((server) => server.id === opened.id) ?? null)
+        }
+        onClose={() => setOpened(null)}
+        actions={actions}
+      />
       {actions.dialogs}
       <RequestServerDialog
         open={requesting}

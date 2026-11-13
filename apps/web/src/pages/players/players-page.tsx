@@ -152,18 +152,24 @@ export function PlayersPage() {
 
 const onlineColumns = columnsFor<OnlinePlayerView>();
 
-function OnlineTable({
-  search,
+/** Online players, found by name (D-0223); on a server's page, only that server's or proxy's (D-0232). */
+export function OnlineTable({
+  search = "",
   actions,
+  server,
 }: {
-  search: string;
+  search?: string;
   actions: ReturnType<typeof usePlayerActions>;
+  /** A server whose players to list; its own column goes, since every row would repeat it. */
+  server?: { id: string; proxy: boolean };
 }) {
   const { t } = useTranslation("web");
   const servers = useServerNames();
   const fetchOnline = usePlayerOnlineHook();
-  // Names are matched by the API, by prefix like the known players' (D-0223).
-  const params = search === "" ? {} : { name: search };
+  const params = {
+    ...(search === "" ? {} : { name: search }),
+    ...(server === undefined ? {} : { serverId: server.id }),
+  };
   const online = usePaged(
     getPlayerOnlineQueryKey(params),
     async (cursor) =>
@@ -187,31 +193,40 @@ function OnlineTable({
             <span className="text-text-2">{cell.getValue()}</span>
           ),
         }),
-        onlineColumns.accessor("session.serverId", {
-          header: () => t("players.columns.server"),
-          cell: (cell) => {
-            const id = cell.getValue();
-            return (
-              <span className="font-mono text-mono text-text-2">
-                {id == null ? "—" : (servers.get(id) ?? id.slice(0, 8))}
-              </span>
-            );
-          },
-        }),
-        onlineColumns.accessor("session.proxyId", {
-          header: () => t("players.columns.proxy"),
-          cell: (cell) => (
-            <span className="font-mono text-mono text-text-2">
-              {servers.get(cell.getValue()) ?? cell.getValue().slice(0, 8)}
-            </span>
-          ),
-        }),
+        ...(server !== undefined && !server.proxy
+          ? []
+          : [
+              onlineColumns.accessor("session.serverId", {
+                header: () => t("players.columns.server"),
+                cell: (cell) => {
+                  const id = cell.getValue();
+                  return (
+                    <span className="font-mono text-mono text-text-2">
+                      {id == null ? "—" : (servers.get(id) ?? id.slice(0, 8))}
+                    </span>
+                  );
+                },
+              }),
+            ]),
+        ...(server?.proxy
+          ? []
+          : [
+              onlineColumns.accessor("session.proxyId", {
+                header: () => t("players.columns.proxy"),
+                cell: (cell) => (
+                  <span className="font-mono text-mono text-text-2">
+                    {servers.get(cell.getValue()) ??
+                      cell.getValue().slice(0, 8)}
+                  </span>
+                ),
+              }),
+            ]),
         onlineColumns.accessor("session.connectedAt", {
           header: () => t("players.columns.connected"),
           cell: (cell) => <Ago at={cell.getValue()} />,
         }),
       ]),
-    [t, servers],
+    [t, servers, server],
   );
 
   return (

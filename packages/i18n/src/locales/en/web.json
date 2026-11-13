@@ -155,7 +155,8 @@
   },
   "actions": {
     "loadMore": "Load more",
-    "more": "More actions"
+    "more": "More actions",
+    "openPage": "Open page"
   },
   "activity": {
     "alerts": {
@@ -910,10 +911,13 @@
       "failed": "This server could not be loaded",
       "gone": "This server is gone",
       "goneDescription": "It stopped and left the live state. Its group starts others as needed.",
+      "here": "On this server",
       "id": "Server id",
       "idHint": "Pods and logs carry this id; the short name above is the last six characters players see.",
       "profile": "Runtime profile",
-      "status": "Status"
+      "since": "In this state since",
+      "status": "Status",
+      "throughHere": "Connected through this proxy"
     },
     "empty": {
       "filtered": "No server matches",
@@ -925,6 +929,7 @@
       "all": "All",
       "allGroups": "All groups",
       "draining": "Draining",
+      "group": "Group",
       "phase": "State",
       "running": "Running",
       "search": "Search by name",

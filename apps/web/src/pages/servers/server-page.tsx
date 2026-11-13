@@ -1,5 +1,5 @@
 import { useOverviewGet, useServerGet } from "@ogcloud/api-client/react";
-import { Button, Card, Loading, PageHeader, Value } from "@ogcloud/ui";
+import { Button, Card, KpiTile, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -9,21 +9,27 @@ import {
   SquareTerminal,
   Upload,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
+import { useFormat } from "../../format.ts";
 import { IdentityCard } from "../../identity-card.tsx";
-import { Load } from "../../load.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { placeholderServer } from "../../placeholders.ts";
 import { GroupLink } from "../groups/group-status.tsx";
+import { usePlayerActions } from "../players/player-actions.tsx";
+import { OnlineTable } from "../players/players-page.tsx";
 import { useServerActions } from "./server-actions.tsx";
 import { ServerStateBadge } from "./server-state.tsx";
 
 const REFRESH_MS = 10_000;
 
-/** One server: where it is in its life, its players, and what can be done to it. */
+// A server this full warns, like its capacity meters.
+const FULL_AT = 0.9;
+
+/** One server: its players, where it is in its life, and what can be done to it. */
 export function ServerPage() {
   const { t } = useTranslation("web");
   const { serverId } = useParams({ from: "/app/servers/$serverId" });
@@ -34,6 +40,10 @@ export function ServerPage() {
   const actions = useServerActions(
     overview.data?.data.groups.map((group) => group.id) ?? [],
   );
+  const playerActions = usePlayerActions();
+  const format = useFormat();
+  const proxy = server.data?.data.groupType === "PROXY";
+  const here = useMemo(() => ({ id: serverId, proxy }), [serverId, proxy]);
 
   if (server.data === undefined && server.error !== null) {
     return (
@@ -119,44 +129,65 @@ export function ServerPage() {
             </>
           }
         />
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] gap-6">
-          <Card title={t("servers.detail.status")}>
-            <Details>
-              <DetailRow label={t("servers.columns.state")}>
-                <span className="flex items-center gap-2">
-                  <ServerStateBadge state={view.state} />
-                  <Ago at={view.stateSince} className="text-text-3" />
-                </span>
-              </DetailRow>
-              <DetailRow label={t("servers.columns.players")}>
-                <Load value={view.players} max={view.maxPlayers} />
-              </DetailRow>
-              {view.gameState == null ? null : (
-                <DetailRow label={t("servers.columns.game")}>
-                  {t(`servers.game.${view.gameState}`)}
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] items-start gap-6">
+          <div className="flex min-w-0 flex-col gap-6">
+            <KpiTile
+              label={t("servers.columns.players")}
+              value={view.players}
+              format={format.number}
+              caption={t("groups.limit", {
+                max: format.number(view.maxPlayers),
+              })}
+              warn={
+                view.maxPlayers > 0 && view.players / view.maxPlayers >= FULL_AT
+              }
+            />
+            {loading ? null : (
+              <Card
+                flush
+                title={t(
+                  proxy ? "servers.detail.throughHere" : "servers.detail.here",
+                )}
+              >
+                <OnlineTable actions={playerActions} server={here} />
+              </Card>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-col gap-6">
+            {/* The title's badge names the state; this card says since when and the rest. */}
+            <Card title={t("servers.detail.status")}>
+              <Details>
+                <DetailRow label={t("servers.detail.since")}>
+                  <Ago at={view.stateSince} className="" />
                 </DetailRow>
-              )}
-              <DetailRow label={t("servers.columns.started")}>
-                <Ago at={view.startedAt} className="" />
-              </DetailRow>
-              <DetailRow label={t("servers.columns.heartbeat")}>
-                <Ago at={view.lastHeartbeatAt} className="" />
-              </DetailRow>
-              <DetailRow label={t("servers.columns.group")}>
-                <GroupLink id={view.groupId} />
-              </DetailRow>
-              <DetailRow label={t("servers.detail.profile")}>
-                <span className="font-mono text-mono">{view.profileId}</span>
-              </DetailRow>
-            </Details>
-          </Card>
-          <IdentityCard
-            label={t("servers.detail.id")}
-            id={view.id}
-            hint={t("servers.detail.idHint")}
-          />
+                {view.gameState == null ? null : (
+                  <DetailRow label={t("servers.columns.game")}>
+                    {t(`servers.game.${view.gameState}`)}
+                  </DetailRow>
+                )}
+                <DetailRow label={t("servers.columns.started")}>
+                  <Ago at={view.startedAt} className="" />
+                </DetailRow>
+                <DetailRow label={t("servers.columns.heartbeat")}>
+                  <Ago at={view.lastHeartbeatAt} className="" />
+                </DetailRow>
+                <DetailRow label={t("servers.columns.group")}>
+                  <GroupLink id={view.groupId} />
+                </DetailRow>
+                <DetailRow label={t("servers.detail.profile")}>
+                  <span className="font-mono text-mono">{view.profileId}</span>
+                </DetailRow>
+              </Details>
+            </Card>
+            <IdentityCard
+              label={t("servers.detail.id")}
+              id={view.id}
+              hint={t("servers.detail.idHint")}
+            />
+          </div>
         </div>
         {actions.dialogs}
+        {playerActions.dialogs}
       </div>
     </Loading>
   );
