@@ -35,7 +35,7 @@ export function Field({ label, hint, error, className, children }: FieldProps) {
       {error !== undefined ? (
         <span
           id={messageId}
-          className="flex items-center gap-1.5 text-danger-text text-small"
+          className="flex items-center gap-1.5 text-danger text-small"
         >
           <CircleAlert aria-hidden="true" size={14} className="shrink-0" />
           {error}

@@ -343,7 +343,7 @@ function Choice({
     >
       <span
         aria-hidden="true"
-        className="grid size-9 shrink-0 place-items-center rounded-control bg-accent-soft text-accent-text"
+        className="grid size-9 shrink-0 place-items-center rounded-control bg-accent-soft text-accent"
       >
         <Icon size={18} strokeWidth={1.75} />
       </span>

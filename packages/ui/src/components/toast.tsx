@@ -109,7 +109,7 @@ function ToastItem({
       type={tone === "danger" ? "foreground" : "background"}
       onOpenChange={(open) => (open ? undefined : close())}
       {...hold}
-      className="flex w-max max-w-full items-center gap-2.5 rounded-card border border-border bg-surface py-2 pr-2 pl-3.5 text-text shadow-popover data-[state=closed]:animate-fade-out data-[state=open]:animate-slide-up"
+      className="flex w-max max-w-full items-center gap-2.5 glass rounded-card border border-border py-2 pr-2 pl-3.5 text-text shadow-popover data-[state=closed]:animate-fade-out data-[state=open]:animate-slide-up"
     >
       <Icon
         aria-hidden="true"
@@ -123,7 +123,7 @@ function ToastItem({
         <Primitive.Action
           altText={toast.action.label}
           onClick={toast.action.onPress}
-          className="h-button-sm shrink-0 cursor-pointer rounded-control px-2.5 font-heavy text-accent-text text-small hover:bg-accent-soft"
+          className="h-button-sm shrink-0 cursor-pointer rounded-control px-2.5 font-bold text-accent text-small hover:bg-accent-soft"
         >
           {toast.action.label}
         </Primitive.Action>

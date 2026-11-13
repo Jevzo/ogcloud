@@ -93,7 +93,7 @@ export function Menu({
                             aria-hidden="true"
                             size={15}
                             strokeWidth={2.25}
-                            className="text-accent-text"
+                            className="text-accent"
                           />
                         </DropdownMenu.ItemIndicator>
                       </DropdownMenu.RadioItem>
@@ -115,8 +115,7 @@ export function Menu({
                       onSelect={onSelect}
                       className={cn(
                         itemLook,
-                        danger &&
-                          "text-danger-text data-highlighted:bg-danger-soft",
+                        danger && "text-danger data-highlighted:bg-danger-soft",
                       )}
                     >
                       {Icon ? (

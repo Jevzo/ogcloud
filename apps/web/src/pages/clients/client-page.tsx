@@ -65,7 +65,7 @@ export function ClientPage() {
         goneDescription={t("clients.detail.goneDescription")}
         failedTitle={t("clients.detail.failed")}
         back={
-          <Link to="/clients" className="font-label text-accent-text">
+          <Link to="/clients" className="font-label text-accent">
             {t("clients.detail.back")}
           </Link>
         }

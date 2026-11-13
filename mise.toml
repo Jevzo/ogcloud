@@ -317,7 +317,7 @@ description = "Generate the TypeScript API client from contracts/openapi/openapi
 run = "pnpm --filter @ogcloud/api-client run generate"
 
 [tasks."gen:tokens"]
-description = "Generate the design tokens' stylesheet from packages/tokens (D-0216)"
+description = "Generate the design tokens' stylesheet from packages/tokens (D-0231)"
 run = "pnpm --filter @ogcloud/tokens run generate"
 
 [tasks."gen:proto"]

@@ -82,7 +82,7 @@ export function GroupPage() {
         goneDescription={t("groups.detail.goneDescription")}
         failedTitle={t("groups.detail.failed")}
         back={
-          <Link to="/groups" className="font-label text-accent-text">
+          <Link to="/groups" className="font-label text-accent">
             {t("groups.detail.back")}
           </Link>
         }

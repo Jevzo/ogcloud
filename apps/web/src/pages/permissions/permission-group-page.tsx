@@ -50,7 +50,7 @@ export function PermissionGroupPage() {
         goneDescription={t("permissions.detail.goneDescription")}
         failedTitle={t("permissions.detail.failed")}
         back={
-          <Link to="/permissions" className="font-label text-accent-text">
+          <Link to="/permissions" className="font-label text-accent">
             {t("permissions.detail.back")}
           </Link>
         }

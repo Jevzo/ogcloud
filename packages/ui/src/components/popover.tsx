@@ -4,7 +4,7 @@ import { cn } from "../lib/cn.ts";
 
 /** The floating surface menus, pickers and lists share. */
 export const popoverSurface =
-  "z-50 max-h-(--radix-popper-available-height) overflow-y-auto rounded-popover border border-border bg-surface text-text shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in";
+  "z-50 max-h-(--radix-popper-available-height) overflow-y-auto glass rounded-popover border border-border text-text shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in";
 
 interface PopoverProps
   extends Omit<ComponentProps<typeof Primitive.Root>, "children"> {

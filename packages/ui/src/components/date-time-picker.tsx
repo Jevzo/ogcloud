@@ -216,9 +216,7 @@ function QuickPick({
       onClick={onPress}
       className={cn(
         "h-7.5 cursor-pointer rounded-control px-2 text-left text-small",
-        active
-          ? "bg-accent-soft font-label text-accent-text"
-          : "hover:bg-surface-3",
+        active ? "bg-accent-soft font-label text-accent" : "hover:bg-surface-3",
       )}
     >
       {children}

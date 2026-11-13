@@ -32,7 +32,7 @@ export function AlertsTab() {
             <TriangleAlert
               aria-hidden="true"
               size={16}
-              className="shrink-0 text-danger-text"
+              className="shrink-0 text-danger"
             />
             <span className="flex-1">{alertMessage(t, alert)}</span>
             <span className="text-meta text-text-3">

@@ -15,12 +15,13 @@ const button = cva(
     variants: {
       kind: {
         primary:
-          "border-transparent bg-accent text-on-accent hover:bg-accent-hover",
+          "accent-gradient border-transparent bg-accent text-on-accent hover:bg-accent-hover hover:bg-none",
         secondary:
           "border-border bg-surface text-text shadow-raised hover:bg-surface-2",
-        ghost: "border-transparent bg-transparent text-text hover:bg-surface-3",
+        // A tint of the text, so ghost buttons show their hover on any ground: cards, the sidebar, popovers.
+        ghost: "border-transparent bg-transparent text-text hover:bg-text/7",
         danger:
-          "border-transparent bg-danger-fill text-on-accent hover:bg-danger-fill/90",
+          "border-transparent bg-danger text-on-accent hover:bg-danger/90",
       },
       size: {
         sm: "h-button-sm gap-1.5 px-2.5 text-small",

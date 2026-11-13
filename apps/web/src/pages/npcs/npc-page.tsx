@@ -43,7 +43,7 @@ export function NpcPage() {
         goneDescription={t("npcs.detail.goneDescription")}
         failedTitle={t("npcs.detail.failed")}
         back={
-          <Link to="/npcs" className="font-label text-accent-text">
+          <Link to="/npcs" className="font-label text-accent">
             {t("npcs.detail.back")}
           </Link>
         }

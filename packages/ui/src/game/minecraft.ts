@@ -20,7 +20,7 @@ export const minecraftColours = {
 
 export type MinecraftColour = keyof typeof minecraftColours;
 
-/** The game's own surfaces and default text colours, which previews show in both themes (D-0209). */
+/** The game's own surfaces and default text colours, which previews show in both themes (D-0231). */
 export const gameLook = {
   panel: "#141414",
   edge: "#000000",

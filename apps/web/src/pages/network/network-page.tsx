@@ -73,7 +73,7 @@ export function NetworkPage() {
         goneDescription=""
         failedTitle={t("network.failed")}
         back={
-          <Link to="/" className="font-label text-accent-text">
+          <Link to="/" className="font-label text-accent">
             {t("errors.back")}
           </Link>
         }
@@ -212,7 +212,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             href={MINECRAFT_EULA_URL}
             target="_blank"
             rel="noreferrer"
-            className="text-accent-text underline-offset-2 hover:underline"
+            className="text-accent underline-offset-2 hover:underline"
           >
             {t("network.eula.read")}
           </a>

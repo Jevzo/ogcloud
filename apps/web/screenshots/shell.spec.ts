@@ -7,7 +7,7 @@ import {
   users,
 } from "../src/mocks/fixtures.ts";
 
-// The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0216).
+// The dashboard against orval's mocks (D-0211), at the smallest layout and a large monitor (D-0170, D-0231).
 const OUT = new URL("../../../build/screenshots/web/", import.meta.url)
   .pathname;
 const VIEWPORTS = layout.reviewViewports;

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { exitTween } from "../lib/motion.ts";
 import { Button } from "./button.tsx";
 
 interface SaveBarProps {
@@ -25,8 +26,8 @@ export function SaveBar({
           aria-label={t("saveBar.changes", { count: changes })}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          className="sticky bottom-4 z-30 flex h-14 items-center gap-3 rounded-popover border border-border bg-surface pr-3 pl-4 shadow-popover"
+          exit={{ opacity: 0, y: 24, transition: exitTween }}
+          className="sticky bottom-4 z-30 flex h-14 items-center gap-3 rounded-popover border border-border bg-floating pr-3 pl-4 shadow-popover"
         >
           <span aria-hidden="true" className="size-2 rounded-full bg-warning" />
           <span className="flex-1 font-label">

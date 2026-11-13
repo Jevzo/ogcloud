@@ -58,7 +58,7 @@ export function PlayersCard({ online, max }: { online: number; max: number }) {
       }
     >
       <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
-        <span data-skeleton="" className="text-display tabular-nums">
+        <span data-skeleton="" className="text-kpi tabular-nums">
           {format.number(online)}
         </span>
         <span data-skeleton="" className="text-text-2">

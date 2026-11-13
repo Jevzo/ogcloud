@@ -40,7 +40,7 @@ export function Dialog({
             ? {}
             : { onEscapeKeyDown: stay, onInteractOutside: stay })}
           className={cn(
-            "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-surface p-5 shadow-popover outline-none data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
+            "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-popover border border-border bg-floating p-5 shadow-overlay outline-none data-[state=closed]:animate-dialog-out data-[state=open]:animate-dialog-in",
             className,
           )}
         >

@@ -12,7 +12,7 @@ export function NotFound() {
         title={t("errors.notFound")}
         description=""
         action={
-          <Link to="/" className="font-label text-accent-text hover:underline">
+          <Link to="/" className="font-label text-accent hover:underline">
             {t("errors.back")}
           </Link>
         }

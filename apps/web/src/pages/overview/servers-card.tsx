@@ -30,21 +30,21 @@ const PHASES: readonly Phase[] = [
     states: ["RUNNING"],
     tone: "success",
     icon: CircleCheck,
-    text: "text-success-text",
+    text: "text-success",
   },
   {
     key: "starting",
     states: ["REQUESTED", "PREPARING", "STARTING"],
     tone: "info",
     icon: LoaderCircle,
-    text: "text-info-text",
+    text: "text-info",
   },
   {
     key: "draining",
     states: ["DRAINING", "STOPPING"],
     tone: "warning",
     icon: CirclePause,
-    text: "text-warning-text",
+    text: "text-warning",
   },
 ];
 

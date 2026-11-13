@@ -34,7 +34,7 @@ export function SetupFrame({
             className={cn(
               "flex items-center gap-2.5 rounded-control px-2 py-1.5",
               index === current
-                ? "bg-accent-soft font-label text-accent-text"
+                ? "bg-accent-soft font-label text-accent"
                 : "text-text-3",
               index < current && "text-text-2",
             )}

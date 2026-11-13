@@ -50,7 +50,7 @@ export function RolePage() {
         goneDescription={t("roles.detail.goneDescription")}
         failedTitle={t("roles.detail.failed")}
         back={
-          <Link to="/roles" className="font-label text-accent-text">
+          <Link to="/roles" className="font-label text-accent">
             {t("roles.detail.back")}
           </Link>
         }

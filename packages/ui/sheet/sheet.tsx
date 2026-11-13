@@ -324,7 +324,7 @@ function Colours() {
 
 function Type() {
   const styles: Record<keyof typeof typeScale, string> = {
-    display: "text-display",
+    kpi: "text-kpi",
     title: "text-title",
     heading: "text-heading",
     body: "text-body",
@@ -336,7 +336,7 @@ function Type() {
     game: "font-game text-game",
   };
   const samples: Record<keyof typeof typeScale, string> = {
-    display: "1,284 players online",
+    kpi: "1,284",
     title: "Group settings",
     heading: "Scaling",
     body: "Servers start when a group's load passes its threshold, and drain when it falls below the lower one.",
@@ -763,7 +763,7 @@ function Charts() {
     <div className="grid grid-cols-[minmax(0,2fr)_minmax(300px,1fr)] gap-5">
       <Card title="Players online" actions={<TimeRange />}>
         <div className="mb-1 flex items-baseline gap-2.5">
-          <span className="text-display tabular-nums">1,284</span>
+          <span className="text-kpi tabular-nums">1,284</span>
           <span className="text-text-2">of 5,000 slots</span>
         </div>
         <TimeSeriesChart
@@ -787,17 +787,13 @@ function Charts() {
             <CircleCheck
               aria-hidden="true"
               size={16}
-              className="text-success-text"
+              className="text-success"
             />
             <span className="flex-1">Running</span>
             <span className="font-label tabular-nums">23</span>
           </li>
           <li className="flex items-center gap-2">
-            <LoaderCircle
-              aria-hidden="true"
-              size={16}
-              className="text-info-text"
-            />
+            <LoaderCircle aria-hidden="true" size={16} className="text-info" />
             <span className="flex-1">Starting</span>
             <span className="font-label tabular-nums">1</span>
           </li>
@@ -805,7 +801,7 @@ function Charts() {
             <CirclePause
               aria-hidden="true"
               size={16}
-              className="text-warning-text"
+              className="text-warning"
             />
             <span className="flex-1">Draining</span>
             <span className="font-label tabular-nums">1</span>

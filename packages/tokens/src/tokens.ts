@@ -1,16 +1,19 @@
-// OgCloud's design tokens: the Layered direction on warm greys and violet (D-0209, D-0216). Web and desktop read
-// the generated CSS; code that needs numbers (charts, Motion, the desktop window) imports these objects.
+// OgCloud's design tokens: Ink & Honey on the warm admin guidelines (D-0231). Web and desktop read the generated
+// CSS; code that needs numbers (charts, Motion, the desktop window) imports these objects.
 
 export const themeNames = ["light", "dark"] as const;
 export type ThemeName = (typeof themeNames)[number];
 
 export interface ThemeColours {
-  canvas: string;
-  /** The app background below the floating sidebar and the cards. */
+  /** The app background behind the cards, and the sign-in backdrop. */
+  page: string;
+  /** The attached sidebar, a step below the page in light. */
   sunken: string;
   surface: string;
   surface2: string;
   surface3: string;
+  /** Popovers, menus, dialogs and toasts: white in light, a step closer than the cards in dark. */
+  floating: string;
   borderSubtle: string;
   border: string;
   borderStrong: string;
@@ -20,24 +23,24 @@ export interface ThemeColours {
   text2: string;
   text3: string;
   textDisabled: string;
+  /** Primary actions, active nav, focus, links and the key series; also their text, which clears 4.5:1. */
   accent: string;
   accentHover: string;
-  accentText: string;
+  /** The lighter top of the primary button's same-hue gradient. */
+  accentTop: string;
   accentSoft: string;
   onAccent: string;
+  /** The second accent: highlight badges and charts only, never a button or a state. */
+  honey: string;
+  onHoney: string;
+  /** Each status is one colour for its text, icon and fill, plus a tint behind it. */
   success: string;
-  successText: string;
   successSoft: string;
   warning: string;
-  warningText: string;
   warningSoft: string;
   danger: string;
-  dangerText: string;
   dangerSoft: string;
-  /** Danger buttons, which carry white text. */
-  dangerFill: string;
   info: string;
-  infoText: string;
   infoSoft: string;
   /** Chart series in their fixed order; further series fold into "Other". */
   chart1: string;
@@ -45,17 +48,26 @@ export interface ThemeColours {
   chart3: string;
   chart4: string;
   chart5: string;
-  /** Dims the page behind dialogs, in both themes. */
+  /** Dims the page behind dialogs and drawers. */
   scrim: string;
   /** A QR code's modules and ground: dark on light in both themes, as scanners read them. */
   qrInk: string;
   qrGround: string;
 }
 
+/** Elevation by role: warm shadows in light, a hairline highlight instead of drop shadows in dark. */
 export interface ThemeShadows {
-  card: string;
-  popover: string;
+  /** Secondary buttons, chips and raised icons. */
   raised: string;
+  card: string;
+  /** One step above a card, for a clickable card under the pointer. */
+  lift: string;
+  /** Popovers, menus, toasts and the save bar. */
+  popover: string;
+  /** Dialogs and drawers. */
+  overlay: string;
+  /** Next to the focus ring: a soft accent glow, dark mode only. */
+  glow: string;
   /** Outlines a colour swatch so white and black ones stay visible on any surface. */
   swatch: string;
 }
@@ -66,105 +78,111 @@ export interface Theme {
   shadows: ThemeShadows;
 }
 
+const SWATCH = "inset 0 0 0 1px rgba(127, 127, 127, 0.35)";
+const DARK_EDGE = "inset 0 1px 0 rgba(255, 255, 255, 0.04)";
+
 export const themes: Record<ThemeName, Theme> = {
   light: {
     colours: {
-      canvas: "#F6F5F2",
-      sunken: "#EEECE7",
+      page: "#FBF8F1",
+      sunken: "#F1ECE2",
       surface: "#FFFFFF",
-      surface2: "#FAF9F7",
-      surface3: "#F0EEEA",
-      borderSubtle: "#EEEBE6",
-      border: "#E2DED7",
-      borderStrong: "#CBC6BD",
-      borderControl: "#8F897F",
-      text: "#1D1B18",
-      text2: "#55504A",
-      text3: "#6B655D",
-      textDisabled: "#A9A39A",
-      accent: "#6A4BF2",
-      accentHover: "#5B3DE3",
-      accentText: "#5A3BDC",
-      accentSoft: "#EFEAFE",
+      surface2: "#F7F4ED",
+      surface3: "#F1ECE2",
+      floating: "#FFFFFF",
+      borderSubtle: "#EFE9DD",
+      border: "#E8E0CF",
+      borderStrong: "#D0C8B6",
+      borderControl: "#8B8475",
+      text: "#25231F",
+      text2: "#4D493F",
+      text3: "#6A6457",
+      textDisabled: "#ADA79A",
+      accent: "#2F3E73",
+      accentHover: "#243163",
+      accentTop: "#3C4C82",
+      accentSoft: "#E6E9F4",
       onAccent: "#FFFFFF",
-      success: "#12A26E",
-      successText: "#047857",
-      successSoft: "#E3F4EC",
-      warning: "#E59A0B",
-      warningText: "#A3560A",
-      warningSoft: "#FCF1DC",
-      danger: "#E5484D",
-      dangerText: "#C42B27",
-      dangerSoft: "#FCE9E7",
-      dangerFill: "#C42B27",
-      info: "#0891B2",
-      infoText: "#0E7490",
-      infoSoft: "#E0F3F7",
-      chart1: "#6A4BF2",
-      chart2: "#DB2777",
-      chart3: "#0891B2",
-      chart4: "#D97706",
-      chart5: "#047857",
-      scrim: "rgba(29, 27, 24, 0.35)",
+      honey: "#E0A12B",
+      onHoney: "#25231F",
+      success: "#37733A",
+      successSoft: "#E6F1E3",
+      warning: "#8A5A00",
+      warningSoft: "#FBF0D5",
+      danger: "#B3204A",
+      dangerSoft: "#FAE3E6",
+      info: "#37689E",
+      infoSoft: "#E3ECF6",
+      chart1: "#4050A0",
+      chart2: "#B27901",
+      chart3: "#009399",
+      chart4: "#BD5833",
+      chart5: "#8E3A6E",
+      scrim: "rgba(30, 20, 10, 0.4)",
       qrInk: "#000000",
       qrGround: "#FFFFFF",
     },
     shadows: {
-      card: "0 1px 2px rgba(29, 27, 24, 0.05), 0 10px 28px -14px rgba(29, 27, 24, 0.16)",
+      raised:
+        "0 1px 2px rgba(60, 40, 20, 0.06), 0 1px 1px rgba(60, 40, 20, 0.04)",
+      card: "0 1px 2px rgba(60, 40, 20, 0.06), 0 1px 1px rgba(60, 40, 20, 0.04)",
+      lift: "0 4px 12px rgba(60, 40, 20, 0.08), 0 1px 3px rgba(60, 40, 20, 0.06)",
       popover:
-        "0 2px 6px rgba(29, 27, 24, 0.06), 0 18px 40px -16px rgba(29, 27, 24, 0.22)",
-      raised: "0 1px 2px rgba(29, 27, 24, 0.1)",
-      swatch: "inset 0 0 0 1px rgba(127, 127, 127, 0.35)",
+        "0 4px 12px rgba(60, 40, 20, 0.08), 0 1px 3px rgba(60, 40, 20, 0.06)",
+      overlay:
+        "0 16px 40px rgba(60, 40, 20, 0.14), 0 4px 12px rgba(60, 40, 20, 0.08)",
+      glow: "0 0 0 0 transparent",
+      swatch: SWATCH,
     },
   },
   dark: {
     colours: {
-      canvas: "#131210",
-      sunken: "#0D0C0B",
-      surface: "#1B1A17",
-      surface2: "#22201D",
-      surface3: "#2B2925",
-      borderSubtle: "#262420",
-      border: "#322F2A",
-      borderStrong: "#4A463F",
-      borderControl: "#716B61",
-      text: "#F3F1EC",
-      text2: "#BDB7AD",
-      text3: "#958F85",
-      textDisabled: "#5C574F",
-      accent: "#6E4DF5",
-      accentHover: "#7B5CFF",
-      accentText: "#AB97FF",
-      accentSoft: "#2C2641",
-      onAccent: "#FFFFFF",
-      success: "#2EB37C",
-      successText: "#4CC795",
-      successSoft: "#1E3327",
-      warning: "#E8A33A",
-      warningText: "#F0B357",
-      warningSoft: "#3C301D",
-      danger: "#EF5350",
-      dangerText: "#F2787A",
-      dangerSoft: "#3D2320",
-      dangerFill: "#C9342F",
-      info: "#22B8D4",
-      infoText: "#5CC9DE",
-      infoSoft: "#1C3032",
-      chart1: "#8B6CFF",
-      chart2: "#C94F8A",
-      chart3: "#1FA5C0",
-      chart4: "#C08414",
-      chart5: "#2B9E6E",
-      scrim: "rgba(0, 0, 0, 0.6)",
+      page: "#171612",
+      sunken: "#171612",
+      surface: "#211F19",
+      surface2: "#28261F",
+      surface3: "#2F2D25",
+      floating: "#28261F",
+      borderSubtle: "#2D2A23",
+      border: "#39362B",
+      borderStrong: "#575245",
+      borderControl: "#807C6D",
+      text: "#F1ECDF",
+      text2: "#B4AD9C",
+      text3: "#989485",
+      textDisabled: "#5E5B50",
+      accent: "#A3B2EE",
+      accentHover: "#B7C5F9",
+      accentTop: "#AEBDFA",
+      accentSoft: "#262B45",
+      onAccent: "#171612",
+      honey: "#F0B849",
+      onHoney: "#171612",
+      success: "#7FC97A",
+      successSoft: "#1E2E1D",
+      warning: "#F2C158",
+      warningSoft: "#33290F",
+      danger: "#F0798C",
+      dangerSoft: "#3A1C22",
+      info: "#86B3E6",
+      infoSoft: "#1B2838",
+      chart1: "#6679CD",
+      chart2: "#B27901",
+      chart3: "#179FA5",
+      chart4: "#D26B46",
+      chart5: "#A24C80",
+      scrim: "rgba(10, 8, 4, 0.6)",
       qrInk: "#000000",
       qrGround: "#FFFFFF",
     },
     shadows: {
-      card: "inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 34px -18px rgba(0, 0, 0, 0.7)",
-      popover: "0 24px 56px -20px rgba(0, 0, 0, 0.8)",
-      raised:
-        "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.5)",
-      swatch: "inset 0 0 0 1px rgba(127, 127, 127, 0.35)",
+      raised: DARK_EDGE,
+      card: DARK_EDGE,
+      lift: "inset 0 1px 0 rgba(255, 255, 255, 0.07)",
+      popover: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+      overlay: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+      glow: "0 0 0 6px rgba(163, 178, 238, 0.25)",
+      swatch: SWATCH,
     },
   },
 };
@@ -183,16 +201,16 @@ export interface Density {
 
 export const densities: Record<DensityName, Density> = {
   compact: {
-    rowHeight: 32,
-    controlHeight: 32,
-    navItemHeight: 32,
+    rowHeight: 36,
+    controlHeight: 36,
+    navItemHeight: 36,
     tableFontSize: 13,
     tableLineHeight: 18,
   },
   comfortable: {
-    rowHeight: 40,
+    rowHeight: 48,
     controlHeight: 40,
-    navItemHeight: 36,
+    navItemHeight: 40,
     tableFontSize: 14,
     tableLineHeight: 20,
   },
@@ -210,7 +228,7 @@ export const radius = {
 } as const;
 
 /** Small and large buttons; medium ones take the density's control height. */
-export const buttonHeights = { sm: 28, lg: 40 } as const;
+export const buttonHeights = { sm: 32, lg: 40 } as const;
 
 export const fonts = {
   sans: [
@@ -220,16 +238,15 @@ export const fonts = {
     "sans-serif",
   ],
   mono: ["Atkinson Hyperlegible Mono Variable", "ui-monospace", "monospace"],
-  /** Previews of in-game text, drawn the way the game shows it (D-0209). */
+  /** Previews of in-game text, drawn the way the game shows it. */
   game: ["Monocraft", "ui-monospace", "monospace"],
 } as const;
 
-/** Labels and buttons use `label`; the variable fonts take any weight. */
+/** Labels, nav and buttons use `label`; titles and KPIs `bold`. No lighter weights. */
 export const fontWeights = {
   normal: 400,
-  label: 650,
-  bold: 700,
-  heavy: 750,
+  label: 500,
+  bold: 600,
 } as const;
 
 export interface TypeStyle {
@@ -241,7 +258,7 @@ export interface TypeStyle {
 
 /** Table text follows the density; everything else is fixed. */
 export const typeScale: Record<
-  | "display"
+  | "kpi"
   | "title"
   | "heading"
   | "body"
@@ -253,45 +270,76 @@ export const typeScale: Record<
   | "game",
   TypeStyle
 > = {
-  display: { size: 34, lineHeight: 40, weight: 750, tracking: "-0.02em" },
-  title: { size: 22, lineHeight: 28, weight: 750, tracking: "-0.01em" },
-  heading: { size: 15, lineHeight: 20, weight: 700 },
+  /** The number a screen is for, in a KPI tile. */
+  kpi: { size: 32, lineHeight: 36, weight: 600, tracking: "-0.02em" },
+  title: { size: 24, lineHeight: 30, weight: 600, tracking: "-0.01em" },
+  heading: { size: 16, lineHeight: 20, weight: 600 },
   body: { size: 14, lineHeight: 20, weight: 400 },
   /** Small buttons, hints and field help. */
   small: { size: 13, lineHeight: 18, weight: 400 },
   meta: { size: 12, lineHeight: 16, weight: 400 },
   mono: { size: 13, lineHeight: 18, weight: 400 },
   /** "OgCloud" beside the mascot: in the sidebar, and large on the sign-in and setup pages. */
-  wordmark: { size: 17, lineHeight: 24, weight: 750, tracking: "-0.02em" },
-  wordmarkLarge: { size: 26, lineHeight: 32, weight: 750, tracking: "-0.02em" },
-  /** In-game text in Monocraft, at the size the game draws it (D-0216). */
+  wordmark: { size: 17, lineHeight: 24, weight: 600, tracking: "-0.02em" },
+  wordmarkLarge: { size: 26, lineHeight: 32, weight: 600, tracking: "-0.02em" },
+  /** In-game text in Monocraft, at the size the game draws it. */
   game: { size: 15, lineHeight: 22, weight: 400 },
 };
 
-/** Expressive but quick (D-0209): every transition settles within 400 ms, and none runs under reduced motion. */
+/**
+ * Fast, quiet motion (D-0231): the more often something is seen, the shorter it runs; exits take three quarters of
+ * their entrance; no springs. None of it runs under reduced motion.
+ */
 export const motion = {
-  durationMs: { fast: 150, base: 220, slow: 320 },
-  easing: { standard: [0.2, 0.7, 0.2, 1] },
-  spring: { stiffness: 520, damping: 42, mass: 1 },
+  durationMs: { instant: 70, quick: 110, fast: 150, base: 240, slow: 400 },
+  easing: {
+    standard: [0.2, 0, 0.38, 0.9],
+    enter: [0, 0, 0.38, 0.9],
+    exit: [0.2, 0, 1, 0.9],
+    expressive: [0.4, 0.14, 0.3, 1],
+  },
+  exitRatio: 0.75,
+  /** One loop of the skeleton shimmer. */
+  shimmerMs: 1400,
+  /** A changed value's accent flash, fading out. */
+  flashMs: 1000,
+  /** KPIs count up once, on first load. */
+  countUpMs: 500,
+} as const;
+
+/** The guidelines' effects, each with one job; at most two kinds in one view (D-0231). */
+export const effects = {
+  /** Floating layers over scrolling content: the top bar, ⌘K, popovers and toasts. */
+  glass: { opacity: 0.78, blurPx: 12, saturate: 1.3 },
+  /** Noise over the page background and empty states. */
+  grainOpacity: 0.03,
+  /** The faint accent-tint wash at the top of each page. */
+  wash: { strength: 0.55, heightPx: 240 },
+  /** How far a clickable card rises under the pointer. */
+  liftPx: 2,
 } as const;
 
 export const layout = {
-  /** The smallest supported layout, also the desktop app's minimum window (D-0170, D-0216). */
+  /** The smallest supported layout, also the desktop app's minimum window (D-0170). */
   minViewport: { width: 1280, height: 800 },
-  sidebarWidth: 232,
-  sidebarInset: 8,
-  headerHeight: 52,
+  sidebarWidth: 248,
+  /** The collapsed sidebar: icons only. */
+  sidebarRailWidth: 64,
+  headerHeight: 56,
   formWidth: 720,
   /** The sign-in pages' card, and the setup wizard with its steps beside it. */
   brandedWidth: 416,
   setupWidth: 800,
   /** The colour picker's popover, sized to its colour area. */
   colourPickerWidth: 284,
-  /** The side panel beside a settings form, between these widths (D-0210). */
+  /** The side panel beside a settings form, between these widths (D-0210); wider on large monitors. */
   asideMinWidth: 280,
   asideWidth: 440,
+  asideWideWidth: 560,
   /** The narrower column of a detail page or the overview. */
   sideMinWidth: 320,
+  /** A record's drawer beside its list. */
+  drawerWidth: 480,
   /** A number field beside a text field, such as a weight or a player limit. */
   numberFieldWidth: 160,
   /** The widest a toast grows before its message wraps. */

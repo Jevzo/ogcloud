@@ -52,7 +52,7 @@ export function PlayerPage() {
         goneDescription={t("players.detail.unknownDescription")}
         failedTitle={t("players.detail.failed")}
         back={
-          <Link to="/players" className="font-label text-accent-text">
+          <Link to="/players" className="font-label text-accent">
             {t("players.detail.back")}
           </Link>
         }

@@ -83,7 +83,7 @@ export function MinecraftCard() {
   );
 }
 
-/** Theme and density, remembered on this device (D-0209); the account menu offers the same. */
+/** Theme and density, remembered on this device (D-0231); the account menu offers the same. */
 export function AppearanceCard() {
   const { t } = useTranslation("web");
   const { preferences, change } = usePreferences();

@@ -67,7 +67,7 @@ function EulaStep({ onNext }: { onNext: () => void }) {
         href={MINECRAFT_EULA_URL}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex w-fit items-center gap-1.5 font-label text-accent-text hover:underline"
+        className="inline-flex w-fit items-center gap-1.5 font-label text-accent hover:underline"
       >
         {t("setup.eula.read")}
         <ExternalLink aria-hidden="true" size={14} />

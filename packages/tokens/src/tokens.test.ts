@@ -7,11 +7,12 @@ import { type ThemeColours, themeNames, themes } from "./tokens.ts";
 const TEXT_MINIMUM = 4.5;
 const CONTROL_MINIMUM = 3;
 const TEXT_BACKGROUNDS = [
-  "canvas",
+  "page",
   "sunken",
   "surface",
   "surface2",
   "surface3",
+  "floating",
 ] as const;
 
 // WCAG 2.2: relative luminance of an sRGB colour, and the contrast ratio of two.
@@ -59,14 +60,19 @@ for (const name of themeNames) {
       for (const background of TEXT_BACKGROUNDS)
         assertContrast(colours, text, background, TEXT_MINIMUM);
     }
-    assertContrast(colours, "accentText", "surface", TEXT_MINIMUM);
-    assertContrast(colours, "accentText", "accentSoft", TEXT_MINIMUM);
+    for (const background of TEXT_BACKGROUNDS) {
+      assertContrast(colours, "accent", background, TEXT_MINIMUM);
+    }
+    assertContrast(colours, "accent", "accentSoft", TEXT_MINIMUM);
     assertContrast(colours, "onAccent", "accent", TEXT_MINIMUM);
-    assertContrast(colours, "onAccent", "dangerFill", TEXT_MINIMUM);
-    assertContrast(colours, "successText", "successSoft", TEXT_MINIMUM);
-    assertContrast(colours, "warningText", "warningSoft", TEXT_MINIMUM);
-    assertContrast(colours, "dangerText", "dangerSoft", TEXT_MINIMUM);
-    assertContrast(colours, "infoText", "infoSoft", TEXT_MINIMUM);
+    assertContrast(colours, "onAccent", "accentTop", TEXT_MINIMUM);
+    assertContrast(colours, "onAccent", "accentHover", TEXT_MINIMUM);
+    assertContrast(colours, "onAccent", "danger", TEXT_MINIMUM);
+    assertContrast(colours, "onHoney", "honey", TEXT_MINIMUM);
+    for (const status of ["success", "warning", "danger", "info"] as const) {
+      assertContrast(colours, status, `${status}Soft`, TEXT_MINIMUM);
+      assertContrast(colours, status, "surface", TEXT_MINIMUM);
+    }
   });
 
   test(`${name}: control borders and chart series reach 3:1 on the surfaces`, () => {

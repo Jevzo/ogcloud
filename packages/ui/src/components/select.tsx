@@ -71,7 +71,7 @@ export function Select<T extends string>({
               <Primitive.Item
                 key={option.value}
                 value={option.value}
-                className="flex h-row cursor-pointer select-none items-center gap-2 rounded-[calc(var(--radius-popover)-8px)] px-2 outline-none data-highlighted:bg-surface-3 data-[state=checked]:font-label data-[state=checked]:text-accent-text"
+                className="flex h-row cursor-pointer select-none items-center gap-2 rounded-[calc(var(--radius-popover)-8px)] px-2 outline-none data-highlighted:bg-surface-3 data-[state=checked]:font-label data-[state=checked]:text-accent"
               >
                 <Primitive.ItemText>{option.label}</Primitive.ItemText>
                 <span className="flex-1 text-right text-meta text-text-3">

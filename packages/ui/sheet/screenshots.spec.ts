@@ -1,7 +1,7 @@
 import { layout, themeNames } from "@ogcloud/tokens";
 import { type Page, test } from "@playwright/test";
 
-// Screenshots for review (AGENTS.md §13), at the smallest layout and a large monitor (D-0170, D-0216).
+// Screenshots for review (AGENTS.md §13), at the smallest layout and a large monitor (D-0170, D-0231).
 const OUT = new URL("../../../build/screenshots/ui/", import.meta.url).pathname;
 const VIEWPORTS = layout.reviewViewports;
 const THEMES = themeNames;

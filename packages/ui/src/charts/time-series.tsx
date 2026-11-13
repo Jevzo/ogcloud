@@ -15,7 +15,7 @@ export interface Series {
   points: readonly Point[];
 }
 
-/** Series take the chart colours in this fixed order; callers fold anything past five into "Other" (D-0216). */
+/** Series take the chart colours in this fixed order; callers fold anything past five into "Other" (D-0231). */
 const SERIES_COLOURS = [
   "--og-chart-1",
   "--og-chart-2",
@@ -197,7 +197,7 @@ export function TimeSeriesChart({
         {hoverTime === undefined ? null : (
           <div
             role="presentation"
-            className="pointer-events-none absolute top-1 rounded-control border border-border bg-surface px-2.5 py-1.5 shadow-popover"
+            className="pointer-events-none absolute top-1 rounded-control border border-border bg-floating px-2.5 py-1.5 shadow-popover"
             style={
               x(hoverTime) > width / 2
                 ? { right: width - x(hoverTime) + 12 }

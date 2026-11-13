@@ -51,7 +51,7 @@ export function ServerPage() {
         goneDescription={t("servers.detail.goneDescription")}
         failedTitle={t("servers.detail.failed")}
         back={
-          <Link to="/servers" className="font-label text-accent-text">
+          <Link to="/servers" className="font-label text-accent">
             {t("servers.detail.back")}
           </Link>
         }

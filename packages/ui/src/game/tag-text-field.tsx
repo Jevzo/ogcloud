@@ -88,8 +88,8 @@ function pieces(source: string, problems: readonly TextProblem[]): Piece[] {
 
 const PIECE_LOOK: Record<Piece["kind"], string> = {
   plain: "",
-  tag: "text-accent-text",
-  placeholder: "text-info-text",
+  tag: "text-accent",
+  placeholder: "text-info",
   escape: "text-text-3",
 };
 
@@ -260,7 +260,7 @@ function Highlight({
           className={cn(
             PIECE_LOOK[piece.kind],
             piece.problem &&
-              "text-danger-text underline decoration-danger-text decoration-wavy underline-offset-3",
+              "text-danger underline decoration-danger decoration-wavy underline-offset-3",
           )}
         >
           {piece.text}

@@ -17,11 +17,11 @@ const badge = cva(
     variants: {
       tone: {
         neutral: "bg-surface-3 text-text-2",
-        accent: "bg-accent-soft text-accent-text",
-        success: "bg-success-soft text-success-text",
-        warning: "bg-warning-soft text-warning-text",
-        danger: "bg-danger-soft text-danger-text",
-        info: "bg-info-soft text-info-text",
+        accent: "bg-accent-soft text-accent",
+        success: "bg-success-soft text-success",
+        warning: "bg-warning-soft text-warning",
+        danger: "bg-danger-soft text-danger",
+        info: "bg-info-soft text-info",
       },
     },
   },

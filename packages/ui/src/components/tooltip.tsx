@@ -16,7 +16,7 @@ export function Tooltip({ content, children, side = "top" }: TooltipProps) {
         <Primitive.Content
           side={side}
           sideOffset={6}
-          className="z-50 max-w-72 rounded-control bg-text px-2 py-1 font-label text-meta text-surface shadow-popover data-[state=closed]:animate-fade-out data-[state=delayed-open]:animate-fade-in"
+          className="z-50 max-w-72 rounded-control bg-text px-2 py-1 font-label text-meta text-surface shadow-popover data-[state=closed]:animate-pop-out data-[state=delayed-open]:animate-pop-in"
         >
           {content}
         </Primitive.Content>

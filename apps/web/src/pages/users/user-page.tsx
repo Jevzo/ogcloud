@@ -63,7 +63,7 @@ export function UserPage() {
         goneDescription={t("users.detail.goneDescription")}
         failedTitle={t("users.detail.failed")}
         back={
-          <Link to="/users" className="font-label text-accent-text">
+          <Link to="/users" className="font-label text-accent">
             {t("users.detail.back")}
           </Link>
         }

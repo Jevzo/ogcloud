@@ -1,4 +1,4 @@
-/* The UI kit's stylesheet: Tailwind 4 on OgCloud's tokens (D-0216). Apps import it once from their entry CSS. */
+/* The UI kit's stylesheet: Tailwind 4 on OgCloud's tokens (D-0231). Apps import it once from their entry CSS. */
 @import "tailwindcss";
 @import "@ogcloud/tokens/tokens.css";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
@@ -6,21 +6,29 @@
 
 @source "./";
 
-/* In-game previews use Monocraft (OFL-1.1, see fonts/Monocraft-LICENSE.txt), D-0209. */
+/* In-game previews use Monocraft (OFL-1.1, see fonts/Monocraft-LICENSE.txt), D-0231. */
 @font-face {
   font-family: "Monocraft";
   src: url("./fonts/Monocraft.ttf") format("truetype");
   font-display: swap;
 }
 
+/* Exits run at three quarters of their entrance, on the exit curve (D-0231). */
 @theme {
-  --default-transition-duration: var(--og-duration-fast);
+  --default-transition-duration: var(--og-duration-quick);
   --default-transition-timing-function: var(--ease-standard);
-  --animate-pop-in: og-pop-in var(--og-duration-base) var(--ease-standard);
-  --animate-pop-out: og-pop-out var(--og-duration-fast) var(--ease-standard);
-  --animate-fade-in: og-fade-in var(--og-duration-base) var(--ease-standard);
-  --animate-fade-out: og-fade-out var(--og-duration-fast) var(--ease-standard);
-  --animate-slide-up: og-slide-up var(--og-duration-slow) var(--ease-standard);
+  --animate-pop-in: og-pop-in var(--og-duration-fast) var(--ease-enter);
+  --animate-pop-out: og-pop-out calc(var(--og-duration-fast) * var(--og-exit-ratio)) var(--ease-exit);
+  --animate-palette-in: og-pop-in var(--og-duration-instant) var(--ease-enter);
+  --animate-palette-out: og-pop-out calc(var(--og-duration-instant) * var(--og-exit-ratio)) var(--ease-exit);
+  --animate-dialog-in: og-pop-in var(--og-duration-base) var(--ease-enter);
+  --animate-dialog-out: og-pop-out calc(var(--og-duration-base) * var(--og-exit-ratio)) var(--ease-exit);
+  --animate-drawer-in: og-drawer-in var(--og-duration-base) var(--ease-enter);
+  --animate-drawer-out: og-drawer-out calc(var(--og-duration-base) * var(--og-exit-ratio)) var(--ease-exit);
+  --animate-fade-in: og-fade-in var(--og-duration-base) var(--ease-enter);
+  --animate-fade-out: og-fade-out calc(var(--og-duration-base) * var(--og-exit-ratio)) var(--ease-exit);
+  --animate-slide-up: og-slide-up var(--og-duration-base) var(--ease-standard);
+  --animate-flash: og-flash var(--og-duration-flash) var(--ease-exit);
   --animate-spin: og-spin 900ms linear infinite;
 }
 
@@ -57,6 +65,37 @@
   }
 }
 
+@keyframes og-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes og-drawer-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* A changed value's tint, fading out over a second. */
+@keyframes og-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes og-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes og-spin {
   to {
     transform: rotate(360deg);
@@ -65,7 +104,7 @@
 
 @layer base {
   html {
-    background-color: var(--og-sunken);
+    background-color: var(--og-page);
     color: var(--og-text);
     font-family: var(--font-sans);
     font-size: var(--text-body);
@@ -82,15 +121,21 @@
   :focus-visible {
     outline: 2px solid var(--og-accent);
     outline-offset: 2px;
+    /* Dark mode's glow around the ring; elements with a shadow of their own carry it through Tailwind's slot. */
+    --tw-ring-offset-shadow: var(--og-shadow-glow);
+    box-shadow: var(--og-shadow-glow);
   }
 }
 
 /*
- * A loading view's data stands as skeletons of their own size (D-0228). The tint suits the page and the cards in
- * both themes; elements without a radius of their own take the small one.
+ * A loading view's data stands as skeletons of their own size (D-0228), with a band of light sweeping across
+ * (D-0231). The tint suits the page and the cards in both themes; elements without a radius of their own take the
+ * small one, and positioned ones keep their position.
  */
 @layer components {
   [data-loading] [data-skeleton] {
+    position: relative;
+    overflow: hidden;
     border-radius: var(--radius-small);
   }
 }
@@ -100,7 +145,6 @@
   background: color-mix(in oklab, var(--og-text) 9%, transparent) !important;
   border-color: transparent !important;
   box-shadow: none !important;
-  animation: var(--animate-pulse);
   user-select: none;
 
   & * {
@@ -109,6 +153,78 @@
 
   &::placeholder {
     color: transparent;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--og-text) 7%, transparent),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: og-shimmer var(--og-duration-shimmer) var(--ease-standard) infinite;
+  }
+}
+
+/* Floating layers over scrolling content (D-0231): the top bar, ⌘K, popovers and toasts; solid for those who ask. */
+@utility glass {
+  --og-glass-ground: var(--og-floating);
+  background-color: color-mix(in oklab, var(--og-glass-ground) var(--og-glass-opacity), transparent);
+  backdrop-filter: blur(var(--og-glass-blur)) saturate(var(--og-glass-saturate));
+
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--og-glass-ground);
+    backdrop-filter: none;
+  }
+}
+
+/* The page's grain and the faint accent wash at its top; both sit behind the content and catch no pointer. */
+@utility page-ground {
+  background-image:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--og-accent-soft) var(--og-wash-strength), transparent),
+      transparent var(--og-wash-height)
+    ),
+    var(--og-grain);
+  background-repeat: no-repeat, repeat;
+}
+
+@utility grain {
+  background-image: var(--og-grain);
+}
+
+/* The primary button's same-hue gradient, a lighter top over the accent. */
+@utility accent-gradient {
+  background-image: linear-gradient(to bottom, var(--og-accent-top), var(--og-accent));
+}
+
+/* A clickable card rises one step under the pointer; the stronger shadow fades in on a layer of its own. */
+@utility lift {
+  position: relative;
+  transition: transform var(--og-duration-fast) var(--ease-standard);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--og-shadow-lift);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--og-duration-fast) var(--ease-standard);
+  }
+
+  &:hover {
+    transform: translateY(var(--og-lift));
+  }
+
+  &:hover::before {
+    opacity: 1;
   }
 }
 

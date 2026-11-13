@@ -83,7 +83,7 @@ export function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-card border border-border-strong border-dashed px-5 py-7 text-center">
+    <div className="grain flex flex-col items-center gap-2 rounded-card border border-border-strong border-dashed px-5 py-7 text-center">
       <span
         aria-hidden="true"
         className="grid size-11 place-items-center rounded-full border border-border-subtle bg-surface text-text-2 shadow-raised"
@@ -98,10 +98,10 @@ export function EmptyState({
 }
 
 const NOTE_TONES: Record<Exclude<Tone, "neutral" | "accent">, string> = {
-  success: "bg-success-soft [&>svg]:text-success-text",
-  warning: "bg-warning-soft [&>svg]:text-warning-text",
-  danger: "bg-danger-soft [&>svg]:text-danger-text",
-  info: "bg-info-soft [&>svg]:text-info-text",
+  success: "bg-success-soft [&>svg]:text-success",
+  warning: "bg-warning-soft [&>svg]:text-warning",
+  danger: "bg-danger-soft [&>svg]:text-danger",
+  info: "bg-info-soft [&>svg]:text-info",
 };
 
 interface NoteProps {

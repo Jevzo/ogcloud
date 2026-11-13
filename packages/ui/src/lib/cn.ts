@@ -2,8 +2,8 @@ import { utilityNames } from "@ogcloud/tokens";
 import { type ClassValue, clsx } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-// tailwind-merge must know OgCloud's token names, or it reads `text-display` as a colour and drops one of
-// `text-display text-text-2`.
+// tailwind-merge must know OgCloud's token names, or it reads `text-kpi` as a colour and drops one of
+// `text-kpi text-text-2`.
 const merge = extendTailwindMerge({
   override: {
     theme: {

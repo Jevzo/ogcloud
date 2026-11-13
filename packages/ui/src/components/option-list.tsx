@@ -72,7 +72,7 @@ function OptionList<T extends string>({
                 className={cn(
                   "flex-1 truncate",
                   mono && "font-mono text-mono",
-                  !multiple && selected && "font-label text-accent-text",
+                  !multiple && selected && "font-label text-accent",
                 )}
               >
                 {option.label}
@@ -85,7 +85,7 @@ function OptionList<T extends string>({
                       aria-hidden="true"
                       size={15}
                       strokeWidth={2.25}
-                      className="text-accent-text"
+                      className="text-accent"
                     />
                   ) : null}
                 </span>
@@ -207,7 +207,7 @@ export function MultiSelect<T extends string>({
             <span
               key={value}
               className={cn(
-                "inline-flex h-6 items-center gap-0.5 rounded-[calc(var(--radius-control)-3px)] bg-accent-soft pr-0.5 pl-2 font-label text-accent-text text-meta",
+                "inline-flex h-6 items-center gap-0.5 rounded-[calc(var(--radius-control)-3px)] bg-accent-soft pr-0.5 pl-2 font-label text-accent text-meta",
                 mono && "font-mono",
               )}
             >

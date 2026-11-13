@@ -15,9 +15,9 @@ const ACTION_LOOK: Record<
   ScalingLogView["action"],
   { icon: LucideIcon; tint: string }
 > = {
-  START: { icon: Play, tint: "bg-success-soft text-success-text" },
-  DRAIN: { icon: ArrowDownToLine, tint: "bg-warning-soft text-warning-text" },
-  UNDRAIN: { icon: RotateCcw, tint: "bg-info-soft text-info-text" },
+  START: { icon: Play, tint: "bg-success-soft text-success" },
+  DRAIN: { icon: ArrowDownToLine, tint: "bg-warning-soft text-warning" },
+  UNDRAIN: { icon: RotateCcw, tint: "bg-info-soft text-info" },
   STOP: { icon: Square, tint: "bg-surface-3 text-text-2" },
 };
 
@@ -37,7 +37,7 @@ export function ScalingCard({
       actions={
         <Link
           to="/activity"
-          className="font-label text-accent-text text-small hover:underline"
+          className="font-label text-accent text-small hover:underline"
         >
           {t("overview.scaling.all")}
         </Link>
