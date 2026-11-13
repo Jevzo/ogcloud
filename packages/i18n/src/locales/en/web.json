@@ -660,6 +660,8 @@
     "pages": "Pages",
     "placeholder": "Search or go to a page",
     "players": "Players",
+    "recent": "Recent",
+    "searching": "Searching…",
     "servers": "Servers"
   },
   "permissions": {
@@ -1016,6 +1018,7 @@
   },
   "shell": {
     "account": "Account settings",
+    "breadcrumbs": "Breadcrumb",
     "density": {
       "comfortable": "Comfortable",
       "compact": "Compact",

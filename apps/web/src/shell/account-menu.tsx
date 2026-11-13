@@ -67,12 +67,12 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
         <button
           type="button"
           aria-label={collapsed ? me.username : undefined}
-          className="flex w-full cursor-pointer items-center gap-2.5 rounded-control p-1.5 text-left hover:bg-surface-3"
+          className="flex w-full cursor-pointer items-center gap-2.5 rounded-control p-1.5 text-left hover:bg-surface"
         >
           <span
             aria-hidden="true"
             data-skeleton=""
-            className="grid size-7.5 shrink-0 place-items-center rounded-full bg-accent-soft font-heavy text-accent-text text-meta"
+            className="grid size-7.5 shrink-0 place-items-center rounded-full bg-accent-soft font-bold text-accent text-meta"
           >
             {initials}
           </span>

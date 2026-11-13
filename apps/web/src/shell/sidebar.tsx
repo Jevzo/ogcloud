@@ -24,7 +24,7 @@ interface SidebarProps {
   account: ReactNode;
 }
 
-/** The floating navigation panel of the Layered direction (D-0216); collapsed, it shows icons with tooltips. */
+/** The navigation, attached at the left on the sunken colour (D-0231); collapsed, an icon rail with tooltips. */
 export function Sidebar({
   permissions,
   collapsed,
@@ -38,8 +38,8 @@ export function Sidebar({
     <aside
       aria-label="OgCloud"
       className={cn(
-        "sticky top-2 m-2 flex h-[calc(100vh-1rem)] shrink-0 flex-col rounded-card border border-border-subtle bg-surface p-2.5 shadow-card",
-        collapsed ? "w-15" : "w-sidebar",
+        "sticky top-0 flex h-screen shrink-0 flex-col border-border-subtle border-r bg-sunken p-3",
+        collapsed ? "w-sidebar-rail" : "w-sidebar",
       )}
     >
       <div
@@ -113,15 +113,16 @@ function NavLink({
       activeOptions={{ exact: item.path === "/" }}
       aria-label={collapsed ? label : undefined}
       className={cn(
-        "group flex h-nav-item items-center gap-2.5 rounded-control px-2.5 text-text-2 hover:bg-surface-3 hover:text-text",
-        "aria-[current=page]:bg-accent-soft aria-[current=page]:font-label aria-[current=page]:text-accent-text",
+        "group relative flex h-nav-item items-center gap-2.5 rounded-control px-2.5 font-label text-text-2 hover:bg-surface hover:text-text",
+        // The active item: the tint, the accent, and a bar on its inner edge.
+        "aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2 aria-[current=page]:before:left-0 aria-[current=page]:before:w-0.75 aria-[current=page]:before:rounded-full aria-[current=page]:before:bg-accent",
         collapsed && "justify-center px-0",
       )}
     >
       <item.icon
         aria-hidden="true"
         size={16}
-        strokeWidth={1.75}
+        strokeWidth={1.5}
         className="shrink-0 group-aria-[current=page]:text-accent"
       />
       {collapsed ? null : (

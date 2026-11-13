@@ -1,39 +1,36 @@
 import { type DensityName, defaultDensity } from "@ogcloud/tokens";
 import { createContext, useContext } from "react";
+import { readStored, writeStored } from "./stored.ts";
 
-/** The theme follows the system unless the user picked one; theme and density are remembered on this device (D-0209). */
+/** The theme follows the system unless the user picked one; theme, density and the sidebar are remembered on this device. */
 export type ThemeChoice = "system" | "light" | "dark";
 
 export interface Preferences {
   theme: ThemeChoice;
   density: DensityName;
+  /** The sidebar shows only its icon rail (D-0231). */
+  sidebarCollapsed: boolean;
 }
 
 const KEY = "ogcloud.preferences";
-const DEFAULTS: Preferences = { theme: "system", density: defaultDensity };
+const DEFAULTS: Preferences = {
+  theme: "system",
+  density: defaultDensity,
+  sidebarCollapsed: false,
+};
 
 export function readPreferences(storage: Storage = localStorage): Preferences {
-  try {
-    const stored: unknown = JSON.parse(storage.getItem(KEY) ?? "null");
-    return typeof stored === "object" && stored !== null
-      ? { ...DEFAULTS, ...(stored as Partial<Preferences>) }
-      : DEFAULTS;
-  } catch (error) {
-    // Blocked or corrupt storage only costs the user their choice; the defaults still work.
-    console.warn("Could not read the display preferences", error);
-    return DEFAULTS;
-  }
+  const stored = readStored(KEY, storage);
+  return typeof stored === "object" && stored !== null
+    ? { ...DEFAULTS, ...(stored as Partial<Preferences>) }
+    : DEFAULTS;
 }
 
 export function writePreferences(
   preferences: Preferences,
   storage: Storage = localStorage,
 ): void {
-  try {
-    storage.setItem(KEY, JSON.stringify(preferences));
-  } catch (error) {
-    console.warn("Could not keep the display preferences", error);
-  }
+  writeStored(KEY, preferences, storage);
 }
 
 /** The display preferences and how to change them, shared by the account menu and the account page. */
@@ -46,7 +43,7 @@ export function usePreferences() {
   return useContext(PreferencesContext);
 }
 
-/** The tokens' stylesheet switches on these attributes (D-0216). */
+/** The tokens' stylesheet switches on these attributes. */
 export function applyPreferences(
   { theme, density }: Preferences,
   root: HTMLElement = document.documentElement,

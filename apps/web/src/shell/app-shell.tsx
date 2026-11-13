@@ -44,7 +44,6 @@ export function AppShell() {
   const me = useMeGet();
   const { pathname } = useLocation();
   const [preferences, setPreferences] = useState<Preferences>(readPreferences);
-  const [collapsed, setCollapsed] = useState(false);
   const [searching, setSearching] = useState(false);
 
   const alerts = useAlertList(Date.now);
@@ -98,18 +97,28 @@ export function AppShell() {
                 permissions={
                   loading ? PRIMARY_PERMISSIONS : profile.permissions
                 }
-                collapsed={collapsed}
-                onToggle={() => setCollapsed((value) => !value)}
-                account={<AccountMenu me={profile} collapsed={collapsed} />}
+                collapsed={preferences.sidebarCollapsed}
+                onToggle={() =>
+                  changePreferences({
+                    ...preferences,
+                    sidebarCollapsed: !preferences.sidebarCollapsed,
+                  })
+                }
+                account={
+                  <AccountMenu
+                    me={profile}
+                    collapsed={preferences.sidebarCollapsed}
+                  />
+                }
               />
             </Loading>
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="page-ground flex min-w-0 flex-1 flex-col">
               <Header live={live} onSearch={() => setSearching(true)} />
               <motion.main
                 key={pathname}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex-1 px-4 pt-2 pb-6"
+                className="flex-1 px-6 pt-5 pb-8"
               >
                 {loading ? (
                   <Loading when>
