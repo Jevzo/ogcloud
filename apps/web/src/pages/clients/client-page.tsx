@@ -29,7 +29,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useListSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useListSave } from "../../editing.tsx";
 import { useConfirmFailure } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { IdentityCard } from "../../identity-card.tsx";
@@ -117,7 +117,7 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={<Value>{client.name}</Value>}
         badges={
@@ -193,6 +193,6 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
       />
       {deletion.dialog}
       <SecretDialog credentials={rotated} onClose={() => setRotated(null)} />
-    </div>
+    </EditorPage>
   );
 }

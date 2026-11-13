@@ -14,7 +14,7 @@ import { Bot, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useViewSettingsForm } from "../../form.tsx";
 import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
@@ -89,7 +89,7 @@ function NpcEditor({ view }: { view: NpcView }) {
   }));
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={
           <Value>
@@ -130,6 +130,6 @@ function NpcEditor({ view }: { view: NpcView }) {
         <NpcFields form={form} fields="settings" groupIds={groupIds} />
       </EditorForm>
       {remove.dialog}
-    </div>
+    </EditorPage>
   );
 }

@@ -20,7 +20,7 @@ import { placeholderRuntime } from "../../placeholders.ts";
 const columns = columnsFor<RuntimeProfileView>();
 
 /** The runtimes groups can run, with their bundles; a rollout replaces the profile's servers onto a fresh bundle. */
-export function RuntimeCard() {
+export function RuntimeCard({ anchor }: { anchor: string }) {
   const { t } = useTranslation("web");
   const toast = useToast();
   const keepOpen = useConfirmFailure();
@@ -71,7 +71,7 @@ export function RuntimeCard() {
   );
 
   return (
-    <Card flush title={t("network.runtime.title")}>
+    <Card id={anchor} flush title={t("network.runtime.title")}>
       <p className="mb-2 px-4 text-small text-text-3">
         {t("network.runtime.description")}
       </p>

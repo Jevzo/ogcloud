@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useListSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useListSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan, useIsOwner } from "../../permissions.ts";
@@ -103,7 +103,7 @@ function RoleEditor({ role }: { role: RoleView }) {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={<Value>{role.name}</Value>}
         badges={
@@ -147,7 +147,7 @@ function RoleEditor({ role }: { role: RoleView }) {
         </form.Field>
       </EditorForm>
       {deletion.dialog}
-    </div>
+    </EditorPage>
   );
 }
 

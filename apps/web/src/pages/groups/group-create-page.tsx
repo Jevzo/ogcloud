@@ -12,10 +12,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CreateActions } from "../../editing.tsx";
+import {
+  CreateActions,
+  EditorPage,
+  editorAside,
+  editorColumns,
+} from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useAppForm } from "../../form.tsx";
 import { invalidatePaths } from "../../queries.ts";
+import { CapacitySummary } from "./capacity-summary.tsx";
 import { newGroupSettings } from "./group-defaults.ts";
 import { GroupSettingsFields } from "./group-settings-fields.tsx";
 
@@ -71,69 +77,78 @@ export function GroupCreatePage() {
   }, [form, profiles]);
 
   return (
-    <form
-      className="flex max-w-form flex-col gap-6"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
+    <EditorPage>
       <PageHeader title={t("groups.create.title")} />
-      <Card title={t("groups.form.basics")}>
-        <div className="flex flex-col gap-3">
-          <form.AppField name="id">
-            {(field) => (
-              <field.TextField
-                mono
-                label={t("groups.form.id")}
-                hint={t("groups.form.idHint")}
-                placeholder="bedwars"
-              />
-            )}
-          </form.AppField>
-          <form.Field name="type">
-            {(field) => (
-              <Field
-                label={t("groups.form.type")}
-                hint={t(`groups.form.typeHint.${field.state.value}`)}
-              >
-                {() => (
-                  <Segmented
-                    label={t("groups.form.type")}
-                    options={TYPES.map((type) => ({
-                      value: type,
-                      label: t(`groups.type.${type}`),
-                    }))}
-                    value={field.state.value}
-                    onValueChange={(type) => {
-                      field.handleChange(type);
-                      form.setFieldValue(
-                        "settings",
-                        newGroupSettings(type, profiles),
-                      );
-                    }}
+      <form
+        className={editorColumns}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void form.handleSubmit();
+        }}
+      >
+        <div className="flex min-w-0 flex-col gap-6">
+          <Card title={t("groups.form.basics")}>
+            <div className="flex flex-col gap-3">
+              <form.AppField name="id">
+                {(field) => (
+                  <field.TextField
+                    mono
+                    label={t("groups.form.id")}
+                    hint={t("groups.form.idHint")}
+                    placeholder="bedwars"
                   />
                 )}
-              </Field>
+              </form.AppField>
+              <form.Field name="type">
+                {(field) => (
+                  <Field
+                    label={t("groups.form.type")}
+                    hint={t(`groups.form.typeHint.${field.state.value}`)}
+                  >
+                    {() => (
+                      <Segmented
+                        label={t("groups.form.type")}
+                        options={TYPES.map((type) => ({
+                          value: type,
+                          label: t(`groups.type.${type}`),
+                        }))}
+                        value={field.state.value}
+                        onValueChange={(type) => {
+                          field.handleChange(type);
+                          form.setFieldValue(
+                            "settings",
+                            newGroupSettings(type, profiles),
+                          );
+                        }}
+                      />
+                    )}
+                  </Field>
+                )}
+              </form.Field>
+            </div>
+          </Card>
+          <form.Subscribe selector={(state) => state.values.type}>
+            {(type) => (
+              <GroupSettingsFields
+                form={form}
+                fields="settings"
+                type={type}
+                profiles={profiles}
+              />
             )}
-          </form.Field>
-        </div>
-      </Card>
-      <form.Subscribe selector={(state) => state.values.type}>
-        {(type) => (
-          <GroupSettingsFields
-            form={form}
-            fields="settings"
-            type={type}
-            profiles={profiles}
+          </form.Subscribe>
+          <CreateActions
+            onCancel={() => void navigate({ to: "/groups" })}
+            submitLabel={t("groups.create.submit")}
+            submitting={submitting}
           />
-        )}
-      </form.Subscribe>
-      <CreateActions
-        onCancel={() => void navigate({ to: "/groups" })}
-        submitLabel={t("groups.create.submit")}
-        submitting={submitting}
-      />
-    </form>
+        </div>
+        <div className={editorAside}>
+          <form.Subscribe selector={(state) => state.values.settings}>
+            {(settings) => <CapacitySummary settings={settings} />}
+          </form.Subscribe>
+        </div>
+      </form>
+    </EditorPage>
   );
 }

@@ -28,6 +28,8 @@ export function PageHeader({ title, badges, actions }: PageHeaderProps) {
 }
 
 interface CardProps {
+  /** A target for in-page links; the card scrolls into view below the sticky top bar. */
+  id?: string | undefined;
   title?: ReactNode;
   /** Small actions or links on the right of the title. */
   actions?: ReactNode;
@@ -38,6 +40,7 @@ interface CardProps {
 }
 
 export function Card({
+  id,
   title,
   actions,
   flush = false,
@@ -47,8 +50,9 @@ export function Card({
   const header = title !== undefined || actions !== undefined;
   return (
     <section
+      id={id}
       className={cn(
-        "min-w-0 rounded-card border border-border-subtle bg-surface shadow-card",
+        "min-w-0 scroll-mt-20 rounded-card border border-border-subtle bg-surface shadow-card",
         // A flush card's title starts as far down as any other card's, so titles side by side line up.
         flush ? cn("overflow-hidden pb-3", header ? "pt-4" : "pt-0") : "p-4",
         className,

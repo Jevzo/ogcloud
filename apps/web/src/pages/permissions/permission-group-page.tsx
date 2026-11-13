@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useViewSettingsForm } from "../../form.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -118,7 +118,7 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={<Value>{view.settings.name}</Value>}
         badges={
@@ -236,6 +236,6 @@ function PermissionGroupEditor({ view }: { view: PermissionGroupView }) {
         </Card>
       </EditorForm>
       {deletion.dialog}
-    </div>
+    </EditorPage>
   );
 }

@@ -35,7 +35,7 @@ import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useDetailSave } from "../../editing.tsx";
 import { useConfirmFailure, useFailureToast } from "../../errors.ts";
 import {
   contractSchema,
@@ -131,7 +131,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const started = (message: string) => () => toast({ message });
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={t("nav.network")}
         badges={<MaintenanceBadge maintenance={view.settings.maintenance} />}
@@ -225,6 +225,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         saving={saving}
         aside={
           <>
+            <SectionLinks />
             <Card title={t("permissions.look.title")}>
               <NetworkLook
                 settings={settings}
@@ -232,14 +233,27 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
               />
             </Card>
             {view.eulaAcceptedAt == null ? null : (
-              <p className="px-1 text-small text-text-3">
-                {t("network.eula.accepted")} <Ago at={view.eulaAcceptedAt} />
-              </p>
+              <Card title={t("network.eula.title")}>
+                <div className="flex flex-col gap-2">
+                  <span>
+                    {t("network.eula.acceptedAt")}{" "}
+                    <Ago at={view.eulaAcceptedAt} className="" />
+                  </span>
+                  <a
+                    href={MINECRAFT_EULA_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="self-start font-label text-accent text-small underline-offset-2 hover:underline"
+                  >
+                    {t("network.eula.read")}
+                  </a>
+                </div>
+              </Card>
             )}
           </>
         }
       >
-        <Card title={t("network.form.serverList")}>
+        <Card id="network-server-list" title={t("network.form.serverList")}>
           <div className="flex flex-col gap-3">
             <form.AppField name="settings.motd" validators={validators.motd}>
               {(field) => (
@@ -275,7 +289,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             </div>
           </div>
         </Card>
-        <Card title={t("network.form.maintenance")}>
+        <Card id="network-maintenance" title={t("network.form.maintenance")}>
           <div className="flex flex-col gap-3">
             <form.AppField
               name="settings.maintenanceMotd"
@@ -315,7 +329,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             </form.AppField>
           </div>
         </Card>
-        <Card title={t("network.form.tablist")}>
+        <Card id="network-tablist" title={t("network.form.tablist")}>
           <div className="flex flex-col gap-3">
             <form.AppField name="settings.tablistEnabled">
               {(field) => (
@@ -351,7 +365,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             </form.AppField>
           </div>
         </Card>
-        <Card title={t("network.form.players")}>
+        <Card id="network-players" title={t("network.form.players")}>
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-4">
               <form.AppField name="settings.defaultGroupId">
@@ -386,7 +400,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             </form.AppField>
           </div>
         </Card>
-        <RuntimeCard />
+        <RuntimeCard anchor="network-runtimes" />
       </EditorForm>
       <ConfirmDialog
         open={pending.isOpen("maintenance")}
@@ -426,6 +440,45 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
             .then(started(t("network.rotate.started")), keepOpen)
         }
       />
-    </div>
+    </EditorPage>
+  );
+}
+
+const SECTIONS = [
+  ["network-server-list", "serverList"],
+  ["network-maintenance", "maintenance"],
+  ["network-tablist", "tablist"],
+  ["network-players", "players"],
+] as const;
+
+/** The long form's sections, one click away from anywhere on it (D-0231). */
+function SectionLinks() {
+  const { t } = useTranslation("web");
+  const jump = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start",
+    });
+  return (
+    <nav
+      aria-label={t("network.sections")}
+      className="flex flex-wrap gap-1 rounded-card border border-border-subtle bg-surface p-1.5 shadow-card"
+    >
+      {[
+        ...SECTIONS.map(([id, key]) => [id, t(`network.form.${key}`)] as const),
+        ["network-runtimes", t("network.runtime.title")] as const,
+      ].map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => jump(id)}
+          className="h-7 cursor-pointer rounded-control px-2.5 font-label text-small text-text-2 hover:bg-text/7 hover:text-text"
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
   );
 }

@@ -38,7 +38,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { EditorForm, useDetailSave } from "../../editing.tsx";
+import { EditorForm, EditorPage, useDetailSave } from "../../editing.tsx";
 import { loadFailure } from "../../errors.ts";
 import {
   contractSchema,
@@ -150,7 +150,7 @@ function GroupEditor({ view }: { view: GroupView }) {
     : [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <EditorPage>
       <PageHeader
         title={<Value>{view.id}</Value>}
         badges={live === undefined ? null : <GroupStatusBadge group={live} />}
@@ -262,7 +262,7 @@ function GroupEditor({ view }: { view: GroupView }) {
         onOpenChange={setRequesting}
         groupIds={[view.id]}
       />
-    </div>
+    </EditorPage>
   );
 }
 

@@ -332,7 +332,14 @@
       "restartTitle": "Restart {{id}}?"
     },
     "create": {
+      "capacity": "At its largest",
+      "capacityHint": "The autoscaler starts servers up to these limits as players arrive.",
       "done": "Created {{id}}",
+      "memory": "Memory",
+      "memoryValue": "{{total}} GiB, {{each}} GiB a server",
+      "servers": "Servers",
+      "slots": "Player slots",
+      "slotsValue": "{{slots}}, {{each}} a server",
       "submit": "Create group",
       "title": "Create group"
     },
@@ -459,9 +466,10 @@
   "network": {
     "eula": {
       "accept": "Accept the EULA",
-      "accepted": "Minecraft EULA accepted",
+      "acceptedAt": "Accepted",
       "description": "Accepting it is up to an owner and cannot be taken back.",
-      "read": "Read the EULA"
+      "read": "Read the EULA",
+      "title": "Minecraft EULA"
     },
     "failed": "The network settings could not be loaded",
     "form": {
@@ -536,6 +544,7 @@
       "title": "Runtimes",
       "version": "Version"
     },
+    "sections": "Sections",
     "typed": "network"
   },
   "npcs": {

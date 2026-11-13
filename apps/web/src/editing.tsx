@@ -126,6 +126,25 @@ export function useListSave(path: string): SaveOutcome<unknown> {
   };
 }
 
+/** The form and its side panel; on large monitors the panel grows so previews scale up (D-0231). */
+export const editorColumns =
+  "grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-6 min-[1920px]:grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside-wide))]";
+
+/** The side panel stays in view below the top bar while the form scrolls. */
+export const editorAside = "sticky top-18 flex min-w-0 flex-col gap-6";
+
+/**
+ * An editor or create page, as wide as its form and side panel, so the header's actions sit over what they act on
+ * rather than at the window's far edge (D-0231).
+ */
+export function EditorPage({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex max-w-[calc(var(--container-form)+var(--container-aside)+--spacing(6))] flex-col gap-6 min-[1920px]:max-w-[calc(var(--container-form)+var(--container-aside-wide)+--spacing(6))]">
+      {children}
+    </div>
+  );
+}
+
 interface EditorFormProps {
   form: { handleSubmit: () => Promise<void>; reset: () => void };
   canWrite: boolean;
@@ -150,7 +169,7 @@ export function EditorForm({
 }: EditorFormProps) {
   const save = () => void form.handleSubmit();
   return (
-    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-6">
+    <div className={editorColumns}>
       <form
         className="flex min-w-0 flex-col gap-6"
         onSubmit={(event) => {
@@ -173,12 +192,15 @@ export function EditorForm({
           />
         ) : null}
       </form>
-      <div className="sticky top-18 flex min-w-0 flex-col gap-6">{aside}</div>
+      <div className={editorAside}>{aside}</div>
     </div>
   );
 }
 
-/** A create page's actions at the end of its form: Cancel, then the action itself, last (D-0210). */
+/**
+ * A create page's actions in a footer that sticks to the bottom like the save bar, so they never sit a screen away:
+ * Cancel, then the action itself, last (D-0210, D-0231).
+ */
 export function CreateActions({
   onCancel,
   submitLabel,
@@ -190,7 +212,7 @@ export function CreateActions({
 }) {
   const { t } = useTranslation("web");
   return (
-    <div className="flex justify-end gap-2">
+    <div className="sticky bottom-4 z-30 flex h-14 items-center justify-end gap-2 rounded-popover border border-border bg-floating px-3 shadow-popover">
       <Button kind="secondary" onClick={onCancel}>
         {t("editing.cancel")}
       </Button>

@@ -1,18 +1,24 @@
 import type { NpcSettings } from "@ogcloud/api-client";
 import { getNpcListQueryKey, useNpcCreate } from "@ogcloud/api-client/react";
 import { NpcCreateBody } from "@ogcloud/api-client/zod";
-import { PageHeader, useToast } from "@ogcloud/ui";
+import { Card, PageHeader, useToast } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { CreateActions } from "../../editing.tsx";
+import {
+  CreateActions,
+  EditorPage,
+  editorAside,
+  editorColumns,
+} from "../../editing.tsx";
 import { useFailureToast } from "../../errors.ts";
 import { contractSchema, useAppForm } from "../../form.tsx";
 import { invalidatePaths } from "../../queries.ts";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { NpcFields } from "./npc-fields.tsx";
+import { NpcLook } from "./npc-look.tsx";
 
 const CreateForm = contractSchema<{ settings: NpcSettings }>(
   z.object({ settings: NpcCreateBody }),
@@ -65,20 +71,38 @@ export function NpcCreatePage() {
   const submitting = useStore(form.store, (state) => state.isSubmitting);
 
   return (
-    <form
-      className="flex max-w-form flex-col gap-6"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
+    <EditorPage>
       <PageHeader title={t("npcs.create.title")} />
-      <NpcFields form={form} fields="settings" groupIds={groupIds} />
-      <CreateActions
-        onCancel={() => void navigate({ to: "/npcs" })}
-        submitLabel={t("npcs.create.submit")}
-        submitting={submitting}
-      />
-    </form>
+      <form
+        className={editorColumns}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void form.handleSubmit();
+        }}
+      >
+        <div className="flex min-w-0 flex-col gap-6">
+          <NpcFields form={form} fields="settings" groupIds={groupIds} />
+          <CreateActions
+            onCancel={() => void navigate({ to: "/npcs" })}
+            submitLabel={t("npcs.create.submit")}
+            submitting={submitting}
+          />
+        </div>
+        <div className={editorAside}>
+          <Card title={t("permissions.look.title")}>
+            <form.Subscribe
+              selector={(state) => [
+                state.values.settings.title,
+                state.values.settings.subtitle,
+              ]}
+            >
+              {([title = "", subtitle = ""]) => (
+                <NpcLook title={title} subtitle={subtitle} />
+              )}
+            </form.Subscribe>
+          </Card>
+        </div>
+      </form>
+    </EditorPage>
   );
 }
