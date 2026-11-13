@@ -41,6 +41,8 @@ const val TEST_GRAFANA_SECRET = "grafana-test-secret"
         // Every API test signs in from 127.0.0.1; RateLimitFilterTest covers the limits themselves.
         "ogcloud.rate-limits.auth.capacity=$UNLIMITED",
         "ogcloud.rate-limits.auth.per-minute=$UNLIMITED",
+        "ogcloud.rate-limits.refresh.capacity=$UNLIMITED",
+        "ogcloud.rate-limits.refresh.per-minute=$UNLIMITED",
         "ogcloud.rate-limits.pages.capacity=$UNLIMITED",
         "ogcloud.rate-limits.pages.per-minute=$UNLIMITED",
         "ogcloud.rate-limits.api.capacity=$UNLIMITED",

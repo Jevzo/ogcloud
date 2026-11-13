@@ -60,6 +60,16 @@ class RateLimitFilterTest {
     }
 
     @Test
+    fun `a token refresh uses its own bucket, other grants the strict one`() {
+        run("POST", "/oauth2/token", "grant_type" to "refresh_token")
+        run("POST", "/oauth2/token", "grant_type" to "authorization_code")
+        run("POST", "/oauth2/token", "grant_type" to "client_credentials")
+
+        taken.map { it.first } shouldBe listOf("refresh", "auth", "auth")
+        taken.first().third shouldBe limits.refresh
+    }
+
+    @Test
     fun `an empty bucket answers 429 with Retry-After`() {
         decision = RateDecision(false, Duration.ofMillis(1500))
 
@@ -73,8 +83,13 @@ class RateLimitFilterTest {
     private fun run(
         method: String,
         path: String,
+        vararg parameters: Pair<String, String>,
     ): MockHttpServletResponse {
-        val request = MockHttpServletRequest(method, path).apply { remoteAddr = "203.0.113.7" }
+        val request =
+            MockHttpServletRequest(method, path).apply {
+                remoteAddr = "203.0.113.7"
+                parameters.forEach { (name, value) -> addParameter(name, value) }
+            }
         return MockHttpServletResponse().also { filter.doFilter(request, it, MockFilterChain()) }
     }
 

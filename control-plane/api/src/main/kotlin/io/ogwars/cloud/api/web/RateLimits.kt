@@ -16,7 +16,9 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
+import org.springframework.security.web.util.matcher.AndRequestMatcher
 import org.springframework.security.web.util.matcher.OrRequestMatcher
+import org.springframework.security.web.util.matcher.ParameterRequestMatcher
 import org.springframework.security.web.util.matcher.RequestMatcher
 import org.springframework.web.filter.OncePerRequestFilter
 import java.time.Clock
@@ -26,6 +28,8 @@ import java.time.Clock
 data class RateLimitProperties(
     /** Sign-in, second factor, token, setup, passkey, password-change and Minecraft-link endpoints. */
     val auth: RateLimit = RateLimit(capacity = 20, perMinute = 10),
+    /** Token refreshes, which every page load and new tab of an app makes (D-0233). */
+    val refresh: RateLimit = RateLimit(capacity = 60, perMinute = 60),
     /** Loading the sign-in pages and their state, which starts a login session (D-0222). */
     val pages: RateLimit = RateLimit(capacity = 60, perMinute = 60),
     val api: RateLimit = RateLimit(capacity = 600, perMinute = 600),
@@ -48,6 +52,7 @@ class RateLimitFilter(
         }
         val (bucket, limit) =
             when {
+                REFRESH.matches(request) -> REFRESH_BUCKET to limits.refresh
                 SIGN_IN.matches(request) -> AUTH_BUCKET to limits.auth
                 SIGN_IN_PAGES.matches(request) -> PAGES_BUCKET to limits.pages
                 else -> API_BUCKET to limits.api
@@ -68,6 +73,7 @@ class RateLimitFilter(
 
     companion object {
         const val AUTH_BUCKET = "auth"
+        const val REFRESH_BUCKET = "refresh"
         const val PAGES_BUCKET = "pages"
         const val API_BUCKET = "api"
         private const val MILLIS_PER_SECOND = 1000L
@@ -88,6 +94,13 @@ class RateLimitFilter(
                 // Removing a passkey checks the password (D-0217).
                 paths.matcher(HttpMethod.DELETE, "/api/v1/me/passkeys/*"),
                 paths.matcher(HttpMethod.POST, "/api/v1/me/minecraft-link/**"),
+            )
+
+        /** A refresh presents a random rotating token, nothing to guess, so it has a looser bucket (D-0233). */
+        val REFRESH: RequestMatcher =
+            AndRequestMatcher(
+                paths.matcher(HttpMethod.POST, "/oauth2/token"),
+                ParameterRequestMatcher("grant_type", "refresh_token"),
             )
 
         /** The sign-in pages and their state; each load starts a login session (D-0222). */
