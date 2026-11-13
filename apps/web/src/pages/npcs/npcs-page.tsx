@@ -6,16 +6,17 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
+  FilterBar,
   PageHeader,
 } from "@ogcloud/ui";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Bot, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { loadFailure } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
 import { placeholderNpc } from "../../placeholders.ts";
-import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
+import { ALL_GROUPS, useGroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { GroupLink } from "../groups/group-status.tsx";
 import { useDeleteNpc } from "./npc-delete.tsx";
@@ -29,11 +30,11 @@ export function NpcsPage() {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
   const canWrite = useCan("npcs:write");
-  const [group, setGroup] = useState(ALL_GROUPS);
+  const groupIds = useBackendGroupIds();
+  const { group, filter: groupFilter } = useGroupFilter(groupIds);
   const npcs = useNpcList(
     group === ALL_GROUPS ? undefined : { groupId: group },
   );
-  const groupIds = useBackendGroupIds();
   const remove = useDeleteNpc();
   const open = (id: string) =>
     navigate({ to: "/npcs/$npcId", params: { npcId: id } });
@@ -109,7 +110,7 @@ export function NpcsPage() {
           ) : undefined
         }
       />
-      <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
+      <FilterBar filters={[groupFilter]} />
       <Card flush>
         <DataTable
           label={t("nav.npcs")}

@@ -3,16 +3,22 @@ import {
   getLogScalingQueryKey,
   useLogScalingHook,
 } from "@ogcloud/api-client/react";
-import { Card, columnsFor, DataTable, EmptyState } from "@ogcloud/ui";
+import {
+  Card,
+  columnsFor,
+  DataTable,
+  EmptyState,
+  FilterBar,
+} from "@ogcloud/ui";
 import { TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { placeholderScaling } from "../../placeholders.ts";
-import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
+import { ALL_GROUPS, useGroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { GroupLink } from "../groups/group-status.tsx";
 
@@ -23,7 +29,7 @@ export function ScalingTab() {
   const { t } = useTranslation("web");
   const fetchScaling = useLogScalingHook();
   const groupIds = useBackendGroupIds();
-  const [group, setGroup] = useState(ALL_GROUPS);
+  const { group, filter: groupFilter } = useGroupFilter(groupIds);
   const params = group === ALL_GROUPS ? {} : { groupId: group };
   const scaling = usePaged(
     getLogScalingQueryKey(params),
@@ -74,7 +80,7 @@ export function ScalingTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
+      <FilterBar filters={[groupFilter]} />
       <Card flush>
         <DataTable
           label={t("activity.tabs.scaling")}

@@ -31,6 +31,13 @@ export function Drawer({
         <Primitive.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
         <Primitive.Content
           aria-describedby={undefined}
+          // Focus lands on the drawer itself, so its close button's tooltip does not pop up on every opening.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            if (event.currentTarget instanceof HTMLElement) {
+              event.currentTarget.focus();
+            }
+          }}
           className="fixed inset-y-0 right-0 z-50 flex w-[min(var(--container-drawer),100vw)] flex-col border-border border-l bg-floating shadow-overlay outline-none data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in"
         >
           <div className="flex min-h-header items-center gap-3 border-border-subtle border-b px-5">

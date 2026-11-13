@@ -167,6 +167,7 @@
       "action": "Action",
       "actor": "Who",
       "anyTime": "Any time",
+      "details": "Details",
       "empty": "Nothing matches",
       "emptyDescription": "Changes are kept for 90 days by default; loosen the filters to see more.",
       "example": {
@@ -182,7 +183,6 @@
         "targetType": "Target type",
         "until": "Until"
       },
-      "filters": "Filters",
       "target": "Target",
       "when": "When"
     },
