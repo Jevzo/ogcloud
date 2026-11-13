@@ -51,9 +51,10 @@ import { useTextValidator } from "../../texts.ts";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { MaintenanceBadge } from "./maintenance-badge.tsx";
 import { useNetworkMaintenance } from "./network-actions.ts";
-import { NetworkLook } from "./network-look.tsx";
+import { type LookFocus, NetworkLook } from "./network-look.tsx";
 import { ROUTING_STRATEGIES } from "./routing.ts";
 import { RuntimeCard } from "./runtime-card.tsx";
+import { useSectionInView } from "./section-in-view.ts";
 
 // The header owns maintenance: the form shows no field for it, and a save keeps the value the edits began from.
 const SettingsForm = contractSchema<{ settings: NetworkSettingsFields }>(
@@ -108,6 +109,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const rotate = useNetworkRotateForwardingToken();
   const eula = useNetworkAcceptEula();
   const pending = usePendingAction<NetworkAction, true>();
+  const section = useSectionInView(SECTION_IDS);
   const outcome = useDetailSave(getNetworkGetQueryKey());
   const validators = {
     motd: useTextValidator("MOTD"),
@@ -225,11 +227,12 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         saving={saving}
         aside={
           <>
-            <SectionLinks />
+            <SectionLinks current={section} />
             <Card title={t("permissions.look.title")}>
               <NetworkLook
                 settings={settings}
                 online={overview.data?.data.playersOnline ?? 0}
+                focus={FOCUS[section ?? ""] ?? null}
               />
             </Card>
             {view.eulaAcceptedAt == null ? null : (
@@ -450,9 +453,16 @@ const SECTIONS = [
   ["network-tablist", "tablist"],
   ["network-players", "players"],
 ] as const;
+const SECTION_IDS = [...SECTIONS.map(([id]) => id), "network-runtimes"];
+// The sections whose texts the preview shows.
+const FOCUS: Partial<Record<string, LookFocus>> = {
+  "network-server-list": "serverList",
+  "network-maintenance": "maintenance",
+  "network-tablist": "tablist",
+};
 
-/** The long form's sections, one click away from anywhere on it (D-0231). */
-function SectionLinks() {
+/** The long form's sections, one click away from anywhere on it; the one being read is marked (D-0231). */
+function SectionLinks({ current }: { current: string | null }) {
   const { t } = useTranslation("web");
   const jump = (id: string) =>
     document.getElementById(id)?.scrollIntoView({
@@ -474,7 +484,8 @@ function SectionLinks() {
           key={id}
           type="button"
           onClick={() => jump(id)}
-          className="h-7 cursor-pointer rounded-control px-2.5 font-label text-small text-text-2 hover:bg-text/7 hover:text-text"
+          aria-current={id === current ? "location" : undefined}
+          className="h-7 cursor-pointer rounded-control px-2.5 font-label text-small text-text-2 hover:bg-text/7 hover:text-text aria-[current=location]:bg-accent-soft aria-[current=location]:text-accent"
         >
           {label}
         </button>
