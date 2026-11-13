@@ -15,6 +15,7 @@ import {
   ArrowUp,
   Ellipsis,
   type LucideIcon,
+  PanelRight,
   RotateCw,
   TriangleAlert,
 } from "lucide-react";
@@ -90,7 +91,12 @@ interface DataTableProps<T extends RowData> {
   maxHeight?: string;
   /** Rows to mark, such as one that changed state just now. */
   highlighted?: (row: T) => boolean;
+  /** Opens a row's drawer: a click on the row, or its details button for the keyboard (D-0231). */
+  onRowOpen?: ((row: T) => void) | undefined;
 }
+
+// Clicks on the row's own links and buttons do what they say, not open the drawer.
+const INTERACTIVE = "a, button, input, select, textarea, [role=menuitem]";
 
 export function DataTable<T extends RowData>({
   label,
@@ -104,6 +110,7 @@ export function DataTable<T extends RowData>({
   failure,
   maxHeight,
   highlighted,
+  onRowOpen,
 }: DataTableProps<T>) {
   const { t } = useTranslation("ui");
   // A loading view passes its own placeholder rows; a table loading alone draws a few of its placeholder.
@@ -136,7 +143,8 @@ export function DataTable<T extends RowData>({
   const paddingBottom = virtual
     ? virtualizer.getTotalSize() - (items.at(-1)?.end ?? 0)
     : 0;
-  const columnCount = table.getAllLeafColumns().length + (actions ? 1 : 0);
+  const hasActions = actions !== undefined || onRowOpen !== undefined;
+  const columnCount = table.getAllLeafColumns().length + (hasActions ? 1 : 0);
 
   return (
     <Loading when={loading}>
@@ -201,7 +209,7 @@ export function DataTable<T extends RowData>({
                     </th>
                   );
                 })}
-                {actions ? (
+                {hasActions ? (
                   <th
                     scope="col"
                     className={cn(
@@ -240,13 +248,30 @@ export function DataTable<T extends RowData>({
                 {paddingTop > 0 ? <tr style={{ height: paddingTop }} /> : null}
                 {visible.map((row) => {
                   const rowActions = actions?.(row.original);
+                  const open =
+                    onRowOpen === undefined || loading
+                      ? undefined
+                      : () => onRowOpen(row.original);
                   return (
                     <tr
                       key={row.id}
                       data-index={virtual ? row.index : undefined}
                       ref={virtual ? virtualizer.measureElement : undefined}
+                      onClick={
+                        open === undefined
+                          ? undefined
+                          : (event) => {
+                              if (
+                                event.target instanceof Element &&
+                                event.target.closest(INTERACTIVE) === null
+                              ) {
+                                open();
+                              }
+                            }
+                      }
                       className={cn(
                         "group hover:bg-surface-2 focus-within:bg-surface-2",
+                        open !== undefined && "cursor-pointer",
                         highlighted?.(row.original) && "bg-accent-soft/60",
                       )}
                     >
@@ -268,10 +293,22 @@ export function DataTable<T extends RowData>({
                           )}
                         </td>
                       ))}
-                      {rowActions ? (
+                      {hasActions ? (
                         <td className="border-border-subtle border-b px-2 text-right whitespace-nowrap">
                           <span className="inline-flex items-center gap-0.5">
-                            {rowActions.inline?.map((action) => (
+                            {open === undefined ? null : (
+                              <Button
+                                kind="ghost"
+                                size="sm"
+                                icon={PanelRight}
+                                iconOnly
+                                onClick={open}
+                                className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                              >
+                                {t("table.details")}
+                              </Button>
+                            )}
+                            {rowActions?.inline?.map((action) => (
                               <Button
                                 key={action.label}
                                 kind="ghost"
@@ -284,19 +321,21 @@ export function DataTable<T extends RowData>({
                                 {action.label}
                               </Button>
                             ))}
-                            <Menu
-                              groups={rowActions.menu}
-                              trigger={
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  icon={Ellipsis}
-                                  iconOnly
-                                >
-                                  {t("actions.more")}
-                                </Button>
-                              }
-                            />
+                            {rowActions === undefined ? null : (
+                              <Menu
+                                groups={rowActions.menu}
+                                trigger={
+                                  <Button
+                                    kind="ghost"
+                                    size="sm"
+                                    icon={Ellipsis}
+                                    iconOnly
+                                  >
+                                    {t("actions.more")}
+                                  </Button>
+                                }
+                              />
+                            )}
                           </span>
                         </td>
                       ) : null}

@@ -30,6 +30,7 @@ import {
   Field,
   type GameSpan,
   Input,
+  KpiTile,
   Meter,
   MultiSelect,
   minecraftColours,
@@ -42,7 +43,6 @@ import {
   Segmented,
   Select,
   ServerListPreview,
-  StackedBar,
   Switch,
   TablistPreview,
   TagTextField,
@@ -774,40 +774,14 @@ function Charts() {
           formatTime={(at) => time.format(at)}
         />
       </Card>
-      <Card title="Servers">
-        <StackedBar
-          segments={[
-            { label: "Running", value: 23, tone: "success" },
-            { label: "Starting", value: 1, tone: "info" },
-            { label: "Draining", value: 1, tone: "warning" },
-          ]}
-        />
-        <ul className="mt-3 flex flex-col gap-1.5">
-          <li className="flex items-center gap-2">
-            <CircleCheck
-              aria-hidden="true"
-              size={16}
-              className="text-success"
-            />
-            <span className="flex-1">Running</span>
-            <span className="font-label tabular-nums">23</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <LoaderCircle aria-hidden="true" size={16} className="text-info" />
-            <span className="flex-1">Starting</span>
-            <span className="font-label tabular-nums">1</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <CirclePause
-              aria-hidden="true"
-              size={16}
-              className="text-warning"
-            />
-            <span className="flex-1">Draining</span>
-            <span className="font-label tabular-nums">1</span>
-          </li>
-        </ul>
-      </Card>
+      <KpiTile
+        label="Servers running"
+        value={23}
+        format={(value) => number.format(value)}
+        caption="1 starting and 1 draining"
+        delta={{ change: "+2", basis: "vs 1 h ago", trend: "up" }}
+        history={[18, 19, 19, 21, 20, 22, 23, 23]}
+      />
     </div>
   );
 }

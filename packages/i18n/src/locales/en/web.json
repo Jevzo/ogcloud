@@ -607,15 +607,34 @@
       "emptyDescription": "Create a proxy group and a lobby to let players in.",
       "title": "Groups"
     },
+    "kpi": {
+      "allOnline": "all online",
+      "basis": "vs 1 h ago",
+      "draining_one": "{{count}} draining",
+      "draining_other": "{{count}} draining",
+      "groups": "Groups",
+      "maintenance_one": "{{count}} in maintenance",
+      "maintenance_other": "{{count}} in maintenance",
+      "paused_one": "{{count}} paused",
+      "paused_other": "{{count}} paused",
+      "players": "Players online",
+      "servers": "Servers running",
+      "slots": "of {{max}} slots",
+      "starting_one": "{{count}} starting",
+      "starting_other": "{{count}} starting"
+    },
     "maintenanceDescription": "Only players with the bypass permission can join, and everyone else is disconnected. The autoscaler pauses until maintenance ends.",
     "maintenanceEnded": "Network maintenance ended",
     "maintenanceStarted": "Network maintenance started",
     "maintenanceTitle": "Start network maintenance?",
+    "paused": {
+      "group": "{{id}} stopped starting servers",
+      "reason": "Its servers kept failing to start. Fix the cause, then resume.",
+      "title": "Paused groups"
+    },
     "players": {
-      "change": "{{change}} in the last hour",
       "chart": "Players online over the last {{range}}",
       "empty": "The history fills in once the controller has sampled for a few minutes.",
-      "of": "of {{max}} slots",
       "range": "Time range",
       "ranges": {
         "1h": "1 h",
@@ -623,8 +642,7 @@
         "6h": "6 h"
       },
       "series": "Players",
-      "title": "Players online",
-      "unchanged": "No change in the last hour"
+      "title": "Players online, last {{range}}"
     },
     "scaling": {
       "actions": {
@@ -642,15 +660,6 @@
         "STATIC": "A static group keeps its one server"
       },
       "title": "Recent scaling"
-    },
-    "servers": {
-      "draining": "Draining",
-      "paused": "{{id}} stopped starting servers",
-      "pausedReason": "Its servers kept failing to start. Fix the cause, then resume.",
-      "running": "Running",
-      "starting": "Starting",
-      "title": "Servers",
-      "total": "{{count}} total"
     },
     "startMaintenance": "Start maintenance"
   },

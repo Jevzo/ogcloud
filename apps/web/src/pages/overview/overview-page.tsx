@@ -1,4 +1,4 @@
-import { useOverviewGet } from "@ogcloud/api-client/react";
+import { useOverviewGet, useOverviewHistory } from "@ogcloud/api-client/react";
 import {
   Button,
   Card,
@@ -20,17 +20,25 @@ import { MaintenanceBadge } from "../network/maintenance-badge.tsx";
 import { useNetworkMaintenance } from "../network/network-actions.ts";
 import { RequestServerDialog } from "../servers/request-server-dialog.tsx";
 import { GroupsCard } from "./groups-card.tsx";
+import { KpiRow } from "./kpi-row.tsx";
+import { PausedCard } from "./paused-card.tsx";
 import { PlayersCard } from "./players-card.tsx";
 import { ScalingCard } from "./scaling-card.tsx";
-import { ServersCard } from "./servers-card.tsx";
 
-const GRID =
-  "grid grid-cols-[minmax(0,2fr)_minmax(var(--container-side-min),1fr)] gap-6";
+// The controller samples once a minute (D-0213).
+const HISTORY_REFRESH_MS = 60_000;
+// Thirds, like the KPI row above, so their edges line up. Each column stacks its own cards, so a card keeps its
+// content's height instead of its neighbour's (D-0231).
+const GRID = "grid grid-cols-3 items-start gap-6";
+const COLUMN = "flex min-w-0 flex-col gap-6";
 
 /** The network at a glance (D-0104): players, servers, groups and the autoscaler's latest decisions. */
 export function OverviewPage() {
   const { t } = useTranslation("web");
   const overview = useOverviewGet();
+  const history = useOverviewHistory(undefined, {
+    query: { refetchInterval: HISTORY_REFRESH_MS },
+  });
   const groupActions = useGroupActions();
 
   if (overview.data === undefined && overview.isError) {
@@ -78,18 +86,22 @@ export function OverviewPage() {
             {t("overview.eula")}
           </Note>
         )}
+        <KpiRow data={data} history={history.data?.data.points ?? []} />
         <div className={GRID}>
-          <PlayersCard online={data.playersOnline} max={data.maxPlayers} />
-          <ServersCard
-            byState={data.serversByState}
-            paused={data.groups.filter((group) => group.crashLoopPaused)}
-            onResume={(id) => groupActions.request("resume", id)}
-          />
-          <GroupsCard
-            groups={data.groups}
-            actionsFor={groupActions.actionsFor}
-          />
-          <ScalingCard entries={data.recentScaling} />
+          <div className={`${COLUMN} col-span-2`}>
+            <PlayersCard history={history} />
+            <GroupsCard
+              groups={data.groups}
+              actionsFor={groupActions.actionsFor}
+            />
+          </div>
+          <div className={COLUMN}>
+            <PausedCard
+              paused={data.groups.filter((group) => group.crashLoopPaused)}
+              onResume={(id) => groupActions.request("resume", id)}
+            />
+            <ScalingCard entries={data.recentScaling} />
+          </div>
         </div>
         {groupActions.dialogs}
       </div>

@@ -1,4 +1,3 @@
-import type { Tone } from "../components/badge.tsx";
 import { cn } from "../lib/cn.ts";
 
 const WARN_AT = 0.9;
@@ -35,48 +34,6 @@ export function Meter({
         )}
         style={{ width: `${ratio * 100}%` }}
       />
-    </span>
-  );
-}
-
-export interface Segment {
-  label: string;
-  value: number;
-  tone: Exclude<Tone, "neutral" | "highlight">;
-}
-
-const SEGMENT_FILL: Record<Segment["tone"], string> = {
-  success: "bg-success",
-  warning: "bg-warning",
-  danger: "bg-danger",
-  info: "bg-info",
-};
-
-/** Parts of a whole, such as servers by state; the list next to it carries the labels and counts. */
-export function StackedBar({
-  segments,
-  className,
-}: {
-  segments: readonly Segment[];
-  className?: string;
-}) {
-  const shown = segments.filter((segment) => segment.value > 0);
-  return (
-    <span
-      aria-hidden="true"
-      data-skeleton=""
-      className={cn(
-        "flex h-2.5 gap-0.5 overflow-hidden rounded-small",
-        className,
-      )}
-    >
-      {shown.map((segment) => (
-        <span
-          key={segment.label}
-          className={SEGMENT_FILL[segment.tone]}
-          style={{ flexGrow: segment.value }}
-        />
-      ))}
     </span>
   );
 }

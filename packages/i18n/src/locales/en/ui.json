@@ -60,6 +60,11 @@
     },
     "time": "Time"
   },
+  "filters": {
+    "clearAll": "Clear all",
+    "remove": "Remove the {{filter}} filter",
+    "title": "Filter"
+  },
   "list": {
     "matches_one": "{{count}} of {{total}} matches",
     "matches_other": "{{count}} of {{total}} match",
@@ -75,6 +80,7 @@
   },
   "table": {
     "actions": "Actions",
+    "details": "Show details",
     "failed": "This list did not load",
     "retry": "Try again",
     "sortedAscending": "Sorted ascending",
