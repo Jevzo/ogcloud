@@ -222,7 +222,8 @@ export function TimeSeriesChart({
   // useId's characters are not valid in a url(#…) reference.
   const id = `og-chart-${useId().replace(/[^\w-]/g, "")}`;
   const dim = (name: string) => (focus !== null && focus !== name ? DIMMED : 1);
-  const { leaving, gone } = useLeavingPlot(series, useLoading());
+  const loading = useLoading();
+  const { leaving, gone } = useLeavingPlot(series, loading);
   const scales = scalesOf(series, width, height);
   const { times, x, y } = scales;
   const plot = {
@@ -299,6 +300,8 @@ export function TimeSeriesChart({
               {/* The data draws in once, left to right, when the chart first appears. */}
               <clipPath id={`${id}-reveal`}>
                 <rect
+                  // Mounted anew when loading ends, so the draw-in plays for the real data, not the skeleton.
+                  key={loading ? "loading" : "ready"}
                   width={width}
                   height={height}
                   className="origin-left animate-draw-in [transform-box:fill-box]"

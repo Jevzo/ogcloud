@@ -37,8 +37,17 @@ const LIFETIME_MS: Record<ToastTone, number | null> = {
   danger: null,
 };
 
-/** More than this and the oldest leaves first. */
+/** More than this and the oldest leaves first, unless it is a failure, which waits for the reader. */
 const MAX_TOASTS = 3;
+
+function withinCap(toasts: QueuedToast[]): QueuedToast[] {
+  let excess = toasts.length - MAX_TOASTS;
+  return toasts.filter((toast) => {
+    if (excess <= 0 || toast.tone === "danger") return true;
+    excess -= 1;
+    return false;
+  });
+}
 
 const ICONS = {
   success: CircleCheck,
@@ -73,7 +82,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const show = useCallback((toast: ToastOptions) => {
     const id = nextId.current++;
-    setToasts((current) => [...current, { ...toast, id }].slice(-MAX_TOASTS));
+    setToasts((current) => withinCap([...current, { ...toast, id }]));
   }, []);
   const dismiss = useCallback(
     (id: number) =>

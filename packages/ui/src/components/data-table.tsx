@@ -261,9 +261,12 @@ export function DataTable<T extends RowData>({
                         open === undefined
                           ? undefined
                           : (event) => {
+                              // Clicks bubble here from portals too (a row's open ⋯ menu), and a drag selects text.
                               if (
                                 event.target instanceof Element &&
-                                event.target.closest(INTERACTIVE) === null
+                                event.currentTarget.contains(event.target) &&
+                                event.target.closest(INTERACTIVE) === null &&
+                                (window.getSelection()?.toString() ?? "") === ""
                               ) {
                                 open();
                               }
