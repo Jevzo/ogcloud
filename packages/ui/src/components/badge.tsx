@@ -5,7 +5,8 @@ import { cn } from "../lib/cn.ts";
 
 export type Tone =
   | "neutral"
-  | "accent"
+  /** Honey: marks the one item that stands apart, such as the default group or the viewer's own row (D-0231). */
+  | "highlight"
   | "success"
   | "warning"
   | "danger"
@@ -17,7 +18,7 @@ const badge = cva(
     variants: {
       tone: {
         neutral: "bg-surface-3 text-text-2",
-        accent: "bg-accent-soft text-accent",
+        highlight: "bg-honey text-on-honey",
         success: "bg-success-soft text-success",
         warning: "bg-warning-soft text-warning",
         danger: "bg-danger-soft text-danger",

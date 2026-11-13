@@ -62,7 +62,7 @@ export function PermissionGroupsPage() {
                 {cell.getValue()}
               </Link>
               {cell.row.original.settings.defaultGroup ? (
-                <Badge tone="accent" icon={Star}>
+                <Badge tone="highlight" icon={Star}>
                   {t("permissions.default")}
                 </Badge>
               ) : null}
@@ -99,7 +99,7 @@ export function PermissionGroupsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={t("nav.permissions")}
         actions={

@@ -42,11 +42,10 @@ export function Meter({
 export interface Segment {
   label: string;
   value: number;
-  tone: Exclude<Tone, "neutral">;
+  tone: Exclude<Tone, "neutral" | "highlight">;
 }
 
 const SEGMENT_FILL: Record<Segment["tone"], string> = {
-  accent: "bg-accent",
   success: "bg-success",
   warning: "bg-warning",
   danger: "bg-danger",

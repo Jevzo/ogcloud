@@ -74,7 +74,7 @@ export function ClientsPage() {
                 {t("clients.firstParty")}
               </Badge>
             ) : (
-              <Badge tone="accent" icon={Bot}>
+              <Badge tone="neutral" icon={Bot}>
                 {t("clients.machine")}
               </Badge>
             ),
@@ -99,7 +99,7 @@ export function ClientsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={t("nav.clients")}
         actions={

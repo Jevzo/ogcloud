@@ -97,7 +97,7 @@ export function EmptyState({
   );
 }
 
-const NOTE_TONES: Record<Exclude<Tone, "neutral" | "accent">, string> = {
+const NOTE_TONES: Record<Exclude<Tone, "neutral" | "highlight">, string> = {
   success: "bg-success-soft [&>svg]:text-success",
   warning: "bg-warning-soft [&>svg]:text-warning",
   danger: "bg-danger-soft [&>svg]:text-danger",

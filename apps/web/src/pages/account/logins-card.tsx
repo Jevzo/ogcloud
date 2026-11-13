@@ -113,7 +113,7 @@ export function LoginsCard() {
                 >
                   {appOf(login)}
                   {login.current ? (
-                    <Badge tone="accent">
+                    <Badge tone="highlight">
                       {t("account.logins.thisDevice")}
                     </Badge>
                   ) : null}

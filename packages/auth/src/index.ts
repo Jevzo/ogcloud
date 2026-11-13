@@ -5,6 +5,7 @@ export {
   AuthSession,
   SignInRequired,
   type SignOutChannel,
+  TokenRequestFailed,
 } from "./session.ts";
 export type {
   LoginStore,

@@ -150,9 +150,9 @@ export function EditorForm({
 }: EditorFormProps) {
   const save = () => void form.handleSubmit();
   return (
-    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-4">
+    <div className="grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-6">
       <form
-        className="flex min-w-0 flex-col gap-4"
+        className="flex min-w-0 flex-col gap-6"
         onSubmit={(event) => {
           event.preventDefault();
           save();
@@ -160,7 +160,7 @@ export function EditorForm({
       >
         <fieldset
           disabled={!canWrite}
-          className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0"
+          className="m-0 flex min-w-0 flex-col gap-6 border-0 p-0"
         >
           {children}
         </fieldset>
@@ -173,7 +173,7 @@ export function EditorForm({
           />
         ) : null}
       </form>
-      <div className="sticky top-16 flex min-w-0 flex-col gap-4">{aside}</div>
+      <div className="sticky top-18 flex min-w-0 flex-col gap-6">{aside}</div>
     </div>
   );
 }

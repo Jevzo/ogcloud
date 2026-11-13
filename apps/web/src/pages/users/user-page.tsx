@@ -124,14 +124,14 @@ function UserEditor({ user }: { user: UserView }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={<Value>{user.username}</Value>}
         badges={
           <>
             <UserStatusBadge enabled={user.enabled} />
             {user.id === me.id ? (
-              <Badge tone="accent" icon={UserRound}>
+              <Badge tone="highlight" icon={UserRound}>
                 {t("users.you")}
               </Badge>
             ) : null}

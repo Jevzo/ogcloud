@@ -25,7 +25,7 @@ import { ScalingCard } from "./scaling-card.tsx";
 import { ServersCard } from "./servers-card.tsx";
 
 const GRID =
-  "grid grid-cols-[minmax(0,2fr)_minmax(var(--container-side-min),1fr)] gap-4";
+  "grid grid-cols-[minmax(0,2fr)_minmax(var(--container-side-min),1fr)] gap-6";
 
 /** The network at a glance (D-0104): players, servers, groups and the autoscaler's latest decisions. */
 export function OverviewPage() {
@@ -35,7 +35,7 @@ export function OverviewPage() {
 
   if (overview.data === undefined && overview.isError) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <PageHeader title={t("nav.overview")} />
         <Card>
           {t("errors.generic", {
@@ -51,7 +51,7 @@ export function OverviewPage() {
 
   return (
     <Loading when={loading}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <PageHeader
           title={t("nav.overview")}
           badges={<MaintenanceBadge maintenance={data.maintenance} />}

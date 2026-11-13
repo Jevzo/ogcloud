@@ -16,12 +16,12 @@ export function PrivacyPage() {
   const { t } = useTranslation("web");
   const privacy = usePrivacyActions();
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader title={t("nav.privacy")} />
       <Note tone="info" icon={Info}>
         {t("privacy.kept")}
       </Note>
-      <div className="grid grid-cols-2 items-start gap-4">
+      <div className="grid grid-cols-2 items-start gap-6">
         <PlayerSearch privacy={privacy} />
         <UserSearch privacy={privacy} />
       </div>

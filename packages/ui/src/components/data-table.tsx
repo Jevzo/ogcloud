@@ -177,7 +177,7 @@ export function DataTable<T extends RowData>({
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
-                            "inline-flex cursor-pointer items-center gap-1 hover:text-text",
+                            "inline-flex min-h-6 cursor-pointer items-center gap-1 hover:text-text",
                             // A right-aligned head keeps its label on the column's edge and its arrow inside.
                             numeric && "flex-row-reverse",
                           )}

@@ -42,6 +42,17 @@ export class SignInRequired extends Error {
   }
 }
 
+/** The token endpoint answered with something other than tokens or a refusal, such as 429 from its rate limit. */
+export class TokenRequestFailed extends Error {
+  readonly status: number;
+
+  constructor(path: string, status: number) {
+    super(`${path} answered ${status}`);
+    this.name = "TokenRequestFailed";
+    this.status = status;
+  }
+}
+
 // An access token is renewed when less than this is left, so a request never leaves with one about to expire.
 const RENEW_BEFORE_MS = 30_000;
 const SCOPE = "openid";
@@ -240,7 +251,7 @@ export class AuthSession {
         `${path} refused the request with ${response.status}`,
       );
     }
-    if (!response.ok) throw new Error(`${path} answered ${response.status}`);
+    if (!response.ok) throw new TokenRequestFailed(path, response.status);
     return response;
   }
 }

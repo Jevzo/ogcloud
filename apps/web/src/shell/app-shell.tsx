@@ -1,6 +1,5 @@
 import { useMeGet } from "@ogcloud/api-client/react";
 import {
-  Card,
   Loading,
   PageHeader,
   type ToastTone,
@@ -28,6 +27,7 @@ import { AccountMenu } from "./account-menu.tsx";
 import { CommandPalette } from "./command-palette.tsx";
 import { Header } from "./header.tsx";
 import { LinkRequired } from "./link-required.tsx";
+import { ShellFailure } from "./shell-failure.tsx";
 import { Sidebar } from "./sidebar.tsx";
 
 /** Everything behind sign-in: the sidebar, the header with search and live state, and the page. */
@@ -69,15 +69,7 @@ export function AppShell() {
   );
 
   if (me.isError && me.data === undefined) {
-    return (
-      <main className="grid min-h-screen place-items-center p-6">
-        <Card className="max-w-md p-6">
-          {t("errors.generic", {
-            detail: me.error instanceof Error ? me.error.message : "",
-          })}
-        </Card>
-      </main>
-    );
+    return <ShellFailure error={me.error} onRetry={() => void me.refetch()} />;
   }
   // Until the profile is in, the shell shows itself as skeletons; pages wait, since what they may load depends on it.
   const loading = me.data === undefined;

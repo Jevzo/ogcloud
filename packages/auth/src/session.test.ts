@@ -6,6 +6,7 @@ import {
   AuthSession,
   SignInRequired,
   type SignOutChannel,
+  TokenRequestFailed,
 } from "./session.ts";
 import type {
   LoginStore,
@@ -30,6 +31,8 @@ class FakeServer {
   revoked: string[] = [];
   refuseRevocation = false;
   unavailable = false;
+  /** The status every token request answers with while set, such as 429 from a rate limit. */
+  failWith: number | undefined;
   private hold: Promise<void> | undefined;
   private issued = 0;
 
@@ -45,6 +48,9 @@ class FakeServer {
       return new Response("", { status: 200 });
     }
     if (this.unavailable) return new Response("", { status: 503 });
+    if (this.failWith !== undefined) {
+      return new Response("", { status: this.failWith });
+    }
     if (fields.grant_type === "refresh_token") {
       await this.hold;
       if (
@@ -311,6 +317,22 @@ test("a renewal the server cannot answer keeps the login for the next try", asyn
   assert.equal((await logins.read())?.refreshToken, "refresh-0");
   server.unavailable = false;
   assert.equal(await session.accessToken(), "access-1");
+});
+
+test("a renewal the rate limit turns away says so with its status", async () => {
+  const server = new FakeServer();
+  server.failWith = 429;
+  const { session, logins } = setup(server, {
+    refreshToken: "refresh-0",
+    idToken: undefined,
+  });
+
+  await assert.rejects(
+    session.accessToken(),
+    (error: unknown) =>
+      error instanceof TokenRequestFailed && error.status === 429,
+  );
+  assert.equal((await logins.read())?.refreshToken, "refresh-0");
 });
 
 test("signing out while another tab renews revokes the token that renewal stored", async () => {

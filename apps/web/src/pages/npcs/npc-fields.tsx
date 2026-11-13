@@ -23,7 +23,7 @@ export const NpcFields = withFieldGroup({
     const subtitle = useTextValidator("NPC_SUBTITLE");
     const groupOptions = groupIds.map((id) => ({ value: id, label: id }));
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <Card title={t("npcs.form.look")}>
           <div className="flex flex-col gap-3">
             <group.AppField name="groupId">

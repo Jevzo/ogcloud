@@ -17,7 +17,7 @@ export function ActivityPage() {
     unseen > 0 ? "alerts" : "audit",
   );
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader title={t("nav.activity")} />
       <Tabs
         label={t("activity.sections")}

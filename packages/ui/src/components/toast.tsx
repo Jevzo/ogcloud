@@ -28,13 +28,17 @@ interface QueuedToast extends ToastOptions {
   id: number;
 }
 
-// Anything but a confirmation stays longer, since the reader did not just cause it or must act on it.
-const LIFETIME_MS: Record<ToastTone, number> = {
+// Anything but a confirmation stays longer, since the reader did not just cause it; a failure stays until
+// dismissed, since the reader must act on it (D-0231).
+const LIFETIME_MS: Record<ToastTone, number | null> = {
   success: 5000,
   info: 8000,
   warning: 8000,
-  danger: 8000,
+  danger: null,
 };
+
+/** More than this and the oldest leaves first. */
+const MAX_TOASTS = 3;
 
 const ICONS = {
   success: CircleCheck,
@@ -69,7 +73,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const show = useCallback((toast: ToastOptions) => {
     const id = nextId.current++;
-    setToasts((current) => [...current, { ...toast, id }]);
+    setToasts((current) => [...current, { ...toast, id }].slice(-MAX_TOASTS));
   }, []);
   const dismiss = useCallback(
     (id: number) =>
@@ -130,7 +134,7 @@ function ToastItem({
       ) : null}
       <Primitive.Close
         aria-label={t("actions.dismiss")}
-        className="grid size-button-sm shrink-0 cursor-pointer place-items-center rounded-control text-text-3 hover:bg-surface-3 hover:text-text"
+        className="grid size-button-sm shrink-0 cursor-pointer place-items-center rounded-control text-text-3 hover:bg-text/7 hover:text-text"
       >
         <X aria-hidden="true" size={15} />
       </Primitive.Close>
@@ -140,22 +144,22 @@ function ToastItem({
 
 /**
  * Calls [close] after [lifetime] ms, counting only while neither the pointer nor the keyboard focus is on the toast,
- * so a reader can always finish it.
+ * so a reader can always finish it; without a lifetime, only the reader closes it.
  */
-function useCloseTimer(lifetime: number, close: () => void) {
+function useCloseTimer(lifetime: number | null, close: () => void) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const remaining = useRef(lifetime);
+  const remaining = useRef(lifetime ?? 0);
   const held = hovered || focused;
   useEffect(() => {
-    if (held) return;
+    if (held || lifetime === null) return;
     const started = performance.now();
     const timer = window.setTimeout(close, remaining.current);
     return () => {
       window.clearTimeout(timer);
       remaining.current -= performance.now() - started;
     };
-  }, [held, close]);
+  }, [held, close, lifetime]);
   return {
     onPointerEnter: () => setHovered(true),
     onPointerLeave: () => setHovered(false),

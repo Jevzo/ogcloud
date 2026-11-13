@@ -73,7 +73,7 @@ export function ScalingTab() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
       <Card flush>
         <DataTable

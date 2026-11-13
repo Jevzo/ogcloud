@@ -69,7 +69,7 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
       actions={
         <Link
           to="/groups"
-          className="font-label text-accent text-small hover:underline"
+          className="inline-flex min-h-6 items-center font-label text-accent text-small hover:underline"
         >
           {t("overview.groups.all")}
         </Link>

@@ -65,7 +65,7 @@ export function PlayerPage() {
 
   return (
     <Loading when={loading}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <PageHeader
           title={<Value>{view.name}</Value>}
           badges={
@@ -120,7 +120,7 @@ export function PlayerPage() {
             </>
           }
         />
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] items-start gap-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(var(--container-side-min),0.6fr)] items-start gap-6">
           <Card title={t("players.detail.status")}>
             <Details>
               {session === null ? (

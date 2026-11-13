@@ -72,7 +72,7 @@ export function GroupCreatePage() {
 
   return (
     <form
-      className="flex max-w-form flex-col gap-4"
+      className="flex max-w-form flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault();
         void form.handleSubmit();

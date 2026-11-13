@@ -17,7 +17,7 @@ export function AccountPage() {
   const { t } = useTranslation("web");
   const [section, setSection] = useState<Section>("profile");
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader title={t("account.title")} />
       <Tabs
         label={t("account.sections")}
@@ -28,7 +28,7 @@ export function AccountPage() {
             value: "profile",
             label: t("account.tabs.profile"),
             content: (
-              <div className="flex max-w-form flex-col gap-4">
+              <div className="flex max-w-form flex-col gap-6">
                 <ProfileCard />
                 <MinecraftCard />
                 <AppearanceCard />
@@ -39,7 +39,7 @@ export function AccountPage() {
             value: "security",
             label: t("account.tabs.security"),
             content: (
-              <div className="flex max-w-form flex-col gap-4">
+              <div className="flex max-w-form flex-col gap-6">
                 <TwoFactorCard />
                 <LoginsCard />
                 <PasswordCard />

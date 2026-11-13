@@ -22,7 +22,7 @@ export const GroupSettingsFields = withFieldGroup({
     const role = type === "PROXY" ? "PROXY" : "BACKEND";
     const seconds = t("groups.form.seconds");
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <Card title={t("groups.form.runtime")}>
           <group.AppField name="profileId">
             {(field) => (

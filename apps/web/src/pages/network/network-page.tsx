@@ -131,7 +131,7 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   const started = (message: string) => () => toast({ message });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={t("nav.network")}
         badges={<MaintenanceBadge maintenance={view.settings.maintenance} />}

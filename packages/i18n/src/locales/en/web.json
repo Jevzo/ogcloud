@@ -1017,6 +1017,14 @@
   "shell": {
     "account": "Account settings",
     "breadcrumbs": "Breadcrumb",
+    "failure": {
+      "other": "Your account did not load.",
+      "server": "OgCloud had a problem answering. Try again in a moment.",
+      "signIn": "Sign in again",
+      "title": "The dashboard could not load",
+      "tooMany": "Too many page loads in a short time. Wait a minute, then try again.",
+      "unreachable": "OgCloud did not answer. Check your connection, then try again."
+    },
     "density": {
       "comfortable": "Comfortable",
       "compact": "Compact",

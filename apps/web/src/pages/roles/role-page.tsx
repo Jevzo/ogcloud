@@ -103,7 +103,7 @@ function RoleEditor({ role }: { role: RoleView }) {
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={<Value>{role.name}</Value>}
         badges={

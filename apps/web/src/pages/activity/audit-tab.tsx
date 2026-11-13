@@ -111,7 +111,7 @@ export function AuditTab() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <Card title={t("activity.audit.filters")}>
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           {(["actor", "action", "targetType"] as const).map((key) => (
