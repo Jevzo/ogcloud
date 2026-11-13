@@ -1,13 +1,5 @@
 import { usePlayerGet } from "@ogcloud/api-client/react";
-import {
-  Badge,
-  Button,
-  Card,
-  CopyField,
-  Loading,
-  PageHeader,
-  Value,
-} from "@ogcloud/ui";
+import { Badge, Button, Card, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -17,10 +9,11 @@ import {
   LogOut,
   UserX,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
-import { useFormat } from "../../format.ts";
+import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { placeholderPlayer } from "../../placeholders.ts";
 import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
@@ -32,7 +25,6 @@ const REFRESH_MS = 10_000;
 /** One player: where they are, their rank and since when the network knows them. */
 export function PlayerPage() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const { playerId } = useParams({ from: "/app/players/$playerId" });
   const player = usePlayerGet(playerId, {
     query: { refetchInterval: REFRESH_MS },
@@ -68,7 +60,6 @@ export function PlayerPage() {
     permissionGroupId: view.permissionGroupId,
     online: session !== null,
   };
-  const now = Date.now();
   const where = (id: string | null | undefined) =>
     id == null ? "—" : (servers.get(id) ?? id);
 
@@ -134,7 +125,7 @@ export function PlayerPage() {
             <Details>
               {session === null ? (
                 <DetailRow label={t("players.columns.lastSeen")}>
-                  {format.ago(new Date(view.lastSeenAt), now)}
+                  <Ago at={view.lastSeenAt} className="" />
                 </DetailRow>
               ) : (
                 <>
@@ -149,31 +140,32 @@ export function PlayerPage() {
                     </span>
                   </DetailRow>
                   <DetailRow label={t("players.columns.connected")}>
-                    {format.ago(new Date(session.connectedAt), now)}
+                    <Ago at={session.connectedAt} className="" />
                   </DetailRow>
                 </>
               )}
               <DetailRow label={t("players.columns.rank")}>
-                {view.rankExpiresAt == null
-                  ? t("players.detail.permanent", {
-                      group: view.permissionGroupId,
-                    })
-                  : t("players.rankUntil", {
-                      group: view.permissionGroupId,
-                      ago: format.ago(new Date(view.rankExpiresAt), now),
-                    })}
+                {view.rankExpiresAt == null ? (
+                  t("players.detail.permanent", {
+                    group: view.permissionGroupId,
+                  })
+                ) : (
+                  <Trans
+                    t={t}
+                    i18nKey="players.rankUntil"
+                    values={{ group: view.permissionGroupId }}
+                    components={{
+                      ago: <Ago at={view.rankExpiresAt} className="" />,
+                    }}
+                  />
+                )}
               </DetailRow>
               <DetailRow label={t("players.columns.firstSeen")}>
-                {format.ago(new Date(view.firstSeenAt), now)}
+                <Ago at={view.firstSeenAt} className="" />
               </DetailRow>
             </Details>
           </Card>
-          <Card title={t("players.detail.identity")}>
-            <div className="flex flex-col gap-1.5">
-              <span className="font-label">{t("players.detail.uuid")}</span>
-              <CopyField value={view.uuid} label={t("players.detail.uuid")} />
-            </div>
-          </Card>
+          <IdentityCard label={t("players.detail.uuid")} id={view.uuid} />
         </div>
         {actions.dialogs}
         {privacy.dialogs}

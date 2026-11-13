@@ -2,13 +2,12 @@ import { Card, EmptyState } from "@ogcloud/ui";
 import { BellOff, TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { alertMessage, useAlerts } from "../../alerts.ts";
-import { useFormat } from "../../format.ts";
 
 /** Alerts that arrived while the dashboard was open; opening this marks them seen. */
 export function AlertsTab() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const { alerts, markSeen } = useAlerts();
   useEffect(() => markSeen(), [markSeen]);
 
@@ -35,9 +34,7 @@ export function AlertsTab() {
               className="shrink-0 text-danger"
             />
             <span className="flex-1">{alertMessage(t, alert)}</span>
-            <span className="text-meta text-text-3">
-              {format.ago(new Date(alert.at), Date.now())}
-            </span>
+            <Ago at={alert.at} className="text-meta text-text-3" />
           </li>
         ))}
       </ol>

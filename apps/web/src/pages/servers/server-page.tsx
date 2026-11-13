@@ -1,13 +1,5 @@
 import { useOverviewGet, useServerGet } from "@ogcloud/api-client/react";
-import {
-  Button,
-  Card,
-  CopyField,
-  Loading,
-  Meter,
-  PageHeader,
-  Value,
-} from "@ogcloud/ui";
+import { Button, Card, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { Link, useParams } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
@@ -18,9 +10,11 @@ import {
   Upload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
-import { useFormat } from "../../format.ts";
+import { IdentityCard } from "../../identity-card.tsx";
+import { Load } from "../../load.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { placeholderServer } from "../../placeholders.ts";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -32,7 +26,6 @@ const REFRESH_MS = 10_000;
 /** One server: where it is in its life, its players, and what can be done to it. */
 export function ServerPage() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const { serverId } = useParams({ from: "/app/servers/$serverId" });
   const server = useServerGet(serverId, {
     query: { refetchInterval: REFRESH_MS },
@@ -66,9 +59,6 @@ export function ServerPage() {
     groupId: view.groupId,
     groupType: view.groupType,
   };
-  const now = Date.now();
-  const ago = (at: string | null | undefined) =>
-    at == null ? "—" : format.ago(new Date(at), now);
   const more = [
     ...(actions.can.push
       ? [
@@ -135,17 +125,11 @@ export function ServerPage() {
               <DetailRow label={t("servers.columns.state")}>
                 <span className="flex items-center gap-2">
                   <ServerStateBadge state={view.state} />
-                  <span className="text-text-3">{ago(view.stateSince)}</span>
+                  <Ago at={view.stateSince} className="text-text-3" />
                 </span>
               </DetailRow>
               <DetailRow label={t("servers.columns.players")}>
-                <span className="inline-flex items-center gap-2.5">
-                  <Meter value={view.players} max={view.maxPlayers} />
-                  {t("groups.load", {
-                    players: format.number(view.players),
-                    capacity: format.number(view.maxPlayers),
-                  })}
-                </span>
+                <Load value={view.players} max={view.maxPlayers} />
               </DetailRow>
               {view.gameState == null ? null : (
                 <DetailRow label={t("servers.columns.game")}>
@@ -153,10 +137,10 @@ export function ServerPage() {
                 </DetailRow>
               )}
               <DetailRow label={t("servers.columns.started")}>
-                {ago(view.startedAt)}
+                <Ago at={view.startedAt} className="" />
               </DetailRow>
               <DetailRow label={t("servers.columns.heartbeat")}>
-                {ago(view.lastHeartbeatAt)}
+                <Ago at={view.lastHeartbeatAt} className="" />
               </DetailRow>
               <DetailRow label={t("servers.columns.group")}>
                 <GroupLink id={view.groupId} />
@@ -166,17 +150,11 @@ export function ServerPage() {
               </DetailRow>
             </Details>
           </Card>
-          <Card title={t("servers.detail.identity")}>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="font-label">{t("servers.detail.id")}</span>
-                <CopyField value={view.id} label={t("servers.detail.id")} />
-              </div>
-              <p className="text-small text-text-3">
-                {t("servers.detail.idHint")}
-              </p>
-            </div>
-          </Card>
+          <IdentityCard
+            label={t("servers.detail.id")}
+            id={view.id}
+            hint={t("servers.detail.idHint")}
+          />
         </div>
         {actions.dialogs}
       </div>

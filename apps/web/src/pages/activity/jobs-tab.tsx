@@ -6,7 +6,6 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
-  Meter,
   type Tone,
 } from "@ogcloud/ui";
 import {
@@ -21,6 +20,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { agoColumn, monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
+import { Load } from "../../load.tsx";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { placeholderJob } from "../../placeholders.ts";
@@ -91,18 +91,14 @@ export function JobsTab() {
         }),
         columns.accessor("completedSteps", {
           header: () => t("activity.jobs.progress"),
-          cell: (cell) => {
-            const total = cell.row.original.totalSteps;
-            return (
-              <span className="inline-flex items-center gap-2.5">
-                <Meter kind="progress" value={cell.getValue()} max={total} />
-                {t("groups.load", {
-                  players: cell.getValue(),
-                  capacity: total,
-                })}
-              </span>
-            );
-          },
+          meta: { numeric: true },
+          cell: (cell) => (
+            <Load
+              kind="progress"
+              value={cell.getValue()}
+              max={cell.row.original.totalSteps}
+            />
+          ),
         }),
         columns.accessor("message", {
           header: () => t("activity.jobs.message"),

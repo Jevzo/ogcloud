@@ -30,10 +30,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { type ReactNode, useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { ActionDialog } from "../../action-dialog.tsx";
+import { Ago } from "../../ago.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 import { usePendingAction } from "../../pending-action.ts";
 import { useMe } from "../../permissions.ts";
@@ -307,8 +307,6 @@ type PasskeyAction = "rename" | "remove";
 
 function PasskeyRows() {
   const { t } = useTranslation("web");
-  const format = useFormat();
-  const now = Date.now();
   const passkeys = useMeListPasskeys();
   const pending = usePendingAction<PasskeyAction, PasskeyView>();
   const failure = loadFailure(passkeys);
@@ -332,10 +330,16 @@ function PasskeyRows() {
             key={passkey.id}
             icon={Fingerprint}
             title={passkey.label}
-            detail={t("account.passkeys.detail", {
-              added: format.ago(new Date(passkey.createdAt), now),
-              used: format.ago(new Date(passkey.lastUsedAt), now),
-            })}
+            detail={
+              <Trans
+                t={t}
+                i18nKey="account.passkeys.detail"
+                components={{
+                  added: <Ago at={passkey.createdAt} className="" />,
+                  used: <Ago at={passkey.lastUsedAt} className="" />,
+                }}
+              />
+            }
           >
             <Button
               size="sm"

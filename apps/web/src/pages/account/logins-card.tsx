@@ -15,14 +15,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppWindow, LogOut, MonitorSmartphone } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { WEB_CLIENT } from "../../auth.ts";
 import {
   loadFailure,
   useConfirmFailure,
   useFailureToast,
 } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 import { placeholderLogin } from "../../placeholders.ts";
 
@@ -46,7 +46,6 @@ const isApp = (clientId: string): clientId is keyof typeof APPS =>
  */
 export function LoginsCard() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const toast = useToast();
   const failed = useFailureToast();
   const keepOpen = useConfirmFailure();
@@ -58,15 +57,12 @@ export function LoginsCard() {
   const loading = logins.data === undefined && failure === undefined;
   const list = logins.data?.data ?? (loading ? PLACEHOLDER_LOGINS : []);
   const others = list.filter((login) => !login.current);
-  const now = Date.now();
   const refresh = () =>
     queries.invalidateQueries({ queryKey: getMeListLoginsQueryKey() });
   const appOf = (login: LoginView) =>
     isApp(login.clientId)
       ? t(`account.logins.apps.${APPS[login.clientId]}`)
       : login.clientId;
-  const ago = (at: string | null | undefined) =>
-    at == null ? "" : format.ago(new Date(at), now);
 
   const signOut = (login: LoginView) =>
     revoke.mutateAsync({ id: login.id }).then(() => {
@@ -126,10 +122,14 @@ export function LoginsCard() {
                   data-skeleton=""
                   className="self-start text-meta text-text-3"
                 >
-                  {t("account.logins.detail", {
-                    signedIn: ago(login.signedInAt),
-                    active: ago(login.lastActiveAt),
-                  })}
+                  <Trans
+                    t={t}
+                    i18nKey="account.logins.detail"
+                    components={{
+                      signedIn: <Ago at={login.signedInAt} className="" />,
+                      active: <Ago at={login.lastActiveAt} className="" />,
+                    }}
+                  />
                 </span>
               </span>
               {login.current ? null : (

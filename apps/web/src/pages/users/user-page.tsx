@@ -10,7 +10,6 @@ import {
   Badge,
   Button,
   Card,
-  CopyField,
   Loading,
   Note,
   PageHeader,
@@ -21,11 +20,11 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { KeyRound, Lock, LogOut, UserRound, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { DetailRow, Details } from "../../details.tsx";
+import { DetailRow } from "../../details.tsx";
 import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
+import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { isOwner, useIsOwner, useMe } from "../../permissions.ts";
 import { placeholderUser } from "../../placeholders.ts";
@@ -172,25 +171,21 @@ function UserEditor({ user }: { user: UserView }) {
         changes={changes}
         saving={saving}
         aside={
-          <Card title={t("users.detail.account")}>
-            <div className="flex flex-col gap-3">
-              <Details>
-                <DetailRow label={t("users.columns.minecraft")}>
-                  {user.linkedPlayerName == null ? (
-                    <span className="text-text-3">{t("users.notLinked")}</span>
-                  ) : (
-                    <span className="font-mono text-mono">
-                      {user.linkedPlayerName}
-                    </span>
-                  )}
-                </DetailRow>
-                <DetailRow label={t("users.columns.created")}>
-                  <Ago at={user.createdAt} />
-                </DetailRow>
-              </Details>
-              <CopyField value={user.id} label={t("users.detail.id")} />
-            </div>
-          </Card>
+          <IdentityCard
+            label={t("users.detail.id")}
+            id={user.id}
+            createdAt={user.createdAt}
+          >
+            <DetailRow label={t("users.columns.minecraft")}>
+              {user.linkedPlayerName == null ? (
+                <span className="text-text-3">{t("users.notLinked")}</span>
+              ) : (
+                <span className="font-mono text-mono">
+                  {user.linkedPlayerName}
+                </span>
+              )}
+            </DetailRow>
+          </IdentityCard>
         }
       >
         {canWrite ? null : (

@@ -4,14 +4,13 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
-  Meter,
   type RowActions,
 } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
 import { Layers } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useFormat } from "../../format.ts";
+import { Load, ServerCount } from "../../load.tsx";
 import { placeholderGroupOverview } from "../../placeholders.ts";
 import { GroupLink, GroupStatusBadge } from "../groups/group-status.tsx";
 
@@ -25,7 +24,6 @@ interface GroupsCardProps {
 /** Every group with its servers, players against capacity, and state. */
 export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
   const { t } = useTranslation("web");
-  const format = useFormat();
 
   const groupColumns = useMemo(
     () =>
@@ -40,32 +38,19 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
         }),
         columns.accessor("running", {
           header: () => t("groups.columns.servers"),
+          meta: { numeric: true },
           cell: (cell) => (
-            <span>
-              {format.number(cell.getValue())}
-              {cell.row.original.pending > 0 ? (
-                <span className="text-text-3">
-                  {" "}
-                  {t("groups.starting", {
-                    count: cell.row.original.pending,
-                  })}
-                </span>
-              ) : null}
-            </span>
+            <ServerCount
+              running={cell.getValue()}
+              pending={cell.row.original.pending}
+            />
           ),
         }),
         columns.accessor("players", {
           header: () => t("groups.columns.players"),
+          meta: { numeric: true },
           cell: (cell) => (
-            <span className="inline-flex items-center gap-2.5">
-              <Meter value={cell.getValue()} max={cell.row.original.capacity} />
-              <span>
-                {t("groups.load", {
-                  players: format.number(cell.getValue()),
-                  capacity: format.number(cell.row.original.capacity),
-                })}
-              </span>
-            </span>
+            <Load value={cell.getValue()} max={cell.row.original.capacity} />
           ),
         }),
         columns.display({
@@ -74,7 +59,7 @@ export function GroupsCard({ groups, actionsFor }: GroupsCardProps) {
           cell: (cell) => <GroupStatusBadge group={cell.row.original} />,
         }),
       ]),
-    [t, format],
+    [t],
   );
 
   return (

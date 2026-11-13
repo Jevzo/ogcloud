@@ -46,6 +46,7 @@ export function RuntimeCard() {
         }),
         columns.accessor("javaVersion", {
           header: () => t("network.runtime.java"),
+          meta: { numeric: true },
         }),
         columns.accessor((profile) => profile.artifacts.length, {
           id: "artifacts",

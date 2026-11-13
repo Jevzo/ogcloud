@@ -84,12 +84,14 @@ export function PermissionGroupsPage() {
         }),
         columns.accessor("settings.weight", {
           header: () => t("permissions.columns.weight"),
+          meta: { numeric: true },
         }),
         columns.accessor(
           (group) => Object.keys(group.settings.permissions).length,
           {
             id: "nodes",
             header: () => t("permissions.columns.nodes"),
+            meta: { numeric: true },
           },
         ),
       ]),

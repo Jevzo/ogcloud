@@ -72,7 +72,7 @@ export function RolesPage() {
         columns.accessor((role) => role.permissions.length, {
           id: "permissions",
           header: () => t("roles.columns.permissions"),
-          cell: (cell) => t("access.count", { count: cell.getValue() }),
+          meta: { numeric: true },
         }),
       ]),
     [t],

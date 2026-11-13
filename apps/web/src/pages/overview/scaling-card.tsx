@@ -9,7 +9,7 @@ import {
   Square,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useFormat } from "../../format.ts";
+import { Ago } from "../../ago.tsx";
 
 const ACTION_LOOK: Record<
   ScalingLogView["action"],
@@ -28,8 +28,6 @@ export function ScalingCard({
   entries: readonly ScalingLogView[];
 }) {
   const { t } = useTranslation("web");
-  const format = useFormat();
-  const now = Date.now();
 
   return (
     <Card
@@ -49,7 +47,6 @@ export function ScalingCard({
         <ol className="flex flex-col">
           {entries.map((entry) => {
             const { icon: Icon, tint } = ACTION_LOOK[entry.action];
-            const at = new Date(entry.occurredAt);
             const title = t(`overview.scaling.actions.${entry.action}`, {
               group: entry.groupId,
             });
@@ -78,13 +75,10 @@ export function ScalingCard({
                     {reason}
                   </span>
                 </span>
-                <time
-                  data-skeleton=""
-                  dateTime={entry.occurredAt}
+                <Ago
+                  at={entry.occurredAt}
                   className="shrink-0 text-meta text-text-3"
-                >
-                  {format.ago(at, now)}
-                </time>
+                />
               </li>
             );
           })}

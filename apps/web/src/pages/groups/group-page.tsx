@@ -16,7 +16,6 @@ import {
   Button,
   Card,
   Loading,
-  Meter,
   Note,
   PageHeader,
   Tabs,
@@ -45,6 +44,7 @@ import {
   useViewSettingsForm,
 } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
+import { Load, ServerCount } from "../../load.tsx";
 import { LoadFailed } from "../../load-failed.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -283,25 +283,11 @@ function LivePanel({
           <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2">
             <dt className="text-text-3">{t("groups.columns.servers")}</dt>
             <dd className="m-0">
-              <Value>
-                {format.number(load.running)}
-                {load.pending > 0 ? (
-                  <span className="text-text-3">
-                    {" "}
-                    {t("groups.starting", { count: load.pending })}
-                  </span>
-                ) : null}
-              </Value>
+              <ServerCount running={load.running} pending={load.pending} />
             </dd>
             <dt className="text-text-3">{t("groups.columns.players")}</dt>
-            <dd className="m-0 inline-flex items-center gap-2.5">
-              <Meter value={load.players} max={load.capacity} />
-              <Value>
-                {t("groups.load", {
-                  players: format.number(load.players),
-                  capacity: format.number(load.capacity),
-                })}
-              </Value>
+            <dd className="m-0">
+              <Load value={load.players} max={load.capacity} />
             </dd>
           </dl>
         </Loading>

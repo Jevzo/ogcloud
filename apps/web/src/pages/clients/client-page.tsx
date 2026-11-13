@@ -16,7 +16,6 @@ import {
   Button,
   Card,
   ConfirmDialog,
-  CopyField,
   Loading,
   Note,
   PageHeader,
@@ -28,13 +27,12 @@ import { AppWindow, Bot, KeyRound, Lock } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
-import { Ago } from "../../ago.tsx";
 import { useDeleteAction } from "../../delete-action.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
-import { DetailRow, Details } from "../../details.tsx";
 import { EditorForm, useListSave } from "../../editing.tsx";
 import { useConfirmFailure } from "../../errors.ts";
 import { contractSchema, useSettingsForm } from "../../form.tsx";
+import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useIsOwner } from "../../permissions.ts";
 import { placeholderClient } from "../../placeholders.ts";
@@ -146,19 +144,11 @@ function ClientEditor({ client }: { client: OAuthClientView }) {
         changes={changes}
         saving={saving}
         aside={
-          <Card title={t("clients.detail.identity")}>
-            <div className="flex flex-col gap-3">
-              <CopyField
-                value={client.clientId}
-                label={t("clients.columns.clientId")}
-              />
-              <Details>
-                <DetailRow label={t("clients.columns.created")}>
-                  <Ago at={client.createdAt} />
-                </DetailRow>
-              </Details>
-            </div>
-          </Card>
+          <IdentityCard
+            label={t("clients.columns.clientId")}
+            id={client.clientId}
+            createdAt={client.createdAt}
+          />
         }
       >
         {client.firstParty ? (

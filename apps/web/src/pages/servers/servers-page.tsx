@@ -7,7 +7,6 @@ import {
   DataTable,
   EmptyState,
   Input,
-  Meter,
   PageHeader,
   Segmented,
 } from "@ogcloud/ui";
@@ -17,7 +16,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { loadFailure } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
+import { Load } from "../../load.tsx";
 import { placeholderServer } from "../../placeholders.ts";
 import { ALL_GROUPS, GroupFilter } from "../groups/group-filter.tsx";
 import { CommandDialog } from "./command-dialog.tsx";
@@ -40,7 +39,6 @@ const columns = columnsFor<ServerView>();
 /** Every live server, filtered by phase, group and name, with its actions in each row. */
 export function ServersPage() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const servers = useServerList(undefined, {
     query: { refetchInterval: REFRESH_MS },
   });
@@ -87,14 +85,9 @@ export function ServersPage() {
       }),
       columns.accessor("players", {
         header: () => t("servers.columns.players"),
+        meta: { numeric: true },
         cell: (cell) => (
-          <span className="inline-flex items-center gap-2.5">
-            <Meter value={cell.getValue()} max={cell.row.original.maxPlayers} />
-            {t("groups.load", {
-              players: format.number(cell.getValue()),
-              capacity: format.number(cell.row.original.maxPlayers),
-            })}
-          </span>
+          <Load value={cell.getValue()} max={cell.row.original.maxPlayers} />
         ),
       }),
       columns.accessor("gameState", {
@@ -117,7 +110,7 @@ export function ServersPage() {
         cell: (cell) => <Ago at={cell.getValue()} />,
       }),
     ]);
-  }, [t, format]);
+  }, [t]);
 
   return (
     <div className="flex flex-col gap-4">

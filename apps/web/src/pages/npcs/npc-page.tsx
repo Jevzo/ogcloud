@@ -6,7 +6,7 @@ import {
   useNpcUpdate,
 } from "@ogcloud/api-client/react";
 import { NpcUpdateBody } from "@ogcloud/api-client/zod";
-import { Card, CopyField, Loading, PageHeader, Value } from "@ogcloud/ui";
+import { Card, Loading, PageHeader, Value } from "@ogcloud/ui";
 import { useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
@@ -16,6 +16,7 @@ import { z } from "zod";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { EditorForm, useDetailSave } from "../../editing.tsx";
 import { contractSchema, useViewSettingsForm } from "../../form.tsx";
+import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { placeholderNpc } from "../../placeholders.ts";
@@ -122,9 +123,7 @@ function NpcEditor({ view }: { view: NpcView }) {
             <Card title={t("permissions.look.title")}>
               <NpcLook title={look.title} subtitle={look.subtitle} />
             </Card>
-            <Card title={t("npcs.detail.identity")}>
-              <CopyField value={view.id} label={t("npcs.detail.id")} />
-            </Card>
+            <IdentityCard label={t("npcs.detail.id")} id={view.id} />
           </>
         }
       >

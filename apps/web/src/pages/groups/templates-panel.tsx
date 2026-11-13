@@ -158,6 +158,7 @@ export function TemplatesPanel({
         }),
         columns.accessor("sizeBytes", {
           header: () => t("templates.columns.size"),
+          meta: { numeric: true },
           cell: (cell) => (
             <span className="text-text-2">{format.bytes(cell.getValue())}</span>
           ),

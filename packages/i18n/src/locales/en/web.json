@@ -61,8 +61,6 @@
         "name": "Users"
       }
     },
-    "count_one": "{{count}} permission",
-    "count_other": "{{count}} permissions",
     "title": "Permissions"
   },
   "account": {
@@ -80,7 +78,7 @@
         "mobile": "Mobile app",
         "web": "Web dashboard"
       },
-      "detail": "Signed in {{signedIn}}, active {{active}}",
+      "detail": "Signed in <signedIn/>, active <active/>",
       "othersSignedOut": "Signed out your other devices",
       "signOut": "Sign out",
       "signOutOthers": "Sign out other devices",
@@ -102,7 +100,7 @@
     },
     "passkeys": {
       "add": "Add passkey",
-      "detail": "Added {{added}}, last used {{used}}",
+      "detail": "Added <added/>, last used <used/>",
       "name": "Name",
       "none": "No passkeys yet.",
       "remove": "Remove",
@@ -250,7 +248,6 @@
       "firstPartyNote": "One of OgCloud's own apps. It acts with the signed-in user's permissions, so it cannot be changed here.",
       "gone": "This client does not exist",
       "goneDescription": "It may have been deleted.",
-      "identity": "Identity",
       "ownerOnly": "Only owners change OAuth clients.",
       "rotate": "Rotate secret",
       "rotateDescription": "The old secret stops working at once; tokens it already got last until they expire. Give the client the new secret.",
@@ -341,7 +338,7 @@
     "deleted": {
       "description": "Deleted groups can be restored while they are kept, 7 days by default.",
       "title": "Recently deleted",
-      "when": "Deleted {{ago}}"
+      "when": "Deleted <ago/>"
     },
     "detail": {
       "back": "Back to the groups",
@@ -407,7 +404,7 @@
         "STATIC": "One server whose files live on a volume and are saved back when it stops."
       }
     },
-    "load": "{{players}} / {{capacity}}",
+    "limit": "/ {{max}}",
     "range": "{{min}} to {{max}}",
     "starting": "+{{count}} starting",
     "status": {
@@ -421,6 +418,10 @@
       "PROXY": "Proxy",
       "STATIC": "Static"
     }
+  },
+  "identity": {
+    "created": "Created",
+    "title": "Identity"
   },
   "link": {
     "code": "Code from the game",
@@ -559,7 +560,6 @@
       "gone": "This NPC does not exist",
       "goneDescription": "It may have been deleted here or in game.",
       "id": "NPC id",
-      "identity": "Identity",
       "title": "NPC in {{group}}"
     },
     "empty": "No NPCs yet",
@@ -748,7 +748,6 @@
     "detail": {
       "back": "Back to the players",
       "failed": "This player could not be loaded",
-      "identity": "Identity",
       "offline": "Offline",
       "onlineNow": "Online",
       "permanent": "{{group}}, permanently",
@@ -782,7 +781,7 @@
       "until": "Until",
       "untilHint": "When it ends, the player falls back to the default group."
     },
-    "rankUntil": "{{group}}, ends {{ago}}",
+    "rankUntil": "{{group}}, ends <ago/>",
     "search": "Search by name",
     "transfer": {
       "description": "A group places the player by the network's routing strategy; a server takes them directly.",
@@ -903,7 +902,6 @@
       "goneDescription": "It stopped and left the live state. Its group starts others as needed.",
       "id": "Server id",
       "idHint": "Pods and logs carry this id; the short name above is the last six characters players see.",
-      "identity": "Identity",
       "profile": "Runtime profile",
       "status": "Status"
     },
@@ -960,7 +958,7 @@
     },
     "eula": {
       "accept": "Accept and continue",
-      "accepted": "Accepted {{ago}}.",
+      "accepted": "Accepted <ago/>.",
       "agree": "I accept the Minecraft EULA for this network",
       "agreeHint": "It is recorded with your name and cannot be withdrawn here.",
       "description": "Minecraft servers start only after the network's owner accepts Mojang's end user licence agreement.",
@@ -1131,7 +1129,6 @@
     },
     "detail": {
       "access": "Access",
-      "account": "Account",
       "back": "Back to users",
       "failed": "The user could not be loaded",
       "gone": "This user does not exist",

@@ -17,11 +17,10 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { loadFailure } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import {
@@ -161,7 +160,6 @@ function OnlineTable({
   actions: ReturnType<typeof usePlayerActions>;
 }) {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const servers = useServerNames();
   const fetchOnline = usePlayerOnlineHook();
   // Names are matched by the API, by prefix like the known players' (D-0223).
@@ -213,7 +211,7 @@ function OnlineTable({
           cell: (cell) => <Ago at={cell.getValue()} />,
         }),
       ]),
-    [t, format, servers],
+    [t, servers],
   );
 
   return (
@@ -246,7 +244,6 @@ function KnownTable({
   actions: ReturnType<typeof usePlayerActions>;
 }) {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const fetchKnown = usePlayerKnownHook();
   const params = search === "" ? {} : { name: search };
   const known = usePaged(
@@ -271,12 +268,16 @@ function KnownTable({
             const expires = cell.row.original.rankExpiresAt;
             return (
               <span className="text-text-2">
-                {expires == null
-                  ? cell.getValue()
-                  : t("players.rankUntil", {
-                      group: cell.getValue(),
-                      ago: format.ago(new Date(expires), Date.now()),
-                    })}
+                {expires == null ? (
+                  cell.getValue()
+                ) : (
+                  <Trans
+                    t={t}
+                    i18nKey="players.rankUntil"
+                    values={{ group: cell.getValue() }}
+                    components={{ ago: <Ago at={expires} className="" /> }}
+                  />
+                )}
               </span>
             );
           },
@@ -290,7 +291,7 @@ function KnownTable({
           cell: (cell) => <Ago at={cell.getValue()} />,
         }),
       ]),
-    [t, format],
+    [t],
   );
 
   return (

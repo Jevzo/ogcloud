@@ -50,7 +50,7 @@ export function Card({
       className={cn(
         "min-w-0 rounded-card border border-border-subtle bg-surface shadow-card",
         // A flush card's title starts as far down as any other card's, so titles side by side line up.
-        flush ? cn("overflow-hidden pb-3", header ? "pt-4" : "pt-1") : "p-4",
+        flush ? cn("overflow-hidden pb-3", header ? "pt-4" : "pt-0") : "p-4",
         className,
       )}
     >

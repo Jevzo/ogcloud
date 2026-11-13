@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
 import { agoColumn, monoColumn } from "../../columns.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
+import { useFormat } from "../../format.ts";
 import { useIsOwner } from "../../permissions.ts";
 import { placeholderClient } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -37,6 +38,7 @@ const columns = columnsFor<OAuthClientView>();
 /** Machine clients for scripts, bots and CI (D-0040), next to OgCloud's own apps. */
 export function ClientsPage() {
   const { t } = useTranslation("web");
+  const format = useFormat();
   const navigate = useNavigate();
   const isOwner = useIsOwner();
   const clients = useOauthClientList();
@@ -80,10 +82,11 @@ export function ClientsPage() {
         columns.accessor((client) => client.scopes.length, {
           id: "scopes",
           header: () => t("clients.columns.permissions"),
+          meta: { numeric: true },
           cell: (cell) =>
             cell.row.original.firstParty
               ? t("clients.fromUser")
-              : t("access.count", { count: cell.getValue() }),
+              : format.number(cell.getValue()),
         }),
         agoColumn(
           columns,
@@ -92,7 +95,7 @@ export function ClientsPage() {
           (client) => client.createdAt,
         ),
       ]),
-    [t],
+    [t, format],
   );
 
   return (

@@ -25,6 +25,8 @@ export interface Formats {
   bytes: (value: number) => string;
   /** A time of day, such as a chart's axis labels. */
   clock: (at: Date) => string;
+  /** A date with its time: "Nov 12, 2026, 2:07 PM". */
+  dateTime: (at: Date) => string;
   /** How long ago, in the largest whole unit: "4 minutes ago". */
   ago: (at: Date, now: number) => string;
 }
@@ -50,6 +52,10 @@ export function useFormat(): Formats {
       hour: "2-digit",
       minute: "2-digit",
     });
+    const dateTime = new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
     const relative = new Intl.RelativeTimeFormat(i18n.language, {
       numeric: "auto",
     });
@@ -67,6 +73,7 @@ export function useFormat(): Formats {
         return bytes[step]?.format(value / BYTE_STEP ** step) ?? String(value);
       },
       clock: (at) => clock.format(at),
+      dateTime: (at) => dateTime.format(at),
       ago: (at, now) => {
         const seconds = Math.round((at.getTime() - now) / SECOND_MS);
         const [unit, size] = RELATIVE_UNITS.find(

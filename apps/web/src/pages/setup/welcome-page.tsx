@@ -15,9 +15,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import { CircleCheck, ExternalLink, Layers } from "lucide-react";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { useFailureToast } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
 import { MINECRAFT_EULA_URL } from "../../links.ts";
 import { isOwner } from "../../permissions.ts";
 import { invalidatePaths } from "../../queries.ts";
@@ -49,7 +49,6 @@ export function WelcomePage() {
 
 function EulaStep({ onNext }: { onNext: () => void }) {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const failed = useFailureToast();
   const queries = useQueryClient();
   const network = useNetworkGet();
@@ -81,9 +80,11 @@ function EulaStep({ onNext }: { onNext: () => void }) {
         />
       ) : (
         <Note tone="success" icon={CircleCheck}>
-          {t("setup.eula.accepted", {
-            ago: format.ago(new Date(acceptedAt), Date.now()),
-          })}
+          <Trans
+            t={t}
+            i18nKey="setup.eula.accepted"
+            components={{ ago: <Ago at={acceptedAt} className="" /> }}
+          />
         </Note>
       )}
       <StepActions>

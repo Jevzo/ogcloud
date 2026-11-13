@@ -1,6 +1,8 @@
+import { defaultDensity, densities } from "@ogcloud/tokens";
 import {
   createColumnHelper,
   createSortedRowModel,
+  metaHelper,
   type RowData,
   rowSortingFeature,
   sortFns,
@@ -24,11 +26,18 @@ import { EmptyState } from "./layout.tsx";
 import { Loading, useLoading, Value } from "./loading.tsx";
 import { Menu, type MenuItem } from "./menu.tsx";
 
+/** What a column may say about itself to the table. */
+export interface ColumnMeta {
+  /** Counts, sizes and ratios: right-aligned with tabular figures, head included (D-0231). */
+  numeric?: boolean;
+}
+
 /** The features every OgCloud table registers: client-side sorting. */
 export const tableFeatureSet = tableFeatures({
   rowSortingFeature,
   sortedRowModel: createSortedRowModel(),
   sortFns,
+  columnMeta: metaHelper<ColumnMeta>(),
 });
 
 export const columnsFor = <T extends RowData>() =>
@@ -53,9 +62,11 @@ export interface RowActions {
 
 // Long lists (players, servers at scale) render only the rows in view.
 const VIRTUALIZE_FROM = 100;
-const ESTIMATED_ROW_PX = 32;
+const ESTIMATED_ROW_PX = densities[defaultDensity].rowHeight;
 const OVERSCAN_ROWS = 8;
 const LOADING_ROWS = 5;
+// The head's band; each cell reaches one pixel into the next, so fractional column widths leave no seams.
+const HEAD_CELL = "bg-surface-3 shadow-[1px_0_0_var(--og-surface-3)]";
 
 /** Why a list could not load, and a way to try again; shown where the rows would be. */
 export interface TableFailure {
@@ -138,11 +149,12 @@ export function DataTable<T extends RowData>({
           aria-label={label}
           className="w-full border-collapse text-table tabular-nums"
         >
-          <thead className="sticky top-0 z-10 bg-surface">
+          <thead className="sticky top-0 z-10">
             {table.getHeaderGroups().map((group) => (
               <tr key={group.id}>
                 {group.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
+                  const numeric = header.column.columnDef.meta?.numeric;
                   return (
                     <th
                       key={header.id}
@@ -154,13 +166,21 @@ export function DataTable<T extends RowData>({
                             ? "descending"
                             : undefined
                       }
-                      className="h-row border-border-subtle border-b px-3 text-left font-label text-text-3 whitespace-nowrap first:pl-4"
+                      className={cn(
+                        HEAD_CELL,
+                        "h-row border-border-subtle border-b px-3 font-label text-text-3 whitespace-nowrap first:pl-4",
+                        numeric ? "text-right" : "text-left",
+                      )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex cursor-pointer items-center gap-1 hover:text-text"
+                          className={cn(
+                            "inline-flex cursor-pointer items-center gap-1 hover:text-text",
+                            // A right-aligned head keeps its label on the column's edge and its arrow inside.
+                            numeric && "flex-row-reverse",
+                          )}
                         >
                           <table.FlexRender header={header} />
                           {sorted === "asc" ? (
@@ -184,7 +204,10 @@ export function DataTable<T extends RowData>({
                 {actions ? (
                   <th
                     scope="col"
-                    className="w-px border-border-subtle border-b px-2"
+                    className={cn(
+                      HEAD_CELL,
+                      "w-px border-border-subtle border-b px-2",
+                    )}
                   >
                     <span className="sr-only">{t("table.actions")}</span>
                   </th>
@@ -231,7 +254,10 @@ export function DataTable<T extends RowData>({
                         // One line per row, so rows keep the density's height and the virtualiser's measure.
                         <td
                           key={cell.id}
-                          className="h-row border-border-subtle border-b px-3 whitespace-nowrap first:pl-4"
+                          className={cn(
+                            "h-row border-border-subtle border-b px-3 whitespace-nowrap first:pl-4",
+                            cell.column.columnDef.meta?.numeric && "text-right",
+                          )}
                         >
                           {loading ? (
                             <Value className="align-middle">

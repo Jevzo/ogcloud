@@ -10,16 +10,16 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
-  Meter,
   PageHeader,
 } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { Ago } from "../../ago.tsx";
 import { monoColumn } from "../../columns.tsx";
 import { loadFailure } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
+import { Load, ServerCount } from "../../load.tsx";
 import {
   placeholderGroup,
   placeholderGroupOverview,
@@ -43,7 +43,6 @@ const NO_LOAD = { running: 0, pending: 0, players: 0, capacity: 0 };
 /** Every group with its runtime, scaling range and live load, and the groups deleted recently. */
 export function GroupsPage() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const navigate = useNavigate();
   const groups = useGroupList();
   const overview = useOverviewGet();
@@ -83,38 +82,28 @@ export function GroupsPage() {
         ),
         columns.accessor("live.running", {
           header: () => t("groups.columns.servers"),
+          meta: { numeric: true },
           cell: (cell) => (
-            <span>
-              {format.number(cell.getValue())}
-              {cell.row.original.live.pending > 0 ? (
-                <span className="text-text-3">
-                  {" "}
-                  {t("groups.starting", {
-                    count: cell.row.original.live.pending,
-                  })}
-                </span>
-              ) : null}
-            </span>
+            <ServerCount
+              running={cell.getValue()}
+              pending={cell.row.original.live.pending}
+            />
           ),
         }),
         columns.accessor("live.players", {
           header: () => t("groups.columns.players"),
+          meta: { numeric: true },
           cell: (cell) => (
-            <span className="inline-flex items-center gap-2.5">
-              <Meter
-                value={cell.getValue()}
-                max={cell.row.original.live.capacity}
-              />
-              {t("groups.load", {
-                players: format.number(cell.getValue()),
-                capacity: format.number(cell.row.original.live.capacity),
-              })}
-            </span>
+            <Load
+              value={cell.getValue()}
+              max={cell.row.original.live.capacity}
+            />
           ),
         }),
         columns.accessor("view.settings.scaling", {
           header: () => t("groups.columns.scaling"),
           enableSorting: false,
+          meta: { numeric: true },
           cell: (cell) => (
             <span className="text-text-2">
               {t("groups.range", {
@@ -130,7 +119,7 @@ export function GroupsPage() {
           cell: (cell) => <GroupStatusBadge group={cell.row.original.live} />,
         }),
       ]),
-    [t, format],
+    [t],
   );
 
   const removed = deleted.data?.data ?? [];
@@ -185,9 +174,11 @@ export function GroupsPage() {
                   {t(`groups.type.${group.type}`)}
                 </span>
                 <span className="flex-1 text-text-3">
-                  {t("groups.deleted.when", {
-                    ago: format.ago(new Date(deletedAt), Date.now()),
-                  })}
+                  <Trans
+                    t={t}
+                    i18nKey="groups.deleted.when"
+                    components={{ ago: <Ago at={deletedAt} className="" /> }}
+                  />
                 </span>
                 {actions.canWrite ? (
                   <Button
