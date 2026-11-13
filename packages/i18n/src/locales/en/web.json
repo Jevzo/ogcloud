@@ -770,7 +770,7 @@
       "failed": "This player could not be loaded",
       "offline": "Offline",
       "onlineNow": "Online",
-      "permanent": "{{group}}, permanently",
+      "permanent": "permanently",
       "status": "Status",
       "unknown": "This player never joined",
       "unknownDescription": "The network knows only players who joined at least once.",
@@ -782,6 +782,7 @@
       "online": "Nobody is online",
       "onlineDescription": "Players appear here as soon as they join through a proxy."
     },
+    "ends": "ends <ago/>",
     "everyone": "Everyone",
     "kick": {
       "description": "They are disconnected and see this message; they can join again.",
@@ -801,7 +802,6 @@
       "until": "Until",
       "untilHint": "When it ends, the player falls back to the default group."
     },
-    "rankUntil": "{{group}}, ends <ago/>",
     "search": "Search by name",
     "transfer": {
       "description": "A group places the player by the network's routing strategy; a server takes them directly.",

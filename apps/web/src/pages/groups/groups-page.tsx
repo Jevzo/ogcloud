@@ -14,16 +14,18 @@ import {
 } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { monoColumn } from "../../columns.tsx";
+import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { Load, ServerCount } from "../../load.tsx";
 import {
   placeholderGroup,
   placeholderGroupOverview,
 } from "../../placeholders.ts";
+import { RecordDrawer } from "../../record-drawer.tsx";
 import { useGroupActions } from "./group-actions.tsx";
 import { GroupLink, GroupStatusBadge } from "./group-status.tsx";
 
@@ -48,6 +50,7 @@ export function GroupsPage() {
   const overview = useOverviewGet();
   const deleted = useGroupDeleted();
   const actions = useGroupActions();
+  const [opened, setOpened] = useState<string | null>(null);
 
   const live = new Map(
     (overview.data?.data.groups ?? []).map((group) => [group.id, group]),
@@ -148,6 +151,7 @@ export function GroupsPage() {
           getRowId={(row) => row.view.id}
           placeholder={PLACEHOLDER_ROW}
           actions={(row) => actions.actionsFor(row.live)}
+          onRowOpen={(row) => setOpened(row.view.id)}
           loading={groups.isPending}
           empty={
             <EmptyState
@@ -158,6 +162,10 @@ export function GroupsPage() {
           }
         />
       </Card>
+      <GroupDrawer
+        row={rows.find((row) => row.view.id === opened) ?? null}
+        onClose={() => setOpened(null)}
+      />
       {removed.length === 0 ? null : (
         <Card title={t("groups.deleted.title")}>
           <p className="mb-2 text-small text-text-3">
@@ -196,5 +204,53 @@ export function GroupsPage() {
       )}
       {actions.dialogs}
     </div>
+  );
+}
+
+/** A group's key facts beside the list, and the way to its page (D-0231). */
+function GroupDrawer({
+  row,
+  onClose,
+}: {
+  row: GroupRow | null;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation("web");
+  const navigate = useNavigate();
+  if (row === null) return null;
+  const { view, live } = row;
+  return (
+    <RecordDrawer
+      title={view.id}
+      badges={<GroupStatusBadge group={live} />}
+      onClose={onClose}
+      onOpenPage={() =>
+        void navigate({ to: "/groups/$groupId", params: { groupId: view.id } })
+      }
+    >
+      <DetailRow label={t("groups.columns.type")}>
+        {t(`groups.type.${view.type}`)}
+      </DetailRow>
+      <DetailRow label={t("groups.columns.profile")}>
+        <span className="font-mono text-mono">{view.settings.profileId}</span>
+      </DetailRow>
+      <DetailRow label={t("groups.columns.servers")}>
+        <ServerCount running={live.running} pending={live.pending} />
+      </DetailRow>
+      <DetailRow label={t("groups.columns.players")}>
+        <Load value={live.players} max={live.capacity} />
+      </DetailRow>
+      <DetailRow label={t("groups.columns.scaling")}>
+        {t("groups.range", {
+          min: view.settings.scaling.minOnline,
+          max: view.settings.scaling.maxInstances,
+        })}
+      </DetailRow>
+      <DetailRow label={t("groups.create.memory")}>
+        <span className="font-mono text-mono">
+          {view.settings.resources.memoryLimit}
+        </span>
+      </DetailRow>
+    </RecordDrawer>
   );
 }

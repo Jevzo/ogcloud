@@ -97,27 +97,47 @@ interface NumberFieldProps {
 
 // Keeps a scaled fraction such as 0.8 → 80 free of floating-point tails.
 const SCALED_DIGITS = 1_000;
+// A number as typed: digits, a sign and one decimal point, nothing else.
+const NUMBER = /^-?\d*\.?\d*$/;
 
+/** A number written the way the field shows it, in the interface's English digits (D-0231). */
+function shown(value: number, scale: number): string {
+  return Number.isNaN(value)
+    ? ""
+    : String(Math.round(value * scale * SCALED_DIGITS) / SCALED_DIGITS);
+}
+
+/**
+ * A number in a text field, since browsers format number fields by the system's locale (112,773 on a German system)
+ * whatever the interface's language; while typing, the field keeps the text as written.
+ */
 function NumberField({ label, hint, suffix, scale = 1 }: NumberFieldProps) {
   const field = useFieldContext<number>();
   const value = field.state.value;
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <Field label={label} hint={hint} error={useFieldError()}>
       {(control) => (
         <Input
           {...control}
-          type="number"
           inputMode="decimal"
           suffix={suffix}
-          value={
-            Number.isNaN(value)
-              ? ""
-              : Math.round(value * scale * SCALED_DIGITS) / SCALED_DIGITS
-          }
-          onBlur={field.handleBlur}
-          onChange={(event) =>
-            field.handleChange(event.target.valueAsNumber / scale)
-          }
+          value={draft ?? shown(value, scale)}
+          onBlur={() => {
+            setDraft(null);
+            field.handleBlur();
+          }}
+          onChange={(event) => {
+            // A comma is a decimal point to whoever typed it.
+            const text = event.target.value.replace(",", ".");
+            if (!NUMBER.test(text)) return;
+            setDraft(text);
+            field.handleChange(
+              text === "" || text === "-" || text === "."
+                ? Number.NaN
+                : Number(text) / scale,
+            );
+          }}
         />
       )}
     </Field>

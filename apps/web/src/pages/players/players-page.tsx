@@ -17,9 +17,10 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
+import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
@@ -29,6 +30,8 @@ import {
 } from "../../placeholders.ts";
 import { useServerNames } from "../servers/server-names.ts";
 import { type PlayerRef, usePlayerActions } from "./player-actions.tsx";
+import { PlayerDrawer } from "./player-drawer.tsx";
+import { RankCell } from "./rank-cell.tsx";
 
 type View = "online" | "everyone";
 const REFRESH_MS = 10_000;
@@ -68,6 +71,7 @@ interface PlayerTableProps<T extends Named> {
   actions: ReturnType<typeof usePlayerActions>;
   emptyTitle: string;
   emptyDescription: string;
+  onRowOpen: (row: T) => void;
 }
 
 /** A page-wise loaded list of players with their row actions. */
@@ -81,6 +85,7 @@ function PlayerTable<T extends Named>({
   actions,
   emptyTitle,
   emptyDescription,
+  onRowOpen,
 }: PlayerTableProps<T>) {
   return (
     <>
@@ -92,6 +97,7 @@ function PlayerTable<T extends Named>({
         getRowId={(player) => player.uuid}
         placeholder={placeholder}
         actions={(player) => actions.actionsFor(toRef(player))}
+        onRowOpen={onRowOpen}
         loading={paged.pending}
         maxHeight="calc(100vh - 16rem)"
         empty={
@@ -166,6 +172,7 @@ export function OnlineTable({
   const { t } = useTranslation("web");
   const servers = useServerNames();
   const fetchOnline = usePlayerOnlineHook();
+  const [opened, setOpened] = useState<OnlinePlayerView | null>(null);
   const params = {
     ...(search === "" ? {} : { name: search }),
     ...(server === undefined ? {} : { serverId: server.id }),
@@ -189,9 +196,7 @@ export function OnlineTable({
         nameColumn(onlineColumns, t("players.columns.player")),
         onlineColumns.accessor("session.permissionGroupId", {
           header: () => t("players.columns.rank"),
-          cell: (cell) => (
-            <span className="text-text-2">{cell.getValue()}</span>
-          ),
+          cell: (cell) => <RankCell groupId={cell.getValue()} />,
         }),
         ...(server !== undefined && !server.proxy
           ? []
@@ -229,23 +234,57 @@ export function OnlineTable({
     [t, servers, server],
   );
 
+  const toRef = (player: OnlinePlayerView): PlayerRef => ({
+    uuid: player.uuid,
+    name: player.name,
+    permissionGroupId: player.session.permissionGroupId,
+    online: true,
+  });
+  const where = (id: string) => servers.get(id) ?? id.slice(0, 8);
+
   return (
-    <PlayerTable
-      label={t("players.online")}
-      paged={online}
-      rows={online.items}
-      placeholder={placeholderOnlinePlayer}
-      columns={columns}
-      toRef={(player) => ({
-        uuid: player.uuid,
-        name: player.name,
-        permissionGroupId: player.session.permissionGroupId,
-        online: true,
-      })}
-      actions={actions}
-      emptyTitle={t("players.empty.online")}
-      emptyDescription={t("players.empty.onlineDescription")}
-    />
+    <>
+      <PlayerTable
+        label={t("players.online")}
+        paged={online}
+        rows={online.items}
+        placeholder={placeholderOnlinePlayer}
+        columns={columns}
+        toRef={toRef}
+        actions={actions}
+        emptyTitle={t("players.empty.online")}
+        emptyDescription={t("players.empty.onlineDescription")}
+        onRowOpen={setOpened}
+      />
+      <PlayerDrawer
+        player={opened === null ? null : toRef(opened)}
+        onClose={() => setOpened(null)}
+        actions={actions}
+      >
+        {opened === null ? null : (
+          <>
+            <DetailRow label={t("players.columns.rank")}>
+              <RankCell groupId={opened.session.permissionGroupId} />
+            </DetailRow>
+            <DetailRow label={t("players.columns.server")}>
+              <span className="font-mono text-mono">
+                {opened.session.serverId == null
+                  ? "—"
+                  : where(opened.session.serverId)}
+              </span>
+            </DetailRow>
+            <DetailRow label={t("players.columns.proxy")}>
+              <span className="font-mono text-mono">
+                {where(opened.session.proxyId)}
+              </span>
+            </DetailRow>
+            <DetailRow label={t("players.columns.connected")}>
+              <Ago at={opened.session.connectedAt} className="" />
+            </DetailRow>
+          </>
+        )}
+      </PlayerDrawer>
+    </>
   );
 }
 
@@ -260,6 +299,7 @@ function KnownTable({
 }) {
   const { t } = useTranslation("web");
   const fetchKnown = usePlayerKnownHook();
+  const [opened, setOpened] = useState<PlayerView | null>(null);
   const params = search === "" ? {} : { name: search };
   const known = usePaged(
     getPlayerKnownQueryKey(params),
@@ -279,23 +319,12 @@ function KnownTable({
         nameColumn(knownColumns, t("players.columns.player")),
         knownColumns.accessor("permissionGroupId", {
           header: () => t("players.columns.rank"),
-          cell: (cell) => {
-            const expires = cell.row.original.rankExpiresAt;
-            return (
-              <span className="text-text-2">
-                {expires == null ? (
-                  cell.getValue()
-                ) : (
-                  <Trans
-                    t={t}
-                    i18nKey="players.rankUntil"
-                    values={{ group: cell.getValue() }}
-                    components={{ ago: <Ago at={expires} className="" /> }}
-                  />
-                )}
-              </span>
-            );
-          },
+          cell: (cell) => (
+            <RankCell
+              groupId={cell.getValue()}
+              expiresAt={cell.row.original.rankExpiresAt}
+            />
+          ),
         }),
         knownColumns.accessor("lastSeenAt", {
           header: () => t("players.columns.lastSeen"),
@@ -309,22 +338,49 @@ function KnownTable({
     [t],
   );
 
+  const toRef = (player: PlayerView): PlayerRef => ({
+    uuid: player.uuid,
+    name: player.name,
+    permissionGroupId: player.permissionGroupId,
+    online: false,
+  });
+
   return (
-    <PlayerTable
-      label={t("players.everyone")}
-      paged={known}
-      rows={known.items}
-      placeholder={placeholderPlayer}
-      columns={columns}
-      toRef={(player) => ({
-        uuid: player.uuid,
-        name: player.name,
-        permissionGroupId: player.permissionGroupId,
-        online: false,
-      })}
-      actions={actions}
-      emptyTitle={t("players.empty.known")}
-      emptyDescription={t("players.empty.knownDescription")}
-    />
+    <>
+      <PlayerTable
+        label={t("players.everyone")}
+        paged={known}
+        rows={known.items}
+        placeholder={placeholderPlayer}
+        columns={columns}
+        toRef={toRef}
+        actions={actions}
+        emptyTitle={t("players.empty.known")}
+        emptyDescription={t("players.empty.knownDescription")}
+        onRowOpen={setOpened}
+      />
+      <PlayerDrawer
+        player={opened === null ? null : toRef(opened)}
+        onClose={() => setOpened(null)}
+        actions={actions}
+      >
+        {opened === null ? null : (
+          <>
+            <DetailRow label={t("players.columns.rank")}>
+              <RankCell
+                groupId={opened.permissionGroupId}
+                expiresAt={opened.rankExpiresAt}
+              />
+            </DetailRow>
+            <DetailRow label={t("players.columns.lastSeen")}>
+              <Ago at={opened.lastSeenAt} className="" />
+            </DetailRow>
+            <DetailRow label={t("players.columns.firstSeen")}>
+              <Ago at={opened.firstSeenAt} className="" />
+            </DetailRow>
+          </>
+        )}
+      </PlayerDrawer>
+    </>
   );
 }

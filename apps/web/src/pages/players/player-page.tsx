@@ -9,7 +9,7 @@ import {
   LogOut,
   UserX,
 } from "lucide-react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { DetailFallback } from "../../detail-fallback.tsx";
 import { DetailRow, Details } from "../../details.tsx";
@@ -19,6 +19,7 @@ import { placeholderPlayer } from "../../placeholders.ts";
 import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
 import { useServerNames } from "../servers/server-names.ts";
 import { usePlayerActions } from "./player-actions.tsx";
+import { RankCell } from "./rank-cell.tsx";
 
 const REFRESH_MS = 10_000;
 
@@ -145,20 +146,17 @@ export function PlayerPage() {
                 </>
               )}
               <DetailRow label={t("players.columns.rank")}>
-                {view.rankExpiresAt == null ? (
-                  t("players.detail.permanent", {
-                    group: view.permissionGroupId,
-                  })
-                ) : (
-                  <Trans
-                    t={t}
-                    i18nKey="players.rankUntil"
-                    values={{ group: view.permissionGroupId }}
-                    components={{
-                      ago: <Ago at={view.rankExpiresAt} className="" />,
-                    }}
+                <span className="inline-flex items-center gap-2">
+                  <RankCell
+                    groupId={view.permissionGroupId}
+                    expiresAt={view.rankExpiresAt}
                   />
-                )}
+                  {view.rankExpiresAt == null ? (
+                    <span className="text-meta text-text-3">
+                      {t("players.detail.permanent")}
+                    </span>
+                  ) : null}
+                </span>
               </DetailRow>
               <DetailRow label={t("players.columns.firstSeen")}>
                 <Ago at={view.firstSeenAt} className="" />

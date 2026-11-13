@@ -64,6 +64,23 @@ export function RankLook({ display }: { display: RankDisplayView }) {
   );
 }
 
+/** A rank's chat prefix alone, small, for a player's row; the group's id where the rank has none. */
+export function RankPrefixChip({
+  display,
+  id,
+}: {
+  display: RankDisplayView;
+  id: string;
+}) {
+  const preview = useTextPreview("CHAT_PREFIX", display.chatPrefix);
+  const spans = preview.data?.rendering?.modern ?? [];
+  return spans.every((span) => span.text.trim() === "") ? (
+    <span className="text-text-2">{id}</span>
+  ) : (
+    <GameChip spans={spans} />
+  );
+}
+
 /** A rank's chat prefix and name in one line, small, for tables. */
 export function RankChip({ display }: { display: RankDisplayView }) {
   const spans = useRankSpans(display, "modern");

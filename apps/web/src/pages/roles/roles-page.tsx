@@ -20,11 +20,13 @@ import { ArrowUpRight, KeyRound, Lock, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monoColumn } from "../../columns.tsx";
+import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { NameIdDialog } from "../../name-id-dialog.tsx";
 import { useIsOwner } from "../../permissions.ts";
 import { placeholderRole } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
+import { RecordDrawer } from "../../record-drawer.tsx";
 
 const columns = columnsFor<RoleView>();
 
@@ -32,6 +34,7 @@ const columns = columnsFor<RoleView>();
 export function RolesPage() {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
+  const [opened, setOpened] = useState<RoleView | null>(null);
   const isOwner = useIsOwner();
   const roles = useRoleList();
   const queries = useQueryClient();
@@ -117,6 +120,7 @@ export function RolesPage() {
               ],
             ],
           })}
+          onRowOpen={setOpened}
           loading={roles.isPending}
           empty={
             <EmptyState
@@ -127,6 +131,28 @@ export function RolesPage() {
           }
         />
       </Card>
+      {opened === null ? null : (
+        <RecordDrawer
+          title={opened.name}
+          onClose={() => setOpened(null)}
+          onOpenPage={() =>
+            void navigate({
+              to: "/roles/$roleId",
+              params: { roleId: opened.id },
+            })
+          }
+        >
+          <DetailRow label={t("roles.columns.kind")}>
+            {opened.builtIn ? t("roles.builtIn") : t("roles.custom")}
+          </DetailRow>
+          <DetailRow label={t("roles.columns.id")}>
+            <span className="font-mono text-mono">{opened.id}</span>
+          </DetailRow>
+          <DetailRow label={t("roles.columns.permissions")}>
+            {opened.permissions.length}
+          </DetailRow>
+        </RecordDrawer>
+      )}
       <NameIdDialog
         open={creating}
         onOpenChange={setCreating}

@@ -11,11 +11,13 @@ import {
 } from "@ogcloud/ui";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowUpRight, Bot, Plus, Trash2 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { useCan } from "../../permissions.ts";
 import { placeholderNpc } from "../../placeholders.ts";
+import { RecordDrawer } from "../../record-drawer.tsx";
 import { ALL_GROUPS, useGroupFilter } from "../groups/group-filter.tsx";
 import { useBackendGroupIds } from "../groups/group-ids.ts";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -36,6 +38,7 @@ export function NpcsPage() {
     group === ALL_GROUPS ? undefined : { groupId: group },
   );
   const remove = useDeleteNpc();
+  const [opened, setOpened] = useState<NpcView | null>(null);
   const open = (id: string) =>
     navigate({ to: "/npcs/$npcId", params: { npcId: id } });
 
@@ -61,14 +64,11 @@ export function NpcsPage() {
         columns.accessor("settings.location", {
           header: () => t("npcs.columns.location"),
           enableSorting: false,
-          cell: (cell) => {
-            const { world, x, y, z } = cell.getValue();
-            return (
-              <span className="font-mono text-mono text-text-2">
-                {`${world} ${[x, y, z].map((n) => n.toFixed(COORDINATE_DIGITS)).join(" ")}`}
-              </span>
-            );
-          },
+          cell: (cell) => (
+            <span className="font-mono text-mono text-text-2">
+              {placeOf(cell.getValue())}
+            </span>
+          ),
         }),
         columns.accessor(
           (npc) =>
@@ -142,6 +142,7 @@ export function NpcsPage() {
                 : []),
             ],
           })}
+          onRowOpen={setOpened}
           loading={npcs.isPending}
           empty={
             <EmptyState
@@ -152,7 +153,38 @@ export function NpcsPage() {
           }
         />
       </Card>
+      {opened === null ? null : (
+        <RecordDrawer
+          title={t("npcs.detail.title", { group: opened.settings.groupId })}
+          onClose={() => setOpened(null)}
+          onOpenPage={() => void open(opened.id)}
+        >
+          <DetailRow label={t("npcs.columns.title")}>
+            <NpcTitleChip title={opened.settings.title} />
+          </DetailRow>
+          <DetailRow label={t("npcs.columns.group")}>
+            <GroupLink id={opened.settings.groupId} />
+          </DetailRow>
+          <DetailRow label={t("npcs.columns.location")}>
+            <span className="font-mono text-mono">
+              {placeOf(opened.settings.location)}
+            </span>
+          </DetailRow>
+          <DetailRow label={t("npcs.columns.click")}>
+            {opened.settings.rightClick?.groupId == null
+              ? t("npcs.form.nothing")
+              : t("npcs.form.moveTo", {
+                  group: opened.settings.rightClick.groupId,
+                })}
+          </DetailRow>
+        </RecordDrawer>
+      )}
       {remove.dialog}
     </div>
   );
+}
+
+/** Where an NPC stands: its world, then x, y and z to a tenth of a block. */
+function placeOf({ world, x, y, z }: NpcView["settings"]["location"]): string {
+  return `${world} ${[x, y, z].map((n) => n.toFixed(COORDINATE_DIGITS)).join(" ")}`;
 }

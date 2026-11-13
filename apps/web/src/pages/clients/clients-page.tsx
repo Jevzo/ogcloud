@@ -24,12 +24,15 @@ import { AppWindow, ArrowUpRight, Bot, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionDialog, useOnOpen } from "../../action-dialog.tsx";
+import { Ago } from "../../ago.tsx";
 import { agoColumn, monoColumn } from "../../columns.tsx";
+import { DetailRow } from "../../details.tsx";
 import { loadFailure, useFailureToast } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
 import { useIsOwner } from "../../permissions.ts";
 import { placeholderClient } from "../../placeholders.ts";
 import { invalidatePaths } from "../../queries.ts";
+import { RecordDrawer } from "../../record-drawer.tsx";
 import { PermissionPicker } from "../roles/permission-picker.tsx";
 import { SecretDialog } from "./secret-dialog.tsx";
 
@@ -40,6 +43,7 @@ export function ClientsPage() {
   const { t } = useTranslation("web");
   const format = useFormat();
   const navigate = useNavigate();
+  const [opened, setOpened] = useState<OAuthClientView | null>(null);
   const isOwner = useIsOwner();
   const clients = useOauthClientList();
   const [creating, setCreating] = useState(false);
@@ -137,6 +141,7 @@ export function ClientsPage() {
               ],
             ],
           })}
+          onRowOpen={setOpened}
           loading={clients.isPending}
           empty={
             <EmptyState
@@ -147,6 +152,33 @@ export function ClientsPage() {
           }
         />
       </Card>
+      {opened === null ? null : (
+        <RecordDrawer
+          title={opened.name}
+          onClose={() => setOpened(null)}
+          onOpenPage={() =>
+            void navigate({
+              to: "/clients/$clientId",
+              params: { clientId: opened.clientId },
+            })
+          }
+        >
+          <DetailRow label={t("clients.columns.kind")}>
+            {opened.firstParty ? t("clients.firstParty") : t("clients.machine")}
+          </DetailRow>
+          <DetailRow label={t("clients.columns.clientId")}>
+            <span className="font-mono text-mono">{opened.clientId}</span>
+          </DetailRow>
+          <DetailRow label={t("clients.columns.permissions")}>
+            {opened.firstParty
+              ? t("clients.fromUser")
+              : format.number(opened.scopes.length)}
+          </DetailRow>
+          <DetailRow label={t("clients.columns.created")}>
+            <Ago at={opened.createdAt} className="" />
+          </DetailRow>
+        </RecordDrawer>
+      )}
       <CreateClientDialog
         open={creating}
         onOpenChange={setCreating}
