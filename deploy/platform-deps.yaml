@@ -25,14 +25,14 @@ manifests:
       chart: strimzi
       version: 1.3.1
 
-  # The operator release that kube-prometheus-stack 93.1.0 ships (its appVersion).
+  # The operator release that kube-prometheus-stack 93.1.1 ships (its appVersion).
   - name: prometheus-operator-crds
     when: monitoring
     url: https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.95.1/stripped-down-crds.yaml
     sha256: 1a3fe61ea58cfe9c18da5d1ec2be86afdf65471a88dc54c102911aab71d42785
     follows:
       chart: kube-prometheus-stack
-      version: 93.1.0
+      version: 93.1.1
 
 charts:
   - name: cert-manager
