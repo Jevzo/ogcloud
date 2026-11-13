@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { DetailRow } from "../../details.tsx";
 import { useFormat } from "../../format.ts";
+import { useHeld } from "../../held.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
 
 /** A list row's client beside the list, with the way to its page (D-0231). */
 export function ClientDrawer({
-  client,
+  client: current,
   onClose,
 }: {
   client: OAuthClientView | null;
@@ -17,9 +18,12 @@ export function ClientDrawer({
   const { t } = useTranslation("web");
   const navigate = useNavigate();
   const format = useFormat();
+  // The drawer slides out still showing what it showed.
+  const client = useHeld(current);
   if (client === null) return null;
   return (
     <RecordDrawer
+      open={current !== null}
       title={client.name}
       onClose={onClose}
       onOpenPage={() =>

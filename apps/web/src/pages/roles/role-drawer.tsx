@@ -2,11 +2,12 @@ import type { RoleView } from "@ogcloud/api-client";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DetailRow } from "../../details.tsx";
+import { useHeld } from "../../held.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
 
 /** A list row's role beside the list, with the way to its page (D-0231). */
 export function RoleDrawer({
-  role,
+  role: current,
   onClose,
 }: {
   role: RoleView | null;
@@ -14,9 +15,12 @@ export function RoleDrawer({
 }) {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
+  // The drawer slides out still showing what it showed.
+  const role = useHeld(current);
   if (role === null) return null;
   return (
     <RecordDrawer
+      open={current !== null}
       title={role.name}
       onClose={onClose}
       onOpenPage={() =>

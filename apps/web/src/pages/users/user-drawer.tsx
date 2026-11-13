@@ -3,13 +3,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { DetailRow } from "../../details.tsx";
+import { useHeld } from "../../held.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
 import { useRoleNames } from "./role-names.ts";
 import { UserStatusBadge } from "./user-status.tsx";
 
 /** A list row's user beside the list, with the way to its page (D-0231). */
 export function UserDrawer({
-  user,
+  user: current,
   onClose,
 }: {
   user: UserView | null;
@@ -18,9 +19,12 @@ export function UserDrawer({
   const { t } = useTranslation("web");
   const navigate = useNavigate();
   const roles = useRoleNames();
+  // The drawer slides out still showing what it showed.
+  const user = useHeld(current);
   if (user === null) return null;
   return (
     <RecordDrawer
+      open={current !== null}
       title={user.username}
       badges={<UserStatusBadge enabled={user.enabled} />}
       onClose={onClose}

@@ -23,6 +23,7 @@ import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { DetailRow, Details } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
 import { useFormat } from "../../format.ts";
+import { useHeld } from "../../held.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import { placeholderAudit } from "../../placeholders.ts";
@@ -192,18 +193,20 @@ export function AuditTab() {
 
 /** One change in full, read-only: who made it, what it did to what, and what it carried (D-0231). */
 function AuditDrawer({
-  entry,
+  entry: current,
   onClose,
 }: {
   entry: AuditEntryView | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation("web");
+  // The drawer slides out still showing what it showed.
+  const entry = useHeld(current);
   if (entry === null) return null;
   const metadata = Object.entries(entry.metadata);
   return (
     <Drawer
-      open
+      open={current !== null}
       onOpenChange={(open) => (open ? undefined : onClose())}
       title={<span className="font-mono">{entry.action}</span>}
     >

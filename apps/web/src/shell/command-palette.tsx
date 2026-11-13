@@ -135,6 +135,8 @@ export function CommandPalette({
                       <TargetItem
                         key={targetKey(target)}
                         target={target}
+                        // A recent page is also among the pages; cmdk selects by value, so each needs its own.
+                        value={`${heading}:${targetKey(target)}`}
                         navItems={navItems}
                         onSelect={() => go(target)}
                       />
@@ -201,15 +203,16 @@ const ICON = { size: 15, strokeWidth: 1.5 } as const;
 
 function TargetItem({
   target,
+  value,
   navItems,
   onSelect,
 }: {
   target: Target;
+  value: string;
   navItems: readonly NavItem[];
   onSelect: () => void;
 }) {
   const { t } = useTranslation("web");
-  const value = targetKey(target);
   switch (target.kind) {
     case "page": {
       const item = navItems.find((nav) => nav.path === target.path);

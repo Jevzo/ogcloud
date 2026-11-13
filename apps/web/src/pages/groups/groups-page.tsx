@@ -20,6 +20,7 @@ import { Ago } from "../../ago.tsx";
 import { monoColumn } from "../../columns.tsx";
 import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
+import { useHeld } from "../../held.ts";
 import { Load, ServerCount } from "../../load.tsx";
 import {
   placeholderGroup,
@@ -209,7 +210,7 @@ export function GroupsPage() {
 
 /** A group's key facts beside the list, and the way to its page (D-0231). */
 function GroupDrawer({
-  row,
+  row: current,
   onClose,
 }: {
   row: GroupRow | null;
@@ -217,10 +218,13 @@ function GroupDrawer({
 }) {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
+  // The drawer slides out still showing what it showed.
+  const row = useHeld(current);
   if (row === null) return null;
   const { view, live } = row;
   return (
     <RecordDrawer
+      open={current !== null}
       title={view.id}
       badges={<GroupStatusBadge group={live} />}
       onClose={onClose}

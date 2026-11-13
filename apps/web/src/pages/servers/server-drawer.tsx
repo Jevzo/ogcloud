@@ -5,6 +5,7 @@ import { ArrowRightLeft, Square } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { DetailRow } from "../../details.tsx";
+import { useHeld } from "../../held.ts";
 import { Load } from "../../load.tsx";
 import { RecordDrawer } from "../../record-drawer.tsx";
 import { GroupLink } from "../groups/group-status.tsx";
@@ -13,7 +14,7 @@ import { ServerStateBadge } from "./server-state.tsx";
 
 /** A server's key facts beside the list, with its everyday actions and the way to its page (D-0231). */
 export function ServerDrawer({
-  server,
+  server: current,
   onClose,
   actions,
 }: {
@@ -23,6 +24,8 @@ export function ServerDrawer({
 }) {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
+  // The drawer slides out still showing what it showed.
+  const server = useHeld(current);
   if (server === null) return null;
   // The drawer closes first, so the action's dialog is the only layer on top.
   const run = (action: "move" | "stop") => {
@@ -31,6 +34,7 @@ export function ServerDrawer({
   };
   return (
     <RecordDrawer
+      open={current !== null}
       title={<span className="font-mono">{server.displayName}</span>}
       badges={<ServerStateBadge state={server.state} />}
       onClose={onClose}

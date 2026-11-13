@@ -8,8 +8,8 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
+import { sampleHourAgo } from "../../history.ts";
 
-const HOUR_MS = 3_600_000;
 // A day of minute samples thinned for a sparkline a few hundred pixels wide.
 const SPARK_POINTS = 48;
 const STARTING: readonly ServerViewState[] = [
@@ -37,9 +37,7 @@ export function KpiRow({ data, history }: KpiRowProps) {
   const draining = count(DRAINING);
   const paused = data.groups.filter((group) => group.crashLoopPaused).length;
   const maintenance = data.groups.filter((group) => group.maintenance).length;
-  const hourAgo = history.find(
-    (point) => new Date(point.at).getTime() >= Date.now() - HOUR_MS,
-  );
+  const hourAgo = sampleHourAgo(history, Date.now());
   // More players is good news; more servers is neither.
   const changeOf = (change: number, judged: boolean): KpiDelta => ({
     change: format.signed(change),

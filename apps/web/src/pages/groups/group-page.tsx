@@ -46,6 +46,7 @@ import {
   useViewSettingsForm,
 } from "../../form.tsx";
 import { useFormat } from "../../format.ts";
+import { sampleHourAgo } from "../../history.ts";
 import { LoadFailed } from "../../load-failed.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
@@ -63,7 +64,6 @@ import { TemplatesPanel } from "./templates-panel.tsx";
 const LIVE_REFRESH_MS = 10_000;
 const HISTORY_REFRESH_MS = 60_000;
 const CHART_HEIGHT = 140;
-const HOUR_MS = 3_600_000;
 // A group this full warns, like its capacity meters.
 const FULL_AT = 0.9;
 // The header owns maintenance: the form shows no field for it, and a save keeps the value the edits began from.
@@ -286,9 +286,8 @@ function LivePanel({
     at: new Date(point.at),
     value: point.players,
   }));
-  const hourAgo = samples.find(
-    (point) => new Date(point.at).getTime() >= now - HOUR_MS,
-  );
+  // Only real samples make a baseline; the placeholders exist to draw the chart's skeleton.
+  const hourAgo = sampleHourAgo(history.data?.data.points ?? [], now);
   const failure = loadFailure(history);
   const load = live ?? placeholderGroupOverview;
   const delta = (change: number | undefined): KpiDelta | undefined =>

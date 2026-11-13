@@ -4,12 +4,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DetailRow } from "../../details.tsx";
+import { useHeld } from "../../held.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
 import { RankChip } from "./rank-look.tsx";
 
 /** A list row's group beside the list, with the way to its page (D-0231). */
 export function PermissionGroupDrawer({
-  group,
+  group: current,
   onClose,
 }: {
   group: PermissionGroupView | null;
@@ -17,9 +18,12 @@ export function PermissionGroupDrawer({
 }) {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
+  // The drawer slides out still showing what it showed.
+  const group = useHeld(current);
   if (group === null) return null;
   return (
     <RecordDrawer
+      open={current !== null}
       title={group.settings.name}
       badges={
         group.settings.defaultGroup ? (

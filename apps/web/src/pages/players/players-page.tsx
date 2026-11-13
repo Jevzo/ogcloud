@@ -22,6 +22,7 @@ import { Ago } from "../../ago.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
+import { useHeld } from "../../held.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
 import {
@@ -88,7 +89,10 @@ function PlayerTable<T extends Named>({
   emptyDescription,
   details,
 }: PlayerTableProps<T>) {
-  const [opened, setOpened] = useState<T | null>(null);
+  // The drawer follows the list's refreshes and slides out once its player is gone.
+  const [opened, setOpened] = useState<string | null>(null);
+  const current = rows.find((row) => row.uuid === opened) ?? null;
+  const shown = useHeld(current);
   return (
     <>
       <DataTable
@@ -99,7 +103,7 @@ function PlayerTable<T extends Named>({
         getRowId={(player) => player.uuid}
         placeholder={placeholder}
         actions={(player) => actions.actionsFor(toRef(player))}
-        onRowOpen={setOpened}
+        onRowOpen={(row) => setOpened(row.uuid)}
         loading={paged.pending}
         maxHeight="calc(100vh - 16rem)"
         empty={
@@ -112,11 +116,12 @@ function PlayerTable<T extends Named>({
       />
       <LoadMore paged={paged} />
       <PlayerDrawer
-        player={opened === null ? null : toRef(opened)}
+        open={current !== null}
+        player={shown === null ? null : toRef(shown)}
         onClose={() => setOpened(null)}
         actions={actions}
       >
-        {opened === null ? null : details(opened)}
+        {shown === null ? null : details(shown)}
       </PlayerDrawer>
     </>
   );

@@ -12,11 +12,14 @@ import type {
 
 /** A player's key facts beside the list, their everyday actions and the way to their page (D-0231). */
 export function PlayerDrawer({
+  open,
   player,
   onClose,
   actions,
   children,
 }: {
+  /** False slides the drawer out, still showing the player. */
+  open: boolean;
   player: PlayerRef | null;
   onClose: () => void;
   actions: ReturnType<typeof usePlayerActions>;
@@ -33,6 +36,7 @@ export function PlayerDrawer({
   };
   return (
     <RecordDrawer
+      open={open}
       title={player.name}
       onClose={onClose}
       onOpenPage={() =>

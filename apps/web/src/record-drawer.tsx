@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Details } from "./details.tsx";
 
 interface RecordDrawerProps {
+  /** False slides the drawer out, still showing its record. */
+  open: boolean;
   title: ReactNode;
   badges?: ReactNode;
   onClose: () => void;
@@ -18,6 +20,7 @@ interface RecordDrawerProps {
 
 /** A list row's record beside the list: its key facts, its everyday actions and the way to its page (D-0231). */
 export function RecordDrawer({
+  open,
   title,
   badges,
   onClose,
@@ -28,8 +31,8 @@ export function RecordDrawer({
   const { t } = useTranslation("web");
   return (
     <Drawer
-      open
-      onOpenChange={(open) => (open ? undefined : onClose())}
+      open={open}
+      onOpenChange={(next) => (next ? undefined : onClose())}
       title={title}
       badges={badges}
       footer={

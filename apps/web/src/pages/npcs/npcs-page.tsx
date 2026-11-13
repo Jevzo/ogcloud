@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DetailRow } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
+import { useHeld } from "../../held.ts";
 import { useCan } from "../../permissions.ts";
 import { placeholderNpc } from "../../placeholders.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
@@ -39,6 +40,12 @@ export function NpcsPage() {
   );
   const remove = useDeleteNpc();
   const [opened, setOpened] = useState<NpcView | null>(null);
+  // The drawer follows the list's refreshes and slides out once its NPC is gone.
+  const current =
+    opened === null
+      ? null
+      : ((npcs.data?.data ?? []).find((npc) => npc.id === opened.id) ?? null);
+  const npc = useHeld(current);
   const open = (id: string) =>
     navigate({ to: "/npcs/$npcId", params: { npcId: id } });
 
@@ -153,28 +160,29 @@ export function NpcsPage() {
           }
         />
       </Card>
-      {opened === null ? null : (
+      {npc === null ? null : (
         <RecordDrawer
-          title={t("npcs.detail.title", { group: opened.settings.groupId })}
+          open={current !== null}
+          title={t("npcs.detail.title", { group: npc.settings.groupId })}
           onClose={() => setOpened(null)}
-          onOpenPage={() => void open(opened.id)}
+          onOpenPage={() => void open(npc.id)}
         >
           <DetailRow label={t("npcs.columns.title")}>
-            <NpcTitleChip title={opened.settings.title} />
+            <NpcTitleChip title={npc.settings.title} />
           </DetailRow>
           <DetailRow label={t("npcs.columns.group")}>
-            <GroupLink id={opened.settings.groupId} />
+            <GroupLink id={npc.settings.groupId} />
           </DetailRow>
           <DetailRow label={t("npcs.columns.location")}>
             <span className="font-mono text-mono">
-              {placeOf(opened.settings.location)}
+              {placeOf(npc.settings.location)}
             </span>
           </DetailRow>
           <DetailRow label={t("npcs.columns.click")}>
-            {opened.settings.rightClick?.groupId == null
+            {npc.settings.rightClick?.groupId == null
               ? t("npcs.form.nothing")
               : t("npcs.form.moveTo", {
-                  group: opened.settings.rightClick.groupId,
+                  group: npc.settings.rightClick.groupId,
                 })}
           </DetailRow>
         </RecordDrawer>
