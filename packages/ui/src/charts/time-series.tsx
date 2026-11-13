@@ -1,7 +1,8 @@
 import { scaleLinear, scaleTime } from "d3-scale";
 import { area, curveMonotoneX, line } from "d3-shape";
-import { type PointerEvent, useId, useRef, useState } from "react";
+import { type PointerEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLoading } from "../components/loading.tsx";
 import { cn } from "../lib/cn.ts";
 import { useWidth } from "../lib/use-width.ts";
 
@@ -32,6 +33,167 @@ const DIMMED = 0.35;
 // A single series' fill fades from this opacity at the line down to nothing.
 const FILL_OPACITY = 0.2;
 
+type Scales = ReturnType<typeof scalesOf>;
+
+/** Where every value lands: the time and value scales and the gridlines, for one set of series. */
+function scalesOf(series: readonly Series[], width: number, height: number) {
+  const times = series[0]?.points.map((point) => point.at) ?? [];
+  const max = Math.max(
+    1,
+    ...series.flatMap((s) => s.points.map((point) => point.value)),
+  );
+  const x = scaleTime()
+    .domain([times[0] ?? new Date(0), times.at(-1) ?? new Date(0)])
+    .range([PADDING.left, Math.max(PADDING.left, width - PADDING.right)]);
+  const y = scaleLinear()
+    .domain([0, max])
+    .nice(GRID_LINES)
+    .range([height - PADDING.bottom, PADDING.top]);
+  // Counts get whole-number gridlines only: a scale showing 0.2 players reads as a fraction that never happens.
+  const counts = series.every((s) =>
+    s.points.every((point) => Number.isInteger(point.value)),
+  );
+  const yTicks = y
+    .ticks(GRID_LINES)
+    .filter((tick) => !counts || Number.isInteger(tick));
+  return { times, x, y, yTicks };
+}
+
+interface PlotProps {
+  series: readonly Series[];
+  scales: Scales;
+  width: number;
+  height: number;
+  formatValue: (value: number) => string;
+  formatTime: (at: Date) => string;
+  /** The ids of the chart's fills and its draw-in clip. */
+  id: string;
+  dim: (name: string) => number;
+  onFocus: (name: string | null) => void;
+}
+
+/** The gridlines, axis labels and series of one set of data; a data change fades one plot into the next. */
+function Plot({
+  series,
+  scales: { x, y, yTicks },
+  width,
+  height,
+  formatValue,
+  formatTime,
+  id,
+  dim,
+  onFocus,
+}: PlotProps) {
+  const toLine = line<Point>()
+    .x((point) => x(point.at))
+    .y((point) => y(point.value))
+    .curve(curveMonotoneX);
+  const toArea = area<Point>()
+    .x((point) => x(point.at))
+    .y0(y(0))
+    .y1((point) => y(point.value))
+    .curve(curveMonotoneX);
+  return (
+    <>
+      {yTicks.map((tick) => (
+        <g key={tick}>
+          <line
+            x1={PADDING.left}
+            x2={width - PADDING.right}
+            y1={y(tick)}
+            y2={y(tick)}
+            stroke="var(--og-border-subtle)"
+          />
+          <text
+            x={width}
+            y={y(tick)}
+            dy="0.32em"
+            textAnchor="end"
+            className="fill-text-3 text-meta tabular-nums"
+          >
+            {formatValue(tick)}
+          </text>
+        </g>
+      ))}
+      {x
+        .ticks(Math.max(MIN_X_TICKS, Math.floor(width / X_TICK_SPACING)))
+        .map((tick) => (
+          <text
+            key={tick.getTime()}
+            x={x(tick)}
+            y={height - 4}
+            textAnchor="middle"
+            className="fill-text-3 text-meta tabular-nums"
+          >
+            {formatTime(tick)}
+          </text>
+        ))}
+      {series.map((s, index) => (
+        <g
+          key={s.name}
+          clipPath={`url(#${id}-reveal)`}
+          onPointerEnter={() => onFocus(s.name)}
+          onPointerLeave={() => onFocus(null)}
+          className="transition-opacity"
+          style={{ opacity: dim(s.name) }}
+        >
+          {series.length === 1 ? (
+            <path
+              d={toArea(s.points as Point[]) ?? ""}
+              fill={`url(#${id}-fill-${index})`}
+            />
+          ) : null}
+          <path
+            d={toLine(s.points as Point[]) ?? ""}
+            fill="none"
+            stroke={`var(${SERIES_COLOURS[index]})`}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+        </g>
+      ))}
+    </>
+  );
+}
+
+/** What a set of series shows, so a new array of the same data counts as no change. */
+function signatureOf(series: readonly Series[]): string {
+  return series
+    .map(
+      (s) =>
+        `${s.name}:${s.points.map((point) => `${point.at.getTime()}=${point.value}`).join(",")}`,
+    )
+    .join("|");
+}
+
+/**
+ * When the data changes, the plot it replaces stays a moment to fade out under the new one fading in, so a new range
+ * or a rescale moves smoothly instead of jumping; opacity only (D-0231).
+ */
+function useLeavingPlot(series: readonly Series[], loading: boolean) {
+  const signature = signatureOf(series);
+  // Placeholder data never fades out over the first real data.
+  const last = useRef<{
+    signature: string;
+    series: readonly Series[];
+    loading: boolean;
+  }>({ signature, series, loading });
+  const [leaving, setLeaving] = useState<{
+    version: number;
+    series: readonly Series[];
+  } | null>(null);
+  useEffect(() => {
+    const before = last.current;
+    last.current = { signature, series, loading };
+    if (before.signature === signature || before.loading || loading) return;
+    setLeaving((current) => ({
+      version: (current?.version ?? 0) + 1,
+      series: before.series,
+    }));
+  }, [signature, series, loading]);
+  return { leaving, gone: () => setLeaving(null) };
+}
+
 interface TimeSeriesChartProps {
   /** Names the chart for screen readers and titles its table view. */
   label: string;
@@ -60,35 +222,18 @@ export function TimeSeriesChart({
   // useId's characters are not valid in a url(#…) reference.
   const id = `og-chart-${useId().replace(/[^\w-]/g, "")}`;
   const dim = (name: string) => (focus !== null && focus !== name ? DIMMED : 1);
-
-  const times = series[0]?.points.map((point) => point.at) ?? [];
-  const max = Math.max(
-    1,
-    ...series.flatMap((s) => s.points.map((point) => point.value)),
-  );
-  const x = scaleTime()
-    .domain([times[0] ?? new Date(0), times.at(-1) ?? new Date(0)])
-    .range([PADDING.left, Math.max(PADDING.left, width - PADDING.right)]);
-  const y = scaleLinear()
-    .domain([0, max])
-    .nice(GRID_LINES)
-    .range([height - PADDING.bottom, PADDING.top]);
-  // Counts get whole-number gridlines only: a scale showing 0.2 players reads as a fraction that never happens.
-  const counts = series.every((s) =>
-    s.points.every((point) => Number.isInteger(point.value)),
-  );
-  const yTicks = y
-    .ticks(GRID_LINES)
-    .filter((tick) => !counts || Number.isInteger(tick));
-  const toLine = line<Point>()
-    .x((point) => x(point.at))
-    .y((point) => y(point.value))
-    .curve(curveMonotoneX);
-  const toArea = area<Point>()
-    .x((point) => x(point.at))
-    .y0(y(0))
-    .y1((point) => y(point.value))
-    .curve(curveMonotoneX);
+  const { leaving, gone } = useLeavingPlot(series, useLoading());
+  const scales = scalesOf(series, width, height);
+  const { times, x, y } = scales;
+  const plot = {
+    width,
+    height,
+    formatValue,
+    formatTime,
+    id,
+    dim,
+    onFocus: setFocus,
+  };
 
   const track = (event: PointerEvent<SVGSVGElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -160,63 +305,25 @@ export function TimeSeriesChart({
                 />
               </clipPath>
             </defs>
-            {yTicks.map((tick) => (
-              <g key={tick}>
-                <line
-                  x1={PADDING.left}
-                  x2={width - PADDING.right}
-                  y1={y(tick)}
-                  y2={y(tick)}
-                  stroke="var(--og-border-subtle)"
-                />
-                <text
-                  x={width}
-                  y={y(tick)}
-                  dy="0.32em"
-                  textAnchor="end"
-                  className="fill-text-3 text-meta tabular-nums"
-                >
-                  {formatValue(tick)}
-                </text>
-              </g>
-            ))}
-            {x
-              .ticks(Math.max(MIN_X_TICKS, Math.floor(width / X_TICK_SPACING)))
-              .map((tick) => (
-                <text
-                  key={tick.getTime()}
-                  x={x(tick)}
-                  y={height - 4}
-                  textAnchor="middle"
-                  className="fill-text-3 text-meta tabular-nums"
-                >
-                  {formatTime(tick)}
-                </text>
-              ))}
-            {series.map((s, index) => (
+            {leaving === null ? null : (
               <g
-                key={s.name}
-                clipPath={`url(#${id}-reveal)`}
-                onPointerEnter={() => setFocus(s.name)}
-                onPointerLeave={() => setFocus(null)}
-                className="transition-opacity"
-                style={{ opacity: dim(s.name) }}
+                key={`leaving-${leaving.version}`}
+                onAnimationEnd={gone}
+                className="pointer-events-none animate-fade-out [animation-fill-mode:forwards]"
               >
-                {series.length === 1 ? (
-                  <path
-                    d={toArea(s.points as Point[]) ?? ""}
-                    fill={`url(#${id}-fill-${index})`}
-                  />
-                ) : null}
-                <path
-                  d={toLine(s.points as Point[]) ?? ""}
-                  fill="none"
-                  stroke={`var(${SERIES_COLOURS[index]})`}
-                  strokeWidth={2}
-                  strokeLinejoin="round"
+                <Plot
+                  series={leaving.series}
+                  scales={scalesOf(leaving.series, width, height)}
+                  {...plot}
                 />
               </g>
-            ))}
+            )}
+            <g
+              key={`current-${leaving?.version ?? 0}`}
+              className={leaving === null ? undefined : "animate-fade-in"}
+            >
+              <Plot series={series} scales={scales} {...plot} />
+            </g>
             {hoverTime === undefined ? null : (
               <g>
                 <line
