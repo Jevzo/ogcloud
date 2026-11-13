@@ -96,11 +96,15 @@ class RateLimitFilter(
                 paths.matcher(HttpMethod.POST, "/api/v1/me/minecraft-link/**"),
             )
 
-        /** A refresh presents a random rotating token, nothing to guess, so it has a looser bucket (D-0233). */
+        /**
+         * An app's refresh presents a random rotating token, nothing to guess, so it has a looser bucket (D-0233). A
+         * request that brings a client secret stays strict: the secret is checked first and could be guessed.
+         */
         val REFRESH: RequestMatcher =
             AndRequestMatcher(
                 paths.matcher(HttpMethod.POST, "/oauth2/token"),
                 ParameterRequestMatcher("grant_type", "refresh_token"),
+                RequestMatcher { it.getParameter("client_secret") == null && it.getHeader("Authorization") == null },
             )
 
         /** The sign-in pages and their state; each load starts a login session (D-0222). */

@@ -70,6 +70,16 @@ class RateLimitFilterTest {
     }
 
     @Test
+    fun `a refresh that brings a client secret uses the strict bucket, since the secret can be guessed`() {
+        run("POST", "/oauth2/token", "grant_type" to "refresh_token", "client_secret" to "guess")
+        run("POST", "/oauth2/token", "grant_type" to "refresh_token") {
+            addHeader("Authorization", "Basic Z3JhZmFuYTpndWVzcw==")
+        }
+
+        taken.map { it.first } shouldBe listOf("auth", "auth")
+    }
+
+    @Test
     fun `an empty bucket answers 429 with Retry-After`() {
         decision = RateDecision(false, Duration.ofMillis(1500))
 
@@ -84,11 +94,13 @@ class RateLimitFilterTest {
         method: String,
         path: String,
         vararg parameters: Pair<String, String>,
+        prepare: MockHttpServletRequest.() -> Unit = {},
     ): MockHttpServletResponse {
         val request =
             MockHttpServletRequest(method, path).apply {
                 remoteAddr = "203.0.113.7"
                 parameters.forEach { (name, value) -> addParameter(name, value) }
+                prepare()
             }
         return MockHttpServletResponse().also { filter.doFilter(request, it, MockFilterChain()) }
     }
