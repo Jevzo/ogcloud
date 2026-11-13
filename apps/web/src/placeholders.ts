@@ -213,8 +213,15 @@ export const placeholderOverview: OverviewView = {
   maintenance: false,
   eulaAccepted: true,
   serversByState: { RUNNING: 2 },
-  groups: [placeholderGroupOverview, placeholderGroupOverview],
-  recentScaling: [placeholderScaling, placeholderScaling],
+  // Lists keyed by id need distinct ones: React keeps a stale row of a repeated key once the real data arrives.
+  groups: [
+    placeholderGroupOverview,
+    { ...placeholderGroupOverview, id: "proxy" },
+  ],
+  recentScaling: [
+    placeholderScaling,
+    { ...placeholderScaling, id: "01900000-0000-7000-8000-000000000001" },
+  ],
 };
 
 export const placeholderNetwork: NetworkSettingsView = {
