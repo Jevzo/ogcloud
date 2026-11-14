@@ -95,18 +95,26 @@ stop_forwards() {
   done
 }
 
-# save_logs <dir>: every pod's log (all containers) and the events of OgCloud's namespaces and kube-system, where
-# k3s runs the HelmChart jobs. The scripts call it when they fail, before the cluster goes; CI keeps the directory.
+# save_logs <dir>: every pod's log (all containers) and the events of OgCloud's namespaces, kube-system, where k3s
+# runs the HelmChart jobs, and default, where the nodes' land; then the nodes, the kubelet's image and eviction lines
+# and the disk. The scripts call it when they fail, before the cluster goes; CI keeps the directory.
 save_logs() {
-  local dir=$1 namespace pod
+  local dir=$1 namespace pod node
   rm -rf "$dir"
   mkdir -p "$dir"
-  for namespace in ogcloud ogcloud-servers kube-system; do
+  for namespace in ogcloud ogcloud-servers kube-system default; do
     kubectl get events --namespace "$namespace" --sort-by=.lastTimestamp >"$dir/$namespace-events.txt" 2>&1 || true
     for pod in $(kubectl get pods --namespace "$namespace" --output name 2>/dev/null); do
       kubectl logs --namespace "$namespace" "$pod" --all-containers --prefix --timestamps \
         >"$dir/$namespace-${pod#pod/}.log" 2>&1 || true
     done
   done
+  kubectl describe nodes >"$dir/nodes.txt" 2>&1 || true
+  # k3d runs each node as a container of the node's name, whose log is k3s's, the kubelet's included.
+  for node in $(kubectl get nodes --output name 2>/dev/null); do
+    node=${node#node/}
+    docker logs "$node" 2>&1 | grep -E 'image_gc_manager|eviction_manager' >"$dir/kubelet-$node.log" || true
+  done
+  df -h >"$dir/disk.txt" 2>&1 || true
   echo "Pod logs and events saved in $dir" >&2
 }
