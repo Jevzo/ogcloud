@@ -25,14 +25,14 @@ manifests:
       chart: strimzi
       version: 1.3.1
 
-  # The operator release that kube-prometheus-stack 93.1.1 ships (its appVersion).
+  # The operator release that kube-prometheus-stack 93.2.0 ships (its appVersion).
   - name: prometheus-operator-crds
     when: monitoring
-    url: https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.95.1/stripped-down-crds.yaml
-    sha256: 1a3fe61ea58cfe9c18da5d1ec2be86afdf65471a88dc54c102911aab71d42785
+    url: https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.95.2/stripped-down-crds.yaml
+    sha256: ab6e3f856ea951a34c16911eb4ea42e898046843159164d72cfd3880b358670a
     follows:
       chart: kube-prometheus-stack
-      version: 93.1.1
+      version: 93.2.0
 
 charts:
   - name: cert-manager
@@ -58,7 +58,7 @@ charts:
     namespace: traefik
     repository: https://traefik.github.io/charts
     chart: traefik
-    version: 42.3.1
+    version: 42.3.2
     values:
       # OgCloud routes through Gateway API only, so Traefik's own CRDs, which its chart cannot upgrade, stay unused.
       providers:
@@ -148,7 +148,7 @@ charts:
     namespace: monitoring
     repository: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    version: 93.1.1
+    version: 93.2.0
     values:
       # Monitors of every namespace count, OgCloud's PodMonitors included (T-0603).
       prometheus:
@@ -181,7 +181,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.1.0
+    version: 21.2.0
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
