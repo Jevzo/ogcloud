@@ -58,7 +58,7 @@ charts:
     namespace: traefik
     repository: https://traefik.github.io/charts
     chart: traefik
-    version: 42.3.1
+    version: 42.3.2
     values:
       # OgCloud routes through Gateway API only, so Traefik's own CRDs, which its chart cannot upgrade, stay unused.
       providers:
@@ -148,7 +148,7 @@ charts:
     namespace: monitoring
     repository: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    version: 93.1.1
+    version: 93.2.0
     values:
       # Monitors of every namespace count, OgCloud's PodMonitors included (T-0603).
       prometheus:
@@ -181,7 +181,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.1.0
+    version: 21.2.0
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
