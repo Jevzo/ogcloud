@@ -1,0 +1,12 @@
+name: Free disk
+description: >-
+  Removes toolchains the runner image ships and OgCloud never uses, so the heavy jobs' image builds and k3d clusters
+  fit its disk; k3s deletes unused images once the disk passes 85 %, imported ones included.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        df -h /
+        sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+        df -h /
