@@ -35,7 +35,7 @@ catalog:
   lucide-react: 1.71.0
   mineflayer: 4.39.0
   motion: 14.12.0
-  msw: 3.0.4
+  msw: 3.0.5
   orval: 8.47.0
   radix-ui: 1.8.1
   react: 19.3.1
@@ -46,7 +46,7 @@ catalog:
   tailwind-merge: 3.7.0
   tailwindcss: 4.3.5
   typescript: 7.0.2
-  vite: 8.3.7
+  vite: 8.3.8
   zod: 4.6.7
 
 minimumReleaseAgeExclude:
