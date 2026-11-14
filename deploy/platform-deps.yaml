@@ -181,7 +181,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.2.0
+    version: 21.2.1
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
