@@ -5,11 +5,8 @@
  * OpenAPI spec version: v1
  */
 import type { TextPreviewRequestField } from './textPreviewRequestField.ts';
-import type { TextPreviewRequestValues } from './textPreviewRequestValues.ts';
 
 export interface TextPreviewRequest {
   text: string;
   field: TextPreviewRequestField;
-  /** @nullable */
-  values?: TextPreviewRequestValues;
 }

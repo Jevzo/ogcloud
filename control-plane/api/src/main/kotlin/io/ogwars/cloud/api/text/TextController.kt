@@ -20,8 +20,6 @@ data class TextPreviewRequest(
     val text: String,
     /** The text it is for, which decides its placeholders and how older clients see it. */
     val field: TextField,
-    /** Plain text for some of the field's placeholders in place of their samples, such as a player's name (D-0238). */
-    val values: Map<String, String>? = null,
 )
 
 /** One stretch of the preview with one colour (`#rrggbb`, or null for the client's default) and its decorations. */
@@ -76,8 +74,8 @@ data class TextPreview(
 @RequestMapping("/api/v1/text")
 class TextController {
     /**
-     * How a text looks once saved, its placeholders filled with the given values or samples. It reads and changes
-     * nothing, so any caller may ask and it is not audited.
+     * How a text looks once saved, its placeholders filled with samples. It reads and changes nothing, so any caller
+     * may ask and it is not audited.
      */
     @AnyCaller
     @NotAudited
@@ -87,19 +85,13 @@ class TextController {
     ): TextPreview {
         val field = request.field
         val placeholders = field.samples.keys.toList()
-        val values = request.values.orEmpty()
-        val unknown = values.keys - field.samples.keys
-        require(unknown.isEmpty()) { "${unknown.joinToString()} is no placeholder of $field" }
-        require(values.values.all { it.length <= TextField.MAX_LENGTH }) {
-            "a value holds at most ${TextField.MAX_LENGTH} characters"
-        }
         return when (val result = field.parse(request.text)) {
             is ParseResult.Invalid -> {
                 TextPreview(result.errors.map(TextErrorView::of), null, placeholders)
             }
 
             is ParseResult.Valid -> {
-                val text = result.text.fill(field.samples + values)
+                val text = result.text.fill(field.samples)
                 val legacy = text.legacySpans(field.collapsesOnLegacy, field.legacyMaxLength).map { it.toView() }
                 val modern = if (field.legacyOnly) legacy else text.spans().map { it.toView() }
                 TextPreview(emptyList(), TextRendering(modern, legacy), placeholders)

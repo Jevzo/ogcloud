@@ -122,7 +122,6 @@ export * from './textErrorViewCode.ts';
 export * from './textPreview.ts';
 export * from './textPreviewRequest.ts';
 export * from './textPreviewRequestField.ts';
-export * from './textPreviewRequestValues.ts';
 export * from './textRendering.ts';
 export * from './textSpanView.ts';
 export * from './totpCodeRequest.ts';
