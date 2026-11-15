@@ -412,7 +412,7 @@ spec:
 ---
 {{- /*
 Game backends run third-party plugins: only proxies reach them, since the forwarding token travels in the
-handshake (D-0065), and they reach only the gateway, S3 and DNS.
+handshake (D-0065), and they reach only the gateway, S3, DNS and Mojang's services on public :443 (D-0240).
 */}}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -437,6 +437,7 @@ spec:
     {{- include "ogcloud.np.dns" . | nindent 4 }}
     {{- include "ogcloud.np.gateway" . | nindent 4 }}
     {{- include "ogcloud.np.s3" . | nindent 4 }}
+    {{- include "ogcloud.np.mojang" . | nindent 4 }}
 ---
 {{- /* Proxies: players arrive through the load balancer; online mode needs Mojang's session servers. */}}
 apiVersion: networking.k8s.io/v1
@@ -471,9 +472,4 @@ spec:
               cloud.ogwars.io/role: backend
       ports:
         - {protocol: TCP, port: 25565}
-    {{- if $np.mojang }}
-    - to:
-        {{- include "ogcloud.np.public" . | nindent 8 }}
-      ports:
-        - {protocol: TCP, port: 443}
-    {{- end }}
+    {{- include "ogcloud.np.mojang" . | nindent 4 }}

@@ -3,6 +3,8 @@ package deploytest
 import (
 	"fmt"
 	"net/netip"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -88,7 +90,9 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(internet, loadbalancer, 25565, true, "players connect from anywhere"),
 		tcp(backend, gateway, 9443, true, "game pods hold sessions with the gateway"),
 		tcp(proxy, gateway, 9443, true, "game pods hold sessions with the gateway"),
-		tcp(backend, internet, 443, false, "backends run third-party plugins and get no internet"),
+		tcp(backend, internet, 443, true, "backends look up Mojang's services (D-0240)"),
+		tcp(backend, internet, 80, false, "backends run third-party plugins and get nothing else outside"),
+		tcp(backend, privateHost, 443, false, "the public egress excludes private ranges"),
 		tcp(proxy, internet, 443, true, "online mode asks Mojang's session servers"),
 		tcp(proxy, privateHost, 443, false, "the public egress excludes private ranges"),
 		tcp(backend, seaweed, 8333, true, "presigned template downloads"),
@@ -149,9 +153,7 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 		tcp(prometheus, gateway, 8081, true, "Prometheus scrapes the gateway"),
 		tcp(api, tempo, 4318, true, "traces go to Tempo"),
 		tcp(backend, objectStorage, 443, true, "backends download templates from Hetzner Object Storage"),
-		tcp(backend, internet, 443, false, "S3's addresses, not the internet (D-0154)"),
 		tcp(postgresPod, backupStorage, 443, true, "PostgreSQL archives into the backup target (D-0166)"),
-		tcp(backend, backupStorage, 443, false, "game pods never reach the backups"),
 		tcp(api, backupStorage, 443, false, "the API never reaches the backups"),
 		tcp(backupJob, objectStorage, 443, true, "the template copy reads the data bucket"),
 		tcp(backupJob, backupStorage, 443, true, "the template copy writes the backup target"),
@@ -159,6 +161,25 @@ func TestNetworkPoliciesAllowOnlyWhatEachWorkloadUses(t *testing.T) {
 	} {
 		if got := monitored.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
 			t.Errorf("hetzner: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)
+		}
+	}
+}
+
+// Without Mojang's egress, for offline development, game pods reach S3's addresses and nothing else outside.
+func TestOfflineGamePodsReachNothingOutside(t *testing.T) {
+	offline := filepath.Join(t.TempDir(), "offline.yaml")
+	if err := os.WriteFile(offline, []byte("networkPolicies:\n  mojang: false\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	objects := render(t, hetznerValues, offline)
+	for _, f := range []flow{
+		tcp(backend, objectStorage, 443, true, "backends download templates from Hetzner Object Storage"),
+		tcp(backend, internet, 443, false, "S3's addresses, not the internet (D-0154)"),
+		tcp(proxy, internet, 443, false, "offline proxies ask no one outside"),
+		tcp(backend, backupStorage, 443, false, "game pods never reach the backups; with Mojang's egress only their credentials do (D-0240)"),
+	} {
+		if got := objects.allows(t, f.from, f.to, f.port, f.protocol); got != f.allowed {
+			t.Errorf("offline: %s -> %s :%d allowed %v, want %v: %s", describe(f.from), describe(f.to), f.port, got, f.allowed, f.why)
 		}
 	}
 }

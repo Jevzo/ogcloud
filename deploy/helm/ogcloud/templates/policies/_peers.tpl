@@ -27,6 +27,16 @@ Building blocks of the NetworkPolicies (D-0154). Peers are list items for `from`
     except: ["::1/128", "fc00::/7", "fe80::/10"]
 {{- end -}}
 
+{{/* Game pods' public :443, for Mojang's session servers and services (D-0154, D-0240); off for offline development. */}}
+{{- define "ogcloud.np.mojang" -}}
+{{- if .Values.networkPolicies.mojang }}
+- to:
+    {{- include "ogcloud.np.public" . | nindent 4 }}
+  ports:
+    - {protocol: TCP, port: 443}
+{{- end }}
+{{- end -}}
+
 {{- define "ogcloud.np.cidrs" -}}
 {{- range . }}
 - ipBlock:

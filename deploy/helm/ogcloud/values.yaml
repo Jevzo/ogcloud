@@ -196,9 +196,9 @@ networkPolicies:
   # Addresses of external PostgreSQL, Kafka and Valkey (D-0021).
   externalCidrs: [0.0.0.0/0, "::/0"]
   # Addresses of an external S3 endpoint, required with one: game pods download templates from it, and
-  # anything wider would give their plugins the internet (D-0154).
+  # anything wider would open more than S3 to their plugins (D-0154).
   externalS3Cidrs: []
-  # Proxies reach Mojang's session servers on public :443; false for offline development.
+  # Game pods reach Mojang's session servers and services on public :443 (D-0240); false for offline development.
   mojang: true
 
 # The monitoring stack from platform-deps.yaml (D-0025): off on minikube, on for Hetzner. With it, the services

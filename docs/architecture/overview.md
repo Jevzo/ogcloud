@@ -122,8 +122,8 @@ backups, orphaned objects).
   infrastructure credentials.
 - In-cluster traffic uses TLS from a cert-manager private CA.
 - NetworkPolicies deny everything in both namespaces and let each workload reach only what it uses (D-0154):
-  backends reach the gateway, S3 and DNS, and only proxies reach them; proxies also reach public :443 for
-  Mojang; only Traefik reaches the API, and monitoring only the services' admin ports. The game namespace enforces
+  backends reach the gateway, S3 and DNS, and only proxies reach them; game pods also reach public :443 for
+  Mojang (D-0240); only Traefik reaches the API, and monitoring only the services' admin ports. The game namespace enforces
   the restricted Pod Security standard.
 - Secrets live in Infisical and are synced into Kubernetes Secrets by its operator.
 - People and machines use the API's built-in OIDC provider. Access tokens are short-lived JWTs
