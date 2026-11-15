@@ -50,6 +50,8 @@ const val TEST_GRAFANA_SECRET = "grafana-test-secret"
         "ogcloud.templates.max-upload-size=$TEST_MAX_UPLOAD",
         "ogcloud.auth.clients.grafana.redirect-uri=$TEST_GRAFANA_REDIRECT",
         "ogcloud.auth.clients.grafana.client-secret=$TEST_GRAFANA_SECRET",
+        // The committed contract is rendered from the served one, which running installs leave off (D-0241).
+        "springdoc.api-docs.enabled=true",
     ],
 )
 @Import(ApiTestConfiguration::class)

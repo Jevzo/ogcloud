@@ -35,6 +35,8 @@ management:
 # Same origin (D-0098): everything the API serves sits under /api, /oauth2, /.well-known, /login and /webauthn.
 springdoc:
   api-docs:
+    # Running installs do not serve the contract; the API's tests turn it on to render openapi.yaml (D-0241).
+    enabled: false
     path: /api/openapi
   packages-to-scan: io.ogwars.cloud.api
   # The login pages are HTML for browsers; only the JSON they read joins the contract (D-0212).
