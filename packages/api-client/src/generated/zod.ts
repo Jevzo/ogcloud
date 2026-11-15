@@ -332,7 +332,8 @@ export const UserCreateResponse = zod.void()
 
 export const TextPreviewBody = zod.object({
   "text": zod.string(),
-  "field": zod.enum(['CHAT_PREFIX', 'CHAT_SUFFIX', 'TAB_PREFIX', 'NAME_FORMAT', 'MOTD', 'MAINTENANCE_MOTD', 'VERSION_NAME', 'MAINTENANCE_VERSION_NAME', 'TABLIST_HEADER', 'TABLIST_FOOTER', 'MAINTENANCE_KICK_MESSAGE', 'KICK_MESSAGE', 'NPC_TITLE', 'NPC_SUBTITLE'])
+  "field": zod.enum(['CHAT_PREFIX', 'CHAT_SUFFIX', 'TAB_PREFIX', 'NAME_FORMAT', 'MOTD', 'MAINTENANCE_MOTD', 'VERSION_NAME', 'MAINTENANCE_VERSION_NAME', 'TABLIST_HEADER', 'TABLIST_FOOTER', 'MAINTENANCE_KICK_MESSAGE', 'KICK_MESSAGE', 'NPC_TITLE', 'NPC_SUBTITLE']),
+  "values": zod.record(zod.string(), zod.string()).nullish()
 })
 
 export const TextPreviewResponse = zod.unknown()
