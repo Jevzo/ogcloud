@@ -50,6 +50,25 @@ class TextPreviewTest(
     }
 
     @Test
+    fun `a value fills its placeholder in place of the sample, the gradient spanning it`() {
+        val preview = preview("<gradient:#ff0000:#0000ff>{name}</gradient>", "NAME_FORMAT", mapOf("name" to "mira"))
+
+        colours(modern(preview)) shouldBe listOf("m" to "#ff0000", "i" to "#aa0055", "r" to "#5500aa", "a" to "#0000ff")
+        colours(modern(preview("<gold>{name}", "NAME_FORMAT", mapOf("name" to "<red>x")))) shouldBe
+            listOf("<red>x" to "#ffaa00")
+    }
+
+    @Test
+    fun `values name only the field's placeholders and are no longer than a text`() {
+        val call = { values: Map<String, String> ->
+            oauth.call("POST", PREVIEW, viewer, mapOf("text" to "{name}", "field" to "NAME_FORMAT", "values" to values))
+        }
+
+        call(mapOf("player" to "mira")).statusCode() shouldBe BAD_REQUEST
+        call(mapOf("name" to "x".repeat(TextField.MAX_LENGTH + 1))).statusCode() shouldBe BAD_REQUEST
+    }
+
+    @Test
     fun `a preview names the placeholders its field offers, valid or not`() {
         preview("<gold>{name}", "NAME_FORMAT")["placeholders"] shouldBe listOf("name")
         preview("<frog>", "NAME_FORMAT")["placeholders"] shouldBe listOf("name")
@@ -100,8 +119,10 @@ class TextPreviewTest(
     private fun preview(
         text: String,
         field: String,
+        values: Map<String, String>? = null,
     ): Map<*, *> {
-        val response = oauth.call("POST", PREVIEW, viewer, mapOf("text" to text, "field" to field))
+        val body = mapOf("text" to text, "field" to field) + (values?.let { mapOf("values" to it) } ?: emptyMap())
+        val response = oauth.call("POST", PREVIEW, viewer, body)
         response.statusCode() shouldBe OK
         return oauth.json(response)
     }

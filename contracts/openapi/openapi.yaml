@@ -2396,6 +2396,12 @@ components:
           - KICK_MESSAGE
           - NPC_TITLE
           - NPC_SUBTITLE
+        values:
+          type:
+          - object
+          - "null"
+          additionalProperties:
+            type: string
       required:
       - field
       - text
