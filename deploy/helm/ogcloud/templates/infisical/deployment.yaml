@@ -139,19 +139,26 @@ spec:
             # Clients authenticate to Infisical itself; the tunnel only encrypts.
             - --disable-authentication
             - --timed-reload=1h
+            # Its own health for the liveness probe, which must not fail while only Infisical is down.
+            - --status=https://0.0.0.0:8444
           ports:
             - name: https
               containerPort: 8443
-          # A full request, since a bare TCP probe leaves ghostunnel a half-made handshake to log.
+            - name: status
+              containerPort: 8444
+          # Full requests, since a bare TCP probe leaves ghostunnel a half-made handshake to log.
           readinessProbe:
             httpGet:
               path: /api/status
               port: https
               scheme: HTTPS
             periodSeconds: 10
+          # /_status would check Infisical too; the metrics only answer that ghostunnel runs.
           livenessProbe:
-            tcpSocket:
-              port: https
+            httpGet:
+              path: /_metrics
+              port: status
+              scheme: HTTPS
             periodSeconds: 60
           securityContext:
             {{- include "ogcloud.containerSecurity" . | nindent 12 }}

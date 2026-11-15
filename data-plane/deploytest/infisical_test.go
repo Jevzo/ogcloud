@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -72,7 +73,7 @@ func TestInfisicalServesOnlyThroughItsTLSSidecar(t *testing.T) {
 		network.WithNetwork(nil, &testcontainers.DockerNetwork{Name: dockerNetwork}),
 		// The sidecar shares this container's network, so its port is published here, next to the one that must
 		// stay closed.
-		testcontainers.WithExposedPorts("8443/tcp", "8080/tcp"),
+		testcontainers.WithExposedPorts("8443/tcp", "8080/tcp", namedPort(t, sidecar, str(sidecar, "livenessProbe", "httpGet", "port"))),
 	)
 	testcontainers.CleanupContainer(t, infisical)
 	if err != nil {
@@ -124,6 +125,22 @@ func TestInfisicalServesOnlyThroughItsTLSSidecar(t *testing.T) {
 		return tail(containerLogs(t, infisical), 15) + "\n--- sidecar:\n" + tail(containerLogs(t, tunnel), 15)
 	})
 
+	// The liveness probe asks ghostunnel's own status port, so it never fails for Infisical alone and leaves no
+	// half-made handshake for ghostunnel to log.
+	probe := get(sidecar, "livenessProbe", "httpGet")
+	liveness := "https://" + testvalkey.Address(t, infisical, namedPort(t, sidecar, str(probe, "port"))) + str(probe, "path")
+	response, err := client.Get(liveness) //nolint:noctx // One request with the client's timeout.
+	if err != nil {
+		t.Fatalf("the sidecar's liveness probe: %v", err)
+	}
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Errorf("the sidecar's liveness probe answers %d, want 200", response.StatusCode)
+	}
+	if logs := containerLogs(t, tunnel); strings.Contains(logs, "error on TLS handshake") {
+		t.Errorf("the sidecar logged a failed handshake:\n%s", tail(logs, 10))
+	}
+
 	// cert-manager renews the certificate; kubelet swaps the Secret's files, and the sidecar serves the new one.
 	runIn(t, tunnel, "/secret/publish.sh", "2", "next.crt", "next.key")
 	block, _ := pem.Decode([]byte(renewed))
@@ -143,6 +160,19 @@ func TestInfisicalServesOnlyThroughItsTLSSidecar(t *testing.T) {
 	if err == nil {
 		t.Error("Infisical's plain port answers outside its pod")
 	}
+}
+
+// namedPort is the container port named name, as Docker exposes it.
+func namedPort(t *testing.T, container any, name string) string {
+	t.Helper()
+	ports, _ := get(container, "ports").([]any)
+	for _, port := range ports {
+		if str(port, "name") == name {
+			return fmt.Sprintf("%v/tcp", get(port, "containerPort"))
+		}
+	}
+	t.Fatalf("container %s declares no port %q", str(container, "name"), name)
+	return ""
 }
 
 // startPostgres runs PostgreSQL with TLS from ca under the names of the chart's database certificate, reached as
