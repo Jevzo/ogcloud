@@ -37,10 +37,11 @@
 	}
 
 	# Every other path is one of the app's routes. Each response gets a fresh nonce in index.html and in the CSP,
-	# so the styles the app inserts load and nothing else inline does (D-0219).
+	# so the styles the app inserts load and nothing else inline does (D-0219). Minecraft heads come from mc-heads.net
+	# (D-0235).
 	handle {
 		header Cache-Control no-store
-		header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'nonce-{http.request.uuid}'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' 'nonce-{http.request.uuid}'; img-src 'self' data: https://mc-heads.net; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 		rewrite * /index.html
 		templates
 		file_server

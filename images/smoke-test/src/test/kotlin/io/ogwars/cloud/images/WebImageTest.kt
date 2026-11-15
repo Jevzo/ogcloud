@@ -33,6 +33,7 @@ class WebImageTest {
             val policy = first.headers().firstValue(CSP).orElse("")
             policy shouldContain "script-src 'self';"
             policy shouldContain "frame-ancestors 'none'"
+            policy shouldContain "img-src 'self' data: https://mc-heads.net;"
             first.headers().firstValue("Cache-Control").orElse("") shouldBe "no-store"
             first.headers().firstValue("X-Content-Type-Options").orElse("") shouldBe "nosniff"
         }
