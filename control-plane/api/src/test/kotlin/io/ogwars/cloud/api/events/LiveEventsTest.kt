@@ -31,11 +31,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.test.annotation.DirtiesContext
 import java.io.UncheckedIOException
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -51,6 +53,7 @@ class LiveEventsTest(
     @Autowired private val metadata: EventMetadataFactory,
     @Autowired private val audit: AuditLogStore,
     @Autowired private val jobs: JobStore,
+    @Autowired private val liveEvents: LiveEvents,
 ) {
     private val oauth = OAuthHttp(port)
     private val testUsers = TestUsers(users, passwords)
@@ -69,6 +72,22 @@ class LiveEventsTest(
         oauth.call("POST", TICKETS, token = null).statusCode() shouldBe UNAUTHORIZED
         audit.list(AuditFilter.NONE, before = null, limit = AUDIT_PAGE).map { it.action } shouldNotContain
             "POST $TICKETS"
+    }
+
+    @Test
+    // Ending the streams is for a shutdown: this replica takes no new ones afterwards.
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    fun `ending the streams closes them and refuses new ones`() {
+        val token = testUsers.token(testUsers.create())
+        val response = oauth.events(ticket(token))
+        response.statusCode() shouldBe OK
+        val closed = CompletableFuture.runAsync { response.body().use { it.forEach { } } }
+
+        liveEvents.endStreams()
+
+        // An open request would hold the graceful shutdown until the pod is killed.
+        closed.get(WAIT.seconds, TimeUnit.SECONDS)
+        oauth.events(ticket(token)).use { it.statusCode() shouldBe SERVICE_UNAVAILABLE }
     }
 
     @Test
@@ -252,6 +271,7 @@ class LiveEventsTest(
         const val AUDIT_PAGE = 100
         const val OK = 200
         const val UNAUTHORIZED = 401
+        const val SERVICE_UNAVAILABLE = 503
         val WAIT: Duration = Duration.ofSeconds(30)
         val RETRY: Duration = Duration.ofMillis(500)
     }

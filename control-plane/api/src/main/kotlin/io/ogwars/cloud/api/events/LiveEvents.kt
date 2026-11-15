@@ -50,6 +50,9 @@ class EventTickets(
     }
 }
 
+/** This replica is ending its streams to shut down; the client opens its stream again, on another replica. */
+class ShuttingDownException : RuntimeException("This API replica is shutting down; open the stream again")
+
 /**
  * The open live-update streams of this replica; each event reaches only callers holding its permission. Every
  * stream has its own queue drained on a virtual thread, so a slow or vanished client never holds up the Kafka
@@ -59,6 +62,7 @@ class EventTickets(
 class LiveEvents {
     private val log = LoggerFactory.getLogger(javaClass)
     private val subscribers = CopyOnWriteArraySet<Subscriber>()
+    private var shuttingDown = false
 
     private class Outgoing(
         val name: String,
@@ -128,10 +132,12 @@ class LiveEvents {
     }
 
     /** Streams end after a while; the client reconnects with a new ticket. */
+    @Synchronized
     fun subscribe(
         permissions: Set<String>,
         emitter: SseEmitter = SseEmitter(STREAM_LIFETIME.toMillis()),
     ): SseEmitter {
+        if (shuttingDown) throw ShuttingDownException()
         val subscriber = Subscriber(permissions, emitter)
         emitter.onCompletion(subscriber::stop)
         // Completing at the timeout ends the stream cleanly; left open, Spring fails the committed response.
@@ -155,9 +161,14 @@ class LiveEvents {
         .filter { permission in it.permissions }
         .forEach { enqueue(it, Outgoing(name, SseEmitter.event().name(name).data(data, MediaType.APPLICATION_JSON))) }
 
-    // Open streams would hold the graceful shutdown until the pod is killed, its database connections still open.
+    // Open streams would hold the graceful shutdown until the pod is killed, its database connections still open;
+    // a client reconnecting at once would land here again, so no new stream opens after this.
     @EventListener(ContextClosedEvent::class)
-    fun endStreams() = subscribers.forEach { it.close() }
+    @Synchronized
+    fun endStreams() {
+        shuttingDown = true
+        subscribers.forEach { it.close() }
+    }
 
     // Proxies close idle connections; a comment line keeps the stream open without waking the client.
     @Scheduled(fixedDelayString = "25s")

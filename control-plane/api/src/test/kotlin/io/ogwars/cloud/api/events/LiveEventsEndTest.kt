@@ -1,5 +1,6 @@
 package io.ogwars.cloud.api.events
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.throwable.shouldHaveMessage
@@ -65,6 +66,14 @@ class LiveEventsEndTest {
         // An open stream would hold the graceful shutdown until the pod is killed.
         emitter.completed.get(WAIT_SECONDS, TimeUnit.SECONDS)
         emitter.failure.isDone shouldBe false
+    }
+
+    @Test
+    fun `a replica that is shutting down refuses new streams`() {
+        events.endStreams()
+
+        // A client reconnecting at once would otherwise land here again and hold the shutdown up anew.
+        shouldThrow<ShuttingDownException> { events.subscribe(PERMISSIONS, FakeEmitter()) }
     }
 
     /** An emitter whose writes behave as a real client's would, recording how the stream was ended. */
