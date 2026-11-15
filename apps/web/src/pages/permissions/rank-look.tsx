@@ -64,27 +64,40 @@ export function RankLook({ display }: { display: RankDisplayView }) {
   );
 }
 
-/**
- * A rank's chat prefix alone, small, for a player's row, or its tablist prefix; the group's id where the rank has none.
- */
+/** A rank's chat prefix alone, small, for a player's row; the group's id where the rank has none. */
 export function RankPrefixChip({
   display,
   id,
-  field = "CHAT_PREFIX",
 }: {
   display: RankDisplayView;
   id: string;
-  field?: "CHAT_PREFIX" | "TAB_PREFIX";
 }) {
-  const preview = useTextPreview(
-    field,
-    field === "TAB_PREFIX" ? display.tabPrefix : display.chatPrefix,
-  );
+  const preview = useTextPreview("CHAT_PREFIX", display.chatPrefix);
   const spans = preview.data?.rendering?.modern ?? [];
   return spans.every((span) => span.text.trim() === "") ? (
     <span className="text-text-2">{id}</span>
   ) : (
     <GameChip spans={spans} />
+  );
+}
+
+/** A player's entry in the 1.16+ tablist: the rank's tab prefix and the player's name in its name format (D-0238). */
+export function TablistEntryChip({
+  display,
+  name,
+}: {
+  display: RankDisplayView;
+  name: string;
+}) {
+  const tab = useTextPreview("TAB_PREFIX", display.tabPrefix);
+  const named = useTextPreview("NAME_FORMAT", display.nameFormat, { name });
+  return (
+    <GameChip
+      spans={[
+        ...(tab.data?.rendering?.modern ?? []),
+        ...(named.data?.rendering?.modern ?? []),
+      ]}
+    />
   );
 }
 

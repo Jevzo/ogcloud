@@ -37,7 +37,7 @@ import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { placeholderPlayer } from "../../placeholders.ts";
-import { RankPrefixChip } from "../permissions/rank-look.tsx";
+import { TablistEntryChip } from "../permissions/rank-look.tsx";
 import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
 import { usePlayerActions } from "./player-actions.tsx";
 import { useRankDisplay } from "./rank-cell.tsx";
@@ -168,7 +168,7 @@ export function PlayerPage() {
 
 /**
  * How long they are on and where, or when they were last seen; since when the network knows them; and their rank as
- * the 1.16+ tablist shows its prefix, with when it ends.
+ * their 1.16+ tablist entry shows it, with when it ends.
  */
 function PlayerFacts({ view }: { view: PlayerView }) {
   const { t } = useTranslation("web");
@@ -247,11 +247,7 @@ function PlayerFacts({ view }: { view: PlayerView }) {
           display === undefined ? (
             view.permissionGroupId
           ) : (
-            <RankPrefixChip
-              display={display}
-              id={view.permissionGroupId}
-              field="TAB_PREFIX"
-            />
+            <TablistEntryChip display={display} name={view.name} />
           )
         }
         caption={
