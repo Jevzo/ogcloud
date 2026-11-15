@@ -30,6 +30,22 @@ import { newGroupSettings } from "./pages/groups/group-defaults.ts";
 
 const AT = "2026-01-01T00:00:00Z";
 const ID = "01900000-0000-7000-8000-000000000000";
+// The UUID's last group, which placeholder rows number.
+const ID_SUFFIX = 12;
+
+/**
+ * Copies of a placeholder with distinct ids: lists keyed by id would otherwise keep one copy as a stale row next to the
+ * data that replaces them.
+ */
+export function placeholderRows<T extends { id: string }>(
+  row: T,
+  count: number,
+): T[] {
+  return Array.from({ length: count }, (_, index) => ({
+    ...row,
+    id: row.id.slice(0, -ID_SUFFIX) + String(index).padStart(ID_SUFFIX, "0"),
+  }));
+}
 const USER = `user:${ID}`;
 const PROFILE = "paper-26.3";
 
@@ -218,10 +234,7 @@ export const placeholderOverview: OverviewView = {
     placeholderGroupOverview,
     { ...placeholderGroupOverview, id: "proxy" },
   ],
-  recentScaling: [
-    placeholderScaling,
-    { ...placeholderScaling, id: "01900000-0000-7000-8000-000000000001" },
-  ],
+  recentScaling: placeholderRows(placeholderScaling, 2),
 };
 
 export const placeholderNetwork: NetworkSettingsView = {

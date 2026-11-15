@@ -24,11 +24,12 @@ import {
   useFailureToast,
 } from "../../errors.ts";
 import { LoadFailed } from "../../load-failed.tsx";
-import { placeholderLogin } from "../../placeholders.ts";
+import { placeholderLogin, placeholderRows } from "../../placeholders.ts";
+
+// Two rows, as a signed-in user has at least this device and often another.
+const PLACEHOLDER_LOGINS = placeholderRows(placeholderLogin, 2);
 
 // OgCloud's own apps by client id (D-0012, D-0153); any other client shows its id.
-// Two rows, as a signed-in user has at least this device and often another.
-const PLACEHOLDER_LOGINS = [placeholderLogin, placeholderLogin];
 
 const APPS = {
   [WEB_CLIENT]: "web",
