@@ -18,25 +18,14 @@ import { TYPING_PAUSE_MS, useDebounced } from "./debounce.ts";
 
 const PREVIEW_KEY = "text-preview";
 
-/** Plain text for some placeholders in place of the API's samples, such as a player's name (D-0238). */
-export type PlaceholderValues = Readonly<Record<string, string>>;
-
 type Preview = (
   field: TextPreviewRequestField,
   text: string,
-  values?: PlaceholderValues,
 ) => Promise<TextPreview>;
 
 function usePreview(): Preview {
   const preview = useTextPreviewHook();
-  return async (field, text, values) =>
-    (
-      await preview({
-        field,
-        text,
-        ...(values === undefined ? {} : { values }),
-      })
-    ).data;
+  return async (field, text) => (await preview({ field, text })).data;
 }
 
 function cached(
@@ -53,16 +42,12 @@ function cached(
 }
 
 /** How a text looks to modern and older clients, or what keeps it from being saved; asked once the typing pauses. */
-export function useTextPreview(
-  field: TextPreviewRequestField,
-  text: string,
-  values?: PlaceholderValues,
-) {
+export function useTextPreview(field: TextPreviewRequestField, text: string) {
   const preview = usePreview();
   const settled = useDebounced(text, TYPING_PAUSE_MS);
   return useQuery({
-    queryKey: [PREVIEW_KEY, field, settled, values ?? null],
-    queryFn: () => preview(field, settled, values),
+    queryKey: [PREVIEW_KEY, field, settled],
+    queryFn: () => preview(field, settled),
     placeholderData: keepPreviousData,
     staleTime: Number.POSITIVE_INFINITY,
   });

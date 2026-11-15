@@ -13,22 +13,13 @@ import { type Client, ClientSwitch } from "../../client-switch.tsx";
 import { GameChip } from "../../game-chip.tsx";
 import { useTextPreview } from "../../texts.ts";
 
-/**
- * A rank's texts as the API draws them for one kind of client (D-0202), with a player's own name where given
- * (D-0238); invalid texts draw as nothing.
- */
-function useRankSpans(display: RankDisplayView, client: Client, name?: string) {
+/** A rank's texts as the API draws them for one kind of client (D-0202); invalid texts draw as nothing. */
+function useRankSpans(display: RankDisplayView, client: Client) {
   const pick = (preview: { data?: TextPreview | undefined }) =>
     preview.data?.rendering?.[client] ?? [];
   return {
     prefix: pick(useTextPreview("CHAT_PREFIX", display.chatPrefix)),
-    name: pick(
-      useTextPreview(
-        "NAME_FORMAT",
-        display.nameFormat,
-        name === undefined ? undefined : { name },
-      ),
-    ),
+    name: pick(useTextPreview("NAME_FORMAT", display.nameFormat)),
     suffix: pick(useTextPreview("CHAT_SUFFIX", display.chatSuffix)),
     tab: pick(useTextPreview("TAB_PREFIX", display.tabPrefix)),
   };
@@ -40,20 +31,11 @@ const OTHERS: readonly (readonly GameSpan[])[] = [
   [{ text: "kiwibear", color: minecraftColours.gray }],
 ];
 
-/**
- * How a rank looks in chat, in the tablist and over a player's head, on 1.16+ and on older clients (D-0200); with a
- * player's name, as that player looks (D-0238).
- */
-export function RankLook({
-  display,
-  name,
-}: {
-  display: RankDisplayView;
-  name?: string;
-}) {
+/** How a rank looks in chat, in the tablist and over a player's head, on 1.16+ and on older clients (D-0200). */
+export function RankLook({ display }: { display: RankDisplayView }) {
   const { t } = useTranslation("web");
   const [client, setClient] = useState<Client>("modern");
-  const spans = useRankSpans(display, client, name);
+  const spans = useRankSpans(display, client);
   const message: GameSpan[] = [
     { text: ": ", color: minecraftColours.gray },
     { text: t("permissions.look.message") },
@@ -82,15 +64,22 @@ export function RankLook({
   );
 }
 
-/** A rank's chat prefix alone, small, for a player's row; the group's id where the rank has none. */
+/**
+ * A rank's chat prefix alone, small, for a player's row, or its tablist prefix; the group's id where the rank has none.
+ */
 export function RankPrefixChip({
   display,
   id,
+  field = "CHAT_PREFIX",
 }: {
   display: RankDisplayView;
   id: string;
+  field?: "CHAT_PREFIX" | "TAB_PREFIX";
 }) {
-  const preview = useTextPreview("CHAT_PREFIX", display.chatPrefix);
+  const preview = useTextPreview(
+    field,
+    field === "TAB_PREFIX" ? display.tabPrefix : display.chatPrefix,
+  );
   const spans = preview.data?.rendering?.modern ?? [];
   return spans.every((span) => span.text.trim() === "") ? (
     <span className="text-text-2">{id}</span>

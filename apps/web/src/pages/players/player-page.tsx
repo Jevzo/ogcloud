@@ -8,7 +8,6 @@ import {
 import {
   Badge,
   Button,
-  Card,
   cn,
   FactTile,
   Loading,
@@ -38,19 +37,19 @@ import { IdentityCard } from "../../identity-card.tsx";
 import { MoreMenu } from "../../more-menu.tsx";
 import { useCan } from "../../permissions.ts";
 import { placeholderPlayer } from "../../placeholders.ts";
-import { RankLook } from "../permissions/rank-look.tsx";
+import { RankPrefixChip } from "../permissions/rank-look.tsx";
 import { usePrivacyActions } from "../privacy/privacy-actions.tsx";
 import { usePlayerActions } from "./player-actions.tsx";
-import { RankCell, useRankDisplay } from "./rank-cell.tsx";
+import { useRankDisplay } from "./rank-cell.tsx";
 
 const REFRESH_MS = 10_000;
-// About as tall as the header with its tiles beside it.
-const BODY_WIDTH = 96;
+// About as tall as the tiles beside it with the box's padding.
+const BODY_WIDTH = 64;
 const RECENT_CHANGES = 6;
 // Enough for a network's dashboard users; the users page pages through everyone.
 const USERS_LIMIT = 200;
 
-/** A player as the game shows them, where they are, how they look in game, and what was changed about them (D-0238). */
+/** A player as the game shows them, where they are, their rank, and what was changed about them (D-0238). */
 export function PlayerPage() {
   const { t } = useTranslation("web");
   const { playerId } = useParams({ from: "/app/players/$playerId" });
@@ -91,89 +90,74 @@ export function PlayerPage() {
   return (
     <Loading when={loading}>
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-stretch gap-6">
-          <figure className="m-0 grid place-items-center rounded-card border border-border-subtle bg-surface px-6 py-4 shadow-card">
+        <PageHeader
+          title={<Value>{view.name}</Value>}
+          badges={
+            online ? (
+              <Badge tone="success" icon={CircleCheck}>
+                {t("players.detail.onlineNow")}
+              </Badge>
+            ) : (
+              <Badge tone="neutral" icon={CircleDashed}>
+                {t("players.detail.offline")}
+              </Badge>
+            )
+          }
+          actions={
+            <>
+              <MoreMenu
+                groups={[
+                  privacy.itemsFor({
+                    kind: "player",
+                    id: view.uuid,
+                    name: view.name,
+                  }),
+                ]}
+              />
+              {actions.canWrite ? (
+                <>
+                  {online ? (
+                    <>
+                      <Button
+                        icon={LogOut}
+                        onClick={() => actions.open("kick", ref)}
+                      >
+                        {t("players.actions.kick")}
+                      </Button>
+                      <Button
+                        icon={ArrowRightLeft}
+                        onClick={() => actions.open("transfer", ref)}
+                      >
+                        {t("players.actions.transfer")}
+                      </Button>
+                    </>
+                  ) : null}
+                  <Button
+                    kind="primary"
+                    icon={Crown}
+                    onClick={() => actions.open("rank", ref)}
+                  >
+                    {t("players.actions.rank")}
+                  </Button>
+                </>
+              ) : null}
+            </>
+          }
+        />
+        {/* The player's skin stands across the page beside what matters about them now (D-0238). */}
+        <section className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-6 rounded-card border border-border-subtle bg-surface-2 p-4">
+          <figure className="m-0 grid place-items-center px-4">
             {loading ? (
               <span data-skeleton="" className="block h-58 w-24 rounded-card" />
             ) : (
               <PlayerBody uuid={view.uuid} width={BODY_WIDTH} />
             )}
           </figure>
-          <div className="flex min-w-0 flex-col gap-4">
-            <PageHeader
-              title={<Value>{view.name}</Value>}
-              badges={
-                online ? (
-                  <Badge tone="success" icon={CircleCheck}>
-                    {t("players.detail.onlineNow")}
-                  </Badge>
-                ) : (
-                  <Badge tone="neutral" icon={CircleDashed}>
-                    {t("players.detail.offline")}
-                  </Badge>
-                )
-              }
-              actions={
-                <>
-                  <MoreMenu
-                    groups={[
-                      privacy.itemsFor({
-                        kind: "player",
-                        id: view.uuid,
-                        name: view.name,
-                      }),
-                    ]}
-                  />
-                  {actions.canWrite ? (
-                    <>
-                      {online ? (
-                        <>
-                          <Button
-                            icon={LogOut}
-                            onClick={() => actions.open("kick", ref)}
-                          >
-                            {t("players.actions.kick")}
-                          </Button>
-                          <Button
-                            icon={ArrowRightLeft}
-                            onClick={() => actions.open("transfer", ref)}
-                          >
-                            {t("players.actions.transfer")}
-                          </Button>
-                        </>
-                      ) : null}
-                      <Button
-                        kind="primary"
-                        icon={Crown}
-                        onClick={() => actions.open("rank", ref)}
-                      >
-                        {t("players.actions.rank")}
-                      </Button>
-                    </>
-                  ) : null}
-                </>
-              }
-            />
-            <span className="inline-flex items-center gap-2">
-              <RankCell
-                groupId={view.permissionGroupId}
-                expiresAt={view.rankExpiresAt}
-              />
-              {view.rankExpiresAt == null ? (
-                <span className="text-meta text-text-3">
-                  {t("players.detail.permanent")}
-                </span>
-              ) : null}
-            </span>
-            <PlayerFacts view={view} />
-          </div>
-        </div>
+          <PlayerFacts view={view} />
+        </section>
         <div className={editorColumns}>
-          <InGameCard view={view} />
-          <div className="flex min-w-0 flex-col gap-6">
-            <RecentChanges uuid={view.uuid} enabled={!loading} />
-            <PlayerIdentity view={view} />
-          </div>
+          <RecentChanges uuid={view.uuid} enabled={!loading} />
+          <PlayerIdentity view={view} />
         </div>
         {actions.dialogs}
         {privacy.dialogs}
@@ -182,7 +166,10 @@ export function PlayerPage() {
   );
 }
 
-/** How long they are on and where, or when they were last seen; and since when the network knows them. */
+/**
+ * How long they are on and where, or when they were last seen; since when the network knows them; and their rank as
+ * the 1.16+ tablist shows its prefix, with when it ends.
+ */
 function PlayerFacts({ view }: { view: PlayerView }) {
   const { t } = useTranslation("web");
   const format = useFormat();
@@ -195,13 +182,14 @@ function PlayerFacts({ view }: { view: PlayerView }) {
   const server = all.find((candidate) => candidate.id === session?.serverId);
   const proxy = all.find((candidate) => candidate.id === session?.proxyId);
   const at = (iso: string) => format.dateTime(new Date(iso));
+  const display = useRankDisplay(view.permissionGroupId);
 
   return (
-    // Offline shows two tiles, which share the row rather than leave a third of it empty.
+    // Offline drops the session's two tiles for one, so the row keeps no empty column.
     <div
       className={cn(
         "grid gap-6",
-        session === null ? "grid-cols-2" : "grid-cols-3",
+        session === null ? "grid-cols-3" : "grid-cols-4",
       )}
     >
       {session === null ? (
@@ -253,18 +241,26 @@ function PlayerFacts({ view }: { view: PlayerView }) {
         value={format.since(new Date(view.firstSeenAt), now)}
         caption={t("players.detail.firstSeen", { at: at(view.firstSeenAt) })}
       />
+      <FactTile
+        label={t("players.columns.rank")}
+        value={
+          display === undefined ? (
+            view.permissionGroupId
+          ) : (
+            <RankPrefixChip
+              display={display}
+              id={view.permissionGroupId}
+              field="TAB_PREFIX"
+            />
+          )
+        }
+        caption={
+          view.rankExpiresAt == null
+            ? t("players.detail.permanent")
+            : t("players.detail.rankUntil", { at: at(view.rankExpiresAt) })
+        }
+      />
     </div>
-  );
-}
-
-/** Their rank's look with their own name, as chat, the tablist and their nametag show it (D-0238). */
-function InGameCard({ view }: { view: PlayerView }) {
-  const { t } = useTranslation("web");
-  const display = useRankDisplay(view.permissionGroupId);
-  return display === undefined ? null : (
-    <Card title={t("players.detail.inGame")}>
-      <RankLook display={display} name={view.name} />
-    </Card>
   );
 }
 

@@ -559,7 +559,6 @@
       "title": "Runtimes",
       "version": "Version"
     },
-    "sections": "Sections",
     "typed": "network"
   },
   "npcs": {
@@ -795,12 +794,12 @@
       "dashboardUser": "Dashboard user",
       "failed": "This player could not be loaded",
       "firstSeen": "first seen {{at}}",
-      "inGame": "In game",
       "knownFor": "Known for",
       "offline": "Offline",
       "onServer": "On server",
       "onlineNow": "Online",
-      "permanent": "permanently",
+      "permanent": "permanent",
+      "rankUntil": "until {{at}}",
       "serverCaption": "{{group}} · {{players}} of {{max}} players",
       "since": "since {{at}}",
       "unknown": "This player never joined",

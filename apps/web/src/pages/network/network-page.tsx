@@ -227,7 +227,6 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
         saving={saving}
         aside={
           <>
-            <SectionLinks current={section} />
             <Card title={t("permissions.look.title")}>
               <NetworkLook
                 settings={settings}
@@ -447,49 +446,17 @@ function NetworkEditor({ view }: { view: NetworkSettingsView }) {
   );
 }
 
-const SECTIONS = [
-  ["network-server-list", "serverList"],
-  ["network-maintenance", "maintenance"],
-  ["network-tablist", "tablist"],
-  ["network-players", "players"],
-] as const;
-const SECTION_IDS = [...SECTIONS.map(([id]) => id), "network-runtimes"];
+// The form's sections in page order; the one being read picks what the preview shows.
+const SECTION_IDS = [
+  "network-server-list",
+  "network-maintenance",
+  "network-tablist",
+  "network-players",
+  "network-runtimes",
+];
 // The sections whose texts the preview shows.
 const FOCUS: Partial<Record<string, LookFocus>> = {
   "network-server-list": "serverList",
   "network-maintenance": "maintenance",
   "network-tablist": "tablist",
 };
-
-/** The long form's sections, one click away from anywhere on it; the one being read is marked (D-0231). */
-function SectionLinks({ current }: { current: string | null }) {
-  const { t } = useTranslation("web");
-  const jump = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-      block: "start",
-    });
-  return (
-    <nav
-      aria-label={t("network.sections")}
-      className="flex flex-wrap gap-1 rounded-card border border-border-subtle bg-surface p-1.5 shadow-card"
-    >
-      {[
-        ...SECTIONS.map(([id, key]) => [id, t(`network.form.${key}`)] as const),
-        ["network-runtimes", t("network.runtime.title")] as const,
-      ].map(([id, label]) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => jump(id)}
-          aria-current={id === current ? "location" : undefined}
-          className="h-7 cursor-pointer rounded-control px-2.5 font-label text-small text-text-2 hover:bg-text/7 hover:text-text aria-[current=location]:bg-accent-soft aria-[current=location]:text-accent"
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
-  );
-}
