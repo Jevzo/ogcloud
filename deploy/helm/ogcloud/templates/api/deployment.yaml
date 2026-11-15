@@ -14,6 +14,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ogcloud.componentLabels" (dict "root" . "component" "api") | nindent 4 }}
+  annotations:
+    {{- include "ogcloud.autoReload" . | nindent 4 }}
 spec:
   replicas: {{ .Values.api.replicas }}
   selector:

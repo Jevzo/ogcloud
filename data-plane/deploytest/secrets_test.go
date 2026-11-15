@@ -284,3 +284,30 @@ func TestTheSeedIsNoChartValue(t *testing.T) {
 		}
 	}
 }
+
+// A Deployment that reads a Secret the Secrets Operator syncs restarts when it changes, so it never keeps a value
+// from before a bootstrap run (D-0239); Valkey reloads its users live instead.
+func TestDeploymentsRestartWhenTheirSyncedSecretsChange(t *testing.T) {
+	for _, values := range valueSets(t) {
+		t.Run(values, func(t *testing.T) {
+			objects := render(t, values)
+			synced := map[string]bool{}
+			for _, sync := range objects.all("InfisicalStaticSecret") {
+				targets, _ := get(sync, "spec", "targets").([]any)
+				for _, target := range targets {
+					synced[str(target, "name")] = true
+				}
+			}
+			for _, workload := range objects.all("Deployment") {
+				volumes, _ := get(workload.podSpec(), "volumes").([]any)
+				reads := slices.ContainsFunc(volumes, func(volume any) bool {
+					return synced[str(volume, "secret", "secretName")]
+				})
+				reload := str(workload, "metadata", "annotations", "secrets.infisical.com/auto-reload")
+				if reads && reload != "true" {
+					t.Errorf("Deployment %s reads a synced Secret but does not restart when it changes", workload.name())
+				}
+			}
+		})
+	}
+}

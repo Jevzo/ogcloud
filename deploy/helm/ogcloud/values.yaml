@@ -146,6 +146,9 @@ seaweedfs:
     enabled: true
     serviceAccountName: ogcloud-seaweedfs
     priorityClassName: ogcloud-platform
+    # Its S3 identities are a synced Secret; a change restarts it (D-0239).
+    annotations:
+      secrets.infisical.com/auto-reload: "true"
     s3:
       enabled: true
       enableAuth: true

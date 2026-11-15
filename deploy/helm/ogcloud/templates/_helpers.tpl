@@ -136,6 +136,14 @@ Grafana signs in through OgCloud (D-0153) where it has a real URL: on the intern
 https://{{ include "ogcloud.grafanaHost" . }}
 {{- end -}}
 
+{{/*
+A workload's annotation that has the Secrets Operator roll it when a Secret it syncs and the workload reads changes
+(D-0044, D-0239).
+*/}}
+{{- define "ogcloud.autoReload" -}}
+secrets.infisical.com/auto-reload: "true"
+{{- end -}}
+
 {{/* The audience of tokens the controller shows Infisical, which the API server refuses. */}}
 {{- define "ogcloud.infisicalAudience" -}}
 ogcloud-infisical
