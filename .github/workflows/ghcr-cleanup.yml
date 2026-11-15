@@ -40,7 +40,7 @@ jobs:
         with:
           ref: v2
           persist-credentials: false
-      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
       - id: packages
         run: echo "names=$(deploy/release/publish.sh packages)" >>"$GITHUB_OUTPUT"
       # Tags of the publish workflow's dry runs, 0.0.0-dryrun-<commit> or <server version>-0.0.0-dryrun-<commit>. The
