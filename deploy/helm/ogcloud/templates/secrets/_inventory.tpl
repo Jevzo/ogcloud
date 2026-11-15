@@ -127,6 +127,10 @@ ogcloud-grafana-oauth:
     # The API names the role (owners administer, overview:read looks); without one Grafana refuses (D-0185).
     GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: grafana_role
     GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
+    {{- if .Values.admin.grafana.publicHost }}
+    # In public, people sign in through OgCloud only (D-0236); the generated admin password stays for the sidecars.
+    GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    {{- end }}
   keys:
     GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: GRAFANA_CLIENT_SECRET
 {{- end }}

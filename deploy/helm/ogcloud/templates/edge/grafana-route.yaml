@@ -1,0 +1,42 @@
+{{- /*
+Grafana's route: on the internal Gateway (D-0045), or on the public one at its own host on a private test cluster
+(D-0236). Grafana lives in the monitoring namespace, which grants the route its Service.
+*/}}
+{{- if include "ogcloud.grafanaSso" . }}
+{{- $public := .Values.admin.grafana.publicHost }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ogcloud-grafana
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: {{ ternary "ogcloud-public" "ogcloud-admin" (not (empty $public)) }}
+      sectionName: grafana
+  hostnames:
+    - {{ include "ogcloud.grafanaHost" . }}
+  rules:
+    - backendRefs:
+        - name: {{ .Values.admin.grafana.service }}
+          namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
+          port: {{ .Values.admin.grafana.port }}
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: ogcloud-grafana
+  namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
+  labels:
+    {{- include "ogcloud.labels" . | nindent 4 }}
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: {{ .Release.Namespace }}
+  to:
+    - group: ""
+      kind: Service
+      name: {{ .Values.admin.grafana.service }}
+{{- end }}

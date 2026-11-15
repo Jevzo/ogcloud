@@ -3,11 +3,12 @@ package deploytest
 import (
 	"maps"
 	"slices"
+	"strings"
 	"testing"
 )
 
 // Admin surfaces are never public (D-0045): the public Gateway routes only to the API and the dashboard, and
-// Infisical and Grafana attach to the internal Gateway alone.
+// Infisical and Grafana attach to the internal Gateway alone; no value set publishes Grafana (D-0236 is opt-in).
 func TestAdminSurfacesNeverAttachToThePublicGateway(t *testing.T) {
 	public := []string{"ogcloud-api", "ogcloud-web"}
 	for _, values := range valueSets(t) {
@@ -133,4 +134,57 @@ func TestLetsEncryptStaysOffUnlessEnabled(t *testing.T) {
 			t.Error("minikube got the Let's Encrypt issuer")
 		}
 	}
+}
+
+// On a private test cluster Grafana may be public at a host of its own, behind OgCloud's sign-in only (D-0236): its
+// own listener and certificate name, its route, and Grafana's settings follow that host.
+func TestGrafanaCanBePublicAtAHostOfItsOwn(t *testing.T) {
+	const host = "monitoring.example.com"
+	output, err := helmTemplate(t, []string{minikubeValues},
+		"--set", "monitoring.enabled=true", "--set", "admin.grafana.publicHost="+host)
+	if err != nil {
+		t.Fatalf("helm template: %v", err)
+	}
+	objects := decodeRendered(t, output)
+	listeners, _ := get(objects.find(t, "Gateway", "ogcloud-public"), "spec", "listeners").([]any)
+	served := map[string]string{}
+	for _, listener := range listeners {
+		served[str(listener, "name")] = str(listener, "hostname")
+	}
+	if served["grafana"] != host || served["grafana-http"] != host {
+		t.Errorf("the public Gateway's listeners are %v, want grafana and grafana-http at %s", served, host)
+	}
+	names, _ := get(objects.find(t, "Certificate", "ogcloud-public"), "spec", "dnsNames").([]any)
+	if !slices.Contains(names, any(host)) {
+		t.Errorf("the public certificate names %v, not %s", names, host)
+	}
+	route := objects.find(t, "HTTPRoute", "ogcloud-grafana")
+	refs, _ := get(route, "spec", "parentRefs").([]any)
+	if len(refs) != 1 || str(refs[0], "name") != "ogcloud-public" || str(refs[0], "sectionName") != "grafana" {
+		t.Errorf("Grafana's route attaches to %v, want the public Gateway's grafana listener only", refs)
+	}
+	targets, _ := get(objects.find(t, "InfisicalStaticSecret", "ogcloud-grafana-oauth"), "spec", "targets").([]any)
+	if len(targets) != 1 {
+		t.Fatalf("Grafana's OAuth settings sync to %d targets, want 1", len(targets))
+	}
+	data, _ := get(targets[0], "template", "data").(map[string]any)
+	if got := data["GF_SERVER_ROOT_URL"]; got != "https://"+host {
+		t.Errorf("Grafana's root URL = %v, want https://%s", got, host)
+	}
+	if got := data["GF_AUTH_DISABLE_LOGIN_FORM"]; got != "true" {
+		t.Errorf("public Grafana keeps its password form: %v", got)
+	}
+}
+
+// A public Grafana needs the monitoring stack, and never sits on both Gateways (D-0045, D-0236).
+func TestAPublicGrafanaNeedsMonitoringAndNoInternalGateway(t *testing.T) {
+	refused := func(values, want string, args ...string) {
+		t.Helper()
+		if _, err := helmTemplate(t, []string{values}, args...); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%v rendered with %v, want %q", args, err, want)
+		}
+	}
+	refused(minikubeValues, "needs monitoring.enabled", "--set", "admin.grafana.publicHost=monitoring.example.com")
+	refused(hetznerValues, "cannot be used with the internal Gateway",
+		"--set", "admin.grafana.publicHost=monitoring.example.com")
 }

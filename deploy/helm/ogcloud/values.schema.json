@@ -199,6 +199,14 @@
             "infisicalHost": { "type": "string" },
             "grafanaHost": { "type": "string" }
           }
+        },
+        "grafana": {
+          "type": "object",
+          "properties": {
+            "service": { "type": "string" },
+            "port": { "type": "integer" },
+            "publicHost": { "type": "string" }
+          }
         }
       }
     }

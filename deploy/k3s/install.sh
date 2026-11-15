@@ -3,8 +3,9 @@
 # (D-0156, D-0157): every HelmChart applied at once, then it waits until everything converges. KUBECONFIG names the
 # cluster, which already has the images tagged OGCLOUD_TAG; OGCLOUD_PUBLIC_ORIGIN sets the dashboard's origin, OGCLOUD_CLOUDFLARE_API_TOKEN gets its
 # certificate from Let's Encrypt (D-0160), OGCLOUD_PROXY_ONLINE_MODE=false lets bots join private test clusters
-# (D-0162), OGCLOUD_VALUES adds values files and OGCLOUD_SEED_FILES seed files (YAML maps of seed keys, D-0188), each
-# separated by spaces.
+# (D-0162), OGCLOUD_MONITORING=true installs the monitoring stack (D-0025) and OGCLOUD_GRAFANA_HOST serves its Grafana
+# there on the public Gateway (D-0236), OGCLOUD_VALUES adds values files and OGCLOUD_SEED_FILES seed files (YAML maps of
+# seed keys, D-0188), each separated by spaces.
 set -euo pipefail
 
 tag=${OGCLOUD_TAG:?OGCLOUD_TAG names the images to install}
@@ -49,7 +50,12 @@ image:
 ${OGCLOUD_PUBLIC_ORIGIN:+publicOrigin: $OGCLOUD_PUBLIC_ORIGIN}
 minecraft:
   proxyOnlineMode: ${OGCLOUD_PROXY_ONLINE_MODE:-true}
+monitoring:
+  enabled: ${OGCLOUD_MONITORING:-false}
 EOF
+if [ -n "${OGCLOUD_GRAFANA_HOST:-}" ]; then
+  printf 'admin:\n  grafana:\n    publicHost: %s\n' "$OGCLOUD_GRAFANA_HOST" >> "$work/install.yaml"
+fi
 # Infisical's first admin (D-0114), made up once per checkout; it reaches the cluster as the seed Secret, never as a
 # value (D-0188), and bootstrap deletes that after the import.
 if [ ! -f "$work/seed.yaml" ]; then
@@ -74,8 +80,8 @@ for extra in ${OGCLOUD_SEED_FILES:-}; do
 done
 terraform -chdir=deploy/terraform/render init -input=false >/dev/null
 terraform -chdir=deploy/terraform/render apply -input=false -auto-approve -state="$PWD/$work/render.tfstate" \
-  -var target=k3s -var "chart_archive=$PWD/$chart_archive" -var "values_files=[$values_files]" \
-  -var "seed_files=[$seed_files]" >/dev/null
+  -var target=k3s -var "monitoring=${OGCLOUD_MONITORING:-false}" -var "chart_archive=$PWD/$chart_archive" \
+  -var "values_files=[$values_files]" -var "seed_files=[$seed_files]" >/dev/null
 # The rendered manifest holds the token as well; the file of it alone is not needed after the render.
 rm -f "$work/cloudflare-seed.yaml"
 terraform -chdir=deploy/terraform/render output -state="$PWD/$work/render.tfstate" -raw manifest > "$work/manifest.yaml"

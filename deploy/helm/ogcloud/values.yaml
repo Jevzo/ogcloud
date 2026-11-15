@@ -402,6 +402,10 @@ admin:
   grafana:
     service: kube-prometheus-stack-grafana
     port: 80
+    # Serves Grafana on the public Gateway at this host, signed in through OgCloud only (D-0236): for a private test
+    # cluster without the VPN. Empty keeps Grafana off the public Gateway (D-0045); it cannot be used with the internal
+    # Gateway.
+    publicHost: ""
 
 bootstrap:
   resources:

@@ -179,7 +179,9 @@ backups, orphaned objects).
     `admin` entrypoint; Grafana signs in through OgCloud as a confidential client (D-0153) that gets no refresh
     token; owners become Grafana Admins and readers of the overview Viewers, and Grafana's access tokens carry no
     permissions: the API takes users' tokens only for its own apps (D-0185). Without it, a
-    port-forward. Values are checked against `values.schema.json`; replicated workloads have disruption budgets.
+    port-forward; a private test cluster may instead publish Grafana at a host of its own on the public Gateway
+    (`admin.grafana.publicHost`), with OgCloud's sign-in as the only way in (D-0236). The k3s installer turns the
+    stack on with `OGCLOUD_MONITORING=true` and that host with `OGCLOUD_GRAFANA_HOST`. Values are checked against `values.schema.json`; replicated workloads have disruption budgets.
   - `mise run check:chart` lints every value set in `ci/` and validates it with kubeconform against pinned
     schemas; Go render tests in `data-plane/deploytest` check the invariants (D-0148).
 - **Images:** `mise run images:stage` builds the artifacts with mise's toolchains (Spring boot jars unpacked into

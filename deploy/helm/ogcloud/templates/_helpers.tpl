@@ -112,13 +112,28 @@ https://{{ required "admin.gateway.infisicalHost is required" .Values.admin.gate
 {{- end -}}
 {{- end -}}
 
-{{/* Grafana signs in through OgCloud (D-0153) where it has a real URL: on the internal Gateway, with monitoring. */}}
+{{/*
+Grafana signs in through OgCloud (D-0153) where it has a real URL: on the internal Gateway, or at its public host
+(D-0236), with monitoring.
+*/}}
 {{- define "ogcloud.grafanaSso" -}}
-{{- if and .Values.monitoring.enabled .Values.admin.gateway.enabled }}true{{ end -}}
+{{- if and .Values.monitoring.enabled (or .Values.admin.gateway.enabled .Values.admin.grafana.publicHost) }}true{{ end -}}
+{{- end -}}
+
+{{/* Grafana's host: its public one, or the internal Gateway's; never both (D-0045, D-0236). */}}
+{{- define "ogcloud.grafanaHost" -}}
+{{- $grafana := .Values.admin.grafana -}}
+{{- if $grafana.publicHost -}}
+{{- if not .Values.monitoring.enabled }}{{ fail "admin.grafana.publicHost needs monitoring.enabled" }}{{ end -}}
+{{- if .Values.admin.gateway.enabled }}{{ fail "admin.grafana.publicHost cannot be used with the internal Gateway" }}{{ end -}}
+{{ $grafana.publicHost }}
+{{- else -}}
+{{ required "admin.gateway.grafanaHost is required with monitoring" .Values.admin.gateway.grafanaHost }}
+{{- end -}}
 {{- end -}}
 
 {{- define "ogcloud.grafanaUrl" -}}
-https://{{ required "admin.gateway.grafanaHost is required with monitoring" .Values.admin.gateway.grafanaHost }}
+https://{{ include "ogcloud.grafanaHost" . }}
 {{- end -}}
 
 {{/* The audience of tokens the controller shows Infisical, which the API server refuses. */}}

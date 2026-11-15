@@ -1,7 +1,12 @@
 {{- /*
 The public edge (D-0024): one hostname for web and API (D-0098). HTTP only redirects; admin surfaces never
-attach here, they get the internal Gateway (T-0603, D-0045).
+attach here, they get the internal Gateway (T-0603, D-0045), except Grafana at a public host of its own on a private
+test cluster (D-0236).
 */}}
+{{- $grafanaHost := "" }}
+{{- if .Values.admin.grafana.publicHost }}
+{{- $grafanaHost = include "ogcloud.grafanaHost" . }}
+{{- end }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -16,6 +21,9 @@ spec:
     encoding: PKCS8
   dnsNames:
     - {{ include "ogcloud.publicHost" . }}
+    {{- with $grafanaHost }}
+    - {{ . }}
+    {{- end }}
   issuerRef:
     {{- include "ogcloud.publicIssuerRef" . | nindent 4 }}
 ---
@@ -47,6 +55,26 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    {{- with $grafanaHost }}
+    - name: grafana-http
+      protocol: HTTP
+      port: {{ $.Values.edge.ports.http }}
+      hostname: {{ . }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: grafana
+      protocol: HTTPS
+      port: {{ $.Values.edge.ports.https }}
+      hostname: {{ . }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: ogcloud-public-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    {{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -59,8 +87,15 @@ spec:
   parentRefs:
     - name: ogcloud-public
       sectionName: http
+    {{- if $grafanaHost }}
+    - name: ogcloud-public
+      sectionName: grafana-http
+    {{- end }}
   hostnames:
     - {{ include "ogcloud.publicHost" . }}
+    {{- with $grafanaHost }}
+    - {{ . }}
+    {{- end }}
   rules:
     - filters:
         - type: RequestRedirect

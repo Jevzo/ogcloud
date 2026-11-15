@@ -1,7 +1,7 @@
 {{- /*
 The internal Gateway (D-0045) for the admin UIs, on Traefik's admin entrypoint, which only a private load balancer
 reaches: the VPN box forwards to it. Infisical is reached over its TLS sidecar, verified against the internal CA
-(D-0149); Grafana lives in the monitoring namespace, which grants this route its Service.
+(D-0149); Grafana's route is grafana-route.yaml's.
 */}}
 {{- $admin := .Values.admin }}
 {{- if $admin.gateway.enabled }}
@@ -88,42 +88,4 @@ spec:
       - group: ""
         kind: ConfigMap
         name: ogcloud-internal-ca
-{{- if .Values.monitoring.enabled }}
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: ogcloud-grafana
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "ogcloud.labels" . | nindent 4 }}
-spec:
-  parentRefs:
-    - name: ogcloud-admin
-      sectionName: grafana
-  hostnames:
-    - {{ $hosts.grafana }}
-  rules:
-    - backendRefs:
-        - name: {{ $admin.grafana.service }}
-          namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
-          port: {{ $admin.grafana.port }}
----
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: ReferenceGrant
-metadata:
-  name: ogcloud-grafana
-  namespace: {{ .Values.networkPolicies.namespaces.monitoring }}
-  labels:
-    {{- include "ogcloud.labels" . | nindent 4 }}
-spec:
-  from:
-    - group: gateway.networking.k8s.io
-      kind: HTTPRoute
-      namespace: {{ .Release.Namespace }}
-  to:
-    - group: ""
-      kind: Service
-      name: {{ $admin.grafana.service }}
-{{- end }}
 {{- end }}
