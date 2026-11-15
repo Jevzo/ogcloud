@@ -5,6 +5,8 @@ import io.ogwars.cloud.domain.store.OneTimeKind
 import io.ogwars.cloud.domain.store.OneTimeStore
 import io.ogwars.cloud.service.SecretGenerator
 import org.slf4j.LoggerFactory
+import org.springframework.context.event.ContextClosedEvent
+import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -92,28 +94,51 @@ class LiveEvents {
             try {
                 emitter.send(outgoing.event)
             } catch (e: IOException) {
+                // The container fails the request itself after a failed write; completing it again would throw.
                 log.debug("A live-update client went away", e)
-                end(e)
+                stop()
             } catch (e: IllegalStateException) {
                 // Without a cause the emitter had completed; with one, the event could not be written.
-                if (e.cause != null) log.error("Could not send the live-update event {}", outgoing.name, e)
-                end(e)
+                if (e.cause == null) {
+                    stop()
+                } else {
+                    log.error("Could not send the live-update event {}", outgoing.name, e)
+                    end(e)
+                }
             }
         }
 
         /** Ends the stream with an error, so the client reconnects and refetches. */
-        fun end(error: Exception) {
+        fun end(error: Exception) = finish { completeWithError(error) }
+
+        /** Ends the stream as finished; the client reconnects, to another replica when this one shuts down. */
+        fun close() = finish(SseEmitter::complete)
+
+        private fun finish(completion: SseEmitter.() -> Unit) {
             stop()
-            emitter.completeWithError(error)
+            // A write still in progress holds the emitter until the client takes it, so the caller never waits for it.
+            Thread.ofVirtual().name("live-events-end").start {
+                try {
+                    emitter.completion()
+                } catch (e: IllegalStateException) {
+                    log.debug("A live-update client went away before its stream was ended", e)
+                }
+            }
         }
     }
 
     /** Streams end after a while; the client reconnects with a new ticket. */
-    fun subscribe(permissions: Set<String>): SseEmitter {
-        val emitter = SseEmitter(STREAM_LIFETIME.toMillis())
+    fun subscribe(
+        permissions: Set<String>,
+        emitter: SseEmitter = SseEmitter(STREAM_LIFETIME.toMillis()),
+    ): SseEmitter {
         val subscriber = Subscriber(permissions, emitter)
         emitter.onCompletion(subscriber::stop)
-        emitter.onTimeout(subscriber::stop)
+        // Completing at the timeout ends the stream cleanly; left open, Spring fails the committed response.
+        emitter.onTimeout {
+            subscriber.stop()
+            emitter.complete()
+        }
         emitter.onError { subscriber.stop() }
         // Commits the response at once, so the client knows the stream is open before the first event.
         subscriber.offer(Outgoing(OPENED, SseEmitter.event().comment(OPENED)))
@@ -130,6 +155,10 @@ class LiveEvents {
         .filter { permission in it.permissions }
         .forEach { enqueue(it, Outgoing(name, SseEmitter.event().name(name).data(data, MediaType.APPLICATION_JSON))) }
 
+    // Open streams would hold the graceful shutdown until the pod is killed, its database connections still open.
+    @EventListener(ContextClosedEvent::class)
+    fun endStreams() = subscribers.forEach { it.close() }
+
     // Proxies close idle connections; a comment line keeps the stream open without waking the client.
     @Scheduled(fixedDelayString = "25s")
     fun keepAlive() = subscribers.forEach { enqueue(it, Outgoing(KEEP_ALIVE, SseEmitter.event().comment(KEEP_ALIVE))) }
@@ -144,10 +173,10 @@ class LiveEvents {
         }
     }
 
-    private companion object {
-        const val OPENED = "opened"
-        const val KEEP_ALIVE = "keep-alive"
-        const val QUEUE_CAPACITY = 1_000
-        val STREAM_LIFETIME: Duration = Duration.ofMinutes(30)
+    companion object {
+        private const val OPENED = "opened"
+        private const val KEEP_ALIVE = "keep-alive"
+        internal const val QUEUE_CAPACITY = 1_000
+        private val STREAM_LIFETIME: Duration = Duration.ofMinutes(30)
     }
 }
