@@ -54,7 +54,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{ resource.service.name =~ \"$service\" && name !~ \"http get /actuator.*|security filterchain.*|task .*\" }",
+          "query": "{ resource.service.name =~ \"$service\" && trace:rootName !~ \"http get /actuator.*|security filterchain.*|task .*\" }",
           "limit": 50,
           "tableType": "traces"
         }
@@ -86,7 +86,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{ resource.service.name =~ \"$service\" && duration > 500ms && name !~ \"http get /actuator.*|security filterchain.*|task .*\" }",
+          "query": "{ resource.service.name =~ \"$service\" && duration > 500ms && trace:rootName !~ \"http get /actuator.*|security filterchain.*|task .*\" }",
           "limit": 50,
           "tableType": "traces"
         }
