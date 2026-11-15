@@ -88,13 +88,14 @@ class KafkaIntegrationTest {
         while (container.assignedPartitions.isEmpty() && System.nanoTime() < deadline) Thread.onSpinWait()
         container.assignedPartitions.shouldNotBeEmpty()
 
-        // The listener's position is fixed at its first poll after the assignment, so pairs are sent until one arrives.
+        // The listener's position is fixed at its first poll after the assignment, so pairs are sent until one arrives;
+        // on a slow CI broker that first poll can lag as long as the join did.
         val first =
             generateSequence {
                 template.send(topic, "broken", byteArrayOf()).get()
                 template.send(topic, "new", byteArrayOf()).get()
                 received.poll(1, TimeUnit.SECONDS)
-            }.take(WAIT_SECONDS.toInt()).firstNotNullOfOrNull { it }
+            }.take(JOIN_SECONDS.toInt()).firstNotNullOfOrNull { it }
 
         first shouldBe "new"
         received shouldNotContain "old"
