@@ -1,6 +1,6 @@
 import { motion } from "@ogcloud/tokens";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { SEGMENT_FILL, type Segment, StackedBar } from "../charts/bars.tsx";
 import { Sparkline } from "../charts/sparkline.tsx";
 import { cn } from "../lib/cn.ts";
@@ -33,6 +33,11 @@ interface KpiTileProps {
   className?: string;
 }
 
+// The tile's frame and label, shared by numbers and facts.
+const TILE =
+  "flex min-w-0 flex-col gap-1.5 rounded-card border border-border-subtle bg-surface p-4 shadow-card";
+const TILE_LABEL = "font-label text-small text-text-2";
+
 const TREND_ICONS = {
   up: ArrowUpRight,
   down: ArrowDownRight,
@@ -58,12 +63,12 @@ export function KpiTile({
   return (
     <section
       className={cn(
-        "flex min-w-0 flex-col gap-1.5 rounded-card border border-border-subtle bg-surface p-4 shadow-card",
+        TILE,
         warn && "border-warning/40 bg-warning-soft",
         className,
       )}
     >
-      <h2 className="font-label text-small text-text-2">{label}</h2>
+      <h2 className={TILE_LABEL}>{label}</h2>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span
           data-skeleton=""
@@ -191,4 +196,31 @@ function useFlashes(value: number, ready: boolean): number {
     seen.current = value;
   }, [value, ready]);
   return flashes;
+}
+
+/** A fact a page leads with that is not a count, such as how long a player has been online, in a KPI tile's frame. */
+export function FactTile({
+  label,
+  value,
+  caption,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  caption?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn(TILE, className)}>
+      <h2 className={TILE_LABEL}>{label}</h2>
+      <span data-skeleton="" className="truncate text-title">
+        {value}
+      </span>
+      {caption === undefined ? null : (
+        <span data-skeleton="" className="text-small text-text-3">
+          {caption}
+        </span>
+      )}
+    </section>
+  );
 }

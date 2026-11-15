@@ -1,5 +1,8 @@
-import { cn } from "@ogcloud/ui";
+import { Card, cn } from "@ogcloud/ui";
+import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Ago } from "./ago.tsx";
 
 /** What happened, in a short list of recent events: its icon on a tint, what and why, and when. */
@@ -46,6 +49,40 @@ export function EventItem({
   );
 }
 
-/** The way from a card of recent events to the Activity page. */
-export const ACTIVITY_LINK =
-  "inline-flex min-h-6 items-center font-label text-accent text-small hover:underline";
+/**
+ * Recent events in a card with the way to the Activity page, newest first; [empty] says why there are none, and
+ * nothing shows while they load.
+ */
+export function EventsCard({
+  title,
+  empty,
+  loading = false,
+  children,
+}: {
+  title: string;
+  empty: string;
+  loading?: boolean;
+  /** The events, as [EventItem]s; none shows [empty]. */
+  children: readonly ReactNode[];
+}) {
+  const { t } = useTranslation("web");
+  return (
+    <Card
+      title={title}
+      actions={
+        <Link
+          to="/activity"
+          className="inline-flex min-h-6 items-center font-label text-accent text-small hover:underline"
+        >
+          {t("overview.scaling.all")}
+        </Link>
+      }
+    >
+      {children.length === 0 ? (
+        <p className="text-small text-text-3">{loading ? "" : empty}</p>
+      ) : (
+        <ol className="flex flex-col">{children}</ol>
+      )}
+    </Card>
+  );
+}

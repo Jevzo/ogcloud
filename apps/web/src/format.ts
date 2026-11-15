@@ -29,6 +29,8 @@ export interface Formats {
   dateTime: (at: Date) => string;
   /** How long ago, in the largest whole unit: "4 minutes ago". */
   ago: (at: Date, now: number) => string;
+  /** How long something has lasted since [at], in the largest whole unit: "4 days". */
+  since: (at: Date, now: number) => string;
 }
 
 /** Number and time formats in the interface's language. */
@@ -59,6 +61,21 @@ export function useFormat(): Formats {
     const relative = new Intl.RelativeTimeFormat(i18n.language, {
       numeric: "auto",
     });
+    const lengths = new Map(
+      RELATIVE_UNITS.map(([unit]) => [
+        unit,
+        new Intl.NumberFormat(i18n.language, {
+          style: "unit",
+          unit,
+          unitDisplay: "long",
+        }),
+      ]),
+    );
+    const largest = (seconds: number) =>
+      RELATIVE_UNITS.find(([, length]) => Math.abs(seconds) >= length) ?? [
+        "second",
+        1,
+      ];
     return {
       number: (value) => number.format(value),
       signed: (value) => signed.format(value),
@@ -76,10 +93,19 @@ export function useFormat(): Formats {
       dateTime: (at) => dateTime.format(at),
       ago: (at, now) => {
         const seconds = Math.round((at.getTime() - now) / SECOND_MS);
-        const [unit, size] = RELATIVE_UNITS.find(
-          ([, length]) => Math.abs(seconds) >= length,
-        ) ?? ["second", 1];
+        const [unit, size] = largest(seconds);
         return relative.format(Math.round(seconds / size), unit);
+      },
+      since: (at, now) => {
+        const seconds = Math.max(
+          0,
+          Math.round((now - at.getTime()) / SECOND_MS),
+        );
+        const [unit, size] = largest(seconds);
+        return (
+          lengths.get(unit)?.format(Math.floor(seconds / size)) ??
+          String(seconds)
+        );
       },
     };
   }, [i18n.language]);

@@ -40,7 +40,7 @@ export { Drawer } from "./components/drawer.tsx";
 export { Field, type FieldControl } from "./components/field.tsx";
 export { FilterBar } from "./components/filter-bar.tsx";
 export { Input } from "./components/input.tsx";
-export { type KpiDelta, KpiTile } from "./components/kpi-tile.tsx";
+export { FactTile, type KpiDelta, KpiTile } from "./components/kpi-tile.tsx";
 export {
   Card,
   EmptyState,

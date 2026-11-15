@@ -1,6 +1,4 @@
 import type { ScalingLogView } from "@ogcloud/api-client";
-import { Card } from "@ogcloud/ui";
-import { Link } from "@tanstack/react-router";
 import {
   ArrowDownToLine,
   type LucideIcon,
@@ -9,7 +7,7 @@ import {
   Square,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ACTIVITY_LINK, EventItem } from "../../event-item.tsx";
+import { EventItem, EventsCard } from "../../event-item.tsx";
 
 const ACTION_LOOK: Record<
   ScalingLogView["action"],
@@ -30,31 +28,21 @@ export function ScalingCard({
   const { t } = useTranslation("web");
 
   return (
-    <Card
+    <EventsCard
       title={t("overview.scaling.title")}
-      actions={
-        <Link to="/activity" className={ACTIVITY_LINK}>
-          {t("overview.scaling.all")}
-        </Link>
-      }
+      empty={t("overview.scaling.empty")}
     >
-      {entries.length === 0 ? (
-        <p className="text-small text-text-3">{t("overview.scaling.empty")}</p>
-      ) : (
-        <ol className="flex flex-col">
-          {entries.map((entry) => (
-            <EventItem
-              key={entry.id}
-              {...ACTION_LOOK[entry.action]}
-              title={t(`overview.scaling.actions.${entry.action}`, {
-                group: entry.groupId,
-              })}
-              detail={t(`overview.scaling.reasons.${entry.reason}`)}
-              at={entry.occurredAt}
-            />
-          ))}
-        </ol>
-      )}
-    </Card>
+      {entries.map((entry) => (
+        <EventItem
+          key={entry.id}
+          {...ACTION_LOOK[entry.action]}
+          title={t(`overview.scaling.actions.${entry.action}`, {
+            group: entry.groupId,
+          })}
+          detail={t(`overview.scaling.reasons.${entry.reason}`)}
+          at={entry.occurredAt}
+        />
+      ))}
+    </EventsCard>
   );
 }

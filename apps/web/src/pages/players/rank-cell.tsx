@@ -7,6 +7,16 @@ import { RankPrefixChip } from "../permissions/rank-look.tsx";
 // Ranks change rarely; one list serves every row.
 const GROUPS_STALE_MS = 60_000;
 
+/** How a permission group shows in game, for those who may read the groups; one shared list serves every caller. */
+export function useRankDisplay(groupId: string) {
+  const canRead = useCan("permissions:read");
+  const groups = usePermissionGroupList({
+    query: { enabled: canRead, staleTime: GROUPS_STALE_MS },
+  });
+  return groups.data?.data.find((group) => group.id === groupId)?.settings
+    .display;
+}
+
 /** A player's rank as its chat prefix shows in game, with when it ends, muted (D-0231). */
 export function RankCell({
   groupId,
@@ -16,12 +26,7 @@ export function RankCell({
   expiresAt?: string | null | undefined;
 }) {
   const { t } = useTranslation("web");
-  const canRead = useCan("permissions:read");
-  const groups = usePermissionGroupList({
-    query: { enabled: canRead, staleTime: GROUPS_STALE_MS },
-  });
-  const display = groups.data?.data.find((group) => group.id === groupId)
-    ?.settings.display;
+  const display = useRankDisplay(groupId);
   return (
     <span className="inline-flex items-center gap-2">
       {display === undefined ? (

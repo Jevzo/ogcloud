@@ -783,14 +783,30 @@
     },
     "detail": {
       "back": "Back to the players",
+      "changes": {
+        "by": "by {{actor}}",
+        "empty": "Nothing was changed about this player yet.",
+        "export": "Data exported",
+        "rank": "Rank changed",
+        "title": "Recent changes",
+        "transfer": "Moved or kicked"
+      },
+      "connectedFor": "Connected for",
+      "dashboardUser": "Dashboard user",
       "failed": "This player could not be loaded",
+      "firstSeen": "first seen {{at}}",
+      "inGame": "In game",
+      "knownFor": "Known for",
       "offline": "Offline",
+      "onServer": "On server",
       "onlineNow": "Online",
       "permanent": "permanently",
-      "status": "Status",
+      "serverCaption": "{{group}} · {{players}} of {{max}} players",
+      "since": "since {{at}}",
       "unknown": "This player never joined",
       "unknownDescription": "The network knows only players who joined at least once.",
-      "uuid": "UUID"
+      "uuid": "UUID",
+      "via": "via {{proxy}}"
     },
     "empty": {
       "known": "No player matches",

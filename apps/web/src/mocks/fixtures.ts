@@ -580,7 +580,7 @@ export function previewOf(request: TextPreviewRequest): TextPreview {
   const span = {
     text: request.text
       .replace(TAG, "")
-      .replaceAll("{name}", "Steve")
+      .replaceAll("{name}", request.values?.["name"] ?? "Steve")
       .replaceAll("{onlinePlayers}", "1,284"),
     color,
     bold: false,

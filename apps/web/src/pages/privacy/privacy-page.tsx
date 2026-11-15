@@ -12,7 +12,6 @@ import {
   PageHeader,
   Segmented,
 } from "@ogcloud/ui";
-import { Link } from "@tanstack/react-router";
 import {
   Download,
   Eraser,
@@ -29,7 +28,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { Ago } from "../../ago.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { editorColumns } from "../../editing.tsx";
-import { ACTIVITY_LINK, EventItem } from "../../event-item.tsx";
+import { EventItem, EventsCard } from "../../event-item.tsx";
 import { isOwner, useCan } from "../../permissions.ts";
 import { type PrivacySubject, usePrivacyActions } from "./privacy-actions.tsx";
 
@@ -217,26 +216,15 @@ function RecentCard() {
   const audit = useLogAudit({ targetType: PRIVACY_TARGET, limit: RECENT });
   const entries = audit.data?.data.items ?? [];
   return (
-    <Card
+    <EventsCard
       title={t("privacy.recent.title")}
-      actions={
-        <Link to="/activity" className={ACTIVITY_LINK}>
-          {t("overview.scaling.all")}
-        </Link>
-      }
+      empty={t("privacy.recent.empty")}
+      loading={audit.isPending}
     >
-      {entries.length === 0 ? (
-        <p className="text-small text-text-3">
-          {audit.isPending ? "" : t("privacy.recent.empty")}
-        </p>
-      ) : (
-        <ol className="flex flex-col">
-          {entries.map((entry) => (
-            <RecentItem key={entry.id} entry={entry} />
-          ))}
-        </ol>
-      )}
-    </Card>
+      {entries.map((entry) => (
+        <RecentItem key={entry.id} entry={entry} />
+      ))}
+    </EventsCard>
   );
 }
 
