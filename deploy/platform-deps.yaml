@@ -150,6 +150,10 @@ charts:
     chart: kube-prometheus-stack
     version: 93.2.0
     values:
+      # The CRDs come from prometheus-operator-crds above (D-0171); the chart's own copies differ from that stripped
+      # manifest, so installing them conflicts with it.
+      crds:
+        enabled: false
       # Monitors of every namespace count, OgCloud's PodMonitors included (T-0603).
       prometheus:
         prometheusSpec:
