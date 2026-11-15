@@ -9,6 +9,7 @@ import {
   Badge,
   Button,
   Card,
+  cn,
   FactTile,
   Loading,
   PageHeader,
@@ -196,7 +197,13 @@ function PlayerFacts({ view }: { view: PlayerView }) {
   const at = (iso: string) => format.dateTime(new Date(iso));
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    // Offline shows two tiles, which share the row rather than leave a third of it empty.
+    <div
+      className={cn(
+        "grid gap-6",
+        session === null ? "grid-cols-2" : "grid-cols-3",
+      )}
+    >
       {session === null ? (
         <FactTile
           label={t("players.columns.lastSeen")}
