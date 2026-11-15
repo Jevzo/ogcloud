@@ -163,6 +163,10 @@ charts:
       # Grafana loads every namespace's dashboard ConfigMaps, OgCloud's included, and signs in through OgCloud
       # with the environment OgCloud's chart syncs into this namespace (D-0153); without it, its own login.
       grafana:
+        # A first start migrates Grafana's database for minutes on slow disks, and its volume-less database starts
+        # over after every restart, so liveness waits ten minutes; readiness still keeps traffic away meanwhile.
+        livenessProbe:
+          failureThreshold: 60
         sidecar:
           dashboards:
             searchNamespace: ALL
