@@ -1,4 +1,4 @@
-import { defaultDensity, densities } from "@ogcloud/tokens";
+import { sizes } from "@ogcloud/tokens";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -63,7 +63,7 @@ export interface RowActions {
 
 // Long lists (players, servers at scale) render only the rows in view.
 const VIRTUALIZE_FROM = 100;
-const ESTIMATED_ROW_PX = densities[defaultDensity].rowHeight;
+const ESTIMATED_ROW_PX = sizes.rowHeight;
 const OVERSCAN_ROWS = 8;
 const LOADING_ROWS = 5;
 // The head's band; each cell reaches one pixel into the next, so fractional column widths leave no seams.
@@ -279,7 +279,7 @@ export function DataTable<T extends RowData>({
                       )}
                     >
                       {row.getAllCells().map((cell) => (
-                        // One line per row, so rows keep the density's height and the virtualiser's measure.
+                        // One line per row, so rows keep their height and the virtualiser's measure.
                         <td
                           key={cell.id}
                           className={cn(

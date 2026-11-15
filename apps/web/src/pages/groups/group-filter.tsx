@@ -1,5 +1,5 @@
-import { type ListFilterSpec, Select } from "@ogcloud/ui";
-import { useState } from "react";
+import { Select } from "@ogcloud/ui";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 // No group id can be "*" (they are DNS labels), so it stands for every group.
@@ -18,8 +18,8 @@ export function GroupFilter({
   const { t } = useTranslation("web");
   return (
     <Select
-      className="w-full"
-      aria-describedby={undefined}
+      className="w-48"
+      aria-label={t("servers.filters.group")}
       options={[
         { value: ALL_GROUPS, label: t("servers.filters.allGroups") },
         ...groupIds.map((id) => ({ value: id, label: id })),
@@ -30,27 +30,20 @@ export function GroupFilter({
   );
 }
 
-/** A list's group filter for its filter bar: the chosen group, and the filter that sets and shows it (D-0231). */
+/** A list's group filter in its filter bar: the chosen group, its control, and whether it narrows the list. */
 export function useGroupFilter(groupIds: readonly string[]): {
   group: string;
-  filter: ListFilterSpec;
+  control: ReactNode;
+  active: boolean;
+  clear: () => void;
 } {
-  const { t } = useTranslation("web");
   const [group, setGroup] = useState(ALL_GROUPS);
   return {
     group,
-    filter: {
-      id: "group",
-      label: t("servers.filters.group"),
-      control: (
-        <GroupFilter
-          groupIds={groupIds}
-          value={group}
-          onValueChange={setGroup}
-        />
-      ),
-      shown: group === ALL_GROUPS ? null : group,
-      clear: () => setGroup(ALL_GROUPS),
-    },
+    control: (
+      <GroupFilter groupIds={groupIds} value={group} onValueChange={setGroup} />
+    ),
+    active: group !== ALL_GROUPS,
+    clear: () => setGroup(ALL_GROUPS),
   };
 }

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLoading } from "../components/loading.tsx";
 import { cn } from "../lib/cn.ts";
 import { useWidth } from "../lib/use-width.ts";
+import { RevealClip } from "./reveal.tsx";
 
 export interface Point {
   at: Date;
@@ -297,16 +298,13 @@ export function TimeSeriesChart({
                   />
                 </linearGradient>
               ))}
-              {/* The data draws in once, left to right, when the chart first appears. */}
-              <clipPath id={`${id}-reveal`}>
-                <rect
-                  // Mounted anew when loading ends, so the draw-in plays for the real data, not the skeleton.
-                  key={loading ? "loading" : "ready"}
-                  width={width}
-                  height={height}
-                  className="origin-left animate-draw-in [transform-box:fill-box]"
-                />
-              </clipPath>
+              {/* Played anew when loading ends, so the draw-in shows the real data, not the skeleton. */}
+              <RevealClip
+                id={`${id}-reveal`}
+                width={width}
+                height={height}
+                run={loading ? "loading" : "ready"}
+              />
             </defs>
             {leaving === null ? null : (
               <g

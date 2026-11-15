@@ -32,9 +32,9 @@ const COLUMN: Record<string, string> = {
 type Area = (typeof AREAS)[number];
 type Action = (typeof ACTIONS)[number];
 
-const isArea = (area: string): area is Area =>
+export const isArea = (area: string): area is Area =>
   (AREAS as readonly string[]).includes(area);
-const isAction = (action: string): action is Action =>
+export const isAction = (action: string): action is Action =>
   (ACTIONS as readonly string[]).includes(action);
 
 /** The catalog by area, in the order the API lists it: `servers:read` is the servers area's read action. */
@@ -45,6 +45,25 @@ function areasOf(catalog: readonly string[]): [string, string[]][] {
     areas.set(area, [...(areas.get(area) ?? []), action]);
   }
   return [...areas];
+}
+
+/** Permissions someone holds, by area, in the catalog's order of areas and actions: for showing, not picking. */
+export function heldAreas(
+  permissions: readonly string[],
+): [string, string[]][] {
+  const rank = (order: readonly string[], item: string) => {
+    const index = order.indexOf(item);
+    return index === -1 ? order.length : index;
+  };
+  const sorted = [...permissions].sort((a, b) => {
+    const [areaA = a, actionA = ""] = a.split(":");
+    const [areaB = b, actionB = ""] = b.split(":");
+    return (
+      rank(AREAS, areaA) - rank(AREAS, areaB) ||
+      rank(ACTIONS, actionA) - rank(ACTIONS, actionB)
+    );
+  });
+  return areasOf(sorted);
 }
 
 interface PermissionPickerProps {

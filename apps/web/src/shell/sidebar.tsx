@@ -16,6 +16,11 @@ import {
 import { useCan } from "../permissions.ts";
 
 const COUNTS_REFRESH_MS = 10_000;
+// Labels stay laid out and fade while the sidebar slides, so nothing jumps; its width is the one animated layout
+// property (D-0235).
+const SLIDE = "duration-(--og-duration-base) ease-standard";
+export const railFade = (collapsed: boolean) =>
+  cn("transition-opacity", SLIDE, collapsed && "opacity-0");
 
 interface SidebarProps {
   permissions: readonly string[];
@@ -38,22 +43,28 @@ export function Sidebar({
     <aside
       aria-label="OgCloud"
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-border-subtle border-r bg-sunken p-3",
+        "sticky top-0 flex h-screen shrink-0 flex-col overflow-hidden border-border-subtle border-r bg-sunken p-3 transition-[width]",
+        SLIDE,
         collapsed ? "w-sidebar-rail" : "w-sidebar",
       )}
     >
       <div
         className={cn(
-          "mb-2.5 flex h-10 items-center gap-2.5",
-          collapsed ? "flex-col justify-center" : "pr-1 pl-1.5",
+          "mb-2.5 flex h-10 items-center",
+          collapsed ? "px-1" : "pr-1 pl-1.5",
         )}
       >
-        {collapsed ? null : (
-          <>
-            <img src={mascot} alt="" className="size-7.5" />
-            <span className="flex-1 text-wordmark">OgCloud</span>
-          </>
-        )}
+        <span
+          aria-hidden={collapsed}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden whitespace-nowrap",
+            railFade(collapsed),
+            !collapsed && "mr-2.5",
+          )}
+        >
+          <img src={mascot} alt="" className="size-7.5 shrink-0" />
+          <span className="text-wordmark">OgCloud</span>
+        </span>
         <Button
           kind="ghost"
           size="sm"
@@ -76,13 +87,22 @@ export function Sidebar({
       </nav>
       {admin.length === 0 ? null : (
         <>
-          {collapsed ? (
-            <hr className="my-3 border-border-subtle" />
-          ) : (
-            <div className="px-2.5 pt-4.5 pb-1.5 font-label text-meta text-text-3">
+          {/* The section's name, or on the rail a hairline in its place, at the same height either way. */}
+          <div className="relative px-2.5 pt-4.5 pb-1.5 font-label text-meta text-text-3">
+            <span
+              aria-hidden={collapsed}
+              className={cn("block whitespace-nowrap", railFade(collapsed))}
+            >
               {t("nav.administration")}
-            </div>
-          )}
+            </span>
+            <hr
+              className={cn(
+                "absolute inset-x-0 top-1/2 border-border transition-opacity",
+                SLIDE,
+                !collapsed && "opacity-0",
+              )}
+            />
+          </div>
           <nav className="flex flex-col gap-0.5">
             {admin.map((item) => (
               <NavLink key={item.path} item={item} collapsed={collapsed} />
@@ -113,10 +133,9 @@ function NavLink({
       activeOptions={{ exact: item.path === "/" }}
       aria-label={collapsed ? label : undefined}
       className={cn(
-        "group relative flex h-nav-item items-center gap-2.5 rounded-control px-2.5 font-label text-text-2 hover:bg-surface hover:text-text",
+        "group relative flex h-nav-item items-center gap-2.5 whitespace-nowrap rounded-control px-2.5 font-label text-text-2 hover:bg-surface hover:text-text",
         // The active item: the tint, the accent, and a bar on its inner edge.
         "aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent aria-[current=page]:before:absolute aria-[current=page]:before:inset-y-2 aria-[current=page]:before:left-0 aria-[current=page]:before:w-0.75 aria-[current=page]:before:rounded-full aria-[current=page]:before:bg-accent",
-        collapsed && "justify-center px-0",
       )}
     >
       <item.icon
@@ -125,14 +144,15 @@ function NavLink({
         strokeWidth={1.5}
         className="shrink-0 group-aria-[current=page]:text-accent"
       />
-      {collapsed ? null : (
-        <>
-          <span className="flex-1 truncate">{label}</span>
-          {count === undefined ? null : (
-            <span className="text-meta text-text-3 tabular-nums">{count}</span>
-          )}
-        </>
-      )}
+      <span
+        aria-hidden={collapsed}
+        className={cn("flex min-w-0 flex-1 items-center", railFade(collapsed))}
+      >
+        <span className="flex-1 truncate">{label}</span>
+        {count === undefined ? null : (
+          <span className="text-meta text-text-3 tabular-nums">{count}</span>
+        )}
+      </span>
     </Link>
   );
   return collapsed ? (

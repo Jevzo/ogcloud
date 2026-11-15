@@ -12,7 +12,6 @@ import {
   EmptyState,
   FilterBar,
   Input,
-  type ListFilterSpec,
 } from "@ogcloud/ui";
 import { ScrollText } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -22,7 +21,6 @@ import { agoColumn, monoColumn } from "../../columns.tsx";
 import { TYPING_PAUSE_MS, useDebounced } from "../../debounce.ts";
 import { DetailRow, Details } from "../../details.tsx";
 import { loadFailure } from "../../errors.ts";
-import { useFormat } from "../../format.ts";
 import { useHeld } from "../../held.ts";
 import { LoadMore } from "../../load-more.tsx";
 import { PAGE_SIZE, usePaged } from "../../paged.ts";
@@ -36,6 +34,13 @@ interface Filters {
   targetType: string;
   targetId: string;
 }
+
+const NO_FILTERS: Filters = {
+  actor: "",
+  action: "",
+  targetType: "",
+  targetId: "",
+};
 
 /** Only the filters that are set, as the API takes them (D-0213). */
 function paramsOf(
@@ -58,14 +63,8 @@ function paramsOf(
 /** Every change made through the API or in game, newest first, narrowed by who, what, which and when. */
 export function AuditTab() {
   const { t } = useTranslation("web");
-  const format = useFormat();
   const fetchAudit = useLogAuditHook();
-  const [filters, setFilters] = useState<Filters>({
-    actor: "",
-    action: "",
-    targetType: "",
-    targetId: "",
-  });
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [from, setFrom] = useState<Date | null>(null);
   const [until, setUntil] = useState<Date | null>(null);
   const settled = useDebounced(filters, TYPING_PAUSE_MS);
@@ -84,41 +83,35 @@ export function AuditTab() {
   const set = (key: keyof Filters) => (value: string) =>
     setFilters((current) => ({ ...current, [key]: value }));
   const [opened, setOpened] = useState<AuditEntryView | null>(null);
-  const textFilter = (key: keyof Filters): ListFilterSpec => ({
-    id: key,
-    label: t(`activity.audit.filter.${key}`),
-    control: (
-      <Input
-        mono
-        aria-label={t(`activity.audit.filter.${key}`)}
-        placeholder={
-          key === "targetId" ? undefined : t(`activity.audit.example.${key}`)
-        }
-        value={filters[key]}
-        onChange={(event) => set(key)(event.target.value)}
-      />
-    ),
-    shown: filters[key].trim() === "" ? null : filters[key].trim(),
-    clear: () => set(key)(""),
-  });
+  // The six share the row, so they fit on one line from the smallest layout up.
+  const textFilter = (key: keyof Filters, grow: string) => (
+    <Input
+      mono
+      className={`min-w-0 basis-0 ${grow}`}
+      aria-label={t(`activity.audit.filter.${key}`)}
+      placeholder={t(`activity.audit.filter.${key}`)}
+      value={filters[key]}
+      onChange={(event) => set(key)(event.target.value)}
+    />
+  );
   const timeFilter = (
     key: "from" | "until",
     value: Date | null,
     change: (value: Date | null) => void,
-  ): ListFilterSpec => ({
-    id: key,
-    label: t(`activity.audit.filter.${key}`),
-    control: (
-      <DateTimePicker
-        aria-label={t(`activity.audit.filter.${key}`)}
-        value={value}
-        onChange={change}
-        now={new Date()}
-      />
-    ),
-    shown: value === null ? null : format.dateTime(value),
-    clear: () => change(null),
-  });
+  ) => (
+    <DateTimePicker
+      className="min-w-0 flex-1 basis-0"
+      aria-label={t(`activity.audit.filter.${key}`)}
+      placeholder={t(`activity.audit.filter.${key}`)}
+      value={value}
+      onChange={change}
+      now={new Date()}
+    />
+  );
+  const filtered =
+    Object.values(filters).some((value) => value.trim() !== "") ||
+    from !== null ||
+    until !== null;
 
   const auditColumns = useMemo(
     () =>
@@ -156,15 +149,23 @@ export function AuditTab() {
   return (
     <div className="flex flex-col gap-6">
       <FilterBar
-        filters={[
-          textFilter("actor"),
-          textFilter("action"),
-          textFilter("targetType"),
-          textFilter("targetId"),
-          timeFilter("from", from, setFrom),
-          timeFilter("until", until, setUntil),
-        ]}
-      />
+        onClear={
+          filtered
+            ? () => {
+                setFilters(NO_FILTERS);
+                setFrom(null);
+                setUntil(null);
+              }
+            : undefined
+        }
+      >
+        {textFilter("actor", "flex-1")}
+        {textFilter("action", "flex-[1.5]")}
+        {textFilter("targetType", "flex-1")}
+        {textFilter("targetId", "flex-1")}
+        {timeFilter("from", from, setFrom)}
+        {timeFilter("until", until, setUntil)}
+      </FilterBar>
       <Card flush>
         <DataTable
           label={t("activity.tabs.audit")}

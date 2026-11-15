@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { LoginsCard } from "./logins-card.tsx";
 import { PasswordCard } from "./password-card.tsx";
 import {
+  AccessCard,
   AppearanceCard,
   MinecraftCard,
   ProfileCard,
@@ -11,8 +12,11 @@ import {
 import { TwoFactorCard } from "./two-factor-card.tsx";
 
 type Section = "profile" | "security";
+// Two columns across the full width, each stacking its own cards so they keep their height (D-0235).
+const COLUMNS = "grid grid-cols-2 items-start gap-6";
+const COLUMN = "flex min-w-0 flex-col gap-6";
 
-/** The signed-in user's own account: profile, Minecraft link and appearance; password, factors and devices. */
+/** The signed-in user's own account: profile, access, Minecraft link and appearance; password, factors and devices. */
 export function AccountPage() {
   const { t } = useTranslation("web");
   const [section, setSection] = useState<Section>("profile");
@@ -28,10 +32,13 @@ export function AccountPage() {
             value: "profile",
             label: t("account.tabs.profile"),
             content: (
-              <div className="flex max-w-form flex-col gap-6">
-                <ProfileCard />
-                <MinecraftCard />
-                <AppearanceCard />
+              <div className={COLUMNS}>
+                <div className={COLUMN}>
+                  <ProfileCard />
+                  <MinecraftCard />
+                  <AppearanceCard />
+                </div>
+                <AccessCard />
               </div>
             ),
           },
@@ -39,10 +46,14 @@ export function AccountPage() {
             value: "security",
             label: t("account.tabs.security"),
             content: (
-              <div className="flex max-w-form flex-col gap-6">
-                <TwoFactorCard />
-                <LoginsCard />
-                <PasswordCard />
+              <div className={COLUMNS}>
+                <div className={COLUMN}>
+                  <PasswordCard />
+                </div>
+                <div className={COLUMN}>
+                  <TwoFactorCard />
+                  <LoginsCard />
+                </div>
               </div>
             ),
           },

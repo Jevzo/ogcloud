@@ -10,16 +10,26 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-type GroupStatus = "paused" | "maintenance" | "online" | "idle";
+/** A group's states, most urgent first. */
+export const GROUP_STATUSES = [
+  "paused",
+  "maintenance",
+  "online",
+  "idle",
+] as const;
+export type GroupStatus = (typeof GROUP_STATUSES)[number];
 
-const STATUS_LOOK: Record<GroupStatus, { tone: Tone; icon: LucideIcon }> = {
+export const STATUS_LOOK: Record<
+  GroupStatus,
+  { tone: Exclude<Tone, "highlight">; icon: LucideIcon }
+> = {
   paused: { tone: "danger", icon: OctagonPause },
   maintenance: { tone: "warning", icon: Construction },
   online: { tone: "success", icon: CircleCheck },
   idle: { tone: "neutral", icon: CircleDashed },
 };
 
-function statusOf(group: GroupOverview): GroupStatus {
+export function statusOf(group: GroupOverview): GroupStatus {
   if (group.crashLoopPaused) return "paused";
   if (group.maintenance) return "maintenance";
   return group.running > 0 ? "online" : "idle";

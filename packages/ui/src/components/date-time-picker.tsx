@@ -29,6 +29,8 @@ interface DateTimePickerProps {
   allowPermanent?: boolean;
   /** Shown while no time is picked and permanence is not offered, e.g. "Any time" in a filter. */
   placeholder?: string;
+  className?: string;
+  "aria-label"?: string | undefined;
   "aria-describedby"?: string | undefined;
   "aria-invalid"?: true | undefined;
 }
@@ -40,6 +42,7 @@ export function DateTimePicker({
   now,
   allowPermanent = false,
   placeholder,
+  className,
   ...trigger
 }: DateTimePickerProps) {
   const { t, i18n } = useTranslation("ui");
@@ -83,6 +86,7 @@ export function DateTimePicker({
           className={cn(
             controlFrame,
             "flex h-control w-full cursor-pointer items-center gap-2 px-2.5 text-left outline-none focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 aria-expanded:border-accent aria-expanded:ring-3 aria-expanded:ring-accent/30",
+            className,
           )}
         >
           <CalendarDays

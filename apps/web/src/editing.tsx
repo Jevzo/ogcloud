@@ -126,23 +126,16 @@ export function useListSave(path: string): SaveOutcome<unknown> {
   };
 }
 
-/** The form and its side panel; on large monitors the panel grows so previews scale up (D-0231). */
+/** The form and its side panel across the full width, two to one, so previews grow with the screen (D-0235). */
 export const editorColumns =
-  "grid grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside))] items-start gap-6 min-[1920px]:grid-cols-[minmax(0,var(--container-form))_minmax(var(--container-aside-min),var(--container-aside-wide))]";
+  "grid grid-cols-[minmax(0,2fr)_minmax(var(--container-aside-min),1fr)] items-start gap-6";
 
 /** The side panel stays in view below the top bar while the form scrolls. */
 export const editorAside = "sticky top-18 flex min-w-0 flex-col gap-6";
 
-/**
- * An editor or create page, as wide as its form and side panel, so the header's actions sit over what they act on
- * rather than at the window's far edge (D-0231).
- */
+/** An editor or create page: its header over the form and side panel, at the full width (D-0235). */
 export function EditorPage({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex max-w-[calc(var(--container-form)+var(--container-aside)+--spacing(6))] flex-col gap-6 min-[1920px]:max-w-[calc(var(--container-form)+var(--container-aside-wide)+--spacing(6))]">
-      {children}
-    </div>
-  );
+  return <div className="flex flex-col gap-6">{children}</div>;
 }
 
 interface EditorFormProps {
@@ -156,7 +149,7 @@ interface EditorFormProps {
 }
 
 /**
- * A page's settings form, about 720 px wide with its side panel: read-only without the write permission, otherwise
+ * A page's settings form with its side panel: read-only without the write permission, otherwise
  * with its save bar and leave guard.
  */
 export function EditorForm({

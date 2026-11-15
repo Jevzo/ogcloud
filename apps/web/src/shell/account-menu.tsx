@@ -1,11 +1,11 @@
 import type { MeView } from "@ogcloud/api-client";
-import type { DensityName } from "@ogcloud/tokens";
-import { Menu } from "@ogcloud/ui";
+import { cn, Menu } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { type ThemeChoice, usePreferences } from "../preferences.ts";
+import { Initials } from "../avatar.tsx";
 import { useSignOut } from "../session-context.ts";
+import { railFade } from "./sidebar.tsx";
 
 interface AccountMenuProps {
   me: MeView;
@@ -14,10 +14,8 @@ interface AccountMenuProps {
 
 export function AccountMenu({ me, collapsed }: AccountMenuProps) {
   const { t } = useTranslation("web");
-  const { preferences, change: onPreferences } = usePreferences();
   const signOut = useSignOut();
   const navigate = useNavigate();
-  const initials = me.username.slice(0, 2).toUpperCase();
 
   return (
     <Menu
@@ -30,26 +28,6 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
         </span>
       }
       groups={[
-        {
-          label: t("shell.theme.label"),
-          value: preferences.theme,
-          options: (["system", "light", "dark"] as const).map((value) => ({
-            value,
-            label: t(`shell.theme.${value}`),
-          })),
-          onValueChange: (theme) =>
-            onPreferences({ ...preferences, theme: theme as ThemeChoice }),
-        },
-        {
-          label: t("shell.density.label"),
-          value: preferences.density,
-          options: (["compact", "comfortable"] as const).map((value) => ({
-            value,
-            label: t(`shell.density.${value}`),
-          })),
-          onValueChange: (density) =>
-            onPreferences({ ...preferences, density: density as DensityName }),
-        },
         [
           {
             label: t("shell.account"),
@@ -69,33 +47,29 @@ export function AccountMenu({ me, collapsed }: AccountMenuProps) {
           aria-label={collapsed ? me.username : undefined}
           className="flex w-full cursor-pointer items-center gap-2.5 rounded-control p-1.5 text-left hover:bg-surface"
         >
+          <Initials name={me.username} className="size-7.5 text-meta" />
+          {/* Faded rather than removed, so the sidebar's slide does not jump (D-0235). */}
           <span
-            aria-hidden="true"
-            data-skeleton=""
-            className="grid size-7.5 shrink-0 place-items-center rounded-full bg-accent-soft font-bold text-accent text-meta"
+            aria-hidden={collapsed}
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-2.5 whitespace-nowrap",
+              railFade(collapsed),
+            )}
           >
-            {initials}
-          </span>
-          {collapsed ? null : (
-            <>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span data-skeleton="" className="truncate font-label">
-                  {me.username}
-                </span>
-                <span
-                  data-skeleton=""
-                  className="truncate text-meta text-text-3"
-                >
-                  {me.roleId}
-                </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span data-skeleton="" className="truncate font-label">
+                {me.username}
               </span>
-              <ChevronsUpDown
-                aria-hidden="true"
-                size={15}
-                className="text-text-3"
-              />
-            </>
-          )}
+              <span data-skeleton="" className="truncate text-meta text-text-3">
+                {me.roleId}
+              </span>
+            </span>
+            <ChevronsUpDown
+              aria-hidden="true"
+              size={15}
+              className="shrink-0 text-text-3"
+            />
+          </span>
         </button>
       }
     />

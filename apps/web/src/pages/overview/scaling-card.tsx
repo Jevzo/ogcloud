@@ -1,5 +1,5 @@
 import type { ScalingLogView } from "@ogcloud/api-client";
-import { Card, cn } from "@ogcloud/ui";
+import { Card } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowDownToLine,
@@ -9,7 +9,7 @@ import {
   Square,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Ago } from "../../ago.tsx";
+import { ACTIVITY_LINK, EventItem } from "../../event-item.tsx";
 
 const ACTION_LOOK: Record<
   ScalingLogView["action"],
@@ -33,10 +33,7 @@ export function ScalingCard({
     <Card
       title={t("overview.scaling.title")}
       actions={
-        <Link
-          to="/activity"
-          className="inline-flex min-h-6 items-center font-label text-accent text-small hover:underline"
-        >
+        <Link to="/activity" className={ACTIVITY_LINK}>
           {t("overview.scaling.all")}
         </Link>
       }
@@ -45,43 +42,17 @@ export function ScalingCard({
         <p className="text-small text-text-3">{t("overview.scaling.empty")}</p>
       ) : (
         <ol className="flex flex-col">
-          {entries.map((entry) => {
-            const { icon: Icon, tint } = ACTION_LOOK[entry.action];
-            const title = t(`overview.scaling.actions.${entry.action}`, {
-              group: entry.groupId,
-            });
-            const reason = t(`overview.scaling.reasons.${entry.reason}`);
-            return (
-              <li key={entry.id} className="flex items-center gap-3 py-1.5">
-                <span
-                  aria-hidden="true"
-                  data-skeleton=""
-                  className={cn(
-                    "grid size-7 shrink-0 place-items-center rounded-full",
-                    tint,
-                  )}
-                >
-                  <Icon size={14} strokeWidth={2} />
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span data-skeleton="" className="truncate" title={title}>
-                    {title}
-                  </span>
-                  <span
-                    data-skeleton=""
-                    className="truncate text-meta text-text-3"
-                    title={reason}
-                  >
-                    {reason}
-                  </span>
-                </span>
-                <Ago
-                  at={entry.occurredAt}
-                  className="shrink-0 text-meta text-text-3"
-                />
-              </li>
-            );
-          })}
+          {entries.map((entry) => (
+            <EventItem
+              key={entry.id}
+              {...ACTION_LOOK[entry.action]}
+              title={t(`overview.scaling.actions.${entry.action}`, {
+                group: entry.groupId,
+              })}
+              detail={t(`overview.scaling.reasons.${entry.reason}`)}
+              at={entry.occurredAt}
+            />
+          ))}
         </ol>
       )}
     </Card>

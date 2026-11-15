@@ -21,7 +21,7 @@ for (const theme of themeNames) {
         (chosen) =>
           localStorage.setItem(
             "ogcloud.preferences",
-            JSON.stringify({ theme: chosen, density: "compact" }),
+            JSON.stringify({ theme: chosen }),
           ),
         theme,
       );

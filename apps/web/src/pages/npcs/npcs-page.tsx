@@ -34,7 +34,8 @@ export function NpcsPage() {
   const navigate = useNavigate();
   const canWrite = useCan("npcs:write");
   const groupIds = useBackendGroupIds();
-  const { group, filter: groupFilter } = useGroupFilter(groupIds);
+  const groupFilter = useGroupFilter(groupIds);
+  const { group } = groupFilter;
   const npcs = useNpcList(
     group === ALL_GROUPS ? undefined : { groupId: group },
   );
@@ -117,7 +118,9 @@ export function NpcsPage() {
           ) : undefined
         }
       />
-      <FilterBar filters={[groupFilter]} />
+      <FilterBar onClear={groupFilter.active ? groupFilter.clear : undefined}>
+        {groupFilter.control}
+      </FilterBar>
       <Card flush>
         <DataTable
           label={t("nav.npcs")}

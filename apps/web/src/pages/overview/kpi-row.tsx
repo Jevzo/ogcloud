@@ -3,12 +3,17 @@ import type {
   OverviewView,
   ServerViewState,
 } from "@ogcloud/api-client";
-import { type KpiDelta, KpiTile } from "@ogcloud/ui";
+import { type KpiDelta, KpiTile, type Segment } from "@ogcloud/ui";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormat } from "../../format.ts";
 import { sampleHourAgo } from "../../history.ts";
+import {
+  GROUP_STATUSES,
+  STATUS_LOOK,
+  statusOf,
+} from "../groups/group-status.tsx";
 
 // A day of minute samples thinned for a sparkline a few hundred pixels wide.
 const SPARK_POINTS = 48;
@@ -35,8 +40,13 @@ export function KpiRow({ data, history }: KpiRowProps) {
   const running = data.serversByState.RUNNING ?? 0;
   const starting = count(STARTING);
   const draining = count(DRAINING);
-  const paused = data.groups.filter((group) => group.crashLoopPaused).length;
-  const maintenance = data.groups.filter((group) => group.maintenance).length;
+  const states = GROUP_STATUSES.map(
+    (status): Segment => ({
+      label: t(`overview.kpi.groupStates.${status}`),
+      value: data.groups.filter((group) => statusOf(group) === status).length,
+      tone: STATUS_LOOK[status].tone,
+    }),
+  );
   const hourAgo = sampleHourAgo(history, Date.now());
   // More players is good news; more servers is neither.
   const changeOf = (change: number, judged: boolean): KpiDelta => ({
@@ -54,12 +64,6 @@ export function KpiRow({ data, history }: KpiRowProps) {
   const serverNotes = [
     starting > 0 ? t("overview.kpi.starting", { count: starting }) : null,
     draining > 0 ? t("overview.kpi.draining", { count: draining }) : null,
-  ].filter((note) => note !== null);
-  const groupNotes = [
-    paused > 0 ? t("overview.kpi.paused", { count: paused }) : null,
-    maintenance > 0
-      ? t("overview.kpi.maintenance", { count: maintenance })
-      : null,
   ].filter((note) => note !== null);
 
   return (
@@ -93,12 +97,8 @@ export function KpiRow({ data, history }: KpiRowProps) {
           label={t("overview.kpi.groups")}
           value={data.groups.length}
           format={format.number}
-          caption={
-            groupNotes.length === 0
-              ? t("overview.kpi.allOnline")
-              : list.format(groupNotes)
-          }
-          warn={paused > 0}
+          breakdown={states}
+          warn={data.groups.some((group) => group.crashLoopPaused)}
         />
       </TileLink>
     </div>

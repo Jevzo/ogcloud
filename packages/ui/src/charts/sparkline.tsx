@@ -1,13 +1,23 @@
 import { scaleLinear } from "d3-scale";
 import { area, line } from "d3-shape";
 import { useId } from "react";
+import { RevealClip } from "./reveal.tsx";
 
 const HEIGHT = 32;
 const WIDTH = 120;
 const STROKE = 1.5;
 
-/** The shape of a recent history beside a KPI: no axes, the line in the accent over a fading fill. */
-export function Sparkline({ values }: { values: readonly number[] }) {
+/**
+ * The shape of a recent history beside a KPI: no axes, the line in the accent over a fading fill, drawn in like the
+ * charts; a new `run` draws it in again.
+ */
+export function Sparkline({
+  values,
+  run = "ready",
+}: {
+  values: readonly number[];
+  run?: string;
+}) {
   // useId's characters are not valid in a url(#…) reference.
   const gradient = `og-spark-${useId().replace(/[^\w-]/g, "")}`;
   if (values.length < 2) return null;
@@ -35,15 +45,24 @@ export function Sparkline({ values }: { values: readonly number[] }) {
           <stop offset="0" stopColor="currentColor" stopOpacity={0.2} />
           <stop offset="1" stopColor="currentColor" stopOpacity={0} />
         </linearGradient>
+        <RevealClip
+          id={`${gradient}-reveal`}
+          width={WIDTH}
+          height={HEIGHT}
+          run={run}
+          bleed={STROKE}
+        />
       </defs>
-      <path d={area().y0(HEIGHT)(points) ?? ""} fill={`url(#${gradient})`} />
-      <path
-        d={line()(points) ?? ""}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={STROKE}
-        vectorEffect="non-scaling-stroke"
-      />
+      <g clipPath={`url(#${gradient}-reveal)`}>
+        <path d={area().y0(HEIGHT)(points) ?? ""} fill={`url(#${gradient})`} />
+        <path
+          d={line()(points) ?? ""}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={STROKE}
+          vectorEffect="non-scaling-stroke"
+        />
+      </g>
     </svg>
   );
 }

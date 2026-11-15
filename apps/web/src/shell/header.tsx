@@ -1,4 +1,4 @@
-import { cn } from "@ogcloud/ui";
+import { Button, cn } from "@ogcloud/ui";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ChevronRight, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -41,17 +41,13 @@ export function Header({
           </Link>
         )}
       </nav>
-      <button
-        type="button"
-        onClick={onSearch}
-        className="flex h-control w-full max-w-sm cursor-pointer items-center gap-2 rounded-control border border-border bg-surface pr-2 pl-2.5 text-left text-small text-text-3 shadow-raised hover:border-border-strong"
-      >
-        <Search aria-hidden="true" size={15} strokeWidth={1.75} />
-        <span className="flex-1">{t("shell.search")}</span>
-        <kbd className="rounded-small border border-border bg-surface-2 px-1.5 font-sans text-meta">
+      {/* A button, not a field: it opens the palette, where the search field is (D-0235). */}
+      <Button icon={Search} onClick={onSearch} aria-keyshortcuts="Meta+K">
+        {t("shell.search")}
+        <kbd className="rounded-small border border-border bg-surface-2 px-1.5 font-sans text-meta text-text-3">
           ⌘K
         </kbd>
-      </button>
+      </Button>
       <span
         role="status"
         className="inline-flex items-center gap-1.5 text-small text-text-2"

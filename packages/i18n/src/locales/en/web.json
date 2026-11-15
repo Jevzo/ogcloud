@@ -64,6 +64,9 @@
     "title": "Permissions"
   },
   "account": {
+    "access": {
+      "title": "What you can do"
+    },
     "appearance": {
       "device": "Remembered on this device.",
       "title": "Appearance"
@@ -96,7 +99,8 @@
       "unlinkDescription": "Your username stops following your Minecraft name. If the network requires a link, you lose access until you link again.",
       "unlinkDone": "Unlinked your Minecraft account",
       "unlinkTitle": "Unlink your Minecraft account?",
-      "unlinked": "Not linked. Join the network, then link it here with a code sent to you in game."
+      "unlinked": "Not linked. Join the network, then link it here with a code sent to you in game.",
+      "uuid": "UUID"
     },
     "passkeys": {
       "add": "Add passkey",
@@ -124,7 +128,8 @@
     },
     "profile": {
       "byAdmin": "An administrator changes your name, email and role.",
-      "title": "Profile"
+      "title": "Profile",
+      "userId": "User id"
     },
     "sections": "Account sections",
     "tabs": {
@@ -170,11 +175,6 @@
       "details": "Details",
       "empty": "Nothing matches",
       "emptyDescription": "Changes are kept for 90 days by default; loosen the filters to see more.",
-      "example": {
-        "action": "PUT /api/v1/groups/{id}",
-        "actor": "user:…",
-        "targetType": "groups"
-      },
       "filter": {
         "action": "Action",
         "actor": "Who",
@@ -360,6 +360,21 @@
       "sections": "Sections",
       "settings": "Settings",
       "templates": "Templates"
+    },
+    "filters": {
+      "allTypes": "All types",
+      "empty": "No group matches",
+      "emptyDescription": "Clear the filters or search for another name.",
+      "search": "Search by name",
+      "state": "State",
+      "states": {
+        "all": "All",
+        "idle": "Idle",
+        "maintenance": "Maintenance",
+        "online": "Online",
+        "paused": "Paused"
+      },
+      "type": "Type"
     },
     "form": {
       "basics": "Name and type",
@@ -619,15 +634,16 @@
       "title": "Groups"
     },
     "kpi": {
-      "allOnline": "all online",
       "basis": "vs 1 h ago",
       "draining_one": "{{count}} draining",
       "draining_other": "{{count}} draining",
       "groups": "Groups",
-      "maintenance_one": "{{count}} in maintenance",
-      "maintenance_other": "{{count}} in maintenance",
-      "paused_one": "{{count}} paused",
-      "paused_other": "{{count}} paused",
+      "groupStates": {
+        "idle": "idle",
+        "maintenance": "in maintenance",
+        "online": "online",
+        "paused": "paused"
+      },
       "players": "Players online",
       "servers": "Servers running",
       "slots": "of {{max}} slots",
@@ -816,6 +832,25 @@
     "view": "Show"
   },
   "privacy": {
+    "effects": {
+      "deleted": {
+        "text": "A player's record, rank, seen times and profile; a user's account, passkeys, authenticator and logins. A player who is online cannot be erased.",
+        "title": "Erased at once"
+      },
+      "expires": {
+        "text": "Events that still mention them expire after 7 days, logs and backups after 14.",
+        "title": "Gone within 14 days"
+      },
+      "export": {
+        "text": "A JSON file of everything OgCloud stores about the person.",
+        "title": "Export"
+      },
+      "pseudonym": {
+        "text": "Audit entries and the authors of jobs and templates stay, so the history is whole without naming them.",
+        "title": "Kept under a pseudonym"
+      },
+      "title": "What export and erasure do"
+    },
     "erase": "Erase data",
     "erasePlayerDescription": "Their player record, rank and profile go for good. A player who is online cannot be erased.",
     "eraseTitle": "Erase {{name}}'s data?",
@@ -823,12 +858,32 @@
     "erased": "Erased {{name}}'s data",
     "export": "Export data",
     "exported": "Exported {{name}}'s data",
+    "find": {
+      "idle": "Search for someone",
+      "idleDescription": "Find a player by the start of their name, or a dashboard user by name or email, to export or erase what OgCloud stores about them.",
+      "kind": "Who to find",
+      "title": "Find a person"
+    },
     "findPlayer": "Player name",
     "findUser": "Username or email",
-    "kept": "Erasing deletes the person's records. Audit entries and authorships stay under a pseudonym; events, logs and backups expire within 14 days.",
+    "lastSeen": "Seen <ago/>",
     "noMatch": "Nobody found",
     "noMatchDescription": "Players are found by the start of their name.",
+    "noUserDescription": "Dashboard users are found by any part of their username or email.",
     "players": "Players",
+    "recent": {
+      "detail": "{{target}} by {{actor}}",
+      "empty": "No exports or erasures yet.",
+      "erased": {
+        "player": "Erased a player's data",
+        "user": "Erased a user's data"
+      },
+      "exported": {
+        "player": "Exported a player's data",
+        "user": "Exported a user's data"
+      },
+      "title": "Recent requests"
+    },
     "users": "Dashboard users"
   },
   "roles": {
@@ -1049,17 +1104,12 @@
       "tooMany": "Too many page loads in a short time. Wait a minute, then try again.",
       "unreachable": "OgCloud did not answer. Check your connection, then try again."
     },
-    "density": {
-      "comfortable": "Comfortable",
-      "compact": "Compact",
-      "label": "Density"
-    },
     "live": {
       "connected": "Live",
       "connecting": "Connecting",
       "reconnecting": "Reconnecting"
     },
-    "search": "Search servers, players and groups",
+    "search": "Search",
     "signOut": "Sign out",
     "signOutFailed": "Signing out failed. Try again.",
     "theme": {

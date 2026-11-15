@@ -1,7 +1,7 @@
 // The shared catalog's typed keys (D-0060): a missing `ui` key fails to compile.
 import type {} from "@ogcloud/i18n/types";
 
-export { Meter } from "./charts/bars.tsx";
+export { Meter, type Segment, StackedBar } from "./charts/bars.tsx";
 export { Sparkline } from "./charts/sparkline.tsx";
 export {
   type Point,
@@ -38,7 +38,7 @@ export { DateTimePicker, PERMANENT } from "./components/date-time-picker.tsx";
 export { ConfirmDialog, Dialog } from "./components/dialog.tsx";
 export { Drawer } from "./components/drawer.tsx";
 export { Field, type FieldControl } from "./components/field.tsx";
-export { FilterBar, type ListFilterSpec } from "./components/filter-bar.tsx";
+export { FilterBar } from "./components/filter-bar.tsx";
 export { Input } from "./components/input.tsx";
 export { type KpiDelta, KpiTile } from "./components/kpi-tile.tsx";
 export {
@@ -50,7 +50,6 @@ export {
 export { Loading, useLoading, Value } from "./components/loading.tsx";
 export {
   Menu,
-  type MenuChoice,
   type MenuGroup,
   type MenuItem,
 } from "./components/menu.tsx";

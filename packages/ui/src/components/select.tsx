@@ -23,6 +23,8 @@ interface SelectProps<T extends string> {
   className?: string;
   "aria-describedby"?: string | undefined;
   "aria-invalid"?: true | undefined;
+  /** For a select without a visible label, such as a list's filter. */
+  "aria-label"?: string | undefined;
 }
 
 /** A closed list of a few options; longer or searchable lists use Combobox. */

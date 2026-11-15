@@ -1,4 +1,8 @@
-import type { GroupOverview, GroupView } from "@ogcloud/api-client";
+import type {
+  GroupOverview,
+  GroupView,
+  GroupViewType,
+} from "@ogcloud/api-client";
 import {
   useGroupDeleted,
   useGroupList,
@@ -10,7 +14,11 @@ import {
   columnsFor,
   DataTable,
   EmptyState,
+  FilterBar,
+  Input,
   PageHeader,
+  Segmented,
+  Select,
 } from "@ogcloud/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Undo2 } from "lucide-react";
@@ -28,7 +36,13 @@ import {
 } from "../../placeholders.ts";
 import { RecordDrawer } from "../../record-drawer.tsx";
 import { useGroupActions } from "./group-actions.tsx";
-import { GroupLink, GroupStatusBadge } from "./group-status.tsx";
+import {
+  GROUP_STATUSES,
+  GroupLink,
+  type GroupStatus,
+  GroupStatusBadge,
+  statusOf,
+} from "./group-status.tsx";
 
 /** A group's settings with what runs of it right now. */
 interface GroupRow {
@@ -42,8 +56,13 @@ const PLACEHOLDER_ROW: GroupRow = {
   live: placeholderGroupOverview,
 };
 const NO_LOAD = { running: 0, pending: 0, players: 0, capacity: 0 };
+const TYPES: readonly GroupViewType[] = ["STATIC", "DYNAMIC", "PROXY"];
+const ANY = "all";
+type StateFilter = GroupStatus | typeof ANY;
+type TypeFilter = GroupViewType | typeof ANY;
+const STATE_FILTERS: readonly StateFilter[] = [ANY, ...GROUP_STATUSES];
 
-/** Every group with its runtime, scaling range and live load, and the groups deleted recently. */
+/** Every group with its runtime, scaling range and live load, narrowed by name, state and type; and the groups deleted recently. */
 export function GroupsPage() {
   const { t } = useTranslation("web");
   const navigate = useNavigate();
@@ -52,6 +71,9 @@ export function GroupsPage() {
   const deleted = useGroupDeleted();
   const actions = useGroupActions();
   const [opened, setOpened] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [state, setState] = useState<StateFilter>(ANY);
+  const [type, setType] = useState<TypeFilter>(ANY);
 
   const live = new Map(
     (overview.data?.data.groups ?? []).map((group) => [group.id, group]),
@@ -66,6 +88,15 @@ export function GroupsPage() {
       ...NO_LOAD,
     },
   }));
+
+  const query = search.trim().toLowerCase();
+  const shown = rows.filter(
+    (row) =>
+      (query === "" || row.view.id.includes(query)) &&
+      (state === ANY || statusOf(row.live) === state) &&
+      (type === ANY || row.view.type === type),
+  );
+  const filtered = query !== "" || state !== ANY || type !== ANY;
 
   const groupColumns = useMemo(
     () =>
@@ -143,10 +174,52 @@ export function GroupsPage() {
           ) : undefined
         }
       />
+      <FilterBar
+        onClear={
+          filtered
+            ? () => {
+                setSearch("");
+                setState(ANY);
+                setType(ANY);
+              }
+            : undefined
+        }
+      >
+        <Segmented
+          label={t("groups.filters.state")}
+          options={STATE_FILTERS.map((value) => ({
+            value,
+            label: t(`groups.filters.states.${value}`),
+          }))}
+          value={state}
+          onValueChange={setState}
+        />
+        <Select
+          className="w-40"
+          aria-label={t("groups.filters.type")}
+          options={[
+            { value: ANY, label: t("groups.filters.allTypes") },
+            ...TYPES.map((value) => ({
+              value,
+              label: t(`groups.type.${value}`),
+            })),
+          ]}
+          value={type}
+          onValueChange={setType}
+        />
+        <Input
+          className="w-64"
+          type="search"
+          aria-label={t("groups.filters.search")}
+          placeholder={t("groups.filters.search")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      </FilterBar>
       <Card flush>
         <DataTable
           label={t("nav.groups")}
-          data={rows}
+          data={shown}
           failure={loadFailure(groups)}
           columns={groupColumns}
           getRowId={(row) => row.view.id}
@@ -155,11 +228,19 @@ export function GroupsPage() {
           onRowOpen={(row) => setOpened(row.view.id)}
           loading={groups.isPending}
           empty={
-            <EmptyState
-              icon={Layers}
-              title={t("overview.groups.empty")}
-              description={t("overview.groups.emptyDescription")}
-            />
+            rows.length === 0 ? (
+              <EmptyState
+                icon={Layers}
+                title={t("overview.groups.empty")}
+                description={t("overview.groups.emptyDescription")}
+              />
+            ) : (
+              <EmptyState
+                icon={Layers}
+                title={t("groups.filters.empty")}
+                description={t("groups.filters.emptyDescription")}
+              />
+            )
           }
         />
       </Card>

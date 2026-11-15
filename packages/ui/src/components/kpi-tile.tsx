@@ -1,6 +1,7 @@
 import { motion } from "@ogcloud/tokens";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { SEGMENT_FILL, type Segment, StackedBar } from "../charts/bars.tsx";
 import { Sparkline } from "../charts/sparkline.tsx";
 import { cn } from "../lib/cn.ts";
 import { useLoading } from "./loading.tsx";
@@ -25,6 +26,8 @@ interface KpiTileProps {
   delta?: KpiDelta | undefined;
   /** Recent values, oldest first, drawn as a sparkline under the value. */
   history?: readonly number[] | undefined;
+  /** The value's parts, such as groups by state: a legend under the value and a stroke in the sparkline's place. */
+  breakdown?: readonly Segment[] | undefined;
   /** Warning colours for a value that needs a look, such as paused groups. */
   warn?: boolean;
   className?: string;
@@ -44,6 +47,7 @@ export function KpiTile({
   caption,
   delta,
   history,
+  breakdown,
   warn = false,
   className,
 }: KpiTileProps) {
@@ -103,9 +107,44 @@ export function KpiTile({
           {delta.basis}
         </span>
       )}
+      {breakdown === undefined ? null : (
+        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-text-2">
+          {breakdown
+            .filter((segment) => segment.value > 0)
+            .map((segment) => (
+              <li
+                key={segment.label}
+                data-skeleton=""
+                className="inline-flex items-center gap-1.5"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-2 rounded-full",
+                    SEGMENT_FILL[segment.tone],
+                  )}
+                />
+                <span className="tabular-nums">{format(segment.value)}</span>
+                {segment.label}
+              </li>
+            ))}
+        </ul>
+      )}
+      {/* The sparkline or the stroke sits at the tile's foot, level with its neighbours' (D-0235). */}
       {history === undefined ? null : (
-        <div data-skeleton="" className="mt-1">
-          <Sparkline values={history} />
+        <div data-skeleton="" className="mt-auto pt-1">
+          {/* Drawn in again once the real values replace the skeleton's. */}
+          <Sparkline values={history} run={loading ? "loading" : "ready"} />
+        </div>
+      )}
+      {breakdown === undefined ? null : (
+        <div className="mt-auto flex h-9 items-center pt-1">
+          <StackedBar
+            key={loading ? "loading" : "ready"}
+            segments={breakdown}
+            format={format}
+            className="origin-left animate-draw-in"
+          />
         </div>
       )}
     </section>

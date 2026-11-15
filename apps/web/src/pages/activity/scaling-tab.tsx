@@ -29,7 +29,8 @@ export function ScalingTab() {
   const { t } = useTranslation("web");
   const fetchScaling = useLogScalingHook();
   const groupIds = useBackendGroupIds();
-  const { group, filter: groupFilter } = useGroupFilter(groupIds);
+  const groupFilter = useGroupFilter(groupIds);
+  const { group } = groupFilter;
   const params = group === ALL_GROUPS ? {} : { groupId: group };
   const scaling = usePaged(
     getLogScalingQueryKey(params),
@@ -80,7 +81,9 @@ export function ScalingTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <FilterBar filters={[groupFilter]} />
+      <FilterBar onClear={groupFilter.active ? groupFilter.clear : undefined}>
+        {groupFilter.control}
+      </FilterBar>
       <Card flush>
         <DataTable
           label={t("activity.tabs.scaling")}

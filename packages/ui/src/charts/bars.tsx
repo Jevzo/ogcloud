@@ -1,3 +1,5 @@
+import type { Tone } from "../components/badge.tsx";
+import { Tooltip } from "../components/tooltip.tsx";
 import { cn } from "../lib/cn.ts";
 
 const WARN_AT = 0.9;
@@ -34,6 +36,58 @@ export function Meter({
         )}
         style={{ width: `${ratio * 100}%` }}
       />
+    </span>
+  );
+}
+
+/** One part of a whole, such as the groups in one state. */
+export interface Segment {
+  label: string;
+  value: number;
+  tone: Exclude<Tone, "highlight">;
+}
+
+/** Status fills; idle and other neutral parts take the muted text colour, which keeps 3:1 on the surface. */
+export const SEGMENT_FILL: Record<Segment["tone"], string> = {
+  neutral: "bg-text-3",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+  info: "bg-info",
+};
+
+/** Parts of a whole side by side, each as wide as its share and named in a tooltip; a legend beside it says the same. */
+export function StackedBar({
+  segments,
+  format,
+  className,
+}: {
+  segments: readonly Segment[];
+  format: (value: number) => string;
+  className?: string;
+}) {
+  return (
+    <span
+      data-skeleton=""
+      className={cn("flex h-2.5 w-full gap-0.5 rounded-small", className)}
+    >
+      {segments
+        .filter((segment) => segment.value > 0)
+        .map((segment) => (
+          <Tooltip
+            key={segment.label}
+            content={`${format(segment.value)} ${segment.label}`}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "h-full rounded-small first:rounded-l-full last:rounded-r-full",
+                SEGMENT_FILL[segment.tone],
+              )}
+              style={{ flexGrow: segment.value }}
+            />
+          </Tooltip>
+        ))}
     </span>
   );
 }

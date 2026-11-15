@@ -1,13 +1,11 @@
-import { type DensityName, defaultDensity } from "@ogcloud/tokens";
 import { createContext, useContext } from "react";
 import { readStored, writeStored } from "./stored.ts";
 
-/** The theme follows the system unless the user picked one; theme, density and the sidebar are remembered on this device. */
+/** The theme follows the system unless the user picked one; theme and the sidebar are remembered on this device. */
 export type ThemeChoice = "system" | "light" | "dark";
 
 export interface Preferences {
   theme: ThemeChoice;
-  density: DensityName;
   /** The sidebar shows only its icon rail (D-0231). */
   sidebarCollapsed: boolean;
 }
@@ -15,15 +13,18 @@ export interface Preferences {
 const KEY = "ogcloud.preferences";
 const DEFAULTS: Preferences = {
   theme: "system",
-  density: defaultDensity,
   sidebarCollapsed: false,
 };
 
 export function readPreferences(storage: Storage = localStorage): Preferences {
   const stored = readStored(KEY, storage);
-  return typeof stored === "object" && stored !== null
-    ? { ...DEFAULTS, ...(stored as Partial<Preferences>) }
-    : DEFAULTS;
+  if (typeof stored !== "object" || stored === null) return DEFAULTS;
+  // Only the known fields, so settings that are gone (the density, D-0235) drop out on the next write.
+  const {
+    theme = DEFAULTS.theme,
+    sidebarCollapsed = DEFAULTS.sidebarCollapsed,
+  } = stored as Partial<Preferences>;
+  return { theme, sidebarCollapsed };
 }
 
 export function writePreferences(
@@ -33,7 +34,7 @@ export function writePreferences(
   writeStored(KEY, preferences, storage);
 }
 
-/** The display preferences and how to change them, shared by the account menu and the account page. */
+/** The display preferences and how to change them, shared by the shell and the account page. */
 export const PreferencesContext = createContext<{
   preferences: Preferences;
   change: (next: Preferences) => void;
@@ -43,12 +44,11 @@ export function usePreferences() {
   return useContext(PreferencesContext);
 }
 
-/** The tokens' stylesheet switches on these attributes. */
+/** The tokens' stylesheet switches on this attribute. */
 export function applyPreferences(
-  { theme, density }: Preferences,
+  { theme }: Preferences,
   root: HTMLElement = document.documentElement,
 ): void {
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
-  root.dataset.density = density;
 }

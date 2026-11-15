@@ -113,7 +113,8 @@ export function CommandPalette({
                 value={query}
                 onValueChange={setQuery}
                 placeholder={t("palette.placeholder")}
-                className="h-12 flex-1 bg-transparent text-body outline-none placeholder:text-text-3"
+                // The palette is the focused layer, so its field carries no ring or dark-mode glow (D-0235).
+                className="h-12 flex-1 bg-transparent text-body outline-none placeholder:text-text-3 focus-visible:[box-shadow:none]"
               />
             </div>
             <Command.List className="max-h-[60vh] overflow-y-auto p-1.5">

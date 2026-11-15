@@ -187,36 +187,14 @@ export const themes: Record<ThemeName, Theme> = {
   },
 };
 
-export const densityNames = ["compact", "comfortable"] as const;
-export type DensityName = (typeof densityNames)[number];
-
-/** Pixel sizes that change with the user's density; medium buttons share the control height. */
-export interface Density {
-  rowHeight: number;
-  controlHeight: number;
-  navItemHeight: number;
-  tableFontSize: number;
-  tableLineHeight: number;
-}
-
-export const densities: Record<DensityName, Density> = {
-  compact: {
-    rowHeight: 36,
-    controlHeight: 36,
-    navItemHeight: 36,
-    tableFontSize: 13,
-    tableLineHeight: 18,
-  },
-  comfortable: {
-    rowHeight: 48,
-    controlHeight: 40,
-    navItemHeight: 40,
-    tableFontSize: 14,
-    tableLineHeight: 20,
-  },
-};
-
-export const defaultDensity: DensityName = "compact";
+/** Row, control and nav heights and the table's text, compact (D-0235); medium buttons share the control height. */
+export const sizes = {
+  rowHeight: 36,
+  controlHeight: 36,
+  navItemHeight: 36,
+  tableFontSize: 13,
+  tableLineHeight: 18,
+} as const;
 
 /** `small` rounds keys, checkboxes and chart bars; `game` the frames of in-game previews. */
 export const radius = {
@@ -227,7 +205,7 @@ export const radius = {
   popover: 12,
 } as const;
 
-/** Small and large buttons; medium ones take the density's control height. */
+/** Small and large buttons; medium ones take the control height. */
 export const buttonHeights = { sm: 32, lg: 40 } as const;
 
 export const fonts = {
@@ -256,7 +234,7 @@ export interface TypeStyle {
   tracking?: string;
 }
 
-/** Table text follows the density; everything else is fixed. */
+/** Table text comes from `sizes`. */
 export const typeScale: Record<
   | "kpi"
   | "title"
@@ -326,16 +304,13 @@ export const layout = {
   /** The collapsed sidebar: icons only. */
   sidebarRailWidth: 64,
   headerHeight: 56,
-  formWidth: 720,
   /** The sign-in pages' card, and the setup wizard with its steps beside it. */
   brandedWidth: 416,
   setupWidth: 800,
   /** The colour picker's popover, sized to its colour area. */
   colourPickerWidth: 284,
-  /** The side panel beside a settings form, between these widths (D-0210); wider on large monitors. */
+  /** The narrowest the side panel beside a settings form gets; it takes a third of the width (D-0235). */
   asideMinWidth: 280,
-  asideWidth: 440,
-  asideWideWidth: 560,
   /** The narrower column of a detail page or the overview. */
   sideMinWidth: 320,
   /** A record's drawer beside its list. */

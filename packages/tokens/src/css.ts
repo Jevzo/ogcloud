@@ -1,15 +1,13 @@
 import { kebab } from "./names.ts";
 import {
   buttonHeights,
-  type Density,
-  defaultDensity,
-  densities,
   effects,
   fonts,
   fontWeights,
   layout,
   motion,
   radius,
+  sizes,
   type Theme,
   themes,
   typeScale,
@@ -65,13 +63,13 @@ function themeDeclarations(
   ];
 }
 
-function densityDeclarations(density: Density): Declaration[] {
+function sizeDeclarations(): Declaration[] {
   return [
-    ["--og-row-height", px(density.rowHeight)],
-    ["--og-control-height", px(density.controlHeight)],
-    ["--og-nav-item-height", px(density.navItemHeight)],
-    ["--og-table-font-size", px(density.tableFontSize)],
-    ["--og-table-line-height", px(density.tableLineHeight)],
+    ["--og-row-height", px(sizes.rowHeight)],
+    ["--og-control-height", px(sizes.controlHeight)],
+    ["--og-nav-item-height", px(sizes.navItemHeight)],
+    ["--og-table-font-size", px(sizes.tableFontSize)],
+    ["--og-table-line-height", px(sizes.tableLineHeight)],
   ];
 }
 
@@ -128,13 +126,10 @@ function staticTheme(): Declaration[] {
     ["--spacing-sidebar", px(layout.sidebarWidth)],
     ["--spacing-sidebar-rail", px(layout.sidebarRailWidth)],
     ["--spacing-header", px(layout.headerHeight)],
-    ["--container-form", px(layout.formWidth)],
     ["--container-branded", px(layout.brandedWidth)],
     ["--container-setup", px(layout.setupWidth)],
     ["--container-colour-picker", px(layout.colourPickerWidth)],
     ["--container-aside-min", px(layout.asideMinWidth)],
-    ["--container-aside", px(layout.asideWidth)],
-    ["--container-aside-wide", px(layout.asideWideWidth)],
     ["--container-drawer", px(layout.drawerWidth)],
     ["--container-side-min", px(layout.sideMinWidth)],
     ["--container-number-field", px(layout.numberFieldWidth)],
@@ -142,7 +137,7 @@ function staticTheme(): Declaration[] {
   ];
 }
 
-// Utilities point at the runtime variables, so a theme or density switch restyles without a rebuild.
+// Utilities point at the runtime variables, so a theme switch restyles without a rebuild.
 function inlineTheme(theme: Theme): Declaration[] {
   return [
     ...Object.keys(theme.colours).map(
@@ -180,7 +175,7 @@ function fixedDeclarations(): Declaration[] {
   ];
 }
 
-/** The whole stylesheet: Tailwind's theme, light and compact by default, dark by OS or choice, comfortable by choice. */
+/** The whole stylesheet: Tailwind's theme, light by default, dark by OS or choice. */
 export function renderCss(): string {
   const dark = themeDeclarations("dark", themes.dark);
   const sections = [
@@ -189,15 +184,11 @@ export function renderCss(): string {
     block("@theme inline", inlineTheme(themes.light)),
     block(":root", [
       ...themeDeclarations("light", themes.light),
-      ...densityDeclarations(densities[defaultDensity]),
+      ...sizeDeclarations(),
       ...fixedDeclarations(),
     ]),
     `@media (prefers-color-scheme: dark) {\n${block(':root:not([data-theme="light"])', dark, "  ")}\n}`,
     block(':root[data-theme="dark"]', dark),
-    block(
-      ':root[data-density="comfortable"]',
-      densityDeclarations(densities.comfortable),
-    ),
   ];
   return `${sections.join("\n\n")}\n`;
 }

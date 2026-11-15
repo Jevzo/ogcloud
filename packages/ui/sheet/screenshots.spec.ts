@@ -5,44 +5,39 @@ import { type Page, test } from "@playwright/test";
 const OUT = new URL("../../../build/screenshots/ui/", import.meta.url).pathname;
 const VIEWPORTS = layout.reviewViewports;
 const THEMES = themeNames;
-const DENSITIES = ["compact", "comfortable"] as const;
 
-async function open(page: Page, theme: string, density: string) {
-  await page.goto(`/?theme=${theme}&density=${density}`);
+async function open(page: Page, theme: string) {
+  await page.goto(`/?theme=${theme}`);
   await page.evaluate(() => document.fonts.ready);
 }
 
 for (const theme of THEMES) {
-  for (const density of DENSITIES) {
-    for (const viewport of VIEWPORTS) {
-      test(`sheet, ${theme}, ${density}, ${viewport.name}`, async ({
-        page,
-      }) => {
-        await page.setViewportSize(viewport);
-        await open(page, theme, density);
-        await page.screenshot({
-          path: `${OUT}sheet-${theme}-${density}-${viewport.name}.png`,
-          fullPage: true,
-        });
-        // Each section on its own as well, at full scale for review.
-        const sections = page.locator("main > section");
-        for (let index = 0; index < (await sections.count()); index++) {
-          const section = sections.nth(index);
-          const title = await section.locator("h2").first().textContent();
-          const slug = (title ?? String(index))
-            .toLowerCase()
-            .replaceAll(/\W+/g, "-");
-          await section.screenshot({
-            path: `${OUT}sections/${theme}-${density}-${viewport.name}-${slug}.png`,
-          });
-        }
+  for (const viewport of VIEWPORTS) {
+    test(`sheet, ${theme}, ${viewport.name}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await open(page, theme);
+      await page.screenshot({
+        path: `${OUT}sheet-${theme}-${viewport.name}.png`,
+        fullPage: true,
       });
-    }
+      // Each section on its own as well, at full scale for review.
+      const sections = page.locator("main > section");
+      for (let index = 0; index < (await sections.count()); index++) {
+        const section = sections.nth(index);
+        const title = await section.locator("h2").first().textContent();
+        const slug = (title ?? String(index))
+          .toLowerCase()
+          .replaceAll(/\W+/g, "-");
+        await section.screenshot({
+          path: `${OUT}sections/${theme}-${viewport.name}-${slug}.png`,
+        });
+      }
+    });
   }
 
   test(`open overlays, ${theme}`, async ({ page }) => {
     await page.setViewportSize(VIEWPORTS[0]);
-    await open(page, theme, "compact");
+    await open(page, theme);
     const shoot = async (
       name: string,
       locator: ReturnType<Page["getByRole"]>,

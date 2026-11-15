@@ -38,19 +38,14 @@ const PAGES = [
   "/account",
 ] as const;
 
-async function open(
-  page: Page,
-  path: string,
-  theme: string,
-  density = "compact",
-) {
+async function open(page: Page, path: string, theme: string) {
   await page.addInitScript(
-    ([chosenTheme, chosenDensity]) =>
+    (chosen) =>
       localStorage.setItem(
         "ogcloud.preferences",
-        JSON.stringify({ theme: chosenTheme, density: chosenDensity }),
+        JSON.stringify({ theme: chosen }),
       ),
-    [theme, density],
+    theme,
   );
   await page.clock.setFixedTime(MOCK_NOW);
   await page.goto(path);
@@ -165,9 +160,12 @@ for (const theme of THEMES) {
     await page.setViewportSize(VIEWPORTS[0]);
     await open(page, "/privacy", theme);
     await page.getByRole("searchbox", { name: "Player name" }).fill("ki");
-    await page.getByRole("searchbox", { name: "Username or email" }).fill("j");
     await page.waitForTimeout(700);
     await page.screenshot({ path: `${OUT}privacy-search-${theme}.png` });
+    await page.getByRole("radio", { name: "Dashboard users" }).click();
+    await page.getByRole("searchbox", { name: "Username or email" }).fill("j");
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${OUT}privacy-users-${theme}.png` });
     await page.goto("/clients");
     await page.getByRole("button", { name: "Create client" }).click();
     await page.getByRole("dialog").waitFor();
@@ -190,7 +188,7 @@ for (const theme of THEMES) {
       (chosen) =>
         localStorage.setItem(
           "ogcloud.preferences",
-          JSON.stringify({ theme: chosen, density: "compact" }),
+          JSON.stringify({ theme: chosen }),
         ),
       theme,
     );

@@ -61,9 +61,7 @@
     "time": "Time"
   },
   "filters": {
-    "clearAll": "Clear all",
-    "remove": "Remove the {{filter}} filter",
-    "title": "Filter"
+    "clear": "Clear filters"
   },
   "list": {
     "matches_one": "{{count}} of {{total}} matches",

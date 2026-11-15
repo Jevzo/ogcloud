@@ -48,7 +48,8 @@ export function ServersPage() {
   const groupIds = overview.data?.data.groups.map((group) => group.id) ?? [];
   const actions = useServerActions(groupIds);
   const [phase, setPhase] = useState<Phase>("all");
-  const { group, filter: groupFilter } = useGroupFilter(groupIds);
+  const groupFilter = useGroupFilter(groupIds);
+  const { group } = groupFilter;
   const [opened, setOpened] = useState<ServerView | null>(null);
   const [search, setSearch] = useState("");
   const [requesting, setRequesting] = useState(false);
@@ -136,7 +137,17 @@ export function ServersPage() {
           ) : undefined
         }
       />
-      <FilterBar filters={[groupFilter]}>
+      <FilterBar
+        onClear={
+          phase === "all" && !groupFilter.active && query === ""
+            ? undefined
+            : () => {
+                setPhase("all");
+                groupFilter.clear();
+                setSearch("");
+              }
+        }
+      >
         <Segmented
           label={t("servers.filters.phase")}
           options={(Object.keys(PHASES) as Phase[]).map((value) => ({
@@ -146,6 +157,7 @@ export function ServersPage() {
           value={phase}
           onValueChange={setPhase}
         />
+        {groupFilter.control}
         <Input
           className="w-64"
           type="search"
