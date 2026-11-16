@@ -13,18 +13,20 @@ export default defineConfig({
     // Clock labels in screenshots match the fixtures' UTC times on every machine.
     timezoneId: "UTC",
   },
+  // Never reused: any server on these ports would pass the check, a dashboard dev server without fixtures included, and
+  // the shots would show it or time out.
   webServer: [
     {
       command: `pnpm exec vite --mode ${MOCKS_MODE}`,
       cwd: import.meta.dirname,
       url: `http://localhost:${DEV_PORT}`,
-      reuseExistingServer: true,
+      reuseExistingServer: false,
     },
     {
       command: `pnpm exec vite --config vite.login.config.ts --mode ${MOCKS_MODE}`,
       cwd: import.meta.dirname,
       url: `http://localhost:${LOGIN_DEV_PORT}/login/`,
-      reuseExistingServer: true,
+      reuseExistingServer: false,
     },
   ],
 });

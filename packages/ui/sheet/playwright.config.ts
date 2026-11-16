@@ -15,6 +15,7 @@ export default defineConfig({
     command: "pnpm exec vite",
     cwd: import.meta.dirname,
     url: `http://localhost:${SHEET_PORT}`,
-    reuseExistingServer: true,
+    // Never reused: any server on the port would pass the check, and the shots would show it.
+    reuseExistingServer: false,
   },
 });
