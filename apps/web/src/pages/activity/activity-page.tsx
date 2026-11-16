@@ -1,4 +1,5 @@
 import { PageHeader, Tabs } from "@ogcloud/ui";
+import { getRouteApi } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAlerts } from "../../alerts.ts";
@@ -7,14 +8,28 @@ import { AuditTab } from "./audit-tab.tsx";
 import { JobsTab } from "./jobs-tab.tsx";
 import { ScalingTab } from "./scaling-tab.tsx";
 
-type Section = "audit" | "scaling" | "jobs" | "alerts";
+const SECTIONS = ["audit", "scaling", "jobs", "alerts"] as const;
+
+/** A tab of the Activity page; a link can open the page on it. */
+export type ActivitySection = (typeof SECTIONS)[number];
+
+/** The Activity page's search: the tab it opens on, left out for the default. */
+export function activitySearch(search: Record<string, unknown>): {
+  section?: ActivitySection;
+} {
+  const section = SECTIONS.find((value) => value === search.section);
+  return section === undefined ? {} : { section };
+}
+
+const route = getRouteApi("/app/activity");
 
 /** What happened on the network: changes, scaling decisions, long operations and alerts. */
 export function ActivityPage() {
   const { t } = useTranslation("web");
   const { unseen } = useAlerts();
-  const [section, setSection] = useState<Section>(
-    unseen > 0 ? "alerts" : "audit",
+  const opened = route.useSearch().section;
+  const [section, setSection] = useState<ActivitySection>(
+    opened ?? (unseen > 0 ? "alerts" : "audit"),
   );
   return (
     <div className="flex flex-col gap-6">

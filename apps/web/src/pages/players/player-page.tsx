@@ -300,6 +300,7 @@ function RecentChanges({ uuid, enabled }: { uuid: string; enabled: boolean }) {
     <EventsCard
       title={t("players.detail.changes.title")}
       empty={t("players.detail.changes.empty")}
+      section="audit"
       loading={audit.isPending}
     >
       {entries.map((entry) => (

@@ -6,7 +6,10 @@ import {
 } from "@tanstack/react-router";
 import { CALLBACK_PATH, SETUP_PATH } from "./auth.ts";
 import { AccountPage } from "./pages/account/account-page.tsx";
-import { ActivityPage } from "./pages/activity/activity-page.tsx";
+import {
+  ActivityPage,
+  activitySearch,
+} from "./pages/activity/activity-page.tsx";
 import { Callback } from "./pages/callback.tsx";
 import { ClientPage } from "./pages/clients/client-page.tsx";
 import { ClientsPage } from "./pages/clients/clients-page.tsx";
@@ -125,6 +128,7 @@ const npc = createRoute({
 const activity = createRoute({
   getParentRoute: () => app,
   path: "/activity",
+  validateSearch: activitySearch,
   component: ActivityPage,
 });
 const users = createRoute({

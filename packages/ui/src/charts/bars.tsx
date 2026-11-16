@@ -56,7 +56,10 @@ export const SEGMENT_FILL: Record<Segment["tone"], string> = {
   info: "bg-info",
 };
 
-/** Parts of a whole side by side, each as wide as its share and named in a tooltip; a legend beside it says the same. */
+/**
+ * Parts of a whole side by side in one joined line, rounded only at its ends, each part as wide as its share and named
+ * in a tooltip; a legend beside it says the same.
+ */
 export function StackedBar({
   segments,
   format,
@@ -69,7 +72,10 @@ export function StackedBar({
   return (
     <span
       data-skeleton=""
-      className={cn("flex h-2.5 w-full gap-0.5 rounded-small", className)}
+      className={cn(
+        "flex h-2.5 w-full overflow-hidden rounded-full",
+        className,
+      )}
     >
       {segments
         .filter((segment) => segment.value > 0)
@@ -80,10 +86,7 @@ export function StackedBar({
           >
             <span
               aria-hidden="true"
-              className={cn(
-                "h-full rounded-small first:rounded-l-full last:rounded-r-full",
-                SEGMENT_FILL[segment.tone],
-              )}
+              className={cn("h-full", SEGMENT_FILL[segment.tone])}
               style={{ flexGrow: segment.value }}
             />
           </Tooltip>

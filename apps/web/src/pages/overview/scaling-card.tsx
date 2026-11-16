@@ -31,6 +31,7 @@ export function ScalingCard({
     <EventsCard
       title={t("overview.scaling.title")}
       empty={t("overview.scaling.empty")}
+      section="scaling"
     >
       {entries.map((entry) => (
         <EventItem

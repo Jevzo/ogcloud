@@ -219,6 +219,7 @@ function RecentCard() {
     <EventsCard
       title={t("privacy.recent.title")}
       empty={t("privacy.recent.empty")}
+      section="audit"
       loading={audit.isPending}
     >
       {entries.map((entry) => (

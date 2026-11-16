@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Ago } from "./ago.tsx";
+import type { ActivitySection } from "./pages/activity/activity-page.tsx";
 
 /** What happened, in a short list of recent events: its icon on a tint, what and why, and when. */
 export function EventItem({
@@ -50,17 +51,20 @@ export function EventItem({
 }
 
 /**
- * Recent events in a card with the way to the Activity page, newest first; [empty] says why there are none, and
- * nothing shows while they load.
+ * Recent events in a card with the way to their tab of the Activity page, newest first; [empty] says why there are
+ * none, and nothing shows while they load.
  */
 export function EventsCard({
   title,
   empty,
+  section,
   loading = false,
   children,
 }: {
   title: string;
   empty: string;
+  /** The Activity tab that lists these events in full. */
+  section: ActivitySection;
   loading?: boolean;
   /** The events, as [EventItem]s; none shows [empty]. */
   children: readonly ReactNode[];
@@ -72,6 +76,7 @@ export function EventsCard({
       actions={
         <Link
           to="/activity"
+          search={{ section }}
           className="inline-flex min-h-6 items-center font-label text-accent text-small hover:underline"
         >
           {t("overview.scaling.all")}
