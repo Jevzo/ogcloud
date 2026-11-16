@@ -122,8 +122,8 @@ kubectl -n kube-system get jobs -o go-template='{{range .items}}{{.metadata.name
 # client-side apply keeps.
 kubectl apply --server-side -f "$work/manifest.yaml" >/dev/null
 
-# shellcheck source=deploy/k3s/helmcharts.sh
-source deploy/k3s/helmcharts.sh
+# shellcheck source=deploy/k3s/converged.sh
+source deploy/k3s/converged.sh
 
 for chart in $(kubectl -n kube-system get helmcharts -o jsonpath='{.items[*].metadata.name}'); do
   until installed "$chart"; do
@@ -155,5 +155,13 @@ ready cluster.postgresql.cnpg.io/ogcloud-postgres
 for workload in $(kubectl -n ogcloud get deployments,statefulsets -o name); do
   kubectl -n ogcloud rollout status "$workload" --timeout="$(remaining)"
 done
-kubectl -n ogcloud wait --for=condition=Ready pod --all --field-selector=status.phase!=Succeeded --timeout="$(remaining)"
+# Listed again each round, not kubectl wait: that follows the pods it found at the start, and one deleted meanwhile
+# keeps it waiting until the timeout.
+until unready=$(unready_pods) && [ -z "$unready" ]; do
+  if [ "$(date +%s)" -ge "$deadline" ]; then
+    echo "Pods not Ready within ${timeout_seconds}s: ${unready:-none listed, kubectl failed}"
+    exit 1
+  fi
+  sleep 10
+done
 echo "OgCloud converged on k3s after $(elapsed)"

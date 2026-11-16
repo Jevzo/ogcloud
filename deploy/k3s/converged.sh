@@ -1,6 +1,7 @@
 # shellcheck shell=bash
-# Sourced by install.sh: when a k3s HelmChart counts as installed. work names the directory with changed.txt (the
-# charts whose documents changed) and jobs-before.txt (each chart job's uid before the apply).
+# Sourced by install.sh: when a k3s HelmChart counts as installed, and which of OgCloud's pods are not Ready yet. work
+# names the directory with changed.txt (the charts whose documents changed) and jobs-before.txt (each chart job's uid
+# before the apply).
 
 # Done once the chart's job succeeded and its newest release is deployed, and for a changed chart only once that job
 # is a new one. k3s may replace a job that succeeded, as when it retries a failed release as an upgrade, and the new
@@ -24,4 +25,12 @@ deployed() {
   newest=$(kubectl -n "${namespace:-kube-system}" get secrets -l "owner=helm,name=$chart" \
     -o jsonpath='{range .items[*]}{.metadata.labels.version} {.metadata.labels.status}{"\n"}{end}' | sort -n | tail -1)
   [ "${newest#* }" = deployed ]
+}
+
+# The names of OgCloud's pods that are not Ready yet, one per line. Pods being deleted are left out, such as a replaced
+# revision's that is still shutting down: it never turns Ready again and is gone a moment later. So are finished pods.
+unready_pods() {
+  kubectl -n ogcloud get pods --field-selector=status.phase!=Succeeded,status.phase!=Failed \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.deletionTimestamp}{"\t"}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}' |
+    awk -F '\t' '$2 == "" && $3 != "True" { print $1 }'
 }
