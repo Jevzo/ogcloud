@@ -35,9 +35,9 @@
       "target": "paper",
       "args": {
         "JVM_FLAGS": "-XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1",
-        "SERVER_SHA256": "352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2",
-        "SERVER_SOURCE": "https://github.com/PaperMC/Paper/commit/0727243c940172f6731dc63bc195917b629b71f9",
-        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2/paper-26.3-248.jar"
+        "SERVER_SHA256": "f9df8e19f4bdee97dbded48095391ea69c64342a4e19624db4f5e0d0136dfe0b",
+        "SERVER_SOURCE": "https://github.com/PaperMC/Paper/commit/63e41db999978b24fefa4c48a286748c99ffbc95",
+        "SERVER_URL": "https://fill-data.papermc.io/v1/objects/f9df8e19f4bdee97dbded48095391ea69c64342a4e19624db4f5e0d0136dfe0b/paper-26.3-253.jar"
       },
       "tags": [
         "${REGISTRY}/paper:26.3-${VERSION}"
