@@ -44,6 +44,8 @@ data class GroupSnapshot(
     val networkMaintenance: Boolean,
     /** Set by the crash-loop breaker; a paused group gets no new servers. */
     val paused: Boolean,
+    /** A job is replacing the group's servers, starting each replacement before it stops the old one (D-0242). */
+    val rolling: Boolean,
 )
 
 /** Pure scaling rules: a snapshot in, decisions out. The controller applies them and records the time. */
@@ -54,11 +56,38 @@ class Autoscaler {
     ): List<ScalingDecision> {
         val group = snapshot.group
         if (snapshot.networkMaintenance || group.maintenance || snapshot.paused) return emptyList()
-        return when (group.type) {
-            GroupType.STATIC -> decideStatic(group, snapshot.servers)
-            GroupType.PROXY -> if (onCooldown(snapshot, now)) emptyList() else decideProxies(group, snapshot.servers)
-            GroupType.DYNAMIC -> if (onCooldown(snapshot, now)) emptyList() else decideDynamic(group, snapshot.servers)
-        }
+        val decisions =
+            when (group.type) {
+                GroupType.STATIC -> {
+                    decideStatic(group, snapshot.servers)
+                }
+
+                GroupType.PROXY -> {
+                    if (onCooldown(
+                            snapshot,
+                            now,
+                        )
+                    ) {
+                        emptyList()
+                    } else {
+                        decideProxies(group, snapshot.servers)
+                    }
+                }
+
+                GroupType.DYNAMIC -> {
+                    if (onCooldown(
+                            snapshot,
+                            now,
+                        )
+                    ) {
+                        emptyList()
+                    } else {
+                        decideDynamic(group, snapshot.servers)
+                    }
+                }
+            }
+        // During a roll the surplus is the replacement, the youngest and emptiest server; the roll stops the old one.
+        return if (snapshot.rolling) decisions.filterNot { it is ScalingDecision.Drain } else decisions
     }
 
     private fun onCooldown(

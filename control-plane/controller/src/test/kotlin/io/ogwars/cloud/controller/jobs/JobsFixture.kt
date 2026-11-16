@@ -1,5 +1,7 @@
 package io.ogwars.cloud.controller.jobs
 
+import io.ogwars.cloud.controller.TestValkey
+import io.ogwars.cloud.controller.lifecycle.AutoscalerLoop
 import io.ogwars.cloud.controller.lifecycle.LifecycleFixture
 import io.ogwars.cloud.controller.lifecycle.PodEnd
 import io.ogwars.cloud.domain.audit.Actor
@@ -7,8 +9,11 @@ import io.ogwars.cloud.domain.group.Group
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobState
 import io.ogwars.cloud.domain.network.RestartPlanner
+import io.ogwars.cloud.domain.scaling.Autoscaler
 import io.ogwars.cloud.domain.server.ServerState
+import io.ogwars.cloud.livestate.ValkeyScalingCooldownStore
 import io.ogwars.cloud.persistence.JdbcJobStore
+import io.ogwars.cloud.persistence.JdbcScalingLogStore
 import io.ogwars.cloud.persistence.JsonCodec
 import io.ogwars.cloud.persistence.TestDatabase
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -34,6 +39,25 @@ class JobsFixture(
         JobRunner(jobs, handlers.toList(), {
             progress += it
         }, f.clock, SimpleMeterRegistry())
+
+    /** The autoscaler on the same stores, seeing the groups that [handlers]' running jobs roll. */
+    fun autoscaler(vararg handlers: JobHandler) =
+        AutoscalerLoop(
+            f.servers,
+            f.groupStore,
+            f.network,
+            ValkeyScalingCooldownStore(TestValkey.connection),
+            f.failures,
+            RollingGroups(jobs, handlers.toList()),
+            Autoscaler(),
+            f.lifecycle,
+            JdbcScalingLogStore(TestDatabase.jdbc),
+            f.events,
+            { UUID.randomUUID() },
+            f.properties,
+            f.clock,
+            SimpleMeterRegistry(),
+        )
 
     fun restartHandlers() =
         arrayOf(
@@ -77,17 +101,19 @@ class JobsFixture(
         }
     }
 
-    /** Ticks [runner] until [job] finishes. */
+    /** Ticks [runner] until [job] finishes; [between] runs after each tick's settling, as other leader loops do. */
     fun runToEnd(
         runner: JobRunner,
         job: UUID,
         failing: () -> Set<UUID> = { emptySet() },
+        between: () -> Unit = {},
     ): Job {
         repeat(MAX_TICKS) {
             runner.runOnce()
             val current = jobs.find(job) ?: error("job vanished")
             if (current.state.isFinished) return current
             settle(failing())
+            between()
             f.clock.advance(TICK)
         }
         error("Job $job did not finish within $MAX_TICKS ticks")

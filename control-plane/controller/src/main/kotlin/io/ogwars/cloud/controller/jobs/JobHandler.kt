@@ -1,5 +1,6 @@
 package io.ogwars.cloud.controller.jobs
 
+import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.job.Job
 
 /**
@@ -10,6 +11,9 @@ interface JobHandler {
     val kind: String
 
     fun step(job: Job): JobStep
+
+    /** The groups whose servers the running [job] is replacing now; the autoscaler does not drain them (D-0242). */
+    fun rolledGroups(job: Job): Set<GroupId> = emptySet()
 }
 
 sealed interface JobStep {

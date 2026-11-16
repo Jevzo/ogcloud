@@ -32,7 +32,11 @@ class AutoscalerTest {
         lastScaledAt: Instant? = null,
         networkMaintenance: Boolean = false,
         paused: Boolean = false,
-    ) = autoscaler.decide(GroupSnapshot(group, servers.toList(), lastScaledAt, networkMaintenance, paused), T0)
+        rolling: Boolean = false,
+    ) = autoscaler.decide(
+        GroupSnapshot(group, servers.toList(), lastScaledAt, networkMaintenance, paused, rolling),
+        T0,
+    )
 
     private fun id(n: Int): UUID = UUID(0, n.toLong())
 
@@ -47,6 +51,23 @@ class AutoscalerTest {
             decide(empty, lastScaledAt = T0.minusSeconds(59)).shouldBeEmpty()
             decide(empty, paused = true).shouldBeEmpty()
             decide(empty, lastScaledAt = T0.minusSeconds(60)) shouldContainExactly List(2) { Start(MIN_ONLINE) }
+        }
+    }
+
+    @Nested
+    inner class Rolling {
+        @Test
+        fun `a group whose servers a roll replaces is never drained, but still gets its minimum`() {
+            // The roll starts the replacement before it stops the old server, so the group has one too many.
+            val single = group(scaling = scaling(min = 1, max = 1, players = 10))
+            val old = server(players = 0, id = id(1), startedAt = T0.minusSeconds(300))
+            val replacement = server(players = 0, id = id(2), startedAt = T0.minusSeconds(5))
+            val proxies = group(type = GroupType.PROXY, id = "proxy", scaling = scaling(min = 1, max = 2))
+            val proxy = { n: Int -> server(groupType = GroupType.PROXY, group = "proxy", id = id(n)) }
+
+            decide(single, old, replacement, rolling = true).shouldBeEmpty()
+            decide(proxies, proxy(1), proxy(2), rolling = true).shouldBeEmpty()
+            decide(group(scaling = scaling(min = 2)), rolling = true) shouldContainExactly List(2) { Start(MIN_ONLINE) }
         }
     }
 

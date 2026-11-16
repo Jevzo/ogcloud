@@ -35,6 +35,21 @@ class RestartJobsTest {
     }
 
     @Test
+    fun `a running group restart rolls its own group, a queued one none`() {
+        val j = JobsFixture(listOf(group(id = "lobby"), bedwars))
+        j.running(bedwars)
+        val handlers = j.restartHandlers()
+        val rolling = RollingGroups(j.jobs, handlers.toList())
+        j.create(JobKinds.GROUP_RESTART, mapOf(JobKinds.GROUP_ID to "bedwars"))
+
+        val queued = rolling.current()
+        j.runner(*handlers).runOnce()
+
+        queued shouldBe emptySet()
+        rolling.current() shouldBe setOf(bedwars.id)
+    }
+
+    @Test
     fun `a new leader resumes the restart without repeating finished steps`() {
         val j = JobsFixture(listOf(group(id = "lobby"), bedwars))
         repeat(4) { j.running(bedwars) }

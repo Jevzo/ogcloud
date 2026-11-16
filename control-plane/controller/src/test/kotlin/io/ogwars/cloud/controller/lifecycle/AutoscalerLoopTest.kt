@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.lifecycle
 
 import io.ogwars.cloud.controller.TestValkey
+import io.ogwars.cloud.controller.jobs.RollingGroups
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
 import io.ogwars.cloud.domain.group.Group
@@ -11,7 +12,9 @@ import io.ogwars.cloud.domain.scaling.Autoscaler
 import io.ogwars.cloud.domain.scaling.ScalingLogEntry
 import io.ogwars.cloud.domain.server.ServerState
 import io.ogwars.cloud.livestate.ValkeyScalingCooldownStore
+import io.ogwars.cloud.persistence.JdbcJobStore
 import io.ogwars.cloud.persistence.JdbcScalingLogStore
+import io.ogwars.cloud.persistence.JsonCodec
 import io.ogwars.cloud.persistence.TestDatabase
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -111,6 +114,7 @@ class AutoscalerLoopTest {
         f.network,
         ValkeyScalingCooldownStore(TestValkey.connection),
         f.failures,
+        RollingGroups(JdbcJobStore(TestDatabase.jdbc, JsonCodec()), emptyList()),
         Autoscaler(),
         f.lifecycle,
         JdbcScalingLogStore(TestDatabase.jdbc),

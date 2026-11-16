@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.jobs
 
 import io.ogwars.cloud.domain.common.sha256Hex
+import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.job.Job
 import io.ogwars.cloud.domain.job.JobKinds
@@ -107,19 +108,23 @@ class ForwardingRotationJob(
         )
     }
 
+    override fun rolledGroups(job: Job): Set<GroupId> =
+        if (job.progress[STAGE] == ROLL) proxyGroups().toSet() else emptySet()
+
+    private fun proxyGroups(): List<GroupId> =
+        groups
+            .findAll()
+            .map {
+                it.value
+            }.filter { it.type == GroupType.PROXY }
+            .map { it.id }
+            .sortedBy { it.value }
+
     private fun rollProxies(
         job: Job,
         p: Map<String, String>,
     ): JobStep {
-        val proxies =
-            groups
-                .findAll()
-                .map {
-                    it.value
-                }.filter { it.type == GroupType.PROXY }
-                .map { it.id }
-                .sortedBy { it.value }
-                .let { listOf(it) }
+        val proxies = listOf(proxyGroups())
         val rollState = p.filterKeys { it.startsWith(ROLL_PREFIX) }.mapKeys { it.key.removePrefix(ROLL_PREFIX) }
         return when (
             val result =

@@ -1,6 +1,7 @@
 package io.ogwars.cloud.controller.lifecycle
 
 import io.ogwars.cloud.controller.config.LifecycleProperties
+import io.ogwars.cloud.controller.jobs.RollingGroups
 import io.ogwars.cloud.controller.leader.LeaderLoop
 import io.ogwars.cloud.domain.audit.Actor
 import io.ogwars.cloud.domain.common.IdGenerator
@@ -37,6 +38,7 @@ class AutoscalerLoop(
     private val network: NetworkSettingsStore,
     private val cooldowns: ScalingCooldownStore,
     private val failures: CrashFailureStore,
+    private val rolling: RollingGroups,
     private val autoscaler: Autoscaler,
     private val lifecycle: LifecycleService,
     private val scalingLog: ScalingLogStore,
@@ -54,11 +56,12 @@ class AutoscalerLoop(
     override fun runOnce() {
         val maintenance = network.load().value.maintenance
         val byGroup = servers.listAll().map { it.value }.groupBy { it.groupId }
+        val rolled = rolling.current()
         val now = clock.instant()
         groups.findAll().map { it.value }.forEach { group ->
             // One group's failure must not stop scaling for the others.
             try {
-                scale(group, byGroup[group.id].orEmpty(), maintenance, now)
+                scale(group, byGroup[group.id].orEmpty(), maintenance, group.id in rolled, now)
             } catch (e: Exception) {
                 log.error("Scaling group {} failed", group.id, e)
                 Counter
@@ -74,10 +77,18 @@ class AutoscalerLoop(
         group: Group,
         members: List<Server>,
         maintenance: Boolean,
+        rolling: Boolean,
         now: Instant,
     ) {
         val snapshot =
-            GroupSnapshot(group, members, cooldowns.lastScaledAt(group.id), maintenance, failures.isPaused(group.id))
+            GroupSnapshot(
+                group,
+                members,
+                cooldowns.lastScaledAt(group.id),
+                maintenance,
+                failures.isPaused(group.id),
+                rolling,
+            )
         val decisions = autoscaler.decide(snapshot, now)
         if (decisions.isEmpty()) return
         decisions.forEach { apply(group, it, now) }

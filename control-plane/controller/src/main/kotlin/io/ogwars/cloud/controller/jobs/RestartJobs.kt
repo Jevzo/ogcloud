@@ -47,6 +47,14 @@ abstract class RestartJob(
         }
     }
 
+    // The phases are stored with the first step; before it, no replacement has been requested.
+    override fun rolledGroups(job: Job): Set<GroupId> =
+        job.progress[PHASES]
+            ?.let(::decodePhases)
+            .orEmpty()
+            .flatten()
+            .toSet()
+
     private companion object {
         const val PHASES = "phases"
 

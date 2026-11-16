@@ -1,7 +1,9 @@
 package io.ogwars.cloud.controller.jobs
 
+import io.ogwars.cloud.domain.group.GroupId
 import io.ogwars.cloud.domain.group.GroupType
 import io.ogwars.cloud.domain.group.group
+import io.ogwars.cloud.domain.group.scaling
 import io.ogwars.cloud.domain.job.JobKinds
 import io.ogwars.cloud.domain.job.JobState
 import io.ogwars.cloud.domain.server.ServerState
@@ -41,10 +43,13 @@ class OtherJobsTest {
                 j.roll,
                 j.f.clock,
             )
+        val rolling = RollingGroups(j.jobs, listOf(rotation))
+        val rolled = mutableSetOf<GroupId>()
 
-        val done = j.runToEnd(j.runner(rotation), job)
+        val done = j.runToEnd(j.runner(rotation), job, between = { rolled += rolling.current() })
 
         done.state shouldBe JobState.SUCCEEDED
+        rolled shouldBe setOf(proxy.id)
         infisical.tokens() shouldContainExactly listOf("new-token")
         j.f.servers.get(oldProxy) shouldBe null
         j.f.servers
@@ -146,6 +151,24 @@ class OtherJobsTest {
 
         done.state shouldBe JobState.FAILED
         done.message shouldContain "Infisical"
+    }
+
+    @Test
+    fun `the autoscaler does not drain a group's replacement while a rollout runs`() {
+        // At its maximum of one server, the replacement is the group's surplus until the roll stops the old one.
+        val single = group(id = "legacy", scaling = scaling(min = 1, max = 1, players = 10))
+        val j = JobsFixture(listOf(single))
+        val old = j.running(single)
+        val rollout = BundleRolloutJob(j.f.groupStore, j.roll)
+        val job = j.create(JobKinds.BUNDLE_ROLLOUT, mapOf(JobKinds.PROFILE_ID to single.profileId))
+        val autoscaler = j.autoscaler(rollout)
+
+        j.runToEnd(j.runner(rollout), job, between = autoscaler::runOnce).state shouldBe JobState.SUCCEEDED
+
+        j.f.servers.get(old) shouldBe null
+        j.f.servers
+            .listByGroup(single.id)
+            .map { it.value.state } shouldBe listOf(ServerState.RUNNING)
     }
 
     @Test
