@@ -13,7 +13,7 @@ const SECTIONS = ["audit", "scaling", "jobs", "alerts"] as const;
 /** A tab of the Activity page; a link can open the page on it. */
 export type ActivitySection = (typeof SECTIONS)[number];
 
-/** The Activity page's search: the tab it opens on, left out for the default. */
+/** The Activity page's search: the tab it shows, left out for the default. */
 export function activitySearch(search: Record<string, unknown>): {
   section?: ActivitySection;
 } {
@@ -27,17 +27,23 @@ const route = getRouteApi("/app/activity");
 export function ActivityPage() {
   const { t } = useTranslation("web");
   const { unseen } = useAlerts();
+  const navigate = route.useNavigate();
   const opened = route.useSearch().section;
   const [section, setSection] = useState<ActivitySection>(
     opened ?? (unseen > 0 ? "alerts" : "audit"),
   );
+  // The URL follows the tab, so a reload stays on it; replaced, so tabs add no history entries.
+  const show = (next: ActivitySection) => {
+    setSection(next);
+    void navigate({ search: { section: next }, replace: true });
+  };
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t("nav.activity")} />
       <Tabs
         label={t("activity.sections")}
         value={section}
-        onValueChange={setSection}
+        onValueChange={show}
         tabs={[
           {
             value: "audit",
