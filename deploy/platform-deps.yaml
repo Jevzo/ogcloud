@@ -141,14 +141,14 @@ charts:
     namespace: infisical-operator
     repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
     chart: secrets-operator
-    version: 0.11.16
+    version: 0.11.17
 
   - name: kube-prometheus-stack
     when: monitoring
     namespace: monitoring
     repository: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    version: 93.2.2
+    version: 93.3.0
     values:
       # The CRDs come from prometheus-operator-crds above (D-0171); the chart's own copies differ from that stripped
       # manifest, so installing them conflicts with it.
@@ -192,7 +192,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.2.2
+    version: 21.2.3
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
@@ -243,7 +243,7 @@ charts:
     namespace: monitoring
     repository: https://grafana.github.io/helm-charts
     chart: alloy
-    version: 1.15.0
+    version: 1.16.0
     values:
       # Its PodLogs CRD stays unused; the file tailing below needs none.
       crds:
