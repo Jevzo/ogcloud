@@ -112,6 +112,26 @@ import { useApiRequest } from '../react/connection.ts';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, value]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
+
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
@@ -261,20 +281,6 @@ export const getUserUpdateUrl = (id: string,) => {
 
 export const useUserUpdateHook = (): (id: string,
     updateUserRequest: UpdateUserRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<userUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -284,7 +290,7 @@ export const useUserUpdateHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateUserRequest)
   }
 );
@@ -447,20 +453,6 @@ export const getUserResetPasswordUrl = (id: string,) => {
 
 export const useUserResetPasswordHook = (): (id: string,
     passwordRequest: PasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<userResetPasswordResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -470,7 +462,7 @@ export const useUserResetPasswordHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(passwordRequest)
   }
 );
@@ -658,20 +650,6 @@ export const getSignInRuleUpdateUrl = () => {
 }
 
 export const useSignInRuleUpdateHook = (): (signInRulesView: SignInRulesView, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<signInRuleUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (signInRulesView: SignInRulesView, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -680,7 +658,7 @@ export const useSignInRuleUpdateHook = (): (signInRulesView: SignInRulesView, op
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(signInRulesView)
   }
 );
@@ -758,20 +736,6 @@ export const getRoleUpdateUrl = (id: string,) => {
 
 export const useRoleUpdateHook = (): (id: string,
     updateRoleRequest: UpdateRoleRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<roleUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -781,7 +745,7 @@ export const useRoleUpdateHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateRoleRequest)
   }
 );
@@ -944,20 +908,6 @@ export const getRankSetUrl = (uuid: string,) => {
 
 export const useRankSetHook = (): (uuid: string,
     setRankRequest: SetRankRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<rankSetResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (uuid: string,
@@ -967,7 +917,7 @@ export const useRankSetHook = (): (uuid: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setRankRequest)
   }
 );
@@ -1156,20 +1106,6 @@ export const getPermissionGroupUpdateUrl = (id: string,) => {
 
 export const usePermissionGroupUpdateHook = (): (id: string,
     updatePermissionGroupRequest: UpdatePermissionGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<permissionGroupUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -1179,7 +1115,7 @@ export const usePermissionGroupUpdateHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updatePermissionGroupRequest)
   }
 );
@@ -1342,20 +1278,6 @@ export const getOauthClientUpdateUrl = (clientId: string,) => {
 
 export const useOauthClientUpdateHook = (): (clientId: string,
     oAuthClientRequest: OAuthClientRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<oauthClientUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (clientId: string,
@@ -1365,7 +1287,7 @@ export const useOauthClientUpdateHook = (): (clientId: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(oAuthClientRequest)
   }
 );
@@ -1639,20 +1561,6 @@ export const getNpcUpdateUrl = (id: string,) => {
 
 export const useNpcUpdateHook = (): (id: string,
     npcSettings: NpcSettings, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<npcUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -1662,7 +1570,7 @@ export const useNpcUpdateHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(npcSettings)
   }
 );
@@ -1935,20 +1843,6 @@ export const getNetworkUpdateUrl = () => {
 }
 
 export const useNetworkUpdateHook = (): (updateNetworkSettingsRequest: UpdateNetworkSettingsRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<networkUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (updateNetworkSettingsRequest: UpdateNetworkSettingsRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -1957,7 +1851,7 @@ export const useNetworkUpdateHook = (): (updateNetworkSettingsRequest: UpdateNet
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateNetworkSettingsRequest)
   }
 );
@@ -2034,20 +1928,6 @@ export const getMeChangePasswordUrl = () => {
 }
 
 export const useMeChangePasswordHook = (): (changePasswordRequest: ChangePasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meChangePasswordResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (changePasswordRequest: ChangePasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -2056,7 +1936,7 @@ export const useMeChangePasswordHook = (): (changePasswordRequest: ChangePasswor
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(changePasswordRequest)
   }
 );
@@ -2134,20 +2014,6 @@ export const getMeRenamePasskeyUrl = (id: string,) => {
 
 export const useMeRenamePasskeyHook = (): (id: string,
     passkeyRename: PasskeyRename, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRenamePasskeyResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -2157,7 +2023,7 @@ export const useMeRenamePasskeyHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(passkeyRename)
   }
 );
@@ -2235,20 +2101,6 @@ export const getMeRemovePasskeyUrl = (id: string,) => {
 
 export const useMeRemovePasskeyHook = (): (id: string,
     currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRemovePasskeyResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -2258,7 +2110,7 @@ export const useMeRemovePasskeyHook = (): (id: string,
   {
     ...options,
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(currentPasswordRequest)
   }
 );
@@ -2447,20 +2299,6 @@ export const getGroupUpdateUrl = (id: string,) => {
 
 export const useGroupUpdateHook = (): (id: string,
     updateGroupRequest: UpdateGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<groupUpdateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -2470,7 +2308,7 @@ export const useGroupUpdateHook = (): (id: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateGroupRequest)
   }
 );
@@ -2633,20 +2471,6 @@ export const getTemplatePromoteUrl = (groupId: string,) => {
 
 export const useTemplatePromoteHook = (): (groupId: string,
     promoteRequest: PromoteRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<templatePromoteResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (groupId: string,
@@ -2656,7 +2480,7 @@ export const useTemplatePromoteHook = (): (groupId: string,
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(promoteRequest)
   }
 );
@@ -2851,20 +2675,6 @@ export const getUserCreateUrl = () => {
 }
 
 export const useUserCreateHook = (): (createUserRequest: CreateUserRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<userCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (createUserRequest: CreateUserRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -2873,7 +2683,7 @@ export const useUserCreateHook = (): (createUserRequest: CreateUserRequest, opti
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createUserRequest)
   }
 );
@@ -2950,20 +2760,6 @@ export const getTextPreviewUrl = () => {
 }
 
 export const useTextPreviewHook = (): (textPreviewRequest: TextPreviewRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<textPreviewResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (textPreviewRequest: TextPreviewRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -2972,7 +2768,7 @@ export const useTextPreviewHook = (): (textPreviewRequest: TextPreviewRequest, o
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(textPreviewRequest)
   }
 );
@@ -3160,20 +2956,6 @@ export const getSetupCompleteUrl = () => {
 }
 
 export const useSetupCompleteHook = (): (setupRequest: SetupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<setupCompleteResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (setupRequest: SetupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -3182,7 +2964,7 @@ export const useSetupCompleteHook = (): (setupRequest: SetupRequest, options?: P
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setupRequest)
   }
 );
@@ -3377,20 +3159,6 @@ export const getServerRequestUrl = () => {
 }
 
 export const useServerRequestHook = (): (requestServerRequest: RequestServerRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<serverRequestResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (requestServerRequest: RequestServerRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -3399,7 +3167,7 @@ export const useServerRequestHook = (): (requestServerRequest: RequestServerRequ
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(requestServerRequest)
   }
 );
@@ -3477,20 +3245,6 @@ export const getServerTransferAllUrl = (id: string,) => {
 
 export const useServerTransferAllHook = (): (id: string,
     transferRequest: TransferRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<serverTransferAllResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -3500,7 +3254,7 @@ export const useServerTransferAllHook = (): (id: string,
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(transferRequest)
   }
 );
@@ -3833,20 +3587,6 @@ export const getRuntimeRolloutUrl = (profileId: string,) => {
 
 export const useRuntimeRolloutHook = (): (profileId: string,
     restartRequest: RestartRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<runtimeRolloutResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (profileId: string,
@@ -3856,7 +3596,7 @@ export const useRuntimeRolloutHook = (): (profileId: string,
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );
@@ -4044,20 +3784,6 @@ export const getRoleCreateUrl = () => {
 }
 
 export const useRoleCreateHook = (): (createRoleRequest: CreateRoleRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<roleCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (createRoleRequest: CreateRoleRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -4066,7 +3792,7 @@ export const useRoleCreateHook = (): (createRoleRequest: CreateRoleRequest, opti
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createRoleRequest)
   }
 );
@@ -4314,20 +4040,6 @@ export const getPlayerTransferUrl = (uuid: string,) => {
 
 export const usePlayerTransferHook = (): (uuid: string,
     transferRequest: TransferRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<playerTransferResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (uuid: string,
@@ -4337,7 +4049,7 @@ export const usePlayerTransferHook = (): (uuid: string,
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(transferRequest)
   }
 );
@@ -4525,20 +4237,6 @@ export const getPermissionGroupCreateUrl = () => {
 }
 
 export const usePermissionGroupCreateHook = (): (createPermissionGroupRequest: CreatePermissionGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<permissionGroupCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (createPermissionGroupRequest: CreatePermissionGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -4547,7 +4245,7 @@ export const usePermissionGroupCreateHook = (): (createPermissionGroupRequest: C
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createPermissionGroupRequest)
   }
 );
@@ -4735,20 +4433,6 @@ export const getOauthClientCreateUrl = () => {
 }
 
 export const useOauthClientCreateHook = (): (oAuthClientRequest: OAuthClientRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<oauthClientCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (oAuthClientRequest: OAuthClientRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -4757,7 +4441,7 @@ export const useOauthClientCreateHook = (): (oAuthClientRequest: OAuthClientRequ
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(oAuthClientRequest)
   }
 );
@@ -5037,20 +4721,6 @@ export const getNpcCreateUrl = () => {
 }
 
 export const useNpcCreateHook = (): (npcSettings: NpcSettings, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<npcCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (npcSettings: NpcSettings, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5059,7 +4729,7 @@ export const useNpcCreateHook = (): (npcSettings: NpcSettings, options?: Paramet
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(npcSettings)
   }
 );
@@ -5136,20 +4806,6 @@ export const getNetworkRestartUrl = () => {
 }
 
 export const useNetworkRestartHook = (): (restartRequest: RestartRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<networkRestartResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (restartRequest: RestartRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5158,7 +4814,7 @@ export const useNetworkRestartHook = (): (restartRequest: RestartRequest, option
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );
@@ -5405,20 +5061,6 @@ export const getMeStartTotpUrl = () => {
 }
 
 export const useMeStartTotpHook = (): (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meStartTotpResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5427,7 +5069,7 @@ export const useMeStartTotpHook = (): (currentPasswordRequest: CurrentPasswordRe
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(currentPasswordRequest)
   }
 );
@@ -5504,20 +5146,6 @@ export const getMeRemoveTotpUrl = () => {
 }
 
 export const useMeRemoveTotpHook = (): (totpCodeRequest: TotpCodeRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRemoveTotpResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (totpCodeRequest: TotpCodeRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5526,7 +5154,7 @@ export const useMeRemoveTotpHook = (): (totpCodeRequest: TotpCodeRequest, option
   {
     ...options,
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(totpCodeRequest)
   }
 );
@@ -5603,20 +5231,6 @@ export const getMeConfirmTotpUrl = () => {
 }
 
 export const useMeConfirmTotpHook = (): (totpCodeRequest: TotpCodeRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meConfirmTotpResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (totpCodeRequest: TotpCodeRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5625,7 +5239,7 @@ export const useMeConfirmTotpHook = (): (totpCodeRequest: TotpCodeRequest, optio
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(totpCodeRequest)
   }
 );
@@ -5702,20 +5316,6 @@ export const getMeRequestMinecraftLinkUrl = () => {
 }
 
 export const useMeRequestMinecraftLinkHook = (): (minecraftLinkRequest: MinecraftLinkRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meRequestMinecraftLinkResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (minecraftLinkRequest: MinecraftLinkRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5724,7 +5324,7 @@ export const useMeRequestMinecraftLinkHook = (): (minecraftLinkRequest: Minecraf
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(minecraftLinkRequest)
   }
 );
@@ -5886,20 +5486,6 @@ export const getMeConfirmMinecraftLinkUrl = () => {
 }
 
 export const useMeConfirmMinecraftLinkHook = (): (minecraftLinkConfirmation: MinecraftLinkConfirmation, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<meConfirmMinecraftLinkResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (minecraftLinkConfirmation: MinecraftLinkConfirmation, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -5908,7 +5494,7 @@ export const useMeConfirmMinecraftLinkHook = (): (minecraftLinkConfirmation: Min
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(minecraftLinkConfirmation)
   }
 );
@@ -6096,20 +5682,6 @@ export const getGroupCreateUrl = () => {
 }
 
 export const useGroupCreateHook = (): (createGroupRequest: CreateGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<groupCreateResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (createGroupRequest: CreateGroupRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -6118,7 +5690,7 @@ export const useGroupCreateHook = (): (createGroupRequest: CreateGroupRequest, o
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createGroupRequest)
   }
 );
@@ -6281,20 +5853,6 @@ export const getGroupRestartUrl = (id: string,) => {
 
 export const useGroupRestartHook = (): (id: string,
     restartRequest: RestartRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<groupRestartResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (id: string,
@@ -6304,7 +5862,7 @@ export const useGroupRestartHook = (): (id: string,
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );
@@ -6578,20 +6136,6 @@ export const getTemplateUploadUrl = (groupId: string,) => {
 
 export const useTemplateUploadHook = (): (groupId: string,
     templateUploadBody?: Blob, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<templateUploadResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (groupId: string,
@@ -6601,7 +6145,7 @@ export const useTemplateUploadHook = (): (groupId: string,
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/gzip', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/gzip' }, options?.headers),
     body: templateUploadBody
   }
 );
@@ -6763,20 +6307,6 @@ export const getCommandRunUrl = () => {
 }
 
 export const useCommandRunHook = (): (consoleCommandRequest: ConsoleCommandRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => Promise<commandRunResponse> => {
-      const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
 
       const customFetcher = useApiRequest();
       return (consoleCommandRequest: ConsoleCommandRequest, options?: Parameters<ReturnType<typeof useApiRequest>>[1]) => {
@@ -6785,7 +6315,7 @@ export const useCommandRunHook = (): (consoleCommandRequest: ConsoleCommandReque
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(consoleCommandRequest)
   }
 );
