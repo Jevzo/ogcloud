@@ -88,6 +88,26 @@ import type {
 } from './model';
 
 import { request } from '../request.ts';
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, value]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
+
 export type userGetResponse200 = {
   data: UserView
   status: 200
@@ -144,25 +164,11 @@ export const getUserUpdateUrl = (id: string,) => {
 export const userUpdate = async (id: string,
     updateUserRequest: UpdateUserRequest, options?: Parameters<typeof request>[1]): Promise<userUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<userUpdateResponse>(getUserUpdateUrl(id),
+  return request<userUpdateResponse>(getUserUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateUserRequest)
   }
 );}
@@ -225,25 +231,11 @@ export const getUserResetPasswordUrl = (id: string,) => {
 export const userResetPassword = async (id: string,
     passwordRequest: PasswordRequest, options?: Parameters<typeof request>[1]): Promise<userResetPasswordResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<userResetPasswordResponse>(getUserResetPasswordUrl(id),
+  return request<userResetPasswordResponse>(getUserResetPasswordUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(passwordRequest)
   }
 );}
@@ -305,25 +297,11 @@ export const getSignInRuleUpdateUrl = () => {
 
 export const signInRuleUpdate = async (signInRulesView: SignInRulesView, options?: Parameters<typeof request>[1]): Promise<signInRuleUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<signInRuleUpdateResponse>(getSignInRuleUpdateUrl(),
+  return request<signInRuleUpdateResponse>(getSignInRuleUpdateUrl(),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(signInRulesView)
   }
 );}
@@ -353,25 +331,11 @@ export const getRoleUpdateUrl = (id: string,) => {
 export const roleUpdate = async (id: string,
     updateRoleRequest: UpdateRoleRequest, options?: Parameters<typeof request>[1]): Promise<roleUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<roleUpdateResponse>(getRoleUpdateUrl(id),
+  return request<roleUpdateResponse>(getRoleUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateRoleRequest)
   }
 );}
@@ -434,25 +398,11 @@ export const getRankSetUrl = (uuid: string,) => {
 export const rankSet = async (uuid: string,
     setRankRequest: SetRankRequest, options?: Parameters<typeof request>[1]): Promise<rankSetResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<rankSetResponse>(getRankSetUrl(uuid),
+  return request<rankSetResponse>(getRankSetUrl(uuid),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setRankRequest)
   }
 );}
@@ -515,25 +465,11 @@ export const getPermissionGroupUpdateUrl = (id: string,) => {
 export const permissionGroupUpdate = async (id: string,
     updatePermissionGroupRequest: UpdatePermissionGroupRequest, options?: Parameters<typeof request>[1]): Promise<permissionGroupUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<permissionGroupUpdateResponse>(getPermissionGroupUpdateUrl(id),
+  return request<permissionGroupUpdateResponse>(getPermissionGroupUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updatePermissionGroupRequest)
   }
 );}
@@ -596,25 +532,11 @@ export const getOauthClientUpdateUrl = (clientId: string,) => {
 export const oauthClientUpdate = async (clientId: string,
     oAuthClientRequest: OAuthClientRequest, options?: Parameters<typeof request>[1]): Promise<oauthClientUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<oauthClientUpdateResponse>(getOauthClientUpdateUrl(clientId),
+  return request<oauthClientUpdateResponse>(getOauthClientUpdateUrl(clientId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(oAuthClientRequest)
   }
 );}
@@ -710,25 +632,11 @@ export const getNpcUpdateUrl = (id: string,) => {
 export const npcUpdate = async (id: string,
     npcSettings: NpcSettings, options?: Parameters<typeof request>[1]): Promise<npcUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<npcUpdateResponse>(getNpcUpdateUrl(id),
+  return request<npcUpdateResponse>(getNpcUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(npcSettings)
   }
 );}
@@ -823,25 +731,11 @@ export const getNetworkUpdateUrl = () => {
 
 export const networkUpdate = async (updateNetworkSettingsRequest: UpdateNetworkSettingsRequest, options?: Parameters<typeof request>[1]): Promise<networkUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<networkUpdateResponse>(getNetworkUpdateUrl(),
+  return request<networkUpdateResponse>(getNetworkUpdateUrl(),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateNetworkSettingsRequest)
   }
 );}
@@ -870,25 +764,11 @@ export const getMeChangePasswordUrl = () => {
 
 export const meChangePassword = async (changePasswordRequest: ChangePasswordRequest, options?: Parameters<typeof request>[1]): Promise<meChangePasswordResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meChangePasswordResponse>(getMeChangePasswordUrl(),
+  return request<meChangePasswordResponse>(getMeChangePasswordUrl(),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(changePasswordRequest)
   }
 );}
@@ -918,25 +798,11 @@ export const getMeRenamePasskeyUrl = (id: string,) => {
 export const meRenamePasskey = async (id: string,
     passkeyRename: PasskeyRename, options?: Parameters<typeof request>[1]): Promise<meRenamePasskeyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meRenamePasskeyResponse>(getMeRenamePasskeyUrl(id),
+  return request<meRenamePasskeyResponse>(getMeRenamePasskeyUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(passkeyRename)
   }
 );}
@@ -966,25 +832,11 @@ export const getMeRemovePasskeyUrl = (id: string,) => {
 export const meRemovePasskey = async (id: string,
     currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<typeof request>[1]): Promise<meRemovePasskeyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meRemovePasskeyResponse>(getMeRemovePasskeyUrl(id),
+  return request<meRemovePasskeyResponse>(getMeRemovePasskeyUrl(id),
   {
     ...options,
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(currentPasswordRequest)
   }
 );}
@@ -1047,25 +899,11 @@ export const getGroupUpdateUrl = (id: string,) => {
 export const groupUpdate = async (id: string,
     updateGroupRequest: UpdateGroupRequest, options?: Parameters<typeof request>[1]): Promise<groupUpdateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<groupUpdateResponse>(getGroupUpdateUrl(id),
+  return request<groupUpdateResponse>(getGroupUpdateUrl(id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateGroupRequest)
   }
 );}
@@ -1128,25 +966,11 @@ export const getTemplatePromoteUrl = (groupId: string,) => {
 export const templatePromote = async (groupId: string,
     promoteRequest: PromoteRequest, options?: Parameters<typeof request>[1]): Promise<templatePromoteResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<templatePromoteResponse>(getTemplatePromoteUrl(groupId),
+  return request<templatePromoteResponse>(getTemplatePromoteUrl(groupId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(promoteRequest)
   }
 );}
@@ -1215,25 +1039,11 @@ export const getUserCreateUrl = () => {
 
 export const userCreate = async (createUserRequest: CreateUserRequest, options?: Parameters<typeof request>[1]): Promise<userCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<userCreateResponse>(getUserCreateUrl(),
+  return request<userCreateResponse>(getUserCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createUserRequest)
   }
 );}
@@ -1262,25 +1072,11 @@ export const getTextPreviewUrl = () => {
 
 export const textPreview = async (textPreviewRequest: TextPreviewRequest, options?: Parameters<typeof request>[1]): Promise<textPreviewResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<textPreviewResponse>(getTextPreviewUrl(),
+  return request<textPreviewResponse>(getTextPreviewUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(textPreviewRequest)
   }
 );}
@@ -1342,25 +1138,11 @@ export const getSetupCompleteUrl = () => {
 
 export const setupComplete = async (setupRequest: SetupRequest, options?: Parameters<typeof request>[1]): Promise<setupCompleteResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<setupCompleteResponse>(getSetupCompleteUrl(),
+  return request<setupCompleteResponse>(getSetupCompleteUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setupRequest)
   }
 );}
@@ -1429,25 +1211,11 @@ export const getServerRequestUrl = () => {
 
 export const serverRequest = async (requestServerRequest: RequestServerRequest, options?: Parameters<typeof request>[1]): Promise<serverRequestResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<serverRequestResponse>(getServerRequestUrl(),
+  return request<serverRequestResponse>(getServerRequestUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(requestServerRequest)
   }
 );}
@@ -1477,25 +1245,11 @@ export const getServerTransferAllUrl = (id: string,) => {
 export const serverTransferAll = async (id: string,
     transferRequest: TransferRequest, options?: Parameters<typeof request>[1]): Promise<serverTransferAllResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<serverTransferAllResponse>(getServerTransferAllUrl(id),
+  return request<serverTransferAllResponse>(getServerTransferAllUrl(id),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(transferRequest)
   }
 );}
@@ -1624,25 +1378,11 @@ export const getRuntimeRolloutUrl = (profileId: string,) => {
 export const runtimeRollout = async (profileId: string,
     restartRequest: RestartRequest, options?: Parameters<typeof request>[1]): Promise<runtimeRolloutResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<runtimeRolloutResponse>(getRuntimeRolloutUrl(profileId),
+  return request<runtimeRolloutResponse>(getRuntimeRolloutUrl(profileId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );}
@@ -1704,25 +1444,11 @@ export const getRoleCreateUrl = () => {
 
 export const roleCreate = async (createRoleRequest: CreateRoleRequest, options?: Parameters<typeof request>[1]): Promise<roleCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<roleCreateResponse>(getRoleCreateUrl(),
+  return request<roleCreateResponse>(getRoleCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createRoleRequest)
   }
 );}
@@ -1818,25 +1544,11 @@ export const getPlayerTransferUrl = (uuid: string,) => {
 export const playerTransfer = async (uuid: string,
     transferRequest: TransferRequest, options?: Parameters<typeof request>[1]): Promise<playerTransferResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<playerTransferResponse>(getPlayerTransferUrl(uuid),
+  return request<playerTransferResponse>(getPlayerTransferUrl(uuid),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(transferRequest)
   }
 );}
@@ -1898,25 +1610,11 @@ export const getPermissionGroupCreateUrl = () => {
 
 export const permissionGroupCreate = async (createPermissionGroupRequest: CreatePermissionGroupRequest, options?: Parameters<typeof request>[1]): Promise<permissionGroupCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<permissionGroupCreateResponse>(getPermissionGroupCreateUrl(),
+  return request<permissionGroupCreateResponse>(getPermissionGroupCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createPermissionGroupRequest)
   }
 );}
@@ -1978,25 +1676,11 @@ export const getOauthClientCreateUrl = () => {
 
 export const oauthClientCreate = async (oAuthClientRequest: OAuthClientRequest, options?: Parameters<typeof request>[1]): Promise<oauthClientCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<oauthClientCreateResponse>(getOauthClientCreateUrl(),
+  return request<oauthClientCreateResponse>(getOauthClientCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(oAuthClientRequest)
   }
 );}
@@ -2098,25 +1782,11 @@ export const getNpcCreateUrl = () => {
 
 export const npcCreate = async (npcSettings: NpcSettings, options?: Parameters<typeof request>[1]): Promise<npcCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<npcCreateResponse>(getNpcCreateUrl(),
+  return request<npcCreateResponse>(getNpcCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(npcSettings)
   }
 );}
@@ -2145,25 +1815,11 @@ export const getNetworkRestartUrl = () => {
 
 export const networkRestart = async (restartRequest: RestartRequest, options?: Parameters<typeof request>[1]): Promise<networkRestartResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<networkRestartResponse>(getNetworkRestartUrl(),
+  return request<networkRestartResponse>(getNetworkRestartUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );}
@@ -2258,25 +1914,11 @@ export const getMeStartTotpUrl = () => {
 
 export const meStartTotp = async (currentPasswordRequest: CurrentPasswordRequest, options?: Parameters<typeof request>[1]): Promise<meStartTotpResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meStartTotpResponse>(getMeStartTotpUrl(),
+  return request<meStartTotpResponse>(getMeStartTotpUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(currentPasswordRequest)
   }
 );}
@@ -2305,25 +1947,11 @@ export const getMeRemoveTotpUrl = () => {
 
 export const meRemoveTotp = async (totpCodeRequest: TotpCodeRequest, options?: Parameters<typeof request>[1]): Promise<meRemoveTotpResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meRemoveTotpResponse>(getMeRemoveTotpUrl(),
+  return request<meRemoveTotpResponse>(getMeRemoveTotpUrl(),
   {
     ...options,
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(totpCodeRequest)
   }
 );}
@@ -2352,25 +1980,11 @@ export const getMeConfirmTotpUrl = () => {
 
 export const meConfirmTotp = async (totpCodeRequest: TotpCodeRequest, options?: Parameters<typeof request>[1]): Promise<meConfirmTotpResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meConfirmTotpResponse>(getMeConfirmTotpUrl(),
+  return request<meConfirmTotpResponse>(getMeConfirmTotpUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(totpCodeRequest)
   }
 );}
@@ -2399,25 +2013,11 @@ export const getMeRequestMinecraftLinkUrl = () => {
 
 export const meRequestMinecraftLink = async (minecraftLinkRequest: MinecraftLinkRequest, options?: Parameters<typeof request>[1]): Promise<meRequestMinecraftLinkResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meRequestMinecraftLinkResponse>(getMeRequestMinecraftLinkUrl(),
+  return request<meRequestMinecraftLinkResponse>(getMeRequestMinecraftLinkUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(minecraftLinkRequest)
   }
 );}
@@ -2479,25 +2079,11 @@ export const getMeConfirmMinecraftLinkUrl = () => {
 
 export const meConfirmMinecraftLink = async (minecraftLinkConfirmation: MinecraftLinkConfirmation, options?: Parameters<typeof request>[1]): Promise<meConfirmMinecraftLinkResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<meConfirmMinecraftLinkResponse>(getMeConfirmMinecraftLinkUrl(),
+  return request<meConfirmMinecraftLinkResponse>(getMeConfirmMinecraftLinkUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(minecraftLinkConfirmation)
   }
 );}
@@ -2559,25 +2145,11 @@ export const getGroupCreateUrl = () => {
 
 export const groupCreate = async (createGroupRequest: CreateGroupRequest, options?: Parameters<typeof request>[1]): Promise<groupCreateResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<groupCreateResponse>(getGroupCreateUrl(),
+  return request<groupCreateResponse>(getGroupCreateUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createGroupRequest)
   }
 );}
@@ -2640,25 +2212,11 @@ export const getGroupRestartUrl = (id: string,) => {
 export const groupRestart = async (id: string,
     restartRequest: RestartRequest, options?: Parameters<typeof request>[1]): Promise<groupRestartResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<groupRestartResponse>(getGroupRestartUrl(id),
+  return request<groupRestartResponse>(getGroupRestartUrl(id),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(restartRequest)
   }
 );}
@@ -2754,25 +2312,11 @@ export const getTemplateUploadUrl = (groupId: string,) => {
 export const templateUpload = async (groupId: string,
     templateUploadBody?: Blob, options?: Parameters<typeof request>[1]): Promise<templateUploadResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<templateUploadResponse>(getTemplateUploadUrl(groupId),
+  return request<templateUploadResponse>(getTemplateUploadUrl(groupId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/gzip', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/gzip' }, options?.headers),
     body: templateUploadBody
   }
 );}
@@ -2834,25 +2378,11 @@ export const getCommandRunUrl = () => {
 
 export const commandRun = async (consoleCommandRequest: ConsoleCommandRequest, options?: Parameters<typeof request>[1]): Promise<commandRunResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return request<commandRunResponse>(getCommandRunUrl(),
+  return request<commandRunResponse>(getCommandRunUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(consoleCommandRequest)
   }
 );}
