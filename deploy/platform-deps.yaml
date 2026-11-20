@@ -148,7 +148,7 @@ charts:
     namespace: monitoring
     repository: https://prometheus-community.github.io/helm-charts
     chart: kube-prometheus-stack
-    version: 93.3.0
+    version: 93.3.1
     values:
       # The CRDs come from prometheus-operator-crds above (D-0171); the chart's own copies differ from that stripped
       # manifest, so installing them conflicts with it.
@@ -192,7 +192,7 @@ charts:
     namespace: monitoring
     repository: https://grafana-community.github.io/helm-charts
     chart: loki
-    version: 21.2.3
+    version: 21.3.1
     # One binary on its own volume, which is all one cluster's logs need; the compactor deletes them after 14 days
     # (D-0043, D-0187).
     values:
