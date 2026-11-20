@@ -59,10 +59,10 @@ profiles:
     protocol: 777
     java: 25
     server:
-      build: 248
-      url: https://fill-data.papermc.io/v1/objects/352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2/paper-26.3-248.jar
-      sha256: 352dbbf965946456a81305f4c4a8d39cb7a8e55a0b0126b417a24efd944b92c2
-      source: https://github.com/PaperMC/Paper/commit/0727243c940172f6731dc63bc195917b629b71f9
+      build: 253
+      url: https://fill-data.papermc.io/v1/objects/f9df8e19f4bdee97dbded48095391ea69c64342a4e19624db4f5e0d0136dfe0b/paper-26.3-253.jar
+      sha256: f9df8e19f4bdee97dbded48095391ea69c64342a4e19624db4f5e0d0136dfe0b
+      source: https://github.com/PaperMC/Paper/commit/63e41db999978b24fefa4c48a286748c99ffbc95
   - id: pandaspigot-1.8.8
     platform: pandaspigot
     version: "1.8.8"
