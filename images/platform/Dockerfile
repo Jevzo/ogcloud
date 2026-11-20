@@ -32,7 +32,7 @@ ENTRYPOINT ["/app/service"]
 
 # Caddy's image grants its binary a file capability, which a pod that drops every capability cannot execute; a plain
 # copy leaves the capability behind.
-FROM caddy:2.11.9@sha256:0c2243efcf437ab7f7a978f1027fcf0d4f9be8a75df27b1b3fbc5dbe0ffa8cf0 AS caddy
+FROM caddy:2.11.9@sha256:4851e54a46b206517c574821bb5cc67f170d2156041e9fbc4c9193b45e84a75b AS caddy
 RUN cp /usr/bin/caddy /tmp/caddy
 
 # The dashboard (D-0214): Caddy's static binary on distroless static, serving the web app's build.
