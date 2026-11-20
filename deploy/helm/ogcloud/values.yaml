@@ -211,7 +211,7 @@ monitoring:
 
 infisical:
   # Our own Deployment (D-0150); v0.167.6, as the tests run it.
-  image: infisical/infisical:v0.167.11@sha256:4cefd7fec942f99b4a458130417ad5b2ad0b15e71300c5d7df8f5a877082fe8d
+  image: infisical/infisical:v0.167.12@sha256:f76165b80113fa55952ff683689825ab7c1d1d8237b72247c39171cfe9ba60e9
   # TLS in front of Infisical (D-0149).
   ghostunnelImage: ghostunnel/ghostunnel:v1.11.5@sha256:65c4e34ec0ee0f30ea1f72b7411ec70a91c32fc50f067a8466ad2adb1e7420f2
   replicas: 1
