@@ -5,7 +5,7 @@ go 1.27.4
 require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.21.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.10
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.115.0
 	github.com/moby/moby/api v1.57.0
 	github.com/pires/go-proxyproto v0.16.0
 	github.com/prometheus/client_golang v1.25.0
