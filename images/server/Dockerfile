@@ -2,7 +2,7 @@
 # generated from contracts/runtime-profiles.yaml, picks the stage and passes the pinned jar and JVM flags.
 
 # Temurin's JRE on Ubuntu; its shell runs the entrypoint (D-0128).
-FROM eclipse-temurin:25.0.5_8-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce AS base
+FROM eclipse-temurin:25.0.5.1_2-jre-noble@sha256:2ec98aa522c472deadfd2b7c5b39bca680e33ef522a53a72f10789bdf89a6bb5 AS base
 ARG SERVER_URL
 ARG SERVER_SHA256
 ARG SERVER_SOURCE
