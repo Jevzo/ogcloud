@@ -40,12 +40,12 @@ jobs:
         with:
           ref: v2
           persist-credentials: false
-      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
       - id: packages
         run: echo "names=$(deploy/release/publish.sh packages)" >>"$GITHUB_OUTPUT"
       # Tags of the publish workflow's dry runs, 0.0.0-dryrun-<commit> or <server version>-0.0.0-dryrun-<commit>. The
       # action refuses nested repetitions such as ([0-9.]+-)?, so the patterns match the tag's end only.
-      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+      - uses: dataaxiom/ghcr-cleanup-action@ac45a8c04b1eb4b27974ca79a0a74f344c93664b # v1.3.0
         with:
           owner: ${{ github.repository_owner }}
           packages: ${{ steps.packages.outputs.names }}
@@ -53,7 +53,7 @@ jobs:
           use-regex: true
           dry-run: ${{ inputs.dry_run == true }}
       # Real releases are 2.0.0 or <server version>-2.0.0; every other tag is a pre-release.
-      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+      - uses: dataaxiom/ghcr-cleanup-action@ac45a8c04b1eb4b27974ca79a0a74f344c93664b # v1.3.0
         with:
           owner: ${{ github.repository_owner }}
           packages: ${{ steps.packages.outputs.names }}
