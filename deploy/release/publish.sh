@@ -14,7 +14,7 @@ cd "$(dirname "$0")/../.."
 readonly SOURCE=https://github.com/Jevzo/ogcloud
 readonly CHART=$REGISTRY/charts/ogcloud
 # The SBOM generator BuildKit runs; its floating default tag would make the SBOM depend on the day of the build.
-readonly SBOM_SCANNER=docker/buildkit-syft-scanner:1.12.1@sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315
+readonly SBOM_SCANNER=docker/buildkit-syft-scanner:1.13.0@sha256:a190379321cf51fba8c284a1834555b55e7bf58d577d574db23370461defc430
 # Keyless signatures (D-0197) carry the signing workflow as their identity.
 readonly IDENTITY='^https://github\.com/Jevzo/ogcloud/\.github/workflows/publish\.yml@refs/heads/(v2|main)$'
 readonly ISSUER=https://token.actions.githubusercontent.com
